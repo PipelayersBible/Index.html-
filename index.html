@@ -1,3 +1,5 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
 
@@ -65,7 +67,7 @@ button.pb-tag { width: 100%; border: none; cursor: pointer; text-align: left; -w
 .pb-field input:focus, .pb-field select:focus { outline: 2px solid var(--rod-red); outline-offset: 1px; }
 .pb-row { display: flex; gap: 8px; }
 .pb-row .pb-field { flex: 1; }
-.pb-derived { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--ok-green); margin: -4px 0 10px 0; min-height: 14px; }
+.pb-derived { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--ok-green); margin: -4px 0 10px 0; min-height: 14px; white-space: pre-line; }
 .pb-help { font-size: 11.5px; color: var(--ink-soft); margin-top: 5px; line-height: 1.4; }
 
 .pb-btn { -webkit-appearance:none; appearance:none; border-radius:0; width: 100%; padding: 13px; font-family: 'Oswald'; font-weight: 600; font-size: 15px; letter-spacing: 0.03em; text-transform: uppercase; background: var(--hazard); color: var(--hazard-ink); border: none; cursor: pointer; }
@@ -170,7 +172,7 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
       <div><div class="name">Resume Run</div><div class="sub">Return to your last locked run</div></div>
       <div>&rsaquo;</div>
     </div>
-    <div class="pb-home-tile" onclick="pbGoto('input')">
+    <div class="pb-home-tile" onclick="pbOpenNewRun()">
       <div><div class="name">New Run</div><div class="sub">Start a new pipe run calculation</div></div>
       <div>&rsaquo;</div>
     </div>
@@ -186,10 +188,19 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
       <div><div class="name">Confined Space</div><div class="sub">Entry permit, atmospheric log, entrant roster, vent calculator</div></div>
       <div>&rsaquo;</div>
     </div>
-    <div class="pb-home-tile disabled"><div><div class="name">Formulas &amp; Reference</div><div class="sub">Coming soon</div></div></div>
-    <div class="pb-home-tile disabled"><div><div class="name">Stats</div><div class="sub">Coming soon</div></div></div>
-    <div class="pb-home-tile disabled"><div><div class="name">Archive</div><div class="sub">Coming soon</div></div></div>
-    <p class="pb-note-general">This build covers the core run calculator, the bend/bedding/flush/volume/ventilation calculators, and confined space entry permits. PDF export, stats, and archive are still to come.</p>
+    <div class="pb-home-tile" onclick="pbOpenStats()">
+      <div><div class="name">Stats</div><div class="sub">Footage totals by type/size, filterable, rough time/ft</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbOpenArchive()">
+      <div><div class="name">Archive</div><div class="sub">Past locked runs, with Sent / Not-yet-sent status</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbGoto('formulasHub')">
+      <div><div class="name">Formulas &amp; Reference</div><div class="sub">Every formula and reference table used in this app, in one place</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <p class="pb-note-general">This build covers the core run calculator, the bend/bedding/flush/volume/ventilation calculators, confined space entry permits, stats, and archive. PDF export is still to come.</p>
   </div>
 
   <!-- CALCULATOR HUB -->
@@ -216,6 +227,30 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     </div>
     <div class="pb-home-tile" onclick="pbOpenVentCalc()">
       <div><div class="name">Confined Space Ventilation</div><div class="sub">Rule-of-thumb blower CFM sizing — not an OSHA compliance number</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbOpenTrenchCalc()">
+      <div><div class="name">Trench Sloping &amp; Shoring</div><div class="sub">OSHA max allowable slope by soil type, plus top width</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbGoto('pipeWeightCalc')">
+      <div><div class="name">Pipe Weight</div><div class="sub">Weight per foot and total segment weight by material</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbGoto('liftCalc')">
+      <div><div class="name">Backfill Lift Count</div><div class="sub">Number of compacted lifts needed to backfill a trench</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbGoto('slopeConvCalc')">
+      <div><div class="name">Slope / Grade Converter</div><div class="sub">Percent, ratio (1:X), and degrees, all at once</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbGoto('manningCalc')">
+      <div><div class="name">Manning's Equation</div><div class="sub">Full-pipe gravity flow capacity and velocity</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbGoto('manholeDepthCalc')">
+      <div><div class="name">Manhole Rim-to-Invert Depth</div><div class="sub">Total structure depth and how many barrel sections needed</div></div>
       <div>&rsaquo;</div>
     </div>
   </div>
@@ -443,6 +478,588 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     </div>
   </div>
 
+  <!-- TRENCH SLOPING & SHORING -->
+  <!-- FORMULAS & REFERENCE HUB -->
+  <div class="pb-screen" id="screen-formulasHub">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>REFERENCE</span><button class="pb-back" title="Home" onclick="pbGoto('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11L12 3l9 8"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></button></p>
+      <h1 class="pb-title">Formulas &amp; Reference</h1>
+    </div>
+    <div class="pb-home-tile" onclick="pbGoto('refRod')">
+      <div><div class="name">Rod Units &amp; Grade Math</div><div class="sub">Lenker/Engineer/Architect definitions, HI, BOP/INV/TOP</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbGoto('refPipeDiagram')">
+      <div><div class="name">Pipe Cross-Section</div><div class="sub">Labeled diagram: TOP, BOP, INV, springline, OD, ID</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbGoto('refSlope')">
+      <div><div class="name">Slope &amp; Grade</div><div class="sub">Slope %, pipe length, percent/ratio/degree conversion</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbGoto('refBends')">
+      <div><div class="name">Bends &amp; Fittings</div><div class="sub">Offset multipliers, Center-to-End</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbGoto('refFlowVolume')">
+      <div><div class="name">Flow &amp; Volume</div><div class="sub">Flush flow rate, material volume, Manning's equation</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbGoto('refTrench')">
+      <div><div class="name">Trenching &amp; Excavation</div><div class="sub">OSHA sloping table, backfill lifts, manhole depth</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbGoto('refPipe')">
+      <div><div class="name">Pipe &amp; Materials</div><div class="sub">Densities, Manning's n, self-cleansing velocity</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbGoto('refConfined')">
+      <div><div class="name">Confined Space</div><div class="sub">Ventilation CFM, attendant rule, entry conditions</div></div>
+      <div>&rsaquo;</div>
+    </div>
+  </div>
+
+  <!-- REF: ROD UNITS & GRADE MATH -->
+  <div class="pb-screen" id="screen-refRod">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>REFERENCE</span><button class="pb-back" title="Back" onclick="pbGoto('formulasHub')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Rod Units &amp; Grade Math</h1>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Rod Types</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">Lenker Rod</span><br>Reads true elevation directly. No HI needed. Simplest rod, most direct number.</div>
+        <div class="pb-review-item"><span class="k">Engineer's Rod</span><br>Reading = HI − elevation. Decimal feet. Reading gets SMALLER as elevation gets HIGHER.</div>
+        <div class="pb-review-item"><span class="k">Architect's Rod</span><br>Same math as Engineer's Rod, displayed in feet-inches-1/16".</div>
+      </div>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Elevation of the Instrument (HI)</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">Benchmark + Backsight</span><br>HI = benchmark elevation + backsight reading.</div>
+        <div class="pb-review-item"><span class="k">Calculate from Stakes</span><br>HI = stake elevation + rod reading shot at that stake. Works from any stake with both values — the app cross-checks multiple stakes automatically and flags disagreement over 0.05 ft.</div>
+        <div class="pb-review-item"><span class="k">Only needed for</span><br>Points entered as a typed Invert Elevation. A run made entirely of survey stakes never needs HI at all.</div>
+      </div>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Survey Stake Math</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">True invert elevation</span><br>Cut: stake elevation − cut. Fill: stake elevation + fill. This is real elevation, for documentation — the surveyor's number, unrelated to your rod.</div>
+        <div class="pb-review-item"><span class="k">Rod reading at invert (Engineer's/Architect's Rod)</span><br>Cut: rod reading at stake + cut. Fill: rod reading at stake − fill. This is what you actually dial in — computed directly from your own shot, with no elevation math involved at all.</div>
+      </div>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">BOP / INV / TOP</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">BOP (Bottom of Pipe)</span><br>Elevation: INV − wall thickness. Engineer's/Architect's Rod reading: INV reading + wall thickness (reads HIGHER, not lower).</div>
+        <div class="pb-review-item"><span class="k">TOP (Top of Pipe)</span><br>Elevation: INV + pipe ID + wall thickness. Engineer's/Architect's Rod reading: INV reading − (ID + wall thickness) (reads LOWER, not higher).</div>
+        <div class="pb-review-item"><span class="k">Why BOP/TOP flip direction on Engineer's/Architect's Rod</span><br>Reading = HI − elevation. Since HI is fixed, a HIGHER elevation always gives a SMALLER reading. TOP is physically highest, so it reads lowest. BOP is physically lowest, so it reads highest.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REF: PIPE CROSS-SECTION DIAGRAM -->
+  <div class="pb-screen" id="screen-refPipeDiagram">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>REFERENCE</span><button class="pb-back" title="Back" onclick="pbGoto('formulasHub')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Pipe Cross-Section</h1>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Looking Straight Down the Pipe</div>
+      <div class="pb-body">
+        <svg viewBox="0 0 420 420" style="width:100%; max-width:420px; display:block; margin:0 auto; background:var(--paper);">
+          <circle cx="200" cy="210" r="140" fill="none" stroke="var(--ink)" stroke-width="2.5"/>
+          <circle cx="200" cy="210" r="98" fill="none" stroke="var(--ink)" stroke-width="2.5"/>
+
+          <!-- springline, with a gap in the middle for the label -->
+          <line x1="60" y1="210" x2="150" y2="210" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="5,4"/>
+          <line x1="250" y1="210" x2="340" y2="210" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="5,4"/>
+          <text x="200" y="205" fill="var(--ink-soft)" font-size="13" font-weight="700" text-anchor="middle">Springline</text>
+
+          <!-- TOP -->
+          <line x1="200" y1="70" x2="200" y2="45" stroke="var(--rod-red)" stroke-width="1.5"/>
+          <text x="200" y="35" fill="var(--rod-red)" font-size="13" font-weight="700" text-anchor="middle">TOP (crown)</text>
+
+          <!-- BOP -->
+          <line x1="200" y1="350" x2="200" y2="378" stroke="var(--rod-red)" stroke-width="1.5"/>
+          <text x="200" y="393" fill="var(--rod-red)" font-size="13" font-weight="700" text-anchor="middle">BOP</text>
+
+          <!-- INV (inside bottom) -->
+          <line x1="200" y1="308" x2="250" y2="345" stroke="var(--hazard-ink)" stroke-width="1.5"/>
+          <text x="255" y="350" fill="var(--hazard-ink)" font-size="13" font-weight="700">INV (invert)</text>
+
+          <!-- OD dimension, left side -->
+          <line x1="40" y1="70" x2="40" y2="350" stroke="var(--ink)" stroke-width="1.5"/>
+          <line x1="34" y1="70" x2="46" y2="70" stroke="var(--ink)" stroke-width="1.5"/>
+          <line x1="34" y1="350" x2="46" y2="350" stroke="var(--ink)" stroke-width="1.5"/>
+          <text x="26" y="210" fill="var(--ink)" font-size="13" font-weight="700" text-anchor="middle" transform="rotate(-90 26 210)">OD</text>
+
+          <!-- ID dimension, right side -->
+          <line x1="368" y1="112" x2="368" y2="308" stroke="var(--ink)" stroke-width="1.5"/>
+          <line x1="362" y1="112" x2="374" y2="112" stroke="var(--ink)" stroke-width="1.5"/>
+          <line x1="362" y1="308" x2="374" y2="308" stroke="var(--ink)" stroke-width="1.5"/>
+          <text x="388" y="210" fill="var(--ink)" font-size="13" font-weight="700" text-anchor="middle" transform="rotate(-90 388 210)">ID</text>
+
+          <!-- Wall thickness callout, upper left, lifted clear above the OD dimension -->
+          <line x1="101" y1="111" x2="75" y2="48" stroke="var(--ink-soft)" stroke-width="1.5"/>
+          <line x1="130.7" y1="140.7" x2="75" y2="48" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="10" y="42" fill="var(--ink-soft)" font-size="12" font-weight="600">Wall Thickness</text>
+
+          <!-- Circumference callout, lower left -->
+          <line x1="101" y1="309" x2="65" y2="360" stroke="var(--ink-soft)" stroke-width="1.5"/>
+          <text x="30" y="378" fill="var(--ink-soft)" font-size="12" font-weight="600">Circumference</text>
+          <text x="30" y="393" fill="var(--ink-soft)" font-size="10.5">= π × OD</text>
+        </svg>
+        <p class="pb-help" style="margin-top:12px;">This is a schematic, not to scale. TOP and BOP are the outside of the pipe (crown and bottom); INV is the inside bottom, where flow actually happens — the number that matters for grade. Springline is the horizontal centerline, the pipe's widest point.</p>
+      </div>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Quick Reference</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">OD (Outside Diameter)</span><br>Full outer width of the pipe, wall included.</div>
+        <div class="pb-review-item"><span class="k">ID (Inside Diameter)</span><br>Open interior width — what "pipe size" (e.g. 12") almost always refers to. ID = OD − 2 × wall thickness.</div>
+        <div class="pb-review-item"><span class="k">Wall Thickness</span><br>The gap between OD and ID. (OD − ID) ÷ 2.</div>
+        <div class="pb-review-item"><span class="k">Springline</span><br>Horizontal line through the pipe's center — its widest point, and the standard reference line for utility conflict/clearance calls.</div>
+        <div class="pb-review-item"><span class="k">Circumference</span><br>π × OD — the full outer perimeter.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REF: SLOPE & GRADE -->
+  <div class="pb-screen" id="screen-refSlope">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>REFERENCE</span><button class="pb-back" title="Back" onclick="pbGoto('formulasHub')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Slope &amp; Grade</h1>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Slope</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">Slope %</span><br>(Start invert elevation − End invert elevation) ÷ Distance × 100.</div>
+        <div class="pb-review-item"><span class="k">Actual pipe length</span><br>√(horizontal distance² + fall²) — Pythagorean theorem. Slightly longer than the horizontal run distance on any sloped pipe.</div>
+        <div class="pb-review-item"><span class="k">Elevation change per interval</span><br>(Slope % ÷ 100) × interval distance. E.g. 2% slope over a 10 ft interval = 0.20 ft of fall (or rise) per interval — this is exactly how the app fills in the interval table between your points.</div>
+      </div>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Percent / Ratio / Degrees</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">Percent → Ratio (1:X)</span><br>X = 100 ÷ percent.</div>
+        <div class="pb-review-item"><span class="k">Percent → Degrees</span><br>arctan(percent ÷ 100).</div>
+        <div class="pb-review-item"><span class="k">Ratio → Percent</span><br>(1 ÷ X) × 100.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REF: BENDS & FITTINGS -->
+  <div class="pb-screen" id="screen-refBends">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>REFERENCE</span><button class="pb-back" title="Back" onclick="pbGoto('formulasHub')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Bends &amp; Fittings</h1>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Bend Offset (symmetric — same angle both bends)</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">Vertex-to-vertex travel</span><br>Offset ÷ sin(angle).</div>
+        <div class="pb-review-item"><span class="k">Multipliers</span><br>11.25° → 5.126 &nbsp;·&nbsp; 22.5° → 2.613 &nbsp;·&nbsp; 45° → 1.414</div>
+        <div class="pb-review-item"><span class="k">Pipe cut length</span><br>Travel − C-E (fitting 1) − C-E (fitting 2).</div>
+        <div class="pb-review-item"><span class="k">Center-to-End (C-E)</span><br>Distance from a fitting's theoretical center to the internal stop shoulder — where the pipe actually seats inside the bell.</div>
+        <div class="pb-review-item"><span class="k">Asymmetric bends (different angle each end)</span><br>Not built into this calculator — math not yet verified.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REF: FLOW & VOLUME -->
+  <div class="pb-screen" id="screen-refFlowVolume">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>REFERENCE</span><button class="pb-back" title="Back" onclick="pbGoto('formulasHub')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Flow &amp; Volume</h1>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Flush / Flow Rate</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">GPM</span><br>Q = 29.83 × C × d² × √P</div>
+        <div class="pb-review-item"><span class="k">C coefficients</span><br>Smooth/rounded 0.90 &nbsp;·&nbsp; Square/sharp 0.80 &nbsp;·&nbsp; Projecting into barrel 0.70 &nbsp;·&nbsp; Stream straightener 0.95</div>
+      </div>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Material Volume</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">Rectangular</span><br>Length × Width × Depth</div>
+        <div class="pb-review-item"><span class="k">Triangular</span><br>0.5 × Base × Height × Depth</div>
+        <div class="pb-review-item"><span class="k">Cylindrical</span><br>π × r² × length</div>
+        <div class="pb-review-item"><span class="k">Encasement</span><br>(Encasement L × W × D) − sum of all pipe cylinder volumes inside it.</div>
+      </div>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Manning's Equation (full-pipe gravity flow)</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">Velocity</span><br>(1.49 ÷ n) × R^(2/3) × S^(1/2), where R = diameter ÷ 4 (hydraulic radius, full pipe) and S = slope as a decimal.</div>
+        <div class="pb-review-item"><span class="k">Capacity</span><br>Velocity × cross-sectional area. This is the pipe's ceiling capacity flowing completely full — real day-to-day flow is usually partial-depth.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REF: TRENCHING & EXCAVATION -->
+  <div class="pb-screen" id="screen-refTrench">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>REFERENCE</span><button class="pb-back" title="Back" onclick="pbGoto('formulasHub')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Trenching &amp; Excavation</h1>
+    </div>
+    <div class="pb-warn" style="margin-top:16px;">
+      <strong>Tabulated data, not a substitute for a competent person</strong>
+      Soil type must be classified per OSHA Appendix A by a competent person — don't guess. This table only applies to excavations 20 ft or less in depth.
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">OSHA Max Allowable Slopes (Table B-1)</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">Stable Rock</span><br>Vertical (90°)</div>
+        <div class="pb-review-item"><span class="k">Type A</span><br>0.75:1 (53°)</div>
+        <div class="pb-review-item"><span class="k">Type A, short-term (≤12 ft, ≤24 hrs)</span><br>0.5:1 (63°)</div>
+        <div class="pb-review-item"><span class="k">Type B</span><br>1:1 (45°)</div>
+        <div class="pb-review-item"><span class="k">Type C</span><br>1.5:1 (34°). Benching not permitted in Type C.</div>
+        <div class="pb-review-item"><span class="k">Top width</span><br>Bottom width + 2 × (depth × slope ratio).</div>
+      </div>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Backfill Lifts</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">Typical loose-to-compacted shrinkage</span><br>Gravel ~6% &nbsp;·&nbsp; Sand ~7% &nbsp;·&nbsp; Silt/common earth ~12% &nbsp;·&nbsp; Clay ~18%</div>
+        <div class="pb-review-item"><span class="k">Number of lifts</span><br>Total compacted depth ÷ (loose lift thickness × (1 − shrink %)), rounded up. The lift thickness you enter is the LOOSE thickness before compaction — it always contributes less than its full thickness to the final compacted depth.</div>
+      </div>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Manhole Rim-to-Invert Depth</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">Total structure depth</span><br>Rim elevation − Invert elevation.</div>
+        <div class="pb-review-item"><span class="k">Barrel sections needed</span><br>(Total depth − cone height) ÷ barrel section height, rounded down. Leftover likely needs a grade ring or a cut section.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REF: PIPE & MATERIALS -->
+  <div class="pb-screen" id="screen-refPipe">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>REFERENCE</span><button class="pb-back" title="Back" onclick="pbGoto('formulasHub')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Pipe &amp; Materials</h1>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Pipe Weight</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">Formula</span><br>π/4 × (OD² − ID²) × length × density. ID = OD − 2×wall thickness.</div>
+        <div class="pb-review-item"><span class="k">Approximate densities (lb/ft³)</span><br>Ductile Iron ~450 &nbsp;·&nbsp; PVC (any schedule/SDR/C900) ~90 &nbsp;·&nbsp; Solid-Wall HDPE ~59 &nbsp;·&nbsp; Steel ~490 &nbsp;·&nbsp; Concrete ~150</div>
+        <div class="pb-review-item"><span class="k">PVC schedule/SDR/C900</span><br>Same material density regardless of schedule — schedule changes wall thickness, not density. Enter your actual wall thickness for an accurate weight.</div>
+        <div class="pb-review-item"><span class="k">Corrugated HDPE</span><br>This formula assumes a solid, uniform wall. Corrugated pipe's ribbed profile has far less material than that — use the manufacturer's published weight for anything that matters.</div>
+      </div>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Manning's n (roughness)</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">Typical values</span><br>PVC/HDPE 0.010 &nbsp;·&nbsp; Concrete/Vitrified Clay/Lined Ductile Iron 0.013 &nbsp;·&nbsp; Corrugated Metal 0.024</div>
+        <div class="pb-review-item"><span class="k">Self-cleansing velocity</span><br>~2 ft/s is the common minimum benchmark for a gravity sewer to avoid solids settling out.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REF: CONFINED SPACE -->
+  <div class="pb-screen" id="screen-refConfined">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>REFERENCE</span><button class="pb-back" title="Back" onclick="pbGoto('formulasHub')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Confined Space</h1>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Ventilation</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">CFM (rule of thumb, not an OSHA compliance number)</span><br>(Volume in ft³ × Air Changes per Hour) ÷ 60.</div>
+        <div class="pb-review-item"><span class="k">ACH tiers</span><br>20 = normal (ANSI Z117.1) &nbsp;·&nbsp; 40 = elevated hazard &nbsp;·&nbsp; 60 = extreme</div>
+      </div>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Attendant Rule</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">OSHA 1910.146(i)</span><br>The attendant must stay outside the space at all times and may not enter for any reason — including rescue — unless first relieved by another qualified attendant.</div>
+      </div>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Entry Conditions</div>
+      <div class="pb-body">
+        <div class="pb-review-item"><span class="k">Common reference range</span><br>O2 typically 19.5%–23.5% &nbsp;·&nbsp; LEL typically below 10%. These are common references only — this app's automatic evacuation alarm only activates if you enter your own site-specific limits, since crews often rely on their sniffer's built-in alarm instead.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARCHIVE -->
+  <div class="pb-screen" id="screen-archive">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>ARCHIVE</span><button class="pb-back" title="Home" onclick="pbGoto('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11L12 3l9 8"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></button></p>
+      <h1 class="pb-title">Archive</h1>
+    </div>
+    <div class="pb-warn" style="margin-top:16px;">
+      <strong>Concept build — not durable storage yet</strong>
+      This is stored the same way as Stats: on this device, through Claude's hosting, not a real backend. Treat this as a working prototype to test and give feedback on, not a permanent home for records that matter. A real backend is still the plan for anything you actually need to keep long-term.
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Filters</div>
+      <div class="pb-body">
+        <div class="pb-row">
+          <div class="pb-field">
+            <label>Time period</label>
+            <select id="archiveFilterPeriod" onchange="renderArchiveList()">
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+            </select>
+          </div>
+          <div class="pb-field">
+            <label>Status</label>
+            <select id="archiveFilterStatus" onchange="renderArchiveList()">
+              <option value="all">All</option>
+              <option value="sent">Sent</option>
+              <option value="notsent">Not Sent</option>
+            </select>
+          </div>
+        </div>
+        <div class="pb-field">
+          <label>Jobsite</label>
+          <select id="archiveFilterJobsite" onchange="renderArchiveList()">
+            <option value="all">All Jobsites</option>
+          </select>
+        </div>
+        <div class="pb-field"><label>Search</label><input type="text" id="archiveSearchBox" placeholder="Search labels, jobsite, notes..." oninput="renderArchiveList()"></div>
+      </div>
+    </div>
+    <div class="pb-btn-wrap"><button class="pb-btn ghost" id="archiveBulkSendBtn" onclick="pbBulkSendArchive()">Send All Un-sent Reports</button></div>
+    <p class="pb-note-general">Bulk send combines every un-sent report into one email, regardless of the filters above. Very long combined text may get truncated by some mail apps.</p>
+    <div class="pb-btn-wrap"><button class="pb-btn ghost small" onclick="pbExportArchiveCSV()">Download Spreadsheet</button></div>
+    <div class="pb-btn-wrap"><button class="pb-btn ghost small" onclick="pbDownloadArchiveAllPDF()">Download All as PDF</button></div>
+    <div class="pb-btn-wrap"><button class="pb-btn small" onclick="pbDownloadArchiveBoth()">Download Both (Spreadsheet + PDF)</button></div>
+    <div id="archiveList" style="margin-top:4px;"></div>
+  </div>
+
+  <!-- STATS -->
+  <div class="pb-screen" id="screen-stats">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>STATS</span><button class="pb-back" title="Home" onclick="pbGoto('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11L12 3l9 8"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></button></p>
+      <h1 class="pb-title">Stats</h1>
+    </div>
+    <p class="pb-note-general">Only runs where you picked a pipe type get tracked here. Stored on this device only — lost if the app resets, no backend yet.</p>
+    <div class="pb-section">
+      <div class="pb-tag">Filters</div>
+      <div class="pb-body">
+        <div class="pb-row">
+          <div class="pb-field">
+            <label>Time period</label>
+            <select id="statsFilterPeriod" onchange="renderStats()">
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+            </select>
+          </div>
+          <div class="pb-field">
+            <label>Pipe type</label>
+            <select id="statsFilterType" onchange="renderStats()">
+              <option value="all">All Types</option>
+            </select>
+          </div>
+        </div>
+        <div class="pb-field">
+          <label>Jobsite</label>
+          <select id="statsFilterJobsite" onchange="renderStats()">
+            <option value="all">All Jobsites</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="pb-summary"><div class="pb-summary-grid" id="statsSummaryGrid"></div></div>
+    <div class="pb-section">
+      <div class="pb-tag">Footage by Type &amp; Size</div>
+      <div class="pb-body">
+        <div id="statsBreakdown"></div>
+      </div>
+    </div>
+    <div class="pb-btn-wrap"><button class="pb-btn ghost" onclick="pbShareStats()">Save / Share Stats</button></div>
+    <p class="pb-note-general">"Share" opens your mail app with a plain-text summary. Email can't attach files, so PDF/spreadsheet downloads below are separate — download, then attach yourself if you want to send them.</p>
+    <div class="pb-btn-wrap"><button class="pb-btn ghost small" onclick="pbExportStatsCSV()">Download Spreadsheet</button></div>
+    <div class="pb-btn-wrap"><button class="pb-btn ghost small" onclick="pbDownloadStatsPDF()">Download PDF</button></div>
+    <div class="pb-btn-wrap"><button class="pb-btn small" onclick="pbDownloadStatsBoth()">Download Both (Spreadsheet + PDF)</button></div>
+    <div class="pb-btn-wrap"><button class="pb-btn ghost small" style="color:var(--rod-red);" onclick="pbClearAllStats()">Clear All Stats Data</button></div>
+  </div>
+
+  <div class="pb-screen" id="screen-trenchCalc">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>TRENCH SLOPING</span><button class="pb-back" title="Back" onclick="pbCalcBack()"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Trench Sloping</h1>
+    </div>
+    <div class="pb-warn" style="margin-top:16px;">
+      <strong>Tabulated data, not a substitute for a competent person</strong>
+      These are OSHA's Table B-1 maximum allowable slopes (29 CFR 1926 Subpart P App B), for excavations 20 ft or less in depth only. Soil type must actually be classified per Appendix A by a competent person — don't guess. Benching is not permitted in Type C soil. Anything deeper than 20 ft, or any non-standard condition, needs a registered professional engineer's design.
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Trench</div>
+      <div class="pb-body">
+        <div class="pb-field"><label>Trench depth (ft)</label><input type="number" step="0.1" id="trenchDepth" inputmode="decimal"></div>
+        <div class="pb-field">
+          <label>Soil type</label>
+          <select id="trenchSoil">
+            <option value="rock">Stable Rock — vertical (90°)</option>
+            <option value="A">Type A — 0.75:1 (53°)</option>
+            <option value="Ashort">Type A, short-term ≤12 ft, ≤24 hrs — 0.5:1 (63°)</option>
+            <option value="B" selected>Type B — 1:1 (45°)</option>
+            <option value="C">Type C — 1.5:1 (34°)</option>
+          </select>
+        </div>
+        <div class="pb-field"><label>Trench bottom width (ft, optional)</label><input type="number" step="0.1" id="trenchBottomW" placeholder="leave blank to just get the offset" inputmode="decimal"></div>
+        <div class="pb-btn-wrap" style="padding:14px 0 0 0;"><button class="pb-btn" onclick="pbCalcTrench()">Calculate</button></div>
+        <div class="pb-derived" id="trenchResult" style="font-size:16px; margin-top:10px;"></div>
+        <div id="trenchDiagram" style="margin-top:14px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIPE WEIGHT -->
+  <div class="pb-screen" id="screen-pipeWeightCalc">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>PIPE WEIGHT</span><button class="pb-back" title="Calculators" onclick="pbGoto('calcHub')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Pipe Weight</h1>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Pipe</div>
+      <div class="pb-body">
+        <p class="pb-help" style="margin-top:0;">Densities below are approximate reference values — for a real lift plan, use the manufacturer's published weight for the exact pipe class/schedule.</p>
+        <div class="pb-row">
+          <div class="pb-field"><label>Outside diameter (in)</label><input type="number" step="0.01" id="pwOD" inputmode="decimal"></div>
+          <div class="pb-field"><label>Wall thickness (in)</label><input type="number" step="0.01" id="pwWall" inputmode="decimal"></div>
+        </div>
+        <div class="pb-field"><label>Length (ft)</label><input type="number" step="0.1" id="pwLength" inputmode="decimal"></div>
+        <div class="pb-field">
+          <label>Material</label>
+          <select id="pwMaterialSel" onchange="pbTogglePwOther()">
+            <option value="450">Ductile Iron — ~450 lb/ft³</option>
+            <option value="90">PVC, Sch 40 — ~90 lb/ft³</option>
+            <option value="90">PVC, Sch 80 — ~90 lb/ft³</option>
+            <option value="90">PVC, C900 — ~90 lb/ft³</option>
+            <option value="90">PVC, SDR 35 — ~90 lb/ft³</option>
+            <option value="59">Solid-Wall HDPE — ~59 lb/ft³</option>
+            <option value="corrugated">Corrugated HDPE</option>
+            <option value="490">Steel — ~490 lb/ft³</option>
+            <option value="150">Concrete — ~150 lb/ft³</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="pb-warn" id="pwCorrugatedWarn" style="display:none; margin-top:10px;">
+          <strong>This formula won't be accurate here</strong>
+          Corrugated HDPE has ribs and valleys, not a uniform wall — the simple OD/wall-thickness math used here assumes a solid annular wall, so it will overstate the actual material (and weight) significantly. Use the manufacturer's published weight-per-foot for corrugated pipe instead.
+        </div>
+        <div class="pb-field" id="pwOtherWrap" style="display:none;"><label>Custom density (lb/ft³)</label><input type="number" step="1" id="pwOther" inputmode="decimal"></div>
+        <div class="pb-btn-wrap" style="padding:14px 0 0 0;"><button class="pb-btn" onclick="pbCalcPipeWeight()">Calculate</button></div>
+        <div class="pb-derived" id="pipeWeightResult" style="font-size:16px; margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BACKFILL LIFT COUNT -->
+  <div class="pb-screen" id="screen-liftCalc">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>BACKFILL LIFTS</span><button class="pb-back" title="Calculators" onclick="pbGoto('calcHub')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Backfill Lift Count</h1>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Backfill</div>
+      <div class="pb-body">
+        <p class="pb-help" style="margin-top:0;">Shrinkage percentages are typical loose-to-compacted ranges, not a lab result for your actual soil — treat as a rough estimate.</p>
+        <div class="pb-field"><label>Total depth to backfill (ft, compacted/final)</label><input type="number" step="0.1" id="liftDepth" inputmode="decimal"></div>
+        <div class="pb-field"><label>Max loose lift thickness (in, before compaction)</label><input type="number" step="1" id="liftThickness" placeholder="per your spec / compactor" inputmode="decimal"></div>
+        <div class="pb-field">
+          <label>Soil type</label>
+          <select id="liftSoilSel" onchange="pbToggleLiftSoilOther()">
+            <option value="0.06">Gravel — ~6% shrink</option>
+            <option value="0.07" selected>Sand — ~7% shrink</option>
+            <option value="0.12">Silt / Common Earth (loam) — ~12% shrink</option>
+            <option value="0.18">Clay — ~18% shrink</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="pb-field" id="liftSoilOtherWrap" style="display:none;"><label>Custom shrink (%)</label><input type="number" step="1" id="liftSoilOther" inputmode="numeric"></div>
+        <div class="pb-btn-wrap" style="padding:14px 0 0 0;"><button class="pb-btn" onclick="pbCalcLifts()">Calculate</button></div>
+        <div class="pb-derived" id="liftResult" style="font-size:16px; margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLOPE / GRADE CONVERTER -->
+  <div class="pb-screen" id="screen-slopeConvCalc">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>SLOPE CONVERTER</span><button class="pb-back" title="Calculators" onclick="pbGoto('calcHub')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Slope / Grade Converter</h1>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Enter One</div>
+      <div class="pb-body">
+        <div class="pb-toggle" id="slopeConvToggle">
+          <button data-val="pct" class="active">Percent</button>
+          <button data-val="ratio">Ratio (1:X)</button>
+          <button data-val="deg">Degrees</button>
+        </div>
+        <div class="pb-field" id="slopeConvInputWrap"><label id="slopeConvLabel">Slope, %</label><input type="number" step="0.01" id="slopeConvVal" inputmode="decimal"></div>
+        <div class="pb-btn-wrap" style="padding:14px 0 0 0;"><button class="pb-btn" onclick="pbCalcSlopeConv()">Calculate</button></div>
+        <div class="pb-derived" id="slopeConvResult" style="font-size:16px; margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANNING'S EQUATION -->
+  <div class="pb-screen" id="screen-manningCalc">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>MANNING'S EQUATION</span><button class="pb-back" title="Calculators" onclick="pbGoto('calcHub')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Manning's Equation</h1>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Full-Pipe Gravity Flow</div>
+      <div class="pb-body">
+        <p class="pb-help" style="margin-top:0;">Capacity and velocity for a circular pipe flowing completely full. Real flow is usually partial-depth — treat this as the pipe's ceiling capacity, not the everyday flow.</p>
+        <div class="pb-row">
+          <div class="pb-field"><label>Pipe diameter (in)</label><input type="number" step="0.1" id="manDia" inputmode="decimal"></div>
+          <div class="pb-field"><label>Slope (%)</label><input type="number" step="0.01" id="manSlope" inputmode="decimal"></div>
+        </div>
+        <div class="pb-field">
+          <label>Manning's n (roughness)</label>
+          <select id="manNSel" onchange="pbToggleManNOther()">
+            <option value="0.010">PVC / HDPE — 0.010</option>
+            <option value="0.013" selected>Concrete / Vitrified Clay / Lined Ductile Iron — 0.013</option>
+            <option value="0.024">Corrugated Metal — 0.024</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="pb-field" id="manNOtherWrap" style="display:none;"><label>Custom n</label><input type="number" step="0.001" id="manNOther" inputmode="decimal"></div>
+        <div class="pb-btn-wrap" style="padding:14px 0 0 0;"><button class="pb-btn" onclick="pbCalcManning()">Calculate</button></div>
+        <div class="pb-derived" id="manningResult" style="font-size:16px; margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANHOLE RIM-TO-INVERT DEPTH -->
+  <div class="pb-screen" id="screen-manholeDepthCalc">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>MANHOLE DEPTH</span><button class="pb-back" title="Calculators" onclick="pbGoto('calcHub')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Manhole Rim-to-Invert Depth</h1>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Structure Depth</div>
+      <div class="pb-body">
+        <div class="pb-row">
+          <div class="pb-field"><label>Rim elevation (ft)</label><input type="number" step="0.01" id="mhRim" inputmode="decimal"></div>
+          <div class="pb-field"><label>Invert elevation (ft)</label><input type="number" step="0.01" id="mhInv" inputmode="decimal"></div>
+        </div>
+        <div class="pb-row">
+          <div class="pb-field"><label>Cone/top section height (ft)</label><input type="number" step="0.1" id="mhCone" inputmode="decimal"></div>
+          <div class="pb-field"><label>Barrel section height (ft)</label><input type="number" step="0.1" id="mhBarrel" inputmode="decimal"></div>
+        </div>
+        <div class="pb-btn-wrap" style="padding:14px 0 0 0;"><button class="pb-btn" onclick="pbCalcManholeDepth()">Calculate</button></div>
+        <div class="pb-derived" id="manholeDepthResult" style="font-size:16px; margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- CONFINED SPACE HUB -->
   <div class="pb-screen" id="screen-confinedHub">
     <div class="pb-header">
@@ -496,20 +1113,69 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     </div>
 
     <div class="pb-section">
+      <div class="pb-tag">Specific Hazards</div>
+      <div class="pb-body">
+        <p class="pb-help" style="margin-top:0;">Check any that apply. This gives rescuers and workers a fast, scannable list of exactly what they're walking into, on top of the general hazards note below.</p>
+        <div class="pb-field">
+          <label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="cpHazFlows" style="width:auto;" onchange="pbToggleHazExplain('Flows')"> Incoming flows</label>
+          <div id="cpHazFlowsExplainWrap" style="display:none; margin-top:6px;"><input type="text" id="cpHazFlowsExplain" placeholder="Explain (source, rate, how to isolate)"></div>
+        </div>
+        <div class="pb-field">
+          <label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="cpHazEngulf" style="width:auto;" onchange="pbToggleHazExplain('Engulf')"> Engulfment</label>
+          <div id="cpHazEngulfExplainWrap" style="display:none; margin-top:6px;"><input type="text" id="cpHazEngulfExplain" placeholder="Explain (material, depth, trigger)"></div>
+        </div>
+        <div class="pb-field">
+          <label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="cpHazElec" style="width:auto;" onchange="pbToggleHazExplain('Elec')"> Electrical energy</label>
+          <div id="cpHazElecExplainWrap" style="display:none; margin-top:6px;"><input type="text" id="cpHazElecExplain" placeholder="Explain (source, voltage, LOTO status)"></div>
+        </div>
+        <div class="pb-field">
+          <label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="cpHazMech" style="width:auto;" onchange="pbToggleHazExplain('Mech')"> Mechanical energy</label>
+          <div id="cpHazMechExplainWrap" style="display:none; margin-top:6px;"><input type="text" id="cpHazMechExplain" placeholder="Explain (equipment, LOTO status)"></div>
+        </div>
+        <div class="pb-field">
+          <label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="cpHazNearby" style="width:auto;" onchange="pbToggleHazExplain('Nearby')"> Nearby operations that may affect this work or emergency crews</label>
+          <div id="cpHazNearbyExplainWrap" style="display:none; margin-top:6px;"><input type="text" id="cpHazNearbyExplain" placeholder="Explain (what's nearby, how it could interfere)"></div>
+        </div>
+        <div class="pb-field">
+          <label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="cpHazOther" style="width:auto;" onchange="pbToggleHazExplain('Other')"> Other</label>
+          <div id="cpHazOtherExplainWrap" style="display:none; margin-top:6px;"><input type="text" id="cpHazOtherExplain" placeholder="Explain"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pb-section">
       <div class="pb-tag">Hazards &amp; Controls</div>
       <div class="pb-body">
         <div class="pb-field"><label>Hazards of the space</label><textarea id="cpHazards" rows="2" placeholder="e.g. oxygen deficiency, H2S, engulfment"></textarea></div>
         <div class="pb-field"><label>Isolation / control measures</label><textarea id="cpControls" rows="2" placeholder="e.g. LOTO on pumps, forced-air ventilation running"></textarea></div>
         <div class="pb-field"><label>How you'll detect a ventilation failure</label><textarea id="cpVentFail" rows="2" placeholder="e.g. air horn alarm on blower, attendant checks duct airflow every 10 min"></textarea></div>
-        <div class="pb-field"><label>Acceptable entry conditions</label><textarea id="cpConditions" rows="2" placeholder="e.g. O2 19.5-23.5%, below 10% LEL, contaminants below PEL"></textarea></div>
+        <div class="pb-field"><label>Acceptable entry conditions (optional)</label><textarea id="cpConditions" rows="2" placeholder="e.g. O2 19.5-23.5%, below 10% LEL, contaminants below PEL"></textarea></div>
+        <p class="pb-help">Optional: set numeric O2/LEL limits below and the app will alarm automatically if a logged air test falls outside them. Leave blank if you're relying on your sniffer's built-in alarm instead — plenty of crews do, and that's fine.</p>
+        <div class="pb-row">
+          <div class="pb-field"><label>Minimum acceptable O2 (%, optional)</label><input type="number" step="0.1" id="cpMinO2" placeholder="typically 19.5" inputmode="decimal"></div>
+          <div class="pb-field"><label>Maximum acceptable LEL (%, optional)</label><input type="number" step="0.1" id="cpMaxLEL" placeholder="typically 10" inputmode="decimal"></div>
+        </div>
         <div class="pb-field"><label>Air test re-check interval (minutes, optional)</label><input type="number" step="1" id="cpAtmoInterval" placeholder="e.g. 15" inputmode="numeric"></div>
       </div>
     </div>
 
     <div class="pb-section">
-      <div class="pb-tag">Rescue &amp; Communication</div>
+      <div class="pb-tag">Emergency Procedures</div>
       <div class="pb-body">
+        <p class="pb-help" style="margin-top:0;">This is for outside emergency response — not routine crew check-ins. Tapping the big Emergency button on the Active Permit screen calls 911 immediately and opens a report you can email to whoever the dispatcher directs.</p>
         <div class="pb-field"><label>Rescue / emergency services and how to summon them</label><textarea id="cpRescue" rows="2" placeholder="e.g. 911, standby rescue team on site, radio channel 2"></textarea></div>
+        <p class="pb-help">Primary emergency number is always 911. Add a second number below only if there's someone else worth reaching too — an on-call supervisor, a site safety contact, etc.</p>
+        <div class="pb-row">
+          <div class="pb-field"><label>Additional emergency contact number (optional)</label><input type="tel" id="cpEmergContactNum" placeholder="e.g. 555-123-4567" inputmode="numeric"></div>
+          <div class="pb-field"><label>Contact name (optional)</label><input type="text" id="cpEmergContactName" placeholder="e.g. John, on-call supervisor"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pb-section">
+      <div class="pb-tag">Communication</div>
+      <div class="pb-body">
+        <p class="pb-help" style="margin-top:0;">Routine check-ins between the crew during the entry — not emergency response.</p>
         <div class="pb-field"><label>Communication procedures</label><textarea id="cpComms" rows="2" placeholder="e.g. radio check every 5 min, hand signals if radio fails"></textarea></div>
         <div class="pb-field"><label>Communication check interval (minutes, optional)</label><input type="number" step="1" id="cpCommInterval" placeholder="e.g. 5" inputmode="numeric"></div>
       </div>
@@ -534,6 +1200,19 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
         <div class="pb-field"><label>Entry supervisor name</label><input type="text" id="cpSupervisor"></div>
         <div class="pb-field"><label>Confined space attendant name</label><input type="text" id="cpAttendant"></div>
         <p class="pb-help" style="margin-top:0;">Locking this permit records the current date/time as your authorization. Once locked, these fields can't be edited — atmospheric tests and the entrant roster are logged separately as the entry proceeds.</p>
+      </div>
+    </div>
+
+    <div class="pb-section">
+      <div class="pb-tag">Additional Notes &amp; Photos</div>
+      <div class="pb-body">
+        <div class="pb-field"><label>Miscellaneous notes (optional)</label><textarea id="cpMiscNotes" rows="2" placeholder="Anything else worth documenting"></textarea></div>
+        <div class="pb-field">
+          <label>Photos (optional)</label>
+          <div id="cpMiscPhotoList"></div>
+          <input type="file" accept="image/*" capture="environment" id="cpMiscPhoto" style="display:none;" onchange="pbAddPhoto('cpMisc')">
+          <button type="button" class="pb-btn ghost small" onclick="document.getElementById('cpMiscPhoto').click()">+ Add Photo</button>
+        </div>
       </div>
     </div>
 
@@ -663,19 +1342,6 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
           <button data-val="engineer" class="active">Engineer's Rod</button>
           <button data-val="architect">Architect's Rod</button>
         </div>
-        <div id="hiFields" style="">
-          <div class="pb-toggle" id="hiToggle">
-            <button data-val="bm" class="active">Benchmark + Backsight</button>
-            <button data-val="direct">I know my HI</button>
-          </div>
-          <div id="hiBmFields">
-            <div class="pb-row" id="hiBmRow"></div>
-            <div class="pb-derived" id="hiBmDerived"></div>
-          </div>
-          <div id="hiDirectFields" style="display:none;">
-            <div id="hiDirectRow"></div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -701,6 +1367,57 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
         <div class="pb-row">
           <div class="pb-field"><label>Total distance (ft)</label><input type="number" step="0.1" id="totalDist" inputmode="decimal"></div>
           <div class="pb-field"><label>Interval (ft)</label><input type="number" step="1" id="interval" value="10" inputmode="numeric"></div>
+        </div>
+        <div id="hiFields" style="margin-top:10px; border-top:1px solid var(--paper-2); padding-top:10px;">
+          <p class="pb-help" style="margin-top:0;">Only needed if any point above uses "Invert Elevation" instead of a survey stake. If every point is a survey stake with its own rod reading, you can leave this on "Calculate from stakes" — it derives itself automatically and won't block calculation even if no candidates exist yet.</p>
+          <div class="pb-toggle" id="hiToggle">
+            <button data-val="stakes" class="active">Calculate from Stakes</button>
+            <button data-val="bm">Benchmark + Backsight</button>
+            <button data-val="direct">I know my HI</button>
+          </div>
+          <div id="hiStakesFields">
+            <div class="pb-derived" id="hiStakesDerived"></div>
+          </div>
+          <div id="hiBmFields" style="display:none;">
+            <div class="pb-row" id="hiBmRow"></div>
+            <div class="pb-derived" id="hiBmDerived"></div>
+          </div>
+          <div id="hiDirectFields" style="display:none;">
+            <div id="hiDirectRow"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pb-section">
+      <div class="pb-tag">Stats &amp; Archive Info<button class="pb-remove" onclick="pbResetStatsArchiveFields()">Reset</button></div>
+      <div class="pb-body">
+        <div class="pb-field"><label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="saEnableToggle" style="width:auto;" onchange="pbToggleStatsArchiveFields()"> Track extra details for this run</label></div>
+        <p class="pb-help" id="saDisabledNote" style="margin:4px 0 0 0;">This run still saves to Archive using the run's own data (start/end, distance, etc.) and won't be counted in Stats. Check the box above to add jobsite, job number, crew, pipe type, or notes.</p>
+        <div id="saFieldsWrap" style="display:none; margin-top:10px;">
+          <p class="pb-help" style="margin-top:0;">All optional — only what the app can't figure out on its own. Leave Pipe Type blank and this run won't be tracked in Stats, but it still saves to Archive. Auto-fills from your last entry.</p>
+          <div class="pb-field"><label>Jobsite name</label><input type="text" id="saJobsite" placeholder="e.g. Main St sewer replacement"></div>
+          <div class="pb-field"><label>Job number</label><input type="text" id="saJobNumber"></div>
+          <div class="pb-field"><label>Pipelayer / crew name</label><input type="text" id="saCrew"></div>
+          <div class="pb-field">
+            <label>Pipe type</label>
+            <select id="statsType">
+              <option value="">— Don't track in Stats —</option>
+              <option value="PVC Sch 40">PVC, Sch 40</option>
+              <option value="PVC Sch 80">PVC, Sch 80</option>
+              <option value="PVC C900">PVC, C900</option>
+              <option value="PVC SDR 35">PVC, SDR 35</option>
+              <option value="Ductile Iron">Ductile Iron</option>
+              <option value="Solid-Wall HDPE">Solid-Wall HDPE</option>
+              <option value="Corrugated HDPE">Corrugated HDPE</option>
+              <option value="Concrete">Concrete</option>
+              <option value="Vitrified Clay">Vitrified Clay</option>
+              <option value="Steel">Steel</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="pb-field"><label>Notes</label><input type="text" id="saNotes"></div>
+          <div class="pb-field"><label>Typical trench width (ft, optional — enables backfill volume estimate)</label><input type="number" step="0.1" id="saTrenchWidth" inputmode="decimal"></div>
         </div>
       </div>
     </div>
@@ -747,7 +1464,7 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     <div style="background:var(--paper); color:var(--ink); max-width:340px; width:100%; border:3px solid var(--ink);">
       <div class="pb-tag" id="pbModalTitle">Notice</div>
       <div style="padding:16px;">
-        <p id="pbModalMessage" style="margin:0 0 16px 0; font-size:14px; line-height:1.5;"></p>
+        <p id="pbModalMessage" style="margin:0 0 16px 0; font-size:14px; line-height:1.5; white-space:pre-line;"></p>
         <div id="pbModalButtons" style="display:flex; gap:10px;"></div>
       </div>
     </div>
@@ -785,10 +1502,13 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     const a = document.createElement('a');
     a.href = url;
     a.rel = 'noopener';
-    a.style.display = 'none';
+    a.style.position = 'fixed';
+    a.style.top = '-2000px';
+    a.style.left = '0';
+    a.style.opacity = '0.01';
     document.body.appendChild(a);
     a.click();
-    setTimeout(() => document.body.removeChild(a), 500);
+    setTimeout(() => { if (a.parentNode) a.parentNode.removeChild(a); }, 1500);
   }
 
   // ---------- keep screen awake while the app is open (best effort) ----------
@@ -828,6 +1548,8 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     // Comm check: three quick high beeps. Air test: two lower, longer alternating tones.
     const pattern = kind === 'atmo'
       ? [[520, 0.35], [340, 0.35], [520, 0.35], [340, 0.35]]
+      : kind === 'evacuate'
+      ? [[1000, 0.15], [500, 0.15], [1000, 0.15], [500, 0.15], [1000, 0.15], [500, 0.15], [1000, 0.15], [500, 0.15]]
       : [[880, 0.2], [880, 0.2], [880, 0.2]];
     pattern.forEach(([freq, dur]) => {
       const osc = ctx.createOscillator();
@@ -846,8 +1568,8 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
   const state = { hubCount: 0 };
 
   // ---------- storage auto-fill ----------
-  async function pbGet(key) { try { const r = await window.storage.get(key); return r ? r.value : null; } catch(e){ return null; } }
-  async function pbSet(key, val) { try { await window.storage.set(key, val); } catch(e){} }
+  async function pbGet(key) { try { return localStorage.getItem('pb_' + key); } catch(e){ return null; } }
+  async function pbSet(key, val) { try { localStorage.setItem('pb_' + key, val); } catch(e){} }
 
   async function initAutofill() {
     const rodUnit = await pbGet('lastRodUnit');
@@ -863,7 +1585,37 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     buildHiFields();
     buildPointFields('start', 'Start Point');
     buildPointFields('end', 'End Point');
+    const lastStatsType = await pbGet('lastStatsType');
+    if (lastStatsType) document.getElementById('statsType').value = lastStatsType;
+    const lastSaJobsite = await pbGet('lastSaJobsite');
+    if (lastSaJobsite) document.getElementById('saJobsite').value = lastSaJobsite;
+    const lastSaJobNumber = await pbGet('lastSaJobNumber');
+    if (lastSaJobNumber) document.getElementById('saJobNumber').value = lastSaJobNumber;
+    const lastSaCrew = await pbGet('lastSaCrew');
+    if (lastSaCrew) document.getElementById('saCrew').value = lastSaCrew;
+    const lastSaNotes = await pbGet('lastSaNotes');
+    if (lastSaNotes) document.getElementById('saNotes').value = lastSaNotes;
+    const lastSaTrenchWidth = await pbGet('lastSaTrenchWidth');
+    if (lastSaTrenchWidth) document.getElementById('saTrenchWidth').value = lastSaTrenchWidth;
+    const lastSaEnabled = await pbGet('lastSaEnabled');
+    document.getElementById('saEnableToggle').checked = lastSaEnabled === 'yes';
+    pbToggleStatsArchiveFields();
+    await loadStatsLog();
+    await loadRunArchive();
   }
+  window.pbToggleStatsArchiveFields = function() {
+    const on = document.getElementById('saEnableToggle').checked;
+    document.getElementById('saFieldsWrap').style.display = on ? '' : 'none';
+    document.getElementById('saDisabledNote').style.display = on ? 'none' : '';
+  };
+  window.pbResetStatsArchiveFields = function() {
+    document.getElementById('saJobsite').value = '';
+    document.getElementById('saJobNumber').value = '';
+    document.getElementById('saCrew').value = '';
+    document.getElementById('statsType').value = '';
+    document.getElementById('saNotes').value = '';
+    document.getElementById('saTrenchWidth').value = '';
+  };
 
   function buildHiFields() {
     const arch = isArch();
@@ -871,6 +1623,7 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     document.getElementById('hiDirectRow').innerHTML = elevFieldHTML('hiDirect', 'HI (ft)', arch);
     wireElevInput('bmElev', updateHiBmDerived);
     wireElevInput('bmBS', updateHiBmDerived);
+    updateHiStakesDerived();
   }
 
   // ---------- navigation ----------
@@ -905,6 +1658,7 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     getAllHubPrefixes().forEach(id => rebuildHubBody(id));
   });
   wireToggle('hiToggle', (val) => {
+    document.getElementById('hiStakesFields').style.display = val === 'stakes' ? '' : 'none';
     document.getElementById('hiBmFields').style.display = val === 'bm' ? '' : 'none';
     document.getElementById('hiDirectFields').style.display = val === 'direct' ? '' : 'none';
   });
@@ -912,7 +1666,36 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     const bm = getElevVal('bmElev'), bs = getElevVal('bmBS');
     const el = document.getElementById('hiBmDerived');
     if (bm === null || bs === null) { el.textContent=''; return; }
-    el.textContent = 'HI = ' + (bm+bs).toFixed(3) + ' ft';
+    el.textContent = 'Elevation of instrument (HI) = ' + (bm+bs).toFixed(3) + ' ft';
+  }
+  function getStakeHICandidates() {
+    const prefixes = ['start'].concat(getAllHubPrefixes(), ['end']);
+    const candidates = [];
+    prefixes.forEach(prefix => {
+      const modeToggle = document.getElementById(prefix+'ModeToggle');
+      if (!modeToggle || activeVal(prefix+'ModeToggle') !== 'stake') return;
+      const se = getElevVal(prefix+'StakeElev'), shot = getElevVal(prefix+'StakeReading');
+      if (se === null || shot === null) return;
+      candidates.push({ prefix, label: getPointLabel(prefix, prefix==='start'?'Start':prefix==='end'?'End':'Hub'), hi: se + shot });
+    });
+    return candidates;
+  }
+  function updateHiStakesDerived() {
+    const el = document.getElementById('hiStakesDerived');
+    if (!el) return;
+    const candidates = getStakeHICandidates();
+    if (!candidates.length) { el.textContent = 'No stake points with both a stake elevation and a rod reading yet.'; return; }
+    const avg = candidates.reduce((s,c) => s+c.hi, 0) / candidates.length;
+    let lines = candidates.map(c => c.label + ': elevation of instrument = ' + c.hi.toFixed(3) + ' ft');
+    const his = candidates.map(c => c.hi);
+    const maxDiff = candidates.length > 1 ? Math.max(...his) - Math.min(...his) : 0;
+    let html = lines.join('<br>');
+    if (candidates.length > 1 && maxDiff > 0.05) {
+      html += '<br><span style="color:var(--rod-red); font-weight:600;">⚠ These disagree by more than 0.05 ft — check for an instrument or data entry error.</span><br>Using the average: ' + avg.toFixed(3) + ' ft.';
+    } else {
+      html += '<br>Using: ' + avg.toFixed(3) + ' ft.';
+    }
+    el.innerHTML = html;
   }
 
   function numVal(id) {
@@ -982,6 +1765,7 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
           <div class="pb-field"><label>Cut / Fill</label><select id="${prefix}CutFill"><option value="cut">Cut to invert</option><option value="fill">Fill to invert</option></select></div>
         </div>
         ${elevFieldHTML(prefix+'CutFillVal', 'Cut/fill amount (ft)', arch)}
+        ${activeVal('rodToggle') !== 'lenker' ? `<div style="margin-top:6px; border-top:1px solid var(--paper-2); padding-top:10px;">${elevFieldHTML(prefix+'StakeReading', 'Rod reading at this stake (what you shoot, not elevation)', arch)}</div>` : ''}
         <div class="pb-derived" id="${prefix}StakeDerived"></div>
       </div>
       <div class="pb-field"><label>Point label (optional)</label><input type="text" id="${prefix}Label" placeholder="e.g. stake #, MH #, lateral, cleanout, etc"></div>
@@ -1071,6 +1855,7 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     });
     wireElevInput(prefix+'StakeElev', () => updateStakeDerived(prefix));
     wireElevInput(prefix+'CutFillVal', () => updateStakeDerived(prefix));
+    wireElevInput(prefix+'StakeReading', () => updateStakeDerived(prefix));
     document.getElementById(prefix+'CutFill').addEventListener('change', () => updateStakeDerived(prefix));
     if (window._pbLastIdIn) {
       const sel = document.getElementById(prefix+'IdSel');
@@ -1087,13 +1872,30 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     }
   }
 
+  function computeHI() {
+    const source = activeVal('hiToggle');
+    if (source === 'stakes') {
+      const candidates = getStakeHICandidates();
+      if (!candidates.length) return null;
+      return candidates.reduce((s,c) => s+c.hi, 0) / candidates.length;
+    }
+    if (source === 'direct') return getElevVal('hiDirect');
+    return (getElevVal('bmElev') !== null && getElevVal('bmBS') !== null) ? getElevVal('bmElev') + getElevVal('bmBS') : null;
+  }
   function updateStakeDerived(prefix) {
+    updateHiStakesDerived();
     const se = getElevVal(prefix+'StakeElev'), cf = getElevVal(prefix+'CutFillVal');
     const el = document.getElementById(prefix+'StakeDerived');
     if (se === null || cf === null) { el.textContent=''; return; }
     const mode = document.getElementById(prefix+'CutFill').value;
     const inv = mode === 'cut' ? se - cf : se + cf;
-    el.textContent = 'Invert (INV) = ' + inv.toFixed(3) + ' ft';
+    let text = 'Invert (INV) elevation = ' + inv.toFixed(3) + ' ft';
+    const shot = getElevVal(prefix+'StakeReading');
+    if (shot !== null) {
+      const reading = mode === 'cut' ? shot + cf : shot - cf;
+      text += ' — Invert rod reading = ' + reading.toFixed(3);
+    }
+    el.textContent = text;
   }
 
   function getPointPI(prefix) {
@@ -1102,7 +1904,29 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     const se = getElevVal(prefix+'StakeElev'), cf = getElevVal(prefix+'CutFillVal');
     if (se === null || cf === null) return null;
     const mode = document.getElementById(prefix+'CutFill').value;
+    // Stake elevation is the true elevation of the top of the hub, written on the
+    // stake by the surveyor. Cut/fill relates it to true invert elevation — this is
+    // real elevation regardless of rod unit, kept purely as a documentation/reference
+    // value (see getPointReading for what actually drives Engineer's/Architect's Rod
+    // BOP/INV/TOP).
     return mode === 'cut' ? se - cf : se + cf;
+  }
+  // What actually drives Engineer's/Architect's Rod BOP/INV/TOP. For a stake point,
+  // this is the raw reading the pipelayer shoots at that stake, plus cut (or minus
+  // fill) — no elevation involved. For a typed Invert Elevation point, the run's HI
+  // (benchmark+backsight or direct) converts it the standard way. Not used for Lenker,
+  // which reads elevation directly.
+  function getPointReading(prefix, hi) {
+    const modeVal = activeVal(prefix+'ModeToggle');
+    if (modeVal === 'elev') {
+      const elev = getElevVal(prefix+'Elev');
+      if (elev === null || hi === null) return null;
+      return hi - elev;
+    }
+    const shot = getElevVal(prefix+'StakeReading'), cf = getElevVal(prefix+'CutFillVal');
+    if (shot === null || cf === null) return null;
+    const mode = document.getElementById(prefix+'CutFill').value;
+    return mode === 'cut' ? shot + cf : shot - cf;
   }
   function getPointWT(prefix) { return numVal(prefix+'WT'); }
   function getPointIdFt(prefix) {
@@ -1133,6 +1957,7 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     });
     wireElevInput(id+'StakeElev', () => updateStakeDerived(id));
     wireElevInput(id+'CutFillVal', () => updateStakeDerived(id));
+    wireElevInput(id+'StakeReading', () => updateStakeDerived(id));
     document.getElementById(id+'CutFill').addEventListener('change', () => updateStakeDerived(id));
     if (startIdInches) {
       const sel = document.getElementById(id+'IdSel');
@@ -1193,19 +2018,33 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
   function buildCalc() {
     const errors = [];
     const rodUnit = activeVal('rodToggle');
+    const needsReading = rodUnit === 'engineer' || rodUnit === 'architect';
+
+    function isElevMode(prefix) {
+      const el = document.getElementById(prefix + 'ModeToggle');
+      return el && activeVal(prefix + 'ModeToggle') === 'elev';
+    }
+    const hubPrefixesEarly = getAllHubPrefixes();
+    const anyElevModePoint = isElevMode('start') || isElevMode('end') || hubPrefixesEarly.some(isElevMode);
+    const hiActuallyNeeded = needsReading && anyElevModePoint;
+
     let hi = null;
-    if (rodUnit === 'engineer' || rodUnit === 'architect') {
-      hi = activeVal('hiToggle') === 'direct' ? getElevVal('hiDirect') : (getElevVal('bmElev') !== null && getElevVal('bmBS') !== null ? getElevVal('bmElev') + getElevVal('bmBS') : null);
-      if (hi === null) errors.push('Enter your HI directly, or a benchmark elevation and backsight reading.');
+    if (needsReading) {
+      hi = computeHI();
+      if (hiActuallyNeeded && hi === null) errors.push('Enter your HI directly, or a benchmark elevation and backsight reading — needed because at least one point uses Invert Elevation mode instead of a survey stake.');
     }
 
     const startPI = getPointPI('start'), startWT = getPointWT('start'), startId = getPointIdFt('start');
+    const startReading = needsReading ? getPointReading('start', hi) : null;
     if (startPI === null) errors.push('Start point invert/stake data is incomplete.');
+    if (needsReading && startReading === null) errors.push('Start point rod reading is incomplete.');
     if (startWT === null) errors.push('Start point wall thickness is required.');
     if (startId === null) errors.push('Start point pipe ID is required.');
 
     const endPI = getPointPI('end'), endWT = getPointWT('end'), endId = getPointIdFt('end');
+    const endReading = needsReading ? getPointReading('end', hi) : null;
     if (endPI === null) errors.push('End point invert/stake data is incomplete.');
+    if (needsReading && endReading === null) errors.push('End point rod reading is incomplete.');
     if (endWT === null) errors.push('End point wall thickness is required.');
     if (endId === null) errors.push('End point pipe ID is required.');
 
@@ -1219,23 +2058,25 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     hubPrefixes.forEach(id => {
       const station = numVal(id + 'Station');
       const pi = getPointPI(id), wt = getPointWT(id), idFt = getPointIdFt(id);
+      const reading = needsReading ? getPointReading(id, hi) : null;
       const untouched = station === null && pi === null;
       if (untouched) return; // hub card left completely blank — treat as never added
       if (station === null) { errors.push('A hub is missing its station distance.'); return; }
       if (totalDist !== null && (station <= 0 || station >= totalDist)) { errors.push('Hub station must be between 0 and the total distance (exclusive).'); return; }
       if (pi === null) { errors.push('A hub is missing invert/stake data.'); return; }
+      if (needsReading && reading === null) { errors.push('A hub is missing rod reading data.'); return; }
       if (wt === null) { errors.push('A hub is missing wall thickness.'); return; }
       if (idFt === null) { errors.push('A hub is missing pipe ID.'); return; }
-      hubs.push({ id, station, pi, wt, idFt, label: getPointLabel(id, 'Hub') });
+      hubs.push({ id, station, pi, reading, wt, idFt, label: getPointLabel(id, 'Hub') });
     });
     hubs.sort((a,b) => a.station - b.station);
 
     if (errors.length) return { errors };
 
     // build segments
-    const points = [{ station: 0, pi: startPI, wt: startWT, idFt: startId, label: getPointLabel('start','Start') }]
+    const points = [{ station: 0, pi: startPI, reading: startReading, wt: startWT, idFt: startId, label: getPointLabel('start','Start') }]
       .concat(hubs)
-      .concat([{ station: totalDist, pi: endPI, wt: endWT, idFt: endId, label: getPointLabel('end','End') }]);
+      .concat([{ station: totalDist, pi: endPI, reading: endReading, wt: endWT, idFt: endId, label: getPointLabel('end','End') }]);
 
     const segments = [];
     for (let i = 0; i < points.length - 1; i++) {
@@ -1251,7 +2092,14 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
       const span = seg.to.station - seg.from.station;
       const frac = span > 0 ? (station - seg.from.station) / span : 0;
       const pi = seg.from.pi + (seg.to.pi - seg.from.pi) * frac;
-      return { pi, bp: pi - seg.wt, tp: pi + seg.idFt + seg.wt, seg };
+      const result = { pi, bp: pi - seg.wt, tp: pi + seg.idFt + seg.wt, seg };
+      if (needsReading) {
+        const reading = seg.from.reading + (seg.to.reading - seg.from.reading) * frac;
+        result.invReading = reading;
+        result.bopReading = reading + seg.wt;
+        result.topReading = reading - (seg.idFt + seg.wt);
+      }
+      return result;
     }
 
     // interval stations
@@ -1267,7 +2115,7 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
       const isHub = !!matchedHub;
       const isEnd = Math.abs(st - totalDist) < 0.001;
       const isStart = Math.abs(st - 0) < 0.001;
-      return { station: st, pi: e.pi, bp: e.bp, tp: e.tp, isHub, isEnd, isStart, hubLabel: matchedHub ? matchedHub.label : null };
+      return { station: st, pi: e.pi, bp: e.bp, tp: e.tp, invReading: e.invReading, bopReading: e.bopReading, topReading: e.topReading, isHub, isEnd, isStart, hubLabel: matchedHub ? matchedHub.label : null };
     });
 
     // warnings
@@ -1326,19 +2174,113 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     if (rodUnit === 'engineer') return fmt(reading, 2);
     return toArch(reading);
   }
+  function fmtReading(val, rodUnit) {
+    return rodUnit === 'architect' ? toArch(val) : fmt(val, 2);
+  }
+  // For interval rows (which already carry precomputed bop/inv/topReading).
+  function dispRow(row, field, calc) {
+    if (calc.rodUnit === 'lenker') {
+      const v = field === 'bop' ? row.bp : field === 'top' ? row.tp : row.pi;
+      return fmt(v, 2);
+    }
+    const v = field === 'bop' ? row.bopReading : field === 'top' ? row.topReading : row.invReading;
+    return fmtReading(v, calc.rodUnit);
+  }
+  // For a start/hub/end point object (carries pi/reading at the invert only —
+  // BOP/TOP computed here from wall thickness and ID).
+  function dispPoint(point, field, calc) {
+    if (calc.rodUnit === 'lenker') {
+      const v = field === 'bop' ? point.pi - point.wt : field === 'top' ? point.pi + point.idFt + point.wt : point.pi;
+      return fmt(v, 2);
+    }
+    const v = field === 'bop' ? point.reading + point.wt : field === 'top' ? point.reading - (point.idFt + point.wt) : point.reading;
+    return fmtReading(v, calc.rodUnit);
+  }
 
   function summaryGridHTML(calc) {
     const overallSlope = calc.totalDist > 0 ? ((calc.points[0].pi - calc.points[calc.points.length-1].pi) / calc.totalDist) * 100 : 0;
     return `
       <div class="pb-summary-item"><div class="k">Distance</div><div class="v">${fmt(calc.totalDist,1)} ft</div></div>
       <div class="pb-summary-item"><div class="k">Slope</div><div class="v">${fmt(overallSlope,2)}%</div></div>
-      <div class="pb-summary-item"><div class="k">Start Invert</div><div class="v">${fmt(calc.points[0].pi,2)}</div></div>
-      <div class="pb-summary-item"><div class="k">End Invert</div><div class="v">${fmt(calc.points[calc.points.length-1].pi,2)}</div></div>
+      <div class="pb-summary-item"><div class="k">Start Invert</div><div class="v">${dispPoint(calc.points[0], 'inv', calc)}</div></div>
+      <div class="pb-summary-item"><div class="k">End Invert</div><div class="v">${dispPoint(calc.points[calc.points.length-1], 'inv', calc)}</div></div>
       <div class="pb-summary-item"><div class="k">HI</div><div class="v">${calc.hi!==null ? fmt(calc.hi,2)+' ft' : '—'}</div></div>
+      ${calc.rodUnit !== 'lenker' ? `<div class="pb-summary-item"><div class="k">Start Invert Elevation</div><div class="v">${fmt(calc.points[0].pi,2)} ft</div></div>
+      <div class="pb-summary-item"><div class="k">End Invert Elevation</div><div class="v">${fmt(calc.points[calc.points.length-1].pi,2)} ft</div></div>` : ''}
     `;
   }
 
   // ---------- review screen ----------
+  function interpGroundElev(points, station) {
+    if (points.length === 1) return points[0].groundElev;
+    for (let i = 0; i < points.length - 1; i++) {
+      if (station >= points[i].station && station <= points[i+1].station) {
+        const span = points[i+1].station - points[i].station;
+        const frac = span > 0 ? (station - points[i].station) / span : 0;
+        return points[i].groundElev + (points[i+1].groundElev - points[i].groundElev) * frac;
+      }
+    }
+    return station < points[0].station ? points[0].groundElev : points[points.length-1].groundElev;
+  }
+  function computeCutFillVolume(calc, trenchWidthFt) {
+    const prefixes = ['start'].concat(getAllHubPrefixes(), ['end']);
+    const groundPoints = [];
+    let totalCut = 0, totalFill = 0, allStaked = true;
+    prefixes.forEach(prefix => {
+      const modeToggle = document.getElementById(prefix + 'ModeToggle');
+      if (!modeToggle) return;
+      const modeVal = activeVal(prefix + 'ModeToggle');
+      const station = prefix === 'start' ? 0 : prefix === 'end' ? calc.totalDist : numVal(prefix + 'Station');
+      if (modeVal !== 'stake') { allStaked = false; return; }
+      const stakeElev = getElevVal(prefix + 'StakeElev');
+      const cutFillVal = getElevVal(prefix + 'CutFillVal');
+      const cutFillSel = document.getElementById(prefix + 'CutFill');
+      if (stakeElev === null || cutFillVal === null || station === null) { allStaked = false; return; }
+      if (cutFillSel.value === 'cut') totalCut += cutFillVal; else totalFill += cutFillVal;
+      groundPoints.push({ station, groundElev: stakeElev });
+    });
+    const netCutFill = totalCut - totalFill;
+    let volumeYd3 = null;
+    if (allStaked && trenchWidthFt && trenchWidthFt > 0 && groundPoints.length >= 2) {
+      groundPoints.sort((a,b) => a.station - b.station);
+      let totalTrenchCf = 0;
+      for (let i = 0; i < calc.rows.length - 1; i++) {
+        const r1 = calc.rows[i], r2 = calc.rows[i+1];
+        const seg = r2.station - r1.station;
+        if (seg <= 0) continue;
+        const g1 = interpGroundElev(groundPoints, r1.station), g2 = interpGroundElev(groundPoints, r2.station);
+        const d1 = Math.max(0, g1 - r1.bp), d2 = Math.max(0, g2 - r2.bp);
+        totalTrenchCf += ((d1 + d2) / 2) * trenchWidthFt * seg;
+      }
+      const odFt = calc.points[0].idFt + 2 * calc.points[0].wt;
+      const pipeCf = (Math.PI / 4) * odFt * odFt * calc.totalDist;
+      volumeYd3 = Math.max(0, (totalTrenchCf - pipeCf) / 27);
+    }
+    return { totalCut, totalFill, netCutFill, volumeYd3, hasCutFillData: totalCut > 0 || totalFill > 0 };
+  }
+
+  function getMaxStakeCutDepth() {
+    let maxDepth = 0;
+    const prefixes = ['start'].concat(getAllHubPrefixes(), ['end']);
+    prefixes.forEach(prefix => {
+      const modeToggle = document.getElementById(prefix + 'ModeToggle');
+      if (!modeToggle) return;
+      const modeVal = activeVal(prefix + 'ModeToggle');
+      if (modeVal !== 'stake') return;
+      const cutFillSel = document.getElementById(prefix + 'CutFill');
+      if (!cutFillSel || cutFillSel.value !== 'cut') return;
+      const cutVal = getElevVal(prefix + 'CutFillVal');
+      if (cutVal !== null && cutVal > maxDepth) maxDepth = cutVal;
+    });
+    return maxDepth;
+  }
+  function countRunPhotos() {
+    const prefixes = ['start'].concat(getAllHubPrefixes(), ['end']);
+    let count = 0;
+    prefixes.forEach(p => { if (window._pbPhotos && window._pbPhotos[p]) count += window._pbPhotos[p].length; });
+    return count;
+  }
+
   window.pbReview = function() {
     const calc = buildCalc();
     document.getElementById('inputError').style.display = calc.errors.length ? '' : 'none';
@@ -1353,8 +2295,12 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     html += `<div class="pb-review-item"><span class="k">Rod Unit</span><br>${calc.rodUnit.charAt(0).toUpperCase()+calc.rodUnit.slice(1)}${calc.hi!==null ? ' — HI ' + fmt(calc.hi,3) + ' ft' : ''}</div>`;
     html += `<div class="pb-review-item"><span class="k">Run</span><br>${calc.points[0].label} → ${calc.points[calc.points.length-1].label}, ${fmt(calc.totalDist,1)} ft, interval ${calc.interval} ft, ${calc.points.length-2} hub(s)</div>`;
     calc.points.forEach((p, i) => {
-      html += `<div class="pb-review-item"><span class="k">${i===0?'Start':i===calc.points.length-1?'End':'Hub'} — ${p.label}</span><br>Station ${fmt(p.station,1)} · INV ${fmt(p.pi,3)} · WT ${fmt(p.wt,3)} · ID ${fmt(p.idFt*12,2)}"</div>`;
+      html += `<div class="pb-review-item"><span class="k">${i===0?'Start':i===calc.points.length-1?'End':'Hub'} — ${p.label}</span><br>Station ${fmt(p.station,1)} · BOP ${dispPoint(p,'bop',calc)} · INV ${dispPoint(p,'inv',calc)} · TOP ${dispPoint(p,'top',calc)} · WT ${fmt(p.wt,3)} · ID ${fmt(p.idFt*12,2)}"${calc.rodUnit !== 'lenker' ? ' · Invert Elevation ' + fmt(p.pi,3) : ''}</div>`;
     });
+    const maxDepth = getMaxStakeCutDepth();
+    if (maxDepth >= 5) {
+      html += `<div class="pb-warn photo"><strong>Deep Trench — Check Sloping</strong>Based on stake cut data, this run may go as deep as ${maxDepth.toFixed(1)} ft at one point. OSHA requires a protective system (sloping, benching, or shoring) for trenches 5 ft or deeper.<br><button class="pb-btn small" style="margin-top:8px;" onclick="pbOpenTrenchCalc('review', ${maxDepth})">Check Trench Sloping Calculator</button></div>`;
+    }
     if (calc.warnings.length === 0) {
       html += `<div class="pb-clean">No warnings — data looks clean.</div>`;
     } else {
@@ -1377,10 +2323,17 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     document.getElementById('lockband').textContent = 'LOCKED ' + lockTime.toLocaleString();
     document.getElementById('resumeTile').style.display = '';
     document.getElementById('summaryGrid').innerHTML = summaryGridHTML(calc);
+    const cfv = computeCutFillVolume(calc, numVal('saTrenchWidth'));
+    const photoCount = countRunPhotos();
+    const depthFlagged = getMaxStakeCutDepth() >= 5;
+    recordStatsEntry(calc, lockTime, cfv, depthFlagged);
+    recordArchiveEntry(calc, lockTime, cfv, photoCount, depthFlagged);
 
     const head = document.getElementById('resultsHead');
     const unitLabel = calc.rodUnit === 'lenker' ? 'Elevation' : calc.rodUnit === 'engineer' ? 'Engineer Rod' : 'Architect Rod';
-    head.innerHTML = `<th>Note</th><th>Sta.</th><th>BOP</th><th>INV</th><th>TOP</th>`;
+    const showElevCol = calc.rodUnit !== 'lenker';
+    head.innerHTML = `<th>Note</th><th>Sta.</th><th>BOP</th><th>INV</th><th>TOP</th>` + (showElevCol ? `<th>Elevation</th>` : '');
+    const colCount = showElevCol ? 6 : 5;
     const body = document.getElementById('resultsBody');
     body.innerHTML = '';
     window._pbRowContexts = [];
@@ -1391,7 +2344,7 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
       const staSub = r.isStart ? 'start' : r.isEnd ? 'end' : r.isHub ? (r.hubLabel || 'hub') : '';
       const staSubClass = r.isStart ? 'start' : r.isEnd ? 'end' : r.isHub ? 'hub' : '';
       const staLabel = staMain + (staSub ? `<span class="pb-sta-sub ${staSubClass}">${staSub}</span>` : '');
-      const bpDisp = convert(r.bp, calc.rodUnit, calc.hi), piDisp = convert(r.pi, calc.rodUnit, calc.hi), tpDisp = convert(r.tp, calc.rodUnit, calc.hi);
+      const bpDisp = dispRow(r, 'bop', calc), piDisp = dispRow(r, 'inv', calc), tpDisp = dispRow(r, 'top', calc);
       window._pbRowContexts.push({ station: r.station, label: staSub || 'point', pi: r.pi, bp: r.bp });
       tr.innerHTML = `
         <td>
@@ -1402,13 +2355,14 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
         <td>${bpDisp}</td>
         <td>${piDisp}</td>
         <td>${tpDisp}</td>
+        ${showElevCol ? `<td>${fmt(r.pi,2)}</td>` : ''}
       `;
       body.appendChild(tr);
       const noteTr = document.createElement('tr');
       noteTr.className = 'pb-noterow';
       noteTr.style.display = 'none';
       const npId = 'note' + idx;
-      noteTr.innerHTML = `<td colspan="5">
+      noteTr.innerHTML = `<td colspan="${colCount}">
         <textarea placeholder="Notes (e.g. existing utility, damage on new pipe, tight / loose joint)"></textarea>
         <div id="${npId}PhotoList"></div>
         <input type="file" accept="image/*" capture="environment" id="${npId}Photo" style="display:none;" onchange="pbAddPhoto('${npId}')">
@@ -1420,7 +2374,7 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
       const toolsTr = document.createElement('tr');
       toolsTr.className = 'pb-noterow';
       toolsTr.style.display = 'none';
-      toolsTr.innerHTML = `<td colspan="5">
+      toolsTr.innerHTML = `<td colspan="${colCount}">
         <p class="pb-help" style="margin:0 0 8px 0;">Launch a calculator using this point's real data:</p>
         <button class="pb-btn ghost small" style="width:100%; margin-bottom:6px;" onclick="pbLaunchBendFromRow(${idx})">Bend Offset Calculator</button>
         <button class="pb-btn ghost small" style="width:100%;" onclick="pbLaunchBeddingFromRow(${idx})">Bedding Elevation Calculator</button>
@@ -1755,6 +2709,19 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     pbGoto('confinedPermit');
   };
 
+  const HAZARD_KEYS = [
+    { key: 'Flows', label: 'Incoming flows' },
+    { key: 'Engulf', label: 'Engulfment' },
+    { key: 'Elec', label: 'Electrical energy' },
+    { key: 'Mech', label: 'Mechanical energy' },
+    { key: 'Nearby', label: 'Nearby operations' },
+    { key: 'Other', label: 'Other' }
+  ];
+  window.pbToggleHazExplain = function(key) {
+    const cb = document.getElementById('cpHaz' + key);
+    document.getElementById('cpHaz' + key + 'ExplainWrap').style.display = cb.checked ? '' : 'none';
+  };
+
   window.pbLockConfinedPermit = function() {
     const errEl = document.getElementById('cpError');
     const req = {
@@ -1765,7 +2732,6 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
       cpHazards: 'Hazards of the space',
       cpControls: 'Isolation / control measures',
       cpVentFail: 'How you\'ll detect a ventilation failure',
-      cpConditions: 'Acceptable entry conditions',
       cpRescue: 'Rescue / emergency services',
       cpComms: 'Communication procedures',
       cpSupervisor: 'Entry supervisor name',
@@ -1792,11 +2758,20 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
       start: document.getElementById('cpStart').value,
       end: document.getElementById('cpEnd').value,
       hazards: document.getElementById('cpHazards').value.trim(),
+      hazardChecklist: HAZARD_KEYS.map(h => ({
+        label: h.label,
+        checked: document.getElementById('cpHaz' + h.key).checked,
+        explain: document.getElementById('cpHaz' + h.key + 'Explain').value.trim()
+      })),
       controls: document.getElementById('cpControls').value.trim(),
       ventFail: document.getElementById('cpVentFail').value.trim(),
       conditions: document.getElementById('cpConditions').value.trim(),
+      minO2: numVal('cpMinO2'),
+      maxLEL: numVal('cpMaxLEL'),
       atmoInterval: numVal('cpAtmoInterval'),
       rescue: document.getElementById('cpRescue').value.trim(),
+      emergContactNum: document.getElementById('cpEmergContactNum').value.trim(),
+      emergContactName: document.getElementById('cpEmergContactName').value.trim(),
       comms: document.getElementById('cpComms').value.trim(),
       commInterval: numVal('cpCommInterval'),
       eqPPE: document.getElementById('cpEqPPE').checked,
@@ -1807,6 +2782,8 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
       eqNotes: document.getElementById('cpEqNotes').value.trim(),
       addlPermits: document.getElementById('cpAddlPermits').value.trim(),
       supervisor: document.getElementById('cpSupervisor').value.trim(),
+      miscNotes: document.getElementById('cpMiscNotes').value.trim(),
+      miscPhotoCount: (window._pbPhotos && window._pbPhotos['cpMisc']) ? window._pbPhotos['cpMisc'].length : 0,
       attendant: document.getElementById('cpAttendant').value.trim(),
       lockTime: new Date()
     };
@@ -1847,6 +2824,9 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
       <div class="pb-summary-item"><div class="k">Attendant</div><div class="v">${confinedPermit.attendant}</div></div>
       <div class="pb-summary-item"><div class="k">Equipment</div><div class="v">${eqList.length ? eqList.join(', ') : 'None checked'}</div></div>
       <div class="pb-summary-item"><div class="k">Equipment Notes</div><div class="v">${confinedPermit.eqNotes || '—'}</div></div>
+      <div class="pb-summary-item"><div class="k">Specific Hazards</div><div class="v">${(confinedPermit.hazardChecklist||[]).filter(h=>h.checked).map(h=>h.label).join(', ') || 'None checked'}</div></div>
+      <div class="pb-summary-item"><div class="k">Additional Notes</div><div class="v">${confinedPermit.miscNotes || '—'}</div></div>
+      <div class="pb-summary-item"><div class="k">Photos</div><div class="v">${confinedPermit.miscPhotoCount || 0} attached</div></div>
     `;
     renderAtmoList();
     renderRosterList();
@@ -1874,7 +2854,23 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     document.getElementById('cpAtmoTester').value = '';
     document.getElementById('cpAtmoAddForm').style.display = 'none';
     renderAtmoList();
+    checkAtmoThresholds(o2, lel);
   };
+
+  function checkAtmoThresholds(o2, lel) {
+    if (!confinedPermit) return;
+    const problems = [];
+    if (confinedPermit.minO2 !== null && o2 !== null && o2 < confinedPermit.minO2) {
+      problems.push('O2 reads ' + o2 + '%, below the minimum of ' + confinedPermit.minO2 + '%.');
+    }
+    if (confinedPermit.maxLEL !== null && lel !== null && lel > confinedPermit.maxLEL) {
+      problems.push('LEL reads ' + lel + '%, above the maximum of ' + confinedPermit.maxLEL + '%.');
+    }
+    if (problems.length) {
+      pbPlayAlarm('evacuate');
+      pbAlert('EVACUATE — Attendant: instruct all entrants to exit the space immediately.\n\n' + problems.join('\n'), 'Reading Outside Acceptable Range');
+    }
+  }
 
   function renderRosterList() {
     const list = document.getElementById('cpRosterList');
@@ -1943,15 +2939,16 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     document.getElementById('cpRosterAddForm').scrollIntoView({ behavior: 'smooth' });
   };
 
-  window.pbTriggerEmergency = async function() {
+  window.pbTriggerEmergency = function() {
     const num = document.getElementById('cpEmergencyNum') ? document.getElementById('cpEmergencyNum').value : '911';
+    pbNavigateExternal('tel:' + (num || '911').replace(/[^0-9+]/g, ''));
     document.getElementById('cpEmergencyNumDisplay').textContent = num || '911';
     document.getElementById('cpEmergencyScript').textContent = buildEmergencyScript();
     renderEmergencyKeyInfo();
     document.getElementById('cpEmergencyPanel').style.display = '';
-    const savedEmail = await pbGet('lastEmergencyEmail');
-    if (savedEmail) document.getElementById('cpEmergencyEmail').value = savedEmail;
-    pbNavigateExternal('tel:' + (num || '911').replace(/[^0-9+]/g, ''));
+    pbGet('lastEmergencyEmail').then(savedEmail => {
+      if (savedEmail) document.getElementById('cpEmergencyEmail').value = savedEmail;
+    });
     document.getElementById('cpEmergencyPanel').scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -1982,7 +2979,9 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
       <div class="row"><div class="k">Space</div><div class="v small">${p.space || '—'}</div></div>
       <div class="row"><div class="k">Personnel Currently In Space</div><div class="v">${inNow.length}</div><div class="v small">${namesText}</div></div>
       <div class="row"><div class="k">Known Hazards</div><div class="v small">${p.hazards || '—'}</div></div>
+      <div class="row"><div class="k">Specific Hazard Categories</div><div class="v small">${(p.hazardChecklist||[]).filter(h=>h.checked).length ? (p.hazardChecklist||[]).filter(h=>h.checked).map(h => h.label + (h.explain ? ' (' + h.explain + ')' : '')).join(', ') : 'None checked'}</div></div>
       <div class="row"><div class="k">On-Site Attendant</div><div class="v small">${p.attendant || '—'}</div></div>
+      ${p.emergContactNum ? `<div class="row"><div class="k">Additional Emergency Contact</div><div class="v small">${p.emergContactName || 'Contact'}: ${p.emergContactNum}</div></div>` : ''}
       <div class="row"><div class="k">Rescue / Emergency Services On File</div><div class="v small">${p.rescue || '—'}</div></div>
     `;
   }
@@ -2073,7 +3072,7 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     list.innerHTML = confinedCommLog.map(r => `<div class="pb-review-item" style="margin:8px 0 0 0;">Communication check — ${r.time.toLocaleTimeString()}</div>`).join('');
   }
 
-  let confinedArchive = [];
+  let lastConfinedArchiveEntry = null;
 
   function buildConfinedReport(mode) {
     const p = confinedPermit;
@@ -2091,7 +3090,10 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     lines.push('PERSONNEL CURRENTLY IN SPACE: ' + inNow.length);
     lines.push(inNow.length ? inNow.map(person => '  - ' + person.name + ' (' + person.role + ')').join('\n') : '  (none currently checked in)');
     lines.push('KNOWN HAZARDS: ' + p.hazards);
+    const checkedHaz = (p.hazardChecklist || []).filter(h => h.checked);
+    lines.push('SPECIFIC HAZARD CATEGORIES: ' + (checkedHaz.length ? checkedHaz.map(h => h.label + (h.explain ? ' — ' + h.explain : '')).join('; ') : 'None checked'));
     lines.push('ON-SITE ATTENDANT: ' + p.attendant);
+    if (p.emergContactNum) lines.push('ADDITIONAL EMERGENCY CONTACT: ' + (p.emergContactName || 'Contact') + ' — ' + p.emergContactNum);
     lines.push('RESCUE / EMERGENCY SERVICES ON FILE: ' + p.rescue);
     lines.push('=========================================');
     lines.push('');
@@ -2115,6 +3117,8 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     if (p.addlPermits) lines.push('Additional permits issued: ' + p.addlPermits);
     lines.push('Entry supervisor: ' + p.supervisor);
     lines.push('Attendant: ' + p.attendant);
+    if (p.miscNotes) lines.push('Additional notes: ' + p.miscNotes);
+    if (p.miscPhotoCount) lines.push(p.miscPhotoCount + ' photo(s) attached in the app (not included in this email — view on the device that created the permit).');
     lines.push('');
     lines.push('--- ATMOSPHERIC TEST LOG (' + confinedAtmoLog.length + ' reading(s)) ---');
     if (!confinedAtmoLog.length) lines.push('No readings logged.');
@@ -2149,14 +3153,27 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
   async function pbProceedCloseOut() {
     stopConfinedCommTimer();
     stopConfinedAtmoTimer();
+    const closeTime = new Date();
     const reportText = buildConfinedReport('closeout');
-    confinedArchive.push({
-      jobsite: confinedPermit.jobsite,
+    const entry = {
+      kind: 'confined',
+      id: closeTime.getTime(),
+      lockTime: closeTime,
       space: confinedPermit.space,
       address: confinedPermit.address,
-      closedTime: new Date(),
-      reportText
-    });
+      jobsite: confinedPermit.jobsite,
+      jobNumber: '',
+      crew: confinedPermit.attendant || '',
+      photoCount: confinedPermit.miscPhotoCount || 0,
+      depthFlagged: false,
+      netCutFill: null,
+      volumeYd3: null,
+      reportText: reportText,
+      sent: false
+    };
+    runArchive.unshift(entry);
+    saveRunArchive();
+    lastConfinedArchiveEntry = entry;
     document.getElementById('cpCloseoutReportPreview').textContent = reportText;
     const savedEmail = await pbGet('lastEmergencyEmail');
     if (savedEmail) document.getElementById('cpCloseoutEmail').value = savedEmail;
@@ -2169,8 +3186,9 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     if (!email) { pbAlert('Enter an email address to send the report to.'); return; }
     pbSet('lastEmergencyEmail', email);
     const subject = 'Confined Space Closeout Report — ' + confinedPermit.space + ' — ' + confinedPermit.address;
-    const body = confinedArchive[confinedArchive.length - 1].reportText;
+    const body = lastConfinedArchiveEntry ? lastConfinedArchiveEntry.reportText : buildConfinedReport('closeout');
     pbNavigateExternal('mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body));
+    if (lastConfinedArchiveEntry) { lastConfinedArchiveEntry.sent = true; saveRunArchive(); }
   };
 
   window.pbFinishCloseOut = function() {
@@ -2178,6 +3196,734 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     document.getElementById('confinedResumeTile').style.display = 'none';
     document.getElementById('confinedResumeTile2').style.display = 'none';
     pbGoto('home');
+  };
+
+  // ---------- Trench Sloping & Shoring ----------
+  const TRENCH_SLOPES = {
+    rock: { ratio: 0, label: 'Vertical', deg: 90 },
+    A: { ratio: 0.75, label: '0.75:1', deg: 53 },
+    Ashort: { ratio: 0.5, label: '0.5:1', deg: 63 },
+    B: { ratio: 1.0, label: '1:1', deg: 45 },
+    C: { ratio: 1.5, label: '1.5:1', deg: 34 }
+  };
+  window.pbOpenTrenchCalc = async function(returnScreen, prefillDepth) {
+    window._pbCalcReturnScreen = returnScreen || 'calcHub';
+    const saved = await pbGet('lastTrenchSoil');
+    if (saved) document.getElementById('trenchSoil').value = saved;
+    if (prefillDepth !== undefined && prefillDepth !== null && prefillDepth > 0) {
+      document.getElementById('trenchDepth').value = prefillDepth.toFixed(1);
+      pbGoto('trenchCalc');
+      pbCalcTrench();
+    } else {
+      pbGoto('trenchCalc');
+    }
+  };
+  window.pbCalcTrench = function() {
+    document.getElementById('trenchDiagram').innerHTML = '';
+    const depth = numVal('trenchDepth');
+    const soil = document.getElementById('trenchSoil').value;
+    pbSet('lastTrenchSoil', soil);
+    const bottomW = numVal('trenchBottomW');
+    const resultEl = document.getElementById('trenchResult');
+    if (depth === null || depth <= 0) { resultEl.textContent = 'Enter a valid trench depth greater than zero.'; return; }
+    if (depth > 20) {
+      resultEl.innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">Outside Tabulated Data</div><div class="pb-answer-val pb-answer-warn">Over 20 ft</div><div class="pb-answer-sub">OSHA's Table B-1 only covers excavations 20 ft or less. This depth needs a registered professional engineer's design.</div></div>`;
+      return;
+    }
+    if (soil === 'Ashort' && depth > 12) {
+      resultEl.innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">Not Applicable</div><div class="pb-answer-val pb-answer-warn">Depth over 12 ft</div><div class="pb-answer-sub">The 0.5:1 short-term Type A exception only applies to excavations 12 ft or less. Use the standard Type A slope (0.75:1) instead.</div></div>`;
+      return;
+    }
+    const s = TRENCH_SLOPES[soil];
+    const offset = depth * s.ratio;
+    let html = `<div class="pb-answer-box"><div class="pb-answer-label">Max Allowable Slope</div><div class="pb-answer-val">${s.label}</div><div class="pb-answer-sub">${s.deg}° from horizontal</div></div>`;
+    html += `<div class="pb-answer-box"><div class="pb-answer-label">Horizontal Offset Each Side</div><div class="pb-answer-val">${offset.toFixed(2)} ft</div></div>`;
+    let usedBottomW = bottomW, isExample = false;
+    if (bottomW !== null && bottomW > 0) {
+      const topW = bottomW + 2 * offset;
+      html += `<div class="pb-answer-box"><div class="pb-answer-label">Required Top Width</div><div class="pb-answer-val">${topW.toFixed(2)} ft</div><div class="pb-answer-sub">${bottomW.toFixed(2)} ft bottom + ${offset.toFixed(2)} ft offset each side</div></div>`;
+    } else {
+      usedBottomW = 2;
+      isExample = true;
+    }
+    resultEl.innerHTML = html;
+    document.getElementById('trenchDiagram').innerHTML = buildTrenchDiagramSVG(depth, usedBottomW, offset, isExample);
+  };
+
+  function buildTrenchDiagramSVG(depth, bottomW, offset, isExample) {
+    const topW = bottomW + 2 * offset;
+    const boxW = 260, boxH = 190;
+    const scale = Math.min(boxW / topW, boxH / depth);
+    const sTop = topW * scale, sBottom = bottomW * scale, sDepth = depth * scale, sOffset = offset * scale;
+    const cx = 190, groundY = 36;
+    const bottomY = groundY + sDepth;
+    const tlx = cx - sTop/2, trx = cx + sTop/2;
+    const blx = cx - sBottom/2, brx = cx + sBottom/2;
+    const groundExtra = 20;
+    return `<svg viewBox="0 0 380 ${bottomY + 60}" style="width:100%; max-width:380px; display:block; margin:0 auto; background:var(--paper); border:1px solid var(--paper-2);">
+      <line x1="${tlx - groundExtra}" y1="${groundY}" x2="${trx + groundExtra}" y2="${groundY}" stroke="var(--ink-soft)" stroke-width="2" stroke-dasharray="4,3"/>
+      <polygon points="${tlx},${groundY} ${trx},${groundY} ${brx},${bottomY} ${blx},${bottomY}" fill="var(--paper-2)" stroke="var(--ink)" stroke-width="2.5"/>
+      <line x1="${tlx-30}" y1="${groundY}" x2="${tlx-30}" y2="${bottomY}" stroke="var(--rod-red)" stroke-width="1.5"/>
+      <line x1="${tlx-35}" y1="${groundY}" x2="${tlx-25}" y2="${groundY}" stroke="var(--rod-red)" stroke-width="1.5"/>
+      <line x1="${tlx-35}" y1="${bottomY}" x2="${tlx-25}" y2="${bottomY}" stroke="var(--rod-red)" stroke-width="1.5"/>
+      <text x="${tlx-40}" y="${(groundY+bottomY)/2}" fill="var(--rod-red)" font-size="12" font-weight="700" text-anchor="end" transform="rotate(-90 ${tlx-40} ${(groundY+bottomY)/2})">${depth.toFixed(1)} ft</text>
+      <line x1="${blx}" y1="${bottomY+15}" x2="${brx}" y2="${bottomY+15}" stroke="var(--ink)" stroke-width="1.5"/>
+      <text x="${cx}" y="${bottomY+30}" fill="var(--ink)" font-size="12" font-weight="700" text-anchor="middle">${bottomW.toFixed(1)} ft bottom${isExample ? ' (example)' : ''}</text>
+      <text x="${cx}" y="${groundY-10}" fill="var(--ink)" font-size="12" font-weight="700" text-anchor="middle">${topW.toFixed(1)} ft top</text>
+      <line x1="${tlx}" y1="${groundY}" x2="${tlx}" y2="${bottomY}" stroke="var(--hazard-ink)" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <line x1="${tlx}" y1="${bottomY}" x2="${blx}" y2="${bottomY}" stroke="var(--hazard-ink)" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <text x="${(tlx+blx)/2}" y="${bottomY-6}" fill="var(--hazard-ink)" font-size="11" font-weight="700" text-anchor="middle">${offset.toFixed(2)} ft offset</text>
+      <text x="${(tlx+blx)/2}" y="${bottomY+8}" fill="var(--ink-soft)" font-size="9" text-anchor="middle">(horizontal distance, not the sloped edge)</text>
+    </svg>`;
+  }
+
+  // ---------- Pipe Weight ----------
+  window.pbTogglePwOther = function() {
+    const val = document.getElementById('pwMaterialSel').value;
+    document.getElementById('pwOtherWrap').style.display = val === 'other' ? '' : 'none';
+    document.getElementById('pwCorrugatedWarn').style.display = val === 'corrugated' ? '' : 'none';
+  };
+  window.pbCalcPipeWeight = function() {
+    const od = numVal('pwOD'), wall = numVal('pwWall'), len = numVal('pwLength');
+    const sel = document.getElementById('pwMaterialSel');
+    const isCorrugated = sel.value === 'corrugated';
+    const density = sel.value === 'other' ? numVal('pwOther') : (isCorrugated ? 59 : parseFloat(sel.value));
+    const resultEl = document.getElementById('pipeWeightResult');
+    if (od === null || wall === null || len === null || od <= 0 || wall <= 0 || len <= 0) { resultEl.textContent = 'Enter valid OD, wall thickness, and length, all greater than zero.'; return; }
+    if (density === null || density <= 0) { resultEl.textContent = 'Enter a valid material density greater than zero.'; return; }
+    const id = od - 2 * wall;
+    if (id <= 0) { resultEl.textContent = 'Wall thickness is too large for that OD — check the numbers.'; return; }
+    const odFt = od / 12, idFt = id / 12;
+    const crossAreaFt2 = (Math.PI / 4) * (odFt * odFt - idFt * idFt);
+    const volumeFt3 = crossAreaFt2 * len;
+    const totalWeight = volumeFt3 * density;
+    const perFoot = totalWeight / len;
+    let html = `<div class="pb-answer-box"><div class="pb-answer-label">Total Segment Weight</div><div class="pb-answer-val">${totalWeight.toFixed(0)} lb</div></div>
+      <div class="pb-answer-box"><div class="pb-answer-label">Weight per Foot</div><div class="pb-answer-val">${perFoot.toFixed(1)} lb/ft</div></div>`;
+    if (isCorrugated) html += `<div class="pb-answer-sub pb-answer-warn" style="margin-top:6px;">This treats the corrugated wall as solid, which overstates the real weight — use the manufacturer's published number for anything that matters.</div>`;
+    resultEl.innerHTML = html;
+  };
+
+  // ---------- Backfill Lift Count ----------
+  window.pbToggleLiftSoilOther = function() {
+    document.getElementById('liftSoilOtherWrap').style.display = document.getElementById('liftSoilSel').value === 'other' ? '' : 'none';
+  };
+  window.pbCalcLifts = function() {
+    const depth = numVal('liftDepth'), thickness = numVal('liftThickness');
+    const sel = document.getElementById('liftSoilSel');
+    const shrinkPct = sel.value === 'other' ? numVal('liftSoilOther') : parseFloat(sel.value) * 100;
+    const resultEl = document.getElementById('liftResult');
+    if (depth === null || depth <= 0) { resultEl.textContent = 'Enter a valid depth greater than zero.'; return; }
+    if (thickness === null || thickness <= 0) { resultEl.textContent = 'Enter a valid max loose lift thickness greater than zero.'; return; }
+    if (shrinkPct === null || shrinkPct < 0 || shrinkPct >= 100) { resultEl.textContent = 'Enter a valid shrink percentage, 0 to 100.'; return; }
+    const shrinkFrac = shrinkPct / 100;
+    const depthIn = depth * 12;
+    const compactedLiftThickness = thickness * (1 - shrinkFrac);
+    const numLifts = Math.ceil(depthIn / compactedLiftThickness);
+    const evenLooseLift = (depthIn / numLifts) / (1 - shrinkFrac);
+    const html = `<div class="pb-answer-box"><div class="pb-answer-label">Number of Lifts</div><div class="pb-answer-val">${numLifts}</div></div>
+      <div class="pb-answer-box"><div class="pb-answer-label">Loose Thickness per Lift (evened out)</div><div class="pb-answer-val">${evenLooseLift.toFixed(1)} in</div><div class="pb-answer-sub">Place this much loose material per lift — it'll compact down to about ${(evenLooseLift*(1-shrinkFrac)).toFixed(1)} in, spreading the total depth evenly across ${numLifts} lifts.</div></div>`;
+    resultEl.innerHTML = html;
+  };
+
+  // ---------- Slope / Grade Converter ----------
+  wireToggle('slopeConvToggle', (val) => {
+    const label = document.getElementById('slopeConvLabel');
+    if (val === 'pct') label.textContent = 'Slope, %';
+    else if (val === 'ratio') label.textContent = 'Ratio — enter the X in 1:X';
+    else label.textContent = 'Degrees from horizontal';
+  });
+  window.pbCalcSlopeConv = function() {
+    const mode = activeVal('slopeConvToggle');
+    const val = numVal('slopeConvVal');
+    const resultEl = document.getElementById('slopeConvResult');
+    if (val === null || val <= 0) { resultEl.textContent = 'Enter a valid number greater than zero.'; return; }
+    let pct, ratioX, deg;
+    if (mode === 'pct') {
+      pct = val;
+      ratioX = 100 / val;
+      deg = Math.atan(val / 100) * 180 / Math.PI;
+    } else if (mode === 'ratio') {
+      ratioX = val;
+      pct = (1 / val) * 100;
+      deg = Math.atan(1 / val) * 180 / Math.PI;
+    } else {
+      deg = val;
+      const rad = val * Math.PI / 180;
+      pct = Math.tan(rad) * 100;
+      ratioX = 1 / Math.tan(rad);
+    }
+    const html = `<div class="pb-answer-box"><div class="pb-answer-label">Percent</div><div class="pb-answer-val">${pct.toFixed(2)}%</div></div>
+      <div class="pb-answer-box"><div class="pb-answer-label">Ratio</div><div class="pb-answer-val">1 : ${ratioX.toFixed(2)}</div></div>
+      <div class="pb-answer-box"><div class="pb-answer-label">Degrees</div><div class="pb-answer-val">${deg.toFixed(2)}°</div></div>`;
+    resultEl.innerHTML = html;
+  };
+
+  // ---------- Manning's Equation ----------
+  window.pbToggleManNOther = function() {
+    document.getElementById('manNOtherWrap').style.display = document.getElementById('manNSel').value === 'other' ? '' : 'none';
+  };
+  window.pbCalcManning = function() {
+    const diaIn = numVal('manDia'), slopePct = numVal('manSlope');
+    const sel = document.getElementById('manNSel');
+    const n = sel.value === 'other' ? numVal('manNOther') : parseFloat(sel.value);
+    const resultEl = document.getElementById('manningResult');
+    if (diaIn === null || diaIn <= 0) { resultEl.textContent = 'Enter a valid pipe diameter greater than zero.'; return; }
+    if (slopePct === null || slopePct <= 0) { resultEl.textContent = 'Enter a valid slope greater than zero.'; return; }
+    if (n === null || n <= 0) { resultEl.textContent = 'Enter a valid Manning\'s n greater than zero.'; return; }
+    const dFt = diaIn / 12;
+    const areaFt2 = (Math.PI / 4) * dFt * dFt;
+    const hydraulicRadius = dFt / 4;
+    const slopeDecimal = slopePct / 100;
+    const velocity = (1.49 / n) * Math.pow(hydraulicRadius, 2/3) * Math.sqrt(slopeDecimal);
+    const qCfs = velocity * areaFt2;
+    const qGpm = qCfs * 448.831;
+    let html = `<div class="pb-answer-box"><div class="pb-answer-label">Full-Pipe Velocity</div><div class="pb-answer-val">${velocity.toFixed(2)} ft/s</div>`;
+    html += velocity < 2 ? `<div class="pb-answer-sub pb-answer-warn">Below the common 2 ft/s self-cleansing benchmark — solids may settle.</div>` : `<div class="pb-answer-sub">At or above the common 2 ft/s self-cleansing benchmark.</div>`;
+    html += `</div><div class="pb-answer-box"><div class="pb-answer-label">Full-Pipe Capacity</div><div class="pb-answer-val">${qGpm.toFixed(0)} GPM</div><div class="pb-answer-sub">${qCfs.toFixed(2)} ft³/s</div></div>`;
+    resultEl.innerHTML = html;
+  };
+
+  // ---------- Manhole Rim-to-Invert Depth ----------
+  window.pbCalcManholeDepth = function() {
+    const rim = numVal('mhRim'), inv = numVal('mhInv');
+    const cone = numVal('mhCone'), barrel = numVal('mhBarrel');
+    const resultEl = document.getElementById('manholeDepthResult');
+    if (rim === null || inv === null) { resultEl.textContent = 'Enter valid rim and invert elevations.'; return; }
+    const totalDepth = rim - inv;
+    if (totalDepth <= 0) { resultEl.textContent = 'Rim elevation should be higher than the invert — check the numbers.'; return; }
+    let html = `<div class="pb-answer-box"><div class="pb-answer-label">Total Structure Depth</div><div class="pb-answer-val">${totalDepth.toFixed(2)} ft</div></div>`;
+    if (cone !== null && cone > 0 && barrel !== null && barrel > 0) {
+      const remaining = totalDepth - cone;
+      if (remaining < 0) {
+        html += `<div class="pb-answer-box"><div class="pb-answer-label">Barrel Sections Needed</div><div class="pb-answer-val pb-answer-warn">Cone alone exceeds total depth</div><div class="pb-answer-sub">Double-check the cone height against the total depth.</div></div>`;
+      } else {
+        const numSections = Math.floor(remaining / barrel + 0.0001);
+        const leftover = remaining - numSections * barrel;
+        html += `<div class="pb-answer-box"><div class="pb-answer-label">Full Barrel Sections</div><div class="pb-answer-val">${numSections}</div>`;
+        if (leftover > 0.01) html += `<div class="pb-answer-sub">Plus ${leftover.toFixed(2)} ft leftover — likely needs a grade ring or a cut section.</div>`;
+        html += `</div>`;
+      }
+    }
+    resultEl.innerHTML = html;
+  };
+
+  // ---------- Archive ----------
+  let runArchive = [];
+  async function loadRunArchive() {
+    try {
+      const raw = await pbGet('runArchive');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        runArchive = parsed.map(e => ({ ...e, lockTime: new Date(e.lockTime) }));
+      }
+    } catch (e) { /* nothing stored yet, or storage unavailable in this context */ }
+  }
+  async function saveRunArchive() {
+    try { await pbSet('runArchive', JSON.stringify(runArchive)); } catch (e) { /* best effort */ }
+  }
+  function saFieldsEnabled() {
+    return document.getElementById('saEnableToggle').checked;
+  }
+  function buildRunReportText(calc, lockTime, cfv, photoCount, depthFlagged) {
+    let lines = [];
+    lines.push('PIPELAYER\'S BIBLE — RUN RECORD');
+    lines.push('Locked: ' + lockTime.toLocaleString());
+    const enabled = saFieldsEnabled();
+    const jobsite = enabled ? document.getElementById('saJobsite').value.trim() : '';
+    const jobNumber = enabled ? document.getElementById('saJobNumber').value.trim() : '';
+    const crew = enabled ? document.getElementById('saCrew').value.trim() : '';
+    const notes = enabled ? document.getElementById('saNotes').value.trim() : '';
+    if (jobsite) lines.push('Jobsite: ' + jobsite);
+    if (jobNumber) lines.push('Job number: ' + jobNumber);
+    if (crew) lines.push('Crew: ' + crew);
+    lines.push('');
+    lines.push('Run: ' + calc.points[0].label + ' \u2192 ' + calc.points[calc.points.length-1].label);
+    lines.push('Distance: ' + calc.totalDist.toFixed(1) + ' ft, interval ' + calc.interval + ' ft');
+    lines.push('Rod unit: ' + calc.rodUnit + (calc.hi !== null ? ' — HI ' + calc.hi.toFixed(3) + ' ft' : ''));
+    if (notes) lines.push('Notes: ' + notes);
+    if (photoCount) lines.push(photoCount + ' photo(s) attached in the app (not included in this email).');
+    if (depthFlagged) lines.push('⚠ Trench depth ≥5 ft indicated by stake data — protective system (sloping/benching/shoring) required per OSHA.');
+    if (cfv && cfv.hasCutFillData) {
+      lines.push('');
+      lines.push('Net cut/fill: ' + (cfv.netCutFill >= 0 ? '+' : '') + cfv.netCutFill.toFixed(2) + ' ft (cut ' + cfv.totalCut.toFixed(2) + ' ft / fill ' + cfv.totalFill.toFixed(2) + ' ft, from stake data)');
+      if (cfv.volumeYd3 !== null) lines.push('Estimated backfill volume: ' + cfv.volumeYd3.toFixed(1) + ' yd³ (rough estimate — assumes constant trench width, not sloped sides)');
+    }
+    lines.push('');
+    lines.push('--- INTERVALS ---');
+    calc.rows.forEach(r => {
+      const label = r.isStart ? 'start' : r.isEnd ? 'end' : r.isHub ? (r.hubLabel || 'hub') : '';
+      lines.push(fmt(r.station,1) + (label ? ' (' + label + ')' : '') + ' — BOP ' + dispRow(r,'bop',calc) + ' · INV ' + dispRow(r,'inv',calc) + ' · TOP ' + dispRow(r,'top',calc) + (calc.rodUnit !== 'lenker' ? ' · Elevation ' + fmt(r.pi,2) : ''));
+    });
+    return lines.join('\n');
+  }
+  function recordArchiveEntry(calc, lockTime, cfv, photoCount, depthFlagged) {
+    const enabled = saFieldsEnabled();
+    runArchive.unshift({
+      kind: 'run',
+      id: lockTime.getTime(),
+      lockTime: lockTime,
+      startLabel: calc.points[0].label,
+      endLabel: calc.points[calc.points.length-1].label,
+      distance: calc.totalDist,
+      jobsite: enabled ? document.getElementById('saJobsite').value.trim() : '',
+      jobNumber: enabled ? document.getElementById('saJobNumber').value.trim() : '',
+      crew: enabled ? document.getElementById('saCrew').value.trim() : '',
+      photoCount: photoCount,
+      depthFlagged: depthFlagged,
+      netCutFill: cfv.hasCutFillData ? cfv.netCutFill : null,
+      volumeYd3: cfv.volumeYd3,
+      rodUnit: calc.rodUnit,
+      hi: calc.hi,
+      intervalRows: calc.rows.map(r => ({
+        station: fmt(r.station,1),
+        label: r.isStart ? 'start' : r.isEnd ? 'end' : r.isHub ? (r.hubLabel || 'hub') : '',
+        bop: dispRow(r,'bop',calc), inv: dispRow(r,'inv',calc), top: dispRow(r,'top',calc),
+        elevation: calc.rodUnit !== 'lenker' ? fmt(r.pi,2) : null
+      })),
+      reportText: buildRunReportText(calc, lockTime, cfv, photoCount, depthFlagged),
+      sent: false
+    });
+    saveRunArchive();
+  }
+  window.pbOpenArchive = function() {
+    const jobsiteFilter = document.getElementById('archiveFilterJobsite');
+    const existingVal = jobsiteFilter.value;
+    const jobsites = Array.from(new Set(runArchive.map(e => e.jobsite).filter(j => j)));
+    jobsiteFilter.innerHTML = '<option value="all">All Jobsites</option>' + jobsites.map(j => `<option value="${j}">${j}</option>`).join('');
+    jobsiteFilter.value = jobsites.includes(existingVal) ? existingVal : 'all';
+    renderArchiveList();
+    pbGoto('archive');
+  };
+  function filteredArchiveIndexed() {
+    const period = document.getElementById('archiveFilterPeriod').value;
+    const status = document.getElementById('archiveFilterStatus').value;
+    const jobsiteFilter = document.getElementById('archiveFilterJobsite').value;
+    const search = document.getElementById('archiveSearchBox').value.trim().toLowerCase();
+    const now = new Date();
+    return runArchive.map((e, i) => ({ e, i })).filter(({ e }) => {
+      if (status === 'sent' && !e.sent) return false;
+      if (status === 'notsent' && e.sent) return false;
+      if (jobsiteFilter !== 'all' && e.jobsite !== jobsiteFilter) return false;
+      if (search) {
+        const haystack = [e.startLabel, e.endLabel, e.space, e.jobsite, e.jobNumber, e.crew, e.reportText].filter(Boolean).join(' ').toLowerCase();
+        if (!haystack.includes(search)) return false;
+      }
+      if (period === 'all') return true;
+      const days = (now - e.lockTime) / 86400000;
+      if (period === 'today') return e.lockTime.toDateString() === now.toDateString();
+      if (period === 'week') return days <= 7;
+      if (period === 'month') return days <= 31;
+      return true;
+    });
+  }
+  window.renderArchiveList = function() {
+    const listEl = document.getElementById('archiveList');
+    const unsentCount = runArchive.filter(e => !e.sent).length;
+    document.getElementById('archiveBulkSendBtn').textContent = 'Send All Un-sent Reports' + (unsentCount ? ' (' + unsentCount + ')' : '');
+    document.getElementById('archiveBulkSendBtn').disabled = unsentCount === 0;
+    if (!runArchive.length) { listEl.innerHTML = '<p class="pb-help" style="margin:14px 16px 0 16px;">No archived entries yet.</p>'; return; }
+    const filtered = filteredArchiveIndexed();
+    if (!filtered.length) { listEl.innerHTML = '<p class="pb-help" style="margin:14px 16px 0 16px;">No entries match these filters.</p>'; return; }
+    listEl.innerHTML = filtered.map(({ e, i }) => `
+      <div class="pb-review-item" style="margin:12px 16px 0 16px;">
+        <span class="k">${e.kind === 'confined' ? 'Confined Space — ' + e.space : e.kind === 'stats-snapshot' ? 'Stats Snapshot' : e.startLabel + ' \u2192 ' + e.endLabel}</span>
+        <span style="float:right; font-weight:700; text-transform:uppercase; font-size:11px; color:${e.sent ? 'var(--start-c)' : 'var(--rod-red)'};">${e.sent ? 'SENT' : 'NOT SENT'}</span><br>
+        ${e.jobsite ? e.jobsite + (e.jobNumber ? ' — #' + e.jobNumber : '') + '<br>' : ''}
+        ${e.kind === 'run' ? e.distance.toFixed(1) + ' ft · ' : e.kind === 'stats-snapshot' ? e.runCount + ' run(s), ' + e.distance.toFixed(0) + ' ft total · ' : ''}locked ${e.lockTime.toLocaleString()}${e.crew ? ' · ' + e.crew : ''}<br>
+        ${e.netCutFill !== null ? 'Net ' + (e.netCutFill >= 0 ? 'cut' : 'fill') + ': ' + Math.abs(e.netCutFill).toFixed(2) + ' ft' + (e.volumeYd3 !== null ? ' · ~' + e.volumeYd3.toFixed(1) + ' yd³ backfill (est.)' : '') + '<br>' : ''}
+        ${e.photoCount ? e.photoCount + ' photo(s) attached<br>' : ''}
+        ${e.depthFlagged ? '<span style="color:var(--rod-red); font-weight:600;">⚠ Trench ≥5 ft — sloping check recommended</span><br>' : ''}
+        <button class="pb-btn ghost small" style="margin-top:6px;" onclick="pbToggleArchiveView(${i})">View</button>
+        <button class="pb-btn ghost small" style="margin-top:6px;" onclick="pbSendArchiveEntry(${i})">Send Email</button>
+        <button class="pb-btn ghost small" style="margin-top:6px;" onclick="pbDownloadArchivePDF(${i})">Download PDF</button>
+        <button class="pb-btn ghost small" style="margin-top:6px;" onclick="pbToggleArchiveSent(${i})">${e.sent ? 'Mark Not Sent' : 'Mark Sent'}</button>
+        <button class="pb-btn ghost small" style="margin-top:6px; color:var(--rod-red);" onclick="pbDeleteArchiveEntry(${i})">Delete</button>
+        <pre id="archiveView${i}" style="display:none; white-space:pre-wrap; font-family:'IBM Plex Mono'; font-size:11px; background:#fff; color:var(--ink); padding:8px; border:1px solid var(--paper-2); margin-top:8px; max-height:240px; overflow-y:auto;">${e.reportText}</pre>
+      </div>`).join('');
+  };
+  window.pbToggleArchiveView = function(i) {
+    const el = document.getElementById('archiveView' + i);
+    el.style.display = el.style.display === 'none' ? '' : 'none';
+  };
+  window.pbSendArchiveEntry = function(i) {
+    const e = runArchive[i];
+    pbNavigateExternal('mailto:?subject=' + encodeURIComponent('Run Record: ' + e.startLabel + ' to ' + e.endLabel) + '&body=' + encodeURIComponent(e.reportText));
+    e.sent = true;
+    saveRunArchive();
+    renderArchiveList();
+  };
+  window.pbToggleArchiveSent = function(i) {
+    runArchive[i].sent = !runArchive[i].sent;
+    saveRunArchive();
+    renderArchiveList();
+  };
+  window.pbBulkSendArchive = function() {
+    const unsent = runArchive.filter(e => !e.sent);
+    if (!unsent.length) { pbAlert('No un-sent reports to send.'); return; }
+    const combined = unsent.map(e => e.reportText).join('\n\n' + '='.repeat(40) + '\n\n');
+    pbNavigateExternal('mailto:?subject=' + encodeURIComponent(unsent.length + ' Run Report(s)') + '&body=' + encodeURIComponent(combined));
+    unsent.forEach(e => e.sent = true);
+    saveRunArchive();
+    renderArchiveList();
+  };
+  function archiveEntryLabel(e) {
+    if (e.kind === 'confined') return 'Confined Space — ' + e.space;
+    if (e.kind === 'stats-snapshot') return 'Stats Snapshot';
+    return e.startLabel + ' \u2192 ' + e.endLabel;
+  }
+  window.pbDeleteArchiveEntry = function(i) {
+    const e = runArchive[i];
+    pbConfirm('Delete the record for ' + archiveEntryLabel(e) + '? This can\'t be undone.', () => {
+      runArchive.splice(i, 1);
+      saveRunArchive();
+      renderArchiveList();
+    }, 'Delete Archive Entry');
+  };
+  function csvEscape(val) {
+    const s = String(val === null || val === undefined ? '' : val);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function downloadCSV(filename, rows) {
+    const csv = rows.map(row => row.map(csvEscape).join(',')).join('\n');
+    try {
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.style.position = 'fixed';
+      a.style.top = '-2000px';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { if (a.parentNode) a.parentNode.removeChild(a); URL.revokeObjectURL(url); }, 1500);
+    } catch (e) {
+      pbShowModal('Automatic download didn\'t fire — here\'s the spreadsheet data to copy manually:', [{ label: 'OK', primary: true }], filename);
+      document.getElementById('pbModalMessage').insertAdjacentHTML('afterend', '<pre style="white-space:pre-wrap; font-size:10px; max-height:200px; overflow-y:auto; background:#fff; color:#000; padding:6px;">' + csv.replace(/</g,'&lt;') + '</pre>');
+    }
+  }
+
+  // ---------- PDF generation (jsPDF + autoTable, loaded from CDN) ----------
+  function pdfLibReady() {
+    return typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF;
+  }
+  function addRunEntryToPDF(doc, entry, y) {
+    doc.setFontSize(14); doc.setFont(undefined, 'bold');
+    doc.text('Run Record: ' + entry.startLabel + ' \u2192 ' + entry.endLabel, 14, y); y += 8;
+    doc.setFontSize(10); doc.setFont(undefined, 'normal');
+    doc.text('Locked: ' + entry.lockTime.toLocaleString(), 14, y); y += 6;
+    if (entry.jobsite) { doc.text('Jobsite: ' + entry.jobsite + (entry.jobNumber ? ' — #' + entry.jobNumber : ''), 14, y); y += 6; }
+    if (entry.crew) { doc.text('Crew: ' + entry.crew, 14, y); y += 6; }
+    doc.text('Distance: ' + entry.distance.toFixed(1) + ' ft' + (entry.hi !== null && entry.hi !== undefined ? ' — HI ' + entry.hi.toFixed(2) + ' ft' : ''), 14, y); y += 6;
+    if (entry.netCutFill !== null) {
+      doc.text('Net cut/fill: ' + (entry.netCutFill >= 0 ? '+' : '') + entry.netCutFill.toFixed(2) + ' ft' + (entry.volumeYd3 !== null ? ' — Est. backfill: ' + entry.volumeYd3.toFixed(1) + ' yd\u00b3' : ''), 14, y); y += 6;
+    }
+    if (entry.photoCount) { doc.text(entry.photoCount + ' photo(s) attached in the app (not included in this PDF).', 14, y); y += 6; }
+    if (entry.depthFlagged) {
+      doc.setTextColor(180,48,47);
+      doc.text('WARNING: Trench \u22655 ft indicated by stake data — protective system required (OSHA).', 14, y);
+      doc.setTextColor(0,0,0); y += 6;
+    }
+    y += 3;
+    const showElev = entry.rodUnit !== 'lenker';
+    const head = showElev ? [['Sta.','BOP','INV','TOP','Elevation']] : [['Sta.','BOP','INV','TOP']];
+    const body = entry.intervalRows.map(r => {
+      const sta = r.station + (r.label ? ' (' + r.label + ')' : '');
+      return showElev ? [sta, r.bop, r.inv, r.top, r.elevation] : [sta, r.bop, r.inv, r.top];
+    });
+    doc.autoTable({ head, body, startY: y, styles: { fontSize: 8 }, headStyles: { fillColor: [184,48,47] }, margin: { left: 14, right: 14 } });
+    return doc.lastAutoTable.finalY + 12;
+  }
+  function addTextEntryToPDF(doc, entry, y, title) {
+    doc.setFontSize(14); doc.setFont(undefined, 'bold');
+    doc.text(title, 14, y); y += 8;
+    doc.setFontSize(9); doc.setFont(undefined, 'normal');
+    const lines = doc.splitTextToSize(entry.reportText, 180);
+    lines.forEach(line => {
+      if (y > 280) { doc.addPage(); y = 20; }
+      doc.text(line, 14, y); y += 5;
+    });
+    return y + 10;
+  }
+  function addEntryToPDF(doc, entry, y) {
+    if (entry.kind === 'run') return addRunEntryToPDF(doc, entry, y);
+    return addTextEntryToPDF(doc, entry, y, entry.kind === 'confined' ? 'Confined Space Closeout Report' : 'Stats Snapshot');
+  }
+  window.pbDownloadArchivePDF = function(i) {
+    if (!pdfLibReady()) { pbAlert('PDF library didn\'t load — check your connection and try again.'); return; }
+    const entry = runArchive[i];
+    const doc = new jspdf.jsPDF();
+    addEntryToPDF(doc, entry, 20);
+    doc.save('archive-' + entry.kind + '-' + entry.id + '.pdf');
+  };
+  window.pbDownloadArchiveAllPDF = function() {
+    if (!pdfLibReady()) { pbAlert('PDF library didn\'t load — check your connection and try again.'); return; }
+    const filtered = filteredArchiveIndexed();
+    if (!filtered.length) { pbAlert('No entries match the current filters to export.'); return; }
+    const doc = new jspdf.jsPDF();
+    let y = 20;
+    filtered.forEach(({ e }, idx) => {
+      if (idx > 0) { doc.addPage(); y = 20; }
+      y = addEntryToPDF(doc, e, y);
+    });
+    doc.save('archive-export.pdf');
+  };
+  window.pbDownloadArchiveBoth = function() {
+    pbExportArchiveCSV();
+    setTimeout(() => pbDownloadArchiveAllPDF(), 400);
+  };
+  window.pbExportArchiveCSV = function() {
+    const filtered = filteredArchiveIndexed();
+    if (!filtered.length) { pbAlert('No entries match the current filters to export.'); return; }
+    const rows = [['Date', 'Kind', 'Start/Space', 'End', 'Distance (ft)', 'Jobsite', 'Job Number', 'Crew', 'Sent', 'Photos', 'Depth Flagged', 'Net Cut/Fill (ft)', 'Est. Backfill (yd3)']];
+    filtered.forEach(({ e }) => {
+      rows.push([
+        e.lockTime.toLocaleString(),
+        e.kind,
+        e.kind === 'confined' ? e.space : e.kind === 'stats-snapshot' ? 'Stats Snapshot' : e.startLabel,
+        e.kind === 'run' ? e.endLabel : '',
+        e.kind === 'run' ? e.distance.toFixed(1) : '',
+        e.jobsite, e.jobNumber, e.crew, e.sent ? 'Yes' : 'No',
+        e.photoCount || 0, e.depthFlagged ? 'Yes' : 'No',
+        e.netCutFill !== null ? e.netCutFill.toFixed(2) : '',
+        e.volumeYd3 !== null ? e.volumeYd3.toFixed(1) : ''
+      ]);
+    });
+    downloadCSV('archive-export.csv', rows);
+  };
+
+  // ---------- Stats ----------
+  let statsLog = [];
+  let statsRunStartTime = null;
+  async function loadStatsLog() {
+    try {
+      const raw = await pbGet('statsLog');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        statsLog = parsed.map(e => ({ ...e, date: new Date(e.date) }));
+      }
+    } catch (e) { /* nothing stored yet, or storage unavailable in this context */ }
+  }
+  async function saveStatsLog() {
+    try { await pbSet('statsLog', JSON.stringify(statsLog)); } catch (e) { /* best effort */ }
+  }
+  window.pbOpenNewRun = function() {
+    statsRunStartTime = new Date();
+    pbGoto('input');
+  };
+  function recordStatsEntry(calc, lockTime, cfv, depthFlagged) {
+    const enabled = saFieldsEnabled();
+    pbSet('lastSaEnabled', enabled ? 'yes' : 'no');
+    const typeSel = document.getElementById('statsType');
+    const type = enabled && typeSel ? typeSel.value : '';
+    const jobsite = enabled ? document.getElementById('saJobsite').value.trim() : '';
+    const jobNumber = enabled ? document.getElementById('saJobNumber').value.trim() : '';
+    const crew = enabled ? document.getElementById('saCrew').value.trim() : '';
+    const notes = enabled ? document.getElementById('saNotes').value.trim() : '';
+    const trenchWidth = enabled ? document.getElementById('saTrenchWidth').value.trim() : '';
+    if (enabled) {
+      pbSet('lastSaJobsite', jobsite);
+      pbSet('lastSaJobNumber', jobNumber);
+      pbSet('lastSaCrew', crew);
+      pbSet('lastSaNotes', notes);
+      pbSet('lastSaTrenchWidth', trenchWidth);
+    }
+    if (!type) return;
+    pbSet('lastStatsType', type);
+    const sizeIn = calc.points[0].idFt * 12;
+    const durationMin = statsRunStartTime ? (lockTime - statsRunStartTime) / 60000 : null;
+    statsLog.push({
+      date: lockTime,
+      type: type,
+      sizeIn: sizeIn,
+      footage: calc.totalDist,
+      durationMin: durationMin,
+      jobsite: jobsite,
+      jobNumber: jobNumber,
+      crew: crew,
+      netCutFill: cfv.hasCutFillData ? cfv.netCutFill : null,
+      volumeYd3: cfv.volumeYd3,
+      depthFlagged: depthFlagged
+    });
+    statsRunStartTime = null;
+    saveStatsLog();
+  }
+
+  window.pbOpenStats = function() {
+    const typeFilter = document.getElementById('statsFilterType');
+    const existingVal = typeFilter.value;
+    const types = Array.from(new Set(statsLog.map(e => e.type)));
+    typeFilter.innerHTML = '<option value="all">All Types</option>' + types.map(t => `<option value="${t}">${t}</option>`).join('');
+    typeFilter.value = types.includes(existingVal) ? existingVal : 'all';
+
+    const jobsiteFilter = document.getElementById('statsFilterJobsite');
+    const existingJobsiteVal = jobsiteFilter.value;
+    const jobsites = Array.from(new Set(statsLog.map(e => e.jobsite).filter(j => j)));
+    jobsiteFilter.innerHTML = '<option value="all">All Jobsites</option>' + jobsites.map(j => `<option value="${j}">${j}</option>`).join('');
+    jobsiteFilter.value = jobsites.includes(existingJobsiteVal) ? existingJobsiteVal : 'all';
+
+    renderStats();
+    pbGoto('stats');
+  };
+
+  function filteredStatsLog() {
+    const period = document.getElementById('statsFilterPeriod').value;
+    const typeFilter = document.getElementById('statsFilterType').value;
+    const jobsiteFilter = document.getElementById('statsFilterJobsite').value;
+    const now = new Date();
+    return statsLog.filter(e => {
+      if (typeFilter !== 'all' && e.type !== typeFilter) return false;
+      if (jobsiteFilter !== 'all' && e.jobsite !== jobsiteFilter) return false;
+      if (period === 'all') return true;
+      const days = (now - e.date) / 86400000;
+      if (period === 'today') return e.date.toDateString() === now.toDateString();
+      if (period === 'week') return days <= 7;
+      if (period === 'month') return days <= 31;
+      return true;
+    });
+  }
+
+  window.renderStats = function() {
+    const entries = filteredStatsLog();
+    const totalFootage = entries.reduce((sum, e) => sum + e.footage, 0);
+    const withDuration = entries.filter(e => e.durationMin !== null && e.durationMin > 0);
+    const totalDuration = withDuration.reduce((sum, e) => sum + e.durationMin, 0);
+    const durationFootage = withDuration.reduce((sum, e) => sum + e.footage, 0);
+    const avgTimePerFt = durationFootage > 0 ? totalDuration / durationFootage : null;
+    const withCutFill = entries.filter(e => e.netCutFill !== null && e.netCutFill !== undefined);
+    const totalNetCutFill = withCutFill.reduce((sum, e) => sum + e.netCutFill, 0);
+    const withVolume = entries.filter(e => e.volumeYd3 !== null && e.volumeYd3 !== undefined);
+    const totalVolume = withVolume.reduce((sum, e) => sum + e.volumeYd3, 0);
+    const depthFlaggedCount = entries.filter(e => e.depthFlagged).length;
+
+    document.getElementById('statsSummaryGrid').innerHTML = `
+      <div class="pb-summary-item"><div class="k">Total Footage</div><div class="v">${totalFootage.toFixed(0)} ft</div></div>
+      <div class="pb-summary-item"><div class="k">Runs Tracked</div><div class="v">${entries.length}</div></div>
+      <div class="pb-summary-item"><div class="k">Avg. Time / Ft</div><div class="v">${avgTimePerFt !== null ? avgTimePerFt.toFixed(2) + ' min' : '—'}</div></div>
+      <div class="pb-summary-item"><div class="k">Net Cut / Fill</div><div class="v">${withCutFill.length ? (totalNetCutFill >= 0 ? '+' : '') + totalNetCutFill.toFixed(1) + ' ft' : '—'}</div></div>
+      <div class="pb-summary-item"><div class="k">Est. Backfill Volume</div><div class="v">${withVolume.length ? totalVolume.toFixed(1) + ' yd³' : '—'}</div></div>
+      <div class="pb-summary-item"><div class="k">Runs Needing Sloping Check</div><div class="v">${depthFlaggedCount} of ${entries.length}</div></div>
+    `;
+
+    const groups = {};
+    entries.forEach(e => {
+      const key = e.type + ' — ' + e.sizeIn.toFixed(1) + '"';
+      groups[key] = (groups[key] || 0) + e.footage;
+    });
+    const keys = Object.keys(groups);
+    const breakdownEl = document.getElementById('statsBreakdown');
+    if (!keys.length) {
+      breakdownEl.innerHTML = '<p class="pb-help" style="margin:0;">No tracked runs match these filters yet.</p>';
+    } else {
+      breakdownEl.innerHTML = keys.map(k => `<div class="pb-review-item" style="margin:8px 0 0 0;"><span class="k">${k}</span><br>${groups[k].toFixed(0)} ft</div>`).join('');
+    }
+  };
+
+  window.pbShareStats = function() {
+    const entries = filteredStatsLog();
+    const totalFootage = entries.reduce((sum, e) => sum + e.footage, 0);
+    let lines = ['PIPELAYER\'S BIBLE — STATS SUMMARY', 'Generated: ' + new Date().toLocaleString(), ''];
+    lines.push('Total footage: ' + totalFootage.toFixed(0) + ' ft across ' + entries.length + ' tracked run(s)');
+    const withCutFill = entries.filter(e => e.netCutFill !== null && e.netCutFill !== undefined);
+    if (withCutFill.length) {
+      const totalNetCutFill = withCutFill.reduce((sum, e) => sum + e.netCutFill, 0);
+      lines.push('Net cut/fill: ' + (totalNetCutFill >= 0 ? '+' : '') + totalNetCutFill.toFixed(1) + ' ft');
+    }
+    const withVolume = entries.filter(e => e.volumeYd3 !== null && e.volumeYd3 !== undefined);
+    if (withVolume.length) {
+      const totalVolume = withVolume.reduce((sum, e) => sum + e.volumeYd3, 0);
+      lines.push('Estimated backfill volume: ' + totalVolume.toFixed(1) + ' yd³ (rough estimate)');
+    }
+    const groups = {};
+    entries.forEach(e => {
+      const key = e.type + ' — ' + e.sizeIn.toFixed(1) + '"';
+      groups[key] = (groups[key] || 0) + e.footage;
+    });
+    lines.push('');
+    lines.push('--- BY TYPE & SIZE ---');
+    Object.keys(groups).forEach(k => lines.push(k + ': ' + groups[k].toFixed(0) + ' ft'));
+    const body = lines.join('\n');
+    pbNavigateExternal('mailto:?subject=' + encodeURIComponent('Stats Summary') + '&body=' + encodeURIComponent(body));
+  };
+  window.pbExportStatsCSV = function() {
+    const entries = filteredStatsLog();
+    if (!entries.length) { pbAlert('No runs match the current filters to export.'); return; }
+    const rows = [['Date', 'Type', 'Size (in)', 'Footage (ft)', 'Duration (min)', 'Jobsite', 'Job Number', 'Crew', 'Net Cut/Fill (ft)', 'Est. Backfill (yd3)', 'Depth Flagged']];
+    entries.forEach(e => {
+      rows.push([e.date.toLocaleString(), e.type, e.sizeIn.toFixed(2), e.footage.toFixed(1), e.durationMin !== null ? e.durationMin.toFixed(1) : '', e.jobsite, e.jobNumber, e.crew, e.netCutFill !== null ? e.netCutFill.toFixed(2) : '', e.volumeYd3 !== null ? e.volumeYd3.toFixed(1) : '', e.depthFlagged ? 'Yes' : 'No']);
+    });
+    downloadCSV('stats-export.csv', rows);
+  };
+  function buildStatsPDF() {
+    const entries = filteredStatsLog();
+    const doc = new jspdf.jsPDF();
+    let y = 20;
+    doc.setFontSize(16); doc.setFont(undefined, 'bold');
+    doc.text('Stats Summary', 14, y); y += 10;
+    doc.setFontSize(10); doc.setFont(undefined, 'normal');
+    doc.text('Generated: ' + new Date().toLocaleString(), 14, y); y += 8;
+    const totalFootage = entries.reduce((s,e) => s+e.footage, 0);
+    doc.text('Total footage: ' + totalFootage.toFixed(0) + ' ft across ' + entries.length + ' tracked run(s)', 14, y); y += 6;
+    const withCutFill = entries.filter(e => e.netCutFill !== null && e.netCutFill !== undefined);
+    if (withCutFill.length) {
+      const t = withCutFill.reduce((s,e) => s+e.netCutFill, 0);
+      doc.text('Net cut/fill: ' + (t >= 0 ? '+' : '') + t.toFixed(1) + ' ft', 14, y); y += 6;
+    }
+    const withVol = entries.filter(e => e.volumeYd3 !== null && e.volumeYd3 !== undefined);
+    if (withVol.length) {
+      const t = withVol.reduce((s,e) => s+e.volumeYd3, 0);
+      doc.text('Estimated backfill volume: ' + t.toFixed(1) + ' yd\u00b3 (rough estimate)', 14, y); y += 6;
+    }
+    y += 4;
+    const groups = {};
+    entries.forEach(e => {
+      const key = e.type + ' — ' + e.sizeIn.toFixed(1) + '"';
+      groups[key] = (groups[key] || 0) + e.footage;
+    });
+    doc.autoTable({ head: [['Type & Size', 'Footage (ft)']], body: Object.keys(groups).map(k => [k, groups[k].toFixed(0)]), startY: y, styles: { fontSize: 9 }, headStyles: { fillColor: [184,48,47] }, margin: { left: 14, right: 14 } });
+    return doc;
+  }
+  window.pbDownloadStatsPDF = function() {
+    if (!pdfLibReady()) { pbAlert('PDF library didn\'t load — check your connection and try again.'); return; }
+    if (!filteredStatsLog().length) { pbAlert('No runs match the current filters to export.'); return; }
+    buildStatsPDF().save('stats-summary.pdf');
+  };
+  window.pbDownloadStatsBoth = function() {
+    pbExportStatsCSV();
+    setTimeout(() => pbDownloadStatsPDF(), 400);
+  };
+  function buildStatsSnapshotReport() {
+    let lines = ['PIPELAYER\'S BIBLE — STATS DATA (CLEARED SNAPSHOT)', 'Generated: ' + new Date().toLocaleString(), ''];
+    const totalFootage = statsLog.reduce((sum, e) => sum + e.footage, 0);
+    lines.push('This is a record of Stats data at the moment it was cleared from the app.');
+    lines.push('Total footage: ' + totalFootage.toFixed(0) + ' ft across ' + statsLog.length + ' run(s)');
+    lines.push('');
+    lines.push('--- INDIVIDUAL ENTRIES ---');
+    statsLog.forEach(e => {
+      lines.push(e.date.toLocaleString() + ' — ' + e.type + ', ' + e.sizeIn.toFixed(1) + '" — ' + e.footage.toFixed(1) + ' ft' + (e.jobsite ? ' — ' + e.jobsite : '') + (e.crew ? ' — ' + e.crew : ''));
+    });
+    return lines.join('\n');
+  }
+  window.pbClearAllStats = function() {
+    if (!statsLog.length) { pbAlert('No Stats data to clear.'); return; }
+    pbConfirm('Delete all Stats data? A snapshot report will be saved to Archive first, so nothing is lost without a trace.', () => {
+      const totalFootage = statsLog.reduce((sum, e) => sum + e.footage, 0);
+      runArchive.unshift({
+        kind: 'stats-snapshot',
+        id: Date.now(),
+        lockTime: new Date(),
+        distance: totalFootage,
+        runCount: statsLog.length,
+        jobsite: '', jobNumber: '', crew: '',
+        photoCount: 0, depthFlagged: false, netCutFill: null, volumeYd3: null,
+        reportText: buildStatsSnapshotReport(),
+        sent: false
+      });
+      saveRunArchive();
+      statsLog = [];
+      saveStatsLog();
+      renderStats();
+    }, 'Clear All Stats');
   };
 
   initAutofill();
