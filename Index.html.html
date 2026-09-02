@@ -1,0 +1,2185 @@
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+.pb-app {
+  --asphalt: #1c1a16;
+  --asphalt-2: #24211c;
+  --paper: #e8e0c9;
+  --paper-2: #ded3b3;
+  --ink: #26221a;
+  --ink-soft: #55503f;
+  --hazard: #f4b41a;
+  --hazard-ink: #211a06;
+  --iron: #565b4e;
+  --iron-line: #3c4038;
+  --rod-red: #b8302f;
+  --rod-white: #ede8db;
+  --ok-green: #4f6b3f;
+  --start-c: #4f6b3f;
+  --hub-c: #b8791a;
+  --end-c: #a33a34;
+
+  font-family: 'Inter', sans-serif;
+  background: var(--asphalt);
+  color: var(--paper);
+  max-width: 560px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+.pb-app * { box-sizing: border-box; }
+.pb-screen { display: none; padding-bottom: 40px; }
+.pb-screen.active { display: block; }
+
+.pb-header {
+  padding: 24px 20px 16px 20px;
+  border-bottom: 6px solid transparent;
+  border-image: repeating-linear-gradient(135deg, var(--hazard) 0 14px, var(--asphalt-2) 14px 28px) 6;
+  background: linear-gradient(180deg, var(--asphalt-2), var(--asphalt));
+  position: sticky; top: 0; z-index: 5;
+}
+.pb-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--iron); letter-spacing: 0.08em; margin: 0 0 4px 0; display:flex; justify-content:space-between; align-items:center;}
+.pb-title { font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 26px; line-height: 1.05; color: var(--hazard); margin: 0; text-transform: uppercase; }
+.pb-back { -webkit-appearance:none; appearance:none; border-radius:0; background: var(--hazard); color: var(--hazard-ink); border: 2px solid var(--hazard-ink); font-size:20px; font-weight:700; width:40px; height:40px; padding:0; cursor:pointer; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
+
+.pb-section { margin: 18px 16px 0 16px; background: var(--paper); color: var(--ink); border: 1px solid var(--paper-2); }
+.pb-tag { font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; background: var(--ink); color: var(--hazard); padding: 8px 14px; display:flex; justify-content:space-between; align-items:center;}
+button.pb-tag { width: 100%; border: none; cursor: pointer; text-align: left; -webkit-appearance:none; appearance:none; border-radius:0; }
+.pb-section.start .pb-tag { border-left: 6px solid var(--start-c); }
+.pb-section.hub .pb-tag { border-left: 6px solid var(--hub-c); }
+.pb-section.end .pb-tag { border-left: 6px solid var(--end-c); }
+.pb-body { padding: 14px; }
+
+.pb-toggle { display: flex; border: 1px solid var(--ink); margin-bottom: 12px; }
+.pb-toggle button { flex: 1; padding: 9px 6px; font-family: 'Inter'; font-weight: 600; font-size: 12.5px; background: var(--paper); color: var(--ink-soft); border: none; border-right: 1px solid var(--ink); cursor: pointer; }
+.pb-toggle button:last-child { border-right: none; }
+.pb-toggle button.active { background: var(--ink); color: var(--hazard); }
+.pb-toggle-wrap { flex-wrap: wrap; }
+.pb-toggle-wrap button { flex: 1 1 50%; border-bottom: 1px solid var(--ink); }
+.pb-toggle-wrap button:nth-child(2n) { border-right: none; }
+
+.pb-field { margin-bottom: 10px; }
+.pb-field:last-child { margin-bottom: 0; }
+.pb-field label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-soft); margin-bottom: 3px; }
+.pb-field input, .pb-field select { width: 100%; padding: 9px 10px; font-family: 'IBM Plex Mono', monospace; font-size: 15px; border: 1px solid var(--ink-soft); background: #fff; color: var(--ink); }
+.pb-field input::placeholder { font-size: 12px; font-family: 'Inter'; color: #9b9584; }
+.pb-field input:focus, .pb-field select:focus { outline: 2px solid var(--rod-red); outline-offset: 1px; }
+.pb-row { display: flex; gap: 8px; }
+.pb-row .pb-field { flex: 1; }
+.pb-derived { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--ok-green); margin: -4px 0 10px 0; min-height: 14px; }
+.pb-help { font-size: 11.5px; color: var(--ink-soft); margin-top: 5px; line-height: 1.4; }
+
+.pb-btn { -webkit-appearance:none; appearance:none; border-radius:0; width: 100%; padding: 13px; font-family: 'Oswald'; font-weight: 600; font-size: 15px; letter-spacing: 0.03em; text-transform: uppercase; background: var(--hazard); color: var(--hazard-ink); border: none; cursor: pointer; }
+.pb-emergency-btn { -webkit-appearance:none; appearance:none; border-radius:0; width:100%; background: var(--rod-red); color:#fff; font-family:'Oswald'; font-weight:700; font-size:19px; letter-spacing:0.06em; text-transform:uppercase; padding:18px; border:3px solid #7a1e1a; cursor:pointer; }
+.pb-emergency-key { margin-top:16px; background:#2a1210; border:3px solid var(--rod-red); padding:14px 16px; }
+.pb-emergency-key .row { margin-bottom:10px; }
+.pb-emergency-key .row:last-child { margin-bottom:0; }
+.pb-emergency-key .k { font-family:'Inter'; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#e8a29d; margin-bottom:2px; }
+.pb-emergency-key .v { font-family:'IBM Plex Mono'; font-size:20px; font-weight:700; color:#fff; line-height:1.3; }
+.pb-emergency-key .v.small { font-size:14px; font-weight:500; }
+.pb-emergency-script { margin:0 16px; background:#fff; color:#111; border:4px solid var(--rod-red); padding:16px; font-family:'Inter'; font-size:19px; line-height:1.55; font-weight:600; }
+.pb-btn.secondary { background: var(--iron); color: var(--rod-white); }
+.pb-btn.small { padding: 8px; font-size: 12.5px; width: auto; }
+.pb-btn.ghost { background: transparent; border: 1px solid var(--paper-2); color: var(--ink-soft); }
+.pb-btn-wrap { padding: 18px 16px 0 16px; }
+.pb-btn-row { display:flex; gap:10px; padding: 18px 16px 0 16px; }
+.pb-btn-row .pb-btn { flex:1; }
+
+.pb-hub-card { border: 1px solid var(--paper-2); margin-top: 10px; }
+.pb-hub-card .pb-tag { font-size: 12px; }
+.pb-remove { background: none; border: none; color: var(--hazard); font-size: 12px; cursor: pointer; font-family:'Inter'; font-weight:600; }
+.pb-add-hub-section { cursor: pointer; }
+
+.pb-photo-chip { display: inline-block; position: relative; margin: 4px 6px 0 0; }
+.pb-photo-remove { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--ink-soft); background: var(--rod-red); color: #fff; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; }
+
+.pb-home-tile { margin: 12px 16px 0 16px; padding: 16px; background: var(--asphalt-2); border: 1px solid var(--iron-line); display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
+.pb-home-tile.disabled { opacity: 0.45; cursor: default; }
+.pb-home-tile .name { font-family:'Oswald'; font-size:16px; text-transform:uppercase; letter-spacing:0.03em; color: var(--hazard); }
+.pb-home-tile.disabled .name { color: var(--paper-2); }
+.pb-home-tile .sub { font-size: 11.5px; color: var(--paper-2); margin-top:2px; }
+
+.pb-warn { margin: 12px 16px 0 16px; padding: 10px 12px; background: #3a1f1c; border-left: 4px solid var(--rod-red); color: var(--rod-white); font-size: 13px; line-height:1.4; }
+.pb-warn.photo { background: #2a2410; border-left-color: var(--hazard); }
+.pb-warn strong { display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px; }
+.pb-clean { margin: 12px 16px 0 16px; padding: 10px 12px; background: #1e2a1a; border-left: 4px solid var(--ok-green); color: var(--rod-white); font-size: 13px; }
+
+.pb-review-item { margin: 12px 16px 0 16px; padding: 10px 14px; background: var(--paper); color: var(--ink); border: 1px solid var(--paper-2); font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+.pb-review-item .k { font-family:'Inter'; font-weight:600; color: var(--ink-soft); font-size:11px; text-transform:uppercase; }
+
+.pb-summary { margin: 16px 16px 0 16px; background: var(--iron); color: var(--rod-white); padding: 14px 16px; border: 1px solid var(--iron-line); }
+.pb-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+.pb-summary-item .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: #cfd4c6; margin-bottom: 2px; }
+.pb-summary-item .v { font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 600; color: #fff; }
+
+.pb-table-wrap { margin: 14px 16px 0 16px; overflow-x: auto; overflow-y: auto; max-height: 62vh; border: 1px solid var(--paper-2); }
+table.pb-table { width: 100%; border-collapse: separate; border-spacing: 0; font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: var(--paper); color: var(--ink); }
+table.pb-table th { position: sticky; top: 0; z-index: 3; background: var(--ink); color: var(--hazard); font-family: 'Inter'; font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 8px; text-align: right; white-space: nowrap; }
+table.pb-table th:first-child, table.pb-table td:first-child { text-align: center; }
+table.pb-table th:nth-child(2), table.pb-table td:nth-child(2) { text-align: left; }
+table.pb-table td { padding: 7px 8px; text-align: right; border-top: 1px solid var(--paper-2); white-space: nowrap; }
+table.pb-table tr.pb-shade td { background: rgba(0,0,0,0.05); }
+table.pb-table tr.pb-hubrow td { border-top: 2px solid var(--hub-c); font-weight: 600; background: rgba(184,121,26,0.12); }
+table.pb-table tr.pb-startrow td { border-top: 2px solid var(--start-c); font-weight: 600; background: rgba(79,107,63,0.12); }
+table.pb-table tr.pb-endrow td { border-top: 2px solid var(--end-c); font-weight: 600; background: rgba(163,58,52,0.12); }
+.pb-notebtn { border: 1px solid var(--ink-soft); background: #fff; width: 22px; height: 22px; font-size: 12px; cursor: pointer; line-height: 1; }
+.pb-notebtn + .pb-notebtn { margin-left: 5px; }
+.pb-notebtn.has-note { background: var(--hazard); border-color: var(--hazard-ink); }
+.pb-notebtn.has-warn::after { content: '!'; }
+tr.pb-noterow td { background: #fff; padding: 8px; border-top: none; white-space: normal; }
+tr.pb-noterow textarea { display:block; width: 100%; font-family: 'Inter'; font-size: 16px; padding: 6px; border: 1px solid var(--ink-soft); resize: vertical; min-height: 44px; box-sizing: border-box; }
+tr.pb-noterow .pb-btn.small { display: block; margin-top: 6px; }
+tr.pb-noterow .ts { font-family:'IBM Plex Mono'; font-size: 11px; color: var(--ok-green); margin-top: 4px; }
+.pb-sta-sub { display: block; font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; margin-top: 2px; }
+.pb-sta-sub.start { color: var(--start-c); }
+.pb-sta-sub.hub { color: var(--hub-c); }
+.pb-sta-sub.end { color: var(--end-c); }
+
+.pb-answer-box { margin-top: 14px; background: var(--ink); border-left: 6px solid var(--hazard); padding: 14px 16px; }
+.pb-answer-label { font-family:'Inter'; font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color: var(--paper-2); margin-bottom:2px; }
+.pb-answer-val { font-family:'IBM Plex Mono'; font-size: 30px; font-weight:700; color: var(--hazard); line-height:1.15; }
+.pb-answer-sub { font-family:'IBM Plex Mono'; font-size: 12.5px; color: var(--paper-2); margin-top: 8px; line-height:1.5; }
+.pb-answer-warn { color: var(--rod-red); font-weight:600; }
+
+table.pb-table.pb-zoom td, table.pb-table.pb-zoom th { font-size: 25px; padding: 15px 10px; }
+table.pb-table.pb-zoom td:nth-child(2) { font-weight: 700; }
+table.pb-table.pb-zoom .pb-sta-sub { font-size: 15px; }
+table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px; }
+
+.pb-lockband { margin: 16px 16px 0 16px; padding: 8px 12px; background: var(--ink); color: var(--hazard); font-family:'IBM Plex Mono'; font-size: 12px; text-align:center; letter-spacing:0.04em; }
+.pb-note-general { font-size: 11.5px; color: var(--paper-2); padding: 14px 16px 0 16px; line-height:1.5; }
+
+.pb-fif-group { display: flex; gap: 6px; align-items: center; }
+.pb-fif-item { flex: 1; position: relative; }
+.pb-fif-item input, .pb-fif-item select { width: 100%; padding: 9px 4px; font-family: 'IBM Plex Mono', monospace; font-size: 14px; border: 1px solid var(--ink-soft); background: #fff; color: var(--ink); text-align: center; }
+.pb-fif-suffix { text-align:center; font-size: 10px; color: var(--ink-soft); margin-top: 2px; }
+.pb-photo-thumb { display:inline-block; width: 54px; height: 54px; object-fit: cover; border: 1px solid var(--ink-soft); margin-top: 6px; }
+.pb-photo-name { font-size: 11px; color: var(--ink-soft); margin-top: 4px; }
+
+@media (max-width: 380px) { .pb-title { font-size: 21px; } table.pb-table { font-size: 11.5px; } }
+</style>
+
+<div class="pb-app" id="pbApp">
+
+  <!-- HOME -->
+  <div class="pb-screen active" id="screen-home">
+    <div class="pb-header">
+      <p class="pb-eyebrow">FIELD GRADE CALCULATOR</p>
+      <h1 class="pb-title">The Pipelayer's Bible</h1>
+    </div>
+    <div class="pb-home-tile" id="resumeTile" style="display:none;" onclick="pbGoto('results')">
+      <div><div class="name">Resume Run</div><div class="sub">Return to your last locked run</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbGoto('input')">
+      <div><div class="name">New Run</div><div class="sub">Start a new pipe run calculation</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbGoto('calcHub')">
+      <div><div class="name">Calculators</div><div class="sub">Bend offset, bedding elevation</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" id="confinedResumeTile" style="display:none;" onclick="pbGoto('confinedActive')">
+      <div><div class="name">Resume Active Permit</div><div class="sub">Return to your open confined space entry permit</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbGoto('confinedHub')">
+      <div><div class="name">Confined Space</div><div class="sub">Entry permit, atmospheric log, entrant roster, vent calculator</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile disabled"><div><div class="name">Formulas &amp; Reference</div><div class="sub">Coming soon</div></div></div>
+    <div class="pb-home-tile disabled"><div><div class="name">Stats</div><div class="sub">Coming soon</div></div></div>
+    <div class="pb-home-tile disabled"><div><div class="name">Archive</div><div class="sub">Coming soon</div></div></div>
+    <p class="pb-note-general">This build covers the core run calculator, the bend/bedding/flush/volume/ventilation calculators, and confined space entry permits. PDF export, stats, and archive are still to come.</p>
+  </div>
+
+  <!-- CALCULATOR HUB -->
+  <div class="pb-screen" id="screen-calcHub">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>CALCULATORS</span><button class="pb-back" title="Home" onclick="pbGoto('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11L12 3l9 8"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></button></p>
+      <h1 class="pb-title">Calculators</h1>
+    </div>
+    <div class="pb-home-tile" onclick="pbOpenBendCalc(null)">
+      <div><div class="name">Bend Offset</div><div class="sub">Two matching bends — required pipe length between them</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbOpenBeddingCalc(null)">
+      <div><div class="name">Bedding Elevation</div><div class="sub">Top of bedding / bottom of bedding at a manhole</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbOpenFlowCalc()">
+      <div><div class="name">Flush / Flow Rate</div><div class="sub">Flow rate and time-to-target-gallons for a pressurized flush</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbOpenVolumeCalc()">
+      <div><div class="name">Material Volume</div><div class="sub">Rectangular, triangular, cylindrical, or concrete/slurry encasement</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbOpenVentCalc()">
+      <div><div class="name">Confined Space Ventilation</div><div class="sub">Rule-of-thumb blower CFM sizing — not an OSHA compliance number</div></div>
+      <div>&rsaquo;</div>
+    </div>
+  </div>
+
+  <!-- BEND CALCULATOR -->
+  <div class="pb-screen" id="screen-bendCalc">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>BEND OFFSET</span><button class="pb-back" title="Back" onclick="pbCalcBack()"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Bend Offset</h1>
+    </div>
+    <p class="pb-note-general" id="bendContext"></p>
+    <div class="pb-section">
+      <div class="pb-tag">Matching Bends</div>
+      <div class="pb-body">
+        <p class="pb-help" style="margin-top:0;">Two equal-and-opposite bends (same angle, mirrored) connected by a straight piece of pipe — the pipe exits parallel to how it entered, just shifted up or down. This is the verified case. A version for two <em>different</em> bend angles isn't built yet — that math still needs to be derived and checked, so it's intentionally left out rather than guessed at.</p>
+        <div class="pb-field">
+          <label>Vertical / horizontal offset required (ft)</label>
+          <input type="number" step="0.001" id="bendOffset" inputmode="decimal">
+        </div>
+        <div class="pb-field">
+          <label>Bend angle (each fitting)</label>
+          <select id="bendAngle">
+            <option value="11.25">11.25°</option>
+            <option value="22.5" selected>22.5°</option>
+            <option value="45">45°</option>
+          </select>
+        </div>
+        <p class="pb-help">Center-to-end (C-E) is the measurement from the center of the fitting to the internal stop shoulder (where the pipe is seated inside the bell). Leave blank for a vertex-to-vertex distance instead of pipe length calculation.</p>
+        <div class="pb-row">
+          <div class="pb-field"><label>Fitting 1: Center-to-End (ft)</label><input type="number" step="0.001" id="bendFit1" inputmode="decimal" oninput="pbSyncFit2()"></div>
+          <div class="pb-field"><label>Fitting 2: Center-to-End (ft)</label><input type="number" step="0.001" id="bendFit2" inputmode="decimal" oninput="pbTouchFit2()"></div>
+        </div>
+        <div class="pb-btn-wrap" style="padding:14px 0 0 0;"><button class="pb-btn" onclick="pbCalcBend()">Calculate</button></div>
+        <div class="pb-derived" id="bendResult" style="font-size:16px; margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BEDDING CALCULATOR -->
+  <div class="pb-screen" id="screen-beddingCalc">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>BEDDING ELEVATION</span><button class="pb-back" title="Back" onclick="pbCalcBack()"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Bedding Elevation</h1>
+    </div>
+    <p class="pb-note-general" id="beddingContext"></p>
+    <div class="pb-section">
+      <div class="pb-tag">Reference Point</div>
+      <div class="pb-body">
+        <div class="pb-toggle" id="beddingRefToggle">
+          <button data-val="inv" class="active">Invert</button>
+          <button data-val="bop">BOP</button>
+        </div>
+        <div id="beddingInvFields">
+          <div class="pb-field"><label>Invert elevation (ft)</label><input type="number" step="0.001" id="beddingInv" inputmode="decimal"></div>
+          <div class="pb-field"><label>Wall thickness (ft)</label><input type="number" step="0.001" id="beddingWT" inputmode="decimal"></div>
+          <div class="pb-derived" id="beddingBopDerived"></div>
+        </div>
+        <div id="beddingBopFields" style="display:none;">
+          <div class="pb-field"><label>BOP elevation (ft)</label><input type="number" step="0.001" id="beddingBop" inputmode="decimal"></div>
+        </div>
+        <div class="pb-field"><label id="beddingDistLabel">Distance, invert to bottom of manhole (ft)</label><input type="number" step="0.001" id="beddingDist" inputmode="decimal"></div>
+        <div class="pb-field"><label>Required bedding thickness (ft)</label><input type="number" step="0.001" id="beddingThk" inputmode="decimal"></div>
+        <div class="pb-btn-wrap" style="padding:14px 0 0 0;"><button class="pb-btn" onclick="pbCalcBedding()">Calculate</button></div>
+        <div class="pb-derived" id="beddingResult" style="font-size:16px; margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLUSH / FLOW RATE CALCULATOR -->
+  <div class="pb-screen" id="screen-flowCalc">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>FLUSH / FLOW RATE</span><button class="pb-back" title="Calculators" onclick="pbGoto('calcHub')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Flush / Flow Rate</h1>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Discharge Flow</div>
+      <div class="pb-body">
+        <p class="pb-help" style="margin-top:0;">Flow rate = 29.83 × C × d² × √P — where d is the diameter of the actual discharge opening (valve, nozzle, corp stop), not the pipe's own diameter. C values below are the standard NFPA/IFSTA fire-flow coefficients — check the shape of the opening to pick the right one.</p>
+        <div class="pb-row">
+          <div class="pb-field"><label>Pressure (psi)</label><input type="number" step="0.1" id="flowPsi" inputmode="decimal"></div>
+          <div class="pb-field"><label>Discharge opening diameter (in)</label><input type="number" step="0.01" id="flowDia" inputmode="decimal"></div>
+        </div>
+        <div class="pb-field">
+          <label>Discharge coefficient (C)</label>
+          <select id="flowCSel" onchange="pbToggleFlowCOther()">
+            <option value="0.9" selected>Smooth and rounded outlet — 0.90</option>
+            <option value="0.8">Square and sharp-edged outlet — 0.80</option>
+            <option value="0.7">Square, projecting into barrel — 0.70</option>
+            <option value="0.95">With a stream straightener — 0.95</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="pb-field" id="flowCOtherWrap" style="display:none;"><label>Custom C</label><input type="number" step="0.01" id="flowC" inputmode="decimal"></div>
+        <div class="pb-field"><label>Target gallons for this flush</label><input type="number" step="1" id="flowGallons" inputmode="decimal"></div>
+        <div class="pb-btn-wrap" style="padding:14px 0 0 0;"><button class="pb-btn" onclick="pbCalcFlow()">Calculate</button></div>
+        <div class="pb-derived" id="flowResult" style="font-size:16px; margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VOLUME CALCULATOR -->
+  <div class="pb-screen" id="screen-volumeCalc">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>MATERIAL VOLUME</span><button class="pb-back" title="Calculators" onclick="pbGoto('calcHub')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Material Volume</h1>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Shape</div>
+      <div class="pb-body">
+        <div class="pb-toggle pb-toggle-wrap" id="volShapeToggle">
+          <button data-val="rect" class="active">Rectangular</button>
+          <button data-val="tri">Triangular</button>
+          <button data-val="cyl">Cylindrical</button>
+          <button data-val="encase">Encasement</button>
+        </div>
+
+        <div id="volFields-rect">
+          <div class="pb-row">
+            <div class="pb-field"><label>Length (ft)</label><input type="number" step="0.1" id="volRectL" inputmode="decimal"></div>
+            <div class="pb-field"><label>Width (ft)</label><input type="number" step="0.1" id="volRectW" inputmode="decimal"></div>
+          </div>
+          <div class="pb-field"><label>Depth (ft)</label><input type="number" step="0.1" id="volRectD" inputmode="decimal"></div>
+        </div>
+
+        <div id="volFields-tri" style="display:none;">
+          <p class="pb-help" style="margin-top:0;">For an odd-shaped hole, wedge, or triangular patch or cross-section. Base can be any one side of the triangle — height is just the perpendicular distance from that side to the opposite corner, whichever way the shape sits.</p>
+          <div class="pb-row">
+            <div class="pb-field">
+              <label>Depth (ft)</label>
+              <input type="number" step="0.1" id="volTriL" inputmode="decimal" placeholder="How deep it runs">
+            </div>
+            <div class="pb-field">
+              <label>Base (ft)</label>
+              <input type="number" step="0.1" id="volTriB" inputmode="decimal" placeholder="Any one side">
+            </div>
+          </div>
+          <div class="pb-field">
+            <label>Height (ft)</label>
+            <input type="number" step="0.1" id="volTriH" inputmode="decimal" placeholder="Distance from the base edge to the far corner">
+          </div>
+        </div>
+
+        <div id="volFields-cyl" style="display:none;">
+          <p class="pb-help" style="margin-top:0;">For a straight pipe or cylindrical volume — e.g. the pipe itself.</p>
+          <div class="pb-row">
+            <div class="pb-field"><label>Diameter (in)</label><input type="number" step="0.1" id="volCylDia" inputmode="decimal"></div>
+            <div class="pb-field"><label>Length (ft)</label><input type="number" step="0.1" id="volCylL" inputmode="decimal"></div>
+          </div>
+        </div>
+
+        <div id="volFields-encase" style="display:none;">
+          <p class="pb-help" style="margin-top:0;">Concrete or slurry encasement — encasement volume minus the volume the pipe(s) displace. Use the pipe's actual outside diameter (OD), not invert or ID.</p>
+          <div class="pb-row">
+            <div class="pb-field"><label>Encasement length (ft)</label><input type="number" step="0.1" id="volEncL" inputmode="decimal"></div>
+            <div class="pb-field"><label>Encasement width (ft)</label><input type="number" step="0.1" id="volEncW" inputmode="decimal"></div>
+          </div>
+          <div class="pb-field"><label>Encasement depth (ft)</label><input type="number" step="0.1" id="volEncD" inputmode="decimal"></div>
+          <div class="pb-row">
+            <div class="pb-field"><label>Pipe OD (in)</label><input type="number" step="0.1" id="volEncOD" inputmode="decimal"></div>
+            <div class="pb-field"><label># of pipes</label><input type="number" step="1" id="volEncCount" value="1" inputmode="numeric"></div>
+          </div>
+          <div class="pb-field"><label>Pipe length within encasement (ft)</label><input type="number" step="0.1" id="volEncPipeL" inputmode="decimal"></div>
+          <div id="volEncExtraContainer"></div>
+          <div class="pb-btn-wrap" style="padding-top:6px;"><button class="pb-btn ghost small" style="width:100%;" onclick="pbAddEncPipeSize()">+ Add Another Pipe Size</button></div>
+        </div>
+
+        <div class="pb-btn-wrap" style="padding:14px 0 0 0;"><button class="pb-btn" onclick="pbCalcVolume()">Calculate</button></div>
+        <div class="pb-toggle" id="volUnitToggle" style="display:none; margin-top:12px;">
+          <button data-val="yd3" class="active">Cubic Yards</button>
+          <button data-val="ft3">Cubic Feet</button>
+          <button data-val="gal">Gallons</button>
+        </div>
+        <div class="pb-derived" id="volumeResult" style="font-size:16px; margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFINED SPACE VENTILATION CALCULATOR -->
+  <div class="pb-screen" id="screen-ventCalc">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>CONFINED SPACE VENT.</span><button class="pb-back" title="Back" onclick="pbCalcBack()"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Confined Space Ventilation</h1>
+    </div>
+    <div class="pb-warn" style="margin-top:16px;">
+      <strong>Not an OSHA/Cal-OSHA compliance number</strong>
+      Neither OSHA nor Cal/OSHA sets a minimum CFM tied to space size — both require whatever forced-air ventilation it takes to pass atmospheric testing (O₂, LEL, PELs), continuously, for as long as anyone is inside. This tool gives a rule-of-thumb blower size using the common 20 air-changes-per-hour industry guidance (ANSI Z117.1), nothing more. It does not replace atmospheric testing, a confined space entry permit, or your company's safety program — always confirm entry conditions with a calibrated gas meter, not this number.
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Space Volume</div>
+      <div class="pb-body">
+        <div class="pb-toggle" id="ventShapeToggle">
+          <button data-val="rect" class="active">Rectangular</button>
+          <button data-val="cyl">Cylindrical</button>
+          <button data-val="known">I Know the Volume</button>
+        </div>
+        <div id="ventFields-rect">
+          <div class="pb-row">
+            <div class="pb-field"><label>Length (ft)</label><input type="number" step="0.1" id="ventRectL" inputmode="decimal"></div>
+            <div class="pb-field"><label>Width (ft)</label><input type="number" step="0.1" id="ventRectW" inputmode="decimal"></div>
+          </div>
+          <div class="pb-field"><label>Depth (ft)</label><input type="number" step="0.1" id="ventRectD" inputmode="decimal"></div>
+        </div>
+        <div id="ventFields-cyl" style="display:none;">
+          <div class="pb-row">
+            <div class="pb-field"><label>Diameter (ft)</label><input type="number" step="0.1" id="ventCylDia" inputmode="decimal"></div>
+            <div class="pb-field"><label>Depth (ft)</label><input type="number" step="0.1" id="ventCylD" inputmode="decimal"></div>
+          </div>
+        </div>
+        <div id="ventFields-known" style="display:none;">
+          <div class="pb-field"><label>Space volume (ft³)</label><input type="number" step="1" id="ventKnownVol" inputmode="decimal"></div>
+        </div>
+        <div class="pb-field">
+          <label>Air changes per hour (ACH)</label>
+          <select id="ventACHSel" onchange="pbToggleVentACHOther()">
+            <option value="20" selected>Normal conditions — 20 ACH</option>
+            <option value="40">Elevated hazard potential (welding, painting, active fumes) — 40 ACH</option>
+            <option value="60">Extreme hazard potential (heavy contaminant generation) — 60 ACH</option>
+            <option value="other">Other (company policy)</option>
+          </select>
+        </div>
+        <div class="pb-field" id="ventACHOtherWrap" style="display:none;"><label>Custom ACH</label><input type="number" step="1" id="ventACH" inputmode="numeric"></div>
+        <div class="pb-btn-wrap" style="padding:14px 0 0 0;"><button class="pb-btn" onclick="pbCalcVent()">Calculate</button></div>
+        <div class="pb-derived" id="ventResult" style="font-size:16px; margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFINED SPACE HUB -->
+  <div class="pb-screen" id="screen-confinedHub">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>CONFINED SPACE</span><button class="pb-back" title="Home" onclick="pbGoto('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11L12 3l9 8"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></button></p>
+      <h1 class="pb-title">Confined Space</h1>
+    </div>
+    <div class="pb-warn" style="margin-top:16px;">
+      <strong>Not a substitute for your safety program</strong>
+      This tool captures the fields OSHA/Cal-OSHA require on an entry permit and timestamps everything, to reduce missed steps and human error. It does not replace atmospheric testing, actual training, a competent person's hazard evaluation, or your company's confined space program.
+    </div>
+    <div class="pb-home-tile" id="confinedResumeTile2" style="display:none;" onclick="pbGoto('confinedActive')">
+      <div><div class="name">Resume Active Permit</div><div class="sub">Return to your open confined space entry permit</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbOpenConfinedPermitForm()">
+      <div><div class="name">New Entry Permit</div><div class="sub">Start a new confined space entry permit</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" onclick="pbOpenVentCalc(true)">
+      <div><div class="name">Ventilation Calculator</div><div class="sub">Rule-of-thumb blower CFM sizing</div></div>
+      <div>&rsaquo;</div>
+    </div>
+  </div>
+
+  <!-- CONFINED SPACE PERMIT FORM -->
+  <div class="pb-screen" id="screen-confinedPermit">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>NEW ENTRY PERMIT</span><button class="pb-back" title="Back" onclick="pbGoto('confinedHub')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Entry Permit</h1>
+    </div>
+
+    <div class="pb-section">
+      <div class="pb-tag">Space &amp; Purpose</div>
+      <div class="pb-body">
+        <div class="pb-field"><label>Jobsite / project name</label><input type="text" id="cpJobsite" placeholder="e.g. Main St sewer replacement"></div>
+        <div class="pb-field"><label>Site address</label><input type="text" id="cpAddress" placeholder="street address — this is what you'd give a 911 dispatcher"></div>
+        <div class="pb-field"><label>Space identification / location</label><input type="text" id="cpSpace" placeholder="e.g. MH #4, Main St &amp; 3rd"></div>
+        <div class="pb-field"><label>Purpose of entry</label><input type="text" id="cpPurpose" placeholder="e.g. pipe tie-in inspection"></div>
+      </div>
+    </div>
+
+    <div class="pb-section">
+      <div class="pb-tag">Authorized Window</div>
+      <div class="pb-body">
+        <div class="pb-field"><label>Entry date</label><input type="date" id="cpDate"></div>
+        <div class="pb-row">
+          <div class="pb-field"><label>Authorized start time</label><input type="time" id="cpStart"></div>
+          <div class="pb-field"><label>Authorized end time</label><input type="time" id="cpEnd"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pb-section">
+      <div class="pb-tag">Hazards &amp; Controls</div>
+      <div class="pb-body">
+        <div class="pb-field"><label>Hazards of the space</label><textarea id="cpHazards" rows="2" placeholder="e.g. oxygen deficiency, H2S, engulfment"></textarea></div>
+        <div class="pb-field"><label>Isolation / control measures</label><textarea id="cpControls" rows="2" placeholder="e.g. LOTO on pumps, forced-air ventilation running"></textarea></div>
+        <div class="pb-field"><label>How you'll detect a ventilation failure</label><textarea id="cpVentFail" rows="2" placeholder="e.g. air horn alarm on blower, attendant checks duct airflow every 10 min"></textarea></div>
+        <div class="pb-field"><label>Acceptable entry conditions</label><textarea id="cpConditions" rows="2" placeholder="e.g. O2 19.5-23.5%, below 10% LEL, contaminants below PEL"></textarea></div>
+        <div class="pb-field"><label>Air test re-check interval (minutes, optional)</label><input type="number" step="1" id="cpAtmoInterval" placeholder="e.g. 15" inputmode="numeric"></div>
+      </div>
+    </div>
+
+    <div class="pb-section">
+      <div class="pb-tag">Rescue &amp; Communication</div>
+      <div class="pb-body">
+        <div class="pb-field"><label>Rescue / emergency services and how to summon them</label><textarea id="cpRescue" rows="2" placeholder="e.g. 911, standby rescue team on site, radio channel 2"></textarea></div>
+        <div class="pb-field"><label>Communication procedures</label><textarea id="cpComms" rows="2" placeholder="e.g. radio check every 5 min, hand signals if radio fails"></textarea></div>
+        <div class="pb-field"><label>Communication check interval (minutes, optional)</label><input type="number" step="1" id="cpCommInterval" placeholder="e.g. 5" inputmode="numeric"></div>
+      </div>
+    </div>
+
+    <div class="pb-section">
+      <div class="pb-tag">Equipment Provided</div>
+      <div class="pb-body">
+        <div class="pb-field"><label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="cpEqPPE" style="width:auto;"> PPE</label></div>
+        <div class="pb-field"><label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="cpEqTest" style="width:auto;"> Testing equipment</label></div>
+        <div class="pb-field"><label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="cpEqComm" style="width:auto;"> Communications equipment</label></div>
+        <div class="pb-field"><label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="cpEqAlarm" style="width:auto;"> Alarm systems</label></div>
+        <div class="pb-field"><label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="cpEqRescue" style="width:auto;"> Rescue equipment</label></div>
+        <div class="pb-field"><label>Equipment notes (optional)</label><input type="text" id="cpEqNotes"></div>
+        <div class="pb-field"><label>Additional permits issued (optional, e.g. hot work permit)</label><input type="text" id="cpAddlPermits"></div>
+      </div>
+    </div>
+
+    <div class="pb-section">
+      <div class="pb-tag">Supervisor &amp; Attendant</div>
+      <div class="pb-body">
+        <div class="pb-field"><label>Entry supervisor name</label><input type="text" id="cpSupervisor"></div>
+        <div class="pb-field"><label>Confined space attendant name</label><input type="text" id="cpAttendant"></div>
+        <p class="pb-help" style="margin-top:0;">Locking this permit records the current date/time as your authorization. Once locked, these fields can't be edited — atmospheric tests and the entrant roster are logged separately as the entry proceeds.</p>
+      </div>
+    </div>
+
+    <div class="pb-btn-wrap"><button class="pb-btn" onclick="pbLockConfinedPermit()">Lock &amp; Activate Permit</button></div>
+    <div class="pb-error" id="cpError" style="display:none; margin:14px 16px 0 16px; padding:10px 12px; background:#3a1f1c; border-left:4px solid var(--rod-red); color:var(--rod-white); font-size:13px;"></div>
+  </div>
+
+  <!-- CONFINED SPACE ACTIVE PERMIT -->
+  <div class="pb-screen" id="screen-confinedActive">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>ACTIVE PERMIT</span><button class="pb-back" title="Home" onclick="pbGoto('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11L12 3l9 8"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></button></p>
+      <h1 class="pb-title">Active Permit</h1>
+    </div>
+    <div class="pb-btn-wrap" style="padding-top:14px;"><button class="pb-emergency-btn" onclick="pbTriggerEmergency()">&#128680; EMERGENCY</button></div>
+    <div id="cpEmergencyPanel" style="display:none;">
+      <p style="margin:18px 16px 4px 16px; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--hazard);">Read this to the dispatcher</p>
+      <div class="pb-emergency-script" id="cpEmergencyScript"></div>
+      <div class="pb-emergency-key" id="cpEmergencyKeyInfo"></div>
+      <div class="pb-warn" style="margin-top:12px;">
+        <strong>Calling now</strong>
+        Your phone should be prompting a call to <span id="cpEmergencyNumDisplay"></span> now — confirm the call if your phone asks. State the site address out loud first thing: this permit has it on file, but the dispatcher needs to hear it from you. Once you're off the line, send the report below to whoever the dispatcher directs (supervisor, emergency personnel, etc.).
+      </div>
+      <div class="pb-section">
+        <div class="pb-tag">Send Incident Report</div>
+        <div class="pb-body">
+          <div class="pb-field"><label>Emergency number called</label><input type="tel" id="cpEmergencyNum" value="911"></div>
+          <div class="pb-field"><label>Send report to (email)</label><input type="email" id="cpEmergencyEmail" placeholder="whoever the dispatcher directs"></div>
+          <div class="pb-btn-wrap" style="padding-top:6px;"><button class="pb-btn" onclick="pbSendEmergencyReport()">Send Report Email</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="pb-lockband" id="cpLockband"></div>
+    <div class="pb-summary"><div class="pb-summary-grid" id="cpSummaryGrid"></div></div>
+
+    <div class="pb-section" id="cpCommTimerSection" style="display:none;">
+      <div class="pb-tag">Communication Timer</div>
+      <div class="pb-body">
+        <div class="pb-answer-box" style="margin-top:0;">
+          <div class="pb-answer-label">Next Check Due</div>
+          <div class="pb-answer-val" id="cpCommCountdown">—</div>
+        </div>
+        <p class="pb-help">Reminders only fire while this screen is open and the phone isn't locked — browsers suspend background timers, so don't rely on this alone if the phone might sleep or the app gets backgrounded.</p>
+        <div class="pb-btn-wrap" style="padding-top:6px;"><button class="pb-btn ghost small" style="width:100%;" onclick="pbLogCommCheck()">+ Log Communication Check</button></div>
+      </div>
+    </div>
+
+    <div class="pb-section" id="cpAtmoTimerSection" style="display:none;">
+      <div class="pb-tag">Air Test Re-Check Timer</div>
+      <div class="pb-body">
+        <div class="pb-answer-box" style="margin-top:0;">
+          <div class="pb-answer-label">Next Air Test Due</div>
+          <div class="pb-answer-val" id="cpAtmoCountdown">—</div>
+        </div>
+        <p class="pb-help">Reminds you to log a fresh reading in the Atmospheric Test Log below. Same limitation as the communication timer — only fires while this screen is open and awake.</p>
+        <div class="pb-btn-wrap" style="padding-top:6px;"><button class="pb-btn ghost small" style="width:100%;" onclick="pbQuickAddAtmoTest()">+ Add Atmospheric Test</button></div>
+      </div>
+    </div>
+
+    <div class="pb-section">
+      <div class="pb-tag">Entrant / Attendant Roster</div>
+      <div class="pb-body">
+        <div id="cpRosterList"></div>
+        <div id="cpRosterAddForm" style="display:none; margin-top:10px; border-top:1px solid var(--paper-2); padding-top:10px;">
+          <div class="pb-row">
+            <div class="pb-field"><label>Name</label><input type="text" id="cpRosterName"></div>
+            <div class="pb-field"><label>Role</label><select id="cpRosterRole"><option value="Entrant">Entrant</option><option value="Attendant">Attendant</option><option value="Entry Supervisor">Entry Supervisor</option></select></div>
+          </div>
+          <div class="pb-btn-wrap" style="padding:10px 0 0 0;"><button class="pb-btn small" onclick="pbAddRosterPerson()">Add to Roster</button></div>
+        </div>
+        <div class="pb-btn-wrap" style="padding-top:10px;"><button class="pb-btn ghost small" style="width:100%;" onclick="document.getElementById('cpRosterAddForm').style.display='';">+ Add Person</button></div>
+      </div>
+    </div>
+
+    <div class="pb-section">
+      <div class="pb-tag">Atmospheric Test Log</div>
+      <div class="pb-body">
+        <div id="cpAtmoList"></div>
+        <div id="cpAtmoAddForm" style="display:none; margin-top:10px; border-top:1px solid var(--paper-2); padding-top:10px;">
+          <div class="pb-row">
+            <div class="pb-field"><label>O2 (%)</label><input type="number" step="0.1" id="cpAtmoO2" inputmode="decimal"></div>
+            <div class="pb-field"><label>LEL (%)</label><input type="number" step="0.1" id="cpAtmoLEL" inputmode="decimal"></div>
+          </div>
+          <div class="pb-field"><label>Other contaminant reading (optional)</label><input type="text" id="cpAtmoOther"></div>
+          <div class="pb-field"><label>Tester name</label><input type="text" id="cpAtmoTester"></div>
+          <div class="pb-btn-wrap" style="padding:10px 0 0 0;"><button class="pb-btn small" onclick="pbSaveAtmoReading()">Save Reading</button></div>
+        </div>
+        <div class="pb-btn-wrap" style="padding-top:10px;"><button class="pb-btn ghost small" style="width:100%;" onclick="document.getElementById('cpAtmoAddForm').style.display='';">+ Add Test Reading</button></div>
+      </div>
+    </div>
+
+    <div class="pb-section">
+      <div class="pb-tag">Communication Check Log</div>
+      <div class="pb-body">
+        <div id="cpCommList"></div>
+        <div class="pb-btn-wrap" style="padding-top:10px;"><button class="pb-btn ghost small" style="width:100%;" onclick="pbLogCommCheck()">+ Log Communication Check</button></div>
+      </div>
+    </div>
+
+    <div class="pb-btn-wrap"><button class="pb-btn" onclick="pbCloseConfinedPermit()">Close Out Permit</button></div>
+    <div id="cpCloseoutPanel" style="display:none;">
+      <div class="pb-clean" style="margin-top:16px;">This permit has been saved to the session archive. Send a copy by email below if needed, then finish.</div>
+      <div class="pb-section">
+        <div class="pb-tag">Closeout Report</div>
+        <div class="pb-body">
+          <div class="pb-field"><label>Send report to (email, optional)</label><input type="email" id="cpCloseoutEmail" placeholder="supervisor@example.com"></div>
+          <div class="pb-btn-wrap" style="padding-top:6px;"><button class="pb-btn ghost" onclick="pbSendCloseoutReport()">Send Report Email</button></div>
+          <p class="pb-help">Report preview:</p>
+          <pre id="cpCloseoutReportPreview" style="white-space:pre-wrap; font-family:'IBM Plex Mono'; font-size:11.5px; background:#fff; color:var(--ink); border:1px solid var(--paper-2); padding:10px; max-height:240px; overflow-y:auto;"></pre>
+        </div>
+      </div>
+      <div class="pb-btn-wrap"><button class="pb-btn" onclick="pbFinishCloseOut()">Finish &amp; Return Home</button></div>
+    </div>
+    <div class="pb-btn-wrap"><button class="pb-btn secondary" onclick="pbGoto('home')">Back to Home</button></div>
+  </div>
+
+  <div class="pb-screen" id="screen-input">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>NEW RUN</span><button class="pb-back" title="Home" onclick="pbGoto('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11L12 3l9 8"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></button></p>
+      <h1 class="pb-title">Run Setup</h1>
+    </div>
+
+    <div class="pb-section">
+      <div class="pb-tag">Rod Unit</div>
+      <div class="pb-body">
+        <div class="pb-toggle" id="rodToggle">
+          <button data-val="lenker">Lenker Rod</button>
+          <button data-val="engineer" class="active">Engineer's Rod</button>
+          <button data-val="architect">Architect's Rod</button>
+        </div>
+        <div id="hiFields" style="">
+          <div class="pb-toggle" id="hiToggle">
+            <button data-val="bm" class="active">Benchmark + Backsight</button>
+            <button data-val="direct">I know my HI</button>
+          </div>
+          <div id="hiBmFields">
+            <div class="pb-row" id="hiBmRow"></div>
+            <div class="pb-derived" id="hiBmDerived"></div>
+          </div>
+          <div id="hiDirectFields" style="display:none;">
+            <div id="hiDirectRow"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pb-section start">
+      <div class="pb-tag">Start Point</div>
+      <div class="pb-body" id="pointBody-start"></div>
+    </div>
+
+    <div id="hubsContainer"></div>
+    <div class="pb-section hub pb-add-hub-section" onclick="pbAddHub()">
+      <div class="pb-tag">+ Add Hub</div>
+      <div class="pb-body"><p class="pb-help" style="margin:0;">Manhole, cleanout, lateral, slope break, or any other real point along the run.</p></div>
+    </div>
+
+    <div class="pb-section end">
+      <div class="pb-tag">End Point</div>
+      <div class="pb-body" id="pointBody-end"></div>
+    </div>
+
+    <div class="pb-section">
+      <div class="pb-tag">The Run</div>
+      <div class="pb-body">
+        <div class="pb-row">
+          <div class="pb-field"><label>Total distance (ft)</label><input type="number" step="0.1" id="totalDist" inputmode="decimal"></div>
+          <div class="pb-field"><label>Interval (ft)</label><input type="number" step="1" id="interval" value="10" inputmode="numeric"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pb-btn-wrap"><button class="pb-btn" onclick="pbReview()">Review &amp; Calculate</button></div>
+    <div class="pb-error" id="inputError" style="display:none; margin:14px 16px 0 16px; padding:10px 12px; background:#3a1f1c; border-left:4px solid var(--rod-red); color:var(--rod-white); font-size:13px;"></div>
+  </div>
+
+  <!-- REVIEW -->
+  <div class="pb-screen" id="screen-review">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>PRE-LOCK REVIEW</span><button class="pb-back" title="Back" onclick="pbGoto('input')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Check Before Locking</h1>
+    </div>
+    <div class="pb-summary"><div class="pb-summary-grid" id="reviewSummaryGrid"></div></div>
+    <div id="reviewContent"></div>
+    <div class="pb-btn-row">
+      <button class="pb-btn ghost" onclick="pbGoto('input')">Go Back &amp; Fix</button>
+      <button class="pb-btn" onclick="pbLock()">Lock This Run</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="pb-screen" id="screen-results">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>LOCKED RESULT</span><button class="pb-back" title="Home" onclick="pbGoto('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11L12 3l9 8"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></button></p>
+      <h1 class="pb-title">Run Results</h1>
+    </div>
+    <div class="pb-lockband" id="lockband"></div>
+    <div class="pb-btn-wrap" style="padding-top:12px;"><button class="pb-btn ghost small" style="width:100%;" onclick="pbGoto('input')">&#9998; Edit Run Data</button></div>
+    <div class="pb-btn-wrap"><button class="pb-btn secondary" id="zoomToggleBtn" onclick="pbToggleZoom()">&#128269; Zoom In: Sta / BOP</button></div>
+
+    <div id="resultsMainContent">
+      <div class="pb-summary"><div class="pb-summary-grid" id="summaryGrid"></div></div>
+      <div class="pb-table-wrap"><table class="pb-table" id="resultsTable"><thead><tr id="resultsHead"></tr></thead><tbody id="resultsBody"></tbody></table></div>
+      <p class="pb-note-general">Tap the + icon next to any row to add a timestamped field note, with its own optional photo. Notes lock along with everything else — sending/PDF export isn't wired up yet in this build.</p>
+      <div class="pb-btn-wrap"><button class="pb-btn" onclick="pbEndRun()">End Run</button></div>
+      <p class="pb-note-general">Ending a run returns you to Home. Once PDF export exists, this is also where a resend prompt appears if notes were added after the original lock.</p>
+      <div class="pb-btn-wrap"><button class="pb-btn secondary" onclick="pbGoto('home')">Back to Home</button></div>
+    </div>
+  </div>
+
+  <div id="pbModalOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:50; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:var(--paper); color:var(--ink); max-width:340px; width:100%; border:3px solid var(--ink);">
+      <div class="pb-tag" id="pbModalTitle">Notice</div>
+      <div style="padding:16px;">
+        <p id="pbModalMessage" style="margin:0 0 16px 0; font-size:14px; line-height:1.5;"></p>
+        <div id="pbModalButtons" style="display:flex; gap:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  let pbCounter = 0;
+
+  // ---------- custom modal (replaces alert/confirm, which sandboxed previews can block) ----------
+  function pbShowModal(message, buttons, title) {
+    document.getElementById('pbModalTitle').textContent = title || 'Notice';
+    document.getElementById('pbModalMessage').textContent = message;
+    const wrap = document.getElementById('pbModalButtons');
+    wrap.innerHTML = '';
+    buttons.forEach(b => {
+      const btn = document.createElement('button');
+      btn.className = b.primary ? 'pb-btn' : 'pb-btn ghost';
+      btn.style.flex = '1';
+      btn.textContent = b.label;
+      btn.onclick = () => { pbHideModal(); if (b.onClick) b.onClick(); };
+      wrap.appendChild(btn);
+    });
+    document.getElementById('pbModalOverlay').style.display = 'flex';
+  }
+  function pbHideModal() { document.getElementById('pbModalOverlay').style.display = 'none'; }
+  function pbAlert(message, title) { pbShowModal(message, [{ label: 'OK', primary: true }], title); }
+  function pbConfirm(message, onConfirm, title) {
+    pbShowModal(message, [{ label: 'Cancel' }, { label: 'Continue', primary: true, onClick: onConfirm }], title);
+  }
+  // Real clicked <a> tags are handled more permissively by browsers/webviews than script-driven navigation
+  function pbNavigateExternal(url) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => document.body.removeChild(a), 500);
+  }
+
+  // ---------- keep screen awake while the app is open (best effort) ----------
+  let pbWakeLock = null;
+  async function pbRequestWakeLock() {
+    try {
+      if ('wakeLock' in navigator) {
+        pbWakeLock = await navigator.wakeLock.request('screen');
+      }
+    } catch (e) { /* not supported here, or blocked by the embedding context — best effort only */ }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') pbRequestWakeLock();
+  });
+  pbRequestWakeLock();
+
+  // ---------- alarm beep (Web Audio, since we can't ship an audio file) ----------
+  // Persistent AudioContext, unlocked by real taps so it can still play sound
+  // later when a setInterval (not a user gesture) fires the alarm.
+  let pbAudioCtx = null;
+  function pbGetAudioCtx() {
+    if (!pbAudioCtx) {
+      try { pbAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+    }
+    return pbAudioCtx;
+  }
+  document.addEventListener('click', () => {
+    const ctx = pbGetAudioCtx();
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+  });
+
+  function pbPlayAlarm(kind) {
+    const ctx = pbGetAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume();
+    let t = ctx.currentTime;
+    // Comm check: three quick high beeps. Air test: two lower, longer alternating tones.
+    const pattern = kind === 'atmo'
+      ? [[520, 0.35], [340, 0.35], [520, 0.35], [340, 0.35]]
+      : [[880, 0.2], [880, 0.2], [880, 0.2]];
+    pattern.forEach(([freq, dur]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.3, t);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + dur);
+      t += dur + 0.08;
+    });
+  }
+
+  const state = { hubCount: 0 };
+
+  // ---------- storage auto-fill ----------
+  async function pbGet(key) { try { const r = await window.storage.get(key); return r ? r.value : null; } catch(e){ return null; } }
+  async function pbSet(key, val) { try { await window.storage.set(key, val); } catch(e){} }
+
+  async function initAutofill() {
+    const rodUnit = await pbGet('lastRodUnit');
+    if (rodUnit) {
+      document.querySelectorAll('#rodToggle button').forEach(b => b.classList.toggle('active', b.dataset.val === rodUnit));
+      updateHiVisibility(rodUnit);
+    }
+    const wt = await pbGet('lastWallThickness');
+    const idIn = await pbGet('lastIdInches');
+    // applied when point bodies are built
+    window._pbLastWT = wt;
+    window._pbLastIdIn = idIn;
+    buildHiFields();
+    buildPointFields('start', 'Start Point');
+    buildPointFields('end', 'End Point');
+  }
+
+  function buildHiFields() {
+    const arch = isArch();
+    document.getElementById('hiBmRow').innerHTML = elevFieldHTML('bmElev', 'Benchmark elevation (ft)', arch) + elevFieldHTML('bmBS', 'Backsight reading (ft)', arch);
+    document.getElementById('hiDirectRow').innerHTML = elevFieldHTML('hiDirect', 'HI (ft)', arch);
+    wireElevInput('bmElev', updateHiBmDerived);
+    wireElevInput('bmBS', updateHiBmDerived);
+  }
+
+  // ---------- navigation ----------
+  window.pbGoto = function(name) {
+    document.querySelectorAll('.pb-screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    window.scrollTo({top:0, behavior:'smooth'});
+  };
+
+  // ---------- toggles ----------
+  function wireToggle(id, onChange) {
+    const el = document.getElementById(id);
+    el.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => {
+        el.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        onChange(b.dataset.val);
+      });
+    });
+  }
+  function activeVal(id) { return document.getElementById(id).querySelector('button.active').dataset.val; }
+
+  function updateHiVisibility(rodUnit) {
+    document.getElementById('hiFields').style.display = (rodUnit === 'engineer' || rodUnit === 'architect') ? '' : 'none';
+  }
+  wireToggle('rodToggle', (val) => {
+    updateHiVisibility(val);
+    pbSet('lastRodUnit', val);
+    buildHiFields();
+    buildPointFields('start', 'Start Point');
+    buildPointFields('end', 'End Point');
+    getAllHubPrefixes().forEach(id => rebuildHubBody(id));
+  });
+  wireToggle('hiToggle', (val) => {
+    document.getElementById('hiBmFields').style.display = val === 'bm' ? '' : 'none';
+    document.getElementById('hiDirectFields').style.display = val === 'direct' ? '' : 'none';
+  });
+  function updateHiBmDerived() {
+    const bm = getElevVal('bmElev'), bs = getElevVal('bmBS');
+    const el = document.getElementById('hiBmDerived');
+    if (bm === null || bs === null) { el.textContent=''; return; }
+    el.textContent = 'HI = ' + (bm+bs).toFixed(3) + ' ft';
+  }
+
+  function numVal(id) {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const v = el.value;
+    if (v === '' || v === null) return null;
+    const n = parseFloat(v);
+    return isNaN(n) ? null : n;
+  }
+
+  const FRACTIONS = [[0,'0'],[0.0625,'1/16'],[0.125,'1/8'],[0.1875,'3/16'],[0.25,'1/4'],[0.3125,'5/16'],[0.375,'3/8'],[0.4375,'7/16'],[0.5,'1/2'],[0.5625,'9/16'],[0.625,'5/8'],[0.6875,'11/16'],[0.75,'3/4'],[0.8125,'13/16'],[0.875,'7/8'],[0.9375,'15/16']];
+  const FRAC_OPTIONS = FRACTIONS.map(f => `<option value="${f[0]}">${f[1]}</option>`).join('');
+
+  function isArch() { return activeVal('rodToggle') === 'architect'; }
+
+  function elevFieldHTML(id, labelText, arch) {
+    if (arch) {
+      return `<div class="pb-field"><label>${labelText}</label>
+        <div class="pb-fif-group">
+          <div class="pb-fif-item"><input type="number" id="${id}_ft" placeholder="0" inputmode="numeric" step="1"><div class="pb-fif-suffix">ft</div></div>
+          <div class="pb-fif-item"><input type="number" id="${id}_in" placeholder="0" inputmode="numeric" step="1" min="0" max="11"><div class="pb-fif-suffix">in</div></div>
+          <div class="pb-fif-item"><select id="${id}_frac">${FRAC_OPTIONS}</select><div class="pb-fif-suffix">frac</div></div>
+        </div>
+      </div>`;
+    }
+    return `<div class="pb-field"><label>${labelText}</label><input type="number" step="0.001" id="${id}" inputmode="decimal"></div>`;
+  }
+
+  function getElevVal(id) {
+    const ftEl = document.getElementById(id + '_ft');
+    if (ftEl) {
+      const ft = numVal(id+'_ft') || 0;
+      const inch = numVal(id+'_in') || 0;
+      const fracEl = document.getElementById(id+'_frac');
+      const frac = fracEl ? (parseFloat(fracEl.value) || 0) : 0;
+      if (numVal(id+'_ft') === null && numVal(id+'_in') === null) return null;
+      return ft + (inch + frac) / 12;
+    }
+    return numVal(id);
+  }
+
+  function wireElevInput(id, callback) {
+    const single = document.getElementById(id);
+    if (single) { single.addEventListener('input', callback); return; }
+    const ftEl = document.getElementById(id+'_ft'), inEl = document.getElementById(id+'_in'), fracEl = document.getElementById(id+'_frac');
+    if (ftEl) ftEl.addEventListener('input', callback);
+    if (inEl) inEl.addEventListener('input', callback);
+    if (fracEl) fracEl.addEventListener('change', callback);
+  }
+
+  const PIPE_SIZES = [4,6,8,10,12,15,18,21,24,27,30,36,42,48];
+
+  function pointFieldsHTML(prefix, defaultWT, defaultIdIn, arch) {
+    let sizeOptions = PIPE_SIZES.map(s => `<option value="${s}">${s}"</option>`).join('');
+    return `
+      <div class="pb-toggle" id="${prefix}ModeToggle">
+        <button data-val="elev" class="active">Invert Elevation</button>
+        <button data-val="stake">Survey Stake</button>
+      </div>
+      <div id="${prefix}ElevFields">
+        ${elevFieldHTML(prefix+'Elev', 'Invert (INV) elevation (ft)', arch)}
+      </div>
+      <div id="${prefix}StakeFields" style="display:none;">
+        <div class="pb-row">
+          ${elevFieldHTML(prefix+'StakeElev', 'Stake elevation (ft)', arch)}
+          <div class="pb-field"><label>Cut / Fill</label><select id="${prefix}CutFill"><option value="cut">Cut to invert</option><option value="fill">Fill to invert</option></select></div>
+        </div>
+        ${elevFieldHTML(prefix+'CutFillVal', 'Cut/fill amount (ft)', arch)}
+        <div class="pb-derived" id="${prefix}StakeDerived"></div>
+      </div>
+      <div class="pb-field"><label>Point label (optional)</label><input type="text" id="${prefix}Label" placeholder="e.g. stake #, MH #, lateral, cleanout, etc"></div>
+      <div class="pb-field">
+        <label>Photos (optional — front/back of stake, etc.)</label>
+        <div id="${prefix}PhotoList"></div>
+        <input type="file" accept="image/*" capture="environment" id="${prefix}Photo" style="display:none;" onchange="pbAddPhoto('${prefix}')">
+        <button type="button" class="pb-btn ghost small" onclick="document.getElementById('${prefix}Photo').click()">+ Add Photo</button>
+      </div>
+      <div class="pb-row">
+        <div class="pb-field"><label>Wall thickness (ft, required)</label><input type="number" step="0.001" id="${prefix}WT" value="${defaultWT !== null && defaultWT !== undefined ? defaultWT : ''}" inputmode="decimal"></div>
+        <div class="pb-field"><label>Pipe ID</label><select id="${prefix}IdSel" onchange="pbToggleIdOther('${prefix}')">${sizeOptions}<option value="other">Other</option></select></div>
+      </div>
+      <div class="pb-field" id="${prefix}IdOtherWrap" style="display:none;"><label>Custom ID (inches)</label><input type="number" step="0.01" id="${prefix}IdOther" value="${defaultIdIn || ''}" inputmode="decimal"></div>
+    `;
+  }
+
+  window._pbPhotos = window._pbPhotos || {};
+  window.pbAddPhoto = function(prefix) {
+    const input = document.getElementById(prefix+'Photo');
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const url = URL.createObjectURL(file);
+    window._pbPhotos[prefix] = window._pbPhotos[prefix] || [];
+    window._pbPhotos[prefix].push({ url, name: file.name });
+    renderPhotoList(prefix);
+    input.value = '';
+  };
+  function renderPhotoList(prefix) {
+    const list = document.getElementById(prefix+'PhotoList');
+    if (!list) return;
+    const photos = window._pbPhotos[prefix] || [];
+    list.innerHTML = photos.map((p,i) => `<span class="pb-photo-chip"><img class="pb-photo-thumb" src="${p.url}"><button type="button" class="pb-photo-remove" onclick="pbRemovePhoto('${prefix}',${i})">&times;</button></span>`).join('');
+  }
+  window.pbRemovePhoto = function(prefix, idx) {
+    window._pbPhotos[prefix].splice(idx, 1);
+    renderPhotoList(prefix);
+  };
+
+  window.pbToggleIdOther = function(prefix) {
+    const sel = document.getElementById(prefix + 'IdSel');
+    document.getElementById(prefix + 'IdOtherWrap').style.display = sel.value === 'other' ? '' : 'none';
+  };
+
+  function markTouched(el) { if (el) el.dataset.touched = '1'; }
+  function isTouched(el) { return el && el.dataset.touched === '1'; }
+
+  function wireTouchTracking(prefix) {
+    const wt = document.getElementById(prefix+'WT');
+    const idSel = document.getElementById(prefix+'IdSel');
+    const idOther = document.getElementById(prefix+'IdOther');
+    if (wt) wt.addEventListener('input', () => markTouched(wt));
+    if (idSel) idSel.addEventListener('change', () => markTouched(idSel));
+    if (idOther) idOther.addEventListener('input', () => markTouched(idOther));
+  }
+
+  function syncFromStartToTarget(prefix) {
+    const startWT = document.getElementById('startWT');
+    const startSel = document.getElementById('startIdSel');
+    if (!startWT || !startSel) return;
+    const wt = document.getElementById(prefix+'WT');
+    if (wt && !isTouched(wt) && startWT.value !== '') wt.value = startWT.value;
+    const idSel = document.getElementById(prefix+'IdSel');
+    if (idSel && !isTouched(idSel)) {
+      idSel.value = startSel.value;
+      pbToggleIdOther(prefix);
+      if (startSel.value === 'other') {
+        const startOther = document.getElementById('startIdOther');
+        const other = document.getElementById(prefix+'IdOther');
+        if (other && !isTouched(other) && startOther) other.value = startOther.value;
+      }
+    }
+  }
+  function syncFromStartToAll() {
+    syncFromStartToTarget('end');
+    getAllHubPrefixes().forEach(id => syncFromStartToTarget(id));
+  }
+  window._pbSyncFromStartToAll = syncFromStartToAll;
+
+  function buildPointFields(prefix, label) {
+    const body = document.getElementById('pointBody-' + prefix);
+    const arch = isArch();
+    body.innerHTML = pointFieldsHTML(prefix, window._pbLastWT, window._pbLastIdIn, arch);
+    wireToggle(prefix + 'ModeToggle', (val) => {
+      document.getElementById(prefix + 'ElevFields').style.display = val === 'elev' ? '' : 'none';
+      document.getElementById(prefix + 'StakeFields').style.display = val === 'stake' ? '' : 'none';
+    });
+    wireElevInput(prefix+'StakeElev', () => updateStakeDerived(prefix));
+    wireElevInput(prefix+'CutFillVal', () => updateStakeDerived(prefix));
+    document.getElementById(prefix+'CutFill').addEventListener('change', () => updateStakeDerived(prefix));
+    if (window._pbLastIdIn) {
+      const sel = document.getElementById(prefix+'IdSel');
+      const match = PIPE_SIZES.find(s => String(s) === String(window._pbLastIdIn));
+      sel.value = match ? String(match) : 'other';
+      pbToggleIdOther(prefix);
+    }
+    wireTouchTracking(prefix);
+    renderPhotoList(prefix);
+    if (prefix === 'start') {
+      document.getElementById('startWT').addEventListener('input', () => window._pbSyncFromStartToAll && window._pbSyncFromStartToAll());
+      document.getElementById('startIdSel').addEventListener('change', () => window._pbSyncFromStartToAll && window._pbSyncFromStartToAll());
+      document.getElementById('startIdOther').addEventListener('input', () => window._pbSyncFromStartToAll && window._pbSyncFromStartToAll());
+    }
+  }
+
+  function updateStakeDerived(prefix) {
+    const se = getElevVal(prefix+'StakeElev'), cf = getElevVal(prefix+'CutFillVal');
+    const el = document.getElementById(prefix+'StakeDerived');
+    if (se === null || cf === null) { el.textContent=''; return; }
+    const mode = document.getElementById(prefix+'CutFill').value;
+    const inv = mode === 'cut' ? se - cf : se + cf;
+    el.textContent = 'Invert (INV) = ' + inv.toFixed(3) + ' ft';
+  }
+
+  function getPointPI(prefix) {
+    const modeVal = activeVal(prefix+'ModeToggle');
+    if (modeVal === 'elev') return getElevVal(prefix+'Elev');
+    const se = getElevVal(prefix+'StakeElev'), cf = getElevVal(prefix+'CutFillVal');
+    if (se === null || cf === null) return null;
+    const mode = document.getElementById(prefix+'CutFill').value;
+    return mode === 'cut' ? se - cf : se + cf;
+  }
+  function getPointWT(prefix) { return numVal(prefix+'WT'); }
+  function getPointIdFt(prefix) {
+    const sel = document.getElementById(prefix+'IdSel');
+    let inches;
+    if (sel.value === 'other') inches = numVal(prefix+'IdOther');
+    else inches = parseFloat(sel.value);
+    if (inches === null || isNaN(inches)) return null;
+    return inches / 12;
+  }
+  function getPointLabel(prefix, fallback) {
+    const v = document.getElementById(prefix+'Label').value;
+    return v && v.trim() ? v.trim() : fallback;
+  }
+
+  // ---------- hubs ----------
+  function hubStartDefaults() {
+    const startWTVal = numVal('startWT');
+    const startIdSel = document.getElementById('startIdSel');
+    const startIdInches = startIdSel ? (startIdSel.value === 'other' ? numVal('startIdOther') : parseFloat(startIdSel.value)) : null;
+    return { startWTVal, startIdInches };
+  }
+
+  function wireHubCard(id, startIdInches) {
+    wireToggle(id + 'ModeToggle', (val) => {
+      document.getElementById(id+'ElevFields').style.display = val === 'elev' ? '' : 'none';
+      document.getElementById(id+'StakeFields').style.display = val === 'stake' ? '' : 'none';
+    });
+    wireElevInput(id+'StakeElev', () => updateStakeDerived(id));
+    wireElevInput(id+'CutFillVal', () => updateStakeDerived(id));
+    document.getElementById(id+'CutFill').addEventListener('change', () => updateStakeDerived(id));
+    if (startIdInches) {
+      const sel = document.getElementById(id+'IdSel');
+      const match = PIPE_SIZES.find(s => String(s) === String(startIdInches));
+      sel.value = match ? String(match) : 'other';
+      pbToggleIdOther(id);
+    }
+    wireTouchTracking(id);
+    renderPhotoList(id);
+  }
+
+  window.pbAddHub = function() {
+    state.hubCount++;
+    const id = 'hub' + (pbCounter++);
+    const container = document.getElementById('hubsContainer');
+    const card = document.createElement('div');
+    card.className = 'pb-section hub pb-hub-card';
+    card.dataset.hubId = id;
+    const { startWTVal, startIdInches } = hubStartDefaults();
+    const arch = isArch();
+    card.innerHTML = `
+      <div class="pb-tag"><span>Hub</span><button class="pb-remove" onclick="pbRemoveHub('${id}')">Remove</button></div>
+      <div class="pb-body">
+        <div class="pb-field"><label>Station (distance from start, ft)</label><input type="number" step="0.1" id="${id}Station" inputmode="decimal"></div>
+        ${pointFieldsHTML(id, startWTVal, startIdInches, arch)}
+      </div>`;
+    container.appendChild(card);
+    wireHubCard(id, startIdInches);
+  };
+
+  function rebuildHubBody(id) {
+    const card = document.querySelector(`[data-hub-id="${id}"]`);
+    if (!card) return;
+    const stationVal = numVal(id + 'Station');
+    const labelVal = document.getElementById(id+'Label') ? document.getElementById(id+'Label').value : '';
+    const { startWTVal, startIdInches } = hubStartDefaults();
+    const arch = isArch();
+    card.querySelector('.pb-body').innerHTML = `
+      <div class="pb-field"><label>Station (distance from start, ft)</label><input type="number" step="0.1" id="${id}Station" inputmode="decimal" value="${stationVal !== null ? stationVal : ''}"></div>
+      ${pointFieldsHTML(id, startWTVal, startIdInches, arch)}`;
+    wireHubCard(id, startIdInches);
+    if (labelVal) document.getElementById(id+'Label').value = labelVal;
+  }
+
+  window.pbRemoveHub = function(id) {
+    const card = document.querySelector(`[data-hub-id="${id}"]`);
+    if (card) card.remove();
+    if (window._pbPhotos) delete window._pbPhotos[id];
+  };
+
+  function getAllHubPrefixes() {
+    return Array.from(document.querySelectorAll('#hubsContainer [data-hub-id]')).map(c => c.dataset.hubId);
+  }
+
+  // ---------- calculation engine ----------
+  let lastCalc = null;
+
+  function buildCalc() {
+    const errors = [];
+    const rodUnit = activeVal('rodToggle');
+    let hi = null;
+    if (rodUnit === 'engineer' || rodUnit === 'architect') {
+      hi = activeVal('hiToggle') === 'direct' ? getElevVal('hiDirect') : (getElevVal('bmElev') !== null && getElevVal('bmBS') !== null ? getElevVal('bmElev') + getElevVal('bmBS') : null);
+      if (hi === null) errors.push('Enter your HI directly, or a benchmark elevation and backsight reading.');
+    }
+
+    const startPI = getPointPI('start'), startWT = getPointWT('start'), startId = getPointIdFt('start');
+    if (startPI === null) errors.push('Start point invert/stake data is incomplete.');
+    if (startWT === null) errors.push('Start point wall thickness is required.');
+    if (startId === null) errors.push('Start point pipe ID is required.');
+
+    const endPI = getPointPI('end'), endWT = getPointWT('end'), endId = getPointIdFt('end');
+    if (endPI === null) errors.push('End point invert/stake data is incomplete.');
+    if (endWT === null) errors.push('End point wall thickness is required.');
+    if (endId === null) errors.push('End point pipe ID is required.');
+
+    const totalDist = numVal('totalDist');
+    if (totalDist === null || totalDist <= 0) errors.push('Enter a valid total distance greater than zero.');
+    const interval = numVal('interval');
+    if (interval === null || interval <= 0) errors.push('Enter a valid interval greater than zero.');
+
+    const hubPrefixes = getAllHubPrefixes();
+    const hubs = [];
+    hubPrefixes.forEach(id => {
+      const station = numVal(id + 'Station');
+      const pi = getPointPI(id), wt = getPointWT(id), idFt = getPointIdFt(id);
+      const untouched = station === null && pi === null;
+      if (untouched) return; // hub card left completely blank — treat as never added
+      if (station === null) { errors.push('A hub is missing its station distance.'); return; }
+      if (totalDist !== null && (station <= 0 || station >= totalDist)) { errors.push('Hub station must be between 0 and the total distance (exclusive).'); return; }
+      if (pi === null) { errors.push('A hub is missing invert/stake data.'); return; }
+      if (wt === null) { errors.push('A hub is missing wall thickness.'); return; }
+      if (idFt === null) { errors.push('A hub is missing pipe ID.'); return; }
+      hubs.push({ id, station, pi, wt, idFt, label: getPointLabel(id, 'Hub') });
+    });
+    hubs.sort((a,b) => a.station - b.station);
+
+    if (errors.length) return { errors };
+
+    // build segments
+    const points = [{ station: 0, pi: startPI, wt: startWT, idFt: startId, label: getPointLabel('start','Start') }]
+      .concat(hubs)
+      .concat([{ station: totalDist, pi: endPI, wt: endWT, idFt: endId, label: getPointLabel('end','End') }]);
+
+    const segments = [];
+    for (let i = 0; i < points.length - 1; i++) {
+      const a = points[i], b = points[i+1];
+      const dist = b.station - a.station;
+      const slopePct = dist > 0 ? ((a.pi - b.pi) / dist) * 100 : 0;
+      segments.push({ from: a, to: b, slopePct, wt: a.wt, idFt: a.idFt });
+    }
+
+    function elevAt(station) {
+      let seg = segments.find(s => station >= s.from.station && station <= s.to.station);
+      if (!seg) seg = segments[segments.length - 1];
+      const span = seg.to.station - seg.from.station;
+      const frac = span > 0 ? (station - seg.from.station) / span : 0;
+      const pi = seg.from.pi + (seg.to.pi - seg.from.pi) * frac;
+      return { pi, bp: pi - seg.wt, tp: pi + seg.idFt + seg.wt, seg };
+    }
+
+    // interval stations
+    let stations = [];
+    for (let d = 0; d < totalDist; d += interval) stations.push(Math.round(d*1000)/1000);
+    stations.push(Math.round(totalDist*1000)/1000);
+    hubs.forEach(h => stations.push(Math.round(h.station*1000)/1000));
+    stations = Array.from(new Set(stations)).sort((a,b) => a-b);
+
+    const rows = stations.map(st => {
+      const e = elevAt(st);
+      const matchedHub = hubs.find(h => Math.abs(h.station - st) < 0.001);
+      const isHub = !!matchedHub;
+      const isEnd = Math.abs(st - totalDist) < 0.001;
+      const isStart = Math.abs(st - 0) < 0.001;
+      return { station: st, pi: e.pi, bp: e.bp, tp: e.tp, isHub, isEnd, isStart, hubLabel: matchedHub ? matchedHub.label : null };
+    });
+
+    // warnings
+    const warnings = [];
+    segments.forEach((s, idx) => {
+      if (s.to.pi < s.from.pi) {
+        warnings.push({ type: 'backflow', text: `Backflow risk: invert LOWERS from station ${s.from.station.toFixed(1)} to ${s.to.station.toFixed(1)} (${s.from.label} → ${s.to.label}). Confirm this is intentional (e.g. pressurized pipe) or fix the data.` });
+      }
+      if (Math.abs(s.slopePct) > 20) {
+        warnings.push({ type: 'typo', text: `${s.slopePct.toFixed(2)}% slope between ${s.from.label} and ${s.to.label} is extremely steep — double-check this isn't a data entry error.` });
+      }
+      if (s.wt >= s.idFt) {
+        warnings.push({ type: 'typo', text: `Wall thickness (${s.wt.toFixed(2)}') is greater than or equal to the pipe ID (${s.idFt.toFixed(2)}') on the segment starting at ${s.from.label} — check these numbers.` });
+      }
+    });
+    for (let i = 0; i < segments.length - 1; i++) {
+      const s1 = segments[i], s2 = segments[i+1];
+      const nearFlat = Math.abs(s1.slopePct) < 0.5 || Math.abs(s2.slopePct) < 0.5;
+      const signFlip = (s1.slopePct > 0) !== (s2.slopePct > 0) && s1.slopePct !== 0 && s2.slopePct !== 0;
+      let flag = nearFlat || signFlip;
+      if (!flag) {
+        const smaller = Math.min(Math.abs(s1.slopePct), Math.abs(s2.slopePct));
+        const relChange = smaller > 0 ? Math.abs(s2.slopePct - s1.slopePct) / smaller : 999;
+        if (relChange >= 0.27) flag = true;
+      }
+      if (flag) {
+        warnings.push({ type: 'photo', text: `Slope changes noticeably at ${s1.to.label} (station ${s1.to.station.toFixed(1)}) — ${s1.slopePct.toFixed(2)}% to ${s2.slopePct.toFixed(2)}%. Recommend a stake photo here for documentation.` });
+      }
+    }
+
+    return { errors: [], rodUnit, hi, totalDist, interval, points, segments, rows, warnings };
+  }
+
+  function fmt(n, d) { return (n === null || n === undefined || isNaN(n)) ? '—' : n.toFixed(d===undefined?3:d); }
+  function toArch(n) {
+    if (n === null || isNaN(n)) return '—';
+    const sign = n < 0 ? '-' : '';
+    let abs = Math.abs(n);
+    let feet = Math.floor(abs);
+    let inches = (abs - feet) * 12;
+    let wholeIn = Math.floor(inches);
+    let sixteenths = Math.round((inches - wholeIn) * 16);
+    if (sixteenths === 16) { sixteenths = 0; wholeIn++; }
+    if (wholeIn === 12) { wholeIn = 0; feet++; }
+    let fracStr = '';
+    if (sixteenths > 0) {
+      let num = sixteenths, den = 16;
+      while (num % 2 === 0) { num/=2; den/=2; }
+      fracStr = ' ' + num + '/' + den + '"';
+    } else fracStr = '"';
+    return sign + feet + "'-" + wholeIn + fracStr;
+  }
+  function convert(elev, rodUnit, hi) {
+    if (rodUnit === 'lenker') return fmt(elev, 2);
+    const reading = hi - elev;
+    if (rodUnit === 'engineer') return fmt(reading, 2);
+    return toArch(reading);
+  }
+
+  function summaryGridHTML(calc) {
+    const overallSlope = calc.totalDist > 0 ? ((calc.points[0].pi - calc.points[calc.points.length-1].pi) / calc.totalDist) * 100 : 0;
+    return `
+      <div class="pb-summary-item"><div class="k">Distance</div><div class="v">${fmt(calc.totalDist,1)} ft</div></div>
+      <div class="pb-summary-item"><div class="k">Slope</div><div class="v">${fmt(overallSlope,2)}%</div></div>
+      <div class="pb-summary-item"><div class="k">Start Invert</div><div class="v">${fmt(calc.points[0].pi,2)}</div></div>
+      <div class="pb-summary-item"><div class="k">End Invert</div><div class="v">${fmt(calc.points[calc.points.length-1].pi,2)}</div></div>
+      <div class="pb-summary-item"><div class="k">HI</div><div class="v">${calc.hi!==null ? fmt(calc.hi,2)+' ft' : '—'}</div></div>
+    `;
+  }
+
+  // ---------- review screen ----------
+  window.pbReview = function() {
+    const calc = buildCalc();
+    document.getElementById('inputError').style.display = calc.errors.length ? '' : 'none';
+    if (calc.errors.length) {
+      document.getElementById('inputError').innerHTML = calc.errors.map(e => '• ' + e).join('<br>');
+      return;
+    }
+    lastCalc = calc;
+    document.getElementById('reviewSummaryGrid').innerHTML = summaryGridHTML(calc);
+    const content = document.getElementById('reviewContent');
+    let html = '';
+    html += `<div class="pb-review-item"><span class="k">Rod Unit</span><br>${calc.rodUnit.charAt(0).toUpperCase()+calc.rodUnit.slice(1)}${calc.hi!==null ? ' — HI ' + fmt(calc.hi,3) + ' ft' : ''}</div>`;
+    html += `<div class="pb-review-item"><span class="k">Run</span><br>${calc.points[0].label} → ${calc.points[calc.points.length-1].label}, ${fmt(calc.totalDist,1)} ft, interval ${calc.interval} ft, ${calc.points.length-2} hub(s)</div>`;
+    calc.points.forEach((p, i) => {
+      html += `<div class="pb-review-item"><span class="k">${i===0?'Start':i===calc.points.length-1?'End':'Hub'} — ${p.label}</span><br>Station ${fmt(p.station,1)} · INV ${fmt(p.pi,3)} · WT ${fmt(p.wt,3)} · ID ${fmt(p.idFt*12,2)}"</div>`;
+    });
+    if (calc.warnings.length === 0) {
+      html += `<div class="pb-clean">No warnings — data looks clean.</div>`;
+    } else {
+      calc.warnings.forEach(w => {
+        html += `<div class="pb-warn ${w.type==='photo'?'photo':''}"><strong>${w.type === 'backflow' ? 'Backflow Check' : w.type === 'photo' ? 'Photo Suggested' : 'Possible Data Error'}</strong>${w.text}</div>`;
+      });
+    }
+    content.innerHTML = html;
+    pbGoto('review');
+    pbSet('lastWallThickness', String(getPointWT('start')));
+    const idSel = document.getElementById('startIdSel');
+    pbSet('lastIdInches', idSel.value === 'other' ? String(numVal('startIdOther')) : idSel.value);
+  };
+
+  // ---------- lock / results ----------
+  window.pbLock = function() {
+    if (!lastCalc) return;
+    const calc = lastCalc;
+    const lockTime = new Date();
+    document.getElementById('lockband').textContent = 'LOCKED ' + lockTime.toLocaleString();
+    document.getElementById('resumeTile').style.display = '';
+    document.getElementById('summaryGrid').innerHTML = summaryGridHTML(calc);
+
+    const head = document.getElementById('resultsHead');
+    const unitLabel = calc.rodUnit === 'lenker' ? 'Elevation' : calc.rodUnit === 'engineer' ? 'Engineer Rod' : 'Architect Rod';
+    head.innerHTML = `<th>Note</th><th>Sta.</th><th>BOP</th><th>INV</th><th>TOP</th>`;
+    const body = document.getElementById('resultsBody');
+    body.innerHTML = '';
+    window._pbRowContexts = [];
+    calc.rows.forEach((r, idx) => {
+      const tr = document.createElement('tr');
+      tr.className = (idx % 2 === 1 ? 'pb-shade ' : '') + (r.isStart ? 'pb-startrow ' : '') + (r.isHub ? 'pb-hubrow ' : '') + (r.isEnd ? 'pb-endrow ' : '');
+      const staMain = fmt(r.station,1);
+      const staSub = r.isStart ? 'start' : r.isEnd ? 'end' : r.isHub ? (r.hubLabel || 'hub') : '';
+      const staSubClass = r.isStart ? 'start' : r.isEnd ? 'end' : r.isHub ? 'hub' : '';
+      const staLabel = staMain + (staSub ? `<span class="pb-sta-sub ${staSubClass}">${staSub}</span>` : '');
+      const bpDisp = convert(r.bp, calc.rodUnit, calc.hi), piDisp = convert(r.pi, calc.rodUnit, calc.hi), tpDisp = convert(r.tp, calc.rodUnit, calc.hi);
+      window._pbRowContexts.push({ station: r.station, label: staSub || 'point', pi: r.pi, bp: r.bp });
+      tr.innerHTML = `
+        <td>
+          <button class="pb-notebtn" onclick="pbToggleNote(this, ${idx})">+</button>
+          <button class="pb-notebtn" title="Calculators" onclick="pbToggleTools(this, ${idx})">&#128295;</button>
+        </td>
+        <td>${staLabel}</td>
+        <td>${bpDisp}</td>
+        <td>${piDisp}</td>
+        <td>${tpDisp}</td>
+      `;
+      body.appendChild(tr);
+      const noteTr = document.createElement('tr');
+      noteTr.className = 'pb-noterow';
+      noteTr.style.display = 'none';
+      const npId = 'note' + idx;
+      noteTr.innerHTML = `<td colspan="5">
+        <textarea placeholder="Notes (e.g. existing utility, damage on new pipe, tight / loose joint)"></textarea>
+        <div id="${npId}PhotoList"></div>
+        <input type="file" accept="image/*" capture="environment" id="${npId}Photo" style="display:none;" onchange="pbAddPhoto('${npId}')">
+        <button type="button" class="pb-btn ghost small" onclick="document.getElementById('${npId}Photo').click()">+ Add Photo</button>
+        <button class="pb-btn small" style="margin-top:6px;" onclick="pbSaveNote(this, ${idx})">Save Note</button>
+        <div class="ts"></div>
+      </td>`;
+      body.appendChild(noteTr);
+      const toolsTr = document.createElement('tr');
+      toolsTr.className = 'pb-noterow';
+      toolsTr.style.display = 'none';
+      toolsTr.innerHTML = `<td colspan="5">
+        <p class="pb-help" style="margin:0 0 8px 0;">Launch a calculator using this point's real data:</p>
+        <button class="pb-btn ghost small" style="width:100%; margin-bottom:6px;" onclick="pbLaunchBendFromRow(${idx})">Bend Offset Calculator</button>
+        <button class="pb-btn ghost small" style="width:100%;" onclick="pbLaunchBeddingFromRow(${idx})">Bedding Elevation Calculator</button>
+      </td>`;
+      body.appendChild(toolsTr);
+    });
+    pbGoto('results');
+    const zt = document.getElementById('resultsTable');
+    if (zt) zt.classList.remove('pb-zoom');
+    const zb = document.getElementById('zoomToggleBtn');
+    if (zb) zb.textContent = '\u{1F50D} Zoom In: Sta / BOP';
+  };
+
+  window.pbToggleZoom = function() {
+    const table = document.getElementById('resultsTable');
+    const btn = document.getElementById('zoomToggleBtn');
+    const on = table.classList.toggle('pb-zoom');
+    btn.textContent = on ? '\u{1F50D} Zoom Out' : '\u{1F50D} Zoom In: Sta / BOP';
+  };
+
+  window.pbToggleNote = function(btn, idx) {
+    const noteRow = btn.closest('tr').nextElementSibling;
+    noteRow.style.display = noteRow.style.display === 'none' ? '' : 'none';
+  };
+  window.pbSaveNote = function(btn, idx) {
+    const noteRow = btn.closest('tr');
+    const textarea = noteRow.querySelector('textarea');
+    const ts = noteRow.querySelector('.ts');
+    const now = new Date();
+    ts.textContent = 'Saved ' + now.toLocaleString();
+    const row = noteRow.previousElementSibling;
+    const noteBtn = row.querySelector('.pb-notebtn');
+    if (textarea.value.trim()) noteBtn.classList.add('has-note');
+    else noteBtn.classList.remove('has-note');
+    textarea.disabled = true;
+    noteRow.querySelectorAll('button').forEach(b => b.disabled = true);
+    btn.textContent = 'Locked';
+  };
+
+  window.pbEndRun = function() {
+    pbGoto('home');
+  };
+  window.pbCalcBack = function() {
+    pbGoto(window._pbCalcReturnScreen || 'calcHub');
+  };
+
+  // ---------- Bend Offset Calculator ----------
+  window.pbOpenBendCalc = function(ctx) {
+    window._pbCalcReturnScreen = ctx ? 'results' : 'calcHub';
+    document.getElementById('bendContext').textContent = ctx
+      ? `Launched from Station ${fmt(ctx.station,1)} (${ctx.label}). This calculator doesn't need that point's elevation — it just solves for the pipe length between two matching bends.`
+      : 'Standalone use — no run context needed for the matching-bend case.';
+    document.getElementById('bendResult').innerHTML = '';
+    bendFit2Touched = false;
+    pbGoto('bendCalc');
+  };
+  let bendFit2Touched = false;
+  window.pbTouchFit2 = function() { bendFit2Touched = true; };
+  window.pbSyncFit2 = function() {
+    if (bendFit2Touched) return;
+    document.getElementById('bendFit2').value = document.getElementById('bendFit1').value;
+  };
+  window.pbCalcBend = function() {
+    const offset = numVal('bendOffset');
+    const angleDeg = parseFloat(document.getElementById('bendAngle').value);
+    const fit1 = numVal('bendFit1') || 0;
+    const fit2 = numVal('bendFit2') || 0;
+    const resultEl = document.getElementById('bendResult');
+    if (offset === null || offset <= 0) { resultEl.innerHTML = 'Enter a valid vertical offset greater than zero.'; return; }
+    const multiplier = 1 / Math.sin(angleDeg * Math.PI / 180);
+    const travel = offset * multiplier;
+    const cutLength = travel - fit1 - fit2;
+    const hasCorrection = fit1 > 0 || fit2 > 0;
+    const primary = hasCorrection ? cutLength : travel;
+    const primaryLabel = hasCorrection ? 'Pipe Cut Length (Bell to Bell)' : 'Vertex-to-Vertex Distance';
+    let html = `<div class="pb-answer-box"><div class="pb-answer-label">${primaryLabel}</div><div class="pb-answer-val">${primary.toFixed(3)} ft</div>`;
+    if (hasCorrection) html += `<div class="pb-answer-sub">Raw vertex-to-vertex distance: ${travel.toFixed(3)} ft</div>`;
+    html += `<div class="pb-answer-sub">Multiplier for ${angleDeg}°: ${multiplier.toFixed(3)}</div>`;
+    if (hasCorrection && cutLength <= 0) html += `<div class="pb-answer-sub pb-answer-warn">This comes out zero or negative — double-check the fitting distances against the offset, the fittings may not physically fit this offset.</div>`;
+    html += `</div>`;
+    resultEl.innerHTML = html;
+  };
+
+  // ---------- Bedding Elevation Calculator ----------
+  wireToggle('beddingRefToggle', (val) => {
+    document.getElementById('beddingInvFields').style.display = val === 'inv' ? '' : 'none';
+    document.getElementById('beddingBopFields').style.display = val === 'bop' ? '' : 'none';
+    document.getElementById('beddingDistLabel').textContent = val === 'inv' ? 'Distance, invert to bottom of manhole (ft)' : 'Distance, BOP to bottom of manhole (ft)';
+  });
+  function updateBeddingBopDerived() {
+    const inv = numVal('beddingInv'), wt = numVal('beddingWT');
+    const el = document.getElementById('beddingBopDerived');
+    if (inv === null || wt === null) { el.textContent = ''; return; }
+    el.textContent = 'BOP = ' + (inv - wt).toFixed(3) + ' ft';
+  }
+  document.getElementById('beddingInv').addEventListener('input', updateBeddingBopDerived);
+  document.getElementById('beddingWT').addEventListener('input', updateBeddingBopDerived);
+
+  window.pbOpenBeddingCalc = function(ctx) {
+    window._pbCalcReturnScreen = ctx ? 'results' : 'calcHub';
+    document.getElementById('beddingContext').textContent = ctx
+      ? `Using real invert data from Station ${fmt(ctx.station,1)} (${ctx.label}).`
+      : 'Standalone use — enter the reference elevation directly.';
+    document.getElementById('beddingResult').textContent = '';
+    if (ctx) {
+      document.getElementById('beddingInv').value = ctx.pi.toFixed(3);
+      document.getElementById('beddingWT').value = (ctx.pi - ctx.bp).toFixed(3);
+      document.getElementById('beddingBop').value = ctx.bp.toFixed(3);
+      document.querySelectorAll('#beddingRefToggle button').forEach(b => b.classList.toggle('active', b.dataset.val === 'inv'));
+      document.getElementById('beddingInvFields').style.display = '';
+      document.getElementById('beddingBopFields').style.display = 'none';
+      updateBeddingBopDerived();
+    }
+    pbGoto('beddingCalc');
+  };
+  window.pbCalcBedding = function() {
+    const mode = activeVal('beddingRefToggle');
+    const ref = mode === 'inv' ? numVal('beddingInv') : numVal('beddingBop');
+    const dist = numVal('beddingDist');
+    const thk = numVal('beddingThk');
+    const resultEl = document.getElementById('beddingResult');
+    if (ref === null) { resultEl.textContent = 'Enter a valid reference elevation.'; return; }
+    if (dist === null) { resultEl.textContent = 'Enter the distance to the bottom of the manhole.'; return; }
+    if (thk === null || thk <= 0) { resultEl.textContent = 'Enter a valid bedding thickness greater than zero.'; return; }
+    const topOfBedding = ref - dist;
+    const bottomOfBedding = topOfBedding - thk;
+    resultEl.innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">Top of Bedding</div><div class="pb-answer-val">${topOfBedding.toFixed(3)} ft</div></div>
+      <div class="pb-answer-box"><div class="pb-answer-label">Bottom of Bedding</div><div class="pb-answer-val">${bottomOfBedding.toFixed(3)} ft</div></div>`;
+  };
+
+  // ---------- Flush / Flow Rate Calculator ----------
+  window.pbOpenFlowCalc = function() {
+    document.getElementById('flowResult').innerHTML = '';
+    pbGoto('flowCalc');
+  };
+  window.pbToggleFlowCOther = function() {
+    const sel = document.getElementById('flowCSel');
+    document.getElementById('flowCOtherWrap').style.display = sel.value === 'other' ? '' : 'none';
+  };
+  window.pbCalcFlow = function() {
+    const psi = numVal('flowPsi');
+    const dia = numVal('flowDia');
+    const cSel = document.getElementById('flowCSel');
+    const c = cSel.value === 'other' ? numVal('flowC') : parseFloat(cSel.value);
+    const gallons = numVal('flowGallons');
+    const resultEl = document.getElementById('flowResult');
+    if (psi === null || psi <= 0) { resultEl.textContent = 'Enter a valid pressure greater than zero.'; return; }
+    if (dia === null || dia <= 0) { resultEl.textContent = 'Enter a valid discharge opening diameter greater than zero.'; return; }
+    if (c === null || c <= 0) { resultEl.textContent = 'Enter a valid discharge coefficient greater than zero.'; return; }
+    const gpm = 29.83 * c * dia * dia * Math.sqrt(psi);
+    let html = `<div class="pb-answer-box"><div class="pb-answer-label">Flow Rate</div><div class="pb-answer-val">${gpm.toFixed(1)} GPM</div></div>`;
+    if (gallons !== null && gallons > 0) {
+      const minutes = gallons / gpm;
+      const wholeMin = Math.floor(minutes);
+      const secs = Math.round((minutes - wholeMin) * 60);
+      html += `<div class="pb-answer-box"><div class="pb-answer-label">Time to Reach ${gallons.toLocaleString()} Gallons</div><div class="pb-answer-val">${wholeMin} min ${secs} sec</div></div>`;
+    }
+    resultEl.innerHTML = html;
+  };
+
+  // ---------- Material Volume Calculator ----------
+  wireToggle('volShapeToggle', (val) => {
+    ['rect','tri','cyl','encase'].forEach(s => {
+      document.getElementById('volFields-' + s).style.display = (s === val) ? '' : 'none';
+    });
+  });
+  let volEncCounter = 0;
+  window.pbAddEncPipeSize = function() {
+    volEncCounter++;
+    const id = 'volEncExtra' + volEncCounter;
+    const container = document.getElementById('volEncExtraContainer');
+    const card = document.createElement('div');
+    card.className = 'pb-hub-card';
+    card.dataset.encExtra = id;
+    card.innerHTML = `
+      <div class="pb-tag" style="font-size:11px;"><span>Additional Pipe Size</span><button class="pb-remove" onclick="this.closest('[data-enc-extra]').remove()">Remove</button></div>
+      <div class="pb-body">
+        <div class="pb-row">
+          <div class="pb-field"><label>Pipe OD (in)</label><input type="number" step="0.1" id="${id}OD" inputmode="decimal"></div>
+          <div class="pb-field"><label># of pipes</label><input type="number" step="1" id="${id}Count" value="1" inputmode="numeric"></div>
+        </div>
+        <div class="pb-field"><label>Pipe length within encasement (ft)</label><input type="number" step="0.1" id="${id}L" inputmode="decimal"></div>
+      </div>`;
+    container.appendChild(card);
+  };
+
+  window.pbOpenVolumeCalc = function() {
+    document.getElementById('volumeResult').innerHTML = '';
+    document.getElementById('volUnitToggle').style.display = 'none';
+    document.querySelectorAll('#volUnitToggle button').forEach(b => b.classList.toggle('active', b.dataset.val === 'yd3'));
+    pbGoto('volumeCalc');
+  };
+  let volLastCubicFt = null, volLastLabel = 'Volume';
+  wireToggle('volUnitToggle', () => renderVolumeResult());
+  function renderVolumeResult() {
+    if (volLastCubicFt === null) return;
+    const unit = activeVal('volUnitToggle');
+    const cubicFt = volLastCubicFt;
+    const cubicYd = cubicFt / 27;
+    const gal = cubicFt * 7.48052;
+    let primaryVal, primaryUnit;
+    if (unit === 'yd3') { primaryVal = cubicYd; primaryUnit = 'yd³'; }
+    else if (unit === 'ft3') { primaryVal = cubicFt; primaryUnit = 'ft³'; }
+    else { primaryVal = gal; primaryUnit = 'gal'; }
+    document.getElementById('volumeResult').innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">${volLastLabel}</div><div class="pb-answer-val">${primaryVal.toFixed(2)} ${primaryUnit}</div><div class="pb-answer-sub">${cubicYd.toFixed(2)} yd³ · ${cubicFt.toFixed(2)} ft³ · ${gal.toFixed(1)} gal</div></div>`;
+  }
+  window.pbCalcVolume = function() {
+    volLastCubicFt = null;
+    document.getElementById('volUnitToggle').style.display = 'none';
+    const shape = activeVal('volShapeToggle');
+    const resultEl = document.getElementById('volumeResult');
+    let cubicFt = null;
+    let label = 'Volume';
+
+    if (shape === 'rect') {
+      const l = numVal('volRectL'), w = numVal('volRectW'), d = numVal('volRectD');
+      if (l === null || w === null || d === null || l <= 0 || w <= 0 || d <= 0) { resultEl.textContent = 'Enter valid length, width, and depth, all greater than zero.'; return; }
+      cubicFt = l * w * d;
+    } else if (shape === 'tri') {
+      const l = numVal('volTriL'), b = numVal('volTriB'), h = numVal('volTriH');
+      if (l === null || b === null || h === null || l <= 0 || b <= 0 || h <= 0) { resultEl.textContent = 'Enter valid length, base width, and height, all greater than zero.'; return; }
+      cubicFt = 0.5 * b * h * l;
+    } else if (shape === 'cyl') {
+      const diaIn = numVal('volCylDia'), l = numVal('volCylL');
+      if (diaIn === null || l === null || diaIn <= 0 || l <= 0) { resultEl.textContent = 'Enter a valid diameter and length, both greater than zero.'; return; }
+      const rFt = (diaIn / 12) / 2;
+      cubicFt = Math.PI * rFt * rFt * l;
+    } else if (shape === 'encase') {
+      const l = numVal('volEncL'), w = numVal('volEncW'), d = numVal('volEncD');
+      const odIn = numVal('volEncOD'), count = numVal('volEncCount'), pipeL = numVal('volEncPipeL');
+      if (l === null || w === null || d === null || l <= 0 || w <= 0 || d <= 0) { resultEl.textContent = 'Enter valid encasement length, width, and depth, all greater than zero.'; return; }
+      if (odIn === null || count === null || pipeL === null || odIn <= 0 || count <= 0 || pipeL <= 0) { resultEl.textContent = 'Enter a valid pipe OD, pipe count, and pipe length, all greater than zero.'; return; }
+      const trenchCf = l * w * d;
+      let pipeCf = (Math.PI * ((odIn/12)/2) * ((odIn/12)/2)) * pipeL * count;
+      const extras = document.querySelectorAll('#volEncExtraContainer [data-enc-extra]');
+      for (const card of extras) {
+        const id = card.dataset.encExtra;
+        const eOd = numVal(id+'OD'), eCount = numVal(id+'Count'), eL = numVal(id+'L');
+        if (eOd !== null && eCount !== null && eL !== null && eOd > 0 && eCount > 0 && eL > 0) {
+          const rFtE = (eOd/12)/2;
+          pipeCf += Math.PI * rFtE * rFtE * eL * eCount;
+        }
+      }
+      cubicFt = trenchCf - pipeCf;
+      label = 'Encasement Volume';
+      if (cubicFt <= 0) {
+        volLastCubicFt = null;
+        document.getElementById('volUnitToggle').style.display = 'none';
+        resultEl.innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">${label}</div><div class="pb-answer-val pb-answer-warn">0 or negative</div><div class="pb-answer-sub">The pipe(s) take up as much or more volume than the encasement itself — double-check the numbers.</div></div>`;
+        return;
+      }
+    }
+
+    volLastCubicFt = cubicFt;
+    volLastLabel = label;
+    document.getElementById('volUnitToggle').style.display = '';
+    renderVolumeResult();
+  };
+
+  // ---------- per-row calculator launcher on results screen ----------
+  window.pbToggleTools = function(btn, idx) {
+    const noteRow = btn.closest('tr').nextElementSibling;
+    const toolsRow = noteRow.nextElementSibling;
+    toolsRow.style.display = toolsRow.style.display === 'none' ? '' : 'none';
+  };
+  window.pbLaunchBendFromRow = function(idx) {
+    const ctx = window._pbRowContexts[idx];
+    pbOpenBendCalc(ctx);
+  };
+  window.pbLaunchBeddingFromRow = function(idx) {
+    const ctx = window._pbRowContexts[idx];
+    pbOpenBeddingCalc(ctx);
+  };
+
+  // ---------- Confined Space Ventilation Calculator ----------
+  wireToggle('ventShapeToggle', (val) => {
+    ['rect','cyl','known'].forEach(s => {
+      document.getElementById('ventFields-' + s).style.display = (s === val) ? '' : 'none';
+    });
+  });
+  window.pbOpenVentCalc = function(fromConfined) {
+    window._pbCalcReturnScreen = fromConfined ? 'confinedHub' : 'calcHub';
+    document.getElementById('ventResult').innerHTML = '';
+    pbGoto('ventCalc');
+  };
+  window.pbToggleVentACHOther = function() {
+    const sel = document.getElementById('ventACHSel');
+    document.getElementById('ventACHOtherWrap').style.display = sel.value === 'other' ? '' : 'none';
+  };
+  window.pbCalcVent = function() {
+    const shape = activeVal('ventShapeToggle');
+    const resultEl = document.getElementById('ventResult');
+    const achSel = document.getElementById('ventACHSel');
+    const ach = achSel.value === 'other' ? numVal('ventACH') : parseFloat(achSel.value);
+    if (ach === null || ach <= 0) { resultEl.textContent = 'Enter a valid air changes per hour, greater than zero.'; return; }
+    let volumeFt3 = null;
+    if (shape === 'rect') {
+      const l = numVal('ventRectL'), w = numVal('ventRectW'), d = numVal('ventRectD');
+      if (l === null || w === null || d === null || l <= 0 || w <= 0 || d <= 0) { resultEl.textContent = 'Enter valid length, width, and depth, all greater than zero.'; return; }
+      volumeFt3 = l * w * d;
+    } else if (shape === 'cyl') {
+      const dia = numVal('ventCylDia'), d = numVal('ventCylD');
+      if (dia === null || d === null || dia <= 0 || d <= 0) { resultEl.textContent = 'Enter a valid diameter and depth, both greater than zero.'; return; }
+      const r = dia / 2;
+      volumeFt3 = Math.PI * r * r * d;
+    } else {
+      volumeFt3 = numVal('ventKnownVol');
+      if (volumeFt3 === null || volumeFt3 <= 0) { resultEl.textContent = 'Enter a valid volume greater than zero.'; return; }
+    }
+    const cfm = (volumeFt3 * ach) / 60;
+    resultEl.innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">Suggested Minimum Blower CFM</div><div class="pb-answer-val">${cfm.toFixed(0)} CFM</div><div class="pb-answer-sub">${volumeFt3.toFixed(0)} ft³ space × ${ach} ACH ÷ 60</div><div class="pb-answer-sub pb-answer-warn" style="margin-top:6px;">Rule of thumb only — confirm actual entry conditions with a calibrated gas meter, not this number.</div></div>`;
+  };
+
+  // ---------- Confined Space ----------
+  let confinedPermit = null; // holds locked permit data
+  let confinedAtmoLog = [];
+  let confinedRoster = [];
+  let confinedCounter = 0;
+  let confinedCommLog = [];
+  let confinedCommTimer = null;
+  let confinedCommCountdownTimer = null;
+  let confinedCommNextDue = null;
+  let confinedCommStarted = false;
+  let confinedAtmoTimer = null;
+  let confinedAtmoCountdownTimer = null;
+  let confinedAtmoNextDue = null;
+
+  window.pbOpenConfinedPermitForm = function() {
+    document.getElementById('cpError').style.display = 'none';
+    const todayStr = new Date().toISOString().slice(0,10);
+    if (!document.getElementById('cpDate').value) document.getElementById('cpDate').value = todayStr;
+    pbGoto('confinedPermit');
+  };
+
+  window.pbLockConfinedPermit = function() {
+    const errEl = document.getElementById('cpError');
+    const req = {
+      cpJobsite: 'Jobsite / project name',
+      cpAddress: 'Site address',
+      cpSpace: 'Space identification / location',
+      cpPurpose: 'Purpose of entry',
+      cpHazards: 'Hazards of the space',
+      cpControls: 'Isolation / control measures',
+      cpVentFail: 'How you\'ll detect a ventilation failure',
+      cpConditions: 'Acceptable entry conditions',
+      cpRescue: 'Rescue / emergency services',
+      cpComms: 'Communication procedures',
+      cpSupervisor: 'Entry supervisor name',
+      cpAttendant: 'Confined space attendant name'
+    };
+    const errors = [];
+    Object.keys(req).forEach(id => {
+      const el = document.getElementById(id);
+      if (!el.value || !el.value.trim()) errors.push(req[id] + ' is required.');
+    });
+    if (errors.length) {
+      errEl.innerHTML = errors.map(e => '• ' + e).join('<br>');
+      errEl.style.display = '';
+      return;
+    }
+    errEl.style.display = 'none';
+
+    confinedPermit = {
+      jobsite: document.getElementById('cpJobsite').value.trim(),
+      address: document.getElementById('cpAddress').value.trim(),
+      space: document.getElementById('cpSpace').value.trim(),
+      purpose: document.getElementById('cpPurpose').value.trim(),
+      date: document.getElementById('cpDate').value,
+      start: document.getElementById('cpStart').value,
+      end: document.getElementById('cpEnd').value,
+      hazards: document.getElementById('cpHazards').value.trim(),
+      controls: document.getElementById('cpControls').value.trim(),
+      ventFail: document.getElementById('cpVentFail').value.trim(),
+      conditions: document.getElementById('cpConditions').value.trim(),
+      atmoInterval: numVal('cpAtmoInterval'),
+      rescue: document.getElementById('cpRescue').value.trim(),
+      comms: document.getElementById('cpComms').value.trim(),
+      commInterval: numVal('cpCommInterval'),
+      eqPPE: document.getElementById('cpEqPPE').checked,
+      eqTest: document.getElementById('cpEqTest').checked,
+      eqComm: document.getElementById('cpEqComm').checked,
+      eqAlarm: document.getElementById('cpEqAlarm').checked,
+      eqRescue: document.getElementById('cpEqRescue').checked,
+      eqNotes: document.getElementById('cpEqNotes').value.trim(),
+      addlPermits: document.getElementById('cpAddlPermits').value.trim(),
+      supervisor: document.getElementById('cpSupervisor').value.trim(),
+      attendant: document.getElementById('cpAttendant').value.trim(),
+      lockTime: new Date()
+    };
+    confinedAtmoLog = [];
+    confinedRoster = [
+      { name: confinedPermit.supervisor, role: 'Entry Supervisor', status: 'out', log: [] },
+      { name: confinedPermit.attendant, role: 'Attendant', status: 'out', log: [] }
+    ];
+    confinedCommLog = [];
+    confinedCommStarted = false;
+    confinedReassignIdx = null;
+    document.getElementById('cpCommTimerSection').style.display = 'none';
+    document.getElementById('cpAtmoTimerSection').style.display = 'none';
+    document.getElementById('cpEmergencyPanel').style.display = 'none';
+    document.getElementById('cpCloseoutPanel').style.display = 'none';
+    renderConfinedActive();
+    document.getElementById('confinedResumeTile').style.display = '';
+    document.getElementById('confinedResumeTile2').style.display = '';
+    pbGoto('confinedActive');
+  };
+
+  function renderConfinedActive() {
+    if (!confinedPermit) return;
+    document.getElementById('cpLockband').textContent = 'PERMIT LOCKED ' + confinedPermit.lockTime.toLocaleString();
+    const eqList = [];
+    if (confinedPermit.eqPPE) eqList.push('PPE');
+    if (confinedPermit.eqTest) eqList.push('Testing');
+    if (confinedPermit.eqComm) eqList.push('Comms');
+    if (confinedPermit.eqAlarm) eqList.push('Alarm');
+    if (confinedPermit.eqRescue) eqList.push('Rescue');
+    document.getElementById('cpSummaryGrid').innerHTML = `
+      <div class="pb-summary-item"><div class="k">Jobsite</div><div class="v">${confinedPermit.jobsite}</div></div>
+      <div class="pb-summary-item"><div class="k">Site Address</div><div class="v">${confinedPermit.address}</div></div>
+      <div class="pb-summary-item"><div class="k">Space</div><div class="v">${confinedPermit.space}</div></div>
+      <div class="pb-summary-item"><div class="k">Purpose</div><div class="v">${confinedPermit.purpose}</div></div>
+      <div class="pb-summary-item"><div class="k">Authorized Window</div><div class="v">${confinedPermit.date || '—'} ${confinedPermit.start || ''}${confinedPermit.end ? '–'+confinedPermit.end : ''}</div></div>
+      <div class="pb-summary-item"><div class="k">Supervisor</div><div class="v">${confinedPermit.supervisor}</div></div>
+      <div class="pb-summary-item"><div class="k">Attendant</div><div class="v">${confinedPermit.attendant}</div></div>
+      <div class="pb-summary-item"><div class="k">Equipment</div><div class="v">${eqList.length ? eqList.join(', ') : 'None checked'}</div></div>
+      <div class="pb-summary-item"><div class="k">Equipment Notes</div><div class="v">${confinedPermit.eqNotes || '—'}</div></div>
+    `;
+    renderAtmoList();
+    renderRosterList();
+    renderCommList();
+  }
+
+  function renderAtmoList() {
+    const list = document.getElementById('cpAtmoList');
+    if (!confinedAtmoLog.length) { list.innerHTML = '<p class="pb-help" style="margin:0;">No readings logged yet.</p>'; return; }
+    list.innerHTML = confinedAtmoLog.map(r => `
+      <div class="pb-review-item" style="margin:10px 0 0 0;">
+        <span class="k">${r.time.toLocaleTimeString()} — ${r.tester}</span><br>
+        O2: ${r.o2 !== null ? r.o2 + '%' : '—'} · LEL: ${r.lel !== null ? r.lel + '%' : '—'}${r.other ? ' · ' + r.other : ''}
+      </div>`).join('');
+  }
+  window.pbSaveAtmoReading = function() {
+    const o2 = numVal('cpAtmoO2'), lel = numVal('cpAtmoLEL');
+    const other = document.getElementById('cpAtmoOther').value.trim();
+    const tester = document.getElementById('cpAtmoTester').value.trim();
+    if (!tester) { pbAlert('Enter the tester\'s name before saving.'); return; }
+    confinedAtmoLog.push({ o2, lel, other, tester, time: new Date() });
+    document.getElementById('cpAtmoO2').value = '';
+    document.getElementById('cpAtmoLEL').value = '';
+    document.getElementById('cpAtmoOther').value = '';
+    document.getElementById('cpAtmoTester').value = '';
+    document.getElementById('cpAtmoAddForm').style.display = 'none';
+    renderAtmoList();
+  };
+
+  function renderRosterList() {
+    const list = document.getElementById('cpRosterList');
+    if (!confinedRoster.length) { list.innerHTML = '<p class="pb-help" style="margin:0;">No one on the roster yet.</p>'; return; }
+    const order = { 'Entrant': 0, 'Attendant': 1, 'Entry Supervisor': 2 };
+    const indexed = confinedRoster.map((p, i) => ({ p, i }));
+    indexed.sort((a, b) => (order[a.p.role] ?? 3) - (order[b.p.role] ?? 3));
+    list.innerHTML = indexed.map(({ p, i }) => {
+      const statusColor = p.status === 'in' ? 'var(--start-c)' : 'var(--ink-soft)';
+      const logText = p.log.map(l => l.action + ' ' + l.time.toLocaleTimeString()).join(' · ');
+      return `<div class="pb-review-item" style="margin:10px 0 0 0;">
+        <span class="k">${p.name} — ${p.role}</span>
+        <span style="float:right; color:${statusColor}; font-weight:600; text-transform:uppercase; font-size:11px;">${p.status}</span><br>
+        <span style="font-size:11px;">${logText}</span><br>
+        <button class="pb-btn ghost small" style="margin-top:6px;" onclick="pbToggleRosterStatus(${i})">${p.status === 'in' ? 'Check Out' : 'Check In'}</button>
+      </div>`;
+    }).join('');
+  }
+  let confinedReassignIdx = null;
+  window.pbAddRosterPerson = function() {
+    const name = document.getElementById('cpRosterName').value.trim();
+    const role = document.getElementById('cpRosterRole').value;
+    if (!name) { pbAlert('Enter a name before adding to the roster.'); return; }
+    confinedRoster.push({ name, role, status: 'out', log: [] });
+    if (confinedReassignIdx !== null) {
+      const oldAttendant = confinedRoster[confinedReassignIdx];
+      const oldName = oldAttendant.name;
+      oldAttendant.role = 'Entrant';
+      oldAttendant.log.push({ action: 'Reassigned from Attendant to Entrant (new attendant: ' + name + ')', time: new Date() });
+      confinedReassignIdx = null;
+    }
+    document.getElementById('cpRosterName').value = '';
+    document.getElementById('cpRosterAddForm').style.display = 'none';
+    renderRosterList();
+  };
+  window.pbToggleRosterStatus = function(idx) {
+    const p = confinedRoster[idx];
+    if (p.status === 'out' && p.role === 'Attendant') {
+      pbShowModal(
+        p.name + ' is the confined space attendant. Per OSHA 1910.146(i), an attendant must stay outside the space and may not enter for any reason — not even rescue — unless first relieved by another qualified attendant. Reassign the attendant role to someone else before ' + p.name + ' can enter.',
+        [
+          { label: 'Cancel' },
+          { label: 'Reassign Attendant', primary: true, onClick: () => pbStartAttendantReassign(idx) }
+        ],
+        'Attendant Restriction'
+      );
+      return;
+    }
+    if (p.status === 'out' && p.role === 'Entrant' && confinedAtmoLog.length === 0) {
+      pbAlert('An air test must be logged in the Atmospheric Test Log before any entrant goes into the space.');
+      return;
+    }
+    p.status = p.status === 'in' ? 'out' : 'in';
+    p.log.push({ action: p.status === 'in' ? 'Checked in' : 'Checked out', time: new Date() });
+    renderRosterList();
+    if (p.status === 'in' && p.role === 'Entrant' && !confinedCommStarted) {
+      confinedCommStarted = true;
+      startConfinedCommTimer();
+      startConfinedAtmoTimer();
+    }
+  };
+  window.pbStartAttendantReassign = function(idx) {
+    confinedReassignIdx = idx;
+    document.getElementById('cpRosterRole').value = 'Attendant';
+    document.getElementById('cpRosterAddForm').style.display = '';
+    document.getElementById('cpRosterAddForm').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  window.pbTriggerEmergency = async function() {
+    const num = document.getElementById('cpEmergencyNum') ? document.getElementById('cpEmergencyNum').value : '911';
+    document.getElementById('cpEmergencyNumDisplay').textContent = num || '911';
+    document.getElementById('cpEmergencyScript').textContent = buildEmergencyScript();
+    renderEmergencyKeyInfo();
+    document.getElementById('cpEmergencyPanel').style.display = '';
+    const savedEmail = await pbGet('lastEmergencyEmail');
+    if (savedEmail) document.getElementById('cpEmergencyEmail').value = savedEmail;
+    pbNavigateExternal('tel:' + (num || '911').replace(/[^0-9+]/g, ''));
+    document.getElementById('cpEmergencyPanel').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  function buildEmergencyScript() {
+    const p = confinedPermit;
+    const inNow = confinedRoster.filter(person => person.status === 'in');
+    const count = inNow.length;
+    const address = p.address || '[address not entered]';
+    let script = `"I'm calling about a confined space emergency at ${address}`;
+    if (p.jobsite) script += `, jobsite ${p.jobsite}`;
+    script += '. ';
+    if (count === 1) script += `1 person is inside and needs emergency rescue. `;
+    else if (count > 1) script += `${count} people are inside and need emergency rescue. `;
+    else script += `We need emergency rescue standing by — please advise. `;
+    if (p.hazards) script += `Known hazards: ${p.hazards}. `;
+    script += `Send help to ${address}."`;
+    return script;
+  }
+
+  function renderEmergencyKeyInfo() {
+    const p = confinedPermit;
+    if (!p) return;
+    const inNow = confinedRoster.filter(person => person.status === 'in');
+    const namesText = inNow.length ? inNow.map(person => person.name + ' (' + person.role + ')').join(', ') : 'None currently checked in';
+    document.getElementById('cpEmergencyKeyInfo').innerHTML = `
+      <div class="row"><div class="k">Site Address</div><div class="v">${p.address || '— not entered —'}</div></div>
+      <div class="row"><div class="k">Jobsite</div><div class="v small">${p.jobsite || '—'}</div></div>
+      <div class="row"><div class="k">Space</div><div class="v small">${p.space || '—'}</div></div>
+      <div class="row"><div class="k">Personnel Currently In Space</div><div class="v">${inNow.length}</div><div class="v small">${namesText}</div></div>
+      <div class="row"><div class="k">Known Hazards</div><div class="v small">${p.hazards || '—'}</div></div>
+      <div class="row"><div class="k">On-Site Attendant</div><div class="v small">${p.attendant || '—'}</div></div>
+      <div class="row"><div class="k">Rescue / Emergency Services On File</div><div class="v small">${p.rescue || '—'}</div></div>
+    `;
+  }
+
+  window.pbSendEmergencyReport = function() {
+    const email = document.getElementById('cpEmergencyEmail').value.trim();
+    if (!email) { pbAlert('Enter an email address to send the report to.'); return; }
+    pbSet('lastEmergencyEmail', email);
+    const subject = 'EMERGENCY — Confined Space Entry — ' + (confinedPermit ? confinedPermit.space + ' — ' + confinedPermit.address : '');
+    const body = buildConfinedEmergencyReport();
+    pbNavigateExternal('mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body));
+  };
+
+  function startConfinedAtmoTimer() {
+    stopConfinedAtmoTimer();
+    if (!confinedPermit || !confinedPermit.atmoInterval || confinedPermit.atmoInterval <= 0) {
+      document.getElementById('cpAtmoTimerSection').style.display = 'none';
+      return;
+    }
+    document.getElementById('cpAtmoTimerSection').style.display = '';
+    const ms = confinedPermit.atmoInterval * 60 * 1000;
+    confinedAtmoNextDue = new Date(Date.now() + ms);
+    confinedAtmoTimer = setInterval(() => {
+      pbPlayAlarm('atmo');
+      pbAlert('Time to log a fresh air quality reading in the Atmospheric Test Log.', 'Air Test Due');
+      confinedAtmoNextDue = new Date(Date.now() + ms);
+    }, ms);
+    confinedAtmoCountdownTimer = setInterval(updateConfinedAtmoCountdown, 1000);
+    updateConfinedAtmoCountdown();
+  }
+  function stopConfinedAtmoTimer() {
+    if (confinedAtmoTimer) clearInterval(confinedAtmoTimer);
+    if (confinedAtmoCountdownTimer) clearInterval(confinedAtmoCountdownTimer);
+    confinedAtmoTimer = null;
+    confinedAtmoCountdownTimer = null;
+  }
+  function updateConfinedAtmoCountdown() {
+    const el = document.getElementById('cpAtmoCountdown');
+    if (!el || !confinedAtmoNextDue) return;
+    const diff = Math.max(0, confinedAtmoNextDue - Date.now());
+    const mins = Math.floor(diff / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+    el.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+  }
+
+  function startConfinedCommTimer() {
+    stopConfinedCommTimer();
+    if (!confinedPermit || !confinedPermit.commInterval || confinedPermit.commInterval <= 0) {
+      document.getElementById('cpCommTimerSection').style.display = 'none';
+      return;
+    }
+    document.getElementById('cpCommTimerSection').style.display = '';
+    const ms = confinedPermit.commInterval * 60 * 1000;
+    confinedCommNextDue = new Date(Date.now() + ms);
+    confinedCommTimer = setInterval(() => {
+      pbPlayAlarm('comm');
+      pbAlert('Communication check due — check in with the entrant(s) now.', 'Communication Check');
+      confinedCommNextDue = new Date(Date.now() + ms);
+    }, ms);
+    confinedCommCountdownTimer = setInterval(updateConfinedCommCountdown, 1000);
+    updateConfinedCommCountdown();
+  }
+  function stopConfinedCommTimer() {
+    if (confinedCommTimer) clearInterval(confinedCommTimer);
+    if (confinedCommCountdownTimer) clearInterval(confinedCommCountdownTimer);
+    confinedCommTimer = null;
+    confinedCommCountdownTimer = null;
+  }
+  function updateConfinedCommCountdown() {
+    const el = document.getElementById('cpCommCountdown');
+    if (!el || !confinedCommNextDue) return;
+    const diff = Math.max(0, confinedCommNextDue - Date.now());
+    const mins = Math.floor(diff / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+    el.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+  }
+  window.pbQuickAddAtmoTest = function() {
+    document.getElementById('cpAtmoAddForm').style.display = '';
+    document.getElementById('cpAtmoAddForm').scrollIntoView({ behavior: 'smooth' });
+  };
+  window.pbLogCommCheck = function() {
+    confinedCommLog.push({ time: new Date() });
+    renderCommList();
+  };
+  function renderCommList() {
+    const list = document.getElementById('cpCommList');
+    if (!confinedCommLog.length) { list.innerHTML = '<p class="pb-help" style="margin:0;">No checks logged yet.</p>'; return; }
+    list.innerHTML = confinedCommLog.map(r => `<div class="pb-review-item" style="margin:8px 0 0 0;">Communication check — ${r.time.toLocaleTimeString()}</div>`).join('');
+  }
+
+  let confinedArchive = [];
+
+  function buildConfinedReport(mode) {
+    const p = confinedPermit;
+    let lines = [];
+    lines.push(mode === 'emergency' ? 'EMERGENCY INCIDENT REPORT' : 'CONFINED SPACE ENTRY — CLOSEOUT REPORT');
+    lines.push('Generated: ' + new Date().toLocaleString());
+    lines.push('');
+    lines.push('=========================================');
+    lines.push(mode === 'emergency' ? 'KEY INFO FOR RESPONDERS' : 'SUMMARY');
+    lines.push('=========================================');
+    lines.push('SITE ADDRESS: ' + p.address);
+    lines.push('JOBSITE: ' + p.jobsite);
+    lines.push('SPACE: ' + p.space);
+    const inNow = confinedRoster.filter(person => person.status === 'in');
+    lines.push('PERSONNEL CURRENTLY IN SPACE: ' + inNow.length);
+    lines.push(inNow.length ? inNow.map(person => '  - ' + person.name + ' (' + person.role + ')').join('\n') : '  (none currently checked in)');
+    lines.push('KNOWN HAZARDS: ' + p.hazards);
+    lines.push('ON-SITE ATTENDANT: ' + p.attendant);
+    lines.push('RESCUE / EMERGENCY SERVICES ON FILE: ' + p.rescue);
+    lines.push('=========================================');
+    lines.push('');
+    lines.push('--- FULL PERMIT DETAILS (locked ' + p.lockTime.toLocaleString() + ') ---');
+    lines.push('Space: ' + p.space);
+    lines.push('Purpose: ' + p.purpose);
+    lines.push('Authorized window: ' + (p.date || '—') + ' ' + (p.start || '') + (p.end ? '-' + p.end : ''));
+    lines.push('Hazards: ' + p.hazards);
+    lines.push('Isolation/control measures: ' + p.controls);
+    lines.push('Ventilation-failure detection: ' + p.ventFail);
+    lines.push('Acceptable entry conditions: ' + p.conditions);
+    lines.push('Rescue/emergency services: ' + p.rescue);
+    lines.push('Communication procedures: ' + p.comms);
+    const eq = [];
+    if (p.eqPPE) eq.push('PPE');
+    if (p.eqTest) eq.push('Testing equipment');
+    if (p.eqComm) eq.push('Communications equipment');
+    if (p.eqAlarm) eq.push('Alarm systems');
+    if (p.eqRescue) eq.push('Rescue equipment');
+    lines.push('Equipment provided: ' + (eq.length ? eq.join(', ') : 'None checked') + (p.eqNotes ? ' — ' + p.eqNotes : ''));
+    if (p.addlPermits) lines.push('Additional permits issued: ' + p.addlPermits);
+    lines.push('Entry supervisor: ' + p.supervisor);
+    lines.push('Attendant: ' + p.attendant);
+    lines.push('');
+    lines.push('--- ATMOSPHERIC TEST LOG (' + confinedAtmoLog.length + ' reading(s)) ---');
+    if (!confinedAtmoLog.length) lines.push('No readings logged.');
+    confinedAtmoLog.forEach(r => {
+      lines.push(r.time.toLocaleString() + ' — Tester: ' + r.tester + ' — O2: ' + (r.o2 !== null ? r.o2 + '%' : '—') + ' — LEL: ' + (r.lel !== null ? r.lel + '%' : '—') + (r.other ? ' — ' + r.other : ''));
+    });
+    lines.push('');
+    lines.push('--- COMMUNICATION CHECKS (' + confinedCommLog.length + ') ---');
+    if (!confinedCommLog.length) lines.push('No checks logged.');
+    confinedCommLog.forEach(r => lines.push(r.time.toLocaleString()));
+    lines.push('');
+    lines.push('--- ENTRANT / ATTENDANT ROSTER (' + confinedRoster.length + ' person(s)) ---');
+    if (!confinedRoster.length) lines.push('No one logged on the roster.');
+    confinedRoster.forEach(person => {
+      lines.push(person.name + ' — ' + person.role + ' — currently: ' + person.status.toUpperCase());
+      person.log.forEach(l => lines.push('   ' + l.action + ' at ' + l.time.toLocaleString()));
+    });
+    return lines.join('\n');
+  }
+  function buildConfinedEmergencyReport() { return buildConfinedReport('emergency'); }
+
+  window.pbCloseConfinedPermit = function() {
+    const stillIn = confinedRoster.filter(p => p.status === 'in');
+    if (stillIn.length) {
+      const names = stillIn.map(p => p.name).join(', ');
+      pbConfirm(`${names} still show as checked IN. Close out the permit anyway?`, pbProceedCloseOut, 'Still Checked In');
+    } else {
+      pbProceedCloseOut();
+    }
+  };
+
+  async function pbProceedCloseOut() {
+    stopConfinedCommTimer();
+    stopConfinedAtmoTimer();
+    const reportText = buildConfinedReport('closeout');
+    confinedArchive.push({
+      jobsite: confinedPermit.jobsite,
+      space: confinedPermit.space,
+      address: confinedPermit.address,
+      closedTime: new Date(),
+      reportText
+    });
+    document.getElementById('cpCloseoutReportPreview').textContent = reportText;
+    const savedEmail = await pbGet('lastEmergencyEmail');
+    if (savedEmail) document.getElementById('cpCloseoutEmail').value = savedEmail;
+    document.getElementById('cpCloseoutPanel').style.display = '';
+    document.getElementById('cpCloseoutPanel').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  window.pbSendCloseoutReport = function() {
+    const email = document.getElementById('cpCloseoutEmail').value.trim();
+    if (!email) { pbAlert('Enter an email address to send the report to.'); return; }
+    pbSet('lastEmergencyEmail', email);
+    const subject = 'Confined Space Closeout Report — ' + confinedPermit.space + ' — ' + confinedPermit.address;
+    const body = confinedArchive[confinedArchive.length - 1].reportText;
+    pbNavigateExternal('mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body));
+  };
+
+  window.pbFinishCloseOut = function() {
+    document.getElementById('cpCloseoutPanel').style.display = 'none';
+    document.getElementById('confinedResumeTile').style.display = 'none';
+    document.getElementById('confinedResumeTile2').style.display = 'none';
+    pbGoto('home');
+  };
+
+  initAutofill();
+})();
+</script>
