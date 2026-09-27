@@ -7338,6 +7338,8 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
   };
   async function pbInsertManagementReportToSupabase(entry, photoUrls) {
     try {
+      if (!sbClient) { pbAlert('[DEBUG] No Supabase client available.', 'Sync Debug'); return; }
+      if (!sbUser) { pbAlert('[DEBUG] No logged-in user (sbUser is null) at send time.', 'Sync Debug'); return; }
       const { data, error } = await sbClient.from('management_reports').insert({
         category: entry.category,
         description: entry.description,
@@ -7346,7 +7348,8 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
         recipient_email: entry.recipientEmail,
         sent: true
       }).select().single();
-      if (error) { console.error('Supabase insert (management_reports) failed:', error.message); return; }
+      if (error) { pbAlert('[DEBUG] Supabase insert failed: ' + error.message + ' (code: ' + (error.code || 'none') + ')', 'Sync Debug'); return; }
+      pbAlert('[DEBUG] Insert succeeded! Row id: ' + data.id, 'Sync Debug');
       for (let i = 0; i < photoUrls.length; i++) {
         try {
           const blob = await (await fetch(photoUrls[i])).blob();
@@ -7357,6 +7360,7 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
         } catch (e) { console.error('Supabase photo upload threw:', e.message); }
       }
     } catch (e) {
+      pbAlert('[DEBUG] Sync threw an exception: ' + e.message, 'Sync Debug');
       // No internet, RLS misconfigured, whatever — the local archive copy and
       // the email are the reliable path regardless. This is a bonus, not a
       // dependency, matching the app's offline-first principle.
