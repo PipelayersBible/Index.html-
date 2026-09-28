@@ -2505,24 +2505,79 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     if (result.error) { errEl.textContent = 'Login failed: ' + result.error.message; errEl.style.display = ''; return; }
     sbUser = result.data.user;
     updateLoginStatusDisplay();
+    await pbRefreshSubscriptionCache();
+    updateLoginStatusDisplay();
     pbGoto('home', true);
   };
   window.pbLogout = async function() {
-    pbConfirm('Log out of syncing to the backend on this device? Everything you\u2019ve already saved on this device stays exactly as it is \u2014 this only affects new syncing, like Report to Management.', async () => {
+    pbConfirm('Log out? This will lock you out of any subscription-gated features until you log back in. Everything you\u2019ve already saved on this device stays exactly as it is.', async () => {
       if (sbClient) { try { await sbClient.auth.signOut(); } catch (e) {} }
       sbUser = null;
+      sbCachedSubscription = { tier: 'none', status: 'inactive' };
+      await pbSet('cachedSubscription', JSON.stringify(sbCachedSubscription));
       updateLoginStatusDisplay();
-    }, 'Log Out of Syncing');
+    }, 'Log Out');
   };
   function updateLoginStatusDisplay() {
     const el = document.getElementById('loggedInAs');
-    if (el) el.textContent = sbUser ? ('Signed in for syncing as ' + sbUser.email) : 'Not signed in \u2014 reports and future backend syncing are local-only until you log in';
+    if (el) {
+      if (!sbUser) { el.textContent = 'Not signed in \u2014 log in to use the app'; }
+      else if (sbCachedSubscription.tier === 'none' || sbCachedSubscription.status !== 'active') { el.textContent = 'Signed in as ' + sbUser.email + ' \u2014 no active subscription'; }
+      else { el.textContent = 'Signed in as ' + sbUser.email + ' \u2014 ' + sbCachedSubscription.tier + ' plan (active)'; }
+    }
     const linkEl = document.getElementById('loginToggleLink');
-    if (linkEl) linkEl.textContent = sbUser ? 'Log Out of Syncing' : 'Log In (for syncing to the backend)';
+    if (linkEl) linkEl.textContent = sbUser ? 'Log Out' : 'Log In';
   }
   window.pbLoginToggleAction = function() {
     if (sbUser) pbLogout(); else pbOpenLogin();
   };
+
+  // ---------- Subscription gating ----------
+  // Only the screens reached DIRECTLY from a Home tile need listing here —
+  // every sub-screen inside Calculators, Confined Space, or Education is
+  // unreachable without first passing through its own entry point, which
+  // is already gated below.
+  const PB_ALWAYS_ALLOWED_SCREENS = ['home', 'login'];
+  const PB_INDIVIDUAL_SCREENS = ['input', 'quickrun', 'calcHub', 'stats', 'formulasHub'];
+  const PB_CONTRACTOR_SCREENS = ['confinedHub', 'archive', 'reportIssue'];
+  let sbCachedSubscription = { tier: 'none', status: 'inactive' };
+
+  function pbTierMeetsRequirement(requiredTier) {
+    if (sbCachedSubscription.status !== 'active') return false;
+    if (requiredTier === 'individual') return sbCachedSubscription.tier === 'individual' || sbCachedSubscription.tier === 'contractor';
+    if (requiredTier === 'contractor') return sbCachedSubscription.tier === 'contractor';
+    return true;
+  }
+  function pbScreenAccessAllowed(name) {
+    if (PB_ALWAYS_ALLOWED_SCREENS.includes(name)) return true;
+    if (PB_INDIVIDUAL_SCREENS.includes(name)) return pbTierMeetsRequirement('individual');
+    if (PB_CONTRACTOR_SCREENS.includes(name)) return pbTierMeetsRequirement('contractor');
+    return true; // any screen not listed above is a sub-screen inside an already-gated area
+  }
+  function pbShowSubscriptionRequiredMessage(name) {
+    if (!sbUser) { pbAlert('This requires an active subscription. Log in first, then check your subscription status.', 'Subscription Required'); return; }
+    const tierNeeded = PB_CONTRACTOR_SCREENS.includes(name) ? 'Contractor' : 'Individual';
+    const current = sbCachedSubscription.tier === 'none' ? 'no active subscription' : (sbCachedSubscription.tier + ' (' + sbCachedSubscription.status + ')');
+    pbAlert('This requires an active ' + tierNeeded + ' subscription. Your current status: ' + current + '.', 'Subscription Required');
+  }
+  async function pbLoadCachedSubscription() {
+    const raw = await pbGet('cachedSubscription');
+    if (raw) { try { sbCachedSubscription = JSON.parse(raw); } catch (e) {} }
+  }
+  // Refreshes from the real, current status whenever there's a chance to —
+  // boot and right after login. Only ever falls back to the last verified
+  // value when genuinely offline, same principle already proven for login
+  // itself: never let a network hiccup silently grant or revoke access.
+  async function pbRefreshSubscriptionCache() {
+    if (!sbClient) return; // can't check at all (offline, CDN failed) — leave whatever's cached alone, don't assume logged out
+    if (!sbUser) { sbCachedSubscription = { tier: 'none', status: 'inactive' }; await pbSet('cachedSubscription', JSON.stringify(sbCachedSubscription)); return; } // confirmed no session — this really is logged out
+    try {
+      const { data, error } = await sbClient.from('subscriptions').select('tier, status').eq('user_id', sbUser.id).maybeSingle();
+      if (error) { console.error('Could not refresh subscription status (keeping last known value):', error.message); return; }
+      sbCachedSubscription = data ? { tier: data.tier, status: data.status } : { tier: 'none', status: 'inactive' };
+      await pbSet('cachedSubscription', JSON.stringify(sbCachedSubscription));
+    } catch (e) { console.error('Could not refresh subscription status (keeping last known value):', e.message); }
+  }
   // Checked once, quietly, in the background at boot — purely to restore the
   // "signed in as" display if a session already exists. This NEVER blocks or
   // gates anything: the rest of the app boots and runs exactly the same
@@ -2796,6 +2851,7 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
     return fields.some(id => { const el = document.getElementById(id); return el && el.value.trim() !== ''; });
   }
   window.pbGoto = function(name, isBack, skipUnsavedCheck) {
+    if (!pbScreenAccessAllowed(name)) { pbShowSubscriptionRequiredMessage(name); return; }
     // Review is still holding the exact same at-risk, unsaved data as input —
     // nothing is actually saved until Lock — so leaving from either screen
     // needs the same warning. Only navigating between input/review/cutsheetImport
@@ -7338,8 +7394,7 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
   };
   async function pbInsertManagementReportToSupabase(entry, photoUrls) {
     try {
-      if (!sbClient) { pbAlert('[DEBUG] No Supabase client available.', 'Sync Debug'); return; }
-      if (!sbUser) { pbAlert('[DEBUG] No logged-in user (sbUser is null) at send time.', 'Sync Debug'); return; }
+      if (!sbClient || !sbUser) return; // not signed in — local archive + email already handled it, nothing more to do
       const { data, error } = await sbClient.from('management_reports').insert({
         category: entry.category,
         description: entry.description,
@@ -7348,8 +7403,7 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
         recipient_email: entry.recipientEmail,
         sent: true
       }).select().single();
-      if (error) { pbAlert('[DEBUG] Supabase insert failed: ' + error.message + ' (code: ' + (error.code || 'none') + ')', 'Sync Debug'); return; }
-      pbAlert('[DEBUG] Insert succeeded! Row id: ' + data.id, 'Sync Debug');
+      if (error) { console.error('Supabase insert (management_reports) failed:', error.message); return; }
       for (let i = 0; i < photoUrls.length; i++) {
         try {
           const blob = await (await fetch(photoUrls[i])).blob();
@@ -7360,7 +7414,6 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
         } catch (e) { console.error('Supabase photo upload threw:', e.message); }
       }
     } catch (e) {
-      pbAlert('[DEBUG] Sync threw an exception: ' + e.message, 'Sync Debug');
       // No internet, RLS misconfigured, whatever — the local archive copy and
       // the email are the reliable path regardless. This is a bonus, not a
       // dependency, matching the app's offline-first principle.
@@ -9552,7 +9605,8 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
 
   initAutofill();
   loadActiveConfinedSession();
-  pbCheckLoginStatusQuietly();
+  pbLoadCachedSubscription();
+  pbCheckLoginStatusQuietly().then(async () => { await pbRefreshSubscriptionCache(); updateLoginStatusDisplay(); });
 })();
 </script>
 
