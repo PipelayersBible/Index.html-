@@ -1676,6 +1676,40 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 .pb-addhome-wrap { margin-top: 8px; }
 .pb-addhome { -webkit-appearance: none; appearance: none; border-radius: 0; background: transparent; border: 1px solid var(--hazard); color: var(--hazard); font-family: 'Inter', sans-serif; font-weight: 700; font-size: 13px; min-height: 40px; padding: 7px 12px; cursor: pointer; }
 .pb-addhome[aria-pressed="true"] { background: var(--hazard); color: var(--hazard-ink); }
+/* UX batch 3 (T1): the Tools tab screen and the Reports tab's job rows use the Calculators rows */
+#pbApp #screen-tools .pb-tools-search { position: relative; }
+#pbApp #screen-tools .pb-tools-search > label { font-size: 15px; color: var(--pb-text); font-weight: 650; }
+#pbApp#pbApp #screen-tools .pb-tools-search > input { min-height: 52px; padding-left: 46px; background-color: var(--pb-raised); border-radius: 12px; font-size: 17px; }
+#pbApp #screen-tools .pb-tools-search::after { content: ""; position: absolute; left: 14px; bottom: 15px; width: 22px; height: 22px; background: var(--pb-text-2); -webkit-mask: var(--pb-icon-search) center / contain no-repeat; mask: var(--pb-icon-search) center / contain no-repeat; pointer-events: none; }
+#pbApp #screen-tools .pb-edu-block > .pb-edu-h, #pbApp #screen-tools #toolsAllResults > .pb-edu-h { margin: var(--pb-section-gap, 24px) 16px 0 16px; font-size: 17px; }
+#pbApp :is(#screen-tools, #screen-archive) .pb-tools-group { margin: 10px 16px 0 16px; background: var(--pb-surface); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--pb-r-card, 14px); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+#pbApp#pbApp :is(#screen-tools, #screen-archive) .pb-tools-group > .pb-edu-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; column-gap: 14px; align-items: center; width: 100%; margin: 0; padding: 12px 14px 12px 16px; min-height: 64px; background: transparent; border: none; border-radius: 0; box-shadow: none; text-align: left; }
+#pbApp#pbApp :is(#screen-tools, #screen-archive) .pb-tools-group > .pb-edu-row + .pb-edu-row { border-top: 1px solid var(--pb-divider); }
+#pbApp :is(#screen-tools, #screen-archive) .pb-tools-group .tx { display: flex; flex-direction: column; min-width: 0; }
+#pbApp :is(#screen-tools, #screen-archive) .pb-tools-group .name { font-size: 16px; font-weight: 600; line-height: 1.3; color: var(--pb-text); overflow-wrap: anywhere; }
+#pbApp :is(#screen-tools, #screen-archive) .pb-tools-group .sub { font-size: 14px; line-height: 1.35; color: var(--pb-text-2); margin-top: 2px; }
+#pbApp :is(#screen-tools, #screen-archive) .pb-tools-group .chev { font-size: 0; color: var(--pb-text-2); }
+#pbApp :is(#screen-tools, #screen-archive) .pb-tools-group .chev::after { content: ""; display: block; width: 20px; height: 20px; background: currentColor; -webkit-mask: var(--pb-icon-chevron-right) center / contain no-repeat; mask: var(--pb-icon-chevron-right) center / contain no-repeat; }
+#pbApp#pbApp #screen-tools .pb-tools-group > .pb-edu-row.pb-dest-locked { border-style: none; }
+#pbApp #screen-tools .pb-tools-group > .pb-edu-row.pb-dest-locked + .pb-edu-row, #pbApp #screen-tools .pb-tools-group > .pb-edu-row + .pb-edu-row.pb-dest-locked { border-top: 1px solid var(--pb-divider); }
+#pbApp #screen-tools .pb-tools-group .pb-dest-lock { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 13px; font-weight: 600; color: var(--pb-text-2); }
+#pbApp #screen-tools .pb-tools-group .pb-dest-lock::before { content: ""; width: 14px; height: 14px; background: currentColor; -webkit-mask: var(--pb-icon-lock) center / contain no-repeat; mask: var(--pb-icon-lock) center / contain no-repeat; }
+#pbApp #screen-tools .pb-tools-empty { margin: 16px 16px 0 16px; font-size: 15px; color: var(--pb-text-2); }
+#pbApp #screen-tools .pb-tools-try { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 16px 0 16px; }
+#pbApp#pbApp #screen-tools .pb-tools-try .pb-edu-link { display: inline-flex; align-items: center; margin: 0; min-height: 48px; padding: 0 16px; border-radius: var(--pb-r-pill, 999px); background: var(--pb-raised-2); border: 1px solid rgba(255,255,255,0.08); color: var(--pb-text); font-size: 15px; font-weight: 600; text-decoration: none; }
+#pbApp #screen-archive .pb-arch-jobs { margin: 16px var(--pb-gutter, 16px) 0 var(--pb-gutter, 16px); }
+.pb-tool-row[data-ic="star"] { --pb-tool-icon: var(--pb-icon-star); }
+.pb-tool-row[data-ic="jobs"] { --pb-tool-icon: var(--pb-icon-jobs); }
+@media (max-width: 400px) {
+  #pbApp#pbApp.pb-text-big :is(#screen-tools, #screen-archive) .pb-tools-group > .pb-edu-row { grid-template-columns: minmax(0, 1fr) auto; }
+  #pbApp#pbApp.pb-text-big :is(#screen-tools, #screen-archive) .pb-tools-group > .pb-edu-row > .pb-tool-ic { display: none; }
+}
+/* the Calculators tab's label: "Calculators", a size smaller in a narrow tab, "Calcs" in the narrowest
+   (Large or Extra Large text on a small phone), drawn by CSS: the text and the button's name stay "Calculators". */
+#pbTabBar .pb-tab { container-type: inline-size; }
+@container (max-width: 75.9px) { #pbTabBar .pb-tab[data-tab="calculators"] .lb { font-size: 0; } #pbTabBar .pb-tab[data-tab="calculators"] .lb::after { content: "Calcs"; font-size: 12.5px; } }
+@container (min-width: 76px) and (max-width: 87.9px) { #pbTabBar .pb-tab[data-tab="calculators"] .lb { font-size: 11px; } }
+
 /* PB2:css:jobs */
 /* A4: Jobs screen, Reports top, Save to Phone. Existing look (phase B restyles). */
 .pb-eyebrow-actions { display: inline-flex; gap: 8px; align-items: center; }
@@ -2451,6 +2485,12 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp #screen-confinedActive .cp-due { white-space: normal; flex-wrap: wrap; font-size: 12.5px; gap: 0 4px; padding: 2px 8px 2px 6px; max-width: 100%; }
 #pbApp#pbApp #screen-confinedActive .cp-due > span { white-space: nowrap; }
 #pbApp#pbApp #screen-confinedActive .cp-gas:has(b.cp-overdue) > .cp-due-slot { display: none; }
+/* UX batch 3: the one re-test chip sits beside the "Latest Air Readings" heading (wraps under it when narrow) */
+#pbApp#pbApp #screen-confinedActive .cp-air-headrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-bottom: 8px; }
+#pbApp#pbApp #screen-confinedActive .cp-air-headrow > .cp-air-head { margin-bottom: 0; }
+#pbApp#pbApp #screen-confinedActive .cp-air-headrow > .cp-due-slot { display: block; margin-top: 0; }
+#pbApp#pbApp #screen-confinedActive .cp-air-headrow > .cp-due-slot:empty { display: none; }
+#pbApp#pbApp #screen-confinedActive .cp-air-headrow .cp-due { font-size: 14px; min-height: 30px; }
 
 /* UX batch 2 (B3): New Run, Cutsheet Import, Review and Results in the dark system. Display only. */
 /* ---- shared bits on these four screens ---- */
@@ -3115,9 +3155,10 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <p class="pb-eyebrow"><span>CALCULATORS</span><button class="pb-back" title="Home" onclick="pbGoto('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11L12 3l9 8"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></button></p>
       <h1 class="pb-title">Calculators</h1>
     </div>
-    <!-- UX batch 2 (A5): Tools. One searchable list under the old category names; the category screens stay. -->
+    <!-- UX batch 2 (A5): one searchable list under the old category names; the category screens stay. -->
+    <!-- UX batch 3 (T1): this is the Calculators tab again; its list and search hold the calculators only. -->
     <div class="pb-field pb-tools-search" style="margin:16px 16px 0 16px;">
-      <label for="toolsSearchBox">Search tools</label>
+      <label for="toolsSearchBox">Search calculators</label>
       <input type="search" enterkeyhint="search" autocomplete="off" id="toolsSearchBox" placeholder="e.g. concrete, rod shot, fall, shoring" oninput="pbToolsSearch()">
     </div>
     <div id="toolsSearchResults" style="display:none;" aria-live="polite"></div>
@@ -3131,6 +3172,21 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <button type="button" class="pb-edu-link" onclick="pbGoto('calcCatStructures')">Structures</button>
       </div>
     </section>
+  </div>
+
+  <!-- TOOLS (UX batch 3, T1): the Tools tab. Quick Run, confined space permits, Education & Reference, Stats
+       (every plan) and the Home shortcut editor; its search finds calculators too. Drawn by pbRenderToolsTab. -->
+  <div class="pb-screen" id="screen-tools">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>Tools</span><button class="pb-back" title="Home" onclick="pbGoto('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11L12 3l9 8"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></button></p>
+      <h1 class="pb-title">Tools</h1>
+    </div>
+    <div class="pb-field pb-tools-search" style="margin:16px 16px 0 16px;">
+      <label for="toolsAllSearchBox">Search tools and calculators</label>
+      <input type="search" enterkeyhint="search" autocomplete="off" id="toolsAllSearchBox" placeholder="e.g. quick run, stats, concrete" oninput="pbToolsAllSearch()">
+    </div>
+    <div id="toolsAllResults" style="display:none;" aria-live="polite"></div>
+    <div id="toolsAllList"></div>
   </div>
 
   <!-- MY SHORTCUTS: EDIT (UX batch 2, A5) -->
@@ -4039,6 +4095,11 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     </div>
     <div id="archiveTopActions">
       <div class="pb-btn-wrap" style="padding-top:16px;"><button type="button" class="pb-btn" id="archiveNewReportBtn" onclick="pbOpenReportIssue()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>New Management Report</button></div>
+      <!-- UX batch 3 (T1): the job list and Job Summary live in Reports now (the Jobs tab is gone) -->
+      <div class="pb-tools-group pb-arch-jobs" id="archiveJobsGroup" role="group" aria-label="Jobs">
+        <button type="button" class="pb-edu-row pb-tool-row" id="archiveJobsBtn" data-ic="jobs" onclick="pbReportsOpenJobs()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Jobs</span><span class="sub">Runs and permits by job number</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
+        <button type="button" class="pb-edu-row pb-tool-row" id="archiveJobSummaryBtn" data-dest="jobSummary" onclick="pbOpenDest('jobSummary')"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Job Summary</span><span class="sub">Totals for one job number, for PMs and supers</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
+      </div>
       <h2 class="pb-reports-heading" id="archiveMyReportsHeading">My Reports</h2>
     </div>
     <div class="pb-warn photo pb-arch-durable">
@@ -4084,7 +4145,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       </div>
     </div>
     <div class="pb-arch-tools">
-      <div class="pb-arch-toolrow"><button class="pb-btn secondary small" onclick="pbOpenJobSummary()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-reports"/></svg>Job Summary (for PMs/Supers)</button></div>
+      <!-- UX batch 3 (T1): Job Summary moved up to the Jobs rows at the top of Reports -->
       <div class="pb-arch-toolrow"><button class="pb-btn ghost small" id="archiveBulkSendBtn" onclick="pbBulkSendArchive()">Send All Un-sent Reports</button></div>
       <details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>What bulk send includes</span></summary><p class="pb-note-general">Bulk send combines every un-sent report into one email, regardless of the filters above. Reports to Management are not included &mdash; each goes to its own recipient, so use Send Email on each. Very long combined text may get truncated by some mail apps.</p></details>
       <div class="pb-arch-toolrow"><span class="pb-arch-k">Download</span><button class="pb-btn ghost small" onclick="pbExportArchiveCSV()">Download Spreadsheet</button><button class="pb-btn ghost small" onclick="pbDownloadArchiveAllPDF()">Download All as PDF</button><button class="pb-btn ghost small" onclick="pbDownloadArchiveBoth()">Download Both (Spreadsheet + PDF)</button></div>
@@ -4163,7 +4224,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   <!-- JOBS (UX batch 2): jobs on this phone, from this account's own records plus jobs added by hand -->
   <div class="pb-screen" id="screen-jobs">
     <div class="pb-header">
-      <p class="pb-eyebrow"><span>JOBS</span><span class="pb-eyebrow-actions"><button type="button" class="pb-profile-btn" id="pbProfileBtnJobs" aria-label="Account and settings" title="Account and settings" onclick="pbOpenSettings()"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></button><button class="pb-back" title="Home" onclick="pbGoto('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11L12 3l9 8"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></button></span></p>
+      <p class="pb-eyebrow"><span>JOBS</span><button type="button" class="pb-back" id="jobsHeaderBack" title="Back" aria-label="Back" onclick="pbJobsBack()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button><span class="pb-eyebrow-actions"><button type="button" class="pb-profile-btn" id="pbProfileBtnJobs" aria-label="Account and settings" title="Account and settings" onclick="pbOpenSettings()"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></button><button class="pb-back" title="Home" onclick="pbGoto('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11L12 3l9 8"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></button></span></p>
       <h1 class="pb-title">Jobs</h1>
     </div>
     <div id="jobsListView">
@@ -4207,7 +4268,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   <!-- STATS -->
   <div class="pb-screen" id="screen-stats">
     <div class="pb-header">
-      <p class="pb-eyebrow"><span>STATS</span><button class="pb-back" title="Home" onclick="pbGoto('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11L12 3l9 8"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></button></p>
+      <p class="pb-eyebrow"><span>STATS</span><button type="button" class="pb-back" id="statsHeaderBack" title="Back" aria-label="Back" onclick="pbStatsBack()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button><button class="pb-back" title="Home" onclick="pbGoto('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11L12 3l9 8"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></button></p>
       <h1 class="pb-title">Stats</h1>
     </div>
     <!-- UX batch 2 (B5, style): one line, the explanations behind (i); filters as compact dark selects; totals as big numbers -->
@@ -5602,9 +5663,10 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 </script>
 <!-- PB2:tabbar -->
 <!-- UX batch 2 (A1): bottom tabs. Each tab goes through pbGotoTab, which checks the plan and uses pbGoto. -->
+<!-- UX batch 3 (T1): Home · Calculators · Tools · Reports. The Jobs tab is gone: Jobs and Job Summary are in Reports. -->
 <nav class="pb-tabbar" id="pbTabBar" aria-label="Main">
   <button type="button" class="pb-tab" id="pbTabHome" data-tab="home" onclick="pbGotoTab('home')"><span class="ic"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-home"/></svg><span class="lk"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="10" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4"/></svg></span></span><span class="lb">Home</span></button>
-  <button type="button" class="pb-tab" id="pbTabJobs" data-tab="jobs" onclick="pbGotoTab('jobs')"><span class="ic"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-jobs"/></svg><span class="lk"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="10" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4"/></svg></span></span><span class="lb">Jobs</span></button>
+  <button type="button" class="pb-tab" id="pbTabCalculators" data-tab="calculators" onclick="pbGotoTab('calculators')"><span class="ic"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-calc"/></svg><span class="lk"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="10" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4"/></svg></span></span><span class="lb">Calculators</span></button>
   <button type="button" class="pb-tab" id="pbTabTools" data-tab="tools" onclick="pbGotoTab('tools')"><span class="ic"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-tools"/></svg><span class="lk"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="10" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4"/></svg></span></span><span class="lb">Tools</span></button>
   <button type="button" class="pb-tab" id="pbTabReports" data-tab="reports" onclick="pbGotoTab('reports')"><span class="ic"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-reports"/></svg><span class="lk"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="10" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4"/></svg></span></span><span class="lb">Reports</span></button>
 </nav>
@@ -6516,13 +6578,23 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   }
   window.pbHomeFinishRun = function(id) {
     if (!pbCanOpen(PB_HOME_FINISH_GATE, { explain: true }) || !pbCanOpen('input', { explain: true })) return;
-    if (pbHomeAskAboutRunDraft(() => pbArchiveTap('pbResumeIncompleteRun', id))) return;
-    pbArchiveTap('pbResumeIncompleteRun', id); // the Archive's own Resume This Run, with all its checks
+    if (pbHomeAskAboutRunDraft(() => pbHomeFinishGo(id))) return;
+    pbHomeFinishGo(id);
   };
+  // UX batch 3: contractor goes through the Archive's own Resume This Run, as before. The individual plan
+  // has no Archive: the same Resume This Run (every check: already resumed, still saving, Stats, crew),
+  // found by id at the tap, with no Archive list redrawn and no Archive wording. Finishing ends with
+  // End Run, which goes Home and offers Save to Phone; nothing opens the Archive.
+  function pbHomeFinishGo(id) {
+    if (!pbCanOpen('input')) { pbShowSubscriptionRequiredMessage('input'); return; }
+    if (pbCanOpen('archive')) { pbArchiveTap('pbResumeIncompleteRun', id); return; } // the Archive's own Resume This Run, with all its checks
+    const i = runArchive.findIndex(e => e && e.id === id);
+    if (i === -1) { pbAlert('This run is no longer on this phone, so there is nothing to finish. Nothing was changed.', 'Run Not Found'); try { window.pbRenderHome(); } catch (e) {} return; }
+    window.pbResumeIncompleteRun(i);
+  }
   let pbHomeFinishShowAll = false;
-  // Which plan may finish a run ended early from Home: the Archive's (Resume This Run lives there; contractor),
-  // as on base. Waiting on Tommy: 'input' would let the individual plan finish runs too.
-  const PB_HOME_FINISH_GATE = 'archive';
+  // Which plan may finish a run ended early from Home. UX batch 3 (owner): both plans, so New Run's ('input').
+  const PB_HOME_FINISH_GATE = 'input';
   window.pbHomeShowAllFinish = function() { pbHomeFinishShowAll = true; window.pbRenderHome(); };
   let pbHomeProvided = [];
   window.pbHomeOpenProvided = function(i) {
@@ -6764,7 +6836,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   // UX batch 2 reserves: 'settings' and 'shortcutsEdit' for everyone, 'jobs' for the
   // individual plan, and 'reports' (the Archive screen, see pbCanOpen) for contractor.
   const PB_ALWAYS_ALLOWED_SCREENS = ['home', 'login', 'settings', 'shortcutsEdit'];
-  const PB_INDIVIDUAL_SCREENS = ['input', 'quickrun', 'calcHub', 'stats', 'formulasHub', 'jobs'];
+  const PB_INDIVIDUAL_SCREENS = ['input', 'quickrun', 'calcHub', 'stats', 'formulasHub', 'jobs', 'tools']; // UX batch 3: 'tools' is the Tools tab's screen
   const PB_CONTRACTOR_SCREENS = ['confinedHub', 'archive', 'reportIssue', 'reports'];
   let sbCachedSubscription = { tier: 'none', status: 'inactive' };
 
@@ -6796,17 +6868,19 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     if (!ok && opts && opts.explain) pbShowSubscriptionRequiredMessage(name);
     return ok;
   };
-  // UX batch 2: the bottom tab a screen belongs to ('home', 'jobs', 'tools', 'reports'), or null for
-  // sign-in screens and work/form screens that sit under no tab (run form, review, results, permit).
+  // UX batch 2: the bottom tab a screen belongs to, or null for sign-in screens and work/form screens
+  // that sit under no tab (run form, review, results, permit).
+  // UX batch 3 (T1): tabs are 'home', 'calculators', 'tools', 'reports'. Jobs and Job Summary moved into
+  // Reports; Stats moved into Tools (both plans); every calculator and its category is Calculators.
   const PB_SCREEN_TABS = {
     home: 'home', settings: 'home', shortcutsEdit: 'home',
-    jobs: 'jobs', stats: 'jobs', jobSummary: 'jobs',
+    jobs: 'reports', jobSummary: 'reports', stats: 'tools',
     reports: 'reports', archive: 'reports', reportIssue: 'reports', reportReceipt: 'reports',
-    calcHub: 'tools', calcCatGrade: 'tools', calcCatTrench: 'tools', calcCatPipe: 'tools', calcCatStructures: 'tools',
-    bendCalc: 'tools', beddingCalc: 'tools', flowCalc: 'tools', volumeCalc: 'tools', ventCalc: 'tools',
-    trenchCalc: 'tools', pipeWeightCalc: 'tools', liftCalc: 'tools', slopeConvCalc: 'tools', fracCalc: 'tools',
-    manningCalc: 'tools', manholeDepthCalc: 'tools', rodElevCalc: 'tools',
-    quickrun: 'tools', formulasHub: 'tools', confinedHub: 'tools',
+    calcHub: 'calculators', calcCatGrade: 'calculators', calcCatTrench: 'calculators', calcCatPipe: 'calculators', calcCatStructures: 'calculators',
+    bendCalc: 'calculators', beddingCalc: 'calculators', flowCalc: 'calculators', volumeCalc: 'calculators', ventCalc: 'calculators',
+    trenchCalc: 'calculators', pipeWeightCalc: 'calculators', liftCalc: 'calculators', slopeConvCalc: 'calculators', fracCalc: 'calculators',
+    manningCalc: 'calculators', manholeDepthCalc: 'calculators', rodElevCalc: 'calculators',
+    tools: 'tools', quickrun: 'tools', formulasHub: 'tools', confinedHub: 'tools',
     refRod: 'tools', refPipeDiagram: 'tools', refSlope: 'tools', refBends: 'tools', refFlowVolume: 'tools',
     refTrench: 'tools', refPipe: 'tools', refConfined: 'tools', refConcrete: 'tools', refSafety: 'tools', refGlossary: 'tools',
     login: null, setPassword: null,
@@ -6814,7 +6888,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   };
   window.pbScreenTab = function(name) {
     if (Object.prototype.hasOwnProperty.call(PB_SCREEN_TABS, name)) return PB_SCREEN_TABS[name];
-    if (typeof name === 'string' && /^(ref[A-Z]\w*|\w+Calc)$/.test(name)) return 'tools'; // a later calculator or reference page
+    if (typeof name === 'string' && /^ref[A-Z]\w*$/.test(name)) return 'tools'; // a later reference page
+    if (typeof name === 'string' && /^\w+Calc$/.test(name)) return 'calculators'; // a later calculator
     return null;
   };
   async function pbLoadCachedSubscription() {
@@ -7419,7 +7494,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   // Reports and Jobs. Its account line and Log In / Log Out button copy #loggedInAs and #loginToggleLink
   // (still on Home, drawn by updateLoginStatusDisplay) and the button runs the same pbLoginToggleAction,
   // so every Log Out / Lock This Phone question still comes first. Nothing here changes the account.
-  const PB_PROFILE_SCREENS = ['calcHub', 'archive', 'jobs'];
+  const PB_PROFILE_SCREENS = ['calcHub', 'archive', 'jobs', 'tools']; // UX batch 3: every tab root has it
   const PB_PROFILE_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7.5 8-7.5s8 3.1 8 7.5"/></svg>';
   function pbAddProfileButtons() {
     PB_PROFILE_SCREENS.forEach(name => {
@@ -7449,7 +7524,16 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     const src = document.getElementById('loggedInAs'), link = document.getElementById('loginToggleLink');
     const st = document.getElementById('settingsAccountStatus');
     if (st) { const t = src ? src.textContent.trim() : ''; st.textContent = t || 'Checking sign-in\u2026'; }
-    const pl = document.getElementById('settingsPlanStatus'); if (pl) pl.textContent = st && /^Checking/.test(st.textContent) ? 'Plan: checking\u2026' : pbPlanStatusText();
+    const pl = document.getElementById('settingsPlanStatus');
+    if (pl) {
+      const checking = !!st && /^Checking/.test(st.textContent);
+      pl.textContent = checking ? 'Plan: checking\u2026' : pbPlanStatusText();
+      // UX batch 3: the account line already says the plan when signed in ("... contractor plan (active)"),
+      // or that it is checking, so this line is not shown then. Signed out it still says which plan this
+      // phone keeps (offline use, not confirmed), which the account line does not.
+      const hide = checking || !!sbUser;
+      if (pl.style.display !== (hide ? 'none' : '')) pl.style.display = hide ? 'none' : '';
+    }
     const label = (link && link.textContent.trim()) || 'Log In';
     const btn = document.getElementById('settingsLoginBtn');
     if (btn) { if (btn.textContent !== label) btn.textContent = label; btn.classList.toggle('ghost', /Log Out/.test(label)); }
@@ -7807,16 +7891,17 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     pbGoto(pbHistory[pbHistory.length - 1], true);
   };
   // ---------- UX batch 2 (A1): bottom tab bar and active bar ----------
-  // Tabs: Home | Jobs | Tools | Reports. A tab is a way onto a screen like any other: it checks the plan
+  // Tabs: Home | Calculators | Tools | Reports (UX batch 3; Jobs is inside Reports now).
+  // A tab is a way onto a screen like any other: it checks the plan
   // first, then goes through pbGoto (or the screen's own opener, which calls pbGoto), so every
   // leave-without-saving question still runs. Only once the move has really happened is the Back
   // history cleared (a tab starts a fresh trail); a question answered Cancel leaves everything as it was.
   function pbTabRootScreen(tab) {
     if (tab === 'home') return 'home';
-    if (tab === 'jobs') return document.getElementById('screen-jobs') ? 'jobs' : 'stats'; // A4 builds screen-jobs; Stats until then
-    if (tab === 'tools') return 'calcHub';
+    if (tab === 'calculators') return 'calcHub';
+    if (tab === 'tools') return 'tools';
     if (tab === 'reports') return 'archive';
-    return null;
+    return null; // 'jobs' is no longer a tab (UX batch 3): Reports -> Jobs, with Reports' plan check
   }
   const pbTabGateName = (tab) => tab === 'reports' ? 'reports' : pbTabRootScreen(tab);
   let pbTabMovePending = null; // { root }: a tab's move waiting on a leave-without-saving answer
@@ -7827,8 +7912,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     if (!window.pbCanOpen(pbTabGateName(tab), { explain: true })) return false;
     pbTabMovePending = { root };
     if (root === 'archive') window.pbOpenArchive(); // its filters are filled, then pbGoto('archive')
-    else if (root === 'stats') window.pbOpenStats();
-    else if (root === 'jobs' && typeof window.pbOpenJobs === 'function') window.pbOpenJobs();
     else pbGoto(root);
     if (pbTabMovePending && pbCurrentScreen !== root) {
       // A question is open (Leave without saving?). Its Continue moves and the screen hook clears the
@@ -16178,7 +16261,9 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     const gases = [['o2', 'O2', '%'], ['lel', 'LEL', '%'], ['h2s', 'H2S', ' ppm'], ['co', 'CO', ' ppm']];
     const ivl = typeof p.atmoInterval === 'number' && p.atmoInterval > 0 ? p.atmoInterval : null;
     let air = '';
-    const dueSlot = '<span class="cp-due-slot">' + pbCpAirDueChip() + '</span>'; // UX batch 2 (B4)
+    // UX batch 3: one re-test chip by the "Latest Air Readings" heading (every gas is tested at the same
+    // time with one meter), shown once a gas has been measured, as the per-tile chips were.
+    const dueSlot = ''; let anyMeasured = false;
     if (confinedLastObservation && confinedLastObservation.unsafe) air += '<div class="cp-st-bad">UNSAFE reading in effect &mdash; DO NOT ENTER. See the red banner above.</div>';
     const latchedGases = [];
     h += '</div>';
@@ -16202,7 +16287,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
           newer = !same && (ls > bs || (haz(Lo[g]) && !haz(best.r[g]) && lt > bt));
         }
         if (newer) {
-          latchedGases.push(label + ' ' + Lo[g] + unit);
+          latchedGases.push(label + ' ' + Lo[g] + unit); anyMeasured = true;
           air += '<div class="cp-gas latched"><span class="g">' + label + '</span> <strong>' + escapeHtml(Lo[g]) + unit + '</strong><span class="cp-gas-meta"><span class="cp-sep"> · </span>'
             + (isNaN(lt) ? 'time not kept' : new Date(lt).toLocaleTimeString() + ' · ' + pbCpAgeText(lt))
             + ' · <b>measured, NOT logged</b> (the reading was refused as a record or did not save)' + (haz(Lo[g]) ? ' · <b>outside the limit &mdash; DO NOT ENTER</b>' : '') + '</span>'
@@ -16211,6 +16296,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         }
       }
       if (!best) { air += '<div class="cp-gas"><span class="g">' + label + '</span> <span class="none">Not measured on this permit yet</span></div>'; return; }
+      anyMeasured = true;
       const t = new Date(best.r.time).getTime();
       const old = ivl && !isNaN(t) && Date.now() - t > ivl * 60000;
       const outLim = pbCpGasOutside(p, g, best.r[g]); // UX batch 2 (B4): display only
@@ -16223,7 +16309,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     if (other) air += '<div class="cp-gas"><span class="g">Other</span> ' + escapeHtml(other.r.other) + ' · ' + new Date(other.r.time).toLocaleTimeString() + '</div>';
     air += '<div class="cp-st-note cp-air-qual">Logged readings, not an entry approval.</div>'; // UX batch 2 (B8): stays visible
     air += '<details class="pb-more b4-more cp-limits-more"><summary>' + PB_B4_INFO + '<span>Limits these are checked against</span></summary><div class="cp-st-note">Checked against: ' + escapeHtml(pbLimitsText(p)) + '. These are the readings logged here, not an entry approval.</div></details>';
-    h += '<div class="cp-air"><div class="cp-air-head">Latest Air Readings</div>' + air + '</div>';
+    h += '<div class="cp-air"><div class="cp-air-headrow"><div class="cp-air-head">Latest Air Readings</div>' + (anyMeasured ? '<span class="cp-due-slot" id="cpAirDueSlot">' + pbCpAirDueChip() + '</span>' : '') + '</div>' + air + '</div>';
     h += row('Reminders', escapeHtml(pbRemindersText(p.atmoInterval, p.commInterval)) + (pbEmergencyOpen() ? '<div class="cp-st-bad">Paused while the EMERGENCY is open.</div>' : '') + '<details class="pb-more b4-more"><summary>' + PB_B4_INFO + '<span>When reminders run</span></summary><div class="cp-st-note">The countdowns below appear once someone has checked in. They only run while this screen is open and awake.</div></details>', 'cp-rem-row');
     // UX batch 2 (B9): keep which disclosures were open, and the focused one, across the periodic rebuild
     const pbOpenKeys = Array.from(grid.querySelectorAll('details[open] > summary')).map(x => x.textContent);
@@ -21457,11 +21543,15 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   // unknown and is offered for removal ("no longer in the app"), never silently mapped to another tool.
   // gate: the screen whose plan rule applies (calculators sit under Calculators/Tools). Every launch asks
   // pbCanOpen(gate) first: calculator screens themselves are unlisted, so pbGoto alone would allow them.
-  // tools: false = an action (Reports / Jobs tab) offered as a shortcut but not listed under Tools.
+  // tools: false = an action (the Reports tab) offered as a shortcut but not listed under Calculators or Tools.
+  // UX batch 3 (T1): the calculator categories (PB_CALC_CATS) are the Calculators tab; every other listed
+  // destination is the Tools tab, Stats included on every plan. Confined Space Permits has its own category.
   const PB_DEST_CATS = [
     ['run', 'Run Tools'], ['grade', 'Grade & Elevation'], ['safety', 'Safety'], ['pipe', 'Pipe & Flow'],
-    ['structures', 'Structures'], ['reference', 'Education & Reference'], ['records', 'Reports & Records']
+    ['structures', 'Structures'], ['permits', 'Confined Space'], ['reference', 'Education & Reference'], ['records', 'Reports & Records']
   ];
+  const PB_CALC_CATS = ['grade', 'safety', 'pipe', 'structures'];
+  const PB_TOOLS_TAB_CATS = [['run', 'Run Tools'], ['permits', 'Confined Space'], ['reference', 'Education & Reference'], ['records', 'Production']];
   const PB_DESTINATIONS = [
     { id: 'quickRun', label: 'Quick Run', sub: 'Basic grade calculations', cat: 'run', gate: 'quickrun', screen: 'quickrun', words: 'quick run grade fall slope rod readings elevations stations cut fill', open: () => pbOpenQuickRun() },
     { id: 'rodElev', label: 'Rod Reading → Elevation', sub: 'Set HI from a known point, then convert any reading to an elevation', cat: 'grade', gate: 'calcHub', screen: 'rodElevCalc', words: 'rod shot rod reading hi height of instrument elevation benchmark backsight level laser', open: () => pbOpenRodElevCalc() },
@@ -21471,7 +21561,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     { id: 'bedding', label: 'Bedding Elevation', sub: 'Top of bedding / bottom of bedding at a manhole', cat: 'grade', gate: 'calcHub', screen: 'beddingCalc', words: 'bedding rock gravel manhole invert bottom of pipe elevation', open: () => pbOpenBeddingCalc(null) },
     { id: 'trench', label: 'Trench Sloping & Shoring', sub: 'OSHA max allowable slope by soil type, plus top width', cat: 'safety', gate: 'calcHub', screen: 'trenchCalc', words: 'trench shoring sloping benching osha soil type trench box shield excavation cave-in top width', open: () => pbOpenTrenchCalc() },
     { id: 'vent', label: 'Confined Space Ventilation', sub: 'Rule-of-thumb blower CFM sizing — not an OSHA compliance number', cat: 'safety', gate: 'calcHub', screen: 'ventCalc', words: 'ventilation blower fan cfm air changes per hour ach confined space manhole vault', open: () => pbOpenVentCalc() },
-    { id: 'confinedHub', label: 'Confined Space Permits', sub: 'Start an entry permit, or return to the active one', cat: 'safety', gate: 'confinedHub', screen: 'confinedHub', words: 'confined space entry permit attendant entrant roster', open: () => pbGoto('confinedHub') },
+    { id: 'confinedHub', label: 'Confined Space Permits', sub: 'Start an entry permit, or return to the active one', cat: 'permits', gate: 'confinedHub', screen: 'confinedHub', words: 'confined space entry permit attendant entrant roster', open: () => pbGoto('confinedHub') },
     { id: 'pipeWeight', label: 'Pipe Weight', sub: 'Weight per foot and total segment weight by material', cat: 'pipe', gate: 'calcHub', screen: 'pipeWeightCalc', words: 'pipe weight pounds lbs per foot ductile iron pvc rcp concrete lifting rigging', open: () => pbGoto('pipeWeightCalc') },
     { id: 'manning', label: 'Manning’s Equation', sub: 'Full-pipe gravity flow capacity and velocity', cat: 'pipe', gate: 'calcHub', screen: 'manningCalc', words: 'manning mannings flow capacity velocity gravity full pipe cfs', open: () => pbGoto('manningCalc') },
     { id: 'flow', label: 'Flush / Flow Rate', sub: 'Flow rate and time-to-target-gallons for a pressurized flush', cat: 'pipe', gate: 'calcHub', screen: 'flowCalc', words: 'flush flow rate gpm gallons pressure psi hydrant', open: () => pbOpenFlowCalc() },
@@ -21481,14 +21571,16 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     { id: 'edu', label: 'Education & Reference', sub: 'Explanations, formulas and field terms', cat: 'reference', gate: 'formulasHub', screen: 'formulasHub', words: 'education reference help learn formulas glossary terms explanations', open: () => pbGoto('formulasHub') },
     { id: 'confinedRef', label: 'Confined Space Reference', sub: (PB_EDU_ARTICLES.refConfined && PB_EDU_ARTICLES.refConfined.sub) || 'Confined space reference', cat: 'reference', gate: 'formulasHub', screen: 'refConfined', words: 'confined space reference lel o2 h2s oxygen gas attendant entry conditions', open: () => pbEduOpen('refConfined') },
     { id: 'reportIssue', label: 'Report to Management', sub: 'Send a report with photos — named or anonymous', cat: 'records', gate: 'reportIssue', screen: 'reportIssue', tools: false, words: 'report issue management safety incident problem photo', open: () => pbOpenReportIssue() },
-    { id: 'stats', label: 'Stats', sub: 'Footage totals and more', cat: 'records', gate: 'stats', screen: 'stats', tools: false, words: 'stats footage totals production', open: () => pbOpenStats() },
+    { id: 'stats', label: 'Stats', sub: 'Footage totals and more', cat: 'records', gate: 'stats', screen: 'stats', words: 'stats footage totals production feet pipe laid', /* UX batch 3: listed in Tools */ open: () => pbOpenStats() },
     { id: 'jobSummary', label: 'Job Summary', sub: 'Totals for one job number, from the Archive', cat: 'records', gate: 'archive', screen: 'jobSummary', tools: false, words: 'job summary totals pm super production', open: () => pbOpenJobSummary() }
   ];
   const PB_DEST = Object.fromEntries(PB_DESTINATIONS.map(d => [d.id, d]));
   const PB_DEST_BY_SCREEN = Object.fromEntries(PB_DESTINATIONS.map(d => [d.screen, d.id]));
   const PB_SC_DEFAULTS = ['volume', 'trench', 'frac', 'bedding']; // D5: Material Volume, Shoring/Sloping, Tenths <-> Inches, Bedding Elevation
   const PB_SC_VISIBLE = 6; // shown on Home before "Show all"
-  window.pbDestinations = PB_DESTINATIONS.map(d => ({ id: d.id, label: d.label, cat: d.cat, gate: d.gate, screen: d.screen, tools: d.tools !== false }));
+  // Which tab lists a destination: 'calculators', 'tools', or null (a Reports action).
+  const pbDestTab = (d) => d.tools === false ? null : PB_CALC_CATS.includes(d.cat) ? 'calculators' : 'tools';
+  window.pbDestinations = PB_DESTINATIONS.map(d => ({ id: d.id, label: d.label, cat: d.cat, gate: d.gate, screen: d.screen, tools: d.tools !== false, tab: pbDestTab(d) }));
   // Why a destination can't open right now ('' when it can).
   function pbDestLockReason(d) {
     if (window.pbCanOpen(d.gate)) return '';
@@ -21535,34 +21627,50 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     const lock = pbDestLockReason(d), short = PB_TOOL_SHORT[d.id] || d.sub;
     return '<button type="button" class="pb-edu-row pb-tool-row' + (lock ? ' pb-dest-locked' : '') + '" data-dest="' + d.id + '" title="' + escapeHtml(d.sub) + '" onclick="pbOpenDest(this.dataset.dest)"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">' + escapeHtml(d.label) + '</span><span class="sub">' + escapeHtml(extraSub ? extraSub + ' · ' + short : short) + '</span>' + (lock ? '<span class="pb-dest-lock">' + escapeHtml(lock) + '</span>' : '') + '</span><span class="chev" aria-hidden="true">&rsaquo;</span></button>';
   }
-  const pbToolsDests = () => PB_DESTINATIONS.filter(d => d.tools !== false);
+  // UX batch 3 (T1): the Calculators tab (calcHub, ids kept from A5: toolsSearchBox / toolsList) lists and
+  // searches the calculators; the Tools tab (screen-tools) lists the other tools and searches everything.
+  const pbToolsDests = () => PB_DESTINATIONS.filter(d => pbDestTab(d) === 'calculators');
+  const pbToolsAllDests = () => PB_DESTINATIONS.filter(d => pbDestTab(d) !== null);
+  const pbGroupHTML = (name, ds) => ds.length ? '<section class="pb-edu-block" aria-label="' + escapeHtml(name) + '"><h2 class="pb-edu-h">' + escapeHtml(name) + '</h2><div class="pb-tools-group">' + ds.map(d => pbDestRowHTML(d)).join('') + '</div></section>' : '';
   function pbRenderToolsList() {
     const box = document.getElementById('toolsList'); if (!box) return;
-    box.innerHTML = PB_DEST_CATS.map(([cat, name]) => {
-      const ds = pbToolsDests().filter(d => d.cat === cat);
-      return ds.length ? '<section class="pb-edu-block" aria-label="' + escapeHtml(name) + '"><h2 class="pb-edu-h">' + escapeHtml(name) + '</h2><div class="pb-tools-group">' + ds.map(d => pbDestRowHTML(d)).join('') + '</div></section>' : '';
-    }).join('');
+    box.innerHTML = PB_DEST_CATS.filter(c => PB_CALC_CATS.includes(c[0])).map(([cat, name]) => pbGroupHTML(name, pbToolsDests().filter(d => d.cat === cat))).join('');
   }
+  function pbRenderToolsTab() {
+    const box = document.getElementById('toolsAllList'); if (!box) return;
+    box.innerHTML = PB_TOOLS_TAB_CATS.map(([cat, name]) => pbGroupHTML(name, PB_DESTINATIONS.filter(d => pbDestTab(d) === 'tools' && d.cat === cat))).join('')
+      + '<section class="pb-edu-block" aria-label="Home shortcuts"><h2 class="pb-edu-h">Home shortcuts</h2><div class="pb-tools-group">'
+      + '<button type="button" class="pb-edu-row pb-tool-row" id="toolsEditShortcuts" data-ic="star" onclick="pbOpenShortcutsEdit()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Edit Home shortcuts</span><span class="sub">Pick the tools shown on Home</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>'
+      + '</div></section>';
+  }
+  window.pbRenderToolsTab = pbRenderToolsTab;
   const PB_TOOLS_SUGGEST = ['concrete', 'rod shot', 'fall', 'shoring', 'gpm'];
-  window.pbToolsSearch = function() {
-    const box = document.getElementById('toolsSearchBox'), res = document.getElementById('toolsSearchResults');
-    const list = document.getElementById('toolsList'), cats = document.getElementById('toolsBrowseCats');
+  const PB_TOOLS_ALL_SUGGEST = ['quick run', 'stats', 'permit', 'concrete', 'glossary'];
+  function pbToolsSearchIn(c) {
+    const box = document.getElementById(c.box), res = document.getElementById(c.res);
+    const list = document.getElementById(c.list), cats = c.cats ? document.getElementById(c.cats) : null;
     if (!box || !res) return;
     const q = box.value.trim();
-    if (!q) { res.style.display = 'none'; res.innerHTML = ''; list.style.display = ''; cats.style.display = ''; return; }
-    const hits = pbDestSearch(q, pbToolsDests());
-    const catName = (d) => (PB_DEST_CATS.find(c => c[0] === d.cat) || [])[1];
+    if (!q) { res.style.display = 'none'; res.innerHTML = ''; if (list) list.style.display = ''; if (cats) cats.style.display = ''; return; }
+    const hits = pbDestSearch(q, c.dests());
+    const catName = (d) => (PB_DEST_CATS.find(x => x[0] === d.cat) || [])[1];
     res.innerHTML = hits.length
-      ? '<h2 class="pb-edu-h">' + hits.length + (hits.length === 1 ? ' tool' : ' tools') + ' for “' + escapeHtml(q) + '”</h2><div class="pb-tools-group">' + hits.map(d => pbDestRowHTML(d, catName(d))).join('') + '</div>'
-      : '<p class="pb-tools-empty">No tool matches “' + escapeHtml(q) + '”. Try another word, or look it up in Education &amp; Reference.</p>'
-        + '<div class="pb-tools-try">' + PB_TOOLS_SUGGEST.map(t => '<button type="button" class="pb-edu-link" onclick="pbToolsTry(this)">' + escapeHtml(t) + '</button>').join('') + '</div>'
-        + '<div class="pb-tools-group"><button type="button" class="pb-edu-row pb-tool-row" data-ic="edu" onclick="pbToolsSearchEdu()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Search Education &amp; Reference for “' + escapeHtml(q) + '”</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button></div>';
-    res.style.display = ''; list.style.display = 'none'; cats.style.display = 'none';
+      ? '<h2 class="pb-edu-h">' + hits.length + ' ' + (hits.length === 1 ? c.one : c.many) + ' for “' + escapeHtml(q) + '”</h2><div class="pb-tools-group">' + hits.map(d => pbDestRowHTML(d, catName(d))).join('') + '</div>'
+      : '<p class="pb-tools-empty">No ' + c.one + ' matches “' + escapeHtml(q) + '”. Try another word, or look it up in Education &amp; Reference.</p>'
+        + '<div class="pb-tools-try">' + c.suggest.map(t => '<button type="button" class="pb-edu-link" onclick="pbToolsTry(this)">' + escapeHtml(t) + '</button>').join('') + '</div>'
+        + '<div class="pb-tools-group"><button type="button" class="pb-edu-row pb-tool-row" data-ic="edu" onclick="pbToolsSearchEdu(\'' + c.box + '\')"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Search Education &amp; Reference for “' + escapeHtml(q) + '”</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button></div>';
+    res.style.display = ''; if (list) list.style.display = 'none'; if (cats) cats.style.display = 'none';
+  }
+  window.pbToolsSearch = function() { pbToolsSearchIn({ box: 'toolsSearchBox', res: 'toolsSearchResults', list: 'toolsList', cats: 'toolsBrowseCats', dests: pbToolsDests, one: 'calculator', many: 'calculators', suggest: PB_TOOLS_SUGGEST }); };
+  window.pbToolsAllSearch = function() { pbToolsSearchIn({ box: 'toolsAllSearchBox', res: 'toolsAllResults', list: 'toolsAllList', dests: pbToolsAllDests, one: 'tool', many: 'tools', suggest: PB_TOOLS_ALL_SUGGEST }); };
+  window.pbToolsTry = function(btn) {
+    const onTools = !!btn.closest('#screen-tools');
+    const b = document.getElementById(onTools ? 'toolsAllSearchBox' : 'toolsSearchBox'); b.value = btn.textContent;
+    if (onTools) window.pbToolsAllSearch(); else window.pbToolsSearch();
   };
-  window.pbToolsTry = function(btn) { const b = document.getElementById('toolsSearchBox'); b.value = btn.textContent; pbToolsSearch(); };
-  window.pbToolsSearchEdu = function() {
+  window.pbToolsSearchEdu = function(fromId) {
     if (!window.pbCanOpen('formulasHub', { explain: true })) return;
-    const q = document.getElementById('toolsSearchBox').value.trim();
+    const q = (document.getElementById(fromId === 'toolsAllSearchBox' ? 'toolsAllSearchBox' : 'toolsSearchBox') || { value: '' }).value.trim();
     pbGoto('formulasHub');
     if (pbCurrentScreen !== 'formulasHub') return;
     const eb = document.getElementById('eduSearchBox'); if (eb) { eb.value = q; pbEduSearch(); }
@@ -21605,6 +21713,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   window.pbScreenHooks.push((name) => {
     if (name === 'home') pbRenderShortcuts();
     if (name === 'calcHub') { pbRenderToolsList(); pbToolsSearch(); }
+    if (name === 'tools') { pbRenderToolsTab(); window.pbToolsAllSearch(); } // UX batch 3 (T1)
     if (name === 'shortcutsEdit') pbShortcutsEditRender();
     if (PB_DEST_BY_SCREEN[name]) pbScSyncAddButtons();
   });
@@ -21651,7 +21760,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     await pbScEnsureLoaded();
     const ids = pbScIds();
     if (ids.includes(id)) { // already there: never a second copy; taking it off is a deliberate, confirmed step
-      pbShowModal(PB_DEST[id].label + ' is on Home in My Shortcuts. Remove it from Home? The tool itself stays in Tools.', [
+      pbShowModal(PB_DEST[id].label + ' is on Home in My Shortcuts. Remove it from Home? The tool itself stays in ' + (pbDestTab(PB_DEST[id]) === 'calculators' ? 'Calculators' : 'Tools') + '.', [
         { label: 'Keep It' },
         { label: 'Remove From Home', primary: true, onClick: async () => { if (!(await pbScSave(pbScIds().filter(x => x !== id)))) pbAlert('It couldn’t be removed because saving failed on this phone. ' + pbSaveAdvice(true), 'Not Saved'); } }
       ], 'Already on Home');
@@ -21742,19 +21851,16 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     ], 'Restore Default Shortcuts');
   };
 
-  // ---------- Calculator Back: back through history, else Tools ----------
+  // ---------- Calculator Back: back through history, else Calculators ----------
   // (pbCalcBack and the arrows that call pbGoBack both land here.) With no history, a calculator's Back
-  // goes to Tools, or Home when Tools isn't open to this plan, instead of doing nothing.
+  // goes to Calculators (calcHub), or Home when it isn't open to this plan, instead of doing nothing.
   const pbGoBackBeforeTools = window.pbGoBack;
   window.pbGoBack = function() {
     if (!pbHistory.length && /Calc$/.test(pbCurrentScreen)) { pbGoto(pbScreenAccessAllowed('calcHub') ? 'calcHub' : 'home'); return; }
     return pbGoBackBeforeTools.apply(this, arguments);
   };
-  // Tools is the Calculators screen's new name (its header markup is shared with A2's profile button).
-  (function() {
-    const h = document.querySelector('#screen-calcHub .pb-header .pb-title'); if (h) h.textContent = 'Tools';
-    const e = document.querySelector('#screen-calcHub .pb-header .pb-eyebrow > span'); if (e) e.textContent = 'Tools';
-  })();
+  // UX batch 3 (T1): calcHub is the Calculators tab again, so A5's rename of its header to "Tools" is gone;
+  // the Tools tab is its own screen (screen-tools).
   const PB_EDU_HELP_LINKS = [
     { after: '#rodToggle', ref: 'refRod/rod-types', label: 'What’s the difference between these rods?' },
     { field: 'runWT', ref: 'refPipeDiagram/wall-thickness', label: 'Wall thickness, ID and OD explained (diagram)' },
@@ -23954,6 +24060,18 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   window.pbJobSummaryBack = function() {
     if (pbHistory.length) { pbGoBack(); return; }
     pbGoto('archive');
+  };
+  // UX batch 3 (T1): Jobs is in the Reports tab. Its row checks the Reports plan first, then Jobs' own.
+  window.pbReportsOpenJobs = function() {
+    if (!pbCanOpen('reports', { explain: true })) return;
+    window.pbOpenJobs();
+  };
+  // Jobs' header Back: a job's view goes back to the list; the list goes back where it was opened from,
+  // or to the Reports tab when there is no history (Home when Reports isn't open to this plan).
+  window.pbJobsBack = function() {
+    if (pbJobsOpenKey && pbCurrentScreen === 'jobs') { window.pbJobsOpen(null); return; }
+    if (pbHistory.length) { pbGoBack(); return; }
+    if (pbCanOpen('reports')) window.pbGotoTab('reports'); else pbGoto('home');
   };
   function pbJobRecordRow(e) {
     const date = e.lockTime instanceof Date ? e.lockTime : new Date(e.lockTime);
@@ -27685,6 +27803,11 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     });
   }
 
+  // UX batch 3 (T1): Stats' header Back: where it was opened from (Tools, a job, a Home shortcut), else Tools.
+  window.pbStatsBack = function() {
+    if (pbHistory.length) { pbGoBack(); return; }
+    if (pbCanOpen('tools')) window.pbGotoTab('tools'); else pbGoto('home');
+  };
   window.pbOpenStats = function() {
     if (!pbScreenAccessAllowed('stats')) { pbShowSubscriptionRequiredMessage('stats'); return; }
     const typeFilter = document.getElementById('statsFilterType');
