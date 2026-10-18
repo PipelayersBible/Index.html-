@@ -1561,6 +1561,23 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 #pbTabBar .pb-tab[aria-current="page"] .ic { background: var(--pb-brand-soft); }
 #pbTabBar .pb-tab.pb-tab-locked { color: var(--pb-text-3); }
 #pbTabBar .pb-tab:focus-visible { outline: none; box-shadow: inset 0 0 0 3px var(--pb-brand); border-radius: 12px; }
+/* batch 5: the Ask tab is shown off (brand colour, ringed pill) unless the plan locks it */
+#pbTabBar .pb-tab.pb-tab-ask:not(.pb-tab-locked) { color: var(--pb-brand); }
+#pbTabBar .pb-tab.pb-tab-ask:not(.pb-tab-locked) .ic { background: var(--pb-brand-soft); box-shadow: inset 0 0 0 1.5px var(--pb-brand-line); }
+#pbTabBar .pb-tab.pb-tab-ask:not(.pb-tab-locked)[aria-current="page"] .ic { background: var(--pb-brand); color: var(--pb-brand-ink); box-shadow: none; }
+/* five tabs on the narrowest phone at large text: smaller pill and label so "Reports" fits */
+@container (max-width: 51.9px) { #pbTabBar .pb-tab .ic { width: 42px; } #pbTabBar .pb-tab .lb { font-size: 11px; letter-spacing: -0.2px; } #pbTabBar .pb-tab[data-tab="calculators"] .lb::after { font-size: 11px; } }
+#pbApp .pb-ai-ctx { margin: 12px 16px 0 16px; display: flex; align-items: center; gap: 8px 10px; flex-wrap: nowrap; padding: 8px 8px 8px 12px; border-radius: 12px; background: var(--pb-brand-soft); border: 1px solid var(--pb-brand-line); color: var(--pb-text); font-size: 14px; line-height: 1.3; }
+#pbApp .pb-ai-ctx[hidden] { display: none; }
+#pbApp .pb-ai-ctx strong { color: var(--pb-brand); }
+#pbApp .pb-ai-ctx > span { flex: 1 1 auto; min-width: 0; }
+#pbApp .pb-ai-ctx-x { flex: 0 0 auto; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: transparent; border: 1px solid var(--pb-divider); color: var(--pb-text-2); border-radius: 999px; padding: 0; }
+#pbApp .pb-ai-ctx-x svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+/* the Ask screen's spacing, also when its content sits in the Ask sheet */
+#pbApp #aiAskSheetBody .pb-ai-lead, #pbApp #aiAskSheetBody .pb-ai-ask-warn { margin: 12px 16px 0 16px; }
+#pbApp #aiAskSheetBody .pb-ai-privacy, #pbApp #aiAskSheetBody #aiAskStatus { margin-left: 16px; margin-right: 16px; }
+#pbApp #aiAskSheetBody textarea { min-height: 96px; }
+#pbApp #aiAskBox { display: block; width: 100%; box-sizing: border-box; }
 /* active bar: neutral lines; EMERGENCY / DO NOT ENTER stay solid red */
 #pbActiveBar.pb-activebar { background: #101318; box-shadow: 0 -8px 24px rgba(0,0,0,0.5); }
 #pbActiveBar .pb-ab-line { min-height: 50px; background: var(--pb-raised); color: var(--pb-text); border-top: 1px solid var(--pb-divider); border-left: 4px solid var(--pb-brand); font-size: 15px; }
@@ -2004,8 +2021,8 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 /* the Calculators tab's label: "Calculators", a size smaller in a narrow tab, "Calcs" in the narrowest
    (Large or Extra Large text on a small phone), drawn by CSS: the text and the button's name stay "Calculators". */
 #pbTabBar .pb-tab { container-type: inline-size; }
-@container (max-width: 75.9px) { #pbTabBar .pb-tab[data-tab="calculators"] .lb { font-size: 0; } #pbTabBar .pb-tab[data-tab="calculators"] .lb::after { content: "Calcs"; font-size: 12.5px; } }
-@container (min-width: 76px) and (max-width: 87.9px) { #pbTabBar .pb-tab[data-tab="calculators"] .lb { font-size: 11px; } }
+@container (max-width: 63.9px) { #pbTabBar .pb-tab[data-tab="calculators"] .lb { font-size: 0; } #pbTabBar .pb-tab[data-tab="calculators"] .lb::after { content: "Calcs"; font-size: 12.5px; } }
+@container (min-width: 64px) and (max-width: 87.9px) { #pbTabBar .pb-tab[data-tab="calculators"] .lb { font-size: 11px; } }
 
 /* PB2:css:jobs */
 /* A4: Jobs screen, Reports top, Save to Phone. Existing look (phase B restyles). */
@@ -3600,6 +3617,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <h1 class="pb-title">Ask</h1>
     </div>
     <p class="pb-help pb-ai-lead">Questions about grade, stakes, rods, pipe or safety. Answers use this app&rsquo;s Education pages.</p>
+    <div class="pb-ai-ctx" id="aiAskCtx" hidden><span>Asking about <strong id="aiAskCtxLabel"></strong></span><button type="button" class="pb-ai-ctx-x" onclick="pbAiAskClearCtx()" aria-label="Ask about any topic instead" title="Any topic"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><use href="#pb-i-x"/></svg></button></div>
     <div class="pb-alert warn pb-ai-ask-warn"><strong>AI answers can be wrong.</strong> For safety rules, follow your competent person and your site&rsquo;s safety program. AI never decides whether a permit or an entry is a go.</div>
     <div class="pb-field" style="margin:16px 16px 0 16px;">
       <label for="aiAskBox">Your question</label>
@@ -6106,7 +6124,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 
 </div>
 <!-- UX batch 2 (B1): the app's one icon set. Use: <svg class="pb-ic" aria-hidden="true"><use href="#pb-i-NAME"/></svg> -->
-<svg id="pbIconSprite" aria-hidden="true" focusable="false" style="position:absolute; width:0; height:0; overflow:hidden;"><symbol id="pb-i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11h5v-6h4v6h5V9"/></symbol><symbol id="pb-i-jobs" viewBox="0 0 24 24"><rect x="3.5" y="7" width="17" height="13" rx="2"/><path d="M9 7V5.2c0-.7.5-1.2 1.2-1.2h3.6c.7 0 1.2.5 1.2 1.2V7"/><path d="M3.5 12.5h17"/></symbol><symbol id="pb-i-tools" viewBox="0 0 24 24"><path d="M14.5 4a4.5 4.5 0 0 0-4.2 6.1L4 16.4 7.6 20l6.3-6.3A4.5 4.5 0 0 0 20 9.5l-2.9 2.9-3.5-3.5L16.5 6A4.5 4.5 0 0 0 14.5 4z"/></symbol><symbol id="pb-i-reports" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></symbol><symbol id="pb-i-chevron-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol><symbol id="pb-i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol><symbol id="pb-i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol><symbol id="pb-i-arrow-right" viewBox="0 0 24 24"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></symbol><symbol id="pb-i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></symbol><symbol id="pb-i-danger" viewBox="0 0 24 24"><path d="M8.2 3h7.6L21 8.2v7.6L15.8 21H8.2L3 15.8V8.2z"/><path d="M12 7.5v5.5"/><path d="M12 16.6v.4"/></symbol><symbol id="pb-i-warn" viewBox="0 0 24 24"><path d="M10.3 4.2 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4"/><path d="M12 17v.3"/></symbol><symbol id="pb-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.6v.3"/></symbol><symbol id="pb-i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.2 9.6"/></symbol><symbol id="pb-i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></symbol><symbol id="pb-i-phone" viewBox="0 0 24 24"><path d="M5 3.5h3.2l1.6 4.2-2.2 1.5a11 11 0 0 0 7.2 7.2l1.5-2.2 4.2 1.6V19a1.6 1.6 0 0 1-1.7 1.6A16.5 16.5 0 0 1 3.4 5.2 1.6 1.6 0 0 1 5 3.5z"/></symbol><symbol id="pb-i-siren" viewBox="0 0 24 24"><path d="M7 18v-5.5a5 5 0 0 1 10 0V18"/><path d="M4.5 18h15v3h-15z"/><path d="M12 2.5V4"/><path d="M4.6 5.6l1.1 1.1"/><path d="M19.4 5.6l-1.1 1.1"/><path d="M2.5 12H4"/><path d="M20 12h1.5"/><path d="M12 12.5v2.5"/></symbol><symbol id="pb-i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></symbol><symbol id="pb-i-device" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.2h2"/></symbol><symbol id="pb-i-cloud-off" viewBox="0 0 24 24"><path d="M3 3l18 18"/><path d="M8.7 8.4A5 5 0 0 0 6.5 18H17"/><path d="M20.3 16.2A4 4 0 0 0 17 9.1a5.6 5.6 0 0 0-6.5-3"/></symbol><symbol id="pb-i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol><symbol id="pb-i-calc" viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8.5 6.5h7v3h-7z"/><path d="M8.6 13.5h.1M12 13.5h.1M15.4 13.5h.1M8.6 17.5h.1M12 17.5h.1M15.4 17.5h.1"/></symbol><symbol id="pb-i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/></symbol><symbol id="pb-i-clipboard" viewBox="0 0 24 24"><rect x="5.5" y="4.5" width="13" height="17" rx="2"/><path d="M9 4.5V3.5h6v1"/><path d="M9 11h6M9 15h4"/></symbol><symbol id="pb-i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.6-4.4"/><path d="M4 3.5V7h3.5"/><path d="M4 13a8 8 0 0 0 14.6 4.4"/><path d="M20 20.5V17h-3.5"/></symbol><symbol id="pb-i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5 16 16"/></symbol><symbol id="pb-i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol><symbol id="pb-i-pipe" viewBox="0 0 24 24"><path d="M5 7.5h12.5a4.5 4.5 0 0 1 0 9H5"/><ellipse cx="5" cy="12" rx="2.2" ry="4.5"/></symbol><symbol id="pb-i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.2c2.1.7 3.5 2.6 3.5 5.8"/></symbol><symbol id="pb-i-air" viewBox="0 0 24 24"><path d="M3 8.5h11a3 3 0 1 0-3-3"/><path d="M3 12.5h15.5a3 3 0 1 1-3 3"/><path d="M3 16.5h7"/></symbol><symbol id="pb-i-grade" viewBox="0 0 24 24"><path d="M3 19.5h18"/><path d="M3 19.5 20 8"/><path d="M14.5 19.5a6 6 0 0 0-1-3.5"/></symbol><symbol id="pb-i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5a7 7 0 0 0-14 0C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol><symbol id="pb-i-book" viewBox="0 0 24 24"><path d="M4 19V5a2 2 0 0 1 2-2h13v14H6a2 2 0 0 0-2 2zm0 0a2 2 0 0 0 2 2h13v-4"/></symbol><symbol id="pb-i-helmet" viewBox="0 0 24 24"><path d="M3 17.5h18"/><path d="M5 17.5V14a7 7 0 0 1 14 0v3.5"/><path d="M10 7.3V11M14 7.3V11"/></symbol><symbol id="pb-i-cube" viewBox="0 0 24 24"><path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></symbol><symbol id="pb-i-layers" viewBox="0 0 24 24"><path d="M12 3 21 8l-9 5-9-5z"/><path d="M3 12.5l9 5 9-5"/><path d="M3 17l9 5 9-5"/></symbol><symbol id="pb-i-ruler" viewBox="0 0 24 24"><rect x="8" y="2.5" width="8" height="19" rx="1.5"/><path d="M8 6.5h3M8 10h4M8 13.5h3M8 17h4"/></symbol><symbol id="pb-i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></symbol><symbol id="pb-i-bookmark" viewBox="0 0 24 24"><path d="M6 3.5h12V21l-6-4-6 4z"/></symbol><symbol id="pb-i-trash" viewBox="0 0 24 24"><path d="M4 6.5h16"/><path d="M9 6.5V4h6v2.5"/><path d="M6.5 6.5 7.5 21h9l1-14.5"/></symbol><symbol id="pb-i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol><symbol id="pb-i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="pb-i-share" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12.5V20h14v-7.5"/></symbol><symbol id="pb-i-trench" viewBox="0 0 24 24"><path d="M2 6.5h5l3 11h4l3-11h5"/><path d="M10 17.5h4"/></symbol><symbol id="pb-i-bend" viewBox="0 0 24 24"><path d="M4 19h5a7 7 0 0 0 7-7V4"/><path d="M4 15h5a3 3 0 0 0 3-3V4"/></symbol><symbol id="pb-i-drop" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z"/></symbol><symbol id="pb-i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol><symbol id="pb-i-manhole" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M7 9.5h10M6.5 12h11M7 14.5h10"/></symbol><symbol id="pb-i-flag" viewBox="0 0 24 24"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></symbol><symbol id="pb-i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.6M12 18.9v2.6M4.7 4.7l1.8 1.8M17.5 17.5l1.8 1.8M2.5 12h2.6M18.9 12h2.6M4.7 19.3l1.8-1.8M17.5 6.5l1.8-1.8"/></symbol></svg>
+<svg id="pbIconSprite" aria-hidden="true" focusable="false" style="position:absolute; width:0; height:0; overflow:hidden;"><symbol id="pb-i-ask" viewBox="0 0 24 24"><path d="M4 5h16v11H11l-5 4v-4H4z"/><path d="M9.9 8.8a2.2 2.2 0 1 1 3 2c-.6.3-.9.7-.9 1.3"/><path d="M12 14.2v.2"/></symbol><symbol id="pb-i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11h5v-6h4v6h5V9"/></symbol><symbol id="pb-i-jobs" viewBox="0 0 24 24"><rect x="3.5" y="7" width="17" height="13" rx="2"/><path d="M9 7V5.2c0-.7.5-1.2 1.2-1.2h3.6c.7 0 1.2.5 1.2 1.2V7"/><path d="M3.5 12.5h17"/></symbol><symbol id="pb-i-tools" viewBox="0 0 24 24"><path d="M14.5 4a4.5 4.5 0 0 0-4.2 6.1L4 16.4 7.6 20l6.3-6.3A4.5 4.5 0 0 0 20 9.5l-2.9 2.9-3.5-3.5L16.5 6A4.5 4.5 0 0 0 14.5 4z"/></symbol><symbol id="pb-i-reports" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></symbol><symbol id="pb-i-chevron-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol><symbol id="pb-i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol><symbol id="pb-i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol><symbol id="pb-i-arrow-right" viewBox="0 0 24 24"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></symbol><symbol id="pb-i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></symbol><symbol id="pb-i-danger" viewBox="0 0 24 24"><path d="M8.2 3h7.6L21 8.2v7.6L15.8 21H8.2L3 15.8V8.2z"/><path d="M12 7.5v5.5"/><path d="M12 16.6v.4"/></symbol><symbol id="pb-i-warn" viewBox="0 0 24 24"><path d="M10.3 4.2 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4"/><path d="M12 17v.3"/></symbol><symbol id="pb-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.6v.3"/></symbol><symbol id="pb-i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.2 9.6"/></symbol><symbol id="pb-i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></symbol><symbol id="pb-i-phone" viewBox="0 0 24 24"><path d="M5 3.5h3.2l1.6 4.2-2.2 1.5a11 11 0 0 0 7.2 7.2l1.5-2.2 4.2 1.6V19a1.6 1.6 0 0 1-1.7 1.6A16.5 16.5 0 0 1 3.4 5.2 1.6 1.6 0 0 1 5 3.5z"/></symbol><symbol id="pb-i-siren" viewBox="0 0 24 24"><path d="M7 18v-5.5a5 5 0 0 1 10 0V18"/><path d="M4.5 18h15v3h-15z"/><path d="M12 2.5V4"/><path d="M4.6 5.6l1.1 1.1"/><path d="M19.4 5.6l-1.1 1.1"/><path d="M2.5 12H4"/><path d="M20 12h1.5"/><path d="M12 12.5v2.5"/></symbol><symbol id="pb-i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></symbol><symbol id="pb-i-device" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.2h2"/></symbol><symbol id="pb-i-cloud-off" viewBox="0 0 24 24"><path d="M3 3l18 18"/><path d="M8.7 8.4A5 5 0 0 0 6.5 18H17"/><path d="M20.3 16.2A4 4 0 0 0 17 9.1a5.6 5.6 0 0 0-6.5-3"/></symbol><symbol id="pb-i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol><symbol id="pb-i-calc" viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8.5 6.5h7v3h-7z"/><path d="M8.6 13.5h.1M12 13.5h.1M15.4 13.5h.1M8.6 17.5h.1M12 17.5h.1M15.4 17.5h.1"/></symbol><symbol id="pb-i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/></symbol><symbol id="pb-i-clipboard" viewBox="0 0 24 24"><rect x="5.5" y="4.5" width="13" height="17" rx="2"/><path d="M9 4.5V3.5h6v1"/><path d="M9 11h6M9 15h4"/></symbol><symbol id="pb-i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.6-4.4"/><path d="M4 3.5V7h3.5"/><path d="M4 13a8 8 0 0 0 14.6 4.4"/><path d="M20 20.5V17h-3.5"/></symbol><symbol id="pb-i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5 16 16"/></symbol><symbol id="pb-i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol><symbol id="pb-i-pipe" viewBox="0 0 24 24"><path d="M5 7.5h12.5a4.5 4.5 0 0 1 0 9H5"/><ellipse cx="5" cy="12" rx="2.2" ry="4.5"/></symbol><symbol id="pb-i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.2c2.1.7 3.5 2.6 3.5 5.8"/></symbol><symbol id="pb-i-air" viewBox="0 0 24 24"><path d="M3 8.5h11a3 3 0 1 0-3-3"/><path d="M3 12.5h15.5a3 3 0 1 1-3 3"/><path d="M3 16.5h7"/></symbol><symbol id="pb-i-grade" viewBox="0 0 24 24"><path d="M3 19.5h18"/><path d="M3 19.5 20 8"/><path d="M14.5 19.5a6 6 0 0 0-1-3.5"/></symbol><symbol id="pb-i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5a7 7 0 0 0-14 0C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol><symbol id="pb-i-book" viewBox="0 0 24 24"><path d="M4 19V5a2 2 0 0 1 2-2h13v14H6a2 2 0 0 0-2 2zm0 0a2 2 0 0 0 2 2h13v-4"/></symbol><symbol id="pb-i-helmet" viewBox="0 0 24 24"><path d="M3 17.5h18"/><path d="M5 17.5V14a7 7 0 0 1 14 0v3.5"/><path d="M10 7.3V11M14 7.3V11"/></symbol><symbol id="pb-i-cube" viewBox="0 0 24 24"><path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></symbol><symbol id="pb-i-layers" viewBox="0 0 24 24"><path d="M12 3 21 8l-9 5-9-5z"/><path d="M3 12.5l9 5 9-5"/><path d="M3 17l9 5 9-5"/></symbol><symbol id="pb-i-ruler" viewBox="0 0 24 24"><rect x="8" y="2.5" width="8" height="19" rx="1.5"/><path d="M8 6.5h3M8 10h4M8 13.5h3M8 17h4"/></symbol><symbol id="pb-i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></symbol><symbol id="pb-i-bookmark" viewBox="0 0 24 24"><path d="M6 3.5h12V21l-6-4-6 4z"/></symbol><symbol id="pb-i-trash" viewBox="0 0 24 24"><path d="M4 6.5h16"/><path d="M9 6.5V4h6v2.5"/><path d="M6.5 6.5 7.5 21h9l1-14.5"/></symbol><symbol id="pb-i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol><symbol id="pb-i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="pb-i-share" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12.5V20h14v-7.5"/></symbol><symbol id="pb-i-trench" viewBox="0 0 24 24"><path d="M2 6.5h5l3 11h4l3-11h5"/><path d="M10 17.5h4"/></symbol><symbol id="pb-i-bend" viewBox="0 0 24 24"><path d="M4 19h5a7 7 0 0 0 7-7V4"/><path d="M4 15h5a3 3 0 0 0 3-3V4"/></symbol><symbol id="pb-i-drop" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z"/></symbol><symbol id="pb-i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol><symbol id="pb-i-manhole" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M7 9.5h10M6.5 12h11M7 14.5h10"/></symbol><symbol id="pb-i-flag" viewBox="0 0 24 24"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></symbol><symbol id="pb-i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.6M12 18.9v2.6M4.7 4.7l1.8 1.8M17.5 17.5l1.8 1.8M2.5 12h2.6M18.9 12h2.6M4.7 19.3l1.8-1.8M17.5 6.5l1.8-1.8"/></symbol></svg>
 <script>
 /* UX batch 2 (B1): the large page title compacts once the page is scrolled (html.pb-scrolled).
    Display only: no screen, field or saved value is touched. */
@@ -6129,6 +6147,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   <button type="button" class="pb-tab" id="pbTabCalculators" data-tab="calculators" onclick="pbGotoTab('calculators')"><span class="ic"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-calc"/></svg><span class="lk"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="10" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4"/></svg></span></span><span class="lb">Calculators</span></button>
   <button type="button" class="pb-tab" id="pbTabTools" data-tab="tools" onclick="pbGotoTab('tools')"><span class="ic"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-tools"/></svg><span class="lk"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="10" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4"/></svg></span></span><span class="lb">Tools</span></button>
   <button type="button" class="pb-tab" id="pbTabReports" data-tab="reports" onclick="pbGotoTab('reports')"><span class="ic"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-reports"/></svg><span class="lk"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="10" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4"/></svg></span></span><span class="lb">Reports</span></button>
+  <button type="button" class="pb-tab pb-tab-ask" id="pbTabAsk" data-tab="ask" onclick="pbGotoTab('ask')"><span class="ic"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-ask"/></svg><span class="lk"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="10" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4"/></svg></span></span><span class="lb">Ask</span></button>
 </nav>
 <!-- PB2:activebar -->
 <!-- UX batch 2 (A1): one line for each piece of active work, the permit first. No call button: it only opens screens. -->
@@ -8398,6 +8417,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   function pbTabRootScreen(tab) {
     if (tab === 'home') return 'home';
     if (tab === 'calculators') return 'calcHub';
+    if (tab === 'ask') return 'aiAsk'; // batch 5: opens as a sheet (pbAskFromTab)
     if (tab === 'tools') return 'tools';
     if (tab === 'reports') return 'archive';
     return null; // 'jobs' is no longer a tab (UX batch 3): Reports -> Jobs, with Reports' plan check
@@ -8409,6 +8429,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     const root = pbTabRootScreen(tab);
     if (!root) return false;
     if (!window.pbCanOpen(pbTabGateName(tab), { explain: true })) return false;
+    if (tab === 'ask') return window.pbAskFromTab(); // batch 5: over the current screen, nothing navigates
     pbTabMovePending = { root };
     if (root === 'archive') window.pbOpenArchive(); // its filters are filled, then pbGoto('archive')
     else pbGoto(root);
@@ -8576,6 +8597,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     const l = pbActiveLines[i];
     if (!l) return;
     if (l.tone !== 'danger' && typeof window.pbEduCloseHelp === 'function') { try { window.pbEduCloseHelp(); } catch (e) {} } // red lines close it themselves
+    if (typeof window.pbAskSheetClose === 'function') { try { window.pbAskSheetClose(); } catch (e) {} } // batch 5
     l.onClick();
   };
   function pbShellZoom(el) { return (el && el.currentCSSZoom) || parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pb-text-zoom')) || 1; }
@@ -8599,7 +8621,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     const signIn = screen === 'login' || screen === 'setPassword';
     // Tabs: shown on every screen, forms too (D1); hidden while typing and on the sign-in screens.
     const sheet = document.getElementById('eduHelpSheet');
-    pbShellSheet = !!sheet && sheet.classList.contains('open');
+    pbShellSheet = (!!sheet && sheet.classList.contains('open')) || (typeof window.pbAskSheetOpen === 'function' && window.pbAskSheetOpen());
     tb.hidden = signIn || pbShellKb || pbShellSheet; // under the help sheet the tabs are covered anyway; the active bar sits above it
     pbShellWrapOpeners();
     let current = null; try { current = window.pbScreenTab(screen); } catch (e) {}
@@ -8653,7 +8675,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   });
   { const app = document.getElementById('pbApp');
     if (app && typeof MutationObserver === 'function') new MutationObserver(() => {
-      const sh = document.getElementById('eduHelpSheet'); const open = !!sh && sh.classList.contains('open');
+      const sh = document.getElementById('eduHelpSheet'); const open = (!!sh && sh.classList.contains('open')) || (typeof window.pbAskSheetOpen === 'function' && window.pbAskSheetOpen());
       if (open !== pbShellSheet) { try { window.pbRenderShell(); } catch (e) {} }
     }).observe(app, { attributes: true, attributeFilter: ['class'], subtree: true }); }
   // Keyboard up = a text field has focus. Coming back waits for the finger to lift, so a tap on a
@@ -9546,6 +9568,94 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   // ---------- AI 3: Ask (the civil teacher) ----------
   // The question goes with the few Education passages that match it best (searched like the Education
   // search), so answers come from the app's own reviewed content. History is kept in memory only.
+  // ---------- batch 5: Ask tab. Ask opens in a sheet OVER the current screen ----------
+  // Like the Education help sheet: nothing navigates, so a run, permit or report being filled in stays
+  // exactly as it was (no leave-without-saving question, nothing lost), and Close puts you back on it.
+  // The screen it was opened from sets "Asking about" and which Education pages the excerpts favour.
+  let pbAiAskCtx = null; // { label, articles, screen } or null (any topic)
+  const PB_ASK_CONTEXT = [
+    [/^(confinedHub|confinedPermit|confinedActive|refConfined|ventCalc)$/, 'Confined Space', ['refConfined', 'refSafety']],
+    [/^(trenchCalc|refTrench|liftCalc|calcCatTrench)$/, 'Trenching & Shoring', ['refTrench', 'refSafety']],
+    [/^(manholeDepthCalc|calcCatStructures)$/, 'Manholes & Structures', ['refTrench', 'refPipeDiagram']],
+    [/^(input|review|results|quickrun|cutsheetImport|rodElevCalc|refRod|calcCatGrade|beddingCalc)$/, 'Grade & Rod Readings', ['refRod', 'refPipeDiagram', 'refSlope']],
+    [/^(slopeConvCalc|fracCalc|refSlope)$/, 'Slope & Grade', ['refSlope', 'refRod']],
+    [/^(bendCalc|refBends)$/, 'Bends & Offsets', ['refBends']],
+    [/^(flowCalc|volumeCalc|manningCalc|refFlowVolume)$/, 'Flow & Volume', ['refFlowVolume', 'refPipe']],
+    [/^(pipeWeightCalc|refPipe|refPipeDiagram|calcCatPipe)$/, 'Pipe', ['refPipe', 'refPipeDiagram']],
+    [/^refConcrete$/, 'Concrete', ['refConcrete']],
+    [/^refSafety$/, 'Jobsite Safety', ['refSafety', 'refTrench', 'refConfined']]
+  ];
+  window.pbAskContextFor = function(screen) {
+    const m = PB_ASK_CONTEXT.find(c => c[0].test(String(screen || '')));
+    if (!m) return null;
+    const articles = m[2].filter(id => typeof PB_EDU_ARTICLES === 'object' && PB_EDU_ARTICLES[id]);
+    return articles.length ? { label: m[1], articles, screen } : null;
+  };
+  function pbAiAskCtxRender() {
+    const el = document.getElementById('aiAskCtx'), lb = document.getElementById('aiAskCtxLabel');
+    if (!el || !lb) return;
+    el.hidden = !pbAiAskCtx;
+    lb.textContent = pbAiAskCtx ? pbAiAskCtx.label : '';
+  }
+  window.pbAiAskClearCtx = function() {
+    pbAiAskCtx = null; pbAiAskCtxRender();
+    const box = document.getElementById('aiAskBox'); if (box) { try { box.focus({ preventScroll: true }); } catch (e) {} }
+  };
+  let pbAskSheetOpener = null;
+  function pbAskSheetEl() {
+    let sh = document.getElementById('aiAskSheet');
+    if (sh) return sh;
+    sh = document.createElement('div');
+    sh.id = 'aiAskSheet'; sh.className = 'pb-edu-sheet pb-ask-sheet';
+    sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-modal', 'true'); sh.setAttribute('aria-labelledby', 'aiAskSheetTitle');
+    sh.innerHTML = '<div class="pb-edu-sheet-inner"><div class="pb-edu-sheet-head"><h2 id="aiAskSheetTitle">Ask</h2><button type="button" class="pb-btn small" id="aiAskSheetClose" onclick="pbAskSheetClose()">Close</button></div><div id="aiAskSheetBody"></div></div>';
+    ['touchstart', 'touchmove', 'touchend'].forEach(ev => sh.addEventListener(ev, e => e.stopPropagation(), { passive: true })); // no edge-swipe Back off the screen underneath
+    sh.addEventListener('keydown', e => { if (e.key === 'Escape' && !pbModalIsOpen()) { e.preventDefault(); window.pbAskSheetClose(); } });
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Tab' || !sh.classList.contains('open') || pbModalIsOpen()) return;
+      const items = Array.from(sh.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(el => !el.disabled && el.offsetParent !== null);
+      if (!items.length) { e.preventDefault(); return; }
+      const first = items[0], last = items[items.length - 1], at = document.activeElement;
+      if (e.shiftKey && (at === first || !items.includes(at))) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (at === last || !items.includes(at))) { e.preventDefault(); first.focus(); }
+    }, true);
+    (document.getElementById('pbApp') || document.body).appendChild(sh);
+    return sh;
+  }
+  window.pbAskSheetOpen = function() { const sh = document.getElementById('aiAskSheet'); return !!sh && sh.classList.contains('open'); };
+  window.pbAskFromTab = function() {
+    if (pbCurrentScreen === 'aiAsk') { const b = document.getElementById('aiAskBox'); if (b) { try { b.focus({ preventScroll: true }); } catch (e) {} } return true; }
+    if (!window.pbCanOpen('aiAsk')) return false;
+    if (window.pbAskSheetOpen()) return true;
+    if (typeof window.pbEduCloseHelp === 'function') { try { window.pbEduCloseHelp(); } catch (e) {} }
+    pbAiAskCtx = window.pbAskContextFor(pbCurrentScreen);
+    pbAiAskCtxRender();
+    const sh = pbAskSheetEl(), body = document.getElementById('aiAskSheetBody'), scr = document.getElementById('screen-aiAsk');
+    if (scr) [...scr.children].forEach(ch => { if (!ch.classList.contains('pb-header')) body.appendChild(ch); });
+    pbAskSheetOpener = document.activeElement;
+    sh.classList.add('open');
+    sh.scrollTop = 0;
+    const c = document.getElementById('aiAskSheetClose'); if (c) c.focus();
+    try { window.pbRenderShell(); } catch (e) {}
+    return true;
+  };
+  window.pbAskSheetClose = function() {
+    const sh = document.getElementById('aiAskSheet');
+    if (!sh || !sh.classList.contains('open')) return;
+    sh.classList.remove('open');
+    const body = document.getElementById('aiAskSheetBody'), scr = document.getElementById('screen-aiAsk');
+    if (body && scr) [...body.children].forEach(ch => scr.appendChild(ch));
+    const o = pbAskSheetOpener; pbAskSheetOpener = null;
+    if (o && o.isConnected && typeof o.focus === 'function') { try { o.focus({ preventScroll: true }); } catch (e) {} }
+    try { window.pbRenderShell(); } catch (e) {}
+  };
+  window.pbAiAskEmergency = function() {
+    if (window.pbAskSheetOpen()) window.pbAskSheetClose();
+    window.pbTriggerEmergency();
+  };
+  // Any move to another screen (an alarm, a session ending, a red line) closes the sheet first.
+  window.pbScreenHooks = Array.isArray(window.pbScreenHooks) ? window.pbScreenHooks : [];
+  window.pbScreenHooks.push(function() { if (window.pbAskSheetOpen()) window.pbAskSheetClose(); });
   const pbAiAskHistory = [];
   let pbAiAskBusy = false;
   const PB_AI_STOP = new Set('a an the and or of to in on at for is are was be do does did what whats how why when where which who can i you my we it its this that with from by if then than vs me your should would will about there need needs ft feet foot in inch inches get use mean means tell explain much many deep long'.split(' '));
@@ -9565,6 +9675,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     const scored = eduIndex.map(e => {
       let s = 0; const tl = String(e.title || '').toLowerCase();
       groups.forEach((g, i) => { if (g.some(r => r.test(e.text))) { s += weight[i]; if (g.some(r => r.test(tl))) s += weight[i]; } });
+      if (s > 0 && pbAiAskCtx && pbAiAskCtx.articles.includes(e.screenId)) s *= 1.6; // batch 5: the screen you came from
       return { e, s };
     }).filter(x => x.s > 0).sort((a, b) => b.s - a.s);
     const seen = new Set(), out = [];
@@ -9578,6 +9689,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   }
   function pbAiAskMessage(q, ex) {
     const parts = ['QUESTION: ' + q, '', 'EXCERPTS FROM THE APP’S EDUCATION PAGES:'];
+    if (pbAiAskCtx) parts.splice(1, 0, 'ASKED FROM: the app’s ' + pbAiAskCtx.label + ' screens (the excerpts favour those pages; answer the question as asked).');
     if (!ex.length) parts.push('(none matched this question)');
     ex.forEach(x => parts.push('[' + x.n + '] (page: ' + x.page + ') ' + x.text + (x.caution ? ' (page note: ' + x.caution + ')' : '')));
     const prev = pbAiAskHistory.slice(0, 2);
@@ -9650,7 +9762,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     const box = document.getElementById('aiAskHistory'); if (!box) return;
     box.innerHTML = pbAiAskHistory.map((h, i) => '<article class="pb-section pb-ai-qa" id="aiAskItem' + i + '"><div class="pb-body">'
       + '<p class="pb-ai-q">' + escapeHtml(h.q) + '</p>'
-      + (h.kind === 'emergency' ? '<div class="pb-ai-em"><button type="button" class="pb-emergency-btn pb-ai-em-btn" onclick="pbTriggerEmergency()">EMERGENCY \u00b7 Call ' + escapeHtml(pbDialNumberNow()) + '</button><p class="pb-ai-hint">' + (confinedPermit ? 'Declares the emergency on the open permit and dials.' : 'No permit is open: this dials the emergency number.') + '</p></div>' : '')
+      + (h.kind === 'emergency' ? '<div class="pb-ai-em"><button type="button" class="pb-emergency-btn pb-ai-em-btn" onclick="pbAiAskEmergency()">EMERGENCY \u00b7 Call ' + escapeHtml(pbDialNumberNow()) + '</button><p class="pb-ai-hint">' + (confinedPermit ? 'Declares the emergency on the open permit and dials.' : 'No permit is open: this dials the emergency number.') + '</p></div>' : '')
       + (h.safety && !h.local ? '<div class="pb-alert danger pb-ai-safety"><strong>Safety rule.</strong> Follow your competent person and your site’s safety program — they decide on site. AI never decides whether a permit, entry or trench is a go.</div>' : '')
       + (h.local ? '<div class="pb-alert danger pb-ai-local"><strong>' + (h.kind === 'emergency' ? 'Emergency' : 'Not an AI question') + '</strong><span class="pb-ai-a">' + escapeHtml(h.body) + '</span></div>' : '<div class="pb-ai-a">' + escapeHtml(h.body || '(no answer text)') + '</div>')
       + (h.truncated ? '<p class="pb-ai-flagnote">This answer was cut off.</p>' : '')
@@ -9661,11 +9773,13 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   }
   window.pbAiOpenSource = function(btn) {
     if (!window.pbCanOpen('formulasHub', { explain: true })) return;
+    if (window.pbAskSheetOpen()) { window.pbAskSheetClose(); window.pbEduHelp(btn.dataset.anchor ? btn.dataset.article + '/' + btn.dataset.anchor : btn.dataset.article); return; } // batch 5
     pbEduOpen(btn.dataset.article, btn.dataset.anchor);
   };
   window.pbAiAskClear = function() { pbAiAskHistory.length = 0; pbAiAskRender(); pbAiShow(document.getElementById('aiAskStatus'), '', '', ''); };
   window.pbOpenAiAsk = function() {
     if (!window.pbCanOpen('aiAsk', { explain: true })) return;
+    pbAiAskCtx = null; pbAiAskCtxRender(); // batch 5: no screen context from Tools
     pbGoto('aiAsk');
   };
   window.pbAiAskBack = function() { if (pbHistory.length) pbGoBack(); else pbGoto('tools'); };
@@ -22660,7 +22774,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   // batch 4 (R1): Ask, on the Tools tab under Education & Reference; paid plans (like every Tools route, checked by pbCanOpen).
   PB_DESTINATIONS.push({ id: 'aiAsk', label: 'Ask a Question (AI)', sub: 'Plain answers from this app’s Education pages', cat: 'reference', gate: 'aiAsk', screen: 'aiAsk', words: 'ask ai question teacher explain learn help chat', open: () => pbOpenAiAsk() });
   if (!PB_INDIVIDUAL_SCREENS.includes('aiAsk')) PB_INDIVIDUAL_SCREENS.push('aiAsk');
-  PB_SCREEN_TABS.aiAsk = 'tools';
+  PB_SCREEN_TABS.aiAsk = 'ask'; // batch 5: the Ask screen belongs to the Ask tab
   const PB_DEST = Object.fromEntries(PB_DESTINATIONS.map(d => [d.id, d]));
   const PB_DEST_BY_SCREEN = Object.fromEntries(PB_DESTINATIONS.map(d => [d.screen, d.id]));
   const PB_SC_DEFAULTS = ['volume', 'trench', 'frac', 'bedding']; // D5: Material Volume, Shoring/Sloping, Tenths <-> Inches, Bedding Elevation
