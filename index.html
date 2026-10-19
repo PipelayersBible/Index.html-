@@ -1561,6 +1561,17 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 #pbTabBar .pb-tab[aria-current="page"] .ic { background: var(--pb-brand-soft); }
 #pbTabBar .pb-tab.pb-tab-locked { color: var(--pb-text-3); }
 #pbTabBar .pb-tab:focus-visible { outline: none; box-shadow: inset 0 0 0 3px var(--pb-brand); border-radius: 12px; }
+/* batch 6: permit backup box in the Archive */
+#pbApp .pb-arch-bkbox { margin: 12px 16px 0 16px; padding: 12px; border-radius: 12px; background: var(--pb-raised, #171b22); border: 1px solid var(--pb-divider); }
+#pbApp .pb-arch-bkbox[hidden] { display: none; }
+#pbApp .pb-arch-bkbox .pb-arch-bk-t { margin: 0; font-weight: 700; color: var(--pb-text); font-size: 15px; }
+#pbApp .pb-arch-bkbox .pb-arch-bk-s { margin: 4px 0 0 0; color: var(--pb-text-2); font-size: 14px; line-height: 1.35; }
+#pbApp .pb-arch-bkbox .pb-btn { margin-top: 10px; }
+#pbApp .pb-cpr-lead { margin: 12px 16px 0 16px; }
+#pbApp #cprStatus { margin: 12px 16px 0 16px; }
+#pbApp #cprList .pb-review-item { margin: 12px 16px 0 16px; }
+#pbApp #cprList .pb-cpr-meta { color: var(--pb-text-2); font-size: 14px; line-height: 1.35; margin-top: 4px; }
+#pbApp #cprList pre { white-space: pre-wrap; font-family: 'IBM Plex Mono', monospace; font-size: 12px; background: #fff; color: #111; padding: 8px; border-radius: 8px; margin-top: 8px; max-height: 280px; overflow-y: auto; }
 /* batch 5: the Ask tab is shown off (brand colour, ringed pill) unless the plan locks it */
 #pbTabBar .pb-tab.pb-tab-ask:not(.pb-tab-locked) { color: var(--pb-brand); }
 #pbTabBar .pb-tab.pb-tab-ask:not(.pb-tab-locked) .ic { background: var(--pb-brand-soft); box-shadow: inset 0 0 0 1.5px var(--pb-brand-line); }
@@ -4541,6 +4552,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div class="pb-tools-group" id="archiveReportsGroup" role="group" aria-label="Reports to management">
         <button type="button" class="pb-edu-row pb-tool-row" id="archiveMyReportsBtn" data-ic="reports" onclick="pbOpenMyReports()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Reports I&rsquo;ve sent</span><span class="sub" id="archiveMyReportsSub">Status and replies from management</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
         <button type="button" class="pb-edu-row pb-tool-row" id="archiveInboxBtn" data-ic="people" style="display:none;" onclick="pbOpenReportsInbox()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Management inbox</span><span class="sub">Reports from your company&rsquo;s crews</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
+        <button type="button" class="pb-edu-row pb-tool-row" id="archiveCompanyPermitsBtn" data-ic="lock" style="display:none;" onclick="pbOpenCompanyPermits()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Company permit records</span><span class="sub">Every closed permit your crews backed up</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
       </div>
       <!-- UX batch 3 (T1): the job list and Job Summary live in Reports now (the Jobs tab is gone) -->
       <div class="pb-tools-group pb-arch-jobs" id="archiveJobsGroup" role="group" aria-label="Jobs">
@@ -4597,6 +4609,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>What bulk send includes</span></summary><p class="pb-note-general">Bulk send combines every un-sent report into one email, regardless of the filters above. Reports to Management are not included &mdash; each goes to its own recipient, so use Send Email on each. Very long combined text may get truncated by some mail apps.</p></details>
       <div class="pb-arch-toolrow"><span class="pb-arch-k">Download</span><button class="pb-btn ghost small" onclick="pbExportArchiveCSV()">Download Spreadsheet</button><button class="pb-btn ghost small" onclick="pbDownloadArchiveAllPDF()">Download All as PDF</button><button class="pb-btn ghost small" onclick="pbDownloadArchiveBoth()">Download Both (Spreadsheet + PDF)</button></div>
     </div>
+    <div id="archivePermitBk" class="pb-arch-bkbox" hidden></div>
     <div id="archiveResumeSection" style="display:none;"></div>
     <div id="archiveList" style="margin-top:4px;"></div>
   </div>
@@ -4689,6 +4702,19 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div id="inboxDetail" style="display:none;"></div>
     <div class="pb-btn-wrap"><button type="button" class="pb-btn secondary" id="inboxRefreshBtn" onclick="pbInboxLoad()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Refresh</button></div>
     <div class="pb-ri-more"><details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>About anonymous reports</span></summary><p class="pb-note-general">Anonymous reports carry no name, no account and no exact time &mdash; only the hour they were sent. They arrive at the top of the next hour. Nobody, including the app, can tell you who sent one. You can still reply; the sender reads it on their phone.</p></details></div>
+  </div>
+
+  <!-- COMPANY PERMIT RECORDS (batch 6b): the company account reads its crews' backed-up permits -->
+  <div class="pb-screen" id="screen-companyPermits">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>COMPANY PERMITS</span><button type="button" class="pb-back" title="Back" aria-label="Back" onclick="pbOpenArchive()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
+      <h1 class="pb-title">Company permit records</h1>
+    </div>
+    <p class="pb-help pb-cpr-lead">Closed confined space permits your crews backed up. They can&rsquo;t be changed or removed. If a permit was updated on a phone after closing (for example, marked as emailed), every version is kept.</p>
+    <p id="cprStatus" class="pb-rpt-status" role="status"></p>
+    <div id="cprList"></div>
+    <div class="pb-btn-wrap" id="cprMoreWrap" style="display:none;"><button type="button" class="pb-btn secondary" id="cprMoreBtn" onclick="pbCompanyPermitsLoad(true)">Load Older Permits</button></div>
+    <div class="pb-btn-wrap"><button type="button" class="pb-btn secondary" id="cprRefreshBtn" onclick="pbCompanyPermitsLoad(false)"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Refresh</button></div>
   </div>
 
   <!-- JOBS (UX batch 2): jobs on this phone, from this account's own records plus jobs added by hand -->
@@ -7534,7 +7560,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         } else {
           const nowVerified = !sbUser && pbSessionUnverified && pbBootDone && !pbLoginInProgress && !pbPasswordSigningIn && loaded && session.user.id === loaded;
           sbUser = session.user; pbSessionUnverified = false;
-          if (nowVerified) { reconcilePendingLockRetries(); pbSyncOwedReports(); } // owed while it couldn't be confirmed
+          if (nowVerified) { reconcilePendingLockRetries(); pbSyncOwedReports(); pbPermitBackupSoon(); } // owed while it couldn't be confirmed
         }
       }
       updateLoginStatusDisplay();
@@ -21845,6 +21871,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       pbRenderRepairBanner();
       pbRefreshArchiveIfChanged(); // a save can carry in another tab's records, or commit a recovered Lock
       if (pbLastLockedEntryId !== null && pbLastPersistedEntryIds.has(pbLastLockedEntryId)) { const lb = document.getElementById('lockSaveStatusBanner'); if (lb) lb.style.display = 'none'; } // any save that stored the failed Lock's run, not just Retry Save
+      pbPermitBackupSoon(); // batch 6: a closed permit saved (or changed) on the phone backs up
       reconcilePendingLockRetries(); // any successful save (not just this entry's own Retry button) can be what actually commits an earlier failed entry's data — its deferred stats/sync work must run whenever that happens, not only on a specific button click
       return true;
     }
@@ -22774,7 +22801,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   // batch 4 (R1): Ask, on the Tools tab under Education & Reference; paid plans (like every Tools route, checked by pbCanOpen).
   PB_DESTINATIONS.push({ id: 'aiAsk', label: 'Ask a Question (AI)', sub: 'Plain answers from this app’s Education pages', cat: 'reference', gate: 'aiAsk', screen: 'aiAsk', words: 'ask ai question teacher explain learn help chat', open: () => pbOpenAiAsk() });
   if (!PB_INDIVIDUAL_SCREENS.includes('aiAsk')) PB_INDIVIDUAL_SCREENS.push('aiAsk');
-  PB_SCREEN_TABS.aiAsk = 'ask'; // batch 5: the Ask screen belongs to the Ask tab
+  PB_SCREEN_TABS.aiAsk = 'ask';
+  PB_SCREEN_TABS.companyPermits = 'reports'; // batch 6b // batch 5: the Ask screen belongs to the Ask tab
   const PB_DEST = Object.fromEntries(PB_DESTINATIONS.map(d => [d.id, d]));
   const PB_DEST_BY_SCREEN = Object.fromEntries(PB_DESTINATIONS.map(d => [d.screen, d.id]));
   const PB_SC_DEFAULTS = ['volume', 'trench', 'frac', 'bedding']; // D5: Material Volume, Shoring/Sloping, Tenths <-> Inches, Bedding Elevation
@@ -24362,6 +24390,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     const a = pbReportAccessMem.get(pbArchiveOwnerUid);
     const btn = document.getElementById('archiveInboxBtn');
     if (btn) btn.style.display = a && a.manager ? '' : 'none';
+    const cpb = document.getElementById('archiveCompanyPermitsBtn'); if (cpb) cpb.style.display = a && a.manager ? '' : 'none'; // batch 6b
     const badge = document.getElementById('archiveMyReportsSub');
     if (badge) {
       const all = pbAppReports(), waiting = all.filter(e => e.delivery !== 'sent').length, un = all.reduce((n, e) => n + pbReportUnread(e), 0);
@@ -24535,6 +24564,294 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     if (name === 'reportsInbox') pbRenderInbox();
   });
   window.addEventListener('online', () => { setTimeout(() => { if (pbAuthBackgroundOk()) pbReportQueueFlush(); pbAnonSchedule(); }, 1500); });
+  // ---------- batch 6: cloud backup of closed permit records ----------
+  // Every closed permit in the Archive is backed up to the signed-in account (public.pb_permit_backup). The server
+  // keeps each backup as a version that can never be changed or removed, so a later change on the phone (emailed,
+  // an emergency time added at closeout) adds a version and the first record stays. What was last confirmed is
+  // remembered per account (content hash), so an unchanged permit is never sent again. Photos stay on the phone.
+  // Review fixes: the account is checked before every upload and by the server (p_expect_uid); one permit that
+  // keeps failing waits on its own back-off while the others still go; a failing pass backs off so background
+  // logged-in calls never crowd out the anonymous-report quiet gap; hashes are cached between saves.
+  const PB_PERMIT_BK_KEY = 'permitBackups';
+  const PB_PERMIT_BK_REFUSED = { 'pb:too_big': 'too large to back up', 'pb:too_many_versions': 'changed too many times', 'pb:bad_record': 'not a permit record', 'pb:bad_id': 'no usable id' };
+  let pbPermitBk = null, pbPermitBkUid = null, pbPermitBkLoading = null;
+  let pbPermitBkBusy = false, pbPermitBkAgain = false, pbPermitBkTimer = null, pbPermitBkForce = false;
+  let pbPermitBkBackoffUntil = 0, pbPermitBkBackoffN = 0;
+  let pbPermitHashCache = new WeakMap(); // entry -> hash of its backup record; cleared on every save and pass
+  function pbPermitClientId(e) { return e && e.permitSessionId ? 'cps-' + String(e.permitSessionId).slice(0, 90) : 'cpe-' + (e ? e.id : ''); }
+  function pbPermitBackupRecord(e) {
+    const { photos, restoredFromCloud, ...rest } = e; // photos stay on the phone that took them; restore marks are local
+    const rec = JSON.parse(JSON.stringify(rest)); // dates as ISO text
+    if (Array.isArray(photos) && photos.length) rec.photoCount = Math.max(Number(rec.photoCount) || 0, photos.length); // never adds a field the record didn't have (restore makes no new version)
+    return rec;
+  }
+  function pbPermitRecordHash(e) {
+    if (pbPermitHashCache.has(e)) return pbPermitHashCache.get(e);
+    let h = ''; try { h = pbHashText(JSON.stringify(pbPermitBackupRecord(e))); } catch (x) {}
+    pbPermitHashCache.set(e, h); return h;
+  }
+  async function pbPermitBkLoad(uid) {
+    if (pbPermitBk && pbPermitBkUid === uid) return pbPermitBk;
+    if (pbPermitBkLoading && pbPermitBkLoading.uid === uid) return pbPermitBkLoading.p;
+    const p = (async () => {
+      let st = {};
+      try { const raw = await pbGetFor(uid, PB_PERMIT_BK_KEY); const o = raw ? JSON.parse(raw) : null; if (o && typeof o === 'object' && !Array.isArray(o)) st = o; } catch (x) {}
+      if (!sbUser || sbUser.id !== uid) return st; // signed out or switched meanwhile: not cached for anyone
+      pbPermitBk = st; pbPermitBkUid = uid; return st;
+    })();
+    pbPermitBkLoading = { uid, p };
+    try { return await p; } finally { if (pbPermitBkLoading && pbPermitBkLoading.p === p) pbPermitBkLoading = null; }
+  }
+  async function pbPermitBkSave(uid, st) { try { return await pbSetFor(uid, PB_PERMIT_BK_KEY, JSON.stringify(st)); } catch (x) { return false; } }
+  // k: 'ok' | 'pending' | 'failing' | 'refused' | 'signedout' | 'unknown'; had: an earlier version is in the account
+  function pbPermitBkStateOf(e) {
+    if (!sbUser) return { k: 'signedout' };
+    if (pbArchiveOwnerUid !== sbUser.id) return { k: 'unknown' };
+    if (!pbPermitBk || pbPermitBkUid !== sbUser.id) {
+      if (!pbPermitBkLoading) { const u = sbUser.id; pbPermitBkLoad(u).then(() => { if (sbUser && sbUser.id === u && pbPermitBkUid === u) pbPermitBkRefreshUI(); }); }
+      return { k: 'unknown' };
+    }
+    const s = pbPermitBk[pbPermitClientId(e)], h = pbPermitRecordHash(e), had = !!(s && s.h);
+    if (s && s.h === h) return { k: 'ok', at: s.at };
+    if (s && s.refused === h) return { k: 'refused', why: PB_PERMIT_BK_REFUSED[s.why] || 'refused', had };
+    if (s && s.quotaH === h && s.nextAt > Date.now()) return { k: 'quota', had };
+    if (s && s.failH === h && (s.fails || 0) >= 3) return { k: 'failing', n: s.fails, had };
+    return { k: 'pending', had };
+  }
+  function pbPermitBkChipFor(e, st) {
+    const id = escapeHtml(pbPermitClientId(e));
+    const label = st.k === 'ok' ? 'Backed up' : st.k === 'refused' ? 'Not backed up: ' + st.why : st.k === 'failing' ? 'Couldn’t back up yet (tried ' + st.n + ' times)'
+      : st.k === 'signedout' ? 'Not backed up (log in)' : st.k === 'unknown' ? 'Checking backup…' : st.k === 'quota' ? 'Waiting: today’s backup limit reached' : st.had ? 'Changes not backed up yet' : 'Not backed up yet';
+    const cls = st.k === 'ok' ? 'ok' : (st.k === 'refused' || st.k === 'failing') ? 'overdue' : 'notsent';
+    return '<span class="pb-chip ' + cls + ' pb-arch-bk" data-bk="' + id + '">' + escapeHtml(label) + '</span>';
+  }
+  function pbPermitBkChip(e) { return pbPermitBkChipFor(e, pbPermitBkStateOf(e)); }
+  function pbPermitDeleteNote(e) {
+    const st = pbPermitBkStateOf(e), n = Array.isArray(e.photos) ? e.photos.length : 0;
+    const photos = n ? '\n\nIts ' + n + ' photo' + (n > 1 ? 's are' : ' is') + ' only on this phone and will be lost.' : '';
+    if (st.k === 'ok') return '\n\nThe backed-up copy in your account is kept permanently; this removes it from this phone.' + photos;
+    if (st.k === 'signedout' || st.k === 'unknown') return '\n\nIts backup can’t be checked right now (log in with signal to check). If it isn’t backed up, this deletes the only copy.' + photos;
+    if (st.had) return '\n\nAn earlier version is kept in your account, but the latest changes are not backed up yet and will be lost.' + photos;
+    return '\n\nThis permit is NOT backed up to your account, so this deletes the only copy.' + photos;
+  }
+  function pbPermitBkRenderBox() {
+    const box = document.getElementById('archivePermitBk'); if (!box) return;
+    const permits = runArchive.filter(e => e && e.kind === 'confined');
+    let canPermits = false; try { canPermits = pbScreenAccessAllowed('confinedHub'); } catch (x) {}
+    if (!sbUser || (!permits.length && !canPermits)) { box.hidden = true; box.innerHTML = ''; return; }
+    const states = permits.map(pbPermitBkStateOf), count = (k) => states.filter(s => s.k === k).length;
+    const ok = count('ok'), refused = count('refused'), failing = count('failing'), unknown = count('unknown'), quota = count('quota'), N = permits.length;
+    let line;
+    if (!N) line = 'Closed permits back up to your account automatically when you have signal, and are kept permanently. Photos stay on the phone that took them.';
+    else if (unknown) line = 'Checking which permits are backed up…';
+    else if (ok === N) line = (N === 1 ? 'Your closed permit is' : 'All ' + N + ' closed permits are') + ' backed up to your account and kept permanently (photos stay on this phone).';
+    else {
+      line = ok + ' of ' + N + ' closed permits backed up to your account.';
+      if (N - ok - refused - failing - quota > 0) line += ' The rest back up automatically when you have signal.';
+      if (quota) line += ' ' + quota + ' wait for your account’s daily backup limit and continue later on their own.';
+      if (failing) line += ' ' + failing + ' couldn’t be backed up yet; the app keeps trying.';
+      if (refused) line += ' ' + refused + ' could not be backed up (see below).';
+    }
+    box.hidden = false;
+    box.innerHTML = '<p class="pb-arch-bk-t">Permit backup</p><p class="pb-arch-bk-s" id="archivePermitBkLine">' + escapeHtml(line) + '</p>'
+      + (failing ? '<button type="button" class="pb-btn ghost small" id="archivePermitRetryBtn" onclick="pbPermitBackupNow()">Try Backup Now</button>' : '')
+      + '<button type="button" class="pb-btn ghost small" id="archivePermitRestoreBtn" onclick="pbPermitRestore()">Restore Permits From Your Account</button>';
+  }
+  function pbPermitBkRefreshUI() {
+    try {
+      document.querySelectorAll('.pb-arch-bk[data-bk]').forEach(ch => {
+        const e = runArchive.find(x => x && x.kind === 'confined' && pbPermitClientId(x) === ch.dataset.bk);
+        if (e) ch.outerHTML = pbPermitBkChip(e);
+      });
+      pbPermitBkRenderBox();
+    } catch (x) { console.error(x); }
+  }
+  // opts.background: timers, signal back, app shown again. These wait out a failing pass's back-off (review 4).
+  function pbPermitBackupSoon(ms, opts) {
+    pbPermitHashCache = new WeakMap();
+    if (opts && opts.background && Date.now() < pbPermitBkBackoffUntil) return;
+    clearTimeout(pbPermitBkTimer);
+    pbPermitBkTimer = setTimeout(() => { pbPermitBackupPass(); }, typeof ms === 'number' ? ms : 2500);
+  }
+  async function pbPermitRpc(fn, args, ms) {
+    if (!sbClient || typeof sbClient.rpc !== 'function') return { data: null, error: { message: 'no client' } };
+    try { return (await Promise.race([sbClient.rpc(fn, args), new Promise(res => setTimeout(() => res({ data: null, error: { message: 'timeout' } }), ms))])) || { data: null, error: { message: 'no answer' } }; }
+    catch (x) { return { data: null, error: { message: String((x && x.message) || x) } }; }
+  }
+  async function pbPermitBackupPass() {
+    if (pbPermitBkBusy) { pbPermitBkAgain = true; return; }
+    if (!sbClient || !sbUser || archiveLoadFailed) return;
+    const uid = sbUser.id;
+    if (pbArchiveOwnerUid !== uid) { pbPermitBackupSoon(15000); return; } // this account's Archive is still loading
+    if (!pbAuthBackgroundOk()) { pbPermitBackupSoon(60000); return; } // anonymous-report quiet rule (review B1)
+    pbPermitBkBusy = true;
+    const force = pbPermitBkForce; pbPermitBkForce = false;
+    let failed = 0, timeouts = 0;
+    try {
+      pbPermitHashCache = new WeakMap();
+      const st = await pbPermitBkLoad(uid);
+      const same = () => !!sbUser && sbUser.id === uid && pbArchiveOwnerUid === uid;
+      const now = Date.now();
+      // Only records the phone has saved; newest first.
+      const todo = runArchive.filter(e => e && e.kind === 'confined' && pbLastPersistedEntryIds.has(e.id))
+        .map(e => { const rec = pbPermitBackupRecord(e), json = JSON.stringify(rec); return { cid: pbPermitClientId(e), rec, json, h: pbHashText(json) }; })
+        .filter(x => { const s = st[x.cid]; if (s && (s.h === x.h || s.refused === x.h)) return false; return force || !(s && (s.failH === x.h || s.quotaH === x.h) && s.nextAt && s.nextAt > now); });
+      if (!todo.length || !same()) return;
+      let changed = false;
+      for (const x of todo) {
+        if (!same() || !(await pbLiveSessionIs(uid)) || !same()) break; // checked right before every upload (review 1)
+        const ms = Math.min(120000, 20000 + 10000 * Math.ceil(x.json.length / 100000));
+        const r = await pbPermitRpc('pb_permit_backup', { p_client_permit_id: x.cid, p_record: x.rec, p_expect_uid: uid }, ms);
+        if (!same()) break;
+        if (r.error) {
+          const msg = String(r.error.message || ''), code = (msg.match(/pb:\w+/) || [''])[0];
+          if (code === 'pb:wrong_account' || code === 'pb:signed_out') break; // another login answered: nothing was filed; later
+          if (PB_PERMIT_BK_REFUSED[code]) { st[x.cid] = Object.assign({}, st[x.cid], { refused: x.h, why: code }); changed = true; continue; }
+          if (navigator.onLine === false || /failed to fetch|networkerror|load failed|no client/i.test(msg)) break; // no signal: nothing reached the server, no back-off; signal back retries
+          if (code === 'pb:quota') { st[x.cid] = Object.assign({}, st[x.cid], { quotaH: x.h, nextAt: Date.now() + 3 * 3600000 }); changed = true; break; } // the account's backup allowance: continues later, not a failure
+          failed++;
+          if (/^timeout$/.test(msg) && ++timeouts >= 2) { const prev0 = st[x.cid] || {}; st[x.cid] = Object.assign({}, prev0, { failH: x.h, fails: prev0.failH === x.h ? (prev0.fails || 0) + 1 : 1, nextAt: Date.now() + 5 * 60000 }); changed = true; break; } // weak signal: stop for now
+          const prev = st[x.cid] || {}, n = prev.failH === x.h ? (prev.fails || 0) + 1 : 1;
+          st[x.cid] = Object.assign({}, prev, { failH: x.h, fails: n, nextAt: Date.now() + Math.min(2 * 3600000, 5 * 60000 * Math.pow(2, n - 1)), lastErr: (code || msg).slice(0, 60) });
+          changed = true; continue; // this one waits on its own back-off; the others still go (review 3)
+        }
+        timeouts = 0;
+        const prev = st[x.cid] || {};
+        st[x.cid] = { h: x.h, at: Date.now(), v: r.data && typeof r.data.version === 'number' ? r.data.version : (prev.v || null) };
+        changed = true;
+      }
+      if (changed && same()) await pbPermitBkSave(uid, st);
+    } catch (x) { console.error('Permit backup pass failed:', x); }
+    finally {
+      pbPermitBkBusy = false;
+      if (failed) { pbPermitBkBackoffN = Math.min(pbPermitBkBackoffN + 1, 5); pbPermitBkBackoffUntil = Date.now() + Math.min(2 * 3600000, 10 * 60000 * Math.pow(2, pbPermitBkBackoffN - 1)); }
+      else { pbPermitBkBackoffN = 0; pbPermitBkBackoffUntil = 0; }
+      pbPermitBkRefreshUI();
+      if (pbPermitBkAgain) { pbPermitBkAgain = false; pbPermitBackupSoon(3000); }
+    }
+  }
+  window.pbPermitBackupNow = function() { pbPermitBkForce = true; pbPermitBackupSoon(0); };
+  // ---------- batch 6b: Company permit records (company account only, read-only, memory only) ----------
+  let pbCpr = { uid: null, rows: [], done: false, busy: false };
+  window.pbOpenCompanyPermits = async function() {
+    if (!pbCanOpen('reports', { explain: true })) return;
+    const uid = pbArchiveOwnerUid;
+    const a = (await pbReportAccessFor(uid)) || null;
+    if (!(a && a.manager)) { pbAlert('Only your company account can see the company’s permit records.', 'Company Permit Records'); return; }
+    if (pbCpr.uid !== uid) pbCpr = { uid, rows: [], done: false, busy: false };
+    pbGoto('companyPermits');
+    pbCompanyPermitsRender();
+    if (!pbCpr.rows.length) pbCompanyPermitsLoad(false);
+  };
+  window.pbCompanyPermitsLoad = async function(more) {
+    const st = document.getElementById('cprStatus'), uid = pbArchiveOwnerUid;
+    if (pbCpr.busy) return;
+    if (!(sbClient && typeof sbClient.rpc === 'function' && sbUser && sbUser.id === uid && (await pbLiveSessionIs(uid)))) { if (st) st.textContent = 'Sign in with signal to see the company’s permit records.'; return; }
+    if (pbCpr.uid !== uid) pbCpr = { uid, rows: [], done: false, busy: false };
+    const lastRow = more && pbCpr.rows.length ? pbCpr.rows[pbCpr.rows.length - 1] : null;
+    pbCpr.busy = true; if (st) st.textContent = 'Loading…';
+    let r;
+    try { r = await Promise.race([sbClient.rpc('pb_permit_company_page', { p_before_closed: lastRow ? lastRow.closed_at : null, p_before_id: lastRow ? lastRow.row_id : null, p_limit: 50 }), new Promise(res => setTimeout(() => res({ data: null, error: { message: 'timeout' } }), 60000))]); }
+    catch (x) { r = { data: null, error: { message: String((x && x.message) || x) } }; }
+    pbCpr.busy = false;
+    if (!sbUser || sbUser.id !== uid || pbCpr.uid !== uid || !(await pbLiveSessionIs(uid)) || !sbUser || sbUser.id !== uid) return; // answered for this login only (review B)
+    const stNow = document.getElementById('cprStatus');
+    if (!r || r.error || !Array.isArray(r.data)) {
+      const m = String((r && r.error && r.error.message) || '');
+      if (stNow) stNow.textContent = /pb:not_company_account/.test(m) ? 'This account isn’t your company account.' : 'Couldn’t load — check your signal and tap Refresh.';
+      return;
+    }
+    const rows = r.data.filter(x => x && x.record && x.record.kind === 'confined');
+    pbCpr.rows = more ? pbCpr.rows.concat(rows.filter(x => !pbCpr.rows.some(y => y.row_id === x.row_id))) : rows;
+    pbCpr.done = r.data.length < 50;
+    pbCompanyPermitsRender();
+  };
+  function pbCprEntry(x) { return Object.assign({}, x.record, { lockTime: new Date(x.record.lockTime), photos: [] }); }
+  function pbCompanyPermitsRender() {
+    const list = document.getElementById('cprList'), st = document.getElementById('cprStatus'), mw = document.getElementById('cprMoreWrap');
+    if (!list) return;
+    if (st && pbCpr.rows.length) st.textContent = pbCpr.rows.length + ' permit record' + (pbCpr.rows.length === 1 ? '' : 's') + (pbCpr.done ? '' : ' so far');
+    else if (st && !pbCpr.busy && pbCpr.uid && pbCpr.done) st.textContent = 'No permit records backed up yet.';
+    if (mw) mw.style.display = pbCpr.rows.length && !pbCpr.done ? '' : 'none';
+    list.innerHTML = pbCpr.rows.map((x, i) => {
+      const e = x.record, p = e.permit || {}, d = new Date(x.closed_at || e.lockTime);
+      const em = p.emergencyDurationSec !== null && p.emergencyDurationSec !== undefined;
+      const who = [p.supervisor ? 'Supervisor: ' + p.supervisor : '', p.attendant ? 'Attendant: ' + p.attendant : ''].filter(Boolean).join(' · ');
+      return '<div class="pb-review-item pb-arch-row pb-arch-confined' + (em ? ' pb-arch-em' : '') + '">'
+        + '<span class="k">Confined Space — ' + escapeHtml(e.space || x.space || '') + '</span>'
+        + '<div class="pb-arch-chips">' + (em ? '<span class="pb-chip overdue">EMERGENCY</span>' : '') + (x.version > 1 ? '<span class="pb-chip notsent">Updated after closing · ' + x.version + ' versions kept</span>' : '<span class="pb-chip ok">Locked record</span>') + '</div>'
+        + '<div class="pb-cpr-meta">Closed ' + escapeHtml(isNaN(d) ? '' : d.toLocaleString()) + '<br>' + escapeHtml((e.jobsite || x.jobsite || '') + ((e.jobNumber || x.job_number) ? ' — #' + (e.jobNumber || x.job_number) : '')) + (who ? '<br>' + escapeHtml(who) : '') + '</div>'
+        + '<div class="pb-arch-actions"><button type="button" class="pb-btn ghost small" onclick="pbCprToggle(' + i + ')">View</button><button type="button" class="pb-btn ghost small" onclick="pbCprPdf(' + i + ')">Download PDF</button></div>'
+        + '<pre id="cprView' + i + '" style="display:none;">' + escapeHtml(e.reportText || '') + '</pre></div>';
+    }).join('');
+  }
+  window.pbCprToggle = function(i) { const el = document.getElementById('cprView' + i); if (el) el.style.display = el.style.display === 'none' ? '' : 'none'; };
+  window.pbCprPdf = async function(i) {
+    const x = pbCpr.rows[i]; if (!x) return;
+    if (!pdfLibReady()) { pbAlert('PDF library didn\'t load — check your connection and try again.'); return; }
+    const entry = pbCprEntry(x);
+    const doc = pbNewPdf(); doc.__pbUnreadable = [];
+    addEntryToPDF(doc, entry, 20);
+    doc.save('permit-' + String(entry.space || 'record').replace(/[^A-Za-z0-9_-]+/g, '_').slice(0, 40) + '-' + (isNaN(entry.lockTime) ? 'undated' : entry.lockTime.toISOString().slice(0, 10)) + '.pdf');
+  };
+
+  // Restore on a new phone: permit records in the account that this phone doesn't have are added to the Archive.
+  // Paged (25 at a time); every page must be this account's (review 2); nothing is added unless every page came.
+  window.pbPermitRestore = async function() {
+    const btn = document.getElementById('archivePermitRestoreBtn');
+    if (!sbClient || !sbUser) { pbAlert('Log in with a connection to restore your permit records.', 'Not Signed In'); return; }
+    const uid = sbUser.id;
+    if (pbArchiveOwnerUid !== uid || archiveLoadFailed) { pbAlert('This phone’s Archive isn’t loaded for your account yet. Try again in a moment.', 'Not Ready'); return; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Checking your account…'; }
+    const rows = []; let before = null, beforeId = null, err = null;
+    for (let pages = 0; pages < 400; pages++) {
+      if (!sbUser || sbUser.id !== uid || !(await pbLiveSessionIs(uid))) { err = 'account'; break; }
+      const r = await pbPermitRpc('pb_permit_mine_page', { p_before_closed: before, p_before_id: beforeId, p_limit: 25 }, 60000);
+      if (!sbUser || sbUser.id !== uid) { err = 'account'; break; }
+      if (!r || r.error || !Array.isArray(r.data)) { err = 'net'; break; }
+      if (r.data.some(x => !x || x.owner_uid !== uid)) { err = 'account'; break; } // answered for another login: none of it is used
+      rows.push(...r.data);
+      const b = document.getElementById('archivePermitRestoreBtn'); if (b) b.textContent = 'Checking your account… (' + rows.length + ')';
+      if (r.data.length < 25) break;
+      const last = r.data[r.data.length - 1]; before = last.closed_at; beforeId = last.row_id;
+    }
+    { const b = document.getElementById('archivePermitRestoreBtn'); if (b) { b.disabled = false; b.textContent = 'Restore Permits From Your Account'; } }
+    if (!sbUser || sbUser.id !== uid || pbArchiveOwnerUid !== uid) return;
+    if (err === 'account') { pbAlert('The signed-in account changed while checking, so nothing was restored. Try again.', 'Not Restored'); return; }
+    if (err) { pbAlert('Couldn’t finish checking your account (no signal?). Nothing was restored; try again.', 'Restore Failed'); return; }
+    const have = new Set(runArchive.filter(e => e && e.kind === 'confined').map(pbPermitClientId));
+    const ids = new Set(runArchive.map(e => e && e.id));
+    const add = []; let skipped = 0;
+    rows.forEach(row => {
+      const rec = row && row.record;
+      if (!rec || rec.kind !== 'confined' || have.has(row.client_permit_id)) return;
+      const lt = new Date(rec.lockTime);
+      if (isNaN(lt.getTime()) || ids.has(rec.id)) { skipped++; return; } // no close time, or another record here uses this id
+      const e = normalizeArchiveEntry(Object.assign({}, rec, { lockTime: lt, photos: [], restoredFromCloud: true }));
+      if (pbPermitClientId(e) !== row.client_permit_id) { skipped++; return; } // not the record this id belongs to
+      add.push(e); ids.add(e.id);
+    });
+    const skipNote = skipped ? '\n\n' + skipped + ' record' + (skipped > 1 ? 's' : '') + ' can’t be restored on this phone (no close time, or another record here uses the same id). ' + (skipped > 1 ? 'They stay' : 'It stays') + ' safe in your account.' : '';
+    if (!add.length) { pbAlert((rows.length ? 'Every permit record in your account is already on this phone.' : 'There are no permit records in your account yet.') + skipNote, 'Nothing to Restore'); return; }
+    pbConfirm('Restore ' + add.length + ' permit record' + (add.length > 1 ? 's' : '') + ' from your account to this phone’s Archive?\n\nPhotos stay only on the phone that took them.' + skipNote, async () => {
+      if (!sbUser || sbUser.id !== uid || pbArchiveOwnerUid !== uid) return;
+      const fresh = add.filter(e => !runArchive.some(o => o && (o.id === e.id || (o.kind === 'confined' && pbPermitClientId(o) === pbPermitClientId(e)))));
+      fresh.forEach(e => { const at = runArchive.findIndex(o => o && o.lockTime instanceof Date && o.lockTime < e.lockTime); runArchive.splice(at === -1 ? runArchive.length : at, 0, e); });
+      const ok = await saveRunArchive();
+      if (!ok) {
+        fresh.forEach(e => { const i = runArchive.indexOf(e); if (i !== -1) runArchive.splice(i, 1); });
+        if (pbCurrentScreen === 'archive') renderArchiveList();
+        pbAlert('The permit records couldn’t be saved on this phone (storage may be full), so they were not restored. Free up space and try again; your account copies are safe.', 'Not Restored');
+        return;
+      }
+      if (pbCurrentScreen === 'archive') renderArchiveList();
+      pbAlert('Restored ' + fresh.length + ' permit record' + (fresh.length > 1 ? 's' : '') + ' to this phone’s Archive.', 'Restored');
+    }, 'Restore Permits');
+  };
+  window.addEventListener('online', () => { pbPermitBkBackoffN = 0; pbPermitBkBackoffUntil = 0; pbPermitBackupSoon(8000); }); // signal back: try now (review A)
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pbPermitBackupSoon(4000, { background: true }); });
+  setInterval(() => { if (sbUser) pbPermitBackupSoon(0, { background: true }); }, 10 * 60 * 1000);
+
   setInterval(() => { try {
     if (pbAuthBackgroundOk() && runArchive.some(x => pbReportDue(x, { timer: true }))) pbReportQueueFlush({ timer: true });
     // the company key an anonymous report waits for: fetched here, at a moment unrelated to any anonymous send,
@@ -25318,6 +25635,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     if (pbArchiveRenderSig() !== pbArchiveRenderedIds) renderArchiveList();
   }
   window.renderArchiveList = function() {
+    try { pbPermitBkRenderBox(); } catch (x) { console.error(x); } // batch 6
     const listEl = document.getElementById('archiveList');
     pbArchiveRenderedIds = pbArchiveRenderSig();
     const unsentCount = runArchive.filter(pbBulkSendable).length;
@@ -25356,7 +25674,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       return `
       <div class="pb-review-item pb-arch-row pb-arch-${kindCls}${hadEmergency ? ' pb-arch-em' : ''}">
         <div class="pb-arch-head"><span class="pb-arch-ic" aria-hidden="true"></span><div class="pb-arch-main"><span class="k">${e.kind === 'confined' ? 'Confined Space — ' + escapeHtml(e.space) : e.kind === 'report' ? 'Report — ' + escapeHtml(e.category) + (e.anonymous ? ' (anonymous)' : '') : e.kind === 'stats-snapshot' ? 'Stats Snapshot' : escapeHtml(e.startLabel) + ' → ' + escapeHtml(e.endLabel)}</span><span class="pb-arch-date">${e.kind === 'run' ? 'Locked ' : ''}${e.lockTime.toLocaleString()}</span></div></div>
-        <div class="pb-arch-chips">${hadEmergency ? '<span class="pb-chip overdue">EMERGENCY</span>' : ''}${onDisk ? '<span class="pb-chip saved">Saved on this phone</span>' : endUnsaved ? '<span class="pb-chip pb-arch-unsaved">End not saved yet</span>' : '<span class="pb-chip pb-arch-unsaved">Not saved yet</span>'}${e.sent ? '<span class="pb-chip ok">Sent</span>' : '<span class="pb-chip notsent">Not sent</span>'}${cloud ? '<span class="pb-chip ok pb-arch-cloud">Cloud copy</span>' : ''}</div>
+        <div class="pb-arch-chips">${hadEmergency ? '<span class="pb-chip overdue">EMERGENCY</span>' : ''}${onDisk ? '<span class="pb-chip saved">Saved on this phone</span>' : endUnsaved ? '<span class="pb-chip pb-arch-unsaved">End not saved yet</span>' : '<span class="pb-chip pb-arch-unsaved">Not saved yet</span>'}${e.sent ? '<span class="pb-chip ok">Sent</span>' : '<span class="pb-chip notsent">Not sent</span>'}${cloud ? '<span class="pb-chip ok pb-arch-cloud">Cloud copy</span>' : ''}${e.kind === 'confined' ? pbPermitBkChip(e) : ''}</div>
         ${hadEmergency ? `<span class="pb-arch-alert em">Emergency declared during this entry — see report for details</span>` : ''}
         ${e.kind === 'report' && e.via === 'app' ? pbReportArchiveLine(e) : ''}
         <div class="pb-arch-meta">${meta}</div>
@@ -25611,7 +25929,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     if (extraDependents.length) {
       warningPrefix += 'This run also has ' + extraDependents.length + ' additional session' + (extraDependents.length > 1 ? 's' : '') + ' branching from it (' + extraDependents.map(archiveEntryLabel).join(', ') + ') \u2014 that\u2019s unusual and can\u2019t all be reconnected the same way. Those will lose their link back to earlier history, though their own records stay intact. ';
     }
-    pbConfirm(warningPrefix + 'Delete the record for ' + archiveEntryLabel(e) + '? This can\'t be undone.', () => {
+    pbConfirm(warningPrefix + 'Delete the record for ' + archiveEntryLabel(e) + '? This can\'t be undone.' + (e && e.kind === 'confined' ? pbPermitDeleteNote(e) : ''), () => {
       // Serialized with every queued operation on EVERY entry this deletion
       // touches (the deleted run and its linked sessions), so it never
       // interleaves with a foreman/note/photo/crew save on a linked session.
@@ -30162,7 +30480,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     }
     pbApplySessionCheck(r);
     pbRefreshPlanInBackground(gen);
-    if (sbUser) { reconcilePendingLockRetries(); pbSyncOwedReports(); } // uploads owed while the check was unanswered
+    if (sbUser) { reconcilePendingLockRetries(); pbSyncOwedReports(); pbPermitBackupSoon(); } // uploads owed while the check was unanswered
     pbShowRecoveryIfPending();
   }
   var pbLateNewerSession = null; // a sign-in event newer than start-up's pending answer; var: an event may come before this line runs
