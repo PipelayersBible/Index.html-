@@ -7459,7 +7459,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r13 · 2026-10-19'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r13.1 · 2026-10-19'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -18478,7 +18478,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     });
     (Array.isArray(d.permit && d.permit.unloggedHazards) ? d.permit.unloggedHazards : []).forEach(pbKeepUnloggedHazard); // both tabs' unlogged hazards are kept
     if (base && Array.isArray(d.miscPhotos) && !same(d.miscPhotos, base.miscPhotos || []) && same((window._pbPhotos && window._pbPhotos['cpMisc']) || [], base.miscPhotos || [])) {
-      window._pbPhotos = window._pbPhotos || {}; window._pbPhotos['cpMisc'] = d.miscPhotos; renderPhotoList('cpMisc');
+      window._pbPhotos = window._pbPhotos || {}; window._pbPhotos['cpMisc'] = (a => Array.isArray(a) ? a.map(ph => (ph && typeof ph === 'object') ? { ...ph } : ph) : [])(d.miscPhotos); renderPhotoList('cpMisc'); // FIX permit photos: own copy
     }
     renderUnsafeBanner();
     renderConfinedActive();
@@ -18803,7 +18803,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     }
     // Always this permit's own photos (none is none), never whatever was in memory before.
     window._pbPhotos = window._pbPhotos || {};
-    window._pbPhotos['cpMisc'] = Array.isArray(data.miscPhotos) ? data.miscPhotos : [];
+    window._pbPhotos['cpMisc'] = (a => Array.isArray(a) ? a.map(ph => (ph && typeof ph === 'object') ? { ...ph } : ph) : [])(data.miscPhotos); // FIX permit photos: own copy
     renderPhotoList('cpMisc');
     document.getElementById('confinedResumeTile').style.display = '';
     document.getElementById('confinedResumeTile2').style.display = '';
@@ -22045,6 +22045,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   function pbRetireClosedPermitState() {
     stopConfinedCommTimer(); stopConfinedAtmoTimer(); stopConfinedEmergencyTimer();
     confinedPermit = null;
+    if (window._pbPhotos) delete window._pbPhotos['cpMisc']; renderPhotoList('cpMisc'); // FIX permit photos: the closed permit's photos are its record's; the next permit starts with its own empty list
     pbRenderRosterUnsavedBanner(); // nothing of the closed permit is left to retry here
     pbResetAtmoRosterForms(); // nothing typed for the closed permit carries to the next one
     ['cpEmergencyPanel', 'cpAtmoTimerSection', 'cpCommTimerSection'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
@@ -22240,7 +22241,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       jobNumber: confinedPermit.jobNumber || '',
       crew: confinedPermit.attendant || '',
       photoCount: Number(confinedPermit.miscPhotoCount) || 0,
-      photos: (window._pbPhotos && window._pbPhotos['cpMisc']) ? window._pbPhotos['cpMisc'] : [],
+      photos: (a => Array.isArray(a) ? a.map(ph => (ph && typeof ph === 'object') ? { ...ph } : ph) : [])(window._pbPhotos && window._pbPhotos['cpMisc']), // FIX permit photos: the record's own copy, never the form's live list
       depthFlagged: false,
       netCutFill: null,
       volumeYd3: null,
