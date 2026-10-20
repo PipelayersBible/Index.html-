@@ -47,8 +47,13 @@ self.addEventListener('push', (event) => {
     const owner = await readOwner();
     let title = APP_NAME, body = 'Open the app to see what’s new.', url = '#/home', tag = 'pb-general';
     if (d && typeof d === 'object') {
-      const forSomeoneElse = owner !== undefined && typeof d.a === 'string' && d.a !== owner;
-      if (forSomeoneElse) {
+      // Bughunt Oct 19 (6a): an owner that couldn't be read (undefined) is no proof the message is this phone's, so a
+      // message addressed to an account then gets the neutral text too (and the subscription is kept).
+      const addressed = typeof d.a === 'string';
+      const forSomeoneElse = addressed && owner !== undefined && d.a !== owner;
+      if (addressed && owner === undefined) {
+        // the neutral defaults above: title, "Open the app to see what's new.", #/home
+      } else if (forSomeoneElse) {
         // Never shown with its own words. Browsers require a notification for every push, so a neutral one is shown.
         body = owner ? 'A notification for another account wasn’t shown on this phone.' : 'Notifications are off on this phone.';
         tag = 'pb-other';
