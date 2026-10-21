@@ -8684,7 +8684,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.2.1 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.2.2 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -46729,6 +46729,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!body || pbCurrentScreen !== 'cxList') return;
     const uid = pbArchiveOwnerUid, kind = pbCx.list;
     let h = '', s = '';
+    const rrPrev = body.dataset.rrKeep || ''; body.dataset.rrKeep = ''; // r15.2.2
     if (kind === 'live') {
       const B = pbCxBoard(uid), L = pbCxLive(B);
       s = B ? pbCxAge(B.busy, '', B.at, B.cached) : (pbCxOnline() ? 'Loading…' : 'No signal. Live now loads with signal.');
@@ -46745,10 +46746,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           + '<span class="pbx-row-s">' + pbCxE(pbProdJobLabel(x.job_number)) + '</span><span class="pbx-row-s pbx-matnums">' + pbMatNums(x.m, x.s) + '</span>'
           + '<span class="pbx-row-flags">' + (x.s.reached ? '<span class="pbx-tag warn">' + pbCxIc('warn') + pbCxE(x.s.pct + '% of ordered used') + '</span>' : '') + (x.s.over ? '<span class="pbx-tag warn">' + pbCxIc('warn') + 'Over expected</span>' : '') + '</span></span>', 'cxMat' + i)).join('') + '</div>'
         : '<p class="pbx-none" id="cxMatNone">No material is near what’s ordered.</p>';
-    } else if (kind === 'runs') {
-      const o = window.pbRrListHtml(uid); h = o.h; s = o.s;
-    } else if (kind === 'crewreports') {
-      const o = window.pbRfListHtml(uid); h = o.h; s = o.s;
+    } else if (kind === 'runs' || kind === 'crewreports') {
+      const o = kind === 'runs' ? window.pbRrListHtml(uid) : window.pbRfListHtml(uid); h = o.h; s = o.s;
+      if (o.keep && rrPrev === o.keep) { body.dataset.rrKeep = o.keep; if (st && st.textContent !== s) st.textContent = s; return; } // r15.2.2: a report on screen is only re-drawn when it changes
+      body.dataset.rrKeep = o.keep || '';
     } else if (kind === 'wait') {
       const D = pbCxDash(uid), jobs = D ? D.data.jobs.filter(j => j && typeof j === 'object') : null;
       s = D ? pbCxAge(pbPd.uid === uid && pbPd.busy, pbPd.uid === uid ? pbPd.msg : '', D.at, pbPd.uid === uid ? pbPd.cached : true) : (pbCxOnline() ? 'Loading…' : 'No signal. This loads with signal.');
@@ -46946,7 +46947,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const x = O.open, e = O.rec;
     let h = '<button type="button" class="pb-btn ghost small" id="cxRunBack" onclick="pbRrClose()">‹ ' + (O.fromCrew || O.fromList ? 'Back' : 'All run reports') + '</button>'
       + '<h2 class="pbx-h2">' + pbCxE(pbProdJobLabel(x.job_number || '') + (x.label ? ' · ' + x.label : '')) + '</h2>'
-      + '<p class="pbx-note">' + pbCxE([x.who, pbRoWhen(x), O.fromCrew || O.fromList ? '' : (PB_RO_TAGS[pbRoStatus(x)] || PB_RO_TAGS.waiting)[1]].filter(Boolean).join(' · ')) + '</p>'
+      + '<p class="pbx-note">' + pbCxE([x.who, pbRoWhen(x), O.fromCrew || O.fromList ? '' : (pbRoStatus(x) === 'waiting' && x.reviewed_at ? 'No production entered' : (PB_RO_TAGS[pbRoStatus(x)] || PB_RO_TAGS.waiting)[1])].filter(Boolean).join(' · ')) + '</p>'
       + (x.sent_at ? '<p class="pbx-note" id="cxRunSent">' + pbCxE('Sent ' + pbRoWhen({ locked_at: x.sent_at }) + (x.sent_how === 'auto' ? ' (automatically, 12 hours after the run ended)' : '') + ' · ' + (x.reviewed_at ? 'Approved' + (x.reviewed_by_name ? ' by ' + x.reviewed_by_name : '') : 'Not approved yet')) + '</p>' : '');
     if (O.recBusy) return { h: h + '<p class="pbx-none">Loading the run…</p>', s: '' };
     if (!e) return { h: h + '<p class="pbx-none">' + pbCxE(O.recMsg || 'Couldn’t load this run.') + '</p>', s: '' };
@@ -46969,7 +46970,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       h += (x.can_review && !x.reviewed_at ? '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn small" id="cxRunReviewed" onclick="pbRrReviewed()">Approve Report</button></div>' : '') + pdf;
       setTimeout(() => window.pbRrPdfShow(), 0);
     }
-    return { h, s: '' };
+    const keep = 'd|' + [x.id || x.sref, e.id, x.reviewed_at || '', x.sent_at || '', O.pdfOpen ? 1 : 0, canProd ? ((pbLv.data ? 1 : 0) + ':' + (pbLv.form ? pbLv.form.cid + ':' + (pbLv.form.err || '') : '') + ':' + JSON.stringify(pbLvRuns())) : ''].join('|');
+    return { h, s: '', keep };
   }
   window.pbRrOpen = async function(i) {
     const uid = pbArchiveOwnerUid, O = pbRoFor(uid), x = O.list && O.list[i];
