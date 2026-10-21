@@ -4129,7 +4129,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
           <button type="button" class="pbx-namerow" id="settingsNameRow" aria-expanded="false" aria-controls="settingsNameEdit" onclick="pbNameEditToggle()"><span class="pbx-namerow-k">Name</span><span class="pbx-namerow-v" id="settingsNameShown">Not set</span><span class="pbx-namerow-a" id="settingsNameAct">Edit</span></button>
           <div class="pbx-name-edit" id="settingsNameEdit" hidden>
             <div class="pb-field"><label for="settingsName">Your name</label><input type="text" id="settingsName" maxlength="80" autocomplete="name" enterkeyhint="done" aria-describedby="settingsNameHelp"></div>
-            <p class="pb-help" id="settingsNameHelp">Your company sees it, with your email under it.</p>
+            <p class="pb-help" id="settingsNameHelp">Your company sees this name, unless it set one for you.</p>
             <div class="pbx-btnrow"><button type="button" class="pb-btn secondary small" id="settingsNameSave" onclick="pbMyNameSave()">Save Name</button><button type="button" class="pb-btn ghost small" id="settingsNameCancel" onclick="pbNameEditToggle(false)">Cancel</button></div>
           </div>
           <p class="pb-help" id="settingsNameMsg" role="status" hidden></p>
@@ -4330,7 +4330,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   <!-- ASK (batch 4, R1): the AI civil teacher, grounded on the Education pages -->
   <div class="pb-screen" id="screen-aiAsk">
     <div class="pb-header">
-      <p class="pb-eyebrow"><span>Tools</span><button class="pb-back" title="Back" aria-label="Back" onclick="pbAiAskBack()"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <p class="pb-eyebrow"><span>Ask</span><button class="pb-back" title="Back" aria-label="Back" onclick="pbAiAskBack()"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
       <h1 class="pb-title">Ask</h1>
     </div>
     <p class="pb-help pb-ai-lead">Questions about grade, stakes, rods, pipe or safety. Answers use this app&rsquo;s Education pages.</p>
@@ -4413,7 +4413,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div>&rsaquo;</div>
     </div>
     <div class="pb-home-tile" onclick="pbOpenVentCalc()">
-      <div><div class="name">Confined Space Ventilation</div><div class="sub">Rule-of-thumb blower CFM sizing — not an OSHA compliance number</div></div>
+      <div><div class="name">Confined Space Ventilation</div><div class="sub">Blower CFM from air changes per hour (not an OSHA number)</div></div>
       <div>&rsaquo;</div>
     </div>
   </div>
@@ -4437,7 +4437,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div>&rsaquo;</div>
     </div>
     <div class="pb-home-tile" onclick="pbOpenVolumeCalc()">
-      <div><div class="name">Material Volume</div><div class="sub">Rectangular, triangular, cylindrical, or concrete/slurry encasement</div></div>
+      <div><div class="name">Material Volume</div><div class="sub">Rectangle, trapezoid, triangle, cylinder, pie slice or encasement</div></div>
       <div>&rsaquo;</div>
     </div>
     <div class="pb-home-tile" onclick="pbOpenBendCalc(null)">
@@ -4520,6 +4520,10 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-field"><label id="beddingDistLabel">Distance, invert to bottom of manhole (ft)</label><input type="number" enterkeyhint="next" step="0.001" id="beddingDist" inputmode="decimal"></div>
         <div class="pb-inline-warn minor" id="beddingDistReview" role="status" hidden></div>
         <div class="pb-field"><label>Required bedding thickness (ft)</label><input type="number" enterkeyhint="next" step="0.001" id="beddingThk" inputmode="decimal"></div>
+        <div class="pb-row">
+          <div class="pb-field"><label>Pad length (ft, optional)</label><input type="number" enterkeyhint="next" step="0.1" id="beddingPadL" inputmode="decimal"></div>
+          <div class="pb-field"><label>Pad width (ft, optional)</label><input type="number" enterkeyhint="next" step="0.1" id="beddingPadW" inputmode="decimal"></div>
+        </div>
         <div class="pb-btn-wrap" style="padding:14px 0 0 0;"><button class="pb-btn" onclick="pbCalcBedding()">Calculate</button></div>
         <div class="pb-derived" id="beddingResult" style="font-size:16px; margin-top:10px;"></div>
         <div class="pb-calc-notebar" id="beddingNoteBar" style="display:none;"></div>
@@ -4707,7 +4711,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div class="pb-warn" style="margin-top:16px;">
       <strong>Not an OSHA/Cal-OSHA compliance number</strong>
       <span class="pb-warn-keep">Always confirm entry conditions with a calibrated gas meter, not this number.</span>
-      <details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>Details</span></summary><span>Neither OSHA nor Cal/OSHA sets a minimum CFM tied to space size — both require whatever forced-air ventilation it takes to pass atmospheric testing (O₂, LEL, PELs), continuously, while anyone is inside. This calculator only converts an air-change rate (ACH) into blower airflow: CFM = volume &times; ACH &divide; 60. The ACH should come from your job’s ventilation plan. The presets in the ACH list and where they come from are explained under it.</span></details>
+      <details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>Details</span></summary><span>OSHA sets no minimum CFM for a space size. It requires “ventilating the permit space as necessary to eliminate or control atmospheric hazards” (29 CFR 1926.1204(c)(4)). This only turns an air-change rate into airflow: CFM = volume &times; ACH &divide; 60. Take the ACH from the job’s ventilation plan.</span></details>
     </div>
     <div class="pb-section">
       <div class="pb-tag">Space Volume</div>
@@ -4809,10 +4813,10 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div class="pb-body">
         <div class="pb-review-item" data-edu-id="benchmark-backsight"><span class="k">Benchmark + Backsight</span><br>HI = benchmark elevation + backsight reading.</div>
         <div class="pb-review-item" data-edu-id="calculate-from-stakes"><span class="k">Calculate from Stakes</span><br>HI = stake elevation + rod reading shot at that stake. Works from any stake with both values.</div>
-        <div class="pb-review-item" data-edu-id="hi-cross-check-tolerance"><span class="k">HI cross-check tolerance</span><br>If two or more Survey Stake points imply a different HI, the app flags it: over ±0.02 ft apart is a serious warning (likely a busted setup or a reading error), 0.001–0.02 ft apart is a milder "worth a second look" flag. This shows live on the New Run screen and carries through to Review and the final report if it's never resolved.</div>
-        <div class="pb-review-item" data-edu-id="only-needed-for"><span class="k">Only needed for</span><br>Points entered as a typed Invert Elevation. A run made entirely of survey stakes never needs HI at all.</div>
+        <div class="pb-review-item" data-edu-id="hi-cross-check-tolerance"><span class="k">HI cross-check tolerance</span><br>When the points with a rod reading (stakes, or inverts with a reading), and a typed or benchmark HI, imply different HIs, the app flags it. More than 0.02 ft apart is a serious warning (likely a busted setup or a misread). Over 0.001 up to 0.02 ft is a milder "worth a second look" flag. It shows live in Run Setup and carries to Review and the final report until fixed.</div>
+        <div class="pb-review-item" data-edu-id="only-needed-for"><span class="k">Only needed for</span><br>Points entered as a typed Invert Elevation, and stakes with no rod reading. A run where every stake has its own rod reading never needs HI.</div>
         <div class="pb-review-item" data-edu-id="rod-reading-elevation-calculator"><span class="k">Rod Reading → Elevation calculator</span><br>Standalone tool (Calculators → Grade & Elevation) for the same HI math, outside of a run — shoot a known point, then convert any other reading to an elevation off that same HI.</div>
-        <div class="pb-review-item" data-edu-id="don-t-know-the-elevation-only-the-reading"><span class="k">Don't know the elevation, only the reading?</span><br>On the New Run screen, Invert Elevation mode has an optional "rod reading here" field — enter it instead of the elevation, and the app derives Elevation = HI − reading automatically, live, as long as this run's HI is set from somewhere.</div>
+        <div class="pb-review-item" data-edu-id="don-t-know-the-elevation-only-the-reading"><span class="k">Don't know the elevation, only the reading?</span><br>In Run Setup, Invert Elevation mode has an optional "Rod reading at this invert" box (Engineer's/Architect's rod). Enter the reading instead of the elevation: the app works out Elevation = HI − reading, once the run's HI is set.</div>
       </div>
     </div>
     <div class="pb-section" data-edu-id="survey-stake-math">
@@ -5046,6 +5050,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div class="pb-tag">Material Volume</div>
       <div class="pb-body">
         <div class="pb-review-item" data-edu-id="rectangular"><span class="k">Rectangular</span><br>Length × Width × Depth</div>
+        <div class="pb-review-item" data-edu-id="trapezoid"><span class="k">Trapezoid</span><br>(Top width + Bottom width) ÷ 2 × Depth × Length</div>
+        <div class="pb-review-item" data-edu-id="pie-slice"><span class="k">Pie Slice</span><br>True circle: angle ÷ 360 × π × r² × Depth. Custom curve: the wedge between the two straight edges + 2/3 × chord × bulge (a parabola, not a true arc), × Depth.</div>
         <div class="pb-review-item" data-edu-id="triangular"><span class="k">Triangular</span><br>0.5 × Base × Height × Depth</div>
         <div class="pb-review-item" data-edu-id="cylindrical"><span class="k">Cylindrical</span><br>π × r² × length</div>
         <div class="pb-review-item" data-edu-id="encasement"><span class="k">Encasement</span><br>(Encasement L × W × D) − sum of all pipe cylinder volumes inside it.</div>
@@ -5085,7 +5091,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div class="pb-section" data-edu-id="backfill-lifts">
       <div class="pb-tag">Backfill Lifts</div>
       <div class="pb-body">
-        <div class="pb-review-item" data-edu-id="typical-loose-to-compacted-shrinkage"><span class="k">Typical loose-to-compacted shrinkage</span><br>Gravel ~6% &nbsp;·&nbsp; Sand ~7% &nbsp;·&nbsp; Silt/common earth ~12% &nbsp;·&nbsp; Clay ~18% — rough rule of thumb, no checked source; use your project’s compaction spec or the engineer’s numbers where you have them.</div>
+        <div class="pb-review-item" data-edu-id="typical-loose-to-compacted-shrinkage"><span class="k">Typical loose-to-compacted shrinkage</span><br>Gravel/rock ~25% &nbsp;·&nbsp; Sand ~30% &nbsp;·&nbsp; Silt/loam ~30% &nbsp;·&nbsp; Clay ~35% — rough rule of thumb (loose fill usually loses 25–35%); use your compaction spec or the engineer’s numbers.</div>
         <div class="pb-review-item" data-edu-id="number-of-lifts"><span class="k">Number of lifts</span><br>Total compacted depth ÷ (loose lift thickness × (1 − shrink %)), rounded up. The lift thickness you enter is the LOOSE thickness before compaction — it always contributes less than its full thickness to the final compacted depth.</div>
       </div>
     </div>
@@ -5097,10 +5103,10 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       </div>
     </div>
     <div class="pb-section" data-edu-id="net-cut-fill-and-backfill-volume-stats-archive">
-      <div class="pb-tag">Net Cut/Fill &amp; Backfill Volume (Stats/Archive)</div>
+      <div class="pb-tag">Cut/Fill &amp; Backfill Volume (Stats/Archive)</div>
       <div class="pb-body">
         <div class="pb-review-item" data-edu-id="net-cut-fill"><span class="k">Cut/fill at stakes</span><br>What the stakes on the run read, in field notation: C is cut (dig down from the stake), F is fill (build up). "Average C 5.60 ft" is the average of the stakes&#x2019; cuts; "deepest C 6.10 ft" is the stake with the most cut, the one to plan shoring and sloping around. A run with both shows its fill stakes separately. Stats pool every stake of every run shown. The app used to show one "net" number (all cuts added up, minus all fills); that sum grows with the number of stakes and isn&#x2019;t a depth, so it is no longer shown.</div><!-- batch 15 PDF -->
-        <div class="pb-review-item" data-edu-id="estimated-backfill-volume"><span class="k">Estimated backfill volume</span><br>Trench width × distance × average cut/fill depth, converted to cubic yards. A rough estimate only — it assumes a constant trench width and vertical sides, not sloped ones, so it will under-report actual spoil volume on a sloped or benched trench.</div>
+        <div class="pb-review-item" data-edu-id="estimated-backfill-volume"><span class="k">Estimated backfill volume</span><br>Trench width × depth from the stake elevations down to the pipe bottom (BOP), along the run, minus the pipe&rsquo;s own volume below grade, in cubic yards. Needs every point staked, a trench width, wall thickness and pipe ID. A rough estimate: it assumes vertical trench walls, so a sloped or benched trench takes more.</div>
       </div>
     </div>
   </div>
@@ -5937,6 +5943,20 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   #pbApp .pbm-form .pbm-radio input { width: 22px; height: 22px; flex: none; margin: 0; }
   #pbApp .pbm-form .pbm-radio span { flex: 1 1 auto; min-width: 0; line-height: 1.35; }
   #pbApp .pbm-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+/* feat_weight: the weight picker under calculator volumes (big targets, the app's segmented control) */
+#pbApp .pb-wt { margin-top: 16px; }
+#pbApp .pb-wt > .pb-answer-label { margin-bottom: 8px; }
+#pbApp .pb-wt .pb-toggle { margin-bottom: 10px; }
+#pbApp .pb-wt .pb-toggle button { min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; }
+#pbApp .pb-wt .pb-toggle-wrap button { flex: 1 1 45%; }
+#pbApp .pb-wt-n { font-size: 15px; font-weight: 650; }
+#pbApp .pb-wt-d { font-size: 13px; font-weight: 500; opacity: 0.85; font-variant-numeric: tabular-nums; }
+#pbApp .pb-wt-step { margin: 2px 0 6px 0; font-size: 14px; font-weight: 600; color: var(--pb-text-2); }
+#pbApp .pb-wt-cust { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 10px; }
+#pbApp .pb-wt-cust .pb-field { flex: 1 1 auto; min-width: 0; margin: 0; }
+#pbApp .pb-wt .pb-wt-cu { flex: 0 0 auto; margin-bottom: 0; }
+#pbApp .pb-wt .pb-wt-cu button { min-width: 76px; }
+#pbApp .pb-wt-ftin { margin-top: 4px; font-size: 14px; color: var(--pb-text-2); font-variant-numeric: tabular-nums; }
   #pbApp .pbm-presets .pb-btn.on { box-shadow: inset 0 0 0 2px var(--pb-brand); }
   #pbApp .pbm-ferr { margin: 10px 0 0 0; }
   #pbApp .pbm-fbtns { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -6232,7 +6252,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
           <button type="button" class="pb-edu-row pb-tool-row" id="pmTicketsBtn" data-ic="clipboard" onclick="pbOpenTickets()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name" id="pmTickets">Field tickets</span><span class="sub">Delivery, material and sub tickets</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
         </div>
       </div></div>
-      <details class="pb-more pbp-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>How production syncs</span></summary><p class="pb-help" id="pmHelp">Enter each run session&rsquo;s own work in Foreman Production Entry on the run (not a running total). It is saved on this phone first and syncs to your company when you have signal. Excavated, pipe installed, backfill and restoration go in as feet (LF); appurtenances go in as Structures (EA); the crew hours from the Crew &amp; Equipment Log go along for the job&rsquo;s budget hours. Changing a run&rsquo;s quantities later sends the change; the company keeps every version.</p></details>
+      <details class="pb-more pbp-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>How production syncs</span></summary><p class="pb-help" id="pmHelp">Enter each session&rsquo;s own work, not a running total: on your run, on your crew&rsquo;s runs here, on a run you claimed, or in Work without a run. It&rsquo;s saved on this phone and syncs with signal. Excavation, pipe, backfill and restoration are in feet (LF), structures in EA; crew hours count toward the job&rsquo;s budget hours. Later changes are sent too, and the company keeps every version.</p></details>
     </div>
   </div>
 
@@ -6468,7 +6488,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <!-- Batch 10 (W, F17): maintenance, apart from the daily share and download actions -->
     <section class="pb-w10-manage" id="statsManage" aria-labelledby="statsManageHead">
       <h2 class="pb-h2" id="statsManageHead">Manage Stats</h2>
-      <p class="pb-help" id="statsClearHelp">Clear All Stats Data deletes the Stats records on this phone. A Stats snapshot report is saved to your Archive first. Your archived runs, their reports and Job Summary are not changed, and nothing in your account or your company&rsquo;s records is touched.</p>
+      <p class="pb-help" id="statsClearHelp">Deletes the Stats records on this phone only. Download a copy first: a snapshot report goes to the Archive (Contractor plan). Your archived runs, their reports and Job Summary are not changed.</p>
       <div class="pb-btn-wrap pb-b5-danger" style="padding:0;"><button class="pb-btn ghost small" id="statsClearBtn" style="color:var(--rod-red);" onclick="pbClearAllStats()">Clear All Stats Data</button></div>
       <p class="pb-help" id="statsClearNone" style="margin:8px 0 0 0;" hidden>No Stats data on this phone to clear.</p>
     </section>
@@ -6523,7 +6543,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div class="pb-section">
       <div class="pb-tag">Pipe</div>
       <div class="pb-body">
-        <p class="pb-help" style="margin-top:0;">Densities are approximate — for a real lift plan, use the manufacturer's published weight for the exact pipe class.</p>
+        <p class="pb-help" style="margin-top:0;">Plain wall only, approximate density: bells, lining and coating aren't counted, so real pipe weighs more. For a lift plan, use the manufacturer's weight.</p>
         <div class="pb-row">
           <div class="pb-field"><label>Outside diameter (in)</label><input type="number" enterkeyhint="next" step="0.01" id="pwOD" inputmode="decimal"></div>
           <div class="pb-field"><label>Wall thickness (in)</label><input type="number" enterkeyhint="next" step="0.01" id="pwWall" inputmode="decimal"></div>
@@ -6565,20 +6585,20 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div class="pb-section">
       <div class="pb-tag">Backfill</div>
       <div class="pb-body">
-        <p class="pb-help" id="liftShrinkNote" style="margin-top:0;">Shrinkage %: rough rule of thumb, no checked source; use your project’s compaction spec or the engineer’s numbers where you have them.</p>
+        <p class="pb-help" id="liftShrinkNote" style="margin-top:0;">How much a loose lift shrinks when compacted. Loose fill usually loses 25–35%. Rough rule of thumb: use your compaction spec or the engineer’s numbers.</p>
         <div class="pb-field"><label>Total depth to backfill (ft, compacted/final)</label><input type="number" enterkeyhint="next" step="0.1" id="liftDepth" inputmode="decimal"></div>
         <div class="pb-field"><label>Max loose lift thickness (in, before compaction)</label><input type="number" enterkeyhint="next" step="1" id="liftThickness" placeholder="per your spec / compactor" inputmode="decimal"></div>
         <div class="pb-field">
-          <label>Soil type</label>
+          <label>Loose-to-compacted shrink</label>
           <select id="liftSoilSel" onchange="pbToggleLiftSoilOther()">
-            <option value="0.06">Gravel — ~6% shrink</option>
-            <option value="0.07" selected>Sand — ~7% shrink</option>
-            <option value="0.12">Silt / Common Earth (loam) — ~12% shrink</option>
-            <option value="0.18">Clay — ~18% shrink</option>
+            <option value="0.25">Gravel / rock — 25%</option>
+            <option value="0.30" selected>Sand — 30%</option>
+            <option value="0.30">Silt / loam — 30%</option>
+            <option value="0.35">Clay — 35%</option>
             <option value="other">Other</option>
           </select>
         </div>
-        <div class="pb-field" id="liftSoilOtherWrap" style="display:none;"><label>Custom shrink (%)</label><input type="number" enterkeyhint="next" step="1" id="liftSoilOther" inputmode="numeric"></div>
+        <div class="pb-field" id="liftSoilOtherWrap" style="display:none;"><label>Custom loose-to-compacted shrink (%)</label><input type="number" enterkeyhint="next" step="1" id="liftSoilOther" inputmode="numeric"></div>
         <div class="pb-btn-wrap" style="padding:14px 0 0 0;"><button class="pb-btn" onclick="pbCalcLifts()">Calculate</button></div>
         <div class="pb-derived" id="liftResult" style="font-size:16px; margin-top:10px;"></div>
       </div>
@@ -6761,7 +6781,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div>&rsaquo;</div>
     </div>
     <div class="pb-home-tile" onclick="pbOpenVentCalc(true)">
-      <div><div class="name">Ventilation Calculator</div><div class="sub">Rule-of-thumb blower CFM sizing</div></div>
+      <div><div class="name">Ventilation Calculator</div><div class="sub">Blower CFM from air changes per hour</div></div>
       <div>&rsaquo;</div>
     </div>
     </div>
@@ -6777,7 +6797,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div class="cp-draft-band" id="cpDraftBand" role="note"><strong>Draft &mdash; not active</strong>Nothing on this form authorizes entry or starts a timer or reminder until you tap <b>Lock &amp; Activate Permit</b> at the bottom. <span class="cp-draft-save" id="cpDraftSaveLine">Not saved yet: a draft is saved on this phone once you start typing. Photos are not kept in drafts.</span></div>
     <div class="pb-btn-wrap cp-review-jump"><button type="button" class="pb-btn ghost small" id="cpReviewPermitBtn" onclick="pbCpReviewPermit()">Review Permit</button><span class="pb-help" id="cpDraftMissing"></span></div>
     <div class="pb-btn-wrap"><button class="pb-btn secondary" onclick="pbReuseLastPermitHazards()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Reuse Last Permit's Hazards &amp; Controls</button></div>
-    <div class="b4-more-wrap"><details class="pb-more b4-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>What Reuse fills in</span></summary><p class="pb-help">Pulls in the hazards, controls, ventilation-failure plan, acceptable conditions, and rescue/comms info from the most recently closed-out permit — still fully editable, and doesn't touch the space, purpose, or roster below.</p></details></div>
+    <div class="b4-more-wrap"><details class="pb-more b4-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>What Reuse fills in</span></summary><p class="pb-help">Fills in the hazards, controls, ventilation-failure plan, acceptable conditions and gas limits, rescue and communication info, the EMERGENCY number and the second contact from the last closed-out permit. All of it stays editable; the space, purpose, window, people and reminders are not changed.</p></details></div>
 
     <details class="cp-group" id="cpGroupLocation" open>
       <summary class="cp-group-head"><span class="cp-group-num" aria-hidden="true">1</span><span class="cp-group-title">Location &amp; Work</span><span class="cp-group-chev" aria-hidden="true"></span><span class="cp-group-sum" id="cpGroupLocationSum"></span><span class="cp-group-need" id="cpGroupLocationNeed"></span></summary>
@@ -6820,7 +6840,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-field"><label>Entry supervisor name</label><input type="text" enterkeyhint="next" id="cpSupervisor" maxlength="200"></div>
         <div class="pb-field"><label for="cpSupervisorInitials">Entry supervisor initials (authorizing this entry)</label><input type="text" enterkeyhint="next" id="cpSupervisorInitials" maxlength="20" placeholder="Supervisor&rsquo;s initials" aria-describedby="cpSupervisorInitialsHelp"><p class="pb-help pb-field-help" id="cpSupervisorInitialsHelp">Entered personally by the supervisor named above, confirming they reviewed this permit and authorize entry.</p></div>
         <div class="pb-field"><label>Confined space attendant name</label><input type="text" enterkeyhint="next" id="cpAttendant" maxlength="200"></div>
-<details class="pb-more b4-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>What locking records</span></summary><p class="pb-help" style="margin-top:0;">Locking records the date/time as your authorization. Fields lock after — tests and roster are logged separately as entry proceeds.</p></details>
+<details class="pb-more b4-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>What locking records</span></summary><p class="pb-help" style="margin-top:0;">Locking records the date and time as your authorization. After that the permit fields can&rsquo;t be changed (only the EMERGENCY number can); air tests and the roster are logged as entry proceeds.</p></details>
       </div>
     </div>
     <div class="pb-section">
@@ -6871,7 +6891,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-field"><label>Hazards of the space</label><textarea id="cpHazards" rows="2" maxlength="1000" placeholder="e.g. oxygen deficiency, H2S, engulfment"></textarea></div>
         <div class="pb-field"><label>Isolation / control measures</label><textarea id="cpControls" rows="2" maxlength="1000" placeholder="e.g. LOTO on pumps, forced-air ventilation running"></textarea></div>
         <div class="pb-field"><label>How you'll detect a ventilation failure</label><textarea id="cpVentFail" rows="2" maxlength="1000" placeholder="e.g. air horn alarm on blower, attendant checks duct airflow every 10 min"></textarea></div>
-        <div class="pb-field"><label>Acceptable entry conditions (optional)</label><textarea id="cpConditions" rows="2" placeholder="e.g. O2 19.5-23.5%, below 10% LEL, contaminants below PEL"></textarea></div>
+        <div class="pb-field"><label>Other acceptable entry conditions (optional)</label><textarea id="cpConditions" rows="2" placeholder="e.g. blower running, no standing water. Gas limits go in the fields below; this text isn&rsquo;t checked"></textarea></div>
         <details class="pb-more b4-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>How the app uses these limits</span></summary><p class="pb-help">The app checks every logged air test against these limits and sounds EVACUATE when one is outside them. A blank field uses the standard value in its label &mdash; it never turns the app&rsquo;s check off. Enter your own only where your program or this space calls for different limits, and keep using your gas meter&rsquo;s own alarm too. H2S and CO are checked on the tests where they are measured; a blank reading means not measured, never zero.</p></details>
         <div class="pb-row cp-limits-row">
           <div class="pb-field"><label>Minimum acceptable O2 (%) — blank uses 19.5</label><input type="number" enterkeyhint="next" step="0.1" min="0" max="25" id="cpMinO2" placeholder="typically 19.5" inputmode="decimal"></div>
@@ -6880,7 +6900,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
           <div class="pb-field"><label>Maximum H2S (ppm) — blank uses 10 ppm, the OSHA construction limit (8-hour average)</label><input type="number" enterkeyhint="next" step="0.1" min="0" id="cpMaxH2S" placeholder="10" inputmode="decimal"></div>
           <div class="pb-field"><label>Maximum CO (ppm) — blank uses 35 ppm, the NIOSH recommended limit, stricter than the OSHA limit of 50 ppm</label><input type="number" enterkeyhint="next" step="0.1" min="0" id="cpMaxCO" placeholder="35" inputmode="decimal"></div>
         </div>
-        <div class="pb-field"><label>Air test re-check reminder (minutes, optional &mdash; blank = Off)</label><input type="number" enterkeyhint="next" step="1" id="cpAtmoInterval" placeholder="e.g. 15" inputmode="numeric"><p class="pb-help" style="margin:4px 0 0 0;">A reminder to log a fresh test, not a gas limit. Blank means no reminder, never 0 minutes.</p></div>
+        <div class="pb-field"><label>Air test re-check reminder (minutes, optional &mdash; blank = Off)</label><input type="number" enterkeyhint="next" step="1" id="cpAtmoInterval" placeholder="e.g. 15" inputmode="numeric"><p class="pb-help" style="margin:4px 0 0 0;">A reminder to log a fresh test, not a gas limit. It also sets how old the last test can be before check-in is blocked (20 min when blank). Blank means no reminder, never 0 minutes.</p></div>
       </div>
     </div>
     <div class="pb-section">
@@ -6902,7 +6922,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div class="pb-section">
       <div class="pb-tag">Emergency Procedures</div>
       <div class="pb-body">
-<details class="pb-more b4-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>What the EMERGENCY button does</span></summary><p class="pb-help" style="margin-top:0;">For outside emergency response, not routine check-ins. The EMERGENCY button calls <strong class="cpDialEcho">911</strong> (the number below) and opens a report you can email to dispatch.</p></details>
+<details class="pb-more b4-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>What the EMERGENCY button does</span></summary><p class="pb-help" style="margin-top:0;">For outside emergency response, not routine check-ins. The EMERGENCY button opens your phone&rsquo;s dialer with <strong class="cpDialEcho">911</strong> (the number below), pauses the reminders, and shows a dispatcher script and a report you can email to whoever dispatch directs.</p></details>
         <div class="pb-field"><label>Emergency number (dialed by the EMERGENCY button)</label><input type="tel" enterkeyhint="next" id="cpDialNum" value="911" maxlength="30"><p class="pb-help" style="margin:4px 0 0 0;">911 unless this site has its own rescue number or the country uses a different one. Can’t be blank.</p></div>
         <div class="pb-field"><label>Rescue / emergency services and how to summon them</label><textarea id="cpRescue" rows="2" maxlength="1000" placeholder="e.g. 911, standby rescue team on site, radio channel 2"></textarea></div>
 <details class="pb-more b4-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>About a second contact</span></summary><p class="pb-help">The primary number is the one the EMERGENCY button dials: <strong class="cpDialEcho">911</strong>. Add a second only if someone else is worth reaching — an on-call super, safety contact.</p></details>
@@ -6958,7 +6978,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div id="cpDialEdit" style="display:none; margin:8px 16px 0 16px;"><div class="pb-field"><label>Emergency number (dialed by the EMERGENCY button)</label><input type="tel" enterkeyhint="done" id="cpDialEditNum" maxlength="30"></div><button type="button" class="pb-btn small" onclick="pbSaveDialNumberEdit()">Save Number</button> <button type="button" class="pb-btn ghost small" onclick="pbCancelDialNumberEdit()">Cancel</button></div>
     <div class="pb-warn pb-rescue" style="margin-top:14px;">
       <strong class="pb-rescue-line">If someone goes down: DO NOT ENTER. Call for trained rescue.</strong>
-      <details class="pb-more"><summary><span>Why</span></summary>Attendant: call for help immediately instead of climbing in after them. 60% of confined space deaths are would-be rescuers overcome by the exact same hazard that got the first person, usually within seconds. Calling for trained rescue is the job — going in yourself just makes it two victims instead of one.</details>
+      <details class="pb-more"><summary><span>Why</span></summary>Attendant: call for trained rescue right away instead of going in after them. NIOSH: &ldquo;More than 60% of confined space fatalities occur among would-be rescuers.&rdquo; Calling for rescue is the job &mdash; going in yourself can make two victims instead of one.</details>
     </div>
     <div id="cpEmergencyPanel" style="display:none;">
       <div class="pb-answer-box cp-em-elapsed" style="margin:18px 16px 0 16px; border-color:var(--rod-red);">
@@ -6974,7 +6994,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div class="pb-emergency-script" id="cpEmergencyScript"></div>
       <div class="pb-emergency-key" id="cpEmergencyKeyInfo"></div>
       <div class="pb-warn" id="cpEmergencyCallNote" style="margin-top:12px;">
-        <strong>Calling now</strong>
+        <strong>Confirm the call</strong>
         Your phone should be prompting a call to <span id="cpEmergencyNumDisplay"></span> now — confirm the call if your phone asks. Opening this prompt does NOT by itself prove a call was placed or connected; if nothing happens, dial manually right away rather than assuming it went through. State the site address out loud first thing: this permit has it on file, but the dispatcher needs to hear it from you. Once you're off the line, send the report below to whoever the dispatcher directs (supervisor, emergency personnel, etc.).
       </div>
       <div class="pb-warn" id="cpEmergencyClosedNote" style="margin-top:12px; display:none;">
@@ -7149,7 +7169,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div class="pb-btn-wrap"><button class="pb-btn" onclick="pbCloseConfinedPermit()">Close Out Permit</button></div>
     </div>
     <div id="cpCloseoutPanel" style="display:none;">
-      <div class="pb-clean" style="margin-top:16px;">This permit has been saved to the session archive. Send a copy by email below if needed, then finish.</div>
+      <div class="pb-clean" style="margin-top:16px;">This permit is saved in the Archive. Email a copy below if needed, then tap Finish &amp; Return Home.</div>
       <div class="pb-section">
         <div class="pb-tag">Closeout Report</div>
         <div class="pb-body">
@@ -7193,10 +7213,10 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div class="pb-tag">Stats &amp; Archive Info<button class="pb-remove" onclick="pbResetStatsArchiveFields()">Reset</button></div>
       <div class="pb-body">
         <div class="pb-field"><label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="saEnableToggle" style="width:auto;" onchange="pbToggleStatsArchiveFields()"> Track extra details for this run</label></div>
-        <p class="pb-help" id="saDisabledNote" style="margin:4px 0 0 0;">Off: the run still saves to Archive, but not to Stats. Turn on to add the job, crew or notes.</p>
+        <p class="pb-help" id="saDisabledNote" style="margin:4px 0 0 0;">Off: the run is still saved, but not counted in Stats. Turn on to add the job, crew or notes.</p>
         <div id="saFieldsWrap" style="display:none; margin-top:10px;">
           <p class="pb-help pb-b3-lead0">Job details carry over from your last run on this phone &mdash; check they&rsquo;re right for this one.</p>
-          <details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>About these fields</span></summary><p class="pb-help" style="margin-top:0;">Optional: only what the app can&rsquo;t work out itself. Leave Pipe type blank to skip Stats (the run still saves to Archive). Notes start blank for each new run.</p></details>
+          <details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>About these fields</span></summary><p class="pb-help" style="margin-top:0;">Optional: only what the app can&rsquo;t work out itself. No Pipe type = not in Stats (the run is still saved). Notes start blank for each run.</p></details>
           <div class="pb-field"><label>Jobsite name</label><input type="text" enterkeyhint="next" id="saJobsite" maxlength="200" placeholder="e.g. Main St sewer"></div>
           <div class="pb-field"><label>Job number</label><input type="text" enterkeyhint="next" id="saJobNumber" maxlength="200" placeholder="e.g. 24-017"></div>
           <div class="pb-field"><label>Cost code</label><input type="text" enterkeyhint="next" id="saCostCode" maxlength="200" placeholder="e.g. 02-310"></div>
@@ -7560,7 +7580,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
           <div class="pb-ai-status" id="cutsheetAiPhotoStatus" aria-live="polite"></div>
         </div>
         <div id="cutsheetDebugWrap" style="display:none; margin-top:10px; border-top:1px solid var(--paper-2); padding-top:10px;">
-          <p class="pb-help" style="margin:0 0 6px 0;">Diagnostic: the first ~25 text fragments PDF.js pulled from page 1. Screenshot this and send it back.</p>
+          <p class="pb-help" style="margin:0 0 6px 0;">Diagnostic: the first ~25 text pieces read from page 1. If the import looks wrong, screenshot this and send it with Report an App Problem (Account &amp; Settings).</p>
           <textarea id="cutsheetDebugBox" rows="10" readonly style="font-size:11px;"></textarea>
         </div>
       </div>
@@ -7836,10 +7856,11 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div id="resultsMainContent">
       <div class="pb-summary"><div class="pb-summary-grid" id="summaryGrid"></div></div>
       <div id="capabilityNotesWrap"></div>
+      <div id="lockFlagsWrap"></div>
       <div class="pb-b3-tablebar"><button type="button" class="pb-btn ghost small" id="laidHideBtn" aria-pressed="false" hidden onclick="pbLaidToggleHide()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-eye"/></svg>Hide laid rows</button><button class="pb-btn ghost small" id="zoomToggleBtn" aria-pressed="false" onclick="pbToggleZoom()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-search"/></svg>Zoom In: Sta / BOP</button></div><p class="pb-laid-progress" id="laidProgress" hidden></p><p class="pb-sr" id="laidLive" role="status" aria-live="polite"></p><!-- batch 14 F -->
       <div id="unplacedEvidencePanel" style="display:none;"></div>
       <div class="pb-table-wrap"><table class="pb-table" id="resultsTable"><thead><tr id="resultsHead"></tr></thead><tbody id="resultsBody"></tbody></table></div>
-      <p class="pb-note-general">Tap the + icon next to any row to add a timestamped field note, with its own optional photo.</p>
+      <p class="pb-note-general">Tap + on a row to add a timestamped field note, with optional photos.</p>
       <p class="pb-note-general" id="laidHelp">Swipe a row right to mark pipe laid to there; swipe it back to undo. The row’s calculator button has Mark laid too.</p><!-- batch 14 F -->
       <!-- batch 22 NOTES: delays, utility conflicts, rework and equipment, added to the run's notes during the run -->
       <section class="pb-section pb-sl-sec" id="pbSlSec" aria-labelledby="pbSlTitle">
@@ -7910,7 +7931,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
           <button class="pb-btn pb-b3-dangersolid" onclick="pbEndRunIncomplete()">Confirm — End Here</button>
         </div>
       </div>
-      <details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>What ending does</span></summary><p class="pb-note-general">Ending a run marks it finished for the archive/report and stops the run clock. You can still send the report from the Archive afterward.</p></details>
+      <details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>What ending does</span></summary><p class="pb-note-general">Ending marks the run finished and stops its clock. You can still send or save its report afterward.</p></details>
       <h2 class="pb-b3-acth pb-b3-acth2"><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-pencil"/></svg>Corrections</h2>
       <p class="pb-help pb-b3-lead0">Change the locked record. Each change is kept in its history.</p>
       <div class="pb-btn-wrap"><button class="pb-btn secondary" onclick="pbToggleCorrectDistance()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-ruler"/></svg>Correct a Distance or Hub</button></div>
@@ -7958,7 +7979,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-tag">Foreman Production Entry</div>
         <div class="pb-body">
           <p class="pb-help" style="margin-top:0;">For the foreman — production quantities for this run, separate from grade data above. Optional, editable anytime.</p>
-          <details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>Who can see this</span></summary><span class="pb-devnote">For foremen, managers and accounts not in a company. A pipelayer in a company doesn’t see this: their foreman enters it.</span><!-- batch 29 ROLES --></details>
+          <details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>Who can see this</span></summary><span class="pb-devnote">Foremen, PMs, managers, the company account and accounts not in a company. A company pipelayer doesn’t see it: their foreman enters it.</span><!-- batch 29 ROLES --></details>
           <div class="pb-field"><label>Entered by (foreman name)</label><input type="text" enterkeyhint="next" id="fpForeman" maxlength="200"></div>
           <div class="pb-field"><label>Feet excavated</label><input type="number" enterkeyhint="next" step="0.1" id="fpExcavated" inputmode="decimal"></div>
           <div class="pb-field"><label>Feet of pipe installed</label><input type="number" enterkeyhint="next" step="0.1" id="fpPipeInstalled" inputmode="decimal"></div>
@@ -8663,7 +8684,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.0.1 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.2 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -10812,12 +10833,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (b1 === null && t1 === null && !segBedding.length && !segTrench.length) { el.textContent = ''; return; }
     let lines = [];
     if (b1 !== null || segBedding.some(s => s.b !== null)) {
-      let l = 'Bedding thickness (from The Run section): ' + (b1 !== null ? fmt(b1,2) + ' ft' : '\u2014');
+      let l = 'Bedding thickness: ' + (b1 !== null ? fmt(b1,2) + ' ft' : '\u2014');
       segBedding.forEach(s => { l += ' \u00b7 Run ' + s.n + ': ' + (s.b !== null ? fmt(s.b,2) + ' ft' : '\u2014'); });
       lines.push(l);
     }
     if (t1 !== null || segTrench.some(s => s.t !== null)) {
-      let l = 'Trench width (from The Run section): ' + (t1 !== null ? fmt(t1,1) + ' ft' : '\u2014');
+      let l = 'Trench width: ' + (t1 !== null ? fmt(t1,1) + ' ft' : '\u2014');
       segTrench.forEach(s => { l += ' \u00b7 Run ' + s.n + ': ' + (s.t !== null ? fmt(s.t,1) + ' ft' : '\u2014'); });
       lines.push(l);
     }
@@ -14343,7 +14364,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     wrap.style.display = '';
     wrap.innerHTML = '<h2 class="pb-b3-acth"><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-pipe"/></svg>Pipe layout</h2>'
       + '<div class="pb-lay-sum">' + sum + '</div>'
-      + '<p class="pb-help pb-lay-lead">Joint and midpoint stations are worked out from the laying length, not measured. They only decide where check rows go: the grade at every station stays the same.</p>'
+      + '<p class="pb-help pb-lay-lead">Joint and division stations come from the laying length; they are not measured. They only place the check rows; the grade doesn\u2019t change.</p>'
       + '<div class="pb-lay-actions">'
       + (run1 && run1.cfg.on && run1.cfg.len ? '<button type="button" class="pb-btn secondary" id="pbLayFirstBtn" onclick="pbLayOpenAdjust({ station: 0, first: true })"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-ruler"/></svg>Adjust First Pipe</button>' : '')
       + (anyOn ? '<button type="button" class="pb-btn ghost" id="pbLayExactBtn" onclick="pbLayOpenAdjust({})">Adjust at a Station</button>' : '')
@@ -15025,7 +15046,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
             : `Backflow risk: invert DROPS from station ${s.from.station.toFixed(1)} to ${s.to.station.toFixed(1)} (${s.from.label} \u2192 ${s.to.label}). This run goes both ways: up to ${atTurn} it should rise toward the turn. Confirm this is intentional or fix the data.` });
           return;
         }
-        warnings.push({ type: 'backflow', text: `Backflow risk: invert DROPS from station ${s.from.station.toFixed(1)} to ${s.to.station.toFixed(1)} (${s.from.label} → ${s.to.label}), while the rest of this run trends the other way. Confirm this is intentional (e.g. pressurized pipe) or fix the data.` });
+        warnings.push({ type: 'backflow', text: `Backflow risk: invert DROPS from station ${s.from.station.toFixed(1)} to ${s.to.station.toFixed(1)} (${s.from.label} → ${s.to.label}). Confirm this is intentional (e.g. pressurized pipe) or fix the data.` });
       });
     }
     // A run's End and the next run's Start share a station, but unlike a TEE lateral
@@ -15079,12 +15100,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       }
       warnings.push({ type: 'same-station', text: `${group.length} hubs are at the same station (${group[0].station.toFixed(1)}): ${group.map(p => p.label).join(', ')}. The app joins them in the order you entered them, so the grade before this station runs to ${group[0].label} and the grade after it runs from ${group[group.length - 1].label}. Check the main line\u2019s points are entered in flow order, or put a lateral in its own run.` });
     });
+    const wtIdSeen = new Set(); // one wall/ID warning per run, not one per section
     segments.forEach((s, idx) => {
       if (Math.abs(s.slopePct) > 20) {
         warnings.push({ type: 'typo', text: `${s.slopePct.toFixed(2)}% slope between ${s.from.label} and ${s.to.label} is extremely steep — double-check this isn't a data entry error.` });
       }
-      if (s.wt !== null && s.idFt !== null && s.wt >= s.idFt) {
-        warnings.push({ type: 'typo', text: `Wall thickness (${s.wt.toFixed(2)}') is greater than or equal to the pipe ID (${s.idFt.toFixed(2)}') on the segment starting at ${s.from.label} — check these numbers.` });
+      if (s.wt !== null && s.idFt !== null && s.wt >= s.idFt && !wtIdSeen.has(pbRunOfPointId(s.from.id))) {
+        wtIdSeen.add(pbRunOfPointId(s.from.id));
+        warnings.push({ type: 'typo', text: `Wall thickness (${s.wt.toFixed(2)}') is not less than the pipe ID (${s.idFt.toFixed(2)}') on the run starting at ${s.from.label} — check these numbers.` });
       }
     });
     for (let i = 0; i < segments.length - 1; i++) {
@@ -15104,7 +15127,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const relChange = smaller > 0 ? Math.abs(s2.slopePct - s1.slopePct) / smaller : (slopeDiff > 0 ? 999 : 0);
         if (relChange >= 0.27) flag = true;
       }
-      if (flag) {
+      if (flag && !((window._pbPhotos && window._pbPhotos[s1.to.id]) || []).length) { // a point that already has a photo is documented
         warnings.push({ type: 'photo', prefix: s1.to.id, text: `Slope changes noticeably at ${s1.to.label}${viaJunction ? ' / ' + s2.from.label : ''} (station ${s1.to.station.toFixed(1)}) — ${s1.slopePct.toFixed(2)}% to ${s2.slopePct.toFixed(2)}%. Recommend a stake photo here for documentation.` });
       }
     }
@@ -15146,7 +15169,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const verifiedPrefixes = stakePrefixes.filter(pointReadingIsVerified);
       if (stakePrefixes.length > 0 && verifiedPrefixes.length < 2) {
         const verifiedLabels = verifiedPrefixes.map(p => getPointLabel(p, p==='start'?'Start':p==='end'?'End':'Hub'));
-        warnings.push({ type: 'unverified', text: `Only ${verifiedPrefixes.length} of ${stakePrefixes.length} stake point(s) in this run have an actual field-shot rod reading${verifiedLabels.length ? ' (' + verifiedLabels.join(', ') + ')' : ''} — the rest are predicted from HI and the design/cutsheet elevation, not confirmed in the field. Recommend physically shooting at least 2 stakes before relying on this run, to confirm the setup and catch any disturbed or incorrect stakes.` });
+        warnings.push({ type: 'unverified', heading: 'Stakes Not Field-Checked', text: verifiedPrefixes.length === stakePrefixes.length
+          ? `This run's only stake point (${verifiedLabels.join(', ')}) has a field-shot rod reading, but one shot can't check the setup. Shoot a second point to confirm the HI and catch a disturbed stake.`
+          : `Only ${verifiedPrefixes.length} of ${stakePrefixes.length} stake point(s) in this run have a field-shot rod reading${verifiedLabels.length ? ' (' + verifiedLabels.join(', ') + ')' : ''}. The rest are predicted from HI, not confirmed in the field. Shoot at least 2 stakes before relying on this run, to confirm the setup and catch disturbed or wrong stakes.` });
       }
     }
 
@@ -15260,7 +15285,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         }
         beddingVolumeIncomplete = true; // thickness entirely unknown, or known-positive but width missing — an unknown contribution, not a zero one
       });
-      if (!calc.segments.some(s => (s.bedding !== null && s.bedding !== undefined) || (s.trenchWidth !== null && s.trenchWidth !== undefined && s.trenchWidth > 0))) beddingVolumeIncomplete = false; // no bedding tracked anywhere in this run: not applicable, not incomplete
+      if (!calc.segments.some(s => s.bedding !== null && s.bedding !== undefined)) beddingVolumeIncomplete = false; // no bedding thickness anywhere in this run (a trench width alone is for backfill): not applicable, not incomplete
       if (anyBedding) beddingVolumeYd3 = totalBeddingCf / 27;
     }
     const anyBeddingData = runStarts.some(r => (r.point.bedding !== null && r.point.bedding !== undefined) || (r.point.trenchWidth !== null && r.point.trenchWidth !== undefined));
@@ -15284,7 +15309,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       ${anyBeddingData ? `
       <div class="pb-summary-subhead">Bedding</div>
       ${beddingTiles}
-      <div class="pb-summary-item"><div class="k">Total Bedding Volume</div><div class="v">${beddingVolumeYd3 !== null ? fmt(beddingVolumeYd3,1)+' yd³' + (beddingVolumeIncomplete ? ' (partial — some sections missing data)' : '') : (beddingVolumeIncomplete ? 'unavailable — missing data' : 'need trench width')}</div></div>` : ''}
+      <div class="pb-summary-item"><div class="k">Total Bedding Volume</div><div class="v">${beddingVolumeYd3 !== null ? fmt(beddingVolumeYd3,1)+' yd³' + (beddingVolumeIncomplete ? ' (partial — some sections missing data)' : '') : (beddingVolumeIncomplete ? 'unavailable — missing data' : 'not recorded')}</div></div>` : ''}
     `;
   }
 
@@ -15478,6 +15503,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // flow line inside the pipe), but the trench bottom is lower by the pipe wall
   // and any bedding beneath it. OSHA's 5 ft protective-system threshold is
   // about the excavation, so that is what's measured here.
+  const PB_DEPTH_FLAG_TEXT = 'Stake data puts the trench bottom 5 ft or deeper. OSHA requires "an adequate protective system" (sloping, benching or shoring) unless the excavation is "made entirely in stable rock" (1926.652(a)(1)).';
   function pbTrenchExtraBelowInvert(prefix) {
     const wt = getPointWT(prefix), bed = getPointBedding(prefix);
     return { wt: (wt !== null && wt > 0) ? wt : 0, bed: (bed !== null && bed > 0) ? bed : 0 };
@@ -15977,7 +16003,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const { maxDepth, maxPrefix, maxCut, maxExtra } = getMaxStakeCutDepth();
     if (maxDepth >= 5) {
       const depthWork = (maxExtra.wt || maxExtra.bed) ? ` (${maxCut.toFixed(2)} ft cut to invert${maxExtra.wt ? ' + ' + maxExtra.wt.toFixed(2) + ' ft pipe wall' : ''}${maxExtra.bed ? ' + ' + maxExtra.bed.toFixed(2) + ' ft bedding' : ''})` : '';
-      html += `<div class="pb-warn photo"><strong>Deep Trench — Check Sloping</strong>Based on stake cut data, the trench bottom may be as deep as ${maxDepth.toFixed(1)} ft at one point${depthWork}. OSHA requires a protective system (sloping, benching, or shoring) for trenches 5 ft or deeper.<br><button class="pb-btn small" style="margin-top:8px;" onclick="pbOpenTrenchCalc('review', ${maxDepth}, '${maxPrefix}')">Check Trench Sloping Calculator</button></div>`;
+      html += `<div class="pb-warn photo"><strong>Deep Trench — Check Sloping</strong>Based on stake cut data, the trench bottom may be as deep as ${maxDepth.toFixed(1)} ft at one point${depthWork}. OSHA requires "an adequate protective system" (sloping, benching or shoring) unless the excavation is "made entirely in stable rock" (1926.652(a)(1)).<br><button class="pb-btn small" style="margin-top:8px;" onclick="pbOpenTrenchCalc('review', ${maxDepth}, '${maxPrefix}')">Check Trench Sloping Calculator</button></div>`;
     }
     if (calc.warnings.length === 0 && calc.capabilityNotes.length === 0 && maxDepth < 5) { // a deep trench is a warning
       html += `<div class="pb-clean">No warnings — data looks clean.</div>`;
@@ -16064,7 +16090,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (next) { pbAlert('The run this form resumes was already continued in another session (' + archiveEntryLabel(next) + ', locked ' + next.lockTime.toLocaleString() + '), so this was NOT locked \u2014 it would count the run\u2019s footage twice. Open that session from the Archive instead.', 'Already Resumed'); return; } }
     const resumedStatsRec = window._pbResumingFromEntryId ? (statsLog.find(s => s.entryId === window._pbResumingFromEntryId) || pbTrackedWhileStatsUnloaded(window._pbResumingFromEntryId)) : null;
     if (resumedStatsRec && !(saFieldsEnabled() && document.getElementById('statsType') && document.getElementById('statsType').value)) {
-      pbAlert('This run is already in Stats from its earlier session, and its record needs a pipe type so the footage laid today is counted under the same pipe. Turn on Stats & Archive Info, choose the Pipe Type' + (resumedStatsRec.type ? ' (it was \u201c' + resumedStatsRec.type + '\u201d before)' : '') + ', and tap Lock again. Nothing was locked.', 'Choose the Pipe Type');
+      pbAlert('This run is already in Stats from its earlier session, so it needs a pipe type to count today\u2019s footage under the same pipe. Turn on \u201cTrack extra details for this run\u201d, pick the Pipe type' + (resumedStatsRec.type ? ' (it was \u201c' + resumedStatsRec.type + '\u201d before)' : '') + ' and tap Lock again. Nothing was locked.', 'Choose the Pipe Type');
       return;
     }
     pbLockInFlight = true;
@@ -16211,7 +16237,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       // inventing a measurement correction — it just re-attempts the save
       // of the entry that's already built and sitting in memory.
       document.getElementById('lockSaveStatusText').textContent = queueSaveOk
-        ? 'This run\u2019s results are shown below, but it did NOT save to Archive. If you close the app or lose power before this saves successfully, this run will be lost.'
+        ? 'This run did NOT save to Archive yet. A recovery copy was kept on this phone and goes back in when the app starts again. Tap Retry Save now.'
         : 'This run\u2019s results are shown below, but it did NOT save to Archive, AND a backup recovery record could not be saved either. If you close the app or lose power right now, this run will be lost with no way to recover it. Do not close this until Retry Save succeeds.';
       banner.style.display = '';
     } else if (banner) {
@@ -16827,6 +16853,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbRenderPendingPhotoBanner(entry); // pending (unsaved) note photos stay with THEIR run, whatever is viewed in between
     const notesWrap = document.getElementById('capabilityNotesWrap');
     if (notesWrap) notesWrap.innerHTML = (entry.capabilityNotes || []).map(n => `<div class="pb-info">${escapeHtml(n)}</div>`).join(''); // read back from storage
+    { const fw = document.getElementById('lockFlagsWrap'); // the flags raised at Lock stay on the screen the crew works from
+      if (fw) { const ws = (entry.warnings || []).filter(w => w && w.text);
+        fw.innerHTML = (entry.depthFlagged ? '<div class="pb-warn" style="margin:0 16px 10px 16px;"><strong>Trench 5 ft or Deeper</strong>' + escapeHtml(PB_DEPTH_FLAG_TEXT) + '</div>' : '')
+          + (ws.length ? '<details class="pb-more pb-b3-gutter" id="lockFlagsMore"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-warn"/></svg><span>Flagged at Lock (' + ws.length + ')</span></summary>' + ws.map(w => '<div class="pb-info">' + escapeHtml(String(w.text).replace(/\s*Would you like to flip the run\?\s*$/, '')) + '</div>').join('') + '</details>' : ''); } }
     const head = document.getElementById('resultsHead');
     const showElevCol = entry.rodUnit !== 'lenker';
     const showSgCol = entry.intervalRows.some(r => r.sgDisp !== undefined && r.sgDisp !== null && r.sgDisp !== '\u2014' && r.sgDisp !== '');
@@ -18529,7 +18559,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // distance actually completed, marked incomplete, never the whole planned run.
   function pbEntrySummaryGridHTML(entry) {
     const pipeInfo = (entry.summary && entry.summary.pipeInfo) || [];
-    return `<div class="pb-summary-item"><div class="k">Overall Slope (+ = rising toward end)</div><div class="v">${entry.summary ? fmt(entry.summary.overallSlopePct,2) + '%' : '\u2014'}</div></div>` +
+    const segSl = (entry.segments || []).filter(s => s && s.distFt > 0 && Number.isFinite(s.slopePct)); // grades only: a junction step is not a section
+    return (segSl.length > 1 ? `<div class="pb-summary-item" style="grid-column: 1 / -1;"><div class="k">Slope % (by section, + = rising toward end)</div><div class="v">${segSl.map(s => fmt(s.slopePct,2) + '%').join(' / ')}</div></div>`
+      : `<div class="pb-summary-item"><div class="k">Slope (+ = rising toward end)</div><div class="v">${segSl.length ? fmt(segSl[0].slopePct,2) + '%' : entry.summary ? fmt(entry.summary.overallSlopePct,2) + '%' : '\u2014'}</div></div>`) +
       `<div class="pb-summary-item"><div class="k">Distance</div><div class="v">${fmt(entry.completedDistance !== undefined ? entry.completedDistance : entry.distance,1)} ft${entry.incomplete ? ' (incomplete)' : ''}</div></div>` +
       pipeInfo.map(p => `<div class="pb-summary-item"><div class="k">${escapeHtml(p.label)} \u2014 Wall Thickness</div><div class="v">${p.wtFt !== null ? fmt(p.wtFt,3) + ' ft' : '\u2014'}</div></div><div class="pb-summary-item"><div class="k">${escapeHtml(p.label)} \u2014 Pipe ID</div><div class="v">${p.idIn !== null ? fmt(p.idIn,2) + '"' : '\u2014'}</div></div>`).join('');
   }
@@ -19725,15 +19757,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const fit1 = numVal('bendFit1') || 0;
     const fit2 = numVal('bendFit2') || 0;
     const resultEl = document.getElementById('bendResult');
-    if (offset === null || offset <= 0) { resultEl.innerHTML = 'Enter a valid vertical offset greater than zero.'; lastBendResultText = null; return; }
-    if (fit1 < 0 || fit2 < 0) { resultEl.innerHTML = 'Fitting take-up length can\u2019t be negative \u2014 check for a typo (e.g. a stray minus sign).'; lastBendResultText = null; return; }
+    if (offset === null || offset <= 0) { resultEl.innerHTML = 'Enter an offset greater than zero.'; lastBendResultText = null; return; }
+    if (fit1 < 0 || fit2 < 0) { resultEl.innerHTML = 'Center-to-end can\u2019t be negative \u2014 check for a stray minus sign.'; lastBendResultText = null; return; }
     const multiplier = 1 / Math.sin(angleDeg * Math.PI / 180);
     const travel = offset * multiplier;
     const cutLength = travel - fit1 - fit2;
     if (!Number.isFinite(travel) || !Number.isFinite(cutLength)) { resultEl.innerHTML = 'Those values are outside what this calculator can compute (the result is not a finite number). Check the offset and fitting distances for a typo.'; lastBendResultText = null; return; }
     const hasCorrection = fit1 > 0 || fit2 > 0;
     const primary = hasCorrection ? cutLength : travel;
-    const primaryLabel = hasCorrection ? 'Pipe Cut Length (Bell to Bell)' : 'Vertex-to-Vertex Distance';
+    const primaryLabel = hasCorrection ? 'Pipe Cut Length (Stop to Stop)' : 'Vertex-to-Vertex Distance';
     let html = `<div class="pb-answer-box"><div class="pb-answer-label">${primaryLabel}</div><div class="pb-answer-val">${primary.toFixed(3)} ft</div>`;
     if (hasCorrection) html += `<div class="pb-answer-sub">Raw vertex-to-vertex distance: ${travel.toFixed(3)} ft</div>`;
     html += `<div class="pb-answer-sub">Multiplier for ${angleDeg}°: ${multiplier.toFixed(3)}</div>`;
@@ -19794,7 +19826,18 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     resultEl.innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">Top of Bedding</div><div class="pb-answer-val">${topOfBedding.toFixed(3)} ft</div></div>
       <div class="pb-answer-box"><div class="pb-answer-label">Bottom of Bedding</div><div class="pb-answer-val">${bottomOfBedding.toFixed(3)} ft</div></div>`;
     if (typeof window.pbBedNeedsReview === 'function' && window.pbBedNeedsReview()) resultEl.insertAdjacentHTML('afterbegin', '<p class="pb-answer-sub pb-answer-warn">The distance was entered for the other reference and hasn\u2019t been checked since the switch. Check it (see above) before using this answer.</p>'); // batch 14 R (F38)
-    lastBeddingResultText = `Bedding Calc: Top of Bedding = ${topOfBedding.toFixed(3)} ft, Bottom of Bedding = ${bottomOfBedding.toFixed(3)} ft (from ${mode === 'inv' ? 'invert' : 'BOP'} ${ref.toFixed(3)} ft, ${dist.toFixed(3)} ft down to the bottom of the manhole, ${thk.toFixed(3)} ft of bedding)`;
+    lastBeddingResultText = `Structure Bedding Calc: Top of Bedding = ${topOfBedding.toFixed(3)} ft, Bottom of Bedding = ${bottomOfBedding.toFixed(3)} ft (from ${mode === 'inv' ? 'invert' : 'BOP'} ${ref.toFixed(3)} ft, ${dist.toFixed(3)} ft down to the bottom of the manhole, ${thk.toFixed(3)} ft of bedding)`;
+    { // feat_weight: the optional pad size gives the bedding volume (in place) and its weight
+      const pl = numVal('beddingPadL'), pw = numVal('beddingPadW');
+      if (pl !== null || pw !== null) {
+        if (pl === null || pw === null || !(pl > 0) || !(pw > 0) || !Number.isFinite(pl * pw * thk)) resultEl.insertAdjacentHTML('beforeend', '<p class="pb-answer-sub" id="beddingPadMsg">For the bedding volume, enter both pad length and width (ft, greater than zero).</p>');
+        else {
+          const yd3 = pl * pw * thk / 27;
+          resultEl.insertAdjacentHTML('beforeend', '<div class="pb-answer-box" id="beddingVolBox"><div class="pb-answer-label">Bedding Volume (estimate)</div><div class="pb-answer-val">' + yd3.toFixed(2) + ' yd³</div><div class="pb-answer-sub">' + pl + ' ft × ' + pw + ' ft × ' + thk + ' ft thick (' + pbWtTrim(thk * 12, 2) + ' in), in place</div></div>' + pbWtHtml('bedding', yd3));
+          lastBeddingResultText += `; bedding volume ${yd3.toFixed(2)} yd³ in place (pad ${pl} × ${pw} ft, estimate)`;
+        }
+      }
+    }
   };
 
   // ---------- Flush / Flow Rate Calculator ----------
@@ -19890,7 +19933,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (unit === 'yd3') { primaryVal = cubicYd; primaryUnit = 'yd³'; }
     else if (unit === 'ft3') { primaryVal = cubicFt; primaryUnit = 'ft³'; }
     else { primaryVal = gal; primaryUnit = 'gal'; }
-    document.getElementById('volumeResult').innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">${volLastLabel}</div><div class="pb-answer-val">${primaryVal.toFixed(2)} ${primaryUnit}</div><div class="pb-answer-sub">${cubicYd.toFixed(2)} yd³ · ${cubicFt.toFixed(2)} ft³ · ${gal.toFixed(1)} gal${volLastArcLen !== null ? ' · ' + volLastArcLabel + ': ' + volLastArcLen.toFixed(2) + ' ft' : ''}</div></div>`;
+    document.getElementById('volumeResult').innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">${volLastLabel}</div><div class="pb-answer-val">${primaryVal.toFixed(2)} ${primaryUnit}</div><div class="pb-answer-sub">${cubicYd.toFixed(2)} yd³ · ${cubicFt.toFixed(2)} ft³ · ${gal.toFixed(1)} gal${volLastArcLen !== null ? ' · ' + volLastArcLabel + ': ' + volLastArcLen.toFixed(2) + ' ft' : ''}</div></div>` + pbWtHtml('volume', cubicYd);
   }
   window.pbCalcVolume = function() {
     volLastCubicFt = null;
@@ -19911,7 +19954,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       cubicFt = ((topW + botW) / 2) * d * l;
     } else if (shape === 'tri') {
       const l = numVal('volTriL'), b = numVal('volTriB'), h = numVal('volTriH');
-      if (l === null || b === null || h === null || l <= 0 || b <= 0 || h <= 0) { resultEl.textContent = 'Enter valid length, base width, and height, all greater than zero.'; return; }
+      if (l === null || b === null || h === null || l <= 0 || b <= 0 || h <= 0) { resultEl.textContent = 'Enter a valid depth, base and height, all greater than zero.'; return; }
       cubicFt = 0.5 * b * h * l;
     } else if (shape === 'cyl') {
       const diaIn = numVal('volCylDia'), l = numVal('volCylL');
@@ -20091,7 +20134,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     const cfm = (volumeFt3 * ach) / 60;
     if (!Number.isFinite(volumeFt3) || !Number.isFinite(cfm)) { resultEl.textContent = 'Those values are outside what this calculator can compute (the result is not a finite number). Check the space dimensions and the ACH for a typo.'; return; }
-    resultEl.innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">Airflow corresponding to the entered ACH</div><div class="pb-answer-val">${cfm.toFixed(0)} CFM</div><div class="pb-answer-sub">${volumeFt3.toFixed(0)} ft³ space × ${ach} ACH ÷ 60</div><div class="pb-answer-sub pb-answer-warn" style="margin-top:6px;">Rule of thumb only — confirm actual entry conditions with a calibrated gas meter, not this number.</div></div>`;
+    resultEl.innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">Airflow needed into the space</div><div class="pb-answer-val">${cfm.toFixed(0)} CFM</div><div class="pb-answer-sub">${volumeFt3.toFixed(0)} ft³ space × ${ach} ACH ÷ 60. A blower’s rated CFM drops with hose length and bends.</div><div class="pb-answer-sub pb-answer-warn" style="margin-top:6px;">Rule of thumb only — confirm actual entry conditions with a calibrated gas meter, not this number.</div></div>`;
   };
 
   // ---------- Confined Space ----------
@@ -21021,7 +21064,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       document.getElementById('cpHaz' + def.key + 'Explain').value = h.explain || '';
     });
     pbRenderPermitReview();
-    pbAlert('Pulled in hazards, controls, and rescue info from the permit for ' + (lastPermit.space || 'the last space') + ' on ' + lastPermit.lockTime.toLocaleDateString() + '. Review and adjust anything that\u2019s different for this space before locking.' + (unmatched.length ? '\n\nThese hazard items from that permit don\u2019t match any hazard in the current list, so they were NOT carried over \u2014 set them yourself if they apply: ' + unmatched.join(', ') + '.' : ''), 'Reused Last Permit');
+    pbAlert('Pulled in hazards, controls, gas limits, rescue info and the EMERGENCY number from the permit for ' + (lastPermit.space || 'the last space') + ' on ' + lastPermit.lockTime.toLocaleDateString() + '. Review and adjust anything that\u2019s different for this space before locking.' + (unmatched.length ? '\n\nThese hazard items from that permit don\u2019t match any hazard in the current list, so they were NOT carried over \u2014 set them yourself if they apply: ' + unmatched.join(', ') + '.' : ''), 'Reused Last Permit');
   };
 
   // Limits no reading could ever pass (min above max, a negative maximum) and
@@ -22772,14 +22815,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const texts = [], short = [];
     const att = pbRosterEntryConflict(p).attendant;
     // Each reason keeps its old heading (e.g. "Unsafe Reading — Entry Blocked"), so the crew sees exactly which check stopped them.
-    if (att) { texts.push('Attendant Restriction: ' + att.name + ' is the confined space attendant. Per OSHA 1910.146(i), an attendant must stay outside the space and may not enter for any reason \u2014 not even rescue \u2014 unless first relieved by another qualified attendant (Reassign Attendant).'); short.push('attendant rule'); }
+    if (att) { texts.push('Attendant Restriction: ' + att.name + ' is the confined space attendant. OSHA 1926.1209(d): the attendant \u201cremains outside the permit space during entry operations until relieved by another attendant.\u201d Do not enter for any reason \u2014 not even rescue \u2014 unless first relieved by another qualified attendant (Reassign Attendant). A relieved attendant may enter for rescue only if your program allows it and they are trained and equipped for rescue (1926.1211(a)).'); short.push('attendant rule'); }
     // Pass 25: nobody may go in while no attendant (judged by person) is outside, e.g. after the only attendant went in.
     // relieve: the inside attendant's row, so Reassign Attendant can hand the role to someone outside.
     let relieve = null;
     if (!att && !pbOtherAttendantOutside(p.name)) {
       const key = (n) => String(n || '').trim().toLowerCase();
       relieve = confinedRoster.find(r => r.role === 'Attendant' && confinedRoster.some(x => key(x.name) === key(r.name) && x.status === 'in')) || null;
-      texts.push('No Attendant Outside the Space: the attendant is checked in, so no attendant is outside the space right now. Per OSHA 1910.146(i), an attendant must be stationed outside for as long as anyone is inside. Before anyone else goes in, tap Reassign Attendant to hand the role to a qualified person outside, or get the attendant out and check them out.'); short.push('no attendant outside the space');
+      texts.push('No Attendant Outside the Space: the attendant is checked in, so no attendant is outside the space right now. OSHA 1926.1204(f) requires \u201cat least one attendant outside the permit space into which entry is authorized for the duration of entry operations.\u201d Before anyone else goes in, tap Reassign Attendant to hand the role to a qualified person outside, or get the attendant out and check them out.'); short.push('no attendant outside the space');
     }
     const why = pbEntryBlockReason();
     if (why) { texts.push((why[1] ? why[1] + ': ' : '') + why[0]); short.push(why[1] ? String(why[1]).replace(/\s*\u2014\s*Entry Blocked$/, '').toLowerCase() : 'no current acceptable air test'); }
@@ -23379,7 +23422,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbSet('lastEmergencyEmail', email);
     const head = ['EMERGENCY INCIDENT REPORT \u2014 EMERGENCY STILL OPEN', 'Generated: ' + new Date().toLocaleString(),
       'This permit was closed out while the emergency' + (open ? ' declared ' + new Date(open.start).toLocaleString() : '') + ' was still OPEN. It is NOT resolved. The closeout report follows.'];
-    if (typed && !(nr.length && nr[nr.length - 1] && nr[nr.length - 1].number === typed)) head.push('NUMBER ACTUALLY REACHED (typed on the emergency panel): ' + typed);
+    if (typed && !(nr.length && nr[nr.length - 1] && nr[nr.length - 1].number === typed)) head.push('NUMBER IN THE EMERGENCY PANEL BOX (filled in with the number dialed unless changed by hand; the app cannot know whether a call connected): ' + typed);
     const subject = 'EMERGENCY \u2014 Confined Space Entry \u2014 ' + (entry.space || '') + ' \u2014 ' + (entry.address || '');
     pbNavigateExternal('mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(head.join('\n') + '\n\n' + entry.reportText));
   }
@@ -23588,7 +23631,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (p.emergContactNum) lines.push('ADDITIONAL EMERGENCY CONTACT: ' + (p.emergContactName || 'Contact') + ' — ' + p.emergContactNum);
     lines.push('RESCUE / EMERGENCY SERVICES ON FILE: ' + p.rescue);
     lines.push('EMERGENCY NUMBER (dialed by the EMERGENCY button): ' + (p.emergencyDialNumber ? p.emergencyDialNumber : pbDialNumberNow() + ' (not set on this permit)'));
-    if (pbNumbersReachedText(p)) lines.push('NUMBER ACTUALLY REACHED (recorded on the emergency panel): ' + pbNumbersReachedText(p));
+    if (pbNumbersReachedText(p)) lines.push('NUMBER RECORDED ON THE EMERGENCY PANEL (filled in with the number dialed unless changed by hand; the app cannot know whether a call connected): ' + pbNumbersReachedText(p));
     { const air = pbLatestAirLine(false); lines.push('LATEST AIR TEST: ' + (air || 'none logged')); }
     if (confinedEmergencyIncidents.length) {
       const openN = confinedEmergencyIncidents.filter(i => !i.end).length;
@@ -24028,7 +24071,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const d = pbJoinCallRecords(p.emergencyDials, from.emergencyDials), n = pbJoinCallRecords(p.numbersReached, from.numbersReached);
       if (d.length === (Array.isArray(p.emergencyDials) ? p.emergencyDials.length : 0) && n.length === (Array.isArray(p.numbersReached) ? p.numbersReached.length : 0)) return true;
       p.emergencyDials = d; p.numbersReached = n;
-      const lab = 'NUMBER ACTUALLY REACHED (recorded on the emergency panel): ', was = pbNumbersReachedText({ numbersReached: prior.n }), now = pbNumbersReachedText(p);
+      const lab = 'NUMBER RECORDED ON THE EMERGENCY PANEL (filled in with the number dialed unless changed by hand; the app cannot know whether a call connected): ', was = pbNumbersReachedText({ numbersReached: prior.n }), now = pbNumbersReachedText(p);
       if (now !== was && typeof entry.reportText === 'string') {
         entry.reportText = was && entry.reportText.includes(lab + was) ? entry.reportText.replace(lab + was, lab + now) : entry.reportText.replace(/(EMERGENCY NUMBER \(dialed by the EMERGENCY button\): [^\n]*)/, '$1\n' + lab + now);
         pbBumpEntryRev(entry); if (entry.sent === true) entry.sent = false; // its report changed after any hand-off
@@ -25264,6 +25307,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const screen = scr ? scr.id.replace(/^screen-/, '') : null;
     const cfg = screen ? PB_CALC_STALE[screen] : null;
     if (!cfg) return;
+    if (btn.closest('.pb-wt')) return; // feat_weight: the weight picker doesn't change the volume
     const tg = btn.closest('.pb-toggle');
     const changes = tg ? (!(cfg.ignore || []).includes(tg.id) && !btn.classList.contains('active'))
       : /^(pbAddEncPipeSize\(|this\.closest\('\[data-enc-extra\]'\)\.remove\(\))/.test(btn.getAttribute('onclick') || '');
@@ -25275,7 +25319,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const scr = el.closest('.pb-screen');
       const screen = scr ? scr.id.replace(/^screen-/, '') : null;
       const cfg = screen ? PB_CALC_STALE[screen] : null;
-      if (cfg && !(cfg.ignore || []).some(id => el.closest('#' + id))) pbCalcSetStale(screen, true);
+      if (cfg && !el.closest('.pb-wt') && !(cfg.ignore || []).some(id => el.closest('#' + id))) pbCalcSetStale(screen, true);
     }
     if (PB_CALC_NOTE_SCREENS[pbCurrentScreen]) pbRenderCalcNoteBar(pbCurrentScreen);
   }));
@@ -26512,7 +26556,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       }
     }
     if (entry.photoCount) lines.push(entry.photoCount + ' photo(s) attached across points and field notes (included as thumbnails in the PDF).');
-    if (entry.depthFlagged) lines.push('⚠ Trench depth ≥5 ft indicated by stake data — protective system (sloping/benching/shoring) required per OSHA.');
+    if (entry.depthFlagged) lines.push('⚠ ' + PB_DEPTH_FLAG_TEXT);
     if (entry.warnings && entry.warnings.length) {
       lines.push('');
       lines.push('--- FLAGGED AT TIME OF LOCK ---');
@@ -26524,8 +26568,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     if (entry.volumeYd3 !== null || entry.volumeIncomplete) {
       if (entry.netCutFill === null) lines.push(''); // this block provides its own spacing when the net-cut/fill line above wasn't shown
-      if (entry.volumeYd3 !== null) lines.push('Estimated backfill volume: ' + entry.volumeYd3.toFixed(1) + ' yd³' + pbVolumeScopeNote(entry) + (entry.volumeIncomplete ? ' (partial — some stations missing wall thickness or trench width, excluded)' : '') + ' (rough estimate — assumes constant trench width, not sloped sides)');
-      else lines.push('Estimated backfill volume: unavailable — ' + (entry.volumeStopUnknown ? pbVolumeStopUnknownText(entry) : 'missing wall thickness or trench width at every station'));
+      if (entry.volumeYd3 !== null) lines.push('Estimated backfill volume: ' + entry.volumeYd3.toFixed(1) + ' yd³' + pbVolumeScopeNote(entry) + (entry.volumeIncomplete ? ' (partial — sections missing wall thickness, pipe ID or trench width left out)' : '') + ' (rough estimate — assumes constant trench width, not sloped sides)');
+      else lines.push('Estimated backfill volume: unavailable — ' + (entry.volumeStopUnknown ? pbVolumeStopUnknownText(entry) : 'needs a stake at every point, a trench width, wall thickness and pipe ID'));
     }
     if (entry.beddingVolumeYd3 !== null || entry.beddingVolumeIncomplete || (entry.beddingThicknessFt !== null && entry.beddingThicknessFt !== undefined)) {
       lines.push('');
@@ -26700,7 +26744,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       // backfill uses for a run with no cut/fill data). Only a run where at
       // least one segment HAS bedding data, and another is missing it, is
       // genuinely incomplete.
-      if (!calc.segments.some(s => (s.bedding !== null && s.bedding !== undefined) || (s.trenchWidth !== null && s.trenchWidth !== undefined && s.trenchWidth > 0))) beddingVolumeIncomplete = false;
+      if (!calc.segments.some(s => s.bedding !== null && s.bedding !== undefined)) beddingVolumeIncomplete = false; // a trench width alone is for backfill, not bedding data
       if (anyBedding) beddingVolumeYd3 = totalBeddingCf / 27;
     }
     return { yd3: beddingVolumeYd3, incomplete: beddingVolumeIncomplete };
@@ -27131,12 +27175,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     { id: 'lift', label: 'Backfill Lift Count', sub: 'Number of compacted lifts needed to backfill a trench', cat: 'grade', gate: 'calcHub', screen: 'liftCalc', words: 'backfill lifts compaction layers trench fill', open: () => pbGoto('liftCalc') },
     { id: 'bedding', label: 'Structure Bedding Calculator', sub: 'Top of bedding / bottom of bedding at a manhole or structure', cat: 'grade', gate: 'calcHub', screen: 'beddingCalc', words: 'bedding elevation structure bedding rock gravel manhole invert bottom of pipe elevation', open: () => pbOpenBeddingCalc(null) },
     { id: 'trench', label: 'Trench Sloping & Shoring', sub: 'OSHA max allowable slope by soil type, plus top width', cat: 'safety', gate: 'calcHub', screen: 'trenchCalc', words: 'trench shoring sloping benching osha soil type trench box shield excavation cave-in top width', open: () => pbOpenTrenchCalc() },
-    { id: 'vent', label: 'Confined Space Ventilation', sub: 'Rule-of-thumb blower CFM sizing — not an OSHA compliance number', cat: 'safety', gate: 'calcHub', screen: 'ventCalc', words: 'ventilation blower fan cfm air changes per hour ach confined space manhole vault', open: () => pbOpenVentCalc() },
+    { id: 'vent', label: 'Confined Space Ventilation', sub: 'Blower CFM from air changes per hour (not an OSHA number)', cat: 'safety', gate: 'calcHub', screen: 'ventCalc', words: 'ventilation blower fan cfm air changes per hour ach confined space manhole vault', open: () => pbOpenVentCalc() },
     { id: 'confinedHub', label: 'Confined Space Permits', sub: 'Start an entry permit, or return to the active one', cat: 'permits', gate: 'confinedHub', screen: 'confinedHub', words: 'confined space entry permit attendant entrant roster', open: () => pbGoto('confinedHub') },
     { id: 'pipeWeight', label: 'Pipe Weight', sub: 'Weight per foot and total segment weight by material', cat: 'pipe', gate: 'calcHub', screen: 'pipeWeightCalc', words: 'pipe weight pounds lbs per foot ductile iron pvc rcp concrete lifting rigging', open: () => pbGoto('pipeWeightCalc') },
     { id: 'manning', label: 'Manning’s Equation', sub: 'Full-pipe gravity flow capacity and velocity', cat: 'pipe', gate: 'calcHub', screen: 'manningCalc', words: 'manning mannings flow capacity velocity gravity full pipe cfs', open: () => pbGoto('manningCalc') },
     { id: 'flow', label: 'Flush / Flow Rate', sub: 'Flow rate and time-to-target-gallons for a pressurized flush', cat: 'pipe', gate: 'calcHub', screen: 'flowCalc', words: 'flush flow rate gpm gallons pressure psi hydrant', open: () => pbOpenFlowCalc() },
-    { id: 'volume', label: 'Material Volume', sub: 'Rectangular, triangular, cylindrical, or concrete/slurry encasement', cat: 'pipe', gate: 'calcHub', screen: 'volumeCalc', words: 'material volume concrete slurry flowable fill cubic yards yardage rock gravel encasement backfill tons', open: () => pbOpenVolumeCalc() },
+    { id: 'volume', label: 'Material Volume', sub: 'Rectangle, trapezoid, triangle, cylinder, pie slice or encasement', cat: 'pipe', gate: 'calcHub', screen: 'volumeCalc', words: 'material volume concrete slurry flowable fill cubic yards yardage rock gravel encasement backfill tons', open: () => pbOpenVolumeCalc() },
     { id: 'bend', label: 'Bend Offset', sub: 'Two matching bends — required pipe length between them', cat: 'pipe', gate: 'calcHub', screen: 'bendCalc', words: 'bend offset fitting elbow 45 22.5 11.25 pipe length center to end', open: () => pbOpenBendCalc(null) },
     { id: 'manhole', label: 'Manhole Rim-to-Invert Depth', sub: 'Total structure depth and how many barrel sections needed', cat: 'structures', gate: 'calcHub', screen: 'manholeDepthCalc', words: 'manhole rim invert depth barrel sections risers structure', open: () => pbGoto('manholeDepthCalc') },
     { id: 'edu', label: 'Education & Reference', sub: 'Explanations, formulas and field terms', cat: 'reference', gate: 'formulasHub', screen: 'formulasHub', words: 'education reference help learn formulas glossary terms explanations', open: () => pbGoto('formulasHub') },
@@ -27196,7 +27240,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     bedding: 'Top and bottom of bedding at a manhole', trench: 'OSHA max slope by soil type, top width',
     confinedHub: 'Start a permit or open the active one', pipeWeight: 'Weight per foot and per segment',
     manning: 'Full-pipe gravity flow and velocity', flow: 'Flush flow rate and time to target gallons',
-    volume: 'Rectangle, triangle, cylinder or encasement', bend: 'Pipe length between two matching bends',
+    volume: 'Rectangle, trapezoid, triangle, cylinder, pie or encasement', bend: 'Pipe length between two matching bends',
     manhole: 'Structure depth and barrel sections'
   };
   function pbDestRowHTML(d, extraSub) {
@@ -30211,7 +30255,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       not_ready: ['info', 'Notifications aren’t ready yet', pbPushKeyAsked ? 'Try again in a few minutes.' : 'This needs signal the first time. Try again when you have signal.'],
       signedout: ['info', 'Log in to turn on notifications', 'They’re set up for each account on each phone.'],
       denied: ['warn', 'Notifications are blocked for this app on this phone', 'Nothing will arrive until they’re allowed in the phone’s settings.'],
-      off: ['info', 'Off on this phone', 'Turn them on to hear when runs are waiting for you, or when a management report arrives (company account).'],
+      off: ['info', 'Off on this phone', 'Turn them on for runs waiting on you, reminders, alerts and (company account) management reports.'],
       pending: ['warn', 'Turning on: not finished yet', pbPushPendingWords(st.dev && st.dev.why)],
       on: ['ok', 'On for this phone' + who, 'Notifications for this account arrive on this phone, even when the app is closed.']
     }[st.code] || ['info', '', ''];
@@ -30843,7 +30887,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!pbCanOpen('reports', { explain: true })) return;
     const uid = pbArchiveOwnerUid;
     const a = (await pbReportAccessFor(uid)) || null;
-    if (!(a && a.manager)) { pbAlert('Only your company’s management can open the inbox. If you should have it, ask the app owner to add your account as a manager.', 'Management Inbox'); return; }
+    if (!(a && a.manager)) { pbAlert('Only your company’s management can open the inbox. If you should have it, ask your company’s owner to make you a manager.', 'Management Inbox'); return; }
     if (pbInboxUid !== uid) { pbInboxData = null; pbInboxOpenId = null; }
     pbInboxOpenId = null;
     pbGoto('reportsInbox');
@@ -32849,7 +32893,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbOpenProdDashboard = async function() {
     if (!pbCanOpen('prodDashboard', { explain: true })) return;
     const uid = pbArchiveOwnerUid;
-    if (!(await pbProdIsManager(uid))) { pbAlert('Only your company account (the owner, or a manager the owner added) can see company production. Your own production is under My Production.', 'Company Production'); return; }
+    if (!(await pbProdIsManager(uid))) { pbAlert('Only your company account (the owner, a PM or a manager) can see company production. Your own is under My Production.', 'Company Production'); return; }
     if (pbPd.uid !== uid) pbPd = pbPdNew(uid);
     pbGoto('prodDashboard');
     if (!pbPd.data) { const c = await pbProdCacheGet(uid, 'dash'); if (c && c.data && pbPd.uid === uid && !pbPd.data) { pbPd.data = c.data; pbPd.at = c.at || 0; pbPd.cached = true; } }
@@ -32888,7 +32932,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!jobs) { list.innerHTML = ''; if (sum) sum.innerHTML = ''; return; }
     if (!jobs.length) {
       if (sum) sum.innerHTML = '';
-      list.innerHTML = '<div class="pbp-empty" id="pdEmpty"><svg class="pb-ic lg" aria-hidden="true" focusable="false"><use href="#pb-i-jobs"/></svg><p><strong>No production yet</strong></p><p>A job shows up here on its own as soon as a crew saves production quantities on a run with that job number. Nothing to set up first.</p></div>';
+      list.innerHTML = '<div class="pbp-empty" id="pdEmpty"><svg class="pb-ic lg" aria-hidden="true" focusable="false"><use href="#pb-i-jobs"/></svg><p><strong>No production yet</strong></p><p>Tap New project, or a job shows up here on its own once a crew saves production under its job number.</p></div>';
       return;
     }
     const views = jobs.map(j => ({ j, v: pbProdJobView(j.plan || null, j.cats) }));
@@ -33263,7 +33307,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const field = (id, label, val, attrs) => '<div class="pb-field"><label for="' + id + '">' + label + '</label><input id="' + id + '" value="' + escapeHtml(val) + '" ' + attrs + '></div>';
     return '<section class="pb-section pbp-card pbp-editor" id="ppEditor" aria-labelledby="ppTitle"><h3 class="pbp-h3" id="ppTitle">Job plan</h3>'
       + '<p class="pbp-dim">Everything here is optional. Rename, add or remove categories; a planned quantity turns that category&rsquo;s amount into a %.</p>'
-      + '<details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>How % complete is worked out</span></summary><p class="pb-help" id="ppMathHelp">Each category&rsquo;s % is done &divide; planned, shown as it is (it can go over 100%). The job&rsquo;s overall % is the average of the planned categories, each counted at most 100%. If you give every planned category a weight, the average uses your weights; if instead every planned category has budget hours, it uses those; otherwise each planned category counts the same. Categories without a planned quantity show their amount and are left out. Work only counts in the category&rsquo;s unit; work reported in another unit is shown beside it. Adding or removing a category re-balances the rest on its own. Budget hours for the job are compared with the crew hours reported on runs (Laborer and Operator, closed check-ins only).</p></details>'
+      + '<details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>How % complete is worked out</span></summary><p class="pb-help" id="ppMathHelp">A category&rsquo;s % is done &divide; planned (it can pass 100%). The job&rsquo;s % averages the planned categories, each capped at 100%: by your weights if every planned category has one, else by budget hours if every one has them, else equally. Unplanned categories show their amount and are left out. Work counts only in the category&rsquo;s unit (other units show beside it). Budget hours are compared with the crew hours reported: closed Crew Log check-ins (laborers and operators) and crew man-hours foremen type in.</p></details>'
       + '<div id="ppRows">' + E.rows.map((r, i) => {
         const c = cats.categories.find(x => x.key === r.key);
         const has = '<span class="pbp-dim pbp-rowhas">' + escapeHtml((c && (c.done || c.otherUnits.length) ? pbProdQtyText(c.done, c.unit) + ' reported. ' : '') + (r.key && PB_PROD_RUN_KEYS.has(r.key) ? 'Filled in from crews\u2019 runs.' : 'Filled in by hand on the job page.')) + '</span>';
@@ -35764,11 +35808,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // Data-quality flags rolled up across every SESSION's warnings — an
     // earlier session's warning is still a real event that happened, not
     // erased by a later resume.
-    const warningCounts = { backflow: 0, hi: 0, dataError: 0, photoAdvisory: 0 };
+    const warningCounts = { backflow: 0, hi: 0, unverified: 0, dataError: 0, photoAdvisory: 0 };
     allSessionRuns.forEach(e => (e.warnings || []).forEach(w => {
       if (w.type === 'backflow' || w.type === 'backflow-all') warningCounts.backflow++;
       else if (w.type === 'hi-minor' || w.type === 'hi-serious') warningCounts.hi++;
       else if (w.type === 'photo') warningCounts.photoAdvisory++;
+      else if (w.type === 'unverified') warningCounts.unverified++;
       else warningCounts.dataError++;
     }));
     // Confined space entries sharing the same job number weren't rolling up at all before — fixed
@@ -35850,7 +35895,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!s) { content.innerHTML = '<p class="pb-help" style="margin:14px 16px 0 16px;">No runs found under that job number.</p>'; return; }
     const takeoffRows = Object.keys(s.takeoff).sort().map(k => `<tr><td>${escapeHtml(k)}</td><td>${s.takeoff[k].toFixed(1)} ft</td></tr>`).join('');
     const breakdownRows = (arr) => arr.sort((a,b) => b.footage - a.footage).map(r => `<tr><td>${escapeHtml(r.name)}</td><td>${r.footage.toFixed(1)} ft</td><td>${r.runs}</td><td>${r.ftPerHour !== null ? r.ftPerHour.toFixed(1)+' ft/hr' : '—'}</td></tr>`).join('');
-    const warnLabels = { backflow: 'Backflow risk flags', hi: 'HI discrepancy flags', dataError: 'Possible data errors', photoAdvisory: 'Photo-recommended flags' };
+    const warnLabels = { backflow: 'Backflow risk flags', hi: 'HI discrepancy flags', unverified: 'Stakes not field-shot', dataError: 'Possible data errors', photoAdvisory: 'Photo-recommended flags' };
     const warnTotal = Object.values(s.warningCounts).reduce((a,b) => a+b, 0);
     content.innerHTML = `
       <details class="pb-more pb-b5-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>Why this can differ from Stats</span></summary><p class="pb-note-general">Counts every archived run under job #${escapeHtml(s.jobNumber)}, with or without a pipe type. Stats counts only runs locked with a pipe type, so the two totals can differ.</p></details>
@@ -35879,7 +35924,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       </div></div>
       ${s.depthFlaggedCount || s.notSentCount || warnTotal || s.confinedSpace ? `<div class="pb-warn" style="margin-top:14px;">
         <strong>Worth Flagging</strong>
-        ${s.depthFlaggedCount ? s.depthFlaggedCount + ' run report(s) had a trench depth flag (\u22655 ft indicated). ' : ''}${s.notSentCount ? s.notSentCount + ' run report(s) haven\u2019t been sent yet. ' : ''}${warnTotal ? warnTotal + ' data-quality flag(s) across all runs (see below). ' : ''}${s.confinedSpace && s.confinedSpace.emergencyCount ? s.confinedSpace.emergencyCount + ' confined space entry/entries on this job had an emergency declared.' : ''}
+        ${s.depthFlaggedCount ? s.depthFlaggedCount + ' run report(s) had a trench depth flag (\u22655 ft indicated). ' : ''}${s.notSentCount ? s.notSentCount + ' run report(s) haven\u2019t been sent yet. ' : ''}${warnTotal ? warnTotal + ' data-quality flag(s) across all run reports (see below). ' : ''}${s.confinedSpace && s.confinedSpace.emergencyCount ? s.confinedSpace.emergencyCount + ' confined space entry/entries on this job had an emergency declared.' : ''}
       </div>` : ''}
       <div class="pb-section">
         <div class="pb-tag">Foreman-Reported Progress</div>
@@ -36069,16 +36114,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return `
       <div class="pb-review-item pb-arch-row pb-arch-${kindCls}${hadEmergency ? ' pb-arch-em' : ''}">
         <div class="pb-arch-head"><span class="pb-arch-ic" aria-hidden="true"></span><div class="pb-arch-main"><span class="k">${e.kind === 'confined' ? 'Confined Space — ' + escapeHtml(e.space) : e.kind === 'report' ? 'Report — ' + escapeHtml(e.category) + (e.anonymous ? ' (anonymous)' : '') : e.kind === 'stats-snapshot' ? 'Stats Snapshot' : escapeHtml(e.startLabel) + ' → ' + escapeHtml(e.endLabel)}</span><span class="pb-arch-date">${e.kind === 'run' ? 'Locked ' : ''}${e.lockTime.toLocaleString()}</span></div></div>
-        <div class="pb-arch-chips">${hadEmergency ? '<span class="pb-chip overdue">EMERGENCY</span>' : ''}${onDisk ? '<span class="pb-chip saved">Saved on this phone</span>' : endUnsaved ? '<span class="pb-chip pb-arch-unsaved">End not saved yet</span>' : '<span class="pb-chip pb-arch-unsaved">Not saved yet</span>'}${e.sent ? '<span class="pb-chip ok">Sent</span>' : '<span class="pb-chip notsent">Not sent</span>'}${cloud ? '<span class="pb-chip ok pb-arch-cloud">Cloud copy</span>' : ''}${e.kind === 'confined' ? pbPermitBkChip(e) : ''}${e.kind === 'confined' && e.restoredFromCloud && (Number(e.photoCount) || 0) > 0 ? '<span class="pb-chip notsent">' + (Number(e.photoCount) > 1 ? e.photoCount + ' photos' : '1 photo') + ' not restored: kept only on the phone that took ' + (Number(e.photoCount) > 1 ? 'them' : 'it') + '</span>' : ''}</div>
+        <div class="pb-arch-chips">${hadEmergency ? '<span class="pb-chip overdue">EMERGENCY</span>' : ''}${onDisk ? '<span class="pb-chip saved">Saved on this phone</span>' : endUnsaved ? '<span class="pb-chip pb-arch-unsaved">End not saved yet</span>' : '<span class="pb-chip pb-arch-unsaved">Not saved yet</span>'}${(typeof window.pbRrArchiveChip === 'function' && window.pbRrArchiveChip(e)) || (e.sent ? '<span class="pb-chip ok">Sent</span>' : '<span class="pb-chip notsent">Not sent</span>')}${cloud ? '<span class="pb-chip ok pb-arch-cloud">Cloud copy</span>' : ''}${e.kind === 'confined' ? pbPermitBkChip(e) : ''}${e.kind === 'confined' && e.restoredFromCloud && (Number(e.photoCount) || 0) > 0 ? '<span class="pb-chip notsent">' + (Number(e.photoCount) > 1 ? e.photoCount + ' photos' : '1 photo') + ' not restored: kept only on the phone that took ' + (Number(e.photoCount) > 1 ? 'them' : 'it') + '</span>' : ''}</div>
         ${hadEmergency ? `<span class="pb-arch-alert em">Emergency declared during this entry — see report for details</span>` : ''}
         ${e.kind === 'report' && e.via === 'app' ? pbReportArchiveLine(e) : ''}
         <div class="pb-arch-meta">${meta}</div>
         ${e.cloudSyncFailed ? `<span class="pb-arch-alert cloudfail">This run’s local copy is correct, but it could not be confirmed as synced to the cloud after repeated attempts.${escapeHtml(pbCloudFailText(e))} <button class="pb-btn ghost small" onclick="${pbArchiveTapAttr('pbRetryCloudSync', e)}">Retry Sync</button></span>` : ''}
-        ${e.depthFlagged ? '<span class="pb-arch-alert depth">Trench ≥5 ft — sloping check recommended</span>' : ''}
+        ${e.depthFlagged ? '<span class="pb-arch-alert depth">Trench ≥5 ft — protective system required (OSHA)</span>' : ''}
         <div class="pb-arch-actions">
         <button class="pb-btn ghost small" onclick="pbToggleArchiveView(${i})">View</button>
-        ${e.kind === 'report' && e.via === 'app' ? pbReportArchiveActions(e) : `${e.kind === 'report' && e.anonymous ? `<button class="pb-btn ghost small" onclick="pbReportAdoptLegacy(${e.id})">Send Through the App</button>` : `<button class="pb-btn ghost small" onclick="${pbArchiveTapAttr('pbSendArchiveEntry', e)}">Send Email</button>`}
-        <button class="pb-btn ghost small" onclick="${pbArchiveTapAttr('pbToggleArchiveSent', e)}">${e.sent ? 'Mark Not Sent' : 'Mark Sent'}</button>`}
+        ${e.kind === 'report' && e.via === 'app' ? pbReportArchiveActions(e) : `${e.kind === 'report' && e.anonymous ? `<button class="pb-btn ghost small" onclick="pbReportAdoptLegacy(${e.id})">Send Through the App</button>` : ((typeof window.pbRrArchiveBtns === 'function' && window.pbRrArchiveBtns(e)) || `<button class="pb-btn ghost small" onclick="${pbArchiveTapAttr('pbSendArchiveEntry', e)}">Send Email</button>`)}
+        ${(typeof window.pbRrArchiveBtns === 'function' && window.pbRrArchiveBtns(e)) ? '' : `<button class="pb-btn ghost small" onclick="${pbArchiveTapAttr('pbToggleArchiveSent', e)}">${e.sent ? 'Mark Not Sent' : 'Mark Sent'}</button>`}`}
         </div>
         <details class="pb-more pb-arch-moreacts"><summary><span>More actions</span></summary><div class="pb-arch-actions">
         <button class="pb-btn ghost small" onclick="${pbArchiveTapAttr('pbDownloadArchivePDF', e)}">Download PDF</button>
@@ -37102,8 +37147,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const f2 = (v) => v.toFixed(2) + ' ft', avg = (a) => a.reduce((s, x) => s + x.v, 0) / a.length, deep = (a) => Math.max.apply(null, a.map(x => x.v));
     const cut = stakes.filter(x => x.c === 'C'), fill = stakes.filter(x => x.c === 'F'), n = (k, w) => k + ' ' + w + (k === 1 ? '' : 's');
     if (!fill.length) return 'average C ' + f2(avg(cut)) + ', deepest C ' + f2(deep(cut)) + ' (' + n(cut.length, 'stake') + ')';
-    if (!cut.length) return 'average F ' + f2(avg(fill)) + ', deepest F ' + f2(deep(fill)) + ' (' + n(fill.length, 'stake') + ')';
-    return 'average C ' + f2(avg(cut)) + ', deepest C ' + f2(deep(cut)) + ' (' + n(cut.length, 'cut stake') + ') \u00b7 ' + n(fill.length, 'fill stake') + ', deepest F ' + f2(deep(fill));
+    if (!cut.length) return 'average F ' + f2(avg(fill)) + ', largest F ' + f2(deep(fill)) + ' (' + n(fill.length, 'stake') + ')';
+    return 'average C ' + f2(avg(cut)) + ', deepest C ' + f2(deep(cut)) + ' (' + n(cut.length, 'cut stake') + ') \u00b7 ' + n(fill.length, 'fill stake') + ', largest F ' + f2(deep(fill));
   }
   function pbCutFillLine(stakes) { const t = pbCutFillText(stakes); return t ? 'Cut/fill at stakes: ' + t : null; }
   // Stats across runs: every stake of every run the Stats records point to (their Archive record), pooled.
@@ -37814,12 +37859,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (r.pointId) {
       const pi = entry.pointInputs ? entry.pointInputs[r.pointId] : null;
       const how = pi && (pi.mode === 'stake' || pi.stakeGround) ? 'stake' : 'invert';
-      return 'Point (' + how + '): source not recorded';
+      return how === 'stake' ? 'Stake' : 'Invert'; // fix_pdfrows: short cell; the legend says the source is not recorded
     }
     if (r.layoutKind) return 'Layout (calc.)';
     return 'Calculated';
   }
-  const PB_RPT_SRC_LEGEND = 'Source: Point = a point entered on the run form; the app does not record, point by point, whether it was typed, filled from a cutsheet import or read by AI, so each says "source not recorded" (invert = an invert elevation, stake = a stake elevation with cut/fill). Calculated = worked out by the app between points, not measured. Layout (calc.) = a joint or mid-point placed from the pipe laying length, calculated, not measured. Added = a point added after the run was locked. Verified: Yes (shot) = checked with an actual rod shot; Predicted = from HI and the design or cutsheet elevation.';
+  const PB_RPT_SRC_LEGEND = 'Source: Stake / Invert = a point entered on the run form (Stake = a stake elevation with cut/fill; Invert = an invert elevation). The app does not record, point by point, whether a point was typed, filled from a cutsheet import or read by AI: that source is not recorded for any point. Calculated = worked out by the app between points, not measured. Layout (calc.) = a joint or mid-point placed from the pipe laying length, calculated, not measured. Added = a point added after the run was locked. Verified: Yes (shot) = checked with an actual rod shot; Predicted = from HI and the design or cutsheet elevation.';
   function pbRptRunMeta(e, fp) {
     const changes = (e.correctionHistory || []).length + (Array.isArray(e.endTimeChanges) ? e.endTimeChanges.length : 0);
     return {
@@ -37958,11 +38003,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const foot = [];
     // Laid at (owner, round 3): a time on every marked row, the zone once in the header when all share it, and rows
     // marked in one swipe say which rows were marked together; rows never marked say so.
-    let laidHead = 'Laid at (phone time)', laidCell = null;
+    let laidHead = 'Laid', laidCell = null; // fix_pdfrows: compact header, one row
     if (laid) {
       const tOf = (r) => laid.marks[pbRptLaidKey(r)], zoneOf = (t) => { const x = pbRptDt(t, { sec: true }); return x.slice(x.lastIndexOf(' ') + 1); };
       const marked = rows.filter(r => typeof tOf(r) === 'number'), zones = new Set(marked.map(r => zoneOf(tOf(r))));
-      const one = zones.size === 1 ? Array.from(zones)[0] : null; if (one) laidHead = 'Laid at (phone time, ' + one + ')';
+      const one = zones.size === 1 ? Array.from(zones)[0] : null;
+      const years = new Set(marked.map(r => pbRptDt(tOf(r), { date: true }).slice(-4))), yr = years.size === 1 ? Array.from(years)[0] : null;
+      laidHead = 'Laid' + (yr ? ' ' + yr : '') + (one ? ' (' + one + ')' : '');
+      const dayOf = (t) => { const d = pbRptDt(t, { date: true }); return yr ? d.replace(/,\s*\d{4}$/, '') : d; };
+      const clk = (t) => { const x = pbRptDt(t, { time: true, sec: true }); return one ? x.slice(0, x.lastIndexOf(' ')) : x; };
       const groups = new Map(); marked.forEach(r => { const t = tOf(r); if (!groups.has(t)) groups.set(t, []); groups.get(t).push(r); });
       // The first row of a swipe shows the date, time and which rows it marked; the others in it show the time and
       // "same swipe", so a block of rows doesn't repeat the same lines.
@@ -37970,15 +38019,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       let earlyReach = null; try { if (typeof pbLaidEarlier === 'function' && e.resumedFromId !== undefined && e.resumedFromId !== null) earlyReach = pbLaidEarlier(e).reach; } catch (x) {} // r14 integration
       laidCell = (r) => {
         const t = tOf(r); if (typeof t !== 'number') return { content: earlyReach !== null && pbRptRowStaFt(r) <= earlyReach + 0.005 ? 'laid in an earlier session' : 'not marked', _muted: true };
-        let x = pbRptDt(t, { sec: true }); if (one) x = x.slice(0, x.lastIndexOf(' '));
-        const g = groups.get(t);
+        const x = dayOf(t) + ' ' + clk(t), g = groups.get(t);
         if (!g || g.length < 2) return x;
-        if (firstOf.get(t) !== r) return pbRptDt(t, { time: true, sec: true }).replace(/ [A-Z]{2,5}$/, one ? '' : '$&') + ' (same swipe)';
+        if (firstOf.get(t) !== r) return clk(t) + ' (swipe)';
         const st = g.map(q => pbRptRowStaFt(q)).filter(v => typeof v === 'number' && isFinite(v));
-        return x + '\n(marked together: ' + (st.length ? pbRptSta(Math.min.apply(null, st)) + '\u2013' + pbRptSta(Math.max.apply(null, st)) : 'other rows') + ', ' + g.length + ' rows)';
+        return x + '\n' + g.length + '-row swipe:\n' + (st.length ? pbRptSta(Math.min.apply(null, st)) + '\u2013' + pbRptSta(Math.max.apply(null, st)) : 'other rows');
       };
     }
-    const head = ['Sta.', 'Point'].concat(['BOP']).concat(showSg ? ['Subgrade'] : []).concat(['INV', 'TOP']).concat(showElev ? ['Elev.'] : []).concat(showVer ? ['Verified'] : []).concat(laid ? [laidHead] : []).concat(['Source', 'Notes and photos']);
+    const head = ['Sta.', 'Point'].concat(['BOP']).concat(showSg ? ['Subgrade'] : []).concat(['INV', 'TOP']).concat(showElev ? ['Elev.'] : []).concat(showVer ? ['Verified'] : []).concat(laid ? [laidHead] : []).concat(['Source', 'Notes']);
     const bandsOut = [];
     const body = rows.map(r => {
       const name = pbRptRowName(e, r), bits = [];
@@ -37996,7 +38044,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       }).filter(Boolean);
       try { pbSlPdfBands(R, e, r).forEach(b => band.push(b)); } catch (x) { console.error(x); } // batch 22 NOTES
       bandsOut.push(band.length ? band : null);
-      if (band.length) bits.push('Note \u2193');
+      if (band.length) bits.push('Note below');
       const isStop = r === stopRow;
       const phs = (rowPhotos.get(r) || []).concat(...rowNotes.map(x => notePhotos.get(x) || []));
       const out = [{ content: pbRptSta(pbRptRowStaFt(r)), _bold: !!r.pointId }, { content: (isStop ? 'ENDED HERE ' : '') + name, _accent: isStop, _bold: !!r.pointId }, r.bop];
@@ -38009,14 +38057,18 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       out.push(phs.length ? R.photoCell(phs, bits.join(' \u00b7 ')) : (bits.join(' \u00b7 ') || '\u2014'));
       return out;
     });
-    const numCols = {}; head.forEach((h, i) => { if (/^(BOP|Subgrade|INV|TOP|Elev\.)$/.test(h)) numCols[i] = { halign: 'right', cellWidth: h === 'Subgrade' ? 19 : 17 }; });
-    numCols[0] = { cellWidth: 17, halign: 'right' }; numCols[1] = { cellWidth: 20 };
-    numCols[head.indexOf('Source')] = { cellWidth: 25, fontSize: 8.5 };
+    // fix_pdfrows: the fixed widths fit the page and leave the Notes column ~15 mm (was 198 mm of fixed widths on
+    // 184 mm, so Notes broke one letter per line: a tall header and tall rows, and the table ran off the page).
+    const numCols = {}; head.forEach((h, i) => { if (/^(BOP|Subgrade|INV|TOP|Elev\.)$/.test(h)) numCols[i] = { halign: 'right', cellWidth: h === 'Subgrade' ? 17 : h === 'Elev.' ? 15 : 14 }; });
+    numCols[0] = { cellWidth: 16, halign: 'right' }; numCols[1] = { cellWidth: 17 };
+    numCols[head.indexOf('Source')] = { cellWidth: 17.5 };
     if (showVer) numCols[head.indexOf('Verified')] = { cellWidth: 16 };
-    if (laid) numCols[head.indexOf(laidHead)] = { cellWidth: 33, fontSize: 7.5 };
-    R.table({ head, body, columnStyles: numCols, fontSize: 9, rowNotes: bandsOut });
+    if (laid) numCols[head.indexOf(laidHead)] = { cellWidth: 28, fontSize: 7.5 };
+    { const fixedW = Object.keys(numCols).reduce((a, k) => a + (numCols[k].cellWidth || 0), 0), room = G.CW - 14;
+      if (fixedW > room) Object.keys(numCols).forEach(k => { if (numCols[k].cellWidth) numCols[k].cellWidth = Math.floor(numCols[k].cellWidth * room / fixedW * 10) / 10; }); }
+    R.table({ head, body, columnStyles: numCols, fontSize: 8.5, rowNotes: bandsOut });
     if (foot.length) foot.forEach((t, i) => R.para('[' + (i + 1) + '] ' + t, { size: 9, after: 0.6 }));
-    R.para(PB_RPT_SRC_LEGEND + (e.cutsheetAiText ? ' This run was built with an AI-read cutsheet (see the AI-recreated cutsheet section); which points came from it is not recorded.' : '') + (laid ? ' Laid at = when the row was marked laid on the phone (phone time). One swipe marks several rows at once: they share one time, the first row of the swipe says which rows it marked and the others say "same swipe"; "not marked" = never marked laid.' : ''), { size: 9, color: G.MUTED, keep: true });
+    R.para(PB_RPT_SRC_LEGEND + (e.cutsheetAiText ? ' This run was built with an AI-read cutsheet (see the AI-recreated cutsheet section); which points came from it is not recorded.' : '') + (laid ? ' Laid = when the row was marked laid on the phone (phone time; the year and time zone are in the column heading when all marks share them). One swipe marks several rows at once: they share one time; the first row of the swipe says "N-row swipe" and the stations it marked, and the others say "(swipe)"; "not marked" = never marked laid.' : ''), { size: 9, color: G.MUTED, keep: true });
     if (laid) {
       R.section('laid', 'Laid progress', { keep: 30, intro: 'Rows marked laid on the grade sheet, as recorded on the phone (device time). Rows marked together share one time. An undo removes the marks from that row on; it is kept here.' });
       const rowsLaid = rows.filter(r => typeof laid.marks[pbRptLaidKey(r)] === 'number');
@@ -38387,7 +38439,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       ['Permit retention', 'OSHA requires each cancelled permit to be kept at least 1 year (29 CFR 1926.1205(f)). The app keeps closed permits indefinitely.']
     ], { cols: 1, labelW: 40 });
     R.sub('Problems encountered during entry (1926.1205(f): note them on the permit)');
-    const probs = alerts.filter(a => !/^Emergency number changed/.test(a));
+    const probs = alerts.filter(a => !/^(Emergency number changed|The number the EMERGENCY button opens the dialer with was changed)/.test(a));
     R.para(probs.length ? probs.map(a => '\u2022 ' + a).join('\n') : 'None recorded by the app.', { size: 9.5 });
     R.para('Additional problems (write in):', { size: 9, color: G.MUTED, after: 1 });
     for (let i = 0; i < 3; i++) { R.ensure(8); R.doc.setDrawColor(120, 120, 120); R.doc.setLineWidth(0.25); R.doc.line(G.ML, R.y + 6, G.ML + G.CW, R.y + 6); R.y += 8; }
@@ -38638,7 +38690,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const tk = Object.keys(s.takeoff).sort((a, b) => (parseFloat(a) || 1e9) - (parseFloat(b) || 1e9)), tkTotal = tk.reduce((a, k) => a + s.takeoff[k], 0);
     const matFor = (k) => { const set = new Set(); s.runs.forEach(e => { const segs = entrySizeSegments(e); const has = segs.length ? segs.some(g => (g.idIn !== null && g.idIn !== undefined ? g.idIn.toFixed(1) + '"' : 'Unknown size') === k) : k === 'Unknown size'; if (has) set.add(e.statsType || 'type not picked'); }); return Array.from(set).join(', ') || 'not recorded'; };
     R.table({ head: ['Size', 'Material (pipe type on the runs)', 'Footage'], body: tk.map(k => [k, matFor(k), s.takeoff[k].toFixed(1) + ' ft']), foot: ['Total', '', tkTotal.toFixed(1) + ' ft'], columns: [{ cellWidth: 30 }, {}, { halign: 'right', cellWidth: 30 }] });
-    const wl = { backflow: 'Backflow risk flags', hi: 'HI discrepancy flags', dataError: 'Possible data errors', photoAdvisory: 'Photo-recommended flags' };
+    const wl = { backflow: 'Backflow risk flags', hi: 'HI discrepancy flags', unverified: 'Stakes not field-shot', dataError: 'Possible data errors', photoAdvisory: 'Photo-recommended flags' };
     if (Object.values(s.warningCounts).reduce((a, b) => a + b, 0)) { R.section('flags', 'Data-quality flags', { keep: 20 }); R.table({ head: ['Flag type', 'Count'], body: Object.keys(wl).filter(k => s.warningCounts[k]).map(k => [wl[k], String(s.warningCounts[k])]), columns: [{}, { halign: 'right', cellWidth: 20 }], width: 110 }); }
     if (s.fieldNotes.length) { R.section('notes', 'Field notes (' + s.fieldNotes.length + ')', { keep: 26 }); R.table({ head: ['Date', 'Run', 'Station', 'Note'], body: s.fieldNotes.map(n => [pbRptDt(n.runDate, { date: true }), n.runLabel, (isFinite(parseFloat(n.station)) ? pbRptSta(parseFloat(n.station)) : n.station) + (n.pointLabel && !/^(point|start|end)$/.test(n.pointLabel) ? ' (' + n.pointLabel + ')' : ''), (n.text || '\u2014') + (n.photoCount ? ' [' + n.photoCount + ' photo(s) in the run record]' : '')]), columns: [{ cellWidth: 26 }, { cellWidth: 34 }, { cellWidth: 30 }, {}] }); }
     if (s.confinedSpace) { R.section('cs', 'Confined space activity', { keep: 16 }); R.para('Entries recorded: ' + s.confinedSpace.count + '   |   Emergencies declared: ' + s.confinedSpace.incidentCount, { size: 10, style: s.confinedSpace.incidentCount ? 'bold' : 'normal', color: s.confinedSpace.incidentCount ? G.ACCENT : G.INK }); }
@@ -42006,7 +42058,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   window.pbClearAllStats = function() {
     if (!statsLog.length) { pbAlert('No Stats data to clear.'); return; }
-    pbConfirm('Delete all Stats data on this phone? A snapshot report will be saved to Archive first, so nothing is lost without a trace. Archived runs and their reports are not changed.', async () => {
+    pbConfirm('Delete all Stats data on this phone? A snapshot report is saved to the Archive first (Contractor plan). Download a copy if you need one. Saved runs and their reports don’t change.', async () => {
       // Phase 1: capture EXACTLY what will be archived and removed, under
       // the stats lock but released immediately — never held across the
       // archive save below. Holding it there would risk a deadlock if
@@ -42281,7 +42333,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbOpenCrewMembers = async function() {
     if (!pbCanOpen('crewMembers', { explain: true })) return;
     const uid = pbArchiveOwnerUid;
-    if (!(await pbProdIsManager(uid))) { pbAlert('Only your company account (the owner, or a manager the owner added) can manage crew members.', 'Crew Members'); return; }
+    if (!(await pbProdIsManager(uid))) { pbAlert('Only your company account (the owner, a PM or a manager) can manage crew members.', 'Crew Members'); return; }
     if (pbCmSt.uid !== uid) pbCmSt = pbCmNew(uid);
     pbGoto('crewMembers');
     pbCmRender();
@@ -42711,7 +42763,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbMyName.busy = true;
     let r; try { r = await pbPermitRpc('pb_my_name_set', { p_name: v, p_expect_uid: uid }, 20000); } finally { pbMyName.busy = false; }
     if (!sbUser || sbUser.id !== uid) return;
-    if (r && r.data && r.data.ok === true) { pbMyName = { uid, name: r.data.name || null, loaded: true, busy: false }; inp.value = pbMyName.name || ''; say(pbMyName.name ? 'Saved. Your company sees ' + pbMyName.name + ', with your email under it.' : 'Name cleared. Your company sees your email.'); }
+    if (r && r.data && r.data.ok === true) { pbMyName = { uid, name: r.data.name || null, loaded: true, busy: false }; inp.value = pbMyName.name || ''; say(pbMyName.name ? 'Saved: ' + pbMyName.name + '. Your company sees it unless it set a name for you.' : 'Name cleared.'); }
     else say(/Could not find the function|does not exist/i.test(String((r && r.error && r.error.message) || '')) ? 'Names aren’t ready on the server yet. Nothing was changed.' : 'Your name wasn’t saved. Try again.');
   };
   window.pbScreenHooks.push((name) => { if (name === 'settings') { pbMyNameRender(); pbMyNameLoad().then(pbMyNameRender).catch(() => {}); } });
@@ -43218,7 +43270,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const full = pbPmd.state === 'full' && pbPmdFormWork();
     let html = pbDraftEsc(live || full ? pbPmdSavedWords() : 'Not saved yet: a draft is saved on this phone once you start typing.') + ' ' + PB_DRAFT_PHOTO_NOTE;
     const n = pbPmd.note;
-    if (live && n) html += '<span class="cp-draft-restored">' + pbDraftEsc('Resumed from the draft saved ' + pbDraftWhen(n.savedAt) + '. Check every field, especially the date and times, before you lock.' + (n.photos ? ' ' + n.photos + ' photo' + (n.photos > 1 ? 's were' : ' was') + ' not kept — add ' + (n.photos > 1 ? 'them' : 'it') + ' again.' : '')) + '</span>';
+    if (live && n) html += '<span class="cp-draft-restored">' + pbDraftEsc('Resumed from the draft saved ' + pbDraftWhen(n.savedAt) + '. Check every field before you lock, especially the date and times, EMERGENCY number, gas limits and reminders.' + (n.photos ? ' ' + n.photos + ' photo' + (n.photos > 1 ? 's were' : ' was') + ' not kept — add ' + (n.photos > 1 ? 'them' : 'it') + ' again.' : '')) + '</span>';
     if (live && pbPmd.state === 'failed') html += '<button type="button" class="pb-btn small" id="cpDraftRetry" onclick="pbPmdRetry()">Retry Save</button>';
     const others = a && !confinedPermit ? pbPmd.others(a) : [];
     if (others.length) html += '<span class="cp-draft-restored pb-draft-head">' + pbDraftEsc((others.length === 1 ? '1 other permit draft' : others.length + ' other permit drafts') + ' kept on this phone.') + '</span><span class="pb-draft-list" id="cpDraftList">' + pbDraftRowsHTML('permit', others, pbPmdSummary, 'pbPmdResume', 'pbPmdDiscardAsk') + '</span>';
@@ -43404,7 +43456,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (window.pbJobGrpOpen) window.pbJobGrpOpen(); // batch 14 R3: the group opens first
     const tg = document.getElementById('saEnableToggle');
     if (tg.checked) { pbGoToField('saJobNumber'); return; }
-    pbShowModal('The job number and jobsite are part of “Track extra details for this run” (in Optional Details), which is off for this run.\n\nTurning it on puts the job on this run’s Archive record. It counts in Stats only if you also choose a Pipe type. Job details carry over from your last run on this phone, so check they’re right.', [
+    pbShowModal('The job number and jobsite are part of “Track extra details for this run” (in Job details), which is off for this run.\n\nTurn it on to put the job on this run’s record. It counts in Stats only if you also choose a Pipe type. Job details carry over from your last run on this phone: check them.', [
       { label: 'Cancel' },
       { label: 'Turn On and Enter Job', primary: true, onClick: () => { tg.checked = true; tg.dispatchEvent(new Event('change', { bubbles: true })); pbRdSchedule(); setTimeout(() => pbGoToField('saJobNumber'), 50); } }
     ], 'Job Details');
@@ -43564,7 +43616,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const PB_BR_MSG = {
     'pb:signed_out': 'Sign in again, then try again.',
     'pb:wrong_account': 'Another account is signed in on this phone now. Open Company logo again.',
-    'pb:not_company_account': 'Only your company account (the owner, or a manager the owner added) can change the company logo.',
+    'pb:not_company_account': 'Only your company account (the owner, a PM or a manager) can change the company logo.',
     'pb:bad_png': 'The company server couldn’t read that picture. Nothing was changed. Try another file.',
     'pb:bad_size': 'The company server couldn’t accept the picture’s size. Nothing was changed. Try another file.',
     'pb:png_too_big': 'The picture is over 300 KB, the most the company server keeps. Nothing was changed. Try a simpler logo file.',
@@ -43799,7 +43851,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbOpenCompanyLogo = async function() {
     if (!pbCanOpen('companyLogo', { explain: true })) return;
     const uid = pbArchiveOwnerUid;
-    if (!uid || uid === 'shared' || !(await pbProdIsManager(uid))) { pbAlert('Only your company account (the owner, or a manager the owner added) can change the company logo. Your reports show your company’s logo by themselves.', 'Company Logo'); return; }
+    if (!uid || uid === 'shared' || !(await pbProdIsManager(uid))) { pbAlert('Only your company account (the owner, a PM or a manager) can change the company logo. Your reports show it by themselves.', 'Company Logo'); return; }
     if (pbBrSt.uid !== uid) pbBrSt = pbBrNew(uid);
     pbGoto('companyLogo');
     pbBrRender();
@@ -44113,16 +44165,128 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // Everything here needs signal to change (like the plan editor); what was last loaded is kept for offline viewing.
   const PB_MAT_DEFAULT_EXTRA_PCT = 15; // the owner's compaction allowance (Oct 19); the server's pb_mat.default_extra_pct() matches
   const PB_MAT_PRESETS = [ // tons per yd³, editable, "verify with your supplier" (lead's supplier conversion charts, Oct 19)
-    { k: 'rock34', name: '3/4" crushed rock', category: 'bedding_rock', density: 1.35 },
-    { k: 'pea', name: 'Pea gravel (1/4" rock)', category: 'bedding_rock', density: 1.40 },
-    { k: 'csand', name: 'Coarse sand (concrete sand)', category: 'bedding_sand', density: 1.35 },
-    { k: 'fsand', name: 'Fine sand (mason sand)', category: 'bedding_sand', density: 1.20 }
+    { k: 'rock34', name: '3/4" crushed rock', short: '3/4" crushed rock', category: 'bedding_rock', density: 1.35 },
+    { k: 'pea', name: 'Pea gravel (1/4" rock)', short: 'pea gravel', category: 'bedding_rock', density: 1.40 },
+    { k: 'csand', name: 'Coarse sand (concrete sand)', short: 'coarse sand', category: 'bedding_sand', density: 1.485 }, // 110 lb/ft³ (owner, Oct 21; was 1.35)
+    { k: 'fsand', name: 'Fine sand (mason sand)', short: 'fine sand', category: 'bedding_sand', density: 1.431 } // 106 lb/ft³ (owner, Oct 21; was 1.20)
   ];
+  // a density shown to 2 places, an exact half rounded up (1.485 -> 1.49, never the float's 1.48)
+  const pbMatDens2 = (n) => (Math.round(Number(n) * 100 + 1e-7) / 100).toFixed(2);
+  const pbMatPresetText = () => PB_MAT_PRESETS.map(p => p.short + ' ' + pbMatDens2(p.density)).join(', ');
   const PB_MAT_CATS = [['pipe', 'Pipe'], ['bedding_rock', 'Bedding: rock'], ['bedding_sand', 'Bedding: sand'], ['bedding_other', 'Bedding: other'],
     ['fittings', 'Fittings'], ['structures', 'Structures'], ['other', 'Other']];
   const PB_MAT_EST_NOTE = 'Estimate from footage × trench width × bedding thickness. Actual use varies with field conditions such as trench width and grading accuracy.';
   // batch 18 M (03, after review start): shading = the sides of the pipe plus a thickness over its top
   const PB_MAT_SHADE_NOTE = 'Estimate from footage × (trench width × (pipe OD + shading thickness) − the pipe’s own area). Actual use varies with field conditions such as trench width and grading accuracy.';
+  // ==== feat_weight (Oct 21): weight in tons next to calculator volumes ====
+  // Reuses the run materials' presets (PB_MAT_PRESETS), compaction allowance (PB_MAT_DEFAULT_EXTRA_PCT) and yd³ -> ton
+  // factor (pbMatFactor). Same order as the materials feature: the allowance is added to the yd³ first, then × density.
+  // The raw (in-place) tons have their own line, rounded like the owner's supplier app: one decimal, an exact half to
+  // even (510 × 2 × 0.5 ft at 130 lb/ft³ = 33.15 -> 33.2; at 110 = 28.05 -> 28.0).
+  const PB_WT_LB_PER_TPY = 2000 / 27; // 1 ton/yd³ = 74.07 lb/ft³
+  const PB_WT_SUP_TYPES = [['base', 'Base'], ['screen', 'Screenings'], ['clean', 'Clean stone'], ['sand', 'Sand']];
+  const PB_WT_SUP_SRC = [['trap', 'Traprock'], ['lime', 'Limestone'], ['gran', 'Granite'], ['sg', 'Sand & gravel'], ['ss', 'Sandstone']];
+  const PB_WT_SUP_LB = { base: [160, 138, 145, 130, 138], screen: [124, 113, 113, 112, 110], clean: [102, 96, 96, 98, 90], sand: [110, 106, 106, 110, 100] }; // lb/ft³, typical supplier values (owner, Oct 21)
+  const pbWtSt = {};
+  const pbWtS = (c) => pbWtSt[c] || (pbWtSt[c] = { k: '', st: '', ss: '', cv: '', cu: 'tpy', gen: 0, yd3: null });
+  const pbWtTrim = (n, d) => String(Number(Number(n).toFixed(d)));
+  function pbWtR1(t) {
+    const x = t * 10, f = Math.floor(x), n = Math.abs(x - f - 0.5) < 1e-7 ? (f % 2 === 0 ? f : f + 1) : Math.round(x);
+    return (n / 10).toFixed(1);
+  }
+  function pbWtDensity(S) {
+    if (S.k === 'custom') {
+      const raw = String(S.cv || '').trim(), v = Number(raw);
+      if (raw === '') return { err: 'Type the density.' };
+      if (!Number.isFinite(v) || v <= 0) return { err: 'Enter a density greater than zero.' };
+      if (S.cu === 'tpy' && v >= 20) return { err: v + ' looks like lb/ft³. Tap lb/ft³.' };
+      if (S.cu === 'lb' && v < 20) return { err: v + ' looks like t/yd³. Tap t/yd³.' };
+      return S.cu === 'lb' ? { lb: v, tpy: v / PB_WT_LB_PER_TPY } : { tpy: v, lb: v * PB_WT_LB_PER_TPY };
+    }
+    if (S.k === 'sup') {
+      const si = PB_WT_SUP_SRC.findIndex(x => x[0] === S.ss);
+      if (!PB_WT_SUP_LB[S.st]) return { err: 'Pick the type.' };
+      if (si < 0) return { err: 'Pick the rock source.' };
+      const lb = PB_WT_SUP_LB[S.st][si];
+      return { lb, tpy: lb * 27 / 2000 };
+    }
+    const p = PB_MAT_PRESETS.find(x => x.k === S.k);
+    return p ? { tpy: p.density, lb: p.density * PB_WT_LB_PER_TPY } : { err: 'Pick a material to see tons.' };
+  }
+  function pbWtOutHtml(c) {
+    const S = pbWtS(c), D = pbWtDensity(S);
+    if (D.err) return '<p class="pb-answer-sub pb-wt-msg">' + escapeHtml(D.err) + '</p>';
+    const f = pbMatFactor('yd3', { unit: 'ton', density_tpy: D.tpy }), a = PB_MAT_DEFAULT_EXTRA_PCT;
+    const raw = S.yd3 * f, ydA = S.yd3 * (1 + a / 100), withA = ydA * f, d = pbWtTrim(D.tpy, 4);
+    return '<div class="pb-answer-box pb-wt-raw"><div class="pb-answer-label">Weight, no allowance (estimate)</div><div class="pb-answer-val" data-tons="' + raw + '">≈ ' + pbWtR1(raw) + ' tons</div>'
+      + '<div class="pb-answer-sub">' + escapeHtml(S.yd3.toFixed(2) + ' yd³ × ' + d + ' t/yd³ (' + pbWtTrim(D.lb, 1) + ' lb/ft³) = ' + raw.toFixed(2) + ' t') + '</div></div>'
+      + '<div class="pb-answer-box pb-wt-comp"><div class="pb-answer-label">With ' + a + '% compaction allowance (estimate)</div><div class="pb-answer-val" data-tons="' + withA + '">≈ ' + pbWtR1(withA) + ' tons</div>'
+      + '<div class="pb-answer-sub">' + escapeHtml('Added to the yd³ before converting: ' + S.yd3.toFixed(2) + ' + ' + a + '% = ' + ydA.toFixed(2) + ' yd³, × ' + d + ' = ' + withA.toFixed(2) + ' t') + '</div></div>'
+      + '<p class="pb-answer-sub pb-wt-note">Estimate. Verify the density with your supplier.</p>';
+  }
+  const pbWtBtn = (c, act, val, on, main, sub) => '<button type="button" aria-pressed="' + on + '" data-wt="' + act + ':' + val + '" onclick="pbWtSet(\'' + c + '\',\'' + act + '\',\'' + val + '\')"><span class="pb-wt-n">' + escapeHtml(main) + '</span>' + (sub ? '<span class="pb-wt-d">' + escapeHtml(sub) + '</span>' : '') + '</button>';
+  function pbWtPanelInner(c) {
+    const S = pbWtS(c);
+    let h = '<div class="pb-answer-label">Weight in tons</div><div class="pb-toggle pb-toggle-wrap pb-wt-pick" role="group" aria-label="Material">'
+      + PB_MAT_PRESETS.map(p => pbWtBtn(c, 'k', p.k, S.k === p.k, p.name, pbMatDens2(p.density) + ' t/yd³ · ' + pbWtTrim(p.density * PB_WT_LB_PER_TPY, 0) + ' lb/ft³')).join('')
+      + pbWtBtn(c, 'k', 'sup', S.k === 'sup', 'Typical supplier values', 'Type, then rock source') + pbWtBtn(c, 'k', 'custom', S.k === 'custom', 'Custom', 'Type a density') + '</div>';
+    if (S.k === 'sup') {
+      h += '<div class="pb-wt-step">Typical supplier values: type</div><div class="pb-toggle pb-toggle-wrap pb-wt-type" role="group" aria-label="Type">' + PB_WT_SUP_TYPES.map(t => pbWtBtn(c, 'st', t[0], S.st === t[0], t[1], '')).join('') + '</div>';
+      if (PB_WT_SUP_LB[S.st]) h += '<div class="pb-wt-step">Rock source</div><div class="pb-toggle pb-toggle-wrap pb-wt-src" role="group" aria-label="Rock source">'
+        + PB_WT_SUP_SRC.map((s, i) => { const lb = PB_WT_SUP_LB[S.st][i]; return pbWtBtn(c, 'ss', s[0], S.ss === s[0], s[1], lb + ' lb/ft³ · ' + pbMatDens2(lb * 27 / 2000) + ' t/yd³'); }).join('') + '</div>';
+    }
+    if (S.k === 'custom') h += '<div class="pb-wt-cust"><div class="pb-field"><label for="pbWtCv-' + c + '">Density</label><input id="pbWtCv-' + c + '" type="text" inputmode="decimal" autocomplete="off" value="' + escapeHtml(S.cv) + '" oninput="pbWtCustom(\'' + c + '\', this.value)"></div>'
+      + '<div class="pb-toggle pb-wt-cu" role="group" aria-label="Density unit">' + pbWtBtn(c, 'cu', 'tpy', S.cu === 'tpy', 't/yd³', '') + pbWtBtn(c, 'cu', 'lb', S.cu === 'lb', 'lb/ft³', '') + '</div></div>';
+    return h + '<div class="pb-wt-out" id="pbWtOut-' + c + '" aria-live="polite">' + pbWtOutHtml(c) + '</div>';
+  }
+  // A calculator's result calls this with its in-place volume; '' when there is none.
+  function pbWtHtml(c, yd3) {
+    const S = pbWtS(c);
+    S.yd3 = Number.isFinite(yd3) && yd3 > 0 ? yd3 : null;
+    if (S.yd3 === null) return '';
+    pbWtLoad(c);
+    return '<div class="pb-wt" id="pbWt-' + c + '">' + pbWtPanelInner(c) + '</div>';
+  }
+  function pbWtPaint(c) { const el = document.getElementById('pbWt-' + c); if (el && pbWtS(c).yd3 !== null) el.innerHTML = pbWtPanelInner(c); }
+  function pbWtSave(c) { const S = pbWtS(c); S.gen++; pbSet('calcWeight_' + c, JSON.stringify({ k: S.k, st: S.st, ss: S.ss, cv: S.cv, cu: S.cu })); }
+  // the signed-in person's last choice for this calculator (a tap made while it loads wins)
+  function pbWtLoad(c) {
+    const S = pbWtS(c), gen = S.gen;
+    Promise.resolve(pbGet('calcWeight_' + c)).then(v => {
+      if (S.gen !== gen) return;
+      let o = null; try { o = v ? JSON.parse(v) : null; } catch (e) { o = null; }
+      const str = (x) => typeof x === 'string' ? x.slice(0, 20) : '';
+      const nk = o && typeof o === 'object' ? { k: str(o.k), st: str(o.st), ss: str(o.ss), cv: str(o.cv), cu: o.cu === 'lb' ? 'lb' : 'tpy' } : { k: '', st: '', ss: '', cv: '', cu: 'tpy' };
+      if (['k', 'st', 'ss', 'cv', 'cu'].every(f => S[f] === nk[f])) return;
+      Object.assign(S, nk); pbWtPaint(c);
+    }).catch(() => {});
+  }
+  window.pbWtSet = function(c, act, val) {
+    const S = pbWtS(c);
+    if (act === 'k') S.k = val;
+    else if (act === 'st') { if (S.st !== val) S.ss = ''; S.st = val; }
+    else if (act === 'ss') S.ss = val;
+    else if (act === 'cu') S.cu = val === 'lb' ? 'lb' : 'tpy';
+    pbWtSave(c); pbWtPaint(c);
+    if (act === 'k' && val === 'custom') { const i = document.getElementById('pbWtCv-' + c); if (i && !i.value) i.focus(); }
+  };
+  window.pbWtCustom = function(c, v) {
+    const S = pbWtS(c); S.cv = String(v || '').slice(0, 20); pbWtSave(c);
+    const o = document.getElementById('pbWtOut-' + c); if (o) o.innerHTML = pbWtOutHtml(c);
+  };
+  // Depth / thickness inputs say what they are in inches as you type (0.5 ft = 6 in), so feet and inches can't be mixed up.
+  const PB_WT_FTIN = ['volRectD', 'volTrapD', 'volSectorD', 'volEncD', 'beddingThk'];
+  function pbWtFtIn(el) {
+    if (!el || !el.id || PB_WT_FTIN.indexOf(el.id) < 0 || !el.parentNode) return;
+    let e = el.parentNode.querySelector('.pb-wt-ftin');
+    if (!e) { e = document.createElement('div'); e.className = 'pb-wt-ftin'; e.id = el.id + 'FtIn'; e.setAttribute('aria-live', 'polite'); el.insertAdjacentElement('afterend', e); }
+    const t = String(el.value || '').trim(), v = Number(t);
+    e.textContent = t !== '' && Number.isFinite(v) && v > 0 ? t + ' ft = ' + pbWtTrim(v * 12, 2) + ' in' : 'In feet (6 in = 0.5 ft)';
+  }
+  document.addEventListener('input', (ev) => pbWtFtIn(ev.target));
+  PB_WT_FTIN.forEach(id => pbWtFtIn(document.getElementById(id)));
+  window.__debugWeight = () => JSON.parse(JSON.stringify(pbWtSt));
+  // ==== end feat_weight ====
   const pbMatIsShade = (m) => m && m.source === 'bedding_calc' && m.use_as === 'shading';
   const PB_MAT_USE_TEXT = { bedding: 'Bedding: under the pipe (pipe bottom to subgrade).', shading: 'Shading: the sides of the pipe plus the shading thickness over its top.' };
   const PB_MAT_PIPE_NOTE = 'From the Pipe Installed footage crews report (counted production only).';
@@ -44418,7 +44582,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return '<h4 class="pbm-h4" id="pjSetHead">Trench settings for this job</h4><p class="pbp-dim pbm-set" id="pjSet">'
       + escapeHtml('Trench width ' + f(S && S.trench_width_ft, 'ft') + ' · bedding ' + f(S && S.bed_thick_ft, 'ft') + ' under the pipe · shading ' + f(S && S.shade_thick_ft, 'ft') + ' over the pipe · pipe OD '
         + (od === null ? 'not set' : Math.round(od * 1000) / 1000 + ' in' + (S.pipe_id_in != null && S.pipe_wall_in != null ? ' (ID ' + S.pipe_id_in + ' + 2 × wall ' + S.pipe_wall_in + ')' : '')))
-      + '</p><p class="pb-help pbm-fhelp">Used by every bedding and shading material on this job unless the material has its own. Runs will be able to change them (coming with Run Setup).</p><div class="pbm-acts"><button type="button" class="pb-btn ghost small" id="pjSetEdit" onclick="pbMatSettingsForm()">Edit Trench Settings</button><button type="button" class="pb-btn ghost small" id="pjSetHist" onclick="pbMatSettingsHistory()">' + (pbMat.setHist ? 'Hide Settings History' : 'Settings History') + '</button></div>' + pbMatSettingsHistHtml();
+      + '</p><p class="pb-help pbm-fhelp">Used by every bedding and shading material on this job unless the material has its own. A run can set its own in Run Setup.</p><div class="pbm-acts"><button type="button" class="pb-btn ghost small" id="pjSetEdit" onclick="pbMatSettingsForm()">Edit Trench Settings</button><button type="button" class="pb-btn ghost small" id="pjSetHist" onclick="pbMatSettingsHistory()">' + (pbMat.setHist ? 'Hide Settings History' : 'Settings History') + '</button></div>' + pbMatSettingsHistHtml();
   }
   // review S9: every change of the trench settings moves every bedding / shading figure, so its history is one tap away
   function pbMatSettingsHistHtml() {
@@ -44542,7 +44706,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + (shade ? pbMatField('shade_thick_ft', 'Shading over the pipe (ft)', v.shade_thick_ft, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Job setting"')
                  : pbMatField('bed_thick_ft', 'Bedding thickness (ft)', v.bed_thick_ft, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 0.5"')) + '</div>'
         + '<p class="pb-help pbm-fhelp">Leave blank to use the job’s trench settings' + (shade ? ' (and the job’s pipe OD)' : '') + '. Without them, no amount is shown (never a guess). Later, each run’s own Run Setup values will be used.</p>'
-        + pbMatField('density_tpy', 'Density (tons per yd³)' + (v.basis === 'weight' ? '' : ', optional'), v.density_tpy, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 1.35"', '<strong>Verify with your supplier.</strong> Presets: 3/4" crushed rock 1.35, pea gravel 1.40, coarse sand 1.35, fine sand 1.20.' + (v.basis === 'weight' ? '' : ' Used to turn delivery tickets in tons into yd³.'))
+        + pbMatField('density_tpy', 'Density (tons per yd³)' + (v.basis === 'weight' ? '' : ', optional'), v.density_tpy, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 1.35"', '<strong>Verify with your supplier.</strong> Presets: ' + escapeHtml(pbMatPresetText()) + '.' + (v.basis === 'weight' ? '' : ' Used to turn delivery tickets in tons into yd³.'))
         + pbMatField('extra_pct', 'Compaction allowance (%)', v.extra_pct, 'type="text" inputmode="decimal" autocomplete="off" placeholder="' + PB_MAT_DEFAULT_EXTRA_PCT + '"', 'The trench volume is in place (compacted). The allowance turns it into what to order: in-place × ' + (pbMatNumOk(v.extra_pct || '', 0, 100) ? Math.round((1 + Number(v.extra_pct || PB_MAT_DEFAULT_EXTRA_PCT) / 100) * 10000) / 10000 : '(1 + allowance)') + (v.extra_pct === '' ? ' (' + PB_MAT_DEFAULT_EXTRA_PCT + '% when left blank)' : '') + '.')
         + '<p class="pb-help pbm-fhelp pbm-estnote" id="pmfEst">' + escapeHtml(shade ? PB_MAT_SHADE_NOTE : PB_MAT_EST_NOTE + ' Bedding is under the pipe, so nothing is taken off for the pipe.') + '</p>';
     } else if (pipeFt) {
@@ -44552,7 +44716,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     h += '<div class="pbm-grid">' + pbMatField('expected', (calc ? 'Expected in all, as ordered (' : 'Expected in all (') + escapeHtml(unitText) + ')', v.expected, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional"')
       + pbMatField('alert_pct', 'Alert at (% of ordered)', v.alert_pct, 'type="text" inputmode="numeric" autocomplete="off" placeholder="80"') + '</div>'
-      + '<p class="pb-help pbm-fhelp">The company account and managers get a notification when used + waiting reaches this % of what’s ordered.</p>';
+      + '<p class="pb-help pbm-fhelp">The job’s PMs (with no PM, the company account) are notified when used + waiting reaches this % of what’s ordered.</p>';
     if (m && ((m.orders || []).some(o => !o.voided) || (m.uses || []).some(u => !u.voided))) h += '<p class="pb-help pbm-fhelp">Its unit can’t change while it has orders or amounts in ' + escapeHtml(m.unit) + ' (void them first, or add a new material).</p>';
     return h + btns(F.id ? 'Save Changes' : 'Add Material') + '</form>';
   }
@@ -46015,8 +46179,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!S) { body.innerHTML = h + (V.building ? '' : '<p class="pbd-dim">No records pulled in yet.</p>'); return; }
     // weather
     let wh = '';
-    if (V.weather && V.weather.data) wh = '<p id="drWeatherText">' + escapeHtml(pbDlyWeatherText(V.weather)) + '</p><p class="pbd-src" id="drWeatherLabel">' + escapeHtml(pbDlyWeatherLabel(V.weather)) + (V.location && V.location.source ? ' Job location: ' + escapeHtml({ geocoded: 'from the job address (US Census geocoder)', pin: 'pinned by a foreman', device_once: 'a phone’s position taken once at the jobsite' }[V.location.source] || V.location.source) + '.' : '') + '</p>';
-    else if (V.needLoc) wh = '<p id="drNeedLoc">This job has no location yet, so the weather can’t be looked up. Weather uses the JOB’s location only, and the company account, a manager or a PM sets it (Reports > Inspections & tests > the job > Job location).</p>'
+    if (V.weather && V.weather.data) wh = '<p id="drWeatherText">' + escapeHtml(pbDlyWeatherText(V.weather)) + '</p><p class="pbd-src" id="drWeatherLabel">' + escapeHtml(pbDlyWeatherLabel(V.weather)) + (V.location && V.location.source ? ' Job location: ' + escapeHtml({ geocoded: 'from the job address (US Census geocoder)', pin: 'pinned by the office', device_once: 'a phone’s position taken once at the jobsite' }[V.location.source] || V.location.source) + '.' : '') + '</p>';
+    else if (V.needLoc) wh = '<p id="drNeedLoc">This job has no location yet, so there’s no weather. The company account, a manager or a PM sets it on the job’s Inspections & tests page.</p>'
       + (pbDlyAcc(pbArchiveOwnerUid).manager ? '<div class="pb-btn-row"><button type="button" class="pb-btn secondary small" id="drSetLocBtn" onclick="pbOpenInspJob(' + escapeHtml(JSON.stringify(V.job)) + ')">Set the Job Location</button></div>' : '');
     else wh = '<p class="pbd-dim" id="drWeatherNone">' + escapeHtml(V.wMsg || 'Not looked up yet.') + '</p>';
     wh += '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" id="drWeatherBtn" onclick="pbDlyWeather({})"' + (V.wBusy || (V.weather && V.weather.complete) ? ' disabled' : '') + '>' + (V.weather ? 'Update Weather' : 'Get Weather') + '</button></div>'
@@ -46139,7 +46303,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         ['Wind', d.wind_max_mph !== null ? 'to ' + d.wind_max_mph + ' mph' + (d.gust_max_mph !== null ? ', gusts to ' + d.gust_max_mph + ' mph' : '') : 'not reported'], ['Conditions', (d.conditions || []).map(c => c.text + ' (' + c.n + ')').join(', ') || 'not reported'],
         ['Observations', d.obs_count + ' from ' + t(d.first_obs, d.tz) + ' to ' + t(d.last_obs, d.tz)], ['Day covered', S.weather.complete ? 'the whole day (' + d.tz + ')' : 'part of the day (signed before it ended)']], { cols: 1, labelW: 40 });
       if (S.weather.partial_confirmed) R.para('The day was not over when this was retrieved; the foreman confirmed the work day had ended and used the weather observed so far.', { size: 9, style: 'bold' });
-      src(S.weather.label + ' Observed values from the station, not a forecast; the station can be several miles from the job. Job location: ' + ({ geocoded: 'the job address, geocoded by the US Census Bureau', pin: 'coordinates a foreman pinned', device_once: 'a phone’s position taken once at the jobsite with permission' }[S.weather.location_source] || 'as recorded') + '.');
+      src(S.weather.label + ' Observed values from the station, not a forecast; the station can be several miles from the job. Job location: ' + ({ geocoded: 'the job address, geocoded by the US Census Bureau', pin: 'coordinates pinned by the office', device_once: 'a phone’s position taken once at the jobsite with permission' }[S.weather.location_source] || 'as recorded') + '.');
     } else { R.para(S.weather ? S.weather.label : 'Weather was not available.', { size: 9.5, style: 'bold' }); src('National Weather Service (api.weather.gov), not reached for this report.'); }
     R.section('runs', 'Runs and production (' + S.runs.items.length + ')', { keep: 30 });
     if (S.runs.items.length) R.table({ head: ['Run', 'Times', 'Footage', 'Production entered (this session)'], columns: [{ cellWidth: 40 }, { cellWidth: 50 }, { cellWidth: 30 }, {}], fontSize: 8.4,
@@ -46452,7 +46616,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (el) {
       let h;
       if (!jobs) h = '<p class="pbx-empty" id="homeCxNoCopy">' + (pbCxOnline() ? 'Loading your jobs…' : 'Your jobs load with signal. Nothing is kept on this phone yet.') + '</p>';
-      else if (!jobs.length) h = '<div class="pbx-empty" id="homeCxNoJobs"><p><strong>No production yet</strong></p><p>A job shows up here on its own as soon as a crew saves production on a run with that job number.</p></div>';
+      else if (!jobs.length) h = '<div class="pbx-empty" id="homeCxNoJobs"><p><strong>No production yet</strong></p><p>Tap New project, or a job shows up here on its own once a crew saves production under its job number.</p></div>';
       else {
         const shown = X.allJobs ? jobs : jobs.slice(0, PB_CX_JOBS_MAX);
         h = shown.map((j, i) => pbCxJobCard(j, i, L, A)).join('') + (jobs.length > shown.length ? '<button type="button" class="pbx-link pbx-more" id="homeCxAllJobs" onclick="pbCxAllJobs()">Show all ' + jobs.length + ' jobs</button>' : '');
@@ -46528,7 +46692,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }, 1500);
 
   // ---- the filtered lists: Live now, Material alerts, Waiting on foremen ----
-  const PB_CX_LISTS = { live: 'Live now', mat: 'Material alerts', wait: 'Waiting on foremen', runs: 'Crew runs' };
+  const PB_CX_LISTS = { live: 'Live now', mat: 'Material alerts', wait: 'Waiting on foremen', runs: 'Run reports', crewreports: 'Reports to review' };
   window.pbCxOpenList = function(kind) {
     if (!PB_CX_LISTS[kind] || !pbCx.on) return;
     if (!pbCanOpen('prodDashboard', { explain: true })) return;
@@ -46583,6 +46747,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         : '<p class="pbx-none" id="cxMatNone">No material is near what’s ordered.</p>';
     } else if (kind === 'runs') {
       const o = window.pbRrListHtml(uid); h = o.h; s = o.s;
+    } else if (kind === 'crewreports') {
+      const o = window.pbRfListHtml(uid); h = o.h; s = o.s;
     } else if (kind === 'wait') {
       const D = pbCxDash(uid), jobs = D ? D.data.jobs.filter(j => j && typeof j === 'object') : null;
       s = D ? pbCxAge(pbPd.uid === uid && pbPd.busy, pbPd.uid === uid ? pbPd.msg : '', D.at, pbPd.uid === uid ? pbPd.cached : true) : (pbCxOnline() ? 'Loading…' : 'No signal. This loads with signal.');
@@ -46614,7 +46780,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // OFFICE (company account, managers, PMs): Home has "Crew runs"; the list says who, which job, how far, and whether a
   // foreman has entered production for it yet. A run opens to its report text and a PDF made from the office copy.
   const PB_RR_DAYS = 21, PB_RR_MAX_PER_PASS = 6;
-  let pbRr = { uid: null, sent: null, busy: false, pauseUntil: 0, timer: null };
+  let pbRr = { uid: null, sent: null, busy: false, pauseUntil: 0, timer: null, asked: {} };
   function pbRrIsBinary(v) { return typeof v === 'string' && /^data:/.test(v) && v.length > 200; }
   // A deep copy with photo / file data left out: strings in arrays are dropped, objects holding one are dropped from their
   // array, and a field holding one becomes null. Counts what was left out.
@@ -46646,13 +46812,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     let laidFt = null; try { const L = window.pbLaidSummaryOf ? window.pbLaidSummaryOf(e.id) : null; if (L && Number.isFinite(Number(L.laidFt))) laidFt = Number(L.laidFt); } catch (x) {}
     const lt = e.lockTime instanceof Date ? e.lockTime : new Date(e.lockTime);
     const wd = isFinite(lt.getTime()) ? lt.getFullYear() + '-' + String(lt.getMonth() + 1).padStart(2, '0') + '-' + String(lt.getDate()).padStart(2, '0') : '';
-    rec.pbOffice = { laidFt, photosLeftOut: left, workDate: wd };
+    rec.pbOffice = { laidFt, photosLeftOut: left, workDate: wd, send: !!(e.reportSendWanted && (e.completed || e.incomplete)) }; // r15.2: Send Report
     return rec;
   }
   async function pbRrLoadSent(uid) {
     if (pbRr.uid === uid && pbRr.sent) return pbRr.sent;
     let m = {}; try { const raw = await pbGetFor(uid, 'rrSent'); const p = raw ? JSON.parse(raw) : null; if (p && typeof p === 'object') m = p; } catch (x) { m = {}; }
-    if (pbRr.uid !== uid) pbRr = { uid, sent: null, busy: false, pauseUntil: 0, timer: null };
+    if (pbRr.uid !== uid) pbRr = { uid, sent: null, busy: false, pauseUntil: 0, timer: null, asked: {} };
     pbRr.sent = m; return m;
   }
   function pbRrSoon(ms) { clearTimeout(pbRr.timer); pbRr.timer = setTimeout(() => { pbRrSend().catch(e => console.error('Crew run send failed:', e)); }, typeof ms === 'number' ? ms : 4000); }
@@ -46672,19 +46838,20 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     for (const e of runs) {
       let rec; try { rec = pbRrOfficeCopy(e); } catch (x) { continue; }
       const h = pbHashText(JSON.stringify([rec, acc.companyId]));
-      if (sent[String(e.id)] !== h) todo.push({ id: String(e.id), rec, h });
+      const ask = !e.reportSentAt && (e.completed || e.incomplete) && Date.now() - (pbRr.asked[String(e.id)] || 0) > (e.reportSendWanted ? 60000 : 30 * 60000); // r15.2: learn a send / an automatic send
+      if (sent[String(e.id)] !== h || ask) { pbRr.asked[String(e.id)] = Date.now(); todo.push({ id: String(e.id), rec, h, e }); }
       if (todo.length >= PB_RR_MAX_PER_PASS) break;
     }
     if (!todo.length) return;
     pbRr.busy = true;
-    let again = false;
+    let again = false, learned = false;
     try {
       for (const t of todo) {
         if (!sbUser || sbUser.id !== uid || pbArchiveOwnerUid !== uid || navigator.onLine === false || !(await pbLiveSessionIs(uid))) break;
         const r = await pbPermitRpc('pb_prod_run_record_put', { p_entry_id: t.id, p_record: t.rec, p_expect_uid: uid, p_access_company: acc.companyId }, 30000);
         if (pbRr.uid !== uid) break;
         const msg = String((r.error && r.error.message) || ''), code = (msg.match(/pb:\w+/) || [''])[0];
-        if (!r.error && r.data && r.data.ok === true) { sent[t.id] = t.h; continue; }
+        if (!r.error && r.data && r.data.ok === true) { sent[t.id] = t.h; if (typeof window.pbRrNoteSent === 'function' && window.pbRrNoteSent(t.e, r.data)) learned = true; continue; }
         if (navigator.onLine === false || /failed to fetch|networkerror|load failed|no client|timeout/i.test(msg)) break;
         if (code === 'pb:not_company_member' || code === 'pb:company_changed') { pbRr.pauseUntil = Date.now() + 6 * 3600000; break; }
         if (code === 'pb:too_big' || code === 'pb:bad_record' || code === 'pb:photo_data') { sent[t.id] = t.h; continue; } // never resent as is
@@ -46692,11 +46859,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       }
       const keys = Object.keys(sent); if (keys.length > 300) keys.slice(0, keys.length - 300).forEach(k => delete sent[k]);
       if (pbRr.uid === uid) await pbSetFor(uid, 'rrSent', JSON.stringify(sent));
-      again = todo.length >= PB_RR_MAX_PER_PASS;
+      if (learned && pbArchiveOwnerUid === uid) { try { await saveRunArchive(); } catch (x) {} try { window.pbRenderHome(); } catch (x) {} try { if (pbCurrentScreen === 'archive') renderArchiveList(); } catch (x) {} again = true; }
+      again = again || todo.length >= PB_RR_MAX_PER_PASS;
     } finally { pbRr.busy = false; if (again) pbRrSoon(5000); }
   }
   window.__pbRrDebug = { copy: (id) => { const e = runArchive.find(x => x && x.id === id); return e ? pbRrOfficeCopy(e) : null; }, send: () => pbRrSend(), state: () => ({ uid: pbRr.uid, sent: pbRr.sent ? Object.assign({}, pbRr.sent) : null, pauseUntil: pbRr.pauseUntil }) };
-  window.pbAccountLoadHooks.push((uid) => { if (pbRr.uid !== uid) { clearTimeout(pbRr.timer); pbRr = { uid: null, sent: null, busy: false, pauseUntil: 0, timer: null }; } pbRrSoon(8000); });
+  window.pbAccountLoadHooks.push((uid) => { if (pbRr.uid !== uid) { clearTimeout(pbRr.timer); pbRr = { uid: null, sent: null, busy: false, pauseUntil: 0, timer: null, asked: {} }; } pbRrSoon(8000); });
   window.addEventListener('online', () => { pbRr.pauseUntil = 0; pbRrSoon(7000); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pbRrSoon(5000); });
   setInterval(() => { if (sbUser) pbRrSoon(0); }, 60 * 1000);
@@ -46744,11 +46912,18 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbRrWaitingCount = function(uid) { const O = pbRoFor(uid); return O.list ? pbRoWaiting(O.list) : 0; };
   const PB_RO_TAGS = { foreman: ['', 'Foreman entered'], counted: ['', 'Counted without a foreman'], held: ['warn', 'Held for a foreman'], waiting: ['warn', 'Waiting for a foreman'] };
   function pbRoTag(x) { const t = PB_RO_TAGS[pbRoStatus(x)] || PB_RO_TAGS.waiting; return '<span class="pbx-tag' + (t[0] ? ' ' + t[0] : '') + '">' + (t[0] ? pbCxIc('clock') : pbCxCheck()) + pbCxE(t[1]) + '</span>'; }
+  // r15.2: "new" = a sent report not opened on this phone yet (kept per account on this phone)
+  let pbRoSeen = { uid: null, set: null };
+  function pbRoSeenSet(uid) {
+    if (pbRoSeen.uid !== uid) { pbRoSeen = { uid, set: new Set() }; pbGetFor(uid, 'rrSeen').then(raw => { try { const a = raw ? JSON.parse(raw) : []; if (pbRoSeen.uid === uid && Array.isArray(a)) { a.forEach(x => pbRoSeen.set.add(String(x))); try { window.pbCxRender(); } catch (e) {} } } catch (e) {} }).catch(() => {}); }
+    return pbRoSeen.set;
+  }
+  function pbRoMarkSeen(uid, id) { const S = pbRoSeenSet(uid); if (S.has(String(id))) return; S.add(String(id)); pbSetFor(uid, 'rrSeen', JSON.stringify(Array.from(S).slice(-500))).catch(() => {}); }
   window.pbRrTile = function(uid) {
-    const O = pbRoFor(uid), L = O.list;
-    const sub = !L ? 'Loads with signal' : !L.length ? 'No crew runs in the last 60 days' : pbRoWaiting(L) ? pbRoWaiting(L) + ' waiting for a foreman' : 'All confirmed by a foreman';
+    const O = pbRoFor(uid), L = O.list, S = pbRoSeenSet(uid), nNew = L ? L.filter(x => !S.has(String(x.id))).length : 0;
+    const sub = !L ? 'Loads with signal' : !L.length ? 'No run reports sent yet' : [nNew ? nNew + ' new' : 'Nothing new', pbRoWaiting(L) ? pbRoWaiting(L) + ' waiting for a foreman' : ''].filter(Boolean).join(' · ');
     return '<button type="button" class="pbx-act pbx-rr-tile" id="homeCxRuns2" onclick="pbCxOpenList(\'runs\')" style="grid-column:1 / -1">'
-      + '<span class="pbx-act-ic">' + pbCxIc('pipe') + '</span><span class="pbx-num">' + (L ? L.length : '–') + '</span><span class="pbx-lbl">Crew runs</span><span class="pbx-sub">' + pbCxE(sub) + '</span></button>';
+      + '<span class="pbx-act-ic">' + pbCxIc('pipe') + '</span><span class="pbx-num">' + (L ? nNew : '–') + '</span><span class="pbx-lbl">' + (nNew === 1 ? 'New run report' : 'New run reports') + '</span><span class="pbx-sub">' + pbCxE(sub) + '</span></button>';
   };
   function pbRoFt(n) { const v = Number(n); return Number.isFinite(v) ? (Math.round(v * 10) / 10).toLocaleString() + ' ft' : ''; }
   function pbRoWhen(x) { const t = x.locked_at ? new Date(x.locked_at) : null; return t && isFinite(t.getTime()) ? t.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + t.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : ''; }
@@ -46756,24 +46931,26 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const O = pbRoFor(uid);
     if (O.open) return pbRoDetailHtml(O);
     const s = O.list ? pbCxAge(O.busy, O.msg, O.at, false) : O.msg || (pbCxOnline() ? 'Loading…' : 'No signal. Crew runs load with signal.');
-    let h = '<p class="pbx-note">Runs from crew phones, last 60 days. Waiting = no production entered for it yet. Photos stay on the crew’s phone.</p>';
+    const S = pbRoSeenSet(uid);
+    let h = '<p class="pbx-note">Run reports crews sent, last 60 days. Photos stay on the crew’s phone.</p>';
     if (O.list) h += O.list.length ? '<div class="pbx-rows">' + O.list.map((x, i) => '<button type="button" class="pbx-row" id="cxRun' + i + '" onclick="pbRrOpen(' + i + ')"><span class="pbx-row-tx">'
         + '<span class="pbx-row-h">' + pbCxE(pbProdJobLabel(x.job_number || '') + (x.label ? ' · ' + x.label : '')) + '</span>'
         + '<span class="pbx-row-s">' + pbCxE([x.who, x.role === 'foreman' ? 'foreman' : x.role === 'pipelayer' ? 'pipelayer' : '', pbRoWhen(x)].filter(Boolean).join(' · ')) + '</span>'
         + '<span class="pbx-row-s">' + pbCxE([x.jobsite || '', x.distance_ft !== null && x.distance_ft !== undefined ? pbRoFt(x.distance_ft) + ' run' : '', x.laid_ft !== null && x.laid_ft !== undefined ? pbRoFt(x.laid_ft) + ' marked laid' : '', x.ended ? (x.ended_early ? 'ended early' : 'ended') : 'open'].filter(Boolean).join(' · ')) + '</span>'
-        + '<span class="pbx-row-flags">' + pbRoTag(x) + '</span>'
+        + '<span class="pbx-row-flags">' + (S.has(String(x.id)) ? '' : '<span class="pbx-tag warn">New</span>') + (x.sent_how === 'auto' ? '<span class="pbx-tag">Sent automatically</span>' : '') + (x.reviewed_at ? '<span class="pbx-tag">' + pbCxCheck() + pbCxE('Reviewed' + (x.reviewed_by_name ? ' by ' + x.reviewed_by_name : '')) + '</span>' : '<span class="pbx-tag">Not reviewed</span>') + pbRoTag(x) + '</span>'
         + '</span><span class="pbx-chev" aria-hidden="true">' + pbCxIc('chevron-right') + '</span></button>').join('') + '</div>'
-      : '<p class="pbx-none" id="cxRunsNone">No crew runs yet. A run shows here once a crew member’s phone has signal.</p>';
+      : '<p class="pbx-none" id="cxRunsNone">No run reports sent yet. A report shows here once the crew member sends it (or 12 hours after the run ended).</p>';
     return { h, s };
   };
   function pbRoDetailHtml(O) {
     const x = O.open, e = O.rec;
-    let h = '<button type="button" class="pb-btn ghost small" id="cxRunBack" onclick="pbRrClose()">‹ ' + (O.fromCrew ? 'Back' : 'All crew runs') + '</button>'
+    let h = '<button type="button" class="pb-btn ghost small" id="cxRunBack" onclick="pbRrClose()">‹ ' + (O.fromCrew || O.fromList ? 'Back' : 'All run reports') + '</button>'
       + '<h2 class="pbx-h2">' + pbCxE(pbProdJobLabel(x.job_number || '') + (x.label ? ' · ' + x.label : '')) + '</h2>'
-      + '<p class="pbx-note">' + pbCxE([x.who, pbRoWhen(x), O.fromCrew ? '' : (PB_RO_TAGS[pbRoStatus(x)] || PB_RO_TAGS.waiting)[1]].filter(Boolean).join(' · ')) + '</p>';
+      + '<p class="pbx-note">' + pbCxE([x.who, pbRoWhen(x), O.fromCrew || O.fromList ? '' : (PB_RO_TAGS[pbRoStatus(x)] || PB_RO_TAGS.waiting)[1]].filter(Boolean).join(' · ')) + '</p>'
+      + (x.sent_at ? '<p class="pbx-note" id="cxRunSent">' + pbCxE('Sent ' + pbRoWhen({ locked_at: x.sent_at }) + (x.sent_how === 'auto' ? ' (automatically, 12 hours after the run ended)' : '') + ' · ' + (x.reviewed_at ? 'Reviewed' + (x.reviewed_by_name ? ' by ' + x.reviewed_by_name : '') : 'Not reviewed yet')) + '</p>' : '');
     if (O.recBusy) return { h: h + '<p class="pbx-none">Loading the run…</p>', s: '' };
     if (!e) return { h: h + '<p class="pbx-none">' + pbCxE(O.recMsg || 'Couldn’t load this run.') + '</p>', s: '' };
-    h += '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn small" id="cxRunPdf" onclick="pbRrPdf()">Save PDF</button></div>'
+    h += '<div class="pb-save-offer-btns" style="margin:8px 0">' + (x.can_review && !x.reviewed_at ? '<button type="button" class="pb-btn small" id="cxRunReviewed" onclick="pbRrReviewed()">Reviewed</button>' : '') + '<button type="button" class="pb-btn ' + (x.can_review && !x.reviewed_at ? 'ghost ' : '') + 'small" id="cxRunPdf" onclick="pbRrPdf()">Save PDF</button></div>'
       + (Number(x.photo_count) ? '<p class="pbx-note" id="cxRunPhotos">' + pbCxE(x.photo_count + ' photo' + (x.photo_count === 1 ? '' : 's') + ' left out: they stay on the crew member’s phone.') + '</p>' : '')
       + '<pre id="cxRunText" style="white-space:pre-wrap; font-family:\'IBM Plex Mono\'; font-size:12px; background:#fff; color:#1A1D21; padding:8px; border:1px solid #C9CED6; border-radius:10px; max-height:60vh; overflow-y:auto;">' + escapeHtml(e.reportText || '') + '</pre>';
     return { h, s: '' };
@@ -46781,33 +46958,36 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbRrOpen = async function(i) {
     const uid = pbArchiveOwnerUid, O = pbRoFor(uid), x = O.list && O.list[i];
     if (!x) return;
-    O.open = x; O.rec = null; O.recBusy = true; O.recMsg = ''; pbCxListRender();
+    O.open = x; O.rec = null; O.recBusy = true; O.recMsg = ''; O.fromCrew = false; O.fromList = null; pbCxListRender();
+    pbRoMarkSeen(uid, x.id);
     const r = await pbPermitRpc('pb_prod_company_run_get', { p_id: x.id }, 30000);
     if (pbRo !== O || O.open !== x) return;
     O.recBusy = false;
     if (r && !r.error && r.data && r.data.record && typeof r.data.record === 'object') {
+      Object.assign(x, { sent_at: r.data.sent_at || x.sent_at, sent_how: r.data.sent_how || x.sent_how, reviewed_at: r.data.reviewed_at || x.reviewed_at, reviewed_by_name: r.data.reviewed_by_name || x.reviewed_by_name });
       try { O.rec = normalizeArchiveEntry(Object.assign({}, r.data.record, { lockTime: new Date(r.data.record.lockTime) })); } catch (err) { O.rec = null; O.recMsg = 'This run’s record couldn’t be read.'; }
     } else O.recMsg = navigator.onLine === false ? 'No signal.' : 'Couldn’t load this run.';
     pbCxListRender();
   };
-  window.pbRrClose = function() { const O = pbRoFor(pbArchiveOwnerUid), back = O.fromCrew; O.open = null; O.rec = null; O.fromCrew = false; if (back) window.pbCxListBack(); else pbCxListRender(); };
+  window.pbRrClose = function() { const O = pbRoFor(pbArchiveOwnerUid), back = O.fromCrew, list = O.fromList; O.open = null; O.rec = null; O.fromCrew = false; O.fromList = null; if (list) { pbCx.list = list; pbCxListRender(); window.pbRfLoad && window.pbRfLoad(pbArchiveOwnerUid, true); } else if (back) window.pbCxListBack(); else pbCxListRender(); };
   // The foreman (or the office) opens one crew run's report from the crew view: pb_prod_crew_run_record.
-  window.pbRrCrewOpen = async function(pid, sref, name) {
+  window.pbRrCrewOpen = async function(pid, sref, name, fromList) {
     const uid = pbArchiveOwnerUid, O = pbRoFor(uid);
     const x = { id: null, who: name || '', job_number: '', label: '', locked_at: null, photo_count: 0, status: null };
-    O.open = x; O.rec = null; O.recBusy = true; O.recMsg = ''; O.fromCrew = true;
-    pbCx.list = 'runs';
+    O.open = x; O.rec = null; O.recBusy = true; O.recMsg = ''; O.fromCrew = !fromList; O.fromList = fromList || null;
+    pbCx.list = fromList || 'runs';
     const t = document.getElementById('cxListTitle'); if (t) t.textContent = 'Run report';
-    pbGoto('cxList'); pbCxListRender();
+    if (pbCurrentScreen !== 'cxList') pbGoto('cxList'); pbCxListRender();
     const r = await pbPermitRpc('pb_prod_crew_run_record', { p_pipelayer: pid, p_session_ref: String(sref) }, 30000);
     if (pbRo !== O || O.open !== x) return;
     O.recBusy = false;
     if (r && !r.error && r.data && r.data.record && typeof r.data.record === 'object') {
-      Object.assign(x, { id: r.data.id, who: r.data.who || x.who, job_number: r.data.job_number || '', label: r.data.label || '', locked_at: r.data.locked_at || null, photo_count: Number(r.data.photo_count) || 0 });
+      Object.assign(x, { id: r.data.id, who: r.data.who || x.who, job_number: r.data.job_number || '', label: r.data.label || '', locked_at: r.data.locked_at || null, photo_count: Number(r.data.photo_count) || 0,
+        sent_at: r.data.sent_at || null, sent_how: r.data.sent_how || null, reviewed_at: r.data.reviewed_at || null, reviewed_by_name: r.data.reviewed_by_name || null, can_review: !!r.data.can_review });
       try { O.rec = normalizeArchiveEntry(Object.assign({}, r.data.record, { lockTime: new Date(r.data.record.lockTime) })); } catch (err) { O.rec = null; O.recMsg = 'This run’s record couldn’t be read.'; }
     } else {
       const m = String((r && r.error && r.error.message) || '');
-      O.recMsg = /pb:no_record/.test(m) ? 'This run’s report hasn’t reached the server yet. It’s sent from ' + (name || 'the crew member') + '’s phone once that phone has the latest app version and signal.'
+      O.recMsg = /pb:no_record|pb:not_sent/.test(m) ? (name || 'The crew member') + ' hasn’t sent this run’s report yet. It sends itself 12 hours after the run ended.'
         : /pb:not_your_crew/.test(m) ? 'Only the foreman this crew member is with (and the office) can open this report.'
         : navigator.onLine === false ? 'No signal.' : 'Couldn’t load this run’s report.';
     }
@@ -46833,6 +47013,143 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   };
   window.pbScreenHooks.push((name) => { try { if (name === 'home' && pbCx.on) window.pbRrLoad(pbArchiveOwnerUid, false); } catch (e) {} });
   // ================= end r15.1 PM RUNS =================
+
+  // ================= r15.2 SEND REPORT: a run report is sent in the app =================
+  // Owner (Tommy, Oct 21): "this is supposed to all be done within the app. The option to email the report is a separate
+  // function ... Put a thing on the home page under current work for the pipelayer to send the report, for the foreman to
+  // review the report and the company to view the report." Rulings: the foreman and the office see a report only after it
+  // is sent; a crew member who doesn't send gets a push, and 12 hours after the run ended it sends itself.
+  //  - Crew member (company pipelayer or foreman): Home > Current Work has "Send Run Report" for each of his ended runs
+  //    from the last 3 days not sent yet. Send Report marks the run (reportSendWanted) and the office copy goes with
+  //    pbOffice.send = true; the server's answer (sent_at, sent_how) is kept on the run (reportSentAt / reportSentHow).
+  //    In the Archive a company run shows Sent / Not sent from that, with Send Report; email is "Email a Copy" and
+  //    its own "Emailed" chip. Mark Sent / Mark Not Sent is gone for these runs.
+  //  - Foreman: Home > Current Work has "Reports to Review" (his crew's sent reports not reviewed yet); each opens the
+  //    report with Reviewed.
+  //  - Office: Home's "Run Reports" tile: sent reports, "N new" (not opened on this phone yet).
+  function pbRrMember(uid) { const a = pbProdAccMem.get(uid); return !!(a && a.member && a.companyId && !a.manager); }
+  function pbRrEnded(e) { return !!(e && e.kind === 'run' && (e.completed || e.incomplete)); }
+  function pbRrEndMs(e) { const t = typeof e.runEndTime === 'number' ? e.runEndTime : (e.lockTime instanceof Date ? e.lockTime : new Date(e.lockTime)).getTime(); return isFinite(t) ? t : 0; }
+  function pbRrLabel(e) { return (e.jobNumber ? 'Job ' + e.jobNumber + ' · ' : '') + String(e.startLabel || 'Start') + ' → ' + String(e.endLabel || 'End'); }
+  function pbRrUnsent(uid) {
+    if (!uid || uid === 'shared' || pbArchiveOwnerUid !== uid || !pbRrMember(uid) || archiveLoadFailed) return [];
+    const since = Date.now() - 3 * 86400000;
+    return runArchive.filter(e => pbRrEnded(e) && !e.reportSentAt && pbRrEndMs(e) > since).sort((a, b) => pbRrEndMs(b) - pbRrEndMs(a)).slice(0, 5);
+  }
+  window.pbRrSendAsk = function(id) {
+    const e = runArchive.find(x => x && x.id === id); if (!e) return;
+    if (e.reportSentAt) { pbAlert('This run’s report was already sent.', 'Already Sent'); return; }
+    pbShowModal('Send this run’s report to your foreman and the office?\n\n' + pbRrLabel(e) + '\n\nYou can still view it, and email a copy, from the Archive.', [
+      { label: 'Send Report', primary: true, onClick: () => { window.pbRrSendNow(id); } },
+      { label: 'View Report', onClick: () => { if (typeof window.pbFxViewReport === 'function') window.pbFxViewReport(id); } },
+      { label: 'Not Now' }
+    ], 'Send Run Report');
+  };
+  window.pbRrSendNow = async function(id) {
+    const e = runArchive.find(x => x && x.id === id); if (!e || e.reportSentAt) return;
+    if (!pbRrEnded(e)) { pbAlert('End the run first, then send its report.', 'Run Still Open'); return; }
+    e.reportSendWanted = Date.now();
+    try { await saveRunArchive(); } catch (x) {}
+    try { window.pbRenderHome(); } catch (x) {}
+    try { renderArchiveList(); } catch (x) {}
+    pbRrSoon(0);
+  };
+  // after the server answered for a run: keep its sent state on the run
+  window.pbRrNoteSent = function(e, data) {
+    if (!e || !data || !data.sent_at || e.reportSentAt) return false;
+    const t = Date.parse(data.sent_at); if (!isFinite(t)) return false;
+    e.reportSentAt = t; e.reportSentHow = data.sent_how === 'auto' ? 'auto' : 'pipelayer';
+    return true;
+  };
+  window.pbHomeWorkProviders.push(() => {
+    const uid = pbArchiveOwnerUid, list = pbRrUnsent(uid);
+    return list.map(e => {
+      const end = new Date(pbRrEndMs(e));
+      return { id: 'rrSend_' + String(e.id), title: 'Send Run Report', text: pbRrLabel(e),
+        sub: 'Ended ' + end.toLocaleDateString(undefined, { weekday: 'short' }) + ' ' + end.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }),
+        status: e.reportSendWanted ? 'Sending when there’s signal.' : 'Not sent. It sends itself 12 hours after the run ended.',
+        locked: !pbScreenAccessAllowed('archive'), onClick: () => window.pbRrSendAsk(e.id) };
+    });
+  });
+  window.pbPushRoutes = window.pbPushRoutes || {};
+  window.pbPushRoutes['/run/sendreport'] = function() { try { pbGotoTab('home'); } catch (e) { pbGoto('home'); } const l = pbRrUnsent(pbArchiveOwnerUid); if (l.length === 1) setTimeout(() => window.pbRrSendAsk(l[0].id), 400); };
+  // Archive: Sent / Not sent for a company run comes from the app's own send; email is separate
+  window.pbRrArchiveChip = function(e) {
+    if (!(e && e.kind === 'run' && pbRrMember(pbArchiveOwnerUid))) return null;
+    return (e.reportSentAt ? '<span class="pb-chip ok">' + (e.reportSentHow === 'auto' ? 'Sent automatically' : 'Sent') + '</span>' : '<span class="pb-chip notsent">' + (e.reportSendWanted ? 'Sending…' : 'Not sent') + '</span>')
+      + (e.sent ? '<span class="pb-chip">Emailed</span>' : '');
+  };
+  window.pbRrArchiveBtns = function(e) {
+    if (!(e && e.kind === 'run' && pbRrMember(pbArchiveOwnerUid))) return null;
+    return (!e.reportSentAt && !e.reportSendWanted && pbRrEnded(e) ? '<button class="pb-btn small" onclick="pbRrSendAsk(' + escapeHtml(JSON.stringify(e.id)) + ')">Send Report</button>' : '')
+      + '<button class="pb-btn ghost small" onclick="' + pbArchiveTapAttr('pbSendArchiveEntry', e) + '">Email a Copy</button>';
+  };
+
+  // ---- the foreman: Reports to Review ----
+  let pbRf = { uid: null, list: null, at: 0, busy: false };
+  window.pbRfLoad = async function(uid, force) {
+    if (pbRf.uid !== uid) pbRf = { uid, list: null, at: 0, busy: false };
+    if (pbRf.busy || (!force && pbRf.list && Date.now() - pbRf.at < 60000)) return;
+    if (!(typeof pbLvIsForeman === 'function' && pbLvIsForeman(uid))) return;
+    if (!(sbClient && sbUser && sbUser.id === uid && navigator.onLine !== false && (await pbLiveSessionIs(uid)))) return;
+    const R = pbRf; R.busy = true;
+    try {
+      const r = await pbPermitRpc('pb_prod_crew_reports', { p_days: 14 }, 30000);
+      if (pbRf !== R) return;
+      if (r && !r.error && r.data && Array.isArray(r.data.reports)) { R.list = r.data.reports.filter(x => x && typeof x === 'object'); R.at = Date.now(); }
+    } finally { R.busy = false; }
+    try { window.pbRenderHome(); } catch (e) {}
+    try { if (pbCurrentScreen === 'cxList' && pbCx.list === 'crewreports') pbCxListRender(); } catch (e) {}
+  };
+  window.pbHomeWorkProviders.push(() => {
+    const uid = pbArchiveOwnerUid;
+    if (!(typeof pbLvIsForeman === 'function' && pbLvIsForeman(uid)) || pbRf.uid !== uid || !pbRf.list) return null;
+    const n = pbRf.list.filter(x => !x.reviewed_at).length;
+    if (!n) return null;
+    return { id: 'rrReview', title: 'Reports to Review', text: n + ' run report' + (n === 1 ? '' : 's') + ' from your crew', status: 'Not reviewed yet.', onClick: () => window.pbRfOpenList() };
+  });
+  window.pbRfOpenList = function() {
+    pbCx.list = 'crewreports';
+    const O = pbRoFor(pbArchiveOwnerUid); O.open = null; O.rec = null; O.fromList = null; O.fromCrew = false;
+    const t = document.getElementById('cxListTitle'); if (t) t.textContent = 'Reports to review';
+    const ey = document.getElementById('cxListEyebrow'); if (ey) ey.textContent = 'My crew';
+    pbGoto('cxList'); pbCxListRender();
+    window.pbRfLoad(pbArchiveOwnerUid, true);
+  };
+  function pbRfWhen(t) { const d = t ? new Date(t) : null; return d && isFinite(d.getTime()) ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : ''; }
+  window.pbRfListHtml = function(uid) {
+    const O = pbRoFor(uid);
+    if (O.open) return pbRoDetailHtml(O);
+    const L = pbRf.uid === uid ? pbRf.list : null;
+    const s = L ? (pbRf.busy ? 'Updating…' : 'Updated ' + pbProdTimeText(pbRf.at) + '.') : (pbCxOnline() ? 'Loading…' : 'No signal. Reports load with signal.');
+    let h = '<p class="pbx-note">Run reports your crew sent in the last 14 days. Open one and tap Reviewed.</p>';
+    if (L) h += L.length ? '<div class="pbx-rows">' + L.map((x, i) => '<button type="button" class="pbx-row" id="cxRev' + i + '" onclick="pbRfOpen(' + i + ')"><span class="pbx-row-tx">'
+        + '<span class="pbx-row-h">' + pbCxE(pbProdJobLabel(x.job_number || '') + (x.label ? ' · ' + x.label : '')) + '</span>'
+        + '<span class="pbx-row-s">' + pbCxE([x.who, 'sent ' + pbRfWhen(x.sent_at) + (x.sent_how === 'auto' ? ' (automatically)' : '')].join(' · ')) + '</span>'
+        + '<span class="pbx-row-flags">' + (x.reviewed_at ? '<span class="pbx-tag">' + pbCxCheck() + 'Reviewed</span>' : '<span class="pbx-tag warn">' + pbCxIc('clock') + 'Not reviewed</span>') + '</span>'
+        + '</span><span class="pbx-chev" aria-hidden="true">' + pbCxIc('chevron-right') + '</span></button>').join('') + '</div>'
+      : '<p class="pbx-none" id="cxRevNone">No reports from your crew yet.</p>';
+    return { h, s };
+  };
+  window.pbRfOpen = function(i) {
+    const x = pbRf.list && pbRf.list[i]; if (!x) return;
+    window.pbRrCrewOpen(x.pipelayer_id, x.entry_id, x.who, 'crewreports');
+  };
+  window.pbRrReviewed = async function() {
+    const uid = pbArchiveOwnerUid, O = pbRoFor(uid), x = O.open;
+    if (!x || !x.id) return;
+    const b = document.getElementById('cxRunReviewed'); if (b) { b.disabled = true; b.textContent = 'Saving…'; }
+    const r = await pbPermitRpc('pb_prod_run_report_review', { p_id: x.id, p_expect_uid: uid }, 20000);
+    if (pbRo !== O || O.open !== x) return;
+    if (r && !r.error && r.data && r.data.ok) { x.reviewed_at = r.data.reviewed_at; if (pbRf.uid === uid && pbRf.list) pbRf.list.forEach(y => { if (y.id === x.id) y.reviewed_at = r.data.reviewed_at; }); }
+    else pbAlert(navigator.onLine === false ? 'No signal. Try again when you have signal.' : 'Couldn’t mark it reviewed. Try again.', 'Not Saved');
+    pbCxListRender();
+    try { window.pbRenderHome(); } catch (e) {}
+  };
+  window.pbScreenHooks.push((name) => { try { if (name === 'home') window.pbRfLoad(pbArchiveOwnerUid, false); } catch (e) {} });
+  setInterval(() => { try { if (sbUser && pbCurrentScreen === 'home' && document.visibilityState === 'visible') window.pbRfLoad(pbArchiveOwnerUid, false); } catch (e) {} }, 60000);
+  window.pbAccountLoadHooks.push(() => { pbRf = { uid: null, list: null, at: 0, busy: false }; });
+  // ================= end r15.2 SEND REPORT =================
 
   // ---- the JOB screen (batch 11's prodJob for the company account): bar and summary, sections as tabs ----
   window.pbCxOpenJob = async function(key, tab) {
@@ -47577,7 +47894,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbArchiveOwnerUid !== uid) return;
     if (!acc.ok) {
       pbAlert(!acc.known ? 'This phone hasn’t checked your company role yet. Open this once with signal.'
-        : acc.why === 'pipelayer' ? 'Work without a run is entered by a foreman. Your runs’ production goes to your foreman as usual; ask him to enter work done without a run.'
+        : acc.why === 'pipelayer' ? 'Work without a run is entered by a foreman. Ask him to enter work done without a run.'
         : acc.why === 'nocompany' ? 'You aren’t in a company, so there is no job to file this under.' : 'Work without a run is entered by foremen, managers and PMs.', 'Work Without a Run');
       return;
     }
