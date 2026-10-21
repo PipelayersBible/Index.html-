@@ -1944,6 +1944,15 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 .pb-activebar { z-index: 46; } /* above the Education help sheet (45), still under dialogs (50) and the toast (60) */
 .pb-edu-sheet.open .pb-edu-sheet-inner { padding-bottom: calc(40px + var(--pb-ab-h, 0px) / var(--pb-text-zoom, 1)); } /* the sheet's end stays clear of the active bar */
 #pbCopyToast { bottom: calc(28px + var(--pb-shell-h, 0px) / var(--pb-text-zoom, 1)) !important; } /* above the bars, not on them */
+/* TABBAR (r14.1): iOS can leave the page offset under the bars after the keyboard or the file picker; the
+   app's pbVvSeat sets --pb-vv-shift (0px everywhere the viewports agree) so they sit on the visible bottom. */
+.pb-tabbar, .pb-activebar { transform: translateY(var(--pb-vv-shift, 0px)); }
+/* TABBAR: fields at least 16 px on a phone: iOS zooms the page in on focus under 16 px, which also
+   leaves the fixed bars looking misplaced. These were the ones under 16 px (Archive and Stats filters, the
+   cutsheet debug box); the t_tabbar_zoom test checks every field. */
+@media (max-width: 1023px), (pointer: coarse) {
+  #pbApp :is(#archiveFilterPeriod, #archiveFilterStatus, #archiveFilterKind, #archiveFilterJobsite, #statsFilterPeriod, #statsFilterType, #statsFilterJobsite, #cutsheetDebugBox) { font-size: 16px !important; }
+}
 /* PB2:css:home */
 /* UX batch 2 (A3): Home work area. */
 #screen-home .pb-home-tile > div:first-child { min-width: 0; overflow-wrap: anywhere; }
@@ -7831,7 +7840,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r14 · 2026-10-20'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r14.1 · 2026-10-20'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -10108,7 +10117,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     pbCurrentScreen = name;
     if (name === 'confinedActive') pbCheckStorageRoom(); // a nearly full phone is why saves fail: said before it happens
     if (name === 'archive' && typeof renderArchiveList === 'function') renderArchiveList(); // reached with Back too: never an out-of-date list
-    window.scrollTo({top:0, behavior:'smooth'});
+    window.scrollTo({ top: 0, behavior: 'instant' }); // TABBAR: at once (a smooth scroll over a swapped screen can leave iOS's fixed bars floating)
+    if (typeof window.pbVvSettle === 'function') { try { window.pbVvSettle(); } catch (e) {} } // TABBAR
     if (typeof window.pbEduAfterShow === 'function') window.pbEduAfterShow(name, stepsBack); // Education: Back keeps the search position; a result lands on its passage
     if (lockedBackTarget) pbShowSubscriptionRequiredMessage(lockedBackTarget);
     pbAfterScreenShown(); // a reset link or account switch waiting for typed work to be saved or left
@@ -10419,6 +10429,47 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   document.addEventListener('pointerdown', () => { pbShellPointerDown = true; }, true);
   ['pointerup', 'pointercancel'].forEach(t => document.addEventListener(t, () => { pbShellPointerDown = false; if (pbShellKbRecheck) setTimeout(pbShellCheckKb, 200); }, true));
   window.addEventListener('resize', () => { try { pbShellLayout(); } catch (e) {} });
+  // TABBAR (r14.1): re-seat the fixed bars when iOS leaves the viewport offset (keyboard closed, file picker back)
+  (function () {
+    let queued = false, last = '0px', pbVvLastScroll = 0;
+    function pbVvSeat() {
+      queued = false;
+      const vv = window.visualViewport, root = document.documentElement;
+      let shift = 0;
+      try {
+        if (vv && pbShellOskLikely() && !pbShellKb && Math.abs((vv.scale || 1) - 1) < 0.01) {
+          shift = Math.round((vv.offsetTop + vv.height) - root.clientHeight);
+          if (Math.abs(shift) < 2 || Math.abs(shift) > root.clientHeight / 2) shift = 0; // noise, or not a stale offset
+        }
+      } catch (e) { shift = 0; }
+      const v = shift + 'px';
+      if (v !== last) { last = v; root.style.setProperty('--pb-vv-shift', v); }
+    }
+    function pbVvQueue() { if (!queued) { queued = true; requestAnimationFrame(pbVvSeat); } }
+    function pbVvNudge() {
+      try {
+        if (!pbShellOskLikely() || pbShellKb || Date.now() - pbVvLastScroll < 250) { pbVvQueue(); return; } // never cut a scroll short
+        const x = window.scrollX, y = window.scrollY;
+        window.scrollTo({ left: x, top: y > 0 ? y - 1 : y + 1, behavior: 'instant' });
+        window.scrollTo({ left: x, top: y, behavior: 'instant' });
+      } catch (e) {}
+      pbVvQueue();
+    }
+    function pbVvSettle() { try { if (typeof window.pbSwipeClearStale === 'function') window.pbSwipeClearStale(); } catch (e) {} [60, 400, 800, 1300].forEach(t => setTimeout(pbVvNudge, t)); }
+    window.pbVvSeat = pbVvSeat; window.pbVvSettle = pbVvSettle;
+    const vv0 = window.visualViewport;
+    if (vv0 && vv0.addEventListener) { vv0.addEventListener('resize', pbVvQueue); vv0.addEventListener('scroll', pbVvQueue); }
+    window.addEventListener('resize', pbVvQueue);
+    window.addEventListener('scroll', () => { pbVvLastScroll = Date.now(); pbVvQueue(); }, { passive: true });
+    // the keyboard going away: focus left a typing field and did not land on another
+    document.addEventListener('focusout', (e) => { if (pbShellTypingField(e.target)) setTimeout(() => { if (!pbShellTypingField(document.activeElement)) pbVvSettle(); }, 150); });
+    // the photo / file picker coming back
+    document.addEventListener('change', (e) => { const t = e.target; if (t && t.matches && t.matches('input[type="file"]')) pbVvSettle(); }, true);
+    document.addEventListener('cancel', (e) => { const t = e.target; if (t && t.matches && t.matches('input[type="file"]')) pbVvSettle(); }, true);
+    window.addEventListener('focus', pbVvSettle);
+    window.addEventListener('pageshow', pbVvSettle);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pbVvSettle(); });
+  })();
   if (typeof ResizeObserver === 'function') {
     const ro = new ResizeObserver(() => { try { pbShellLayout(); } catch (e) {} });
     ['pbTabBar', 'pbActiveBar'].forEach(id => { const el = document.getElementById(id); if (el) ro.observe(el); });
@@ -10470,22 +10521,28 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     // outside of an active swipe.
     function setupLayers() {
       const h = (window.innerHeight / pbZoomOf(currentEl)) + 'px'; // the screen's own px under Text Size zoom
-      Object.assign(currentEl.style, { position: 'fixed', top: '0', left: '0', width: '100%', height: h, overflowY: 'auto', zIndex: '20', transition: 'none', display: 'block', background: 'var(--asphalt)' });
-      if (prevEl) Object.assign(prevEl.style, { position: 'fixed', top: '0', left: '0', width: '100%', height: h, overflowY: 'hidden', zIndex: '10', transition: 'none', display: 'block', background: 'var(--asphalt)', transform: 'translateX(-28%)' });
+      void h; // TABBAR: top 0 / bottom 0 instead of a px height (iOS can report a stale innerHeight)
+      Object.assign(currentEl.style, { position: 'fixed', top: '0', bottom: '0', left: '0', width: '100%', height: 'auto', overflowY: 'auto', zIndex: '20', transition: 'none', display: 'block', background: 'var(--asphalt)' });
+      if (prevEl) Object.assign(prevEl.style, { position: 'fixed', top: '0', bottom: '0', left: '0', width: '100%', height: 'auto', overflowY: 'hidden', zIndex: '10', transition: 'none', display: 'block', background: 'var(--asphalt)', transform: 'translateX(-28%)' });
     }
     function clearLayers(el) {
       if (!el) return;
-      ['transition','transform','opacity','position','top','left','width','height','overflowY','zIndex','display','background'].forEach(p => el.style[p] = '');
+      ['transition','transform','opacity','position','top','bottom','left','width','height','overflowY','zIndex','display','background'].forEach(p => el.style[p] = ''); // TABBAR: bottom too
     }
+    // TABBAR: a screen left as a swipe layer (fixed, its own scroller) is put back when no swipe is running
+    let pbSwipeBusy = 0;
+    window.pbSwipeClearStale = function() { if (dragging || pbSwipeBusy) return; document.querySelectorAll('#pbApp .pb-screen').forEach(sc => { if (sc.style.position === 'fixed') clearLayers(sc); }); };
     function resetDrag() {
       if (!currentEl) return;
       currentEl.style.transition = 'transform 0.2s ease';
       currentEl.style.transform = 'translateX(0)';
       if (prevEl) { prevEl.style.transition = 'transform 0.2s ease'; prevEl.style.transform = 'translateX(-28%)'; }
       const cel = currentEl, pel = prevEl;
-      setTimeout(() => { clearLayers(cel); clearLayers(pel); }, 210);
+      pbSwipeBusy++; // TABBAR
+      setTimeout(() => { pbSwipeBusy--; clearLayers(cel); clearLayers(pel); }, 210);
     }
     document.addEventListener('touchstart', function(e) {
+      try { window.pbSwipeClearStale(); } catch (x) {} // TABBAR
       if (e.touches.length !== 1) return;
       const t = e.touches[0];
       startX = t.clientX; startY = t.clientY;
@@ -10528,7 +10585,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         // was opened from); the swipe must do what that arrow does. Neither one
         // puts anything into a note (UX-30: only Add Result to This Note does).
         const viaCalcBack = !!document.querySelector('#screen-' + pbCurrentScreen + ' .pb-back[onclick^="pbCalcBack"]');
-        setTimeout(() => { if (viaCalcBack) pbCalcBack(); else pbGoBack(); clearLayers(el); clearLayers(pel); }, 180);
+        pbSwipeBusy++; // TABBAR: the layers are put back even if going back throws
+        setTimeout(() => { try { if (viaCalcBack) pbCalcBack(); else pbGoBack(); } finally { pbSwipeBusy--; clearLayers(el); clearLayers(pel); } }, 180);
       } else {
         resetDrag();
       }
