@@ -8684,7 +8684,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.2.2 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.3 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -33291,8 +33291,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbProdPlanEdit = function() {
     if (!pbPj.data) return;
     const rows = pbProdPlanRowsFrom(pbPj.data), bh = pbPj.data.plan && pbPj.data.plan.budget_hours != null ? String(pbPj.data.plan.budget_hours) : '';
-    pbPj.edit = { version: Number(pbPj.data.plan_version) || 0, rows, budget: bh, err: '', saving: false };
-    pbPj.edit.base = JSON.stringify([rows, bh]);
+    // owner, Oct 21: the whole-job budget fills itself in from the categories' hours, and can still be changed
+    const sum = pbProdPlanHoursSum(rows), auto = bh === '' || (sum !== '' && Number(bh) === Number(sum));
+    pbPj.edit = { version: Number(pbPj.data.plan_version) || 0, rows, budget: auto ? sum : bh, budgetAuto: auto, err: '', saving: false };
+    pbPj.edit.base = JSON.stringify([rows, pbPj.edit.budget]);
     pbProdJobRender();
     const f = pbProdEl('ppName0'); if (f) f.focus({ preventScroll: true });
   };
@@ -33301,6 +33303,23 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     E.rows.forEach((r, i) => { ['name', 'unit', 'planned', 'weight', 'hours'].forEach(k => { const el = pbProdEl('pp' + k.charAt(0).toUpperCase() + k.slice(1) + i); if (el) r[k] = el.value; }); });
     const b = pbProdEl('ppBudget'); if (b) E.budget = b.value;
   }
+  function pbProdPlanHoursSum(rows) {
+    let t = 0;
+    (rows || []).forEach(r => { const n = Number(String(r.hours == null ? '' : r.hours).replace(/,/g, '').trim()); if (String(r.hours == null ? '' : r.hours).trim() !== '' && Number.isFinite(n) && n > 0) t += n; });
+    return t > 0 ? String(Math.round(t * 100) / 100) : '';
+  }
+  function pbProdBudgetHelpText(E) { return E.budgetAuto ? 'Adds up the categories\u2019 budget hours. Type a different total to change it.' : 'Your own total. Clear it to add up the categories\u2019 hours again.'; }
+  window.pbProdPlanHoursIn = function() {
+    const E = pbPj.edit; if (!E) return; pbProdPlanRead();
+    if (E.budgetAuto) { E.budget = pbProdPlanHoursSum(E.rows); const b = pbProdEl('ppBudget'); if (b && b.value !== E.budget) b.value = E.budget; }
+  };
+  window.pbProdPlanBudgetIn = function(blur) {
+    const E = pbPj.edit; if (!E) return; pbProdPlanRead();
+    const v = String(E.budget || '').trim(), sum = pbProdPlanHoursSum(E.rows);
+    E.budgetAuto = v === '' || (sum !== '' && Number(v.replace(/,/g, '')) === Number(sum));
+    if (blur && v === '' && sum !== '') { E.budget = sum; const b = pbProdEl('ppBudget'); if (b) b.value = sum; }
+    const h = pbProdEl('ppBudgetHelp'); if (h) h.textContent = pbProdBudgetHelpText(E);
+  };
   function pbProdPlanDirty() { const E = pbPj.edit; if (!E) return false; pbProdPlanRead(); return JSON.stringify([E.rows, E.budget]) !== E.base; }
   function pbProdPlanEditorHtml() {
     const E = pbPj.edit, cats = pbProdJobView(pbPj.data.plan || null, pbPj.data.cats);
@@ -33316,12 +33335,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           + '<div class="pbp-prow-nums">' + field('ppPlanned' + i, 'Planned', r.planned, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanNote()"')
           + field('ppUnit' + i, 'Unit', r.unit, 'type="text" maxlength="12" autocomplete="off" placeholder="LF"')
           + field('ppWeight' + i, 'Weight', r.weight, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanNote()"')
-          + field('ppHours' + i, 'Budget hours', r.hours, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional"') + '</div>'
+          + field('ppHours' + i, 'Budget hours', r.hours, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanHoursIn()"') + '</div>'
           + '<div class="pbp-prow-foot">' + has + '<button type="button" class="pb-btn ghost small" id="ppRemove' + i + '" onclick="pbProdPlanRemove(' + i + ')" aria-label="Remove ' + escapeHtml(r.name || 'this category') + '"><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-trash"/></svg>Remove</button></div></fieldset>';
       }).join('') + '</div>'
       + (E.rows.length < 20 ? '<div class="pb-btn-wrap pbp-btns"><button type="button" class="pb-btn secondary" id="ppAddBtn" onclick="pbProdPlanAdd()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Category</button></div>' : '')
       + '<p class="pb-alert info pbp-wnote" id="ppWeightNote" role="status"' + (pbProdWeightNoteText(E.rows) ? '' : ' hidden') + '>' + escapeHtml(pbProdWeightNoteText(E.rows)) + '</p>'
-      + '<div class="pbp-budget">' + field('ppBudget', 'Budget hours for the whole job', E.budget, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional"') + '</div>'
+      + '<div class="pbp-budget">' + (E.budgetAuto ? (E.budget = pbProdPlanHoursSum(E.rows), '') : '') + field('ppBudget', 'Budget hours for the whole job', E.budget, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" aria-describedby="ppBudgetHelp" oninput="pbProdPlanBudgetIn()" onblur="pbProdPlanBudgetIn(true)"')
+        + '<p class="pb-field-help" id="ppBudgetHelp" style="margin-top:-6px">' + escapeHtml(pbProdBudgetHelpText(E)) + '</p></div>'
       + (E.err ? '<div class="pb-warn" id="ppErr" role="alert"><strong>Not saved</strong>' + escapeHtml(E.err) + '</div>' : '')
       + '<div class="pb-btn-wrap pbp-btns2"><button type="button" class="pb-btn ghost" id="ppCancelBtn" onclick="pbProdPlanCancel()">Cancel</button><button type="button" class="pb-btn" id="ppSaveBtn" onclick="pbProdPlanSave()"' + (E.saving ? ' disabled' : '') + '>' + (E.saving ? 'Saving…' : 'Save Plan') + '</button></div></section>';
   }
@@ -46938,7 +46958,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + '<span class="pbx-row-h">' + pbCxE(pbProdJobLabel(x.job_number || '') + (x.label ? ' · ' + x.label : '')) + '</span>'
         + '<span class="pbx-row-s">' + pbCxE([x.who, x.role === 'foreman' ? 'foreman' : x.role === 'pipelayer' ? 'pipelayer' : '', pbRoWhen(x)].filter(Boolean).join(' · ')) + '</span>'
         + '<span class="pbx-row-s">' + pbCxE([x.jobsite || '', x.distance_ft !== null && x.distance_ft !== undefined ? pbRoFt(x.distance_ft) + ' run' : '', x.laid_ft !== null && x.laid_ft !== undefined ? pbRoFt(x.laid_ft) + ' marked laid' : '', x.ended ? (x.ended_early ? 'ended early' : 'ended') : 'open'].filter(Boolean).join(' · ')) + '</span>'
-        + '<span class="pbx-row-flags">' + (S.has(String(x.id)) ? '' : '<span class="pbx-tag warn">New</span>') + (x.sent_how === 'auto' ? '<span class="pbx-tag">Sent automatically</span>' : '') + (x.reviewed_at ? '<span class="pbx-tag">' + pbCxCheck() + pbCxE('Approved' + (x.reviewed_by_name ? ' by ' + x.reviewed_by_name : '')) + '</span>' : '<span class="pbx-tag">Not approved yet</span>') + pbRoTag(x) + '</span>'
+        + '<span class="pbx-row-flags">' + (S.has(String(x.id)) ? '' : '<span class="pbx-tag warn">New</span>') + (x.sent_how === 'auto' ? '<span class="pbx-tag">Sent automatically</span>' : '') + (x.removed_at ? '<span class="pbx-tag warn">' + pbCxE('Deleted by ' + (x.removed_by_name || 'the foreman') + (x.removed_reason ? ': ' + x.removed_reason : '')) + '</span>' : x.sent_back_at && !x.reviewed_at ? '<span class="pbx-tag warn">' + pbCxIc('clock') + pbCxE('Sent back' + (x.sent_back_by_name ? ' by ' + x.sent_back_by_name : '')) + '</span>' : '') + (x.removed_at ? '' : x.reviewed_at ? '<span class="pbx-tag">' + pbCxCheck() + pbCxE('Approved' + (x.reviewed_by_name ? ' by ' + x.reviewed_by_name : '')) + '</span>' : '<span class="pbx-tag">Not approved yet</span>') + (x.removed_at ? '' : pbRoTag(x)) + '</span>'
         + '</span><span class="pbx-chev" aria-hidden="true">' + pbCxIc('chevron-right') + '</span></button>').join('') + '</div>'
       : '<p class="pbx-none" id="cxRunsNone">No run reports sent yet. A report shows here once the crew member sends it (or 12 hours after the run ended).</p>';
     return { h, s };
@@ -46947,8 +46967,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const x = O.open, e = O.rec;
     let h = '<button type="button" class="pb-btn ghost small" id="cxRunBack" onclick="pbRrClose()">‹ ' + (O.fromCrew || O.fromList ? 'Back' : 'All run reports') + '</button>'
       + '<h2 class="pbx-h2">' + pbCxE(pbProdJobLabel(x.job_number || '') + (x.label ? ' · ' + x.label : '')) + '</h2>'
-      + '<p class="pbx-note">' + pbCxE([x.who, pbRoWhen(x), O.fromCrew || O.fromList ? '' : (pbRoStatus(x) === 'waiting' && x.reviewed_at ? 'No production entered' : (PB_RO_TAGS[pbRoStatus(x)] || PB_RO_TAGS.waiting)[1])].filter(Boolean).join(' · ')) + '</p>'
-      + (x.sent_at ? '<p class="pbx-note" id="cxRunSent">' + pbCxE('Sent ' + pbRoWhen({ locked_at: x.sent_at }) + (x.sent_how === 'auto' ? ' (automatically, 12 hours after the run ended)' : '') + ' · ' + (x.reviewed_at ? 'Approved' + (x.reviewed_by_name ? ' by ' + x.reviewed_by_name : '') : 'Not approved yet')) + '</p>' : '');
+      + '<p class="pbx-note">' + pbCxE([x.who, pbRoWhen(x), O.fromCrew || O.fromList || x.removed_at ? '' : (pbRoStatus(x) === 'waiting' && x.reviewed_at ? 'No production entered' : (PB_RO_TAGS[pbRoStatus(x)] || PB_RO_TAGS.waiting)[1])].filter(Boolean).join(' · ')) + '</p>'
+      + (x.sent_at ? '<p class="pbx-note" id="cxRunSent">' + pbCxE('Sent ' + pbRoWhen({ locked_at: x.sent_at }) + (x.sent_how === 'auto' ? ' (automatically, 12 hours after the run ended)' : '') + (x.removed_at ? '' : ' · ' + (x.reviewed_at ? 'Approved' + (x.reviewed_by_name ? ' by ' + x.reviewed_by_name : '') : 'Not approved yet'))) + '</p>' : '');
+    if (x.removed_at) h += '<p class="pb-warn pbp-manmsg" id="cxRunRemoved"><strong>Deleted</strong>' + pbCxE('by ' + (x.removed_by_name || 'the foreman') + ' ' + pbRoWhen({ locked_at: x.removed_at }) + (x.removed_reason ? ': ' + x.removed_reason : '') + '. It doesn’t count in production. The server keeps a copy.') + '</p>';
+    else if (x.sent_back_at && !x.reviewed_at) h += '<p class="pb-warn pbp-manmsg" id="cxRunSentBack" role="note"><strong>' + pbCxE('Sent back by ' + (x.sent_back_by_name || 'the office') + ' ' + pbRoWhen({ locked_at: x.sent_back_at })) + '</strong>' + pbCxE(x.sent_back_note || '') + '</p>';
     if (O.recBusy) return { h: h + '<p class="pbx-none">Loading the run…</p>', s: '' };
     if (!e) return { h: h + '<p class="pbx-none">' + pbCxE(O.recMsg || 'Couldn’t load this run.') + '</p>', s: '' };
     // r15.2a (owner, Oct 21): the foreman reads the report as its PDF, in the app (no saving it to the phone first), and
@@ -46964,25 +46986,30 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + (Number(x.photo_count) ? '<p class="pbx-note" id="cxRunPhotos">' + pbCxE(x.photo_count + ' photo' + (x.photo_count === 1 ? '' : 's') + ' left out: they stay on the crew member’s phone.') + '</p>' : '')
       + '<details class="pb-more" style="margin-top:8px"><summary><span>Text version</span></summary><pre id="cxRunText" style="white-space:pre-wrap; font-family:\'IBM Plex Mono\'; font-size:12px; background:#fff; color:#1A1D21; padding:8px; border:1px solid #C9CED6; border-radius:10px; max-height:60vh; overflow-y:auto;">' + escapeHtml(e.reportText || '') + '</pre></details>';
     if (canProd) {
-      h += approve + '<details class="pb-more" id="cxRunPdfFold" style="margin-top:14px"' + (O.pdfOpen ? ' open' : '') + ' ontoggle="pbRrPdfFold(this.open)"><summary><span>View the run report (PDF)</span></summary>' + pdf + '</details>';
+      h += approve + '<details class="pb-more" id="cxRunPdfFold" style="margin-top:14px"' + (O.pdfOpen ? ' open' : '') + ' ontoggle="pbRrPdfFold(this.open)"><summary><span>View the run report (PDF)</span></summary>' + pdf + '</details>'
+        + '<details class="pb-more" id="cxRunMore" style="margin-top:14px"><summary><span>More</span></summary><p class="pbx-note">Delete this run if it shouldn’t be in the company’s records (a test, a duplicate, the wrong job). It leaves every list and its production stops counting. The office sees that you deleted it, and the server keeps a copy.</p><button type="button" class="pb-btn ghost small" id="cxRunDelete" style="color:var(--rod-red)" onclick="pbRrDelete()">Delete Run</button></details>';
       if (O.pdfOpen) setTimeout(() => window.pbRrPdfShow(), 0);
     } else {
-      h += (x.can_review && !x.reviewed_at ? '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn small" id="cxRunReviewed" onclick="pbRrReviewed()">Approve Report</button></div>' : '') + pdf;
+      h += (x.can_review && !x.reviewed_at ? '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn small" id="cxRunReviewed" onclick="pbRrReviewed()">Approve Report</button></div>' : '')
+        + (x.can_send_back && !O.fromCrew && !O.fromList ? (O.sendBack ? '<div class="pb-field" id="cxSendBackForm" style="margin-top:14px"><label for="cxSendBackNote">What does the foreman need to add or fix?</label><textarea id="cxSendBackNote" rows="3" maxlength="500" placeholder="e.g. Add the crew hours" style="width:100%;box-sizing:border-box" oninput="pbRrSendBackType(this.value)">' + escapeHtml(O.sendBackText || '') + '</textarea>' + (O.sendBackErr ? '<p class="pb-warn pbp-manmsg" role="alert">' + pbCxE(O.sendBackErr) + '</p>' : '') + '<div class="pb-save-offer-btns"><button type="button" class="pb-btn small" id="cxSendBackGo" onclick="pbRrSendBack()">Send Back</button><button type="button" class="pb-btn ghost small" onclick="pbRrSendBackCancel()">Cancel</button></div></div>'
+          : '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn ghost small" id="cxSendBackBtn" onclick="pbRrSendBackOpen()">Send Back to Foreman</button></div>') : '') + pdf;
       setTimeout(() => window.pbRrPdfShow(), 0);
     }
-    const keep = 'd|' + [x.id || x.sref, e.id, x.reviewed_at || '', x.sent_at || '', O.pdfOpen ? 1 : 0, canProd ? ((pbLv.data ? 1 : 0) + ':' + (pbLv.form ? pbLv.form.cid + ':' + (pbLv.form.err || '') : '') + ':' + JSON.stringify(pbLvRuns())) : ''].join('|');
+    const keep = 'd|' + [x.id || x.sref, e.id, x.reviewed_at || '', x.sent_at || '', O.pdfOpen ? 1 : 0, O.sendBack ? 'sb:' + (O.sendBackErr || '') : '', x.sent_back_at || '', x.removed_at || '', canProd ? ((pbLv.data ? 1 : 0) + ':' + (pbLv.form ? pbLv.form.cid + ':' + (pbLv.form.err || '') : '') + ':' + JSON.stringify(pbLvRuns())) : ''].join('|');
     return { h, s: '', keep };
   }
   window.pbRrOpen = async function(i) {
     const uid = pbArchiveOwnerUid, O = pbRoFor(uid), x = O.list && O.list[i];
     if (!x) return;
-    O.open = x; O.rec = null; O.recBusy = true; O.recMsg = ''; O.fromCrew = false; O.fromList = null; O.pdfFor = null; pbCxListRender();
+    O.open = x; O.rec = null; O.recBusy = true; O.recMsg = ''; O.fromCrew = false; O.fromList = null; O.pdfFor = null; O.sendBack = false; O.sendBackText = ''; O.sendBackErr = ''; pbCxListRender();
     pbRoMarkSeen(uid, x.id);
     const r = await pbPermitRpc('pb_prod_company_run_get', { p_id: x.id }, 30000);
     if (pbRo !== O || O.open !== x) return;
     O.recBusy = false;
     if (r && !r.error && r.data && r.data.record && typeof r.data.record === 'object') {
-      Object.assign(x, { sent_at: r.data.sent_at || x.sent_at, sent_how: r.data.sent_how || x.sent_how, reviewed_at: r.data.reviewed_at || x.reviewed_at, reviewed_by_name: r.data.reviewed_by_name || x.reviewed_by_name });
+      Object.assign(x, { sent_at: r.data.sent_at || x.sent_at, sent_how: r.data.sent_how || x.sent_how, reviewed_at: r.data.reviewed_at || null, reviewed_by_name: r.data.reviewed_by_name || null,
+        sent_back_at: r.data.sent_back_at || null, sent_back_note: r.data.sent_back_note || null, sent_back_by_name: r.data.sent_back_by_name || null,
+        removed_at: r.data.removed_at || x.removed_at || null, removed_reason: r.data.removed_reason || x.removed_reason || null, removed_by_name: r.data.removed_by_name || x.removed_by_name || null, can_send_back: !!r.data.can_send_back });
       try { O.rec = normalizeArchiveEntry(Object.assign({}, r.data.record, { lockTime: new Date(r.data.record.lockTime) })); } catch (err) { O.rec = null; O.recMsg = 'This run’s record couldn’t be read.'; }
     } else O.recMsg = navigator.onLine === false ? 'No signal.' : 'Couldn’t load this run.';
     pbCxListRender();
@@ -47001,11 +47028,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     O.recBusy = false;
     if (r && !r.error && r.data && r.data.record && typeof r.data.record === 'object') {
       Object.assign(x, { id: r.data.id, who: r.data.who || x.who, job_number: r.data.job_number || '', label: r.data.label || '', locked_at: r.data.locked_at || null, photo_count: Number(r.data.photo_count) || 0,
-        sent_at: r.data.sent_at || null, sent_how: r.data.sent_how || null, reviewed_at: r.data.reviewed_at || null, reviewed_by_name: r.data.reviewed_by_name || null, can_review: !!r.data.can_review });
+        sent_at: r.data.sent_at || null, sent_how: r.data.sent_how || null, reviewed_at: r.data.reviewed_at || null, reviewed_by_name: r.data.reviewed_by_name || null, can_review: !!r.data.can_review,
+        sent_back_at: r.data.sent_back_at || null, sent_back_note: r.data.sent_back_note || null, sent_back_by_name: r.data.sent_back_by_name || null });
       try { O.rec = normalizeArchiveEntry(Object.assign({}, r.data.record, { lockTime: new Date(r.data.record.lockTime) })); } catch (err) { O.rec = null; O.recMsg = 'This run’s record couldn’t be read.'; }
     } else {
       const m = String((r && r.error && r.error.message) || '');
-      O.recMsg = /pb:no_record|pb:not_sent/.test(m) ? (name || 'The crew member') + ' hasn’t sent this run’s report yet. It sends itself 12 hours after the run ended.'
+      O.recMsg = /pb:removed/.test(m) ? 'This run was deleted. It isn’t in the company’s records any more.' : /pb:no_record|pb:not_sent/.test(m) ? (name || 'The crew member') + ' hasn’t sent this run’s report yet. It sends itself 12 hours after the run ended.'
         : /pb:not_your_crew/.test(m) ? 'Only the foreman this crew member is with (and the office) can open this report.'
         : navigator.onLine === false ? 'No signal.' : 'Couldn’t load this run’s report.';
     }
@@ -47050,6 +47078,41 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (box.dataset.pdfKey === key) return; // already drawn, or being drawn, in this box
     box.dataset.pdfKey = key;
     try { await window.pbRrPdfDraw(e, box, key); } catch (err) { console.error('PDF view failed', err); if (box.dataset.pdfKey === key) box.innerHTML = '<p class="pbx-none" style="color:#fff">The report couldn’t be drawn here. Use Save or Share PDF, or the text version below.</p>'; }
+  };
+  // ---- r15.3: the office sends a report back; the foreman deletes a crew run ----
+  window.pbRrSendBackOpen = function() { const O = pbRoFor(pbArchiveOwnerUid); O.sendBack = true; O.sendBackErr = ''; pbCxListRender(); setTimeout(() => { const t = document.getElementById('cxSendBackNote'); if (t) t.focus(); }, 50); };
+  window.pbRrSendBackType = function(v) { pbRo.sendBackText = String(v || ''); };
+  window.pbRrSendBackCancel = function() { const O = pbRoFor(pbArchiveOwnerUid); O.sendBack = false; O.sendBackText = ''; O.sendBackErr = ''; pbCxListRender(); };
+  window.pbRrSendBack = async function() {
+    const uid = pbArchiveOwnerUid, O = pbRoFor(uid), x = O.open; if (!x || !x.id) return;
+    const t = document.getElementById('cxSendBackNote'), note = String(t ? t.value : O.sendBackText || '').trim(); O.sendBackText = note;
+    if (note.length < 3) { O.sendBackErr = 'Type what the foreman needs to add or fix.'; pbCxListRender(); return; }
+    const b = document.getElementById('cxSendBackGo'); if (b) { b.disabled = true; b.textContent = 'Sending…'; }
+    const r = await pbPermitRpc('pb_prod_run_report_send_back', { p_id: x.id, p_note: note, p_expect_uid: uid }, 20000);
+    if (pbRo !== O || O.open !== x) return;
+    const m = String((r && r.error && r.error.message) || '');
+    if (r && !r.error && r.data && r.data.ok) {
+      Object.assign(x, { reviewed_at: null, reviewed_by_name: null, sent_back_at: r.data.sent_back_at, sent_back_note: note, sent_back_by_name: 'you', can_send_back: false });
+      O.sendBack = false; O.sendBackText = ''; O.sendBackErr = '';
+      if (O.list) O.list.forEach(y => { if (y.id === x.id) Object.assign(y, { reviewed_at: null, reviewed_by_name: null, sent_back_at: x.sent_back_at, sent_back_note: note, sent_back_by_name: 'you' }); });
+      pbCxListRender(); window.pbRrLoad(uid, true);
+      pbAlert('Sent back' + (r.data.foreman ? ' to ' + r.data.foreman : '') + '. The report is open again for the foreman, with your note.', 'Sent Back');
+    } else { O.sendBackErr = /pb:not_approved/.test(m) ? 'It isn’t approved, so it’s already open for the foreman.' : /pb:removed/.test(m) ? 'This run was deleted.' : navigator.onLine === false ? 'No signal. Try again when you have signal.' : 'Couldn’t send it back. Try again.'; pbCxListRender(); }
+  };
+  window.pbRrDelete = function() {
+    const uid = pbArchiveOwnerUid, O = pbRoFor(uid), x = O.open; if (!x || !x.id) return;
+    pbShowModal('Delete this run?\n\n' + (x.job_number ? 'Job ' + x.job_number + ' · ' : '') + (x.label || 'this run') + (x.who ? ' (' + x.who + ')' : '') + '\n\nIt leaves every list and its production stops counting. The office sees that you deleted it, and the server keeps a copy.', [
+      { label: 'Cancel' },
+      { label: 'Delete Run', danger: true, onClick: async () => {
+        const r = await pbPermitRpc('pb_prod_run_remove', { p_id: x.id, p_reason: null, p_expect_uid: uid }, 20000);
+        if (r && !r.error && r.data && r.data.ok) {
+          if (pbRf.uid === uid && pbRf.list) pbRf.list = pbRf.list.filter(y => y.id !== x.id);
+          window.pbRrClose(); try { window.pbRenderHome(); } catch (e) {}
+          if (window.pbRfLoad) window.pbRfLoad(uid, true);
+          try { Promise.resolve(pbLvLoad(uid, { force: true })).catch(() => null); } catch (e) {}
+        } else pbAlert(navigator.onLine === false ? 'No signal. Nothing was deleted. Try again when you have signal.' : 'Couldn’t delete it. Nothing was changed.', 'Not Deleted');
+      } }
+    ], 'Delete Run');
   };
   window.pbRrPdfFold = function(open) { const O = pbRoFor(pbArchiveOwnerUid); O.pdfOpen = !!open; if (open) window.pbRrPdfShow(); };
   window.pbRrPdfZoom = function(d) {
@@ -47190,6 +47253,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     });
   });
   window.pbPushRoutes = window.pbPushRoutes || {};
+  window.pbPushRoutes['/crew/reports'] = function() { try { pbGotoTab('home'); } catch (e) { pbGoto('home'); } setTimeout(() => window.pbRfOpenList(), 300); };
   window.pbPushRoutes['/run/sendreport'] = function() { try { pbGotoTab('home'); } catch (e) { pbGoto('home'); } const l = pbRrUnsent(pbArchiveOwnerUid); if (l.length === 1) setTimeout(() => window.pbRrSendAsk(l[0].id), 400); };
   // Archive: Sent / Not sent for a company run comes from the app's own send; email is separate
   window.pbRrArchiveChip = function(e) {
@@ -47222,9 +47286,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbHomeWorkProviders.push(() => {
     const uid = pbArchiveOwnerUid;
     if (!(typeof pbLvIsForeman === 'function' && pbLvIsForeman(uid)) || pbRf.uid !== uid || !pbRf.list) return null;
-    const n = pbRf.list.filter(x => !x.reviewed_at).length;
+    const n = pbRf.list.filter(x => !x.reviewed_at).length, back = pbRf.list.filter(x => !x.reviewed_at && x.sent_back_at).length;
     if (!n) return null;
-    return { id: 'rrReview', title: 'Reports to Review', text: n + ' run report' + (n === 1 ? '' : 's') + ' from your crew', status: 'Not approved yet.', onClick: () => window.pbRfOpenList() };
+    return { id: 'rrReview', title: 'Reports to Review', text: n + ' run report' + (n === 1 ? '' : 's') + ' from your crew', status: back ? back + ' sent back by the office: see the note.' : 'Not approved yet.', urgent: back > 0, onClick: () => window.pbRfOpenList() };
   });
   window.pbRfOpenList = function() {
     pbCx.list = 'crewreports';
@@ -47244,6 +47308,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (L) h += L.length ? '<div class="pbx-rows">' + L.map((x, i) => '<button type="button" class="pbx-row" id="cxRev' + i + '" onclick="pbRfOpen(' + i + ')"><span class="pbx-row-tx">'
         + '<span class="pbx-row-h">' + pbCxE(pbProdJobLabel(x.job_number || '') + (x.label ? ' · ' + x.label : '')) + '</span>'
         + '<span class="pbx-row-s">' + pbCxE([x.who, 'sent ' + pbRfWhen(x.sent_at) + (x.sent_how === 'auto' ? ' (automatically)' : '')].join(' · ')) + '</span>'
+        + (x.sent_back_at && !x.reviewed_at ? '<span class="pbx-row-s" style="color:var(--rod-red)">' + pbCxE('Sent back' + (x.sent_back_by_name ? ' by ' + x.sent_back_by_name : '') + ': ' + (x.sent_back_note || '')) + '</span>' : '')
         + '<span class="pbx-row-flags">' + (x.reviewed_at ? '<span class="pbx-tag">' + pbCxCheck() + 'Approved</span>' : '<span class="pbx-tag warn">' + pbCxIc('clock') + 'Not approved</span>') + '</span>'
         + '</span><span class="pbx-chev" aria-hidden="true">' + pbCxIc('chevron-right') + '</span></button>').join('') + '</div>'
       : '<p class="pbx-none" id="cxRevNone">No reports from your crew yet.</p>';
