@@ -8692,7 +8692,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.3.1 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.3.2 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -44652,6 +44652,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---- the forms (one at a time, in place of the list) ----
+  function pbMatNorm(s) { s = String(s == null ? '' : s).trim().replace(/[,\s]/g, ''); if (/^\.\d/.test(s)) s = '0' + s; if (/^\d+\.$/.test(s)) s = s.slice(0, -1); return s; }
   const pbMatV = (id) => { const el = pbProdEl(id); return el ? String(el.value || '').trim() : ''; };
   function pbMatFormRead() {
     const F = pbMat.form; if (!F || !pbProdEl('pmfForm')) return F;
@@ -44664,6 +44665,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     } else if (F.kind === 'job') { ['trench_width_ft', 'bed_thick_ft', 'shade_thick_ft', 'pipe_id_in', 'pipe_wall_in', 'pipe_od_in'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = String(el.value).trim(); });
     } else if (F.kind === 'tlink') { ['material', 'order', 'factor'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = String(el.value); });
     } else { ['qty', 'date', 'ref', 'note', 'reason'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = String(el.value); }); }
+    // r15.3.2 (owner, Oct 21: "Check the numbers" on a sand with nothing wrong): the server takes 0.5, not .5 or 5. or 1,200
+    ['expected', 'alert_pct', 'trench_width_ft', 'bed_thick_ft', 'density_tpy', 'extra_pct', 'shade_thick_ft', 'pipe_id_in', 'pipe_wall_in', 'pipe_od_in', 'qty', 'factor'].forEach(k => { if (typeof F.v[k] === 'string') F.v[k] = pbMatNorm(F.v[k]); });
     return F;
   }
   function pbMatDirty() { const F = pbMatFormRead(); if (!F) return false; const v = F.kind === 'mat' && F.expAuto ? Object.assign({}, F.v, { expected: JSON.parse(F.base).expected }) : F.v; return JSON.stringify(v) !== F.base; }
@@ -44770,6 +44773,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!F.id) h += '<div class="pb-field"><span class="pbm-flabel">Bedding presets</span><div class="pbm-presets" role="group" aria-label="Bedding presets">' + PB_MAT_PRESETS.map(p => '<button type="button" class="pb-btn ghost small' + (F.preset === p.k ? ' on' : '') + '" aria-pressed="' + (F.preset === p.k) + '" onclick="pbMatPreset(\'' + p.k + '\')">' + escapeHtml(p.name) + '</button>').join('') + '</div><p class="pb-help pbm-fhelp">Or type any material below.</p></div>';
     h += pbMatField('name', 'Material', v.name, 'type="text" maxlength="60" autocomplete="off" placeholder="e.g. 8 in PVC SDR 35"')
       + '<div class="pb-field"><label for="pmf_category">Type</label><select id="pmf_category" onchange="pbMatCatChange()">' + PB_MAT_CATS.map(c => '<option value="' + c[0] + '"' + (v.category === c[0] ? ' selected' : '') + '>' + c[1] + '</option>').join('') + '</select></div>';
+    h += '<p class="pb-alert info pbm-quick" id="pmfQuick">' + escapeHtml('Only the name is needed. Know the amount? Type it in Expected in all and tap ' + (F.id ? 'Save Changes' : 'Add Material') + '. Everything else is optional: it fills in the estimate.') + '</p>';
     if (v.category === 'pipe' || bed) {
       h += '<fieldset class="pb-field pbm-fs"><legend>How “used” is counted</legend>'
         + radio('pmfSource', v.category === 'pipe' ? 'pipe_footage' : 'bedding_calc', v.category === 'pipe' ? 'From the Pipe Installed footage crews report' : 'Calculated from the footage (an estimate)', v.source)
@@ -44779,9 +44783,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const shade = v.use_as === 'shading';
       h += '<fieldset class="pb-field pbm-fs"><legend>Used as</legend>' + radio('pmfUse', 'bedding', 'Bedding: under the pipe (pipe bottom to subgrade)', v.use_as || 'bedding') + radio('pmfUse', 'shading', 'Shading: the sides of the pipe plus a thickness over its top', v.use_as) + '</fieldset>';
       h += '<fieldset class="pb-field pbm-fs"><legend>Count it in</legend>' + radio('pmfBasis', 'volume', 'Cubic yards (yd³)', v.basis) + radio('pmfBasis', 'weight', 'Tons (by density)', v.basis) + '</fieldset>'
-        + '<div class="pbm-grid">' + pbMatField('trench_width_ft', 'Trench width (ft)', v.trench_width_ft, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 3" oninput="pbMatExpIn()"')
-        + (shade ? pbMatField('shade_thick_ft', 'Shading over the pipe (ft)', v.shade_thick_ft, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Job setting" oninput="pbMatExpIn()"')
-                 : pbMatField('bed_thick_ft', 'Bedding thickness (ft)', v.bed_thick_ft, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 0.5" oninput="pbMatExpIn()"')) + '</div>'
+        + '<div class="pbm-grid">' + pbMatField('trench_width_ft', 'Trench width (ft, optional)', v.trench_width_ft, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 3" oninput="pbMatExpIn()"')
+        + (shade ? pbMatField('shade_thick_ft', 'Shading over the pipe (ft, optional)', v.shade_thick_ft, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Job setting" oninput="pbMatExpIn()"')
+                 : pbMatField('bed_thick_ft', 'Bedding thickness (ft, optional)', v.bed_thick_ft, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 0.5" oninput="pbMatExpIn()"')) + '</div>'
         + '<p class="pb-help pbm-fhelp">Leave blank to use the job’s trench settings' + (shade ? ' (and the job’s pipe OD)' : '') + '. Without them, no amount is shown (never a guess). Later, each run’s own Run Setup values will be used.</p>'
         + pbMatField('density_tpy', 'Density (tons per yd³)' + (v.basis === 'weight' ? '' : ', optional'), v.density_tpy, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 1.35" oninput="pbMatExpIn()"', '<strong>Verify with your supplier.</strong> Presets: ' + escapeHtml(pbMatPresetText()) + '.' + (v.basis === 'weight' ? '' : ' Used to turn delivery tickets in tons into yd³.'))
         + pbMatField('extra_pct', 'Compaction allowance (%)', v.extra_pct, 'type="text" inputmode="decimal" autocomplete="off" oninput="pbMatExpIn()" placeholder="' + PB_MAT_DEFAULT_EXTRA_PCT + '"', 'The trench volume is in place (compacted). The allowance turns it into what to order: in-place × ' + (pbMatNumOk(v.extra_pct || '', 0, 100) ? Math.round((1 + Number(v.extra_pct || PB_MAT_DEFAULT_EXTRA_PCT) / 100) * 10000) / 10000 : '(1 + allowance)') + (v.extra_pct === '' ? ' (' + PB_MAT_DEFAULT_EXTRA_PCT + '% when left blank)' : '') + '.')
