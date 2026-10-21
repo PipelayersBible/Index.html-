@@ -8684,7 +8684,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.2 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.2.1 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -46760,7 +46760,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
             + (Number(j.waiting) ? '<span class="pbx-tag warn">' + pbCxIc('clock') + pbCxE(pbCxN(Number(j.waiting), 'run') + ' waiting for a foreman') + '</span>' : '') + (Number(j.edits_waiting) ? '<span class="pbx-tag warn">' + pbCxIc('pencil') + pbCxE(pbCxN(Number(j.edits_waiting), 'edit') + ' waiting for approval') + '</span>' : '') + '</span></span>', 'cxWait' + i)).join('') + '</div>'
           : '';
         const rrw = typeof window.pbRrWaitingCount === 'function' ? window.pbRrWaitingCount(uid) : 0; // r15.1 PM RUNS
-        if (rrw) h += '<div class="pbx-rows"><button type="button" class="pbx-row" id="cxWaitRuns" onclick="pbCxOpenList(\'runs\')"><span class="pbx-row-tx"><span class="pbx-row-h">' + pbCxE(pbCxN(rrw, 'crew run') + ' with no production yet') + '</span><span class="pbx-row-s">A foreman hasn’t entered production for ' + (rrw === 1 ? 'it' : 'them') + '.</span></span><span class="pbx-chev" aria-hidden="true">' + pbCxIc('chevron-right') + '</span></button></div>';
+        if (rrw) h += '<div class="pbx-rows"><button type="button" class="pbx-row" id="cxWaitRuns" onclick="pbCxOpenList(\'runs\')"><span class="pbx-row-tx"><span class="pbx-row-h">' + pbCxE(pbCxN(rrw, 'run report') + ' not reviewed yet') + '</span><span class="pbx-row-s">Sent by the crew; their foreman hasn’t reviewed ' + (rrw === 1 ? 'it' : 'them') + ' or entered production yet.</span></span><span class="pbx-chev" aria-hidden="true">' + pbCxIc('chevron-right') + '</span></button></div>';
         if (!w.length && !rrw) h += '<p class="pbx-none" id="cxWaitNone">Nothing is waiting on a foreman.</p>';
         if (mine) h += '<div class="pbx-rows"><button type="button" class="pbx-row" id="cxWaitMine" onclick="pbOpenProdMine()"><span class="pbx-row-tx"><span class="pbx-row-h">' + pbCxE(pbCxN(mine, 'edit') + ' on runs you count') + '</span><span class="pbx-row-s">Approve or reject them in My production</span></span><span class="pbx-chev" aria-hidden="true">' + pbCxIc('chevron-right') + '</span></button></div>';
       }
@@ -46907,11 +46907,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     try { if (pbCurrentScreen === 'cxList') pbCxListRender(); else if (pbCurrentScreen === 'home') window.pbCxRender(); } catch (e) {}
   };
   const pbRoStatus = (x) => x.status || (x.confirmed ? 'foreman' : 'waiting');
-  const pbRoWaiting = (L) => L.filter(x => pbRoStatus(x) === 'waiting').length;
+  const pbRoWaiting = (L) => L.filter(x => pbRoStatus(x) === 'waiting' && !x.reviewed_at).length; // r15.2.1 (owner): a report the foreman reviewed isn't waiting on him
   // for Home's "Waiting on foremen": crew runs with no production at all (a run held for a foreman is already counted there)
   window.pbRrWaitingCount = function(uid) { const O = pbRoFor(uid); return O.list ? pbRoWaiting(O.list) : 0; };
   const PB_RO_TAGS = { foreman: ['', 'Foreman entered'], counted: ['', 'Counted without a foreman'], held: ['warn', 'Held for a foreman'], waiting: ['warn', 'Waiting for a foreman'] };
-  function pbRoTag(x) { const t = PB_RO_TAGS[pbRoStatus(x)] || PB_RO_TAGS.waiting; return '<span class="pbx-tag' + (t[0] ? ' ' + t[0] : '') + '">' + (t[0] ? pbCxIc('clock') : pbCxCheck()) + pbCxE(t[1]) + '</span>'; }
+  function pbRoTag(x) { const t = pbRoStatus(x) === 'waiting' && x.reviewed_at ? ['', 'No production entered'] : PB_RO_TAGS[pbRoStatus(x)] || PB_RO_TAGS.waiting; return '<span class="pbx-tag' + (t[0] ? ' ' + t[0] : '') + '">' + (t[0] ? pbCxIc('clock') : pbCxCheck()) + pbCxE(t[1]) + '</span>'; }
   // r15.2: "new" = a sent report not opened on this phone yet (kept per account on this phone)
   let pbRoSeen = { uid: null, set: null };
   function pbRoSeenSet(uid) {
@@ -46937,7 +46937,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + '<span class="pbx-row-h">' + pbCxE(pbProdJobLabel(x.job_number || '') + (x.label ? ' · ' + x.label : '')) + '</span>'
         + '<span class="pbx-row-s">' + pbCxE([x.who, x.role === 'foreman' ? 'foreman' : x.role === 'pipelayer' ? 'pipelayer' : '', pbRoWhen(x)].filter(Boolean).join(' · ')) + '</span>'
         + '<span class="pbx-row-s">' + pbCxE([x.jobsite || '', x.distance_ft !== null && x.distance_ft !== undefined ? pbRoFt(x.distance_ft) + ' run' : '', x.laid_ft !== null && x.laid_ft !== undefined ? pbRoFt(x.laid_ft) + ' marked laid' : '', x.ended ? (x.ended_early ? 'ended early' : 'ended') : 'open'].filter(Boolean).join(' · ')) + '</span>'
-        + '<span class="pbx-row-flags">' + (S.has(String(x.id)) ? '' : '<span class="pbx-tag warn">New</span>') + (x.sent_how === 'auto' ? '<span class="pbx-tag">Sent automatically</span>' : '') + (x.reviewed_at ? '<span class="pbx-tag">' + pbCxCheck() + pbCxE('Reviewed' + (x.reviewed_by_name ? ' by ' + x.reviewed_by_name : '')) + '</span>' : '<span class="pbx-tag">Not reviewed</span>') + pbRoTag(x) + '</span>'
+        + '<span class="pbx-row-flags">' + (S.has(String(x.id)) ? '' : '<span class="pbx-tag warn">New</span>') + (x.sent_how === 'auto' ? '<span class="pbx-tag">Sent automatically</span>' : '') + (x.reviewed_at ? '<span class="pbx-tag">' + pbCxCheck() + pbCxE('Approved' + (x.reviewed_by_name ? ' by ' + x.reviewed_by_name : '')) + '</span>' : '<span class="pbx-tag">Not approved yet</span>') + pbRoTag(x) + '</span>'
         + '</span><span class="pbx-chev" aria-hidden="true">' + pbCxIc('chevron-right') + '</span></button>').join('') + '</div>'
       : '<p class="pbx-none" id="cxRunsNone">No run reports sent yet. A report shows here once the crew member sends it (or 12 hours after the run ended).</p>';
     return { h, s };
@@ -46947,18 +46947,34 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     let h = '<button type="button" class="pb-btn ghost small" id="cxRunBack" onclick="pbRrClose()">‹ ' + (O.fromCrew || O.fromList ? 'Back' : 'All run reports') + '</button>'
       + '<h2 class="pbx-h2">' + pbCxE(pbProdJobLabel(x.job_number || '') + (x.label ? ' · ' + x.label : '')) + '</h2>'
       + '<p class="pbx-note">' + pbCxE([x.who, pbRoWhen(x), O.fromCrew || O.fromList ? '' : (PB_RO_TAGS[pbRoStatus(x)] || PB_RO_TAGS.waiting)[1]].filter(Boolean).join(' · ')) + '</p>'
-      + (x.sent_at ? '<p class="pbx-note" id="cxRunSent">' + pbCxE('Sent ' + pbRoWhen({ locked_at: x.sent_at }) + (x.sent_how === 'auto' ? ' (automatically, 12 hours after the run ended)' : '') + ' · ' + (x.reviewed_at ? 'Reviewed' + (x.reviewed_by_name ? ' by ' + x.reviewed_by_name : '') : 'Not reviewed yet')) + '</p>' : '');
+      + (x.sent_at ? '<p class="pbx-note" id="cxRunSent">' + pbCxE('Sent ' + pbRoWhen({ locked_at: x.sent_at }) + (x.sent_how === 'auto' ? ' (automatically, 12 hours after the run ended)' : '') + ' · ' + (x.reviewed_at ? 'Approved' + (x.reviewed_by_name ? ' by ' + x.reviewed_by_name : '') : 'Not approved yet')) + '</p>' : '');
     if (O.recBusy) return { h: h + '<p class="pbx-none">Loading the run…</p>', s: '' };
     if (!e) return { h: h + '<p class="pbx-none">' + pbCxE(O.recMsg || 'Couldn’t load this run.') + '</p>', s: '' };
-    h += '<div class="pb-save-offer-btns" style="margin:8px 0">' + (x.can_review && !x.reviewed_at ? '<button type="button" class="pb-btn small" id="cxRunReviewed" onclick="pbRrReviewed()">Reviewed</button>' : '') + '<button type="button" class="pb-btn ' + (x.can_review && !x.reviewed_at ? 'ghost ' : '') + 'small" id="cxRunPdf" onclick="pbRrPdf()">Save PDF</button></div>'
+    // r15.2a (owner, Oct 21): the foreman reads the report as its PDF, in the app (no saving it to the phone first), and
+    // enters production for it from here.
+    const canProd = !!(x.can_review && x.pid && x.sref && typeof pbLvIsForeman === 'function' && pbLvIsForeman(pbArchiveOwnerUid));
+    // r15.2.1 (owner): reviewing is ONE step for the foreman: his production for the run (the PM's tracking data) on top,
+    // Approve Report; the report's PDF is there to open when he needs it (rarely). The office sees the PDF first.
+    const approve = canProd ? '<section id="cxRunApprove" style="margin-top:4px"><h3 class="pbx-h2">Production for this run</h3><style>#cxRunProdBox .pbp-btns2{display:none}</style><div id="cxRunProdBox">' + window.pbRrProdBox(x) + '</div>'
+        + (x.reviewed_at ? '<p class="pbx-note" id="cxRunApproved">' + pbCxCheck() + pbCxE(' Approved ' + pbRoWhen({ locked_at: x.reviewed_at })) + '</p>' : '<p class="pb-warn pbp-manmsg" id="cxRunApproveErr" role="alert" style="display:none"></p><button type="button" class="pb-btn" id="cxRunApproveBtn" onclick="pbRrApprove()">Approve Report</button>') + '</section>' : '';
+    const pdf = '<div class="pb-save-offer-btns" style="margin:4px 0" role="group" aria-label="Zoom"><button type="button" class="pb-btn ghost small" id="cxPdfZoomOut" onclick="pbRrPdfZoom(-1)" aria-label="Smaller">−</button><span class="pbx-note" id="cxPdfZoom" style="align-self:center">' + Math.round(pbRrPdfZ * 100) + '%</span><button type="button" class="pb-btn ghost small" id="cxPdfZoomIn" onclick="pbRrPdfZoom(1)" aria-label="Bigger">+</button></div>'
+      + '<div id="cxRunPdfView" style="overflow:auto; -webkit-overflow-scrolling:touch; max-height:75vh; background:#5b6068; border-radius:10px; padding:6px;"><p class="pbx-none" style="color:#fff">Opening the report…</p></div>'
+      + '<button type="button" class="pb-btn ghost small" id="cxRunPdf" onclick="pbRrPdf()" style="margin-top:6px">Save or Share PDF</button>'
       + (Number(x.photo_count) ? '<p class="pbx-note" id="cxRunPhotos">' + pbCxE(x.photo_count + ' photo' + (x.photo_count === 1 ? '' : 's') + ' left out: they stay on the crew member’s phone.') + '</p>' : '')
-      + '<pre id="cxRunText" style="white-space:pre-wrap; font-family:\'IBM Plex Mono\'; font-size:12px; background:#fff; color:#1A1D21; padding:8px; border:1px solid #C9CED6; border-radius:10px; max-height:60vh; overflow-y:auto;">' + escapeHtml(e.reportText || '') + '</pre>';
+      + '<details class="pb-more" style="margin-top:8px"><summary><span>Text version</span></summary><pre id="cxRunText" style="white-space:pre-wrap; font-family:\'IBM Plex Mono\'; font-size:12px; background:#fff; color:#1A1D21; padding:8px; border:1px solid #C9CED6; border-radius:10px; max-height:60vh; overflow-y:auto;">' + escapeHtml(e.reportText || '') + '</pre></details>';
+    if (canProd) {
+      h += approve + '<details class="pb-more" id="cxRunPdfFold" style="margin-top:14px"' + (O.pdfOpen ? ' open' : '') + ' ontoggle="pbRrPdfFold(this.open)"><summary><span>View the run report (PDF)</span></summary>' + pdf + '</details>';
+      if (O.pdfOpen) setTimeout(() => window.pbRrPdfShow(), 0);
+    } else {
+      h += (x.can_review && !x.reviewed_at ? '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn small" id="cxRunReviewed" onclick="pbRrReviewed()">Approve Report</button></div>' : '') + pdf;
+      setTimeout(() => window.pbRrPdfShow(), 0);
+    }
     return { h, s: '' };
   }
   window.pbRrOpen = async function(i) {
     const uid = pbArchiveOwnerUid, O = pbRoFor(uid), x = O.list && O.list[i];
     if (!x) return;
-    O.open = x; O.rec = null; O.recBusy = true; O.recMsg = ''; O.fromCrew = false; O.fromList = null; pbCxListRender();
+    O.open = x; O.rec = null; O.recBusy = true; O.recMsg = ''; O.fromCrew = false; O.fromList = null; O.pdfFor = null; pbCxListRender();
     pbRoMarkSeen(uid, x.id);
     const r = await pbPermitRpc('pb_prod_company_run_get', { p_id: x.id }, 30000);
     if (pbRo !== O || O.open !== x) return;
@@ -46973,8 +46989,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // The foreman (or the office) opens one crew run's report from the crew view: pb_prod_crew_run_record.
   window.pbRrCrewOpen = async function(pid, sref, name, fromList) {
     const uid = pbArchiveOwnerUid, O = pbRoFor(uid);
-    const x = { id: null, who: name || '', job_number: '', label: '', locked_at: null, photo_count: 0, status: null };
-    O.open = x; O.rec = null; O.recBusy = true; O.recMsg = ''; O.fromCrew = !fromList; O.fromList = fromList || null;
+    const x = { id: null, who: name || '', job_number: '', label: '', locked_at: null, photo_count: 0, status: null, pid: String(pid), sref: String(sref) };
+    O.open = x; O.rec = null; O.recBusy = true; O.recMsg = ''; O.fromCrew = !fromList; O.fromList = fromList || null; O.pdfFor = null;
     pbCx.list = fromList || 'runs';
     const t = document.getElementById('cxListTitle'); if (t) t.textContent = 'Run report';
     if (pbCurrentScreen !== 'cxList') pbGoto('cxList'); pbCxListRender();
@@ -46996,6 +47012,106 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbRrCrewBtn = function(p, run, id) {
     if (!p || !p.id || !run || !run.session_ref) return '';
     return pbCrewBtn(id, 'View Run Report', 'pbRrCrewOpen(' + escapeHtml(JSON.stringify(String(p.id))) + ', ' + escapeHtml(JSON.stringify(String(run.session_ref))) + ', ' + escapeHtml(JSON.stringify(String(p.name || ''))) + ')', 'ghost');
+  };
+  // ---- r15.2a: the report's PDF drawn on screen (the bundled pdf.js draws the same file Save PDF makes) ----
+  let pbRrPdfZ = 1;
+  async function pbRrMakeDoc(e) {
+    const unreadable = await pbPreflightPdfImages([e], () => {});
+    return pbRptMakeSafe(e, { unreadable });
+  }
+  window.pbRrPdfDraw = async function(e, box, key) {
+    if (!box) return false;
+    if (!pdfLibReady()) { box.innerHTML = '<p class="pbx-none" style="color:#fff">The PDF tool didn’t load (no signal when the app opened?). The text version is below.</p>'; return false; }
+    const doc = await pbRrMakeDoc(e);
+    const data = doc.output('arraybuffer');
+    if (!(await pbEnsurePdfjs())) { box.innerHTML = '<p class="pbx-none" style="color:#fff">The PDF viewer couldn’t start on this phone. Use Save or Share PDF, or the text version below.</p>'; return false; }
+    const pdf = await pdfjsLib.getDocument({ data, isEvalSupported: false, cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.5.141/cmaps/', cMapPacked: true, standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.5.141/standard_fonts/' }).promise;
+    if (box.dataset.pdfKey !== key) return false;
+    box.innerHTML = '';
+    const w = Math.max(280, box.clientWidth - 12), dpr = Math.min(3, window.devicePixelRatio || 1);
+    for (let n = 1; n <= pdf.numPages; n++) {
+      if (box.dataset.pdfKey !== key) return false;
+      const page = await pdf.getPage(n), v1 = page.getViewport({ scale: 1 }), cssW = w * pbRrPdfZ, sc = cssW / v1.width, vp = page.getViewport({ scale: sc * dpr });
+      const c = document.createElement('canvas'); c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+      c.style.width = Math.floor(cssW) + 'px'; c.style.height = Math.floor(vp.height / dpr) + 'px'; c.style.display = 'block'; c.style.margin = '0 auto 6px auto'; c.style.background = '#fff';
+      c.setAttribute('role', 'img'); c.setAttribute('aria-label', 'Report page ' + n + ' of ' + pdf.numPages); c.className = 'pb-rr-pdfpage';
+      box.appendChild(c);
+      await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+    }
+    box.dataset.pages = String(pdf.numPages);
+    return true;
+  };
+  window.pbRrPdfShow = async function() {
+    const O = pbRoFor(pbArchiveOwnerUid), e = O.rec, box = document.getElementById('cxRunPdfView');
+    if (!e || !box) return;
+    const key = String(e.id) + '|' + pbRrPdfZ;
+    if (box.dataset.pdfKey === key) return; // already drawn, or being drawn, in this box
+    box.dataset.pdfKey = key;
+    try { await window.pbRrPdfDraw(e, box, key); } catch (err) { console.error('PDF view failed', err); if (box.dataset.pdfKey === key) box.innerHTML = '<p class="pbx-none" style="color:#fff">The report couldn’t be drawn here. Use Save or Share PDF, or the text version below.</p>'; }
+  };
+  window.pbRrPdfFold = function(open) { const O = pbRoFor(pbArchiveOwnerUid); O.pdfOpen = !!open; if (open) window.pbRrPdfShow(); };
+  window.pbRrPdfZoom = function(d) {
+    const steps = [0.75, 1, 1.5, 2, 3], i = Math.max(0, steps.indexOf(pbRrPdfZ));
+    pbRrPdfZ = steps[Math.max(0, Math.min(steps.length - 1, i + d))];
+    const z = document.getElementById('cxPdfZoom'); if (z) z.textContent = Math.round(pbRrPdfZ * 100) + '%';
+    window.pbRrPdfShow();
+  };
+  // ---- r15.2a: Enter Production for the crew run being reviewed (the crew view's own form, on My production) ----
+  // r15.2.1: the run's production form inside the report (the crew view's own form and save, on this screen)
+  function pbRrLocate(x) {
+    const D = pbLv.data, crew = D && Array.isArray(D.crew) ? D.crew.filter(c => c && c.id) : [];
+    const pi = crew.findIndex(c => String(c.id) === x.pid); if (pi < 0) return null;
+    const runs = Array.isArray(crew[pi].runs) ? crew[pi].runs.filter(r => r && r.session_ref) : [], ri = runs.findIndex(r => String(r.session_ref) === x.sref);
+    return ri < 0 ? null : { p: crew[pi], run: runs[ri], pi, ri };
+  }
+  let pbRrLvAsked = 0;
+  window.pbRrProdBox = function(x) {
+    const uid = pbArchiveOwnerUid;
+    if (pbLv.uid !== uid || !pbLv.data) {
+      if (Date.now() - pbRrLvAsked > 5000) { pbRrLvAsked = Date.now(); Promise.resolve(pbLvLoad(uid, { force: true })).catch(() => null).then(() => { if (pbCurrentScreen === 'cxList') pbCxListRender(); }); }
+      return '<p class="pbx-none">Loading your crew’s runs…</p>';
+    }
+    const L = pbRrLocate(x);
+    if (!L) return '<p class="pbx-note" id="cxRunNoProd">This run isn’t in your crew view (runs stay there 3 days after they end, until production is entered), so its production can’t be entered here. Approve Report still marks the report approved.</p>';
+    const cid = pbLvCid(L.p.id, L.run.session_ref), mine = pbLvRuns()[cid] || (L.run.mine && typeof L.run.mine === 'object' ? L.run.mine : null);
+    const open = pbLv.form && pbLv.form.cid === cid;
+    if (!open && !mine) { pbLvFormOpen(L.pi, L.ri); }
+    let h = pbLvProdHtml(L.p, L.run, L.pi, L.ri);
+    h = h.replace(/(id|for)="pmLive/g, '$1="cxRunLive').replace(/pbLvFormOpen\(\d+, \d+\)/g, 'pbRrProdChange()');
+    h = h.replace(/<h4 class="pbp-h4">[^<]*<\/h4>/, '').replace(/<p class="pbp-dim">This session’s work only\.[^<]*<\/p>/, '<p class="pbp-dim">' + escapeHtml('Enter what ' + (L.p.name || 'the crew') + ' did on this run. It counts once, for this run.') + '</p>');
+    return h;
+  };
+  window.pbRrProdChange = function() { const O = pbRoFor(pbArchiveOwnerUid), L = O.open && pbRrLocate(O.open); if (L) pbLvFormOpen(L.pi, L.ri); pbCxListRender(); };
+  window.pbRrApprove = async function() {
+    const uid = pbArchiveOwnerUid, O = pbRoFor(uid), x = O.open; if (!x || !x.id) return;
+    const btn = document.getElementById('cxRunApproveBtn'), err = document.getElementById('cxRunApproveErr');
+    const L = pbRrLocate(x), cid = L ? pbLvCid(L.p.id, L.run.session_ref) : null;
+    if (L && pbLv.form && pbLv.form.cid === cid) {
+      const crewView = document.getElementById('pmLive'); if (crewView) crewView.innerHTML = ''; // the form's values are read from this screen's copy (pbLvTyped)
+      if (btn) { btn.disabled = true; btn.textContent = 'Saving production…'; }
+      await window.pbLvFormSave();
+      if (pbLv.form && pbLv.form.cid === cid) { // not saved: say why, keep the form
+        if (btn) { btn.disabled = false; btn.textContent = 'Approve Report'; }
+        if (err) { err.textContent = pbLv.form.err || 'Production wasn’t saved.'; err.style.display = ''; }
+        return;
+      }
+    }
+    if (btn) { btn.disabled = true; btn.textContent = 'Approving…'; }
+    await window.pbRrReviewed();
+  };
+  window.pbRrEnterProd = async function() {
+    const uid = pbArchiveOwnerUid, O = pbRoFor(uid), x = O.open;
+    if (!x || !x.pid || !x.sref) return;
+    const find = () => { const D = pbLv.data, crew = D && Array.isArray(D.crew) ? D.crew.filter(c => c && c.id) : [];
+      const pi = crew.findIndex(c => String(c.id) === x.pid); if (pi < 0) return null;
+      const runs = Array.isArray(crew[pi].runs) ? crew[pi].runs.filter(r => r && r.session_ref) : [], ri = runs.findIndex(r => String(r.session_ref) === x.sref);
+      return ri < 0 ? null : [pi, ri]; };
+    window.pbOpenProdMine();
+    let at = null;
+    for (let k = 0; k < 40 && !at; k++) { at = find(); if (!at) await new Promise(res => setTimeout(res, 250)); }
+    if (!at) { pbAlert('This run isn’t in your crew view any more, so production for it can’t be entered from here. Runs stay there for 3 days after they end, until someone enters production for them.', 'Run Not in Your Crew View'); return; }
+    window.pbLvFormOpen(at[0], at[1]);
+    setTimeout(() => { const f = document.getElementById('pmLiveForm'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'start' }); }, 150);
   };
   window.pbRrPdf = async function() {
     const O = pbRoFor(pbArchiveOwnerUid), e = O.rec;
@@ -47106,7 +47222,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!(typeof pbLvIsForeman === 'function' && pbLvIsForeman(uid)) || pbRf.uid !== uid || !pbRf.list) return null;
     const n = pbRf.list.filter(x => !x.reviewed_at).length;
     if (!n) return null;
-    return { id: 'rrReview', title: 'Reports to Review', text: n + ' run report' + (n === 1 ? '' : 's') + ' from your crew', status: 'Not reviewed yet.', onClick: () => window.pbRfOpenList() };
+    return { id: 'rrReview', title: 'Reports to Review', text: n + ' run report' + (n === 1 ? '' : 's') + ' from your crew', status: 'Not approved yet.', onClick: () => window.pbRfOpenList() };
   });
   window.pbRfOpenList = function() {
     pbCx.list = 'crewreports';
@@ -47122,11 +47238,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (O.open) return pbRoDetailHtml(O);
     const L = pbRf.uid === uid ? pbRf.list : null;
     const s = L ? (pbRf.busy ? 'Updating…' : 'Updated ' + pbProdTimeText(pbRf.at) + '.') : (pbCxOnline() ? 'Loading…' : 'No signal. Reports load with signal.');
-    let h = '<p class="pbx-note">Run reports your crew sent in the last 14 days. Open one and tap Reviewed.</p>';
+    let h = '<p class="pbx-note">Run reports your crew sent in the last 14 days. Open one, check it, enter its production and tap Approve Report.</p>';
     if (L) h += L.length ? '<div class="pbx-rows">' + L.map((x, i) => '<button type="button" class="pbx-row" id="cxRev' + i + '" onclick="pbRfOpen(' + i + ')"><span class="pbx-row-tx">'
         + '<span class="pbx-row-h">' + pbCxE(pbProdJobLabel(x.job_number || '') + (x.label ? ' · ' + x.label : '')) + '</span>'
         + '<span class="pbx-row-s">' + pbCxE([x.who, 'sent ' + pbRfWhen(x.sent_at) + (x.sent_how === 'auto' ? ' (automatically)' : '')].join(' · ')) + '</span>'
-        + '<span class="pbx-row-flags">' + (x.reviewed_at ? '<span class="pbx-tag">' + pbCxCheck() + 'Reviewed</span>' : '<span class="pbx-tag warn">' + pbCxIc('clock') + 'Not reviewed</span>') + '</span>'
+        + '<span class="pbx-row-flags">' + (x.reviewed_at ? '<span class="pbx-tag">' + pbCxCheck() + 'Approved</span>' : '<span class="pbx-tag warn">' + pbCxIc('clock') + 'Not approved</span>') + '</span>'
         + '</span><span class="pbx-chev" aria-hidden="true">' + pbCxIc('chevron-right') + '</span></button>').join('') + '</div>'
       : '<p class="pbx-none" id="cxRevNone">No reports from your crew yet.</p>';
     return { h, s };
@@ -47138,11 +47254,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbRrReviewed = async function() {
     const uid = pbArchiveOwnerUid, O = pbRoFor(uid), x = O.open;
     if (!x || !x.id) return;
-    const b = document.getElementById('cxRunReviewed'); if (b) { b.disabled = true; b.textContent = 'Saving…'; }
+    const b = document.getElementById('cxRunReviewed'); if (b) { b.disabled = true; b.textContent = 'Approving…'; }
     const r = await pbPermitRpc('pb_prod_run_report_review', { p_id: x.id, p_expect_uid: uid }, 20000);
     if (pbRo !== O || O.open !== x) return;
     if (r && !r.error && r.data && r.data.ok) { x.reviewed_at = r.data.reviewed_at; if (pbRf.uid === uid && pbRf.list) pbRf.list.forEach(y => { if (y.id === x.id) y.reviewed_at = r.data.reviewed_at; }); }
-    else pbAlert(navigator.onLine === false ? 'No signal. Try again when you have signal.' : 'Couldn’t mark it reviewed. Try again.', 'Not Saved');
+    else pbAlert(navigator.onLine === false ? 'No signal. Try again when you have signal.' : 'Couldn’t approve it. Try again.', 'Not Saved');
     pbCxListRender();
     try { window.pbRenderHome(); } catch (e) {}
   };
