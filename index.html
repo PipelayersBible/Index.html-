@@ -8692,7 +8692,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.4.1 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.4.2 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -44719,7 +44719,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const ef = pbProdEl('pmf_each_ft'); if (ef) F.v.each_ft = String(ef.value); // r15.4.1
     } else if (F.kind === 'job') { ['trench_width_ft', 'bed_thick_ft', 'shade_thick_ft', 'pipe_id_in', 'pipe_wall_in', 'pipe_od_in'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = String(el.value).trim(); });
     } else if (F.kind === 'tlink') { ['material', 'order', 'factor'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = String(el.value); });
-    } else { ['qty', 'date', 'ref', 'note', 'reason'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = String(el.value); }); }
+    } else { ['qty', 'date', 'ref', 'note', 'reason', 'len', 'wid', 'thk'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = String(el.value); });
+      const am = document.querySelector('input[name="pmfAddMode"]:checked'); if (am) F.v.mode = am.value; }
     // r15.3.2 (owner, Oct 21: "Check the numbers" on a sand with nothing wrong): the server takes 0.5, not .5 or 5. or 1,200
     ['expected', 'alert_pct', 'trench_width_ft', 'bed_thick_ft', 'density_tpy', 'extra_pct', 'shade_thick_ft', 'each_ft', 'pipe_id_in', 'pipe_wall_in', 'pipe_od_in', 'qty', 'factor'].forEach(k => { if (typeof F.v[k] === 'string') F.v[k] = pbMatNorm(F.v[k]); });
     return F;
@@ -44823,8 +44824,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (F.kind === 'addexp') {
       return '<form class="pbm-form" id="pmfForm" onsubmit="event.preventDefault(); pbMatFormSave();"><h4 class="pbm-h4">Add to Expected: ' + escapeHtml(m ? m.name : '') + '</h4>'
         + '<p class="pbp-dim" id="pmfAddNow">' + escapeHtml('Expected now: ' + (m && m.expected != null ? pbMatFmt(m.expected, m.unit) + ' ' + m.unit : 'not set') + '. Add what the extra work needs (for example the laterals); the new total is saved on this material.') + '</p>'
-        + pbMatField('qty', 'Add (' + escapeHtml(m ? m.unit : '') + ')', F.v.qty, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 12" oninput="pbMatAddExpIn()"')
-        + '<p class="pb-help pbm-fhelp" id="pmfAddTot" role="status">' + escapeHtml(pbMatAddExpText(m, F.v.qty)) + '</p>' + btns('Add to Expected') + '</form>';
+        + (m && m.source === 'bedding_calc' ? '<fieldset class="pb-field pbm-fs"><legend>Add by</legend>'
+            + ['amt', 'dim'].map(k => '<label class="pb-checkrow pbm-radio"><input type="radio" name="pmfAddMode" value="' + k + '"' + ((F.v.mode || 'amt') === k ? ' checked' : '') + ' onchange="pbMatFormRefresh()"> <span>' + (k === 'amt' ? 'Amount (' + escapeHtml(m.unit) + ')' : 'Dimensions (the app works it out)') + '</span></label>').join('') + '</fieldset>' : '')
+        + (m && m.source === 'bedding_calc' && F.v.mode === 'dim'
+            ? '<div class="pbm-grid">' + pbMatField('len', 'Length (ft)', F.v.len, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 60" oninput="pbMatAddExpIn()"')
+              + pbMatField('wid', 'Width (ft)', F.v.wid, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 3" oninput="pbMatAddExpIn()"') + '</div>'
+              + '<div class="pbm-grid">' + pbMatField('thk', 'Thickness (ft)', F.v.thk, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 0.5" oninput="pbMatAddExpIn()"') + '</div>'
+            : pbMatField('qty', 'Add (' + escapeHtml(m ? m.unit : '') + ')', F.v.qty, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 12" oninput="pbMatAddExpIn()"'))
+        + '<p class="pb-help pbm-fhelp" id="pmfAddTot" role="status">' + escapeHtml(pbMatAddExpText(m, pbMatAddQty(m, F.v))) + '</p>' + btns('Add to Expected') + '</form>';
     }
     if (F.kind === 'tlink') return pbMatLinkFormHtml(F, btns);
     if (F.kind === 'job') return pbMatSettingsFormHtml(F, btns);
@@ -44880,8 +44887,20 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return h + btns(F.id ? 'Save Changes' : 'Add Material') + '</form>';
   }
   function pbMatAddExpText(m, q) { const a = Number(pbMatNorm(q)); if (!m || !(a > 0)) return ''; const t = Math.round(((Number(m.expected) || 0) + a) * 1000) / 1000; return 'New total: ' + pbMatFmt(t, m.unit) + ' ' + m.unit + '.'; }
-  window.pbMatAddExpForm = function(id) { const m = pbMatFind(id); if (!m) return; pbMatSetForm({ kind: 'addexp', id, v: { qty: '' } }); };
-  window.pbMatAddExpIn = function() { const F = pbMatFormRead(); if (!F || F.kind !== 'addexp') return; const el = pbProdEl('pmfAddTot'); if (el) el.textContent = pbMatAddExpText(pbMatFind(F.id), F.v.qty); };
+  // feat_adddim: the amount to add, typed or worked out from dimensions -> { qty: string, how: text } (qty '' when incomplete)
+  function pbMatAddDims(m, v) {
+    const n = (x) => { const s = pbMatNorm(x); const k = Number(s); return s !== '' && Number.isFinite(k) && k > 0 ? k : null; };
+    const L = n(v.len), W = n(v.wid), T = n(v.thk); if (!L || !W || !T) return { qty: '', how: 'Type the length, width and thickness in feet.' };
+    const ex = Number(m.extra_pct != null ? m.extra_pct : PB_MAT_DEFAULT_EXTRA_PCT), yd = L * W * T / 27, f = 1 + (Number.isFinite(ex) ? ex : 0) / 100;
+    if (m.basis === 'weight' && !(Number(m.density_tpy) > 0)) return { qty: '', how: 'This material counts tons but has no density. Edit it and set the density, or add by Amount.' };
+    const q = Math.round(yd * f * (m.basis === 'weight' ? Number(m.density_tpy) : 1) * 10) / 10;
+    return { qty: String(q), how: L + ' × ' + W + ' × ' + T + ' ft ÷ 27 = ' + (Math.round(yd * 100) / 100) + ' yd³ in place × ' + (Math.round(f * 10000) / 10000) + (m.basis === 'weight' ? ' × ' + m.density_tpy + ' t/yd³' : '') + ' = ' + pbMatFmt(q, m.unit) + ' ' + m.unit + ' to add.' };
+  }
+  function pbMatAddQty(m, v) { return m && m.source === 'bedding_calc' && v.mode === 'dim' ? pbMatAddDims(m, v).qty : v.qty; }
+  window.pbMatAddExpForm = function(id) { const m = pbMatFind(id); if (!m) return; const S = pbMat.set && pbPj.job && pbMat.set[pbPj.job.job_key] ? pbMat.set[pbPj.job.job_key].s : null, sh = m.use_as === 'shading';
+    pbMatSetForm({ kind: 'addexp', id, v: { qty: '', mode: 'amt', len: '', wid: pbMatStr(m.trench_width_ft != null ? m.trench_width_ft : S && S.trench_width_ft), thk: pbMatStr(sh ? (m.shade_thick_ft != null ? m.shade_thick_ft : S && S.shade_thick_ft) : (m.bed_thick_ft != null ? m.bed_thick_ft : S && S.bed_thick_ft)) } }); };
+  window.pbMatAddExpIn = function() { const F = pbMatFormRead(); if (!F || F.kind !== 'addexp') return; const m = pbMatFind(F.id), el = pbProdEl('pmfAddTot');
+    if (el) { const d = m && m.source === 'bedding_calc' && F.v.mode === 'dim' ? pbMatAddDims(m, F.v) : null; el.textContent = (d ? d.how + ' ' : '') + pbMatAddExpText(m, pbMatAddQty(m, F.v)); } };
   window.pbMatFormCancel = function() { pbMat.form = null; pbMatJobPaint(); };
   window.pbMatOrderForm = function(id) { const m = pbMatFind(id); if (!m) return; pbMatSetForm({ kind: 'order', id, v: { qty: '', date: pbTkToday(), ref: '', note: '' } }); };
   window.pbMatUsedForm = function(id) { const m = pbMatFind(id); if (!m) return; pbMatSetForm({ kind: 'use', id, v: { qty: '', date: pbTkToday(), note: '' } }); };
@@ -44906,8 +44925,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const now = new Date().toISOString();
     if (F.kind === 'addexp') { // the material's own save, with Expected = now + the amount added
       const m = pbMatFind(F.id); if (!m) return fail('That material isn’t in the list any more. Refresh and try again.');
-      if (!pbMatNumOk(F.v.qty, 0.001, 1e8) || F.v.qty === '') return fail('Enter the amount to add, above 0.');
-      const tot = String(Math.round(((Number(m.expected) || 0) + Number(F.v.qty)) * 1000) / 1000);
+      const addq = pbMatAddQty(m, F.v);
+      if (m.source === 'bedding_calc' && F.v.mode === 'dim' && !addq) return fail(pbMatAddDims(m, F.v).how);
+      if (!pbMatNumOk(addq, 0.001, 1e8) || addq === '') return fail('Enter the amount to add, above 0.');
+      const tot = String(Math.round(((Number(m.expected) || 0) + Number(addq)) * 1000) / 1000);
       window.pbMatEdit(F.id); const F2 = pbMat.form; if (!F2 || F2.kind !== 'mat') return;
       const el = pbProdEl('pmf_expected'); if (el) el.value = tot; F2.v.expected = tot; F2.expAuto = false;
       return window.pbMatFormSave();
