@@ -8692,7 +8692,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.3.4 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.4 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -33349,7 +33349,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>How % complete is worked out</span></summary><p class="pb-help" id="ppMathHelp">A category&rsquo;s % is done &divide; planned (it can pass 100%). The job&rsquo;s % averages the planned categories, each capped at 100%: by your weights if every planned category has one, else by budget hours if every one has them, else equally. Unplanned categories show their amount and are left out. Work counts only in the category&rsquo;s unit (other units show beside it). Budget hours are compared with the crew hours reported: closed Crew Log check-ins (laborers and operators) and crew man-hours foremen type in.</p></details>'
       + '<div id="ppRows">' + E.rows.map((r, i) => {
         const c = cats.categories.find(x => x.key === r.key);
-        const has = '<span class="pbp-dim pbp-rowhas">' + escapeHtml((c && (c.done || c.otherUnits.length) ? pbProdQtyText(c.done, c.unit) + ' reported. ' : '') + (r.key && PB_PROD_RUN_KEYS.has(r.key) ? 'Filled in from crews\u2019 runs.' : 'Filled in by hand on the job page.')) + '</span>';
+        const has = '<span class="pbp-dim pbp-rowhas">' + escapeHtml((c && (c.done || c.otherUnits.length) ? pbProdQtyText(c.done, c.unit) + ' reported. ' : '') + (r.key && PB_PROD_RUN_KEYS.has(r.key) ? 'Filled in from crews\u2019 runs.' : 'Entered by foremen with each run\u2019s production, or by hand on the job page.')) + '</span>';
         return '<fieldset class="pbp-prow" id="ppRow' + i + '"><legend class="pb-sr">Category ' + (i + 1) + '</legend>'
           + field('ppName' + i, 'Category', r.name, 'type="text" maxlength="40" autocomplete="off"')
           + '<div class="pbp-prow-nums">' + field('ppPlanned' + i, 'Planned', r.planned, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanNote(); pbProdPlanPerIn(' + i + ')"')
@@ -34879,8 +34879,32 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const rows = PB_PROD_FIELD_MAP.map(m => { const i = have.get(m.key); const q = i && i.qty != null ? String(i.qty) : ''; const pv = rlEnd ? rlEnd.ft : laid; const pre = !x && !mine && m.key === 'pipe' && pv > 0 ? String(+pv.toFixed(1)) : null; return { key: m.key, unit: m.unit, qty: pre !== null ? pre : q, pre, typed: false, preText: pre !== null && rlEnd ? rlEnd.text : null }; }).concat(pbRolesHourRows(x ? x.items : mine || [])); // batch 29 ROLES: hours
     // the laid rows can only fill the pipe field before anything was entered: a value already entered stays
     pbLv.form = { cid, pid: p.id, name: p.name || '', sref: run.session_ref, rref: run.run_ref || (run.status && run.status.runRef) || run.session_ref, job: run.job_number || (run.status && run.status.jobNumber) || '', jobsite: (run.status && run.status.jobsite) || '', workDate: run.work_date || (run.status && run.status.workDate) || pbTkToday(), rows, err: '' };
+    { const F = pbLv.form; pbLvAddExtra(F, have); pbLvPlanLoad(F, have).catch(() => {}); } // r15.4
     pbLvRender(); const f = pbProdEl('pmLiveQ0'); if (f) f.focus();
   };
+  // r15.4: the job's own plan items (Laterals, ...) on the foreman's production form
+  const pbLvPlans = {};
+  function pbLvExtraRows(job, have, rows) {
+    const P = pbLvPlans[String(job || '').trim().toLowerCase().slice(0, 60)], out = [], seen = new Set(rows.map(r => r.key));
+    const add = (key, unit, name) => { if (!key || seen.has(key) || String(key).startsWith('_')) return; seen.add(key); const i = have.get(key); out.push({ key, unit: unit || '', qty: i && i.qty != null ? String(i.qty) : '', pre: null, typed: false, preText: null, label: (name || key) + (unit ? ' (' + unit + ')' : ''), custom: true }); };
+    (P && Array.isArray(P.cats) ? P.cats : []).forEach(c => c && add(c.key, c.unit, c.name));
+    have.forEach((i, key) => add(key, i.unit, key)); // something entered before stays editable
+    return out;
+  }
+  function pbLvAddExtra(F, have) {
+    const extra = pbLvExtraRows(F.job, have, F.rows); if (!extra.length) return false;
+    let at = F.rows.findIndex(r => String(r.key).startsWith('_')); if (at < 0) at = F.rows.length;
+    F.rows.splice(at, 0, ...extra); return true;
+  }
+  async function pbLvPlanLoad(F, have) {
+    const k = String(F.job || '').trim().toLowerCase().slice(0, 60); if (!k) return;
+    const P = pbLvPlans[k]; if (P && Date.now() - P.at < 600000) return;
+    const r = await pbPermitRpc('pb_prod_job_plan_crew', { p_job_number: F.job }, 20000);
+    if (!r || r.error || !r.data) return;
+    pbLvPlans[k] = { at: Date.now(), cats: r.data.plan && Array.isArray(r.data.plan.categories) ? r.data.plan.categories.filter(c => c && typeof c === 'object') : [] };
+    if (pbLv.form !== F) return;
+    if (pbLvAddExtra(F, have)) { pbLvRender(); try { if (pbCurrentScreen === 'cxList') pbCxListRender(); } catch (e) {} } // typed values are already in F.rows (pbLvTyped)
+  }
   window.pbLvTyped = function(k, v) { const F = pbLv.form; if (!F || !F.rows[k]) return; F.rows[k].qty = String(v); F.rows[k].typed = true; };
   window.pbLvFormCancel = function() { pbLv.form = null; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); pbLvRender(); };
   window.pbLvFormSave = async function() {
@@ -34891,7 +34915,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     for (let k = 0; k < F.rows.length; k++) {
       const el = pbProdEl('pmLiveQ' + k), t = String(el ? el.value : F.rows[k].qty).trim().replace(/,/g, ''); F.rows[k].qty = t;
       if (t === '') continue;
-      if (!/^\d+(\.\d+)?$|^\.\d+$/.test(t) || Number(t) > 50000) { F.err = pbProdCatName(F.rows[k].key) + ': enter a plain number of ' + F.rows[k].unit + ' (or leave it empty).'; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); pbLvRender(); return; }
+      if (!/^\d+(\.\d+)?$|^\.\d+$/.test(t) || Number(t) > 50000) { F.err = (F.rows[k].custom ? String(F.rows[k].label || F.rows[k].key).replace(/ \([^)]*\)$/, '') : pbProdCatName(F.rows[k].key)) + ': enter a plain number of ' + (F.rows[k].unit || 'it') + ' (or leave it empty).'; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); pbLvRender(); return; }
       items.push({ key: F.rows[k].key, qty: +Number(t).toFixed(3), unit: F.rows[k].unit });
     }
     if (!items.length) { F.err = 'Enter at least one quantity.'; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); pbLvRender(); return; }
@@ -44374,15 +44398,26 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return '<span class="pbm-bar" aria-hidden="true"><span class="pbm-bused" style="width:' + p(s.used) + '"></span><span class="pbm-bwait" style="left:' + p(s.used) + ';width:' + p(s.wait) + '"></span>'
       + (s.ord > 0 ? '<span class="pbm-bord" style="left:' + p(s.ord) + '"></span>' : '') + '</span>';
   }
-  function pbMatHowText(m) { return m.source === 'bedding_calc' ? (pbMatIsShade(m) ? PB_MAT_SHADE_NOTE : PB_MAT_EST_NOTE) + ' ' + PB_MAT_USE_TEXT[pbMatIsShade(m) ? 'shading' : 'bedding'] : m.source === 'pipe_footage' ? PB_MAT_PIPE_NOTE : PB_MAT_ENTERED_NOTE; }
+  // r15.4: the LF items of the job plan a material can count from (Pipe Installed first)
+  function pbMatFootCats() {
+    const cats = pbPj.data && pbPj.data.plan && Array.isArray(pbPj.data.plan.categories) ? pbPj.data.plan.categories : [];
+    const out = [{ key: 'pipe', name: (cats.find(c => c && c.key === 'pipe') || {}).name || 'Pipe Installed' }];
+    cats.forEach(c => { if (c && c.key && c.key !== 'pipe' && !String(c.key).startsWith('_') && /^\s*(lf|ft|feet)?\s*$/i.test(String(c.unit || ''))) out.push({ key: c.key, name: c.name || c.key }); });
+    return out;
+  }
+  function pbMatFootName(k) { k = k || 'pipe'; const c = pbMatFootCats().find(x => x.key === k); return c ? c.name : k === 'pipe' ? 'Pipe Installed' : k; }
+  function pbMatHowText(m) { if (m.footage_cat && m.footage_cat !== 'pipe' && (m.source === 'pipe_footage' || m.source === 'bedding_calc')) return (m.source === 'pipe_footage' ? 'From the ' + pbMatFootName(m.footage_cat) + ' footage crews report (counted production only).' : (pbMatIsShade(m) ? PB_MAT_SHADE_NOTE : PB_MAT_EST_NOTE).replace('footage', pbMatFootName(m.footage_cat) + ' footage') + ' ' + PB_MAT_USE_TEXT[pbMatIsShade(m) ? 'shading' : 'bedding']);
+    return m.source === 'bedding_calc' ? (pbMatIsShade(m) ? PB_MAT_SHADE_NOTE : PB_MAT_EST_NOTE) + ' ' + PB_MAT_USE_TEXT[pbMatIsShade(m) ? 'shading' : 'bedding'] : m.source === 'pipe_footage' ? PB_MAT_PIPE_NOTE : PB_MAT_ENTERED_NOTE; }
   // Two calculated materials sharing the job's footage each count all of it.
   // review S3 / S7: materials that take the SAME footage for the same use (two pipes, two beddings, two shadings; a bedding +
   // a shading pair is normal). The server shows them "split unknown" (no number) until crews say which went where.
   const pbMatUseKey = (m) => m.source === 'pipe_footage' ? 'pipe' : m.source === 'bedding_calc' ? (m.use_as === 'shading' ? 'shading' : 'bedding') : null;
-  function pbMatShareNote(list) {
+  function pbMatShareNote(list) { // r15.4: grouped by use and by the footage item
     const by = {};
-    list.filter(m => m && !m.archived && pbMatUseKey(m)).forEach(m => { (by[pbMatUseKey(m)] = by[pbMatUseKey(m)] || []).push(m); });
-    return Object.keys(by).filter(k => by[k].length > 1).map(k => '<p class="pb-warn photo pbm-share"><strong>Split unknown: ' + k + '</strong>' + escapeHtml(by[k].map(m => m.name).join(', ') + ' are all ' + k + ' worked out from this job’s pipe footage, and the app can’t tell yet how much went to each. So none of them shows an amount, an alert or a digest line, rather than counting the job twice. Each run says which ' + k + ' it used on Run Setup (' + (k === 'pipe' ? 'Pipe material' : k === 'shading' ? 'Shading material' : 'Bedding material') + '); footage from runs that didn’t pick one can’t be split. For pipe you don’t track from runs (laterals, for example), tap Edit and choose “Amounts I record by hand”.') + '</p>').join('');
+    list.filter(m => m && !m.archived && pbMatUseKey(m)).forEach(m => { const k = pbMatUseKey(m) + '|' + (m.footage_cat || 'pipe'); (by[k] = by[k] || []).push(m); });
+    return Object.keys(by).filter(k => by[k].length > 1).map(key => { const k = key.split('|')[0], fc = key.split('|')[1], names = by[key].map(m => m.name).join(', ');
+      if (fc !== 'pipe') return '<p class="pb-warn photo pbm-share"><strong>Split unknown: ' + escapeHtml(k + ' on ' + pbMatFootName(fc)) + '</strong>' + escapeHtml(names + ' both count the ' + pbMatFootName(fc) + ' footage as ' + k + ', so neither shows an amount rather than counting it twice. Tie one to another item (Edit > Footage from), or archive the one not in use.') + '</p>';
+      return '<p class="pb-warn photo pbm-share"><strong>Split unknown: ' + k + '</strong>' + escapeHtml(names + ' are all ' + k + ' worked out from this job’s pipe footage, and the app can’t tell yet how much went to each. So none of them shows an amount, an alert or a digest line, rather than counting the job twice. Each run says which ' + k + ' it used on Run Setup (' + (k === 'pipe' ? 'Pipe material' : k === 'shading' ? 'Shading material' : 'Bedding material') + '); footage from runs that didn’t pick one can’t be split. For pipe on another item (laterals, for example), add that item to the job plan and tie the material to it (Edit > Footage from).') + '</p>'; }).join('');
   }
 
   // ---- Company production cards: a Materials block on each job ----
@@ -44678,6 +44713,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const s = document.querySelector('input[name="pmfSource"]:checked'); if (s) F.v.source = s.value;
       const u = document.querySelector('input[name="pmfUse"]:checked'); if (u) F.v.use_as = u.value;
       const st = pbProdEl('pmf_shade_thick_ft'); if (st) F.v.shade_thick_ft = String(st.value);
+      const fc = pbProdEl('pmf_footage_cat'); if (fc) F.v.footage_cat = String(fc.value || 'pipe'); // r15.4
     } else if (F.kind === 'job') { ['trench_width_ft', 'bed_thick_ft', 'shade_thick_ft', 'pipe_id_in', 'pipe_wall_in', 'pipe_od_in'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = String(el.value).trim(); });
     } else if (F.kind === 'tlink') { ['material', 'order', 'factor'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = String(el.value); });
     } else { ['qty', 'date', 'ref', 'note', 'reason'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = String(el.value); }); }
@@ -44687,17 +44723,18 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbMatDirty() { const F = pbMatFormRead(); if (!F) return false; const v = F.kind === 'mat' && F.expAuto ? Object.assign({}, F.v, { expected: JSON.parse(F.base).expected }) : F.v; return JSON.stringify(v) !== F.base; }
   // ---- feat_matexp (owner, Oct 21): Expected in all fills itself in ----
-  function pbMatPlanLen() {
+  function pbMatPlanLen(fcat) {
     const cats = pbPj.data && pbPj.data.plan && Array.isArray(pbPj.data.plan.categories) ? pbPj.data.plan.categories : [];
+    if (fcat && fcat !== 'pipe') { const c = cats.find(x => x && x.key === fcat), n = c ? Number(c.planned) : NaN; return c && Number.isFinite(n) && n > 0 ? { n, name: c.name || fcat } : null; } // r15.4
     const lf = (k) => { const c = cats.find(x => x && x.key === k); const n = c ? Number(c.planned) : NaN; return c && Number.isFinite(n) && n > 0 && /^\s*(lf|ft|feet)?\s*$/i.test(String(c.unit || '')) ? { n, name: c.name || k } : null; };
     return lf('pipe') || lf('excavation') || lf('backfill') || null;
   }
   const pbMatR = (x, d) => { const p = Math.pow(10, d); return Math.round(x * p) / p; };
   function pbMatExpCalc(v) { // -> { val, how } or { val: '', why }
-    const L = pbMatPlanLen(), S = pbMat.set && pbPj.job && pbMat.set[pbPj.job.job_key] ? pbMat.set[pbPj.job.job_key].s : null;
+    const L = pbMatPlanLen(v.footage_cat), S = pbMat.set && pbPj.job && pbMat.set[pbPj.job.job_key] ? pbMat.set[pbPj.job.job_key].s : null;
     const bed = pbMatIsBed(v.category), calc = v.source === 'bedding_calc' && bed, pipeFt = v.category === 'pipe' && v.source === 'pipe_footage';
     if (!calc && !pipeFt) return { val: '', why: '' };
-    if (!L) return { val: '', why: 'Fills in from the job plan’s planned Pipe Installed length (LF). Set it under Edit project > Job plan, or type the amount.' };
+    if (!L) return { val: '', why: 'Fills in from the job plan’s planned ' + pbMatFootName(v.footage_cat) + ' length (LF). Set it under Edit project > Job plan, or type the amount.' };
     const lenTxt = pbMatFmt(L.n, 'LF') + ' LF (' + L.name + ' planned)';
     if (pipeFt) return { val: String(pbMatR(L.n, 0)), how: 'Filled in from ' + lenTxt + '.' };
     const num = (a, b) => { const x = String(a == null ? '' : a).trim() !== '' ? Number(a) : (b == null ? NaN : Number(b)); return Number.isFinite(x) && x > 0 ? x : null; };
@@ -44744,7 +44781,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (id && !m) return;
     pbMatSetForm({ kind: 'mat', id, version: m ? m.version : 0, preset: '', v: m ? { name: m.name, category: m.category, source: m.source, basis: m.basis || 'volume', unit: m.source === 'entered' ? m.unit : '', expected: pbMatStr(m.expected), alert_pct: pbMatStr(m.alert_pct),
         trench_width_ft: pbMatStr(m.trench_width_ft), bed_thick_ft: pbMatStr(m.bed_thick_ft), density_tpy: pbMatStr(m.density_tpy), extra_pct: pbMatStr(m.extra_pct), use_as: m.use_as || 'bedding', shade_thick_ft: pbMatStr(m.shade_thick_ft) }
-      : { name: '', category: 'pipe', source: 'pipe_footage', basis: 'volume', unit: '', expected: '', alert_pct: '80', trench_width_ft: '', bed_thick_ft: '', density_tpy: '', extra_pct: String(PB_MAT_DEFAULT_EXTRA_PCT), use_as: 'bedding', shade_thick_ft: '' } });
+      : { name: '', category: 'pipe', source: 'pipe_footage', basis: 'volume', unit: '', expected: '', alert_pct: '80', trench_width_ft: '', bed_thick_ft: '', density_tpy: '', extra_pct: String(PB_MAT_DEFAULT_EXTRA_PCT), use_as: 'bedding', shade_thick_ft: '', footage_cat: 'pipe' } });
+    if (m && pbMat.form) { pbMat.form.v.footage_cat = m.footage_cat || 'pipe'; pbMat.form.base = JSON.stringify(pbMat.form.v); pbMatJobPaint(); } // r15.4
   };
   window.pbMatPreset = function(k) {
     const F = pbMatFormRead(); if (!F || F.kind !== 'mat') return;
@@ -44800,6 +44838,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       h += '<fieldset class="pb-field pbm-fs"><legend>How “used” is counted</legend>'
         + radio('pmfSource', v.category === 'pipe' ? 'pipe_footage' : 'bedding_calc', v.category === 'pipe' ? 'From the Pipe Installed footage crews report' : 'Calculated from the footage (an estimate)', v.source)
         + radio('pmfSource', 'entered', 'Amounts I record by hand', v.source) + '</fieldset>';
+      if (v.source !== 'entered') { const fcs = pbMatFootCats(), cur = v.footage_cat || 'pipe'; if (!fcs.some(c => c.key === cur)) fcs.push({ key: cur, name: cur + ' (not in the plan)' });
+        h += '<div class="pb-field"><label for="pmf_footage_cat">Footage from</label><select id="pmf_footage_cat" onchange="pbMatFormRefresh()">' + fcs.map(c => '<option value="' + escapeHtml(c.key) + '"' + (c.key === cur ? ' selected' : '') + '>' + escapeHtml(c.name) + '</option>').join('') + '</select>'
+          + '<p class="pb-help pbm-fhelp">The production item whose footage this material counts. Add an item like Laterals (LF) to the job plan to tie a material to it.</p></div>'; }
     }
     if (calc) {
       const shade = v.use_as === 'shading';
@@ -44871,6 +44912,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const p = { name: v.name, category: v.category, source: v.source, expected: v.expected, alert_pct: v.alert_pct || '80' };
       if (F.id) p.id = F.id;
       if (v.source === 'entered') p.unit = v.unit;
+      if (calc || v.source === 'pipe_footage') p.footage_cat = v.footage_cat || 'pipe'; // r15.4: the footage item it counts from
       if (calc) { p.use_as = v.use_as || 'bedding'; if (p.use_as === 'shading') p.shade_thick_ft = v.shade_thick_ft || ''; else p.bed_thick_ft = v.bed_thick_ft; p.basis = v.basis || 'volume'; p.trench_width_ft = v.trench_width_ft; p.extra_pct = v.extra_pct === '' ? String(PB_MAT_DEFAULT_EXTRA_PCT) : v.extra_pct; p.density_tpy = v.density_tpy; }
       fn = 'pb_mat_save'; args = { p_job_number: job.job_number, p_material: p, p_expect_uid: uid, p_expect_version: F.id ? F.version : 0, p_phone_at: now };
     } else if (F.kind === 'order' || F.kind === 'use') {
@@ -47093,7 +47135,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           : '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn ghost small" id="cxSendBackBtn" onclick="pbRrSendBackOpen()">Send Back to Foreman</button></div>') : '') + pdf;
       setTimeout(() => window.pbRrPdfShow(), 0);
     }
-    const keep = 'd|' + [x.id || x.sref, e.id, x.reviewed_at || '', x.sent_at || '', O.pdfOpen ? 1 : 0, O.sendBack ? 'sb:' + (O.sendBackErr || '') : '', x.sent_back_at || '', x.removed_at || '', canProd ? ((pbLv.data ? 1 : 0) + ':' + (pbLv.form ? pbLv.form.cid + ':' + (pbLv.form.err || '') : '') + ':' + JSON.stringify(pbLvRuns())) : ''].join('|');
+    const keep = 'd|' + [x.id || x.sref, e.id, x.reviewed_at || '', x.sent_at || '', O.pdfOpen ? 1 : 0, O.sendBack ? 'sb:' + (O.sendBackErr || '') : '', x.sent_back_at || '', x.removed_at || '', canProd ? ((pbLv.data ? 1 : 0) + ':' + (pbLv.form ? pbLv.form.cid + ':' + (pbLv.form.err || '') + ':' + pbLv.form.rows.length : '') + ':' + JSON.stringify(pbLvRuns())) : ''].join('|');
     return { h, s: '', keep };
   }
   window.pbRrOpen = async function(i) {
