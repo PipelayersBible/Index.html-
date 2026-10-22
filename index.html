@@ -8692,7 +8692,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.4.3 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.5 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -32379,7 +32379,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const planned = pbProdNumOrNull(c.planned), weight = pbProdNumOrNull(c.weight), hours = pbProdNumOrNull(c.hours);
       const done = same.reduce((s, r) => s + r.done, 0), today = same.reduce((s, r) => s + r.today, 0), week = same.reduce((s, r) => s + r.week, 0);
       const hasPlan = planned !== null && planned > 0;
-      return { key: c.key, name: String(c.name || c.key), unit, planned: hasPlan ? planned : null, weight: weight !== null && weight > 0 ? weight : null, hours: hours !== null && hours >= 0 ? hours : null,
+      return { key: c.key, name: String(c.name || c.key), code: String(c.cost_code || ''), unit, planned: hasPlan ? planned : null, weight: weight !== null && weight > 0 ? weight : null, hours: hours !== null && hours >= 0 ? hours : null,
         done, today, week, pct: hasPlan ? done / planned : null, share: 0, contrib: 0,
         otherUnits: mine.filter(r => pbProdUnitKey(r.unit) !== pbProdUnitKey(unit) && r.done).map(r => ({ unit: r.unit, done: r.done, today: r.today, week: r.week })) };
     });
@@ -33019,7 +33019,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbPj.edit) { body.innerHTML = pbProdPlanEditorHtml(); return; }
     const v = pbProdJobView(D.plan || null, D.cats);
     const unitOf = (key) => { const c = v.categories.find(x => x.key === key); return c ? c.unit : ''; };
-    const rows = v.categories.map(c => [c.name, pbProdQtyText(c.done, c.unit), c.planned !== null ? pbProdQtyText(c.planned, c.unit) : 'Not planned', c.planned !== null ? pbProdPctText(c.pct) : '', pbProdQtyText(c.today), pbProdQtyText(c.week)]);
+    const rows = v.categories.map(c => [c.name + (c.code ? ' · ' + c.code : ''), pbProdQtyText(c.done, c.unit), c.planned !== null ? pbProdQtyText(c.planned, c.unit) : 'Not planned', c.planned !== null ? pbProdPctText(c.pct) : '', pbProdQtyText(c.today), pbProdQtyText(c.week)]);
     v.extra.forEach(x => rows.push([pbProdCatName(x.key) + ' (not in plan)', pbProdQtyText(x.done, x.unit), 'Not planned', '', pbProdQtyText(x.today), pbProdQtyText(x.week)]));
     v.categories.forEach(c => c.otherUnits.forEach(o => rows.push([c.name + ' (in ' + (o.unit || 'no unit') + ')', pbProdQtyText(o.done, o.unit), 'Unit differs', '', pbProdQtyText(o.today), pbProdQtyText(o.week)])));
     if (v.hoursUsed) rows.push(['Crew hours', pbProdQtyText(v.hoursUsed, 'h'), v.budgetHours ? pbProdQtyText(v.budgetHours, 'h') : 'No budget', v.budgetHours ? pbProdPctText(v.hoursUsed / v.budgetHours) : '', pbProdQtyText(v.hoursToday), '']);
@@ -33294,7 +33294,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbProdPlanRowsFrom(D) {
     const plan = D && D.plan && Array.isArray(D.plan.categories) ? D.plan.categories : PB_PROD_DEFAULT_CATS;
     const fmt = (n) => (n === null || n === undefined || n === '') ? '' : String(n);
-    return plan.filter(c => c && c.key).map(c => ({ key: c.key, name: String(c.name || ''), unit: String(c.unit || ''), planned: fmt(c.planned), weight: fmt(c.weight), hours: fmt(c.hours), perUnit: (Number(c.hours) > 0 && Number(c.planned) > 0) ? String(Math.round(Number(c.hours) / Number(c.planned) * 10000) / 10000) : '' }));
+    return plan.filter(c => c && c.key).map(c => ({ key: c.key, name: String(c.name || ''), unit: String(c.unit || ''), planned: fmt(c.planned), weight: fmt(c.weight), hours: fmt(c.hours), costCode: String(c.cost_code || ''), perUnit: (Number(c.hours) > 0 && Number(c.planned) > 0) ? String(Math.round(Number(c.hours) / Number(c.planned) * 10000) / 10000) : '' }));
   }
   window.pbProdPlanEdit = function() {
     if (!pbPj.data) return;
@@ -33308,7 +33308,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   };
   function pbProdPlanRead() {
     const E = pbPj.edit; if (!E) return;
-    E.rows.forEach((r, i) => { ['name', 'unit', 'planned', 'weight', 'hours', 'perUnit'].forEach(k => { const el = pbProdEl('pp' + k.charAt(0).toUpperCase() + k.slice(1) + i); if (el) r[k] = el.value; }); });
+    E.rows.forEach((r, i) => { ['name', 'unit', 'planned', 'weight', 'hours', 'perUnit', 'costCode'].forEach(k => { const el = pbProdEl('pp' + k.charAt(0).toUpperCase() + k.slice(1) + i); if (el) r[k] = el.value; }); });
     const b = pbProdEl('ppBudget'); if (b) E.budget = b.value;
   }
   function pbProdPlanHoursSum(rows) {
@@ -33356,7 +33356,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           + field('ppUnit' + i, 'Unit', r.unit, 'type="text" maxlength="12" autocomplete="off" placeholder="LF"')
           + field('ppPerUnit' + i, 'Budget hours per unit', r.perUnit || '', 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanPerIn(' + i + ')"')
           + field('ppHours' + i, 'Budget hours (whole category)', r.hours, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanCatHoursIn(' + i + ')"')
-          + field('ppWeight' + i, 'Weight', r.weight, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanNote()"') + '</div>'
+          + field('ppWeight' + i, 'Weight', r.weight, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanNote()"')
+          + field('ppCostCode' + i, 'Cost code', r.costCode || '', 'type="text" maxlength="60" autocomplete="off" autocapitalize="characters" placeholder="e.g. 02-200"') + '</div>'
           + '<div class="pbp-prow-foot">' + has + '<button type="button" class="pb-btn ghost small" id="ppRemove' + i + '" onclick="pbProdPlanRemove(' + i + ')" aria-label="Remove ' + escapeHtml(r.name || 'this category') + '"><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-trash"/></svg>Remove</button></div></fieldset>';
       }).join('') + '</div>'
       + (E.rows.length < 20 ? '<div class="pb-btn-wrap pbp-btns"><button type="button" class="pb-btn secondary" id="ppAddBtn" onclick="pbProdPlanAdd()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Category</button></div>' : '')
@@ -33376,7 +33377,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbProdPlanAdd = function() {
     const E = pbPj.edit; if (!E || E.rows.length >= 20) return;
     pbProdPlanRead();
-    E.rows.push({ key: null, name: '', unit: 'LF', planned: '', weight: '', hours: '', perUnit: '' });
+    E.rows.push({ key: null, name: '', unit: 'LF', planned: '', weight: '', hours: '', perUnit: '', costCode: '' });
     pbProdJobRender();
     const f = pbProdEl('ppName' + (E.rows.length - 1)); if (f) f.focus();
   };
@@ -33401,7 +33402,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if ([planned, weight, hours].some(x => Number.isNaN(x))) { E.err = name + ': planned, weight and budget hours must be plain numbers (or left empty).'; pbProdJobRender(); return; }
       if (planned !== null && planned > 10000000 || hours !== null && hours > 1000000 || weight !== null && weight > 1000) { E.err = name + ': that number is too large. Check for a typo.'; pbProdJobRender(); return; }
       const key = r.key || pbProdNewKey(name, taken); if (!r.key) taken.push(key);
-      cats.push({ key, name: name.slice(0, 40), unit: String(r.unit || '').trim().slice(0, 12), planned, weight: weight || null, hours });
+      cats.push({ key, name: name.slice(0, 40), unit: String(r.unit || '').trim().slice(0, 12), planned, weight: weight || null, hours, cost_code: String(r.costCode || '').trim().slice(0, 60) || null }); // r15.5
     }
     const budget = num(E.budget);
     if (Number.isNaN(budget)) { E.err = 'Budget hours must be a plain number (or left empty).'; pbProdJobRender(); return; }
@@ -34886,13 +34887,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbLvPlans = {};
   function pbLvExtraRows(job, have, rows) {
     const P = pbLvPlans[String(job || '').trim().toLowerCase().slice(0, 60)], out = [], seen = new Set(rows.map(r => r.key));
-    const add = (key, unit, name) => { if (!key || seen.has(key) || String(key).startsWith('_')) return; seen.add(key); const i = have.get(key); out.push({ key, unit: unit || '', qty: i && i.qty != null ? String(i.qty) : '', pre: null, typed: false, preText: null, label: (name || key) + (unit ? ' (' + unit + ')' : ''), custom: true }); };
-    (P && Array.isArray(P.cats) ? P.cats : []).forEach(c => c && add(c.key, c.unit, c.name));
+    const add = (key, unit, name, code) => { if (!key || seen.has(key) || String(key).startsWith('_')) return; seen.add(key); const i = have.get(key); out.push({ key, unit: unit || '', qty: i && i.qty != null ? String(i.qty) : '', pre: null, typed: false, preText: null, label: (name || key) + (unit ? ' (' + unit + ')' : '') + (code ? ' · ' + code : ''), custom: true }); };
+    (P && Array.isArray(P.cats) ? P.cats : []).forEach(c => c && add(c.key, c.unit, c.name, c.cost_code));
     have.forEach((i, key) => add(key, i.unit, key)); // something entered before stays editable
     return out;
   }
   function pbLvAddExtra(F, have) {
-    const extra = pbLvExtraRows(F.job, have, F.rows); if (!extra.length) return false;
+    { const P = pbLvPlans[String(F.job || '').trim().toLowerCase().slice(0, 60)]; let ch = false; // r15.5: the plan's own names and cost codes on every row
+      (P && Array.isArray(P.cats) ? P.cats : []).forEach(c => { const r = c && F.rows.find(x => x.key === c.key); if (!r) return; const lab = (c.name || r.key) + (r.unit ? ' (' + r.unit + ')' : '') + (c.cost_code ? ' · ' + c.cost_code : ''); if (r.label !== lab) { r.label = lab; ch = true; } });
+      F.labelsFromPlan = ch || F.labelsFromPlan; }
+    const extra = pbLvExtraRows(F.job, have, F.rows); if (!extra.length) return !!F.labelsFromPlan;
     let at = F.rows.findIndex(r => String(r.key).startsWith('_')); if (at < 0) at = F.rows.length;
     F.rows.splice(at, 0, ...extra); return true;
   }
@@ -44415,6 +44419,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return (pbMatList() || []).filter(o => o && !o.archived && o.id !== F.id && pbMatUseKey(o) === use && (o.footage_cat || 'pipe') === fc);
   }
   window.pbMatFixShare = function(id) { window.pbMatEdit(id); setTimeout(() => { const s = pbProdEl('pmf_footage_cat'); if (s) { s.scrollIntoView({ block: 'center' }); s.focus(); } }, 80); };
+  // r15.5 cost codes: a plan item's code; the job's codes (plan, materials, tickets) for the picker
+  function pbMatItemCode(k) { const cats = pbPj.data && pbPj.data.plan && Array.isArray(pbPj.data.plan.categories) ? pbPj.data.plan.categories : []; const c = cats.find(x => x && x.key === (k || 'pipe')); return c && c.cost_code ? String(c.cost_code) : ''; }
+  function pbMatJobCodes() {
+    const out = [], seen = new Set(), add = (code, name) => { code = String(code || '').trim(); if (!code || seen.has(code)) return; seen.add(code); out.push({ code, name: name || '' }); };
+    (pbPj.data && pbPj.data.plan && Array.isArray(pbPj.data.plan.categories) ? pbPj.data.plan.categories : []).forEach(c => c && add(c.cost_code, c.cost_code_name || c.name));
+    (pbMatList() || []).forEach(m => m && add(m.cost_code, m.name));
+    try { const T = pbTkCc && pbPj.job ? pbTkCc.map[String(pbPj.job.job_number || '').trim().toLowerCase()] : null; (T && T.rows || []).forEach(r => add(r.code, r.name)); } catch (e) {}
+    return out;
+  }
+  window.pbMatCodeTyped = function() { const F = pbMat.form; if (F) F.ccTyped = true; };
   function pbMatFootCat(k) { return pbMatFootCats().find(x => x.key === (k || 'pipe')) || null; }
   function pbMatHowText(m) { if (m.footage_cat && m.footage_cat !== 'pipe' && m.each_ft && (m.source === 'pipe_footage' || m.source === 'bedding_calc')) return 'From the ' + pbMatFootName(m.footage_cat) + ' crews report × ' + m.each_ft + ' ft each' + (m.source === 'bedding_calc' ? ', then the trench numbers (an estimate). ' + PB_MAT_USE_TEXT[pbMatIsShade(m) ? 'shading' : 'bedding'] : ' (counted production only).');
     if (m.footage_cat && m.footage_cat !== 'pipe' && (m.source === 'pipe_footage' || m.source === 'bedding_calc')) return (m.source === 'pipe_footage' ? 'From the ' + pbMatFootName(m.footage_cat) + ' footage crews report (counted production only).' : (pbMatIsShade(m) ? PB_MAT_SHADE_NOTE : PB_MAT_EST_NOTE).replace('footage', pbMatFootName(m.footage_cat) + ' footage') + ' ' + PB_MAT_USE_TEXT[pbMatIsShade(m) ? 'shading' : 'bedding']);
@@ -44513,7 +44527,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const live = list.filter(m => !m.archived), arch = list.filter(m => m.archived);
       if (!live.length) h += '<p class="pbp-dim pbm-none" id="pjMatEmpty">No materials listed for this job yet. Add the pipe, bedding and anything else you want to track against what’s ordered.</p>';
       h += pbMatShareNote(live);
-      h += '<ul class="pbm-list" id="pjMatList">' + live.map(m => pbMatRowHtml(m)).join('') + '</ul>';
+      h += '<ul class="pbm-list" id="pjMatList">' + pbMatGroups(live).map(g => g.length === 1 ? pbMatRowHtml(Object.assign({}, g[0], { __line: false })) : pbMatGroupHtml(g)).join('') + '</ul>';
       if (arch.length) h += '<details class="pb-more pbm-arch"><summary><span>Archived (' + arch.length + ')</span></summary><ul class="pbm-list">' + arch.map(m => '<li class="pbm-row archived"><span class="pbm-name">' + escapeHtml(m.name) + '</span><span class="pbp-dim">' + escapeHtml(pbMatCatName(m.category)) + ' · kept with its orders and history</span><span class="pbm-acts"><button type="button" class="pb-btn ghost small" onclick="pbMatArchive(\'' + m.id + '\', false)">Bring Back</button></span></li>').join('') + '</ul></details>';
     }
     if (list) h += pbMatTicketsHtml();
@@ -44523,6 +44537,23 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + 'Each line reads used / ordered / expected. <strong>Pipe</strong>: the Pipe Installed footage crews report (only what counts in the totals). <strong>Bedding</strong> (under the pipe, pipe bottom to subgrade): an estimate, the job’s pipe footage × trench width × bedding thickness ÷ 27 = cubic yards (nothing taken off: it’s below the pipe). <strong>Shading</strong> (the sides of the pipe plus a thickness over its top): footage × (trench width × (pipe OD + shading thickness) − the pipe’s own area) ÷ 27. Both get your compaction allowance (15% unless you change it), times the density when counted in tons. Actual use varies with field conditions such as trench width and grading accuracy. <strong>Other materials</strong>: the amounts you record. “+ waiting” is crew work still inside its 24 hours for a foreman: not in the used number yet, but it counts toward the alert. A pending edit of a run that already counts isn’t added until it’s approved. Two materials of the same use (two pipes, two beddings, two shadings) show “Split unknown” and no amount until crews say which went where; a bedding and a shading on one job is normal. A delivery ticket counts only while it still says what it said when linked; a ticket changed or moved to another job stops counting and shows as needing a look. When used + waiting reaches the material’s alert % of what’s ordered (80% unless you change it), the company account and managers get one notification for that order level; adding an order sets it up again. No notifications 8:55 PM to 6:00 AM: they go out after 6:00 AM.</p></details>';
     return h + '</section>';
   }
+  // r15.5: materials with the same name are one material, a line per cost code
+  function pbMatGroups(list) { const by = new Map(); list.forEach(m => { const k = String(m.name || '').trim().toLowerCase(); if (!by.has(k)) by.set(k, []); by.get(k).push(m); }); return [...by.values()]; }
+  function pbMatGroupHtml(g) {
+    const unit = g[0].unit, same = g.every(m => m.unit === unit), sum = (f) => g.reduce((a, m) => { const v = f(pbMatState(m)); return a === null || v === null || v === undefined ? (a === null ? null : a) : a + Number(v); }, 0);
+    const used = g.every(m => pbMatState(m).used !== null) ? sum(s => s.used) : null, ord = sum(s => s.ord || 0), exp = sum(s => s.exp || 0);
+    return '<li class="pbm-group" id="pjMatG_' + escapeHtml(g[0].id) + '" style="list-style:none;margin:0 0 12px;padding:10px 12px;border:1px solid var(--pb-divider);border-radius:12px">'
+      + '<span class="pbm-line1"><span class="pbm-name">' + escapeHtml(g[0].name) + '</span><span class="pbm-chips"><span class="pb-chip pbm-chip">' + g.length + ' cost codes</span></span></span>'
+      + (same ? '<span class="pbm-line2"><span class="pbm-nums">Total: ' + escapeHtml((used === null ? '—' : pbMatFmt(used, unit)) + ' / ' + (ord ? pbMatFmt(ord, unit) : '—') + ' / ' + pbMatFmt(exp, unit) + ' ' + unit) + '</span></span>' : '')
+      + '<ul class="pbm-list" style="margin-top:8px">' + g.map(m => pbMatRowHtml(Object.assign({}, m, { __line: true }))).join('') + '</ul></li>';
+  }
+  window.pbMatAddLine = function(id) {
+    const m = pbMatFind(id); if (!m) return;
+    window.pbMatEdit(null); const F = pbMat.form; if (!F) return;
+    Object.assign(F.v, { name: m.name, category: m.category, source: m.source, basis: m.basis || 'volume', unit: m.source === 'entered' ? m.unit : '', alert_pct: pbMatStr(m.alert_pct), trench_width_ft: pbMatStr(m.trench_width_ft), bed_thick_ft: pbMatStr(m.bed_thick_ft), density_tpy: pbMatStr(m.density_tpy), extra_pct: pbMatStr(m.extra_pct), use_as: m.use_as || 'bedding', shade_thick_ft: pbMatStr(m.shade_thick_ft), expected: '', cost_code: '', footage_cat: 'pipe', each_ft: '' });
+    F.lineOf = m.id; F.base = JSON.stringify(F.v); pbMatJobPaint();
+    setTimeout(() => { const s = pbProdEl('pmf_footage_cat') || pbProdEl('pmf_cost_code'); if (s) { s.scrollIntoView({ block: 'center' }); s.focus(); } }, 80);
+  };
   function pbMatRowHtml(m) {
     const s = pbMatState(m), id = m.id, open = !!pbMat.open[id];
     const orders = Array.isArray(m.orders) ? m.orders : [], uses = Array.isArray(m.uses) ? m.uses : [];
@@ -44531,12 +44562,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         ? gw + ' ft wide × (' + (Number(G.od_in) / 12).toFixed(4) + ' ft OD [' + G.od_in + ' in' + (G.od_from === 'id_wall' ? ', ID + 2 × wall' : '') + '] + ' + gt + ' ft over the pipe) − ' + (Math.PI * Math.pow(Number(G.od_in) / 12, 2) / 4).toFixed(4) + ' ft² of pipe = ' + Number(G.ft3_per_ft).toFixed(4) + ' ft³ ÷ 27 = '
         : gw + ' ft wide × ' + gt + ' ft thick ÷ 27 = ') + Number(m.fig.yd3_per_ft).toFixed(4) + ' yd³ in place' + (G && (G.width_from === 'job' || G.thick_from === 'job') ? ' (job settings)' : '') + ', + ' + pbMatFmt(m.extra_pct) + '% compaction allowance' + (m.basis === 'weight' ? ', × ' + m.density_tpy + ' tons per yd³' : '') + '. Footage counted: ' + pbMatFmt(m.fig.ft, 'LF') + ' LF' + (Number(m.fig.ft_waiting) ? ' (+' + pbMatFmt(m.fig.ft_waiting, 'LF') + ' LF waiting)' : '') + '.' : '';
     const hist = pbMat.hist[id];
-    return '<li class="pbm-row' + (s.reached || s.over ? ' alert' : '') + '" id="pjMat_' + id + '"><span class="pbm-line1"><span class="pbm-name">' + escapeHtml(m.name) + '</span><span class="pbm-chips">' + pbMatChips(m, s) + '</span></span>'
+    return '<li class="pbm-row' + (s.reached || s.over ? ' alert' : '') + (m.__line ? ' pbm-line' : '') + '" id="pjMat_' + id + '"><span class="pbm-line1"><span class="pbm-name">' + escapeHtml(m.__line ? (m.cost_code || 'No cost code') + ' · ' + (m.source === 'entered' ? 'recorded by hand' : pbMatFootName(m.footage_cat)) : m.name + (m.cost_code ? ' · ' + m.cost_code : '')) + '</span><span class="pbm-chips">' + pbMatChips(m, s) + '</span></span>'
       + '<span class="pbm-line2">' + pbMatNums(m, s) + '</span>' + pbMatBar(m, s)
       + '<span class="pbm-how' + (s.est ? ' est' : '') + '">' + escapeHtml((s.est ? '' : '') + pbMatHowText(m)) + '</span>'
       + '<span class="pbm-acts"><button type="button" class="pb-btn ghost small" onclick="pbMatOrderForm(\'' + id + '\')">Add Order</button>'
       + (m.source === 'entered' ? '<button type="button" class="pb-btn ghost small" onclick="pbMatUsedForm(\'' + id + '\')">Record Use</button>' : '')
       + '<button type="button" class="pb-btn ghost small" onclick="pbMatAddExpForm(\'' + id + '\')">Add to Expected</button>'
+      + '<button type="button" class="pb-btn ghost small" onclick="pbMatAddLine(\'' + id + '\')">Add Cost Code Line</button>'
       + '<button type="button" class="pb-btn ghost small" onclick="pbMatEdit(\'' + id + '\')">Edit</button>'
       + '<button type="button" class="pb-btn ghost small" aria-expanded="' + open + '" onclick="pbMatToggle(\'' + id + '\')">' + (open ? 'Hide Details' : 'Details') + '</button></span>'
       + (open ? '<div class="pbm-detail" id="pjMatD_' + id + '">'
@@ -44724,8 +44756,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const u = document.querySelector('input[name="pmfUse"]:checked'); if (u) F.v.use_as = u.value;
       const st = pbProdEl('pmf_shade_thick_ft'); if (st) F.v.shade_thick_ft = String(st.value);
       const fc = pbProdEl('pmf_footage_cat'); if (fc) { const fv = String(fc.value || 'pipe'); const pm = fv.startsWith('mat:') ? pbMatFind(fv.slice(4)) : null;
-        if (pm) { F.v.footage_cat = pm.footage_cat || 'pipe'; F.v.each_ft = pbMatStr(pm.each_ft); fc.value = F.v.footage_cat; } else F.v.footage_cat = fv; } // r15.4 / r15.4.1
+        if (pm) { F.v.footage_cat = pm.footage_cat || 'pipe'; F.v.each_ft = pbMatStr(pm.each_ft); fc.value = F.v.footage_cat; if (!F.ccTyped && pm.cost_code) F.v.cost_code = pm.cost_code; } else F.v.footage_cat = fv; } // r15.4 / r15.4.1 / r15.5
       const ef = pbProdEl('pmf_each_ft'); if (ef) F.v.each_ft = String(ef.value); // r15.4.1
+      const cc = pbProdEl('pmf_cost_code'); if (cc) F.v.cost_code = String(cc.value).trim(); // r15.5
     } else if (F.kind === 'job') { ['trench_width_ft', 'bed_thick_ft', 'shade_thick_ft', 'pipe_id_in', 'pipe_wall_in', 'pipe_od_in'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = String(el.value).trim(); });
     } else if (F.kind === 'tlink') { ['material', 'order', 'factor'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = String(el.value); });
     } else { ['qty', 'date', 'ref', 'note', 'reason', 'len', 'wid', 'thk'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = String(el.value); });
@@ -44799,7 +44832,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbMatSetForm({ kind: 'mat', id, version: m ? m.version : 0, preset: '', v: m ? { name: m.name, category: m.category, source: m.source, basis: m.basis || 'volume', unit: m.source === 'entered' ? m.unit : '', expected: pbMatStr(m.expected), alert_pct: pbMatStr(m.alert_pct),
         trench_width_ft: pbMatStr(m.trench_width_ft), bed_thick_ft: pbMatStr(m.bed_thick_ft), density_tpy: pbMatStr(m.density_tpy), extra_pct: pbMatStr(m.extra_pct), use_as: m.use_as || 'bedding', shade_thick_ft: pbMatStr(m.shade_thick_ft) }
       : { name: '', category: 'pipe', source: 'pipe_footage', basis: 'volume', unit: '', expected: '', alert_pct: '80', trench_width_ft: '', bed_thick_ft: '', density_tpy: '', extra_pct: String(PB_MAT_DEFAULT_EXTRA_PCT), use_as: 'bedding', shade_thick_ft: '', footage_cat: 'pipe' } });
-    if (m && pbMat.form) { pbMat.form.v.footage_cat = m.footage_cat || 'pipe'; pbMat.form.v.each_ft = pbMatStr(m.each_ft); pbMat.form.base = JSON.stringify(pbMat.form.v); pbMatJobPaint(); } // r15.4
+    if (m && pbMat.form) { pbMat.form.v.footage_cat = m.footage_cat || 'pipe'; pbMat.form.v.each_ft = pbMatStr(m.each_ft); pbMat.form.v.cost_code = m.cost_code || ''; pbMat.form.ccTyped = !!m.cost_code; pbMat.form.base = JSON.stringify(pbMat.form.v); pbMatJobPaint(); } // r15.4
   };
   window.pbMatPreset = function(k) {
     const F = pbMatFormRead(); if (!F || F.kind !== 'mat') return;
@@ -44852,7 +44885,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const v = F.v, bed = pbMatIsBed(v.category), calc = (v.source === 'bedding_calc' && bed), pipeFt = v.category === 'pipe' && v.source === 'pipe_footage';
     const unitText = calc ? (v.basis === 'weight' ? 'tons' : 'yd³') : pipeFt ? 'LF' : (v.unit || 'its unit');
     const radio = (name, val, label, cur, attrs) => '<label class="pb-checkrow pbm-radio"><input type="radio" name="' + name + '" value="' + val + '"' + (cur === val ? ' checked' : '') + ' onchange="pbMatFormRefresh()"' + (attrs || '') + '> <span>' + label + '</span></label>';
-    let h = '<form class="pbm-form" id="pmfForm" onsubmit="event.preventDefault(); pbMatFormSave();"><h4 class="pbm-h4">' + (F.id ? 'Edit material' : 'Add a material') + '</h4>';
+    let h = '<form class="pbm-form" id="pmfForm" onsubmit="event.preventDefault(); pbMatFormSave();"><h4 class="pbm-h4">' + (F.id ? 'Edit material' : F.lineOf ? 'Another cost code line: ' + escapeHtml(v.name) : 'Add a material') + '</h4>'
+      + (F.lineOf ? '<p class="pbp-dim" id="pmfLineNote">' + escapeHtml('Same material on its own cost code and footage (for example the laterals). Pick its footage, then its cost code.') + '</p>' : '');
     if (!F.id) h += '<div class="pb-field"><span class="pbm-flabel">Bedding presets</span><div class="pbm-presets" role="group" aria-label="Bedding presets">' + PB_MAT_PRESETS.map(p => '<button type="button" class="pb-btn ghost small' + (F.preset === p.k ? ' on' : '') + '" aria-pressed="' + (F.preset === p.k) + '" onclick="pbMatPreset(\'' + p.k + '\')">' + escapeHtml(p.name) + '</button>').join('') + '</div><p class="pb-help pbm-fhelp">Or type any material below.</p></div>';
     h += pbMatField('name', 'Material', v.name, 'type="text" maxlength="60" autocomplete="off" placeholder="e.g. 8 in PVC SDR 35"')
       + '<div class="pb-field"><label for="pmf_category">Type</label><select id="pmf_category" onchange="pbMatCatChange()">' + PB_MAT_CATS.map(c => '<option value="' + c[0] + '"' + (v.category === c[0] ? ' selected' : '') + '>' + c[1] + '</option>').join('') + '</select></div>';
@@ -44889,6 +44923,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (F.expAuto === undefined) { const c0 = pbMatExpCalc(v); F.expAuto = String(v.expected || '').trim() === '' || (c0.val !== '' && Number(v.expected) === Number(c0.val)); }
     const xc = pbMatExpCalc(v); if (F.expAuto) v.expected = xc.val;
     const xt = F.expAuto ? (xc.how || xc.why || '') : (xc.val ? 'Your own amount. Clear it to fill in ' + pbMatFmt(Number(xc.val), '') + ' from the plan again.' : '');
+    { // r15.5: the cost code, filled in from its footage item until typed
+      const icode = (v.source === 'pipe_footage' || calc) ? pbMatItemCode(v.footage_cat) : '';
+      if (!F.ccTyped && (!v.cost_code || v.cost_code === F.ccAuto)) { v.cost_code = icode; F.ccAuto = icode; }
+      const codes = pbMatJobCodes();
+      h += pbMatField('cost_code', 'Cost code', v.cost_code || '', 'type="text" maxlength="60" autocomplete="off" autocapitalize="characters" list="pmfCodes" placeholder="e.g. 02-100" oninput="pbMatCodeTyped()"', escapeHtml(icode ? 'From ' + pbMatFootName(v.footage_cat) + ' (' + icode + ') unless you type another. ' : '') + 'Same material on another cost code (main and laterals)? Save this one, then use Add Cost Code Line.')
+        + '<datalist id="pmfCodes">' + codes.map(c => '<option value="' + escapeHtml(c.code) + '">' + escapeHtml(c.name || '') + '</option>').join('') + '</datalist>'; }
     h += '<div class="pbm-grid">' + pbMatField('expected', (calc ? 'Expected in all, as ordered (' : 'Expected in all (') + escapeHtml(unitText) + ')', v.expected, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" aria-describedby="pmfExpHelp" oninput="pbMatExpTyped()" onblur="pbMatExpTyped(true)"')
       + pbMatField('alert_pct', 'Alert at (% of ordered)', v.alert_pct, 'type="text" inputmode="numeric" autocomplete="off" placeholder="80"') + '</div>'
       + '<p class="pb-help pbm-fhelp" id="pmfExpHelp"' + (xt ? '' : ' hidden') + '>' + escapeHtml(xt) + '</p>'
@@ -44920,7 +44960,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbMatSetForm({ kind: 'void', what, id, rid, label: what === 'tlink' ? pbMatTkLabel(x) + ', ' + pbMatFmt(x.ticket_qty, x.ticket_unit) + ' ' + x.ticket_unit : pbMatFmt(x.qty, x.unit) + ' ' + x.unit + ', ' + pbProdDayText(x.ordered_on || x.used_on), v: { reason: '' } });
   };
   const PB_MAT_ERR = { 'pb:duplicate_name': 'This job already has a material with that name.', 'pb:changed': 'Someone changed this material since you opened it. Cancel and open it again to see their changes.',
-    'pb:unit_locked': 'The unit can’t change while it has orders or amounts in the old unit. Void them first, or add a new material.', 'pb:bad_material': 'Check the numbers: one is missing, not a number, or out of range.',
+    'pb:cost_code_lines_need_paste': 'A second cost-code line of the same material needs one more server step: run the R155 owner paste in Supabase, then save again.', 'pb:unit_locked': 'The unit can’t change while it has orders or amounts in the old unit. Void them first, or add a new material.', 'pb:bad_material': 'Check the numbers: one is missing, not a number, or out of range.',
     'pb:bad_qty': 'Enter an amount above 0.', 'pb:bad_date': 'Pick a date that isn’t in the future.', 'pb:reason_needed': 'Say why it’s being voided.', 'pb:quota': 'Too many materials or changes for now.',
     'pb:archived': 'This material is archived. Bring it back first.', 'pb:already_linked': 'That ticket line already counts toward a material. Refresh the page.',
     'pb:needs_factor': 'The units don’t convert by themselves: give the material a density, or say how many of its units one ticket unit is.', 'pb:bad_order': 'That order was voided. Pick another, or count it on its own.', 'pb:wrong_job': 'That ticket is for another job.', 'pb:not_found': 'This material isn’t there any more. Refresh the page.', 'pb:not_entered': 'Amounts can only be recorded on a material counted by hand.' };
@@ -44960,6 +45000,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
             [{ label: 'Share It', onClick: () => { F.shareOk = true; window.pbMatFormSave(); } }, { label: 'Pick Its Own Item', primary: true, onClick: () => { const s = pbProdEl('pmf_footage_cat'); if (s) { s.scrollIntoView({ block: 'center' }); s.focus(); } } }], 'Same Footage');
           return;
         } }
+      p.cost_code = String(v.cost_code || '').trim().slice(0, 60); // r15.5
       if (calc || v.source === 'pipe_footage') { p.footage_cat = v.footage_cat || 'pipe'; const fcc = pbMatFootCat(p.footage_cat); p.each_ft = p.footage_cat !== 'pipe' && fcc && !fcc.lf ? (v.each_ft || '') : ''; } // r15.4 / r15.4.1
       if (calc) { p.use_as = v.use_as || 'bedding'; if (p.use_as === 'shading') p.shade_thick_ft = v.shade_thick_ft || ''; else p.bed_thick_ft = v.bed_thick_ft; p.basis = v.basis || 'volume'; p.trench_width_ft = v.trench_width_ft; p.extra_pct = v.extra_pct === '' ? String(PB_MAT_DEFAULT_EXTRA_PCT) : v.extra_pct; p.density_tpy = v.density_tpy; }
       fn = 'pb_mat_save'; args = { p_job_number: job.job_number, p_material: p, p_expect_uid: uid, p_expect_version: F.id ? F.version : 0, p_phone_at: now };
