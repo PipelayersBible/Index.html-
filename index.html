@@ -4565,6 +4565,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
           <div class="pb-field"><label>Pad length (ft, optional)</label><input type="number" enterkeyhint="next" step="0.1" id="beddingPadL" inputmode="decimal"></div>
           <div class="pb-field"><label>Pad width (ft, optional)</label><input type="number" enterkeyhint="next" step="0.1" id="beddingPadW" inputmode="decimal"></div>
         </div>
+        <div class="pb-field pb-qty-field"><label for="beddingQty">Quantity (structures this size)</label><input type="number" enterkeyhint="done" step="1" min="1" id="beddingQty" value="1" inputmode="numeric"><p class="pb-help" style="margin:2px 0 0 0;">For the bedding volume: how many structures get this same pad.</p></div>
         <div class="pb-btn-wrap" style="padding:14px 0 0 0;"><button class="pb-btn" onclick="pbCalcBedding()">Calculate</button></div>
         <div class="pb-derived" id="beddingResult" style="font-size:16px; margin-top:10px;"></div>
         <div class="pb-calc-notebar" id="beddingNoteBar" style="display:none;"></div>
@@ -4731,6 +4732,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
           <div class="pb-btn-wrap" style="padding-top:6px;"><button class="pb-btn ghost small" style="width:100%;" onclick="pbAddEncPipeSize()">+ Add Another Pipe Size</button></div>
         </div>
 
+        <div class="pb-field pb-qty-field"><label for="volQty">Quantity</label><input type="number" enterkeyhint="done" step="1" min="1" id="volQty" value="1" inputmode="numeric"><p class="pb-help" style="margin:2px 0 0 0;">How many the same size, e.g. 6 footings. The answer is for all of them.</p></div>
         <div class="pb-btn-wrap" style="padding:14px 0 0 0;"><button class="pb-btn" onclick="pbCalcVolume()">Calculate</button></div>
         <div class="pb-toggle" id="volUnitToggle" style="display:none; margin-top:12px;">
           <button data-val="yd3" class="active">Cubic Yards</button>
@@ -8754,7 +8756,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.10 · 2026-10-22'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.11 · 2026-10-22'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -19911,10 +19913,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const pl = numVal('beddingPadL'), pw = numVal('beddingPadW');
       if (pl !== null || pw !== null) {
         if (pl === null || pw === null || !(pl > 0) || !(pw > 0) || !Number.isFinite(pl * pw * thk)) resultEl.insertAdjacentHTML('beforeend', '<p class="pb-answer-sub" id="beddingPadMsg">For the bedding volume, enter both pad length and width (ft, greater than zero).</p>');
+        else if (window.pbCalcQty('beddingQty') === null) resultEl.insertAdjacentHTML('beforeend', '<p class="pb-answer-sub" id="beddingPadMsg">Quantity: a whole number, 1 or more.</p>');
         else {
-          const yd3 = pl * pw * thk / 27;
-          resultEl.insertAdjacentHTML('beforeend', '<div class="pb-answer-box" id="beddingVolBox"><div class="pb-answer-label">Bedding Volume (estimate)</div><div class="pb-answer-val">' + yd3.toFixed(2) + ' yd³</div><div class="pb-answer-sub">' + pl + ' ft × ' + pw + ' ft × ' + thk + ' ft thick (' + pbWtTrim(thk * 12, 2) + ' in), in place</div></div>' + (typeof window.pbCiBtnHtml === 'function' ? window.pbCiBtnHtml('sb', yd3, 'Structure Bedding: ' + pl + ' × ' + pw + ' ft pad') : '') + pbWtHtml('bedding', yd3));
-          lastBeddingResultText += `; bedding volume ${yd3.toFixed(2)} yd³ in place (pad ${pl} × ${pw} ft, estimate)`;
+          const sq = window.pbCalcQty('beddingQty'), yd3 = pl * pw * thk / 27 * sq; // feat_volqty
+          resultEl.insertAdjacentHTML('beforeend', '<div class="pb-answer-box" id="beddingVolBox"><div class="pb-answer-label">Bedding Volume (estimate)</div><div class="pb-answer-val">' + yd3.toFixed(2) + ' yd³</div><div class="pb-answer-sub">' + pl + ' ft × ' + pw + ' ft × ' + thk + ' ft thick (' + pbWtTrim(thk * 12, 2) + ' in)' + (sq > 1 ? ', × ' + sq + ' structures' : '') + ', in place</div></div>' + (typeof window.pbCiBtnHtml === 'function' ? window.pbCiBtnHtml('sb', yd3, 'Structure Bedding: ' + pl + ' × ' + pw + ' ft pad' + (sq > 1 ? ' × ' + sq : '')) : '') + pbWtHtml('bedding', yd3));
+          lastBeddingResultText += `; bedding volume ${yd3.toFixed(2)} yd³ in place (pad ${pl} × ${pw} ft${sq > 1 ? ', ' + sq + ' structures' : ''}, estimate)`;
         }
       }
     }
@@ -19988,7 +19991,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     document.querySelectorAll('#volUnitToggle button').forEach(b => b.classList.toggle('active', b.dataset.val === 'yd3'));
     pbGoto('volumeCalc');
   };
-  let volLastCubicFt = null, volLastLabel = 'Volume', volLastArcLen = null, volLastArcLabel = 'Arc length';
+  let volLastCubicFt = null, volLastLabel = 'Volume', volLastArcLen = null, volLastArcLabel = 'Arc length', volLastQty = 1;
+  window.pbCalcQty = function(id) { const el = document.getElementById(id), t = el ? String(el.value).trim() : ''; if (t === '') return 1; const n = Number(t); return Number.isInteger(n) && n >= 1 && n <= 10000 ? n : null; }; // feat_volqty
   wireToggle('volUnitToggle', () => renderVolumeResult());
   // ONE rule for the closeout-reason controls, used by the toggle AND by
   // restoring a saved choice: detail is shown for every reason except
@@ -20013,7 +20017,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (unit === 'yd3') { primaryVal = cubicYd; primaryUnit = 'yd³'; }
     else if (unit === 'ft3') { primaryVal = cubicFt; primaryUnit = 'ft³'; }
     else { primaryVal = gal; primaryUnit = 'gal'; }
-    document.getElementById('volumeResult').innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">${volLastLabel}</div><div class="pb-answer-val">${primaryVal.toFixed(2)} ${primaryUnit}</div><div class="pb-answer-sub">${cubicYd.toFixed(2)} yd³ · ${cubicFt.toFixed(2)} ft³ · ${gal.toFixed(1)} gal${volLastArcLen !== null ? ' · ' + volLastArcLabel + ': ' + volLastArcLen.toFixed(2) + ' ft' : ''}</div></div>` + (typeof window.pbCiBtnHtml === 'function' ? window.pbCiBtnHtml('vol', cubicYd, 'Material Volume: ' + ((document.querySelector('#volShapeToggle button.active') || {}).textContent || 'Volume').trim()) : '') + pbWtHtml('volume', cubicYd);
+    document.getElementById('volumeResult').innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">${volLastLabel}</div><div class="pb-answer-val">${primaryVal.toFixed(2)} ${primaryUnit}</div><div class="pb-answer-sub">${volLastQty > 1 ? volLastQty + ' × ' + (cubicYd / volLastQty).toFixed(2) + ' yd³ each · ' : ''}${cubicYd.toFixed(2)} yd³ · ${cubicFt.toFixed(2)} ft³ · ${gal.toFixed(1)} gal${volLastArcLen !== null ? ' · ' + volLastArcLabel + ': ' + volLastArcLen.toFixed(2) + ' ft' : ''}</div></div>` + (typeof window.pbCiBtnHtml === 'function' ? window.pbCiBtnHtml('vol', cubicYd, 'Material Volume: ' + ((document.querySelector('#volShapeToggle button.active') || {}).textContent || 'Volume').trim() + (volLastQty > 1 ? ' × ' + volLastQty : '')) : '') + pbWtHtml('volume', cubicYd);
   }
   window.pbCalcVolume = function() {
     volLastCubicFt = null;
@@ -20126,8 +20130,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       resultEl.textContent = 'Those values are outside what this calculator can compute (the result is not a finite number). Check the dimensions and their units (feet, or inches where marked) for a typo.';
       return;
     }
-    volLastCubicFt = cubicFt;
-    volLastLabel = label;
+    const qty = window.pbCalcQty('volQty'); // feat_volqty
+    if (qty === null) { volLastArcLen = null; resultEl.textContent = 'Quantity: a whole number, 1 or more.'; return; }
+    volLastQty = qty;
+    volLastCubicFt = cubicFt * qty;
+    volLastLabel = label + (qty > 1 ? ' × ' + qty : '');
     document.getElementById('volUnitToggle').style.display = '';
     renderVolumeResult();
   };
