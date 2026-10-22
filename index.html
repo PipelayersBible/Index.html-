@@ -8692,7 +8692,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.3.3 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.3.4 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -44382,7 +44382,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbMatShareNote(list) {
     const by = {};
     list.filter(m => m && !m.archived && pbMatUseKey(m)).forEach(m => { (by[pbMatUseKey(m)] = by[pbMatUseKey(m)] || []).push(m); });
-    return Object.keys(by).filter(k => by[k].length > 1).map(k => '<p class="pb-warn photo pbm-share"><strong>Split unknown: ' + k + '</strong>' + escapeHtml(by[k].map(m => m.name).join(', ') + ' are all ' + k + ' worked out from this job’s pipe footage, and the app can’t tell yet how much went to each. So none of them shows an amount, an alert or a digest line, rather than counting the job twice. Crews will pick the ' + k + ' on Run Setup (coming next). Until then, keep one of them on footage and set the others to amounts you record, or archive the one not in use.') + '</p>').join('');
+    return Object.keys(by).filter(k => by[k].length > 1).map(k => '<p class="pb-warn photo pbm-share"><strong>Split unknown: ' + k + '</strong>' + escapeHtml(by[k].map(m => m.name).join(', ') + ' are all ' + k + ' worked out from this job’s pipe footage, and the app can’t tell yet how much went to each. So none of them shows an amount, an alert or a digest line, rather than counting the job twice. Each run says which ' + k + ' it used on Run Setup (' + (k === 'pipe' ? 'Pipe material' : k === 'shading' ? 'Shading material' : 'Bedding material') + '); footage from runs that didn’t pick one can’t be split. For pipe you don’t track from runs (laterals, for example), tap Edit and choose “Amounts I record by hand”.') + '</p>').join('');
   }
 
   // ---- Company production cards: a Materials block on each job ----
@@ -44491,6 +44491,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<span class="pbm-how' + (s.est ? ' est' : '') + '">' + escapeHtml((s.est ? '' : '') + pbMatHowText(m)) + '</span>'
       + '<span class="pbm-acts"><button type="button" class="pb-btn ghost small" onclick="pbMatOrderForm(\'' + id + '\')">Add Order</button>'
       + (m.source === 'entered' ? '<button type="button" class="pb-btn ghost small" onclick="pbMatUsedForm(\'' + id + '\')">Record Use</button>' : '')
+      + '<button type="button" class="pb-btn ghost small" onclick="pbMatAddExpForm(\'' + id + '\')">Add to Expected</button>'
       + '<button type="button" class="pb-btn ghost small" onclick="pbMatEdit(\'' + id + '\')">Edit</button>'
       + '<button type="button" class="pb-btn ghost small" aria-expanded="' + open + '" onclick="pbMatToggle(\'' + id + '\')">' + (open ? 'Hide Details' : 'Details') + '</button></span>'
       + (open ? '<div class="pbm-detail" id="pjMatD_' + id + '">'
@@ -44665,7 +44666,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---- the forms (one at a time, in place of the list) ----
-  function pbMatNorm(s) { s = String(s == null ? '' : s).trim().replace(/[,\s]/g, ''); if (/^\.\d/.test(s)) s = '0' + s; if (/^\d+\.$/.test(s)) s = s.slice(0, -1); return s; }
+  function pbMatNorm(s) { s = String(s == null ? '' : s).trim().replace(/[,\s]/g, '');
+    if (/^\.?\d[\d.]*(\+\.?\d[\d.]*)+$/.test(s)) { const p = s.split('+').map(Number); if (p.every(Number.isFinite)) s = String(Math.round(p.reduce((a, b) => a + b, 0) * 1000) / 1000); } // "76.7+12" -> 88.7
+    if (/^\.\d/.test(s)) s = '0' + s; if (/^\d+\.$/.test(s)) s = s.slice(0, -1); return s; }
   const pbMatV = (id) => { const el = pbProdEl(id); return el ? String(el.value || '').trim() : ''; };
   function pbMatFormRead() {
     const F = pbMat.form; if (!F || !pbProdEl('pmfForm')) return F;
@@ -44772,6 +44775,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + (isO ? pbMatField('ref', 'PO / order number', F.v.ref, 'type="text" maxlength="60" autocomplete="off" placeholder="Optional"') : '')
         + pbMatField('note', 'Note', F.v.note, 'type="text" maxlength="200" autocomplete="off" placeholder="Optional"') + btns(isO ? 'Save Order' : 'Save') + '</form>';
     }
+    if (F.kind === 'addexp') {
+      return '<form class="pbm-form" id="pmfForm" onsubmit="event.preventDefault(); pbMatFormSave();"><h4 class="pbm-h4">Add to Expected: ' + escapeHtml(m ? m.name : '') + '</h4>'
+        + '<p class="pbp-dim" id="pmfAddNow">' + escapeHtml('Expected now: ' + (m && m.expected != null ? pbMatFmt(m.expected, m.unit) + ' ' + m.unit : 'not set') + '. Add what the extra work needs (for example the laterals); the new total is saved on this material.') + '</p>'
+        + pbMatField('qty', 'Add (' + escapeHtml(m ? m.unit : '') + ')', F.v.qty, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 12" oninput="pbMatAddExpIn()"')
+        + '<p class="pb-help pbm-fhelp" id="pmfAddTot" role="status">' + escapeHtml(pbMatAddExpText(m, F.v.qty)) + '</p>' + btns('Add to Expected') + '</form>';
+    }
     if (F.kind === 'tlink') return pbMatLinkFormHtml(F, btns);
     if (F.kind === 'job') return pbMatSettingsFormHtml(F, btns);
     if (F.kind === 'void') {
@@ -44818,6 +44827,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (m && ((m.orders || []).some(o => !o.voided) || (m.uses || []).some(u => !u.voided))) h += '<p class="pb-help pbm-fhelp">Its unit can’t change while it has orders or amounts in ' + escapeHtml(m.unit) + ' (void them first, or add a new material).</p>';
     return h + btns(F.id ? 'Save Changes' : 'Add Material') + '</form>';
   }
+  function pbMatAddExpText(m, q) { const a = Number(pbMatNorm(q)); if (!m || !(a > 0)) return ''; const t = Math.round(((Number(m.expected) || 0) + a) * 1000) / 1000; return 'New total: ' + pbMatFmt(t, m.unit) + ' ' + m.unit + '.'; }
+  window.pbMatAddExpForm = function(id) { const m = pbMatFind(id); if (!m) return; pbMatSetForm({ kind: 'addexp', id, v: { qty: '' } }); };
+  window.pbMatAddExpIn = function() { const F = pbMatFormRead(); if (!F || F.kind !== 'addexp') return; const el = pbProdEl('pmfAddTot'); if (el) el.textContent = pbMatAddExpText(pbMatFind(F.id), F.v.qty); };
   window.pbMatFormCancel = function() { pbMat.form = null; pbMatJobPaint(); };
   window.pbMatOrderForm = function(id) { const m = pbMatFind(id); if (!m) return; pbMatSetForm({ kind: 'order', id, v: { qty: '', date: pbTkToday(), ref: '', note: '' } }); };
   window.pbMatUsedForm = function(id) { const m = pbMatFind(id); if (!m) return; pbMatSetForm({ kind: 'use', id, v: { qty: '', date: pbTkToday(), note: '' } }); };
@@ -44840,6 +44852,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const fail = (t) => { F.err = t; F.saving = false; pbMatJobPaint(); const e = pbProdEl('pmfErr'); if (e) e.scrollIntoView({ block: 'nearest' }); };
     let fn, args;
     const now = new Date().toISOString();
+    if (F.kind === 'addexp') { // the material's own save, with Expected = now + the amount added
+      const m = pbMatFind(F.id); if (!m) return fail('That material isn’t in the list any more. Refresh and try again.');
+      if (!pbMatNumOk(F.v.qty, 0.001, 1e8) || F.v.qty === '') return fail('Enter the amount to add, above 0.');
+      const tot = String(Math.round(((Number(m.expected) || 0) + Number(F.v.qty)) * 1000) / 1000);
+      window.pbMatEdit(F.id); const F2 = pbMat.form; if (!F2 || F2.kind !== 'mat') return;
+      const el = pbProdEl('pmf_expected'); if (el) el.value = tot; F2.v.expected = tot; F2.expAuto = false;
+      return window.pbMatFormSave();
+    }
     if (F.kind === 'mat') {
       const v = F.v;
       v.name = String(v.name || '').trim().replace(/\s+/g, ' ');
