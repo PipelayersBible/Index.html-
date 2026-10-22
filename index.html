@@ -1699,6 +1699,24 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 #pbApp #homeShortcuts .pb-sc-head .pb-edu-h { margin: 0; }
 
 /* Current job: a compact row with a pin, no yellow bar */
+#pbApp .pbm-ci { margin: 4px 0 14px; }
+#pbApp .pbm-ci-list { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+#pbApp .pbm-ci-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--pb-raised); border: 1px solid var(--pb-divider); }
+#pbApp .pbm-ci-tx { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+#pbApp .pbm-ci-name { font-weight: 650; color: var(--pb-text); overflow-wrap: anywhere; }
+#pbApp .pbm-ci-val { color: var(--pb-text-2); font-size: 14px; }
+#pbApp .pbm-ci-item .pb-btn { margin: 0; flex: none; width: auto; }
+#pbApp .pbm-ci-h { margin: 0 0 8px; color: var(--pb-text-2); font-size: 14px; font-weight: 600; }
+#pbApp .pbm-ci-btns { display: grid; grid-template-columns: 1fr; gap: 8px; }
+#pbApp .pbm-ci-btns .pb-btn { margin: 0; min-height: 52px; }
+#pbApp .pb-ci-band { margin: 12px 16px 0; padding: 12px 14px; border-radius: 14px; background: var(--pb-brand-soft); border: 1px solid var(--pb-brand-line); display: flex; flex-direction: column; gap: 10px; }
+#pbApp .pb-ci-band-tx { display: flex; flex-direction: column; gap: 2px; }
+#pbApp .pb-ci-band-k { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--pb-text-2); font-weight: 650; }
+#pbApp .pb-ci-band-n { font-size: 18px; font-weight: 700; color: var(--pb-text); overflow-wrap: anywhere; }
+#pbApp .pb-ci-band-s { font-size: 14px; color: var(--pb-text-2); }
+#pbApp .pb-ci-band .pb-btn { margin: 0; align-self: flex-start; width: auto; }
+#pbApp .pb-ci-use { margin: 12px 0 4px; }
+#pbApp .pb-ci-use .pb-btn { margin: 0 0 6px; width: 100%; min-height: 54px; }
 #pbApp #archiveOfficeWrap:not(:has(.pb-tool-row:not([style*="display: none"]):not([style*="display:none"]))) { display: none; }
 #pbApp #archiveOfficeHead { margin-top: 16px; }
 #pbApp #archiveCrewBtn[hidden] { display: none !important; }
@@ -8736,7 +8754,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.9 · 2026-10-22'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.10 · 2026-10-22'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -19895,7 +19913,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         if (pl === null || pw === null || !(pl > 0) || !(pw > 0) || !Number.isFinite(pl * pw * thk)) resultEl.insertAdjacentHTML('beforeend', '<p class="pb-answer-sub" id="beddingPadMsg">For the bedding volume, enter both pad length and width (ft, greater than zero).</p>');
         else {
           const yd3 = pl * pw * thk / 27;
-          resultEl.insertAdjacentHTML('beforeend', '<div class="pb-answer-box" id="beddingVolBox"><div class="pb-answer-label">Bedding Volume (estimate)</div><div class="pb-answer-val">' + yd3.toFixed(2) + ' yd³</div><div class="pb-answer-sub">' + pl + ' ft × ' + pw + ' ft × ' + thk + ' ft thick (' + pbWtTrim(thk * 12, 2) + ' in), in place</div></div>' + pbWtHtml('bedding', yd3));
+          resultEl.insertAdjacentHTML('beforeend', '<div class="pb-answer-box" id="beddingVolBox"><div class="pb-answer-label">Bedding Volume (estimate)</div><div class="pb-answer-val">' + yd3.toFixed(2) + ' yd³</div><div class="pb-answer-sub">' + pl + ' ft × ' + pw + ' ft × ' + thk + ' ft thick (' + pbWtTrim(thk * 12, 2) + ' in), in place</div></div>' + (typeof window.pbCiBtnHtml === 'function' ? window.pbCiBtnHtml('sb', yd3, 'Structure Bedding: ' + pl + ' × ' + pw + ' ft pad') : '') + pbWtHtml('bedding', yd3));
           lastBeddingResultText += `; bedding volume ${yd3.toFixed(2)} yd³ in place (pad ${pl} × ${pw} ft, estimate)`;
         }
       }
@@ -19995,7 +20013,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (unit === 'yd3') { primaryVal = cubicYd; primaryUnit = 'yd³'; }
     else if (unit === 'ft3') { primaryVal = cubicFt; primaryUnit = 'ft³'; }
     else { primaryVal = gal; primaryUnit = 'gal'; }
-    document.getElementById('volumeResult').innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">${volLastLabel}</div><div class="pb-answer-val">${primaryVal.toFixed(2)} ${primaryUnit}</div><div class="pb-answer-sub">${cubicYd.toFixed(2)} yd³ · ${cubicFt.toFixed(2)} ft³ · ${gal.toFixed(1)} gal${volLastArcLen !== null ? ' · ' + volLastArcLabel + ': ' + volLastArcLen.toFixed(2) + ' ft' : ''}</div></div>` + pbWtHtml('volume', cubicYd);
+    document.getElementById('volumeResult').innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">${volLastLabel}</div><div class="pb-answer-val">${primaryVal.toFixed(2)} ${primaryUnit}</div><div class="pb-answer-sub">${cubicYd.toFixed(2)} yd³ · ${cubicFt.toFixed(2)} ft³ · ${gal.toFixed(1)} gal${volLastArcLen !== null ? ' · ' + volLastArcLabel + ': ' + volLastArcLen.toFixed(2) + ' ft' : ''}</div></div>` + (typeof window.pbCiBtnHtml === 'function' ? window.pbCiBtnHtml('vol', cubicYd, 'Material Volume: ' + ((document.querySelector('#volShapeToggle button.active') || {}).textContent || 'Volume').trim()) : '') + pbWtHtml('volume', cubicYd);
   }
   window.pbCalcVolume = function() {
     volLastCubicFt = null;
@@ -44622,10 +44640,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (r.bed) { bed += r.bed.ft3; h += '<p class="bs-line">' + escapeHtml('Section ' + (i + 1) + ' bedding: ' + r.bed.how + ' = ' + pbBsF(r.bed.ft3, 1) + ' ft³ = ' + pbBsF(r.bed.ft3 / 27, 2) + ' yd³ in place') + '</p>'; }
       if (r.shade) { shade += r.shade.ft3; h += '<p class="bs-line">' + escapeHtml('Section ' + (i + 1) + ' shading: ' + r.shade.how + ' = ' + pbBsF(r.shade.ft3, 1) + ' ft³ = ' + pbBsF(r.shade.ft3 / 27, 2) + ' yd³ in place') + '</p>'; } });
     const box = (id, label, ft3) => { const y = ft3 / 27, o = y * f; return '<div class="pb-answer-box" id="' + id + '"><div class="pb-answer-label">' + label + ' to order</div><div class="pb-answer-val" data-yd3="' + o + '">' + pbBsF(o, 1) + ' yd³</div><div class="pb-answer-sub">' + escapeHtml(pbBsF(y, 2) + ' yd³ in place + ' + a + '% compaction = ' + pbBsF(o, 2) + ' yd³') + '</div></div>'; };
-    let out = '';
-    if (ok && pbBs.bed && bed > 0) out += box('bsBedBox', 'Bedding', bed) + pbBsWt('bedshadeB', bed / 27, a, 'Bedding');
-    if (ok && pbBs.shade && shade > 0) out += box('bsShadeBox', 'Shading', shade) + pbBsWt('bedshadeS', shade / 27, a, 'Shading');
-    if (ok && pbBs.bed && pbBs.shade && bed > 0 && shade > 0) out += '<div class="pb-answer-box" id="bsBothBox"><div class="pb-answer-label">Bedding + shading (same material)</div><div class="pb-answer-val">' + pbBsF((bed + shade) / 27 * f, 1) + ' yd³</div></div>';
+    let out = ''; // feat_calcimp: Use This Amount (in place; the material adds its own allowance) under the answer
+    const yb = ok && pbBs.bed && bed > 0 ? bed / 27 : 0, ys = ok && pbBs.shade && shade > 0 ? shade / 27 : 0;
+    const ci = typeof window.pbCiBtnHtml === 'function' ? window.pbCiBtnHtml('bs', yb + ys, 'Bedding & Shading: ' + (yb && ys ? 'bedding + shading' : yb ? 'bedding' : 'shading')) : '';
+    if (yb) out += box('bsBedBox', 'Bedding', bed) + (ys ? '' : ci) + pbBsWt('bedshadeB', bed / 27, a, 'Bedding');
+    if (ys) out += box('bsShadeBox', 'Shading', shade) + (yb ? '' : ci) + pbBsWt('bedshadeS', shade / 27, a, 'Shading');
+    if (yb && ys) out += '<div class="pb-answer-box" id="bsBothBox"><div class="pb-answer-label">Bedding + shading (same material)</div><div class="pb-answer-val">' + pbBsF((bed + shade) / 27 * f, 1) + ' yd³</div></div>' + ci;
     el.innerHTML = out + h + '<p class="pb-answer-sub">Estimate.</p>';
   }
   function pbBsWt(c, yd3, a, label) { const S = pbWtS(c); S.extra = a; S.label = label; return pbWtHtml(c, yd3); }
@@ -45087,8 +45107,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   const pbMatR = (x, d) => { const p = Math.pow(10, d); return Math.round(x * p) / p; };
   function pbMatExpCalc(v) { // -> { val, how } or { val: '', why }
-    if (v.kind && PB_MAT_KIND[v.kind]) { if (v.pmode !== 'dim') return { val: '', why: '' }; // feat_paving
-      const r = pbMatKindDims(v.kind, v.dl, v.dw, v.dt, v.density_tpy, v.extra_pct, v.unit); return r.qty ? { val: r.qty, how: r.how } : { val: '', why: r.how }; }
+    if (v.kind && PB_MAT_KIND[v.kind]) { if (v.pmode !== 'calc') return { val: '', why: '' }; // feat_paving, feat_calcimp
+      const r = pbCiQty(v.calcs, v.extra_pct, v.unit, v.density_tpy); return r.qty ? { val: r.qty, how: r.how } : { val: '', why: r.how }; }
     const L = pbMatPlanLen(v.footage_cat, v.each_ft), S = pbMat.set && pbPj.job && pbMat.set[pbPj.job.job_key] ? pbMat.set[pbPj.job.job_key].s : null;
     const bed = pbMatIsBed(v.category), calc = v.source === 'bedding_calc' && bed, pipeFt = v.category === 'pipe' && v.source === 'pipe_footage';
     if (!calc && !pipeFt) return { val: '', why: '' };
@@ -45132,7 +45152,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbMatExpApply(F, false);
   };
   window.pbExtraUnsavedChecks = Array.isArray(window.pbExtraUnsavedChecks) ? window.pbExtraUnsavedChecks : [];
-  window.pbExtraUnsavedChecks.push((from, to) => (from === 'prodJob' && to !== 'prodJob' && pbMat.form && pbMatDirty()) ? { title: 'Unsaved Material', text: 'Leave without saving? What you typed for this material is NOT saved.', onLeave: () => { pbMat.form = null; } } : null);
+  window.pbExtraUnsavedChecks.push((from, to) => (from === 'prodJob' && to !== 'prodJob' && pbMat.form && pbMatDirty() && !window.pbCiGoing) ? { title: 'Unsaved Material', text: 'Leave without saving? What you typed for this material is NOT saved.', onLeave: () => { pbMat.form = null; } } : null);
   function pbMatSetForm(F) { F.base = JSON.stringify(F.v); F.err = ''; F.saving = false; pbMat.form = F; pbMatJobPaint(); const f = document.querySelector('#pmfForm input:not([type=radio]), #pmfForm select'); if (f) f.focus({ preventScroll: true }); }
   const pbMatStr = (n) => (n === null || n === undefined) ? '' : String(n);
   window.pbMatEdit = function(id) {
@@ -45143,7 +45163,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       : { name: '', category: 'pipe', source: 'pipe_footage', basis: 'volume', unit: '', expected: '', alert_pct: '80', trench_width_ft: '', bed_thick_ft: '', density_tpy: '', extra_pct: String(PB_MAT_DEFAULT_EXTRA_PCT), use_as: 'bedding', shade_thick_ft: '', footage_cat: 'pipe' } });
     if (m && pbMat.form) { pbMat.form.v.footage_cat = m.footage_cat || 'pipe'; pbMat.form.v.each_ft = pbMatStr(m.each_ft); pbMat.form.v.cost_code = m.cost_code || ''; pbMat.form.ccTyped = !!m.cost_code; pbMat.form.base = JSON.stringify(pbMat.form.v); pbMatJobPaint(); } // r15.4
     if (pbMat.form) { const V = pbMat.form.v, k = m && m.kind && PB_MAT_KIND[m.kind] ? m.kind : ''; // feat_paving
-      V.kind = k; pbMat.form.kindWas = k; V.pmode = 'amt'; V.dl = ''; V.dw = ''; V.dt = k ? String(PB_MAT_KIND[k].thk) : '';
+      V.kind = k; pbMat.form.kindWas = k; V.pmode = 'amt'; V.calcs = []; V.dl = ''; V.dw = ''; V.dt = k ? String(PB_MAT_KIND[k].thk) : '';
       if (k) { V.density_tpy = pbMatStr(m.density_tpy); V.extra_pct = pbMatStr(m.extra_pct); }
       pbMat.form.base = JSON.stringify(V); pbMatJobPaint(); }
   };
@@ -45160,8 +45180,77 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!F.v.name || (W && F.v.name === W.name) || PB_MAT_PRESETS.some(p => p.name === F.v.name)) F.v.name = K.name; }
     else if (W) { F.v.unit = ''; F.v.density_tpy = ''; if (!pbMatIsBed(F.v.category)) F.v.extra_pct = String(PB_MAT_DEFAULT_EXTRA_PCT); }
   }
+  // ==== feat_calcimp: bring amounts back from the app's volume calculators ====
+  const PB_CI_CALCS = { vol: { name: 'Material Volume', open: () => window.pbOpenVolumeCalc() },
+    bs: { name: 'Bedding & Shading', open: () => window.pbOpenBsCalc(), bed: true },
+    sb: { name: 'Structure Bedding', open: () => window.pbOpenBeddingCalc(), bed: true } };
+  const PB_CI_SCREENS = { volumeCalc: 'vol', bedShadeCalc: 'bs', beddingCalc: 'sb' };
+  let pbCi = null; const pbCiOffers = {};
+  window.pbCiActive = () => !!pbCi;
+  const pbCiR = (x, d) => { const p = Math.pow(10, d); return Math.round(x * p) / p; };
+  // in-place yd³ from the calculators -> the material's amount: + its allowance, x its density for tons
+  function pbCiQty(calcs, extra, unit, dens) {
+    const L = (Array.isArray(calcs) ? calcs : []).filter(c => c && Number(c.yd3) > 0);
+    if (!L.length) return { qty: '', how: 'Pick a calculator below. Under its answer, tap Use This Amount to bring it back here.' };
+    const yd = L.reduce((s, c) => s + Number(c.yd3), 0), es = String(extra == null ? '' : extra).trim(), e = es === '' ? 0 : Number(es), f = 1 + (Number.isFinite(e) && e > 0 ? e : 0) / 100;
+    const tons = /^ton/i.test(String(unit || '')), d = Number(dens);
+    if (tons && !(d > 0)) return { qty: '', how: 'Set the density to work out tons.' };
+    const q = pbCiR(yd * f * (tons ? d : 1), 1), w = tons ? 'tons' : String(unit || 'yd³');
+    return { qty: String(q), how: (L.length > 1 ? L.length + ' amounts, ' : '') + pbCiR(yd, 2) + ' yd³ in place' + (f !== 1 ? ' + ' + pbMatFmt(e) + '%' : '') + (tons ? ' × ' + d + ' t/yd³' : '') + ' = ' + pbMatFmt(q, w) + ' ' + w + '.' };
+  }
+  function pbCiBoxHtml(F, m) {
+    const bed = m ? pbMatIsBed(m.category) : pbMatIsBed(F.v.category), L = Array.isArray(F.v.calcs) ? F.v.calcs : [];
+    let h = '<div class="pbm-ci" id="pmfCi">';
+    if (L.length) h += '<ul class="pbm-ci-list" id="pmfCiList" aria-label="Amounts from calculators">' + L.map((c, i) => '<li class="pbm-ci-item"><span class="pbm-ci-tx"><span class="pbm-ci-name">' + escapeHtml(c.label) + '</span><span class="pbm-ci-val">' + escapeHtml(pbCiR(Number(c.yd3), 2) + ' yd³ in place') + '</span></span>'
+      + '<button type="button" class="pb-btn ghost small" id="pmfCiDel' + i + '" aria-label="Remove ' + escapeHtml(c.label) + '" onclick="pbCiDel(' + i + ')">Remove</button></li>').join('') + '</ul>';
+    h += '<p class="pbm-ci-h">' + (L.length ? 'Add another from' : 'Work it out in') + '</p><div class="pbm-ci-btns">' + Object.keys(PB_CI_CALCS).filter(k => bed || !PB_CI_CALCS[k].bed)
+      .map(k => '<button type="button" class="pb-btn secondary" id="pmfCiOpen_' + k + '" onclick="pbCiOpen(\'' + k + '\')">' + escapeHtml(PB_CI_CALCS[k].name) + '</button>').join('') + '</div></div>';
+    return h;
+  }
+  window.pbCiOpen = function(k) {
+    const F = pbMatFormRead(), C = PB_CI_CALCS[k]; if (!C || !F || (F.kind !== 'mat' && F.kind !== 'addexp') || !pbPj.job) return;
+    const m = F.id ? pbMatFind(F.id) : null;
+    pbCi = { F, job: pbPj.job, k, name: String((F.kind === 'addexp' ? m && m.name : F.v.name) || '').trim() || 'this material' };
+    window.pbCiGoing = true; try { C.open(); } finally { window.pbCiGoing = false; }
+    if (pbCurrentScreen === 'prodJob') pbCi = null; // the calculator did not open
+  };
+  window.pbCiDel = function(i) { const F = pbMatFormRead(); if (!F || !Array.isArray(F.v.calcs)) return; F.v.calcs = F.v.calcs.filter((x, j) => j !== i); if (F.kind === 'mat') pbMatExpApply(F, false); pbMatJobPaint(); };
+  // a calculator's answer: the Use This Amount button (only while a material is waiting for one)
+  window.pbCiBtnHtml = function(k, yd3, label) {
+    delete pbCiOffers[k];
+    if (!pbCi || PB_CI_SCREENS[pbCurrentScreen] !== k || !(Number(yd3) > 0)) return '';
+    pbCiOffers[k] = { yd3: Number(yd3), label: String(label || PB_CI_CALCS[k].name) };
+    return '<div class="pb-ci-use" id="ciUse_' + k + '"><button type="button" class="pb-btn" id="ciUseBtn_' + k + '" onclick="pbCiUse(\'' + k + '\')">Use This Amount for ' + escapeHtml(pbCi.name) + '</button>'
+      + '<p class="pb-answer-sub">' + escapeHtml(pbCiR(Number(yd3), 2) + ' yd³ in place goes back to the material. Its allowance is added there.') + '</p></div>';
+  };
+  window.pbCiUse = function(k) {
+    const o = pbCiOffers[k], C = pbCi; if (!o || !C) return;
+    if (typeof window.pbCalcIsStale === 'function' && window.pbCalcIsStale(pbCurrentScreen)) { pbShowModal('The numbers changed since this answer. Tap Calculate first, then Use This Amount.', [{ label: 'OK' }]); return; }
+    pbCi = null;
+    if (pbMat.form !== C.F || pbPj.job !== C.job) { pbShowModal('That material form was closed, so the amount was not brought back. Open the material again and pick the calculator.', [{ label: 'OK' }]); return; }
+    const F = C.F; F.v.calcs = (Array.isArray(F.v.calcs) ? F.v.calcs : []).concat([{ yd3: o.yd3, label: o.label }]);
+    if (F.kind === 'mat') { F.v.pmode = 'calc'; F.expAuto = true; pbMatExpApply(F, false); } else F.v.mode = 'calc';
+    pbGoto('prodJob');
+    setTimeout(() => { const el = pbProdEl('pmfCi'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center' }); }, 120);
+  };
+  // the band on the calculator; leaving the calculators without using an amount drops the request
+  window.pbScreenHooks.push((name) => {
+    try {
+      document.querySelectorAll('.pb-ci-band').forEach(b => b.remove());
+      if (!pbCi) return;
+      const calcScreen = name === 'calcHub' || /^calcCat/.test(name) || /Calc$/.test(name);
+      if (!calcScreen) { if (name !== 'prodJob' && pbMat.form === pbCi.F) pbMat.form = null; pbCi = null; return; }
+      const k = PB_CI_SCREENS[name], sc = document.getElementById('screen-' + name), hd = sc && sc.querySelector('.pb-header'); if (!hd) return;
+      const b = document.createElement('div'); b.className = 'pb-ci-band'; b.id = 'pbCiBand'; b.setAttribute('role', 'status');
+      b.innerHTML = '<div class="pb-ci-band-tx"><span class="pb-ci-band-k">Getting an amount for</span><span class="pb-ci-band-n">' + escapeHtml(pbCi.name) + '</span><span class="pb-ci-band-s">' + (k ? 'Work it out, then tap Use This Amount under the answer.' : 'Open Material Volume' + (PB_CI_CALCS.bs && pbCi.F && (pbMatIsBed(pbCi.F.v.category) || (pbCi.F.id && pbMatIsBed((pbMatFind(pbCi.F.id) || {}).category))) ? ', Bedding & Shading or Structure Bedding' : '') + '.') + '</span></div>'
+        + '<button type="button" class="pb-btn ghost small" id="pbCiBack" onclick="pbCiBack()">Back to the Material</button>';
+      hd.insertAdjacentElement('afterend', b);
+    } catch (e) { console.error(e); }
+  });
+  window.pbCiBack = function() { pbCi = null; pbGoto('prodJob'); };
+  // ==== end feat_calcimp ====
   window.pbMatKindPick = function(k) { const F = pbMatFormRead(); if (!F || F.kind !== 'mat') return; F.preset = k; pbMatKindSet(F, k); pbMatJobPaint(); };
-  window.pbMatPModeChange = function() { const F = pbMatFormRead(); if (!F || F.kind !== 'mat') return; F.expAuto = F.v.pmode === 'dim'; pbMatJobPaint(); };
+  window.pbMatPModeChange = function() { const F = pbMatFormRead(); if (!F || F.kind !== 'mat') return; F.expAuto = F.v.pmode === 'calc'; if (F.expAuto) pbMatExpApply(F, false); pbMatJobPaint(); };
   window.pbMatCatChange = function() {
     const F = pbMatFormRead(); if (!F || F.kind !== 'mat') return;
     const c = F.v.category;
@@ -45190,13 +45279,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return '<form class="pbm-form" id="pmfForm" onsubmit="event.preventDefault(); pbMatFormSave();"><h4 class="pbm-h4">Add to Expected: ' + escapeHtml(m ? m.name : '') + '</h4>'
         + '<p class="pbp-dim" id="pmfAddNow">' + escapeHtml('Expected now: ' + (m && m.expected != null ? pbMatFmt(m.expected, m.unit) + ' ' + m.unit : 'not set') + '.') + '</p>'
         + (pbMatDimOk(m) ? '<fieldset class="pb-field pbm-fs"><legend>Add by</legend>'
-            + ['amt', 'dim'].map(k => '<label class="pb-checkrow pbm-radio"><input type="radio" name="pmfAddMode" value="' + k + '"' + ((F.v.mode || 'amt') === k ? ' checked' : '') + ' onchange="pbMatFormRefresh()"> <span>' + (k === 'amt' ? 'Amount (' + escapeHtml(m.unit) + ')' : 'Dimensions (the app works it out)') + '</span></label>').join('') + '</fieldset>' : '')
-        + (pbMatDimOk(m) && F.v.mode === 'dim'
+            + ['amt', 'calc'].map(k => '<label class="pb-checkrow pbm-radio"><input type="radio" name="pmfAddMode" value="' + k + '"' + ((F.v.mode || 'amt') === k ? ' checked' : '') + ' onchange="pbMatFormRefresh()"> <span>' + (k === 'amt' ? 'Amount (' + escapeHtml(m.unit) + ')' : 'Use a calculator') + '</span></label>').join('') + '</fieldset>' : '')
+        + (pbMatDimOk(m) && F.v.mode === 'calc' ? pbCiBoxHtml(F, m) // feat_calcimp
+          : pbMatDimOk(m) && F.v.mode === 'dim'
             ? '<div class="pbm-grid">' + pbMatField('len', 'Length (ft)', F.v.len, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 60" oninput="pbMatAddExpIn()"')
               + pbMatField('wid', 'Width (ft)', F.v.wid, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 3" oninput="pbMatAddExpIn()"') + '</div>'
               + '<div class="pbm-grid">' + pbMatField('thk', m.kind && PB_MAT_KIND[m.kind] ? 'Thickness (in)' : 'Thickness (ft)', F.v.thk, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 0.5" oninput="pbMatAddExpIn()"') + '</div>'
             : pbMatField('qty', 'Add (' + escapeHtml(m ? m.unit : '') + ')', F.v.qty, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 12" oninput="pbMatAddExpIn()"'))
-        + '<p class="pb-help pbm-fhelp" id="pmfAddTot" role="status">' + escapeHtml(pbMatAddExpText(m, pbMatAddQty(m, F.v))) + '</p>' + btns('Add to Expected') + '</form>';
+        + '<p class="pb-help pbm-fhelp" id="pmfAddTot" role="status">' + escapeHtml((pbMatDimOk(m) && F.v.mode === 'calc' ? pbCiAddCalc(m, F.v).how + ' ' : '') + pbMatAddExpText(m, pbMatAddQty(m, F.v))) + '</p>' + btns('Add to Expected') + '</form>';
     }
     if (F.kind === 'tlink') return pbMatLinkFormHtml(F, btns);
     if (F.kind === 'job') return pbMatSettingsFormHtml(F, btns);
@@ -45245,9 +45335,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       h += '<p class="pb-help pbm-fhelp">Counted in LF from the Pipe Installed footage that counts in the job’s totals.</p>';
     } else if (K) { // feat_paving: asphalt / concrete, a total or length x width x thickness
       const dimIn = 'type="text" inputmode="decimal" autocomplete="off" oninput="pbMatExpIn()"';
-      h += '<fieldset class="pb-field pbm-fs"><legend>Expected amount</legend>' + ['amt', 'dim'].map(k => '<label class="pb-checkrow pbm-radio"><input type="radio" name="pmfPMode" value="' + k + '"' + ((v.pmode || 'amt') === k ? ' checked' : '') + ' onchange="pbMatPModeChange()"> <span>' + (k === 'amt' ? 'Type the total' : 'Work it out from length × width × thickness') + '</span></label>').join('') + '</fieldset>';
-      if (v.pmode === 'dim') h += '<div class="pbm-grid">' + pbMatField('dl', 'Length (ft)', v.dl, dimIn + ' placeholder="e.g. 200"') + pbMatField('dw', 'Width (ft)', v.dw, dimIn + ' placeholder="e.g. 24"') + '</div>'
-        + '<div class="pbm-grid">' + pbMatField('dt', 'Thickness (in)', v.dt, dimIn + ' placeholder="e.g. ' + K.thk + '"') + '</div>';
+      h += '<fieldset class="pb-field pbm-fs"><legend>Expected amount</legend>' + ['amt', 'calc'].map(k => '<label class="pb-checkrow pbm-radio"><input type="radio" name="pmfPMode" value="' + k + '"' + ((v.pmode || 'amt') === k ? ' checked' : '') + ' onchange="pbMatPModeChange()"> <span>' + (k === 'amt' ? 'Type the total' : 'Use a calculator') + '</span></label>').join('') + '</fieldset>';
+      if (v.pmode === 'calc') h += pbCiBoxHtml(F, null); // feat_calcimp
       if (/^ton/i.test(v.unit || '')) h += pbMatField('density_tpy', 'Density (tons per yd³)', v.density_tpy, 'type="text" inputmode="decimal" autocomplete="off" placeholder="' + (K.density || '') + '" oninput="pbMatExpIn()"', '<strong>Verify with your supplier.</strong>' + (K.density ? ' Typical: ' + K.density + '.' : ''));
       h += pbMatField('extra_pct', 'Waste allowance (%)', v.extra_pct, 'type="text" inputmode="decimal" autocomplete="off" placeholder="0" oninput="pbMatExpIn()"');
     } else {
@@ -45280,12 +45369,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const q = Math.round(yd * f * (m.basis === 'weight' ? Number(m.density_tpy) : 1) * 10) / 10;
     return { qty: String(q), how: L + ' × ' + W + ' × ' + T + ' ft ÷ 27 = ' + (Math.round(yd * 100) / 100) + ' yd³ in place × ' + (Math.round(f * 10000) / 10000) + (m.basis === 'weight' ? ' × ' + m.density_tpy + ' t/yd³' : '') + ' = ' + pbMatFmt(q, m.unit) + ' ' + m.unit + ' to add.' };
   }
-  function pbMatAddQty(m, v) { return pbMatDimOk(m) && v.mode === 'dim' ? pbMatAddDims(m, v).qty : v.qty; }
+  function pbMatAddQty(m, v) { return pbMatDimOk(m) && v.mode === 'calc' ? pbCiAddCalc(m, v).qty : pbMatDimOk(m) && v.mode === 'dim' ? pbMatAddDims(m, v).qty : v.qty; }
+  function pbCiAddCalc(m, v) { return pbCiQty(v.calcs, m.extra_pct != null ? m.extra_pct : PB_MAT_DEFAULT_EXTRA_PCT, m.unit, m.density_tpy); }
   window.pbMatAddExpForm = function(id) { const m = pbMatFind(id); if (!m) return; const S = pbMat.set && pbPj.job && pbMat.set[pbPj.job.job_key] ? pbMat.set[pbPj.job.job_key].s : null, sh = m.use_as === 'shading';
     if (m.kind && PB_MAT_KIND[m.kind]) { pbMatSetForm({ kind: 'addexp', id, v: { qty: '', mode: 'amt', len: '', wid: '', thk: String(PB_MAT_KIND[m.kind].thk) } }); return; } // feat_paving
     pbMatSetForm({ kind: 'addexp', id, v: { qty: '', mode: 'amt', len: '', wid: pbMatStr(m.trench_width_ft != null ? m.trench_width_ft : S && S.trench_width_ft), thk: pbMatStr(sh ? (m.shade_thick_ft != null ? m.shade_thick_ft : S && S.shade_thick_ft) : (m.bed_thick_ft != null ? m.bed_thick_ft : S && S.bed_thick_ft)) } }); };
   window.pbMatAddExpIn = function() { const F = pbMatFormRead(); if (!F || F.kind !== 'addexp') return; const m = pbMatFind(F.id), el = pbProdEl('pmfAddTot');
-    if (el) { const d = pbMatDimOk(m) && F.v.mode === 'dim' ? pbMatAddDims(m, F.v) : null; el.textContent = (d ? d.how + ' ' : '') + pbMatAddExpText(m, pbMatAddQty(m, F.v)); } };
+    if (el) { const d = pbMatDimOk(m) && F.v.mode === 'calc' ? pbCiAddCalc(m, F.v) : pbMatDimOk(m) && F.v.mode === 'dim' ? pbMatAddDims(m, F.v) : null; el.textContent = (d ? d.how + ' ' : '') + pbMatAddExpText(m, pbMatAddQty(m, F.v)); } };
   window.pbMatFormCancel = function() { pbMat.form = null; pbMatJobPaint(); };
   window.pbMatOrderForm = function(id) { const m = pbMatFind(id); if (!m) return; pbMatSetForm({ kind: 'order', id, v: { qty: '', date: pbTkToday(), ref: '', note: '' } }); };
   window.pbMatUsedForm = function(id) { const m = pbMatFind(id); if (!m) return; pbMatSetForm({ kind: 'use', id, v: { qty: '', date: pbTkToday(), note: '' } }); };
@@ -45312,6 +45402,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const m = pbMatFind(F.id); if (!m) return fail('That material isn’t in the list any more. Refresh and try again.');
       const addq = pbMatAddQty(m, F.v);
       if (pbMatDimOk(m) && F.v.mode === 'dim' && !addq) return fail(pbMatAddDims(m, F.v).how);
+      if (pbMatDimOk(m) && F.v.mode === 'calc' && !addq) return fail(pbCiAddCalc(m, F.v).how);
       if (!pbMatNumOk(addq, 0.001, 1e8) || addq === '') return fail('Enter the amount to add, above 0.');
       const tot = String(Math.round(((Number(m.expected) || 0) + Number(addq)) * 1000) / 1000);
       window.pbMatEdit(F.id); const F2 = pbMat.form; if (!F2 || F2.kind !== 'mat') return;
