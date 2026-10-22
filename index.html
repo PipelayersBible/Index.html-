@@ -8728,7 +8728,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.6 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.7 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -47367,18 +47367,119 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + (Number(x.photo_count) ? '<p class="pbx-note" id="cxRunPhotos">' + pbCxE(x.photo_count + ' photo' + (x.photo_count === 1 ? '' : 's') + ' left out: they stay on the crew member’s phone.') + '</p>' : '')
       + '<details class="pb-more" style="margin-top:8px"><summary><span>Text version</span></summary><pre id="cxRunText" style="white-space:pre-wrap; font-family:\'IBM Plex Mono\'; font-size:12px; background:#fff; color:#1A1D21; padding:8px; border:1px solid #C9CED6; border-radius:10px; max-height:60vh; overflow-y:auto;">' + escapeHtml(e.reportText || '') + '</pre></details>';
     if (canProd) {
-      h += approve + '<details class="pb-more" id="cxRunPdfFold" style="margin-top:14px"' + (O.pdfOpen ? ' open' : '') + ' ontoggle="pbRrPdfFold(this.open)"><summary><span>View the run report (PDF)</span></summary>' + pdf + '</details>'
+      h += approve + pbRrSetupHtml(O, x) + '<details class="pb-more" id="cxRunPdfFold" style="margin-top:14px"' + (O.pdfOpen ? ' open' : '') + ' ontoggle="pbRrPdfFold(this.open)"><summary><span>View the run report (PDF)</span></summary>' + pdf + '</details>'
         + '<details class="pb-more" id="cxRunMore" style="margin-top:14px"><summary><span>More</span></summary><p class="pbx-note">Delete this run if it shouldn’t be in the company’s records (a test, a duplicate, the wrong job). It leaves every list and its production stops counting. The office sees that you deleted it, and the server keeps a copy.</p><button type="button" class="pb-btn ghost small" id="cxRunDelete" style="color:var(--rod-red)" onclick="pbRrDelete()">Delete Run</button></details>';
       if (O.pdfOpen) setTimeout(() => window.pbRrPdfShow(), 0);
     } else {
-      h += pbRrOffHtml(O, x) + (x.can_review && !x.reviewed_at ? '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn small" id="cxRunReviewed" onclick="pbRrReviewed()">Approve Report</button></div>' : '')
+      h += pbRrSetupHtml(O, x) + pbRrOffHtml(O, x) + (x.can_review && !x.reviewed_at ? '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn small" id="cxRunReviewed" onclick="pbRrReviewed()">Approve Report</button></div>' : '')
         + (x.can_send_back && !O.fromCrew && !O.fromList ? (O.sendBack ? '<div class="pb-field" id="cxSendBackForm" style="margin-top:14px"><label for="cxSendBackNote">What does the foreman need to add or fix?</label><textarea id="cxSendBackNote" rows="3" maxlength="500" placeholder="e.g. Add the crew hours" style="width:100%;box-sizing:border-box" oninput="pbRrSendBackType(this.value)">' + escapeHtml(O.sendBackText || '') + '</textarea>' + (O.sendBackErr ? '<p class="pb-warn pbp-manmsg" role="alert">' + pbCxE(O.sendBackErr) + '</p>' : '') + '<div class="pb-save-offer-btns"><button type="button" class="pb-btn small" id="cxSendBackGo" onclick="pbRrSendBack()">Send Back</button><button type="button" class="pb-btn ghost small" onclick="pbRrSendBackCancel()">Cancel</button></div></div>'
           : '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn ghost small" id="cxSendBackBtn" onclick="pbRrSendBackOpen()">Send Back to Foreman</button></div>') : '') + pdf;
       setTimeout(() => window.pbRrPdfShow(), 0);
     }
-    const keep = 'd|' + [x.id || x.sref, e.id, x.reviewed_at || '', x.sent_at || '', O.pdfOpen ? 1 : 0, O.sendBack ? 'sb:' + (O.sendBackErr || '') : '', x.sent_back_at || '', x.removed_at || '', pbRrOffKey(O, x), canProd ? ((pbLv.data ? 1 : 0) + ':' + (pbLv.form ? pbLv.form.cid + ':' + (pbLv.form.err || '') + ':' + pbLv.form.rows.length : '') + ':' + JSON.stringify(pbLvRuns())) : ''].join('|');
+    const keep = 'd|' + [x.id || x.sref, e.id, x.reviewed_at || '', x.sent_at || '', O.pdfOpen ? 1 : 0, O.sendBack ? 'sb:' + (O.sendBackErr || '') : '', x.sent_back_at || '', x.removed_at || '', pbRrOffKey(O, x), pbRrSetupKey(O, x), canProd ? ((pbLv.data ? 1 : 0) + ':' + (pbLv.form ? pbLv.form.cid + ':' + (pbLv.form.err || '') + ':' + pbLv.form.rows.length : '') + ':' + JSON.stringify(pbLvRuns())) : ''].join('|');
     return { h, s: '', keep };
   }
+  // ---- feat_runsetup: a sent run's setup, changed by the office (intended) or its foreman (field; his win) ----
+  const PB_RS_PICKS = [['pipe', 'Pipe', 'pipe'], ['bed', 'Bedding', 'bedding'], ['shade', 'Shading', 'shading']];
+  const PB_RS_NUMS = [['bed_thk', 'Bedding thickness', 'ft', 0.01, 20], ['shade_thk', 'Shading over the pipe', 'ft', 0, 20], ['width', 'Trench width', 'ft', 0.01, 100], ['od_in', 'Pipe OD', 'in', 0.1, 240]];
+  function pbRrSetupSide(O, x) { return pbRrOffOn(O, x) ? 'intended' : x && x.can_review && x.id && !x.removed_at ? 'field' : ''; }
+  function pbRrSetupKey(O, x) { return x && x.setup ? 'se:' + JSON.stringify([x.setup.version, x.setup.effective, O.se ? [O.se.err, O.se.saving] : null]) : ''; }
+  const pbRsNum = (v) => v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? '' : String(Number(v));
+  const pbRsPick = (v) => v && typeof v === 'object' && v.name ? String(v.name) : '';
+  function pbRsVal(key, v, unit) { if (key === 'job_number' || key === 'jobsite') return v ? String(v) : '—'; if (['pipe', 'bed', 'shade'].includes(key)) return pbRsPick(v) || '—'; const n = pbRsNum(v); return n ? n + ' ' + unit : '—'; }
+  function pbRsOver(S, path) { const get = (o) => { if (!o) return undefined; if (path.length === 1) return Object.prototype.hasOwnProperty.call(o, path[0]) ? o[path[0]] : undefined; const p = o.parts && o.parts[path[0]]; return p && Object.prototype.hasOwnProperty.call(p, path[1]) ? p[path[1]] : undefined; };
+    return { i: get(S.intended), f: get(S.field) }; }
+  function pbRsParts(S) { const e = S.effective || {}; return Array.isArray(e.parts) ? e.parts.filter(p => p && Number(p.n) >= 1) : []; }
+  function pbRrSetupHtml(O, x) {
+    const side = pbRrSetupSide(O, x), S = x && x.setup; if (!side || !S || !S.effective) return '';
+    const E = S.effective, parts = pbRsParts(S), F = O.se, office = side === 'intended';
+    const tag = (path, key, unit) => { const o = pbRsOver(S, path); let t = ''; if (o.f !== undefined) t = ' <span class="pbx-tag">Foreman</span>'; else if (o.i !== undefined) t = ' <span class="pbx-tag">PM</span>';
+      if (o.f !== undefined && o.i !== undefined && JSON.stringify(o.f) !== JSON.stringify(o.i)) t += '<br><span class="pbx-note">' + escapeHtml('PM intended: ' + pbRsVal(key, o.i, unit)) + '</span>';
+      if (!office && o.f !== undefined) t += ' <button type="button" class="pb-btn ghost small" onclick="pbRrSetupUndo(' + escapeHtml(JSON.stringify(path.join('.'))) + ')">Undo My Change</button>';
+      return t; };
+    const row = (label, val, path, key, unit) => '<div class="pbx-row-s" style="margin:2px 0"><strong>' + escapeHtml(label) + ':</strong> ' + escapeHtml(pbRsVal(key, val, unit)) + tag(path, key, unit) + '</div>';
+    let h = '<section id="cxRunSetup" style="margin:8px 0 12px"><h3 class="pbx-h2">Run setup</h3>';
+    if (!F) {
+      h += row('Job', E.job_number, ['job_number'], 'job_number') + row('Jobsite', E.jobsite, ['jobsite'], 'jobsite');
+      parts.forEach(p => { const n = String(p.n); if (parts.length > 1) h += '<p class="pbx-note" style="margin-top:6px"><strong>' + (n === '1' ? 'Run 1' : 'Section ' + n) + '</strong></p>';
+        PB_RS_PICKS.forEach(([k, lab]) => { h += row(lab, p[k], [n, k], k); });
+        PB_RS_NUMS.forEach(([k, lab, unit]) => { h += row(lab, p[k], [n, k], k, unit); }); });
+      const who = [S.intended_by_name ? 'PM: ' + S.intended_by_name : '', S.field_by_name ? 'Foreman: ' + S.field_by_name : ''].filter(Boolean).join(' · ');
+      h += (who ? '<p class="pbx-note" id="cxRunSetupWho">' + escapeHtml('Changed after the run. ' + who + '. The report below is as the crew sent it.') + '</p>' : '')
+        + '<p class="pbx-note">' + escapeHtml(office ? 'Your changes are the intended setup. The foreman’s field changes win.' : 'Your changes are the field setup. They win over the office’s.') + '</p>'
+        + '<div class="pb-save-offer-btns"><button type="button" class="pb-btn ghost small" id="cxRunSetupEdit" onclick="pbRrSetupOpen()">Change Setup</button></div>';
+      return h + '</section>';
+    }
+    const mats = Array.isArray(S.materials) ? S.materials : [];
+    const inp = (id, label, val, attrs, help) => '<div class="pb-field"><label for="' + id + '">' + escapeHtml(label) + '</label><input id="' + id + '" value="' + escapeHtml(val) + '" ' + attrs + '>' + (help ? '<p class="pb-help">' + escapeHtml(help) + '</p>' : '') + '</div>';
+    h += '<form id="cxRunSetupForm" onsubmit="event.preventDefault(); pbRrSetupSave();">'
+      + inp('cxRsJob', 'Job number', F.v.job_number, 'type="text" maxlength="60" autocomplete="off"', 'Changing it moves this run and its production to that job.')
+      + inp('cxRsSite', 'Jobsite', F.v.jobsite, 'type="text" maxlength="200" autocomplete="off"');
+    F.parts.forEach(n => {
+      if (F.parts.length > 1) h += '<p class="pbx-note" style="margin-top:6px"><strong>' + (n === '1' ? 'Run 1' : 'Section ' + n) + '</strong></p>';
+      PB_RS_PICKS.forEach(([k, lab, use]) => { const cur = F.v[n + '.' + k], list = mats.filter(m => m && m.use === use), have = cur && !list.some(m => m.name === cur.name);
+        const enc = (o) => o ? JSON.stringify({ id: o.id || null, name: o.name }) : '';
+        h += '<div class="pb-field"><label for="cxRs_' + n + '_' + k + '">' + escapeHtml(lab + ' material') + '</label><select id="cxRs_' + n + '_' + k + '"><option value="">None</option>'
+          + (have ? '<option value="' + escapeHtml(enc(cur)) + '" selected>' + escapeHtml(cur.name) + '</option>' : '')
+          + list.map(m => '<option value="' + escapeHtml(enc(m)) + '"' + (cur && cur.name === m.name ? ' selected' : '') + '>' + escapeHtml(m.name + (m.cost_code ? ' · ' + m.cost_code : '')) + '</option>').join('') + '</select></div>'; });
+      h += '<div class="pbm-grid">' + PB_RS_NUMS.map(([k, lab, unit]) => inp('cxRs_' + n + '_' + k, lab + ' (' + unit + ')', F.v[n + '.' + k], 'type="text" inputmode="decimal" autocomplete="off" placeholder="Job setting"')).join('') + '</div>';
+    });
+    h += (F.err ? '<p class="pb-warn pbp-manmsg" id="cxRunSetupErr" role="alert"><strong>Not saved</strong>' + escapeHtml(F.err) + '</p>' : '')
+      + '<div class="pb-save-offer-btns"><button type="button" class="pb-btn ghost small" id="cxRunSetupCancel" onclick="pbRrSetupCancel()">Cancel</button><button type="submit" class="pb-btn small" id="cxRunSetupSave"' + (F.saving ? ' disabled' : '') + '>' + (F.saving ? 'Saving…' : 'Save Setup') + '</button></div></form>';
+    return h + '</section>';
+  }
+  window.pbRrSetupOpen = function() {
+    const O = pbRoFor(pbArchiveOwnerUid), x = O.open, S = x && x.setup; if (!pbRrSetupSide(O, x) || !S) return;
+    const office = pbRrSetupSide(O, x) === 'intended', E = S.effective || {}, v = {};
+    // the office starts from its own intended value where it set one (the foreman's may stand over it); the foreman from the result
+    const start = (path, eff) => { const o = pbRsOver(S, path); return office && o.i !== undefined ? o.i : eff; };
+    v.job_number = String(start(['job_number'], E.job_number) || ''); v.jobsite = String(start(['jobsite'], E.jobsite) || '');
+    const parts = pbRsParts(S).map(p => String(p.n)); if (!parts.length) parts.push('1');
+    parts.forEach(n => { const p = pbRsParts(S).find(q => String(q.n) === n) || {};
+      PB_RS_PICKS.forEach(([k]) => { const c = start([n, k], p[k]); v[n + '.' + k] = c && c.name ? { id: c.id || null, name: c.name } : null; });
+      PB_RS_NUMS.forEach(([k]) => { v[n + '.' + k] = pbRsNum(start([n, k], p[k])); }); });
+    O.se = { v, base: JSON.parse(JSON.stringify(v)), parts, err: '', saving: false }; pbCxListRender();
+  };
+  window.pbRrSetupCancel = function() { const O = pbRoFor(pbArchiveOwnerUid); O.se = null; pbCxListRender(); };
+  const PB_RS_ERR = { 'pb:changed': 'Someone changed this run’s setup since you opened it. Go back and open the run again.', 'pb:removed': 'This run was deleted.', 'pb:not_your_crew': 'Only the office and this crew’s foreman can change it.', 'pb:bad_setup': 'Check the values.', 'pb:quota': 'Too many changes today.' };
+  async function pbRrSetupSend(O, x, change) {
+    const uid = pbArchiveOwnerUid;
+    const r = await pbPermitRpc('pb_prod_run_setup_save', { p_id: x.id, p_change: change, p_expect_uid: uid, p_expect_version: x.setup ? Number(x.setup.version) || 0 : 0 }, 30000);
+    if (r && !r.error && r.data && r.data.ok) { if (r.data.setup) { x.setup = r.data.setup; const j = x.setup.effective && x.setup.effective.job_number; if (j) x.job_number = j; } return ''; }
+    const msg = String((r && r.error && r.error.message) || ''), code = (msg.match(/pb:\w+/) || [''])[0];
+    return navigator.onLine === false || /failed to fetch|networkerror|load failed|timeout/i.test(msg) ? 'No signal. Nothing was saved.' : PB_RS_ERR[code] || (/could not find the function|schema cache/i.test(msg) ? 'The company server isn’t ready for this yet.' : 'Couldn’t save it. Nothing was changed.');
+  }
+  window.pbRrSetupSave = async function() {
+    const O = pbRoFor(pbArchiveOwnerUid), x = O.open, F = O.se; if (!F || !x || F.saving) return;
+    const val = (id) => { const el = document.getElementById(id); return el ? String(el.value) : null; };
+    const v = Object.assign({}, F.v); const j = val('cxRsJob'), s = val('cxRsSite'); if (j !== null) v.job_number = j.trim(); if (s !== null) v.jobsite = s.trim();
+    for (const n of F.parts) {
+      for (const [k] of PB_RS_PICKS) { const t = val('cxRs_' + n + '_' + k); if (t !== null) { try { v[n + '.' + k] = t ? JSON.parse(t) : null; } catch (e) { v[n + '.' + k] = null; } } }
+      for (const [k, lab, unit, lo, hi] of PB_RS_NUMS) { const t = val('cxRs_' + n + '_' + k); if (t === null) continue; const c = pbMatNorm(t);
+        if (c !== '' && !(/^\d+(\.\d+)?$/.test(c) && Number(c) >= lo && Number(c) <= hi)) { F.err = lab + ': enter a number from ' + lo + ' to ' + hi + ' ' + unit + ', or leave it blank.'; F.v = v; pbCxListRender(); return; }
+        v[n + '.' + k] = c; }
+    }
+    if (!v.job_number) { F.err = 'Enter the job number.'; F.v = v; pbCxListRender(); return; }
+    const change = {}; if (v.job_number !== F.base.job_number) change.job_number = v.job_number; if (v.jobsite !== F.base.jobsite) change.jobsite = v.jobsite || null;
+    F.parts.forEach(n => { const p = {};
+      PB_RS_PICKS.forEach(([k]) => { const nm = (o) => o && o.name ? o.name : ''; if (nm(v[n + '.' + k]) !== nm(F.base[n + '.' + k])) p[k] = v[n + '.' + k]; }); // the same name is the same pick
+      PB_RS_NUMS.forEach(([k]) => { if (v[n + '.' + k] !== F.base[n + '.' + k]) p[k] = v[n + '.' + k] === '' ? null : Number(v[n + '.' + k]); });
+      if (Object.keys(p).length) (change.parts = change.parts || {})[n] = p; });
+    F.v = v;
+    if (!Object.keys(change).length) { O.se = null; pbCxListRender(); return; }
+    F.saving = true; F.err = ''; pbCxListRender();
+    const err = await pbRrSetupSend(O, x, change);
+    if (pbRo !== O || O.open !== x) return;
+    F.saving = false; if (err) F.err = err; else O.se = null;
+    pbCxListRender();
+  };
+  window.pbRrSetupUndo = async function(path) {
+    const O = pbRoFor(pbArchiveOwnerUid), x = O.open; if (!x || pbRrSetupSide(O, x) !== 'field') return;
+    const err = await pbRrSetupSend(O, x, { clear: [String(path)] });
+    if (pbRo !== O || O.open !== x) return;
+    if (err) pbAlert(err, 'Not Saved');
+    pbCxListRender();
+  };
   // ---- feat_pmedit: the office's production on a run report ----
   const pbRrOffOn = (O, x) => !!(x && x.can_edit && x.id && !x.removed_at && !O.fromCrew && !O.fromList);
   function pbRrOffKey(O, x) { return pbRrOffOn(O, x) ? 'off:' + JSON.stringify([x.prod, O.pe ? [O.pe.err, O.pe.saving, O.pe.rows.length] : null]) : ''; }
@@ -47459,7 +47560,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       Object.assign(x, { sent_at: r.data.sent_at || x.sent_at, sent_how: r.data.sent_how || x.sent_how, reviewed_at: r.data.reviewed_at || null, reviewed_by_name: r.data.reviewed_by_name || null,
         sent_back_at: r.data.sent_back_at || null, sent_back_note: r.data.sent_back_note || null, sent_back_by_name: r.data.sent_back_by_name || null,
         removed_at: r.data.removed_at || x.removed_at || null, removed_reason: r.data.removed_reason || x.removed_reason || null, removed_by_name: r.data.removed_by_name || x.removed_by_name || null, can_send_back: !!r.data.can_send_back });
-      x.can_edit = !!r.data.can_edit; x.prod = r.data.prod && typeof r.data.prod === 'object' ? r.data.prod : null; x.plan = Array.isArray(r.data.plan) ? r.data.plan.filter(c => c && typeof c === 'object' && typeof c.key === 'string') : []; O.pe = null; // feat_pmedit
+      x.can_edit = !!r.data.can_edit; x.setup = r.data.setup && typeof r.data.setup === 'object' ? r.data.setup : null; O.se = null; x.prod = r.data.prod && typeof r.data.prod === 'object' ? r.data.prod : null; x.plan = Array.isArray(r.data.plan) ? r.data.plan.filter(c => c && typeof c === 'object' && typeof c.key === 'string') : []; O.pe = null; // feat_pmedit
       try { O.rec = normalizeArchiveEntry(Object.assign({}, r.data.record, { lockTime: new Date(r.data.record.lockTime) })); } catch (err) { O.rec = null; O.recMsg = 'This run’s record couldn’t be read.'; }
     } else O.recMsg = navigator.onLine === false ? 'No signal.' : 'Couldn’t load this run.';
     pbCxListRender();
@@ -47480,6 +47581,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       Object.assign(x, { id: r.data.id, who: r.data.who || x.who, job_number: r.data.job_number || '', label: r.data.label || '', locked_at: r.data.locked_at || null, photo_count: Number(r.data.photo_count) || 0,
         sent_at: r.data.sent_at || null, sent_how: r.data.sent_how || null, reviewed_at: r.data.reviewed_at || null, reviewed_by_name: r.data.reviewed_by_name || null, can_review: !!r.data.can_review,
         sent_back_at: r.data.sent_back_at || null, sent_back_note: r.data.sent_back_note || null, sent_back_by_name: r.data.sent_back_by_name || null });
+      x.setup = r.data.setup && typeof r.data.setup === 'object' ? r.data.setup : null; O.se = null; // feat_runsetup
       try { O.rec = normalizeArchiveEntry(Object.assign({}, r.data.record, { lockTime: new Date(r.data.record.lockTime) })); } catch (err) { O.rec = null; O.recMsg = 'This run’s record couldn’t be read.'; }
     } else {
       const m = String((r && r.error && r.error.message) || '');
