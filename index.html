@@ -1767,6 +1767,11 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 .pb-sc-tile:is([data-dest="pipeWeight"], [data-dest="manning"]) { --pb-tile-icon: var(--pb-icon-pipe); }
 .pb-sc-tile[data-dest="flow"] { --pb-tile-icon: var(--pb-icon-drop); }
 .pb-sc-tile[data-dest="volume"] { --pb-tile-icon: var(--pb-icon-cube); }
+.pb-sc-tile[data-dest="bedShade"] { --pb-tile-icon: var(--pb-icon-cube); }
+#pbApp #screen-bedShadeCalc { --pb-calc-icon: var(--pb-icon-cube); }
+#pbApp .bs-sec .pb-row { gap: 10px; }
+#pbApp .bs-line { font-size: 15px; margin: 4px 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+#pbApp .bs-err { color: var(--pb-warn, #f0b429); font-size: 15px; margin: 6px 0; }
 .pb-sc-tile[data-dest="bend"] { --pb-tile-icon: var(--pb-icon-bend); }
 .pb-sc-tile[data-dest="manhole"] { --pb-tile-icon: var(--pb-icon-manhole); }
 .pb-sc-tile:is([data-dest="edu"], [data-dest="confinedRef"]) { --pb-tile-icon: var(--pb-icon-book); }
@@ -4448,6 +4453,10 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div><div class="name">Material Volume</div><div class="sub">Rectangle, trapezoid, triangle, cylinder, pie slice or encasement</div></div>
       <div>&rsaquo;</div>
     </div>
+    <div class="pb-home-tile" onclick="pbOpenBsCalc()">
+      <div><div class="name">Bedding &amp; Shading</div><div class="sub">Yards and tons for bedding and shading</div></div>
+      <div>&rsaquo;</div>
+    </div>
     <div class="pb-home-tile" onclick="pbOpenBendCalc(null)">
       <div><div class="name">Bend Offset</div><div class="sub">Two matching bends — required pipe length between them</div></div>
       <div>&rsaquo;</div>
@@ -4706,6 +4715,32 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         </div>
         <div class="pb-derived" id="volumeResult" style="font-size:16px; margin-top:10px;"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- BEDDING & SHADING CALCULATOR (owner, Oct 21) -->
+  <div class="pb-screen pb-b6-calc" id="screen-bedShadeCalc">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>BEDDING &amp; SHADING</span><button class="pb-back" title="Back" onclick="pbGoBack()"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Bedding &amp; Shading</h1>
+      <div class="pb-addhome-wrap"><button type="button" class="pb-addhome" data-dest="bedShade" aria-pressed="false" onclick="pbAddToHome('bedShade')">Add to Home</button></div>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">What to figure</div>
+      <div class="pb-body">
+        <div class="pb-toggle" id="bsUseToggle" role="group" aria-label="What to figure">
+          <button type="button" id="bsUseBed" aria-pressed="true" class="active" onclick="pbBsUse('bed')">Bedding</button>
+          <button type="button" id="bsUseShade" aria-pressed="false" onclick="pbBsUse('shade')">Shading</button>
+        </div>
+        <p class="pb-help" style="margin:8px 0 0 0;">Pick one or both. Shading covers the sides and top of the pipe.</p>
+        <div class="pb-field" style="margin-top:12px;"><label for="bsExtra">Compaction allowance (%)</label><input type="text" id="bsExtra" inputmode="decimal" autocomplete="off" value="15" oninput="pbBsCalc()"></div>
+      </div>
+    </div>
+    <div id="bsSections"></div>
+    <div class="pb-btn-wrap" style="padding:0 16px;"><button type="button" class="pb-btn secondary" id="bsAddSec" onclick="pbBsAdd()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Section (another size)</button></div>
+    <div class="pb-section">
+      <div class="pb-tag">Result</div>
+      <div class="pb-body"><div id="bsResult" aria-live="polite"></div></div>
     </div>
   </div>
 
@@ -5932,7 +5967,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   #pbApp .pbm-bused { position: absolute; left: 0; top: 0; bottom: 0; background: var(--pb-brand); }
   #pbApp .pbm-bwait { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(45deg, var(--pb-brand) 0 3px, transparent 3px 6px); opacity: 0.7; }
   #pbApp .pbm-bord { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1px; background: var(--pb-text); }
-  #pbApp .pbm-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  #pbApp .pbm-acts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 4px; } /* r15.5.1: two rows (owner) */
+  #pbApp .pbm-acts > .pb-btn { margin: 0; min-height: 44px; padding: 6px 4px; font-size: 14px; line-height: 1.15; white-space: normal; text-align: center; }
   #pbApp .pbm-detail { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--pb-divider); }
   #pbApp .pbm-h4 { font-size: 15px; font-weight: 650; margin: 10px 0 4px 0; }
   #pbApp .pbm-sub { list-style: none; margin: 0; padding: 0; }
@@ -8692,7 +8728,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.5 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.5.1 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -9900,7 +9936,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     jobs: 'reports', jobSummary: 'reports', stats: 'tools',
     reports: 'reports', archive: 'reports', reportIssue: 'reports', reportReceipt: 'reports', myReports: 'reports', reportsInbox: 'reports',
     calcHub: 'calculators', calcCatGrade: 'calculators', calcCatTrench: 'calculators', calcCatPipe: 'calculators', calcCatStructures: 'calculators',
-    bendCalc: 'calculators', beddingCalc: 'calculators', flowCalc: 'calculators', volumeCalc: 'calculators', ventCalc: 'calculators',
+    bendCalc: 'calculators', beddingCalc: 'calculators', flowCalc: 'calculators', volumeCalc: 'calculators', ventCalc: 'calculators', bedShadeCalc: 'calculators',
     trenchCalc: 'calculators', pipeWeightCalc: 'calculators', liftCalc: 'calculators', slopeConvCalc: 'calculators', fracCalc: 'calculators',
     manningCalc: 'calculators', manholeDepthCalc: 'calculators', rodElevCalc: 'calculators',
     tools: 'tools', quickrun: 'tools', formulasHub: 'tools', confinedHub: 'tools',
@@ -27189,6 +27225,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     { id: 'manning', label: 'Manning’s Equation', sub: 'Full-pipe gravity flow capacity and velocity', cat: 'pipe', gate: 'calcHub', screen: 'manningCalc', words: 'manning mannings flow capacity velocity gravity full pipe cfs', open: () => pbGoto('manningCalc') },
     { id: 'flow', label: 'Flush / Flow Rate', sub: 'Flow rate and time-to-target-gallons for a pressurized flush', cat: 'pipe', gate: 'calcHub', screen: 'flowCalc', words: 'flush flow rate gpm gallons pressure psi hydrant', open: () => pbOpenFlowCalc() },
     { id: 'volume', label: 'Material Volume', sub: 'Rectangle, trapezoid, triangle, cylinder, pie slice or encasement', cat: 'pipe', gate: 'calcHub', screen: 'volumeCalc', words: 'material volume concrete slurry flowable fill cubic yards yardage rock gravel encasement backfill tons', open: () => pbOpenVolumeCalc() },
+    { id: 'bedShade', label: 'Bedding & Shading', sub: 'Yards and tons for bedding and shading', cat: 'pipe', gate: 'calcHub', screen: 'bedShadeCalc', words: 'bedding shading sand rock gravel trench pipe zone haunch embedment cubic yards tons compaction', open: () => pbOpenBsCalc() },
     { id: 'bend', label: 'Bend Offset', sub: 'Two matching bends — required pipe length between them', cat: 'pipe', gate: 'calcHub', screen: 'bendCalc', words: 'bend offset fitting elbow 45 22.5 11.25 pipe length center to end', open: () => pbOpenBendCalc(null) },
     { id: 'manhole', label: 'Manhole Rim-to-Invert Depth', sub: 'Total structure depth and how many barrel sections needed', cat: 'structures', gate: 'calcHub', screen: 'manholeDepthCalc', words: 'manhole rim invert depth barrel sections risers structure', open: () => pbGoto('manholeDepthCalc') },
     { id: 'edu', label: 'Education & Reference', sub: 'Explanations, formulas and field terms', cat: 'reference', gate: 'formulasHub', screen: 'formulasHub', words: 'education reference help learn formulas glossary terms explanations', open: () => pbGoto('formulasHub') },
@@ -33316,7 +33353,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     (rows || []).forEach(r => { const n = Number(String(r.hours == null ? '' : r.hours).replace(/,/g, '').trim()); if (String(r.hours == null ? '' : r.hours).trim() !== '' && Number.isFinite(n) && n > 0) t += n; });
     return t > 0 ? String(Math.round(t * 100) / 100) : '';
   }
-  function pbProdBudgetHelpText(E) { return E.budgetAuto ? 'Adds up the categories\u2019 budget hours. Type a different total to change it.' : 'Your own total. Clear it to add up the categories\u2019 hours again.'; }
+  function pbProdBudgetHelpText(E) { return E.budgetAuto ? 'Adds up the categories.' : 'Your own total. Clear it to add up the categories.'; }
   // feat_perunit: a category's budget hours = planned x hours per unit (either one can be typed)
   const pbPpNum = (x) => { const s = String(x == null ? '' : x).replace(/,/g, '').trim(); if (s === '') return null; const n = Number(s); return Number.isFinite(n) && n >= 0 ? n : NaN; };
   window.pbProdPlanPerIn = function(i) {
@@ -33349,7 +33386,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>How % complete is worked out</span></summary><p class="pb-help" id="ppMathHelp">A category&rsquo;s % is done &divide; planned (it can pass 100%). The job&rsquo;s % averages the planned categories, each capped at 100%: by your weights if every planned category has one, else by budget hours if every one has them, else equally. Unplanned categories show their amount and are left out. Work counts only in the category&rsquo;s unit (other units show beside it). Budget hours are compared with the crew hours reported: closed Crew Log check-ins (laborers and operators) and crew man-hours foremen type in.</p></details>'
       + '<div id="ppRows">' + E.rows.map((r, i) => {
         const c = cats.categories.find(x => x.key === r.key);
-        const has = '<span class="pbp-dim pbp-rowhas">' + escapeHtml((c && (c.done || c.otherUnits.length) ? pbProdQtyText(c.done, c.unit) + ' reported. ' : '') + (r.key && PB_PROD_RUN_KEYS.has(r.key) ? 'Filled in from crews\u2019 runs.' : 'Entered by foremen with each run\u2019s production, or by hand on the job page.')) + '</span>';
+        const has = '<span class="pbp-dim pbp-rowhas">' + escapeHtml((c && (c.done || c.otherUnits.length) ? pbProdQtyText(c.done, c.unit) + ' reported. ' : '') + (r.key && PB_PROD_RUN_KEYS.has(r.key) ? 'Filled in from crews\u2019 runs.' : 'Foremen enter it with each run.')) + '</span>';
         return '<fieldset class="pbp-prow" id="ppRow' + i + '"><legend class="pb-sr">Category ' + (i + 1) + '</legend>'
           + field('ppName' + i, 'Category', r.name, 'type="text" maxlength="40" autocomplete="off"')
           + '<div class="pbp-prow-nums">' + field('ppPlanned' + i, 'Planned', r.planned, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanNote(); pbProdPlanPerIn(' + i + ')"')
@@ -44285,7 +44322,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbWtOutHtml(c) {
     const S = pbWtS(c), D = pbWtDensity(S);
     if (D.err) return '<p class="pb-answer-sub pb-wt-msg">' + escapeHtml(D.err) + '</p>';
-    const f = pbMatFactor('yd3', { unit: 'ton', density_tpy: D.tpy }), a = PB_MAT_DEFAULT_EXTRA_PCT;
+    const f = pbMatFactor('yd3', { unit: 'ton', density_tpy: D.tpy }), a = Number.isFinite(S.extra) ? S.extra : PB_MAT_DEFAULT_EXTRA_PCT; // feat_bedshade: a calculator's own allowance
     const raw = S.yd3 * f, ydA = S.yd3 * (1 + a / 100), withA = ydA * f, d = pbWtTrim(D.tpy, 4);
     return '<div class="pb-answer-box pb-wt-raw"><div class="pb-answer-label">Weight, no allowance (estimate)</div><div class="pb-answer-val" data-tons="' + raw + '">≈ ' + pbWtR1(raw) + ' tons</div>'
       + '<div class="pb-answer-sub">' + escapeHtml(S.yd3.toFixed(2) + ' yd³ × ' + d + ' t/yd³ (' + pbWtTrim(D.lb, 1) + ' lb/ft³) = ' + raw.toFixed(2) + ' t') + '</div></div>'
@@ -44296,7 +44333,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbWtBtn = (c, act, val, on, main, sub) => '<button type="button" aria-pressed="' + on + '" data-wt="' + act + ':' + val + '" onclick="pbWtSet(\'' + c + '\',\'' + act + '\',\'' + val + '\')"><span class="pb-wt-n">' + escapeHtml(main) + '</span>' + (sub ? '<span class="pb-wt-d">' + escapeHtml(sub) + '</span>' : '') + '</button>';
   function pbWtPanelInner(c) {
     const S = pbWtS(c);
-    let h = '<div class="pb-answer-label">Weight in tons</div><div class="pb-toggle pb-toggle-wrap pb-wt-pick" role="group" aria-label="Material">'
+    let h = '<div class="pb-answer-label">' + escapeHtml(S.label ? S.label + ' weight in tons' : 'Weight in tons') + '</div><div class="pb-toggle pb-toggle-wrap pb-wt-pick" role="group" aria-label="Material">'
       + PB_MAT_PRESETS.map(p => pbWtBtn(c, 'k', p.k, S.k === p.k, p.name, pbMatDens2(p.density) + ' t/yd³ · ' + pbWtTrim(p.density * PB_WT_LB_PER_TPY, 0) + ' lb/ft³')).join('')
       + pbWtBtn(c, 'k', 'sup', S.k === 'sup', 'Typical supplier values', 'Type, then rock source') + pbWtBtn(c, 'k', 'custom', S.k === 'custom', 'Custom', 'Type a density') + '</div>';
     if (S.k === 'sup') {
@@ -44356,6 +44393,64 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   PB_WT_FTIN.forEach(id => pbWtFtIn(document.getElementById(id)));
   window.__debugWeight = () => JSON.parse(JSON.stringify(pbWtSt));
   // ==== end feat_weight ====
+  // ==== feat_bedshade (owner, Oct 21): Bedding & Shading calculator ====
+  const PB_BS_PIPES = [['', 'Type the OD'], ['sdr:4.215', '4" SDR 35 (4.215" OD)'], ['sdr:6.275', '6" SDR 35 (6.275" OD)'], ['sdr:8.400', '8" SDR 35 (8.400" OD)'], ['sdr:10.500', '10" SDR 35 (10.500" OD)'], ['sdr:12.500', '12" SDR 35 (12.500" OD)'], ['sdr:15.300', '15" SDR 35 (15.300" OD)'],
+    ['dip:4.80', '4" DIP / C900 (4.80" OD)'], ['dip:6.90', '6" DIP / C900 (6.90" OD)'], ['dip:9.05', '8" DIP / C900 (9.05" OD)'], ['dip:11.10', '10" DIP / C900 (11.10" OD)'], ['dip:13.20', '12" DIP / C900 (13.20" OD)']];
+  const pbBs = { bed: true, shade: false, secs: [{ L: '', W: '', pipe: '', od: '', T: '', S: '' }] };
+  const pbBsN = (s) => { const t = pbMatNorm(s); const v = Number(t); return t !== '' && Number.isFinite(v) && v > 0 ? v : null; };
+  const pbBsF = (n, d) => Number(n).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+  function pbBsSecHtml(s, i) {
+    const fld = (k, label, ph, help) => '<div class="pb-field"><label for="bs' + k + i + '">' + label + '</label><input type="text" id="bs' + k + i + '" inputmode="decimal" autocomplete="off" placeholder="' + ph + '" value="' + escapeHtml(s[k]) + '" oninput="pbBsIn(' + i + ',\'' + k + '\',this.value)">' + (help ? '<p class="pb-help" style="margin:2px 0 0 0;">' + help + '</p>' : '') + '</div>';
+    return '<div class="pb-section bs-sec" id="bsSec' + i + '"><div class="pb-tag">Section ' + (i + 1) + (pbBs.secs.length > 1 ? ' <button type="button" class="pb-btn ghost small" style="float:right;min-height:32px" id="bsDel' + i + '" onclick="pbBsDel(' + i + ')">Remove</button>' : '') + '</div><div class="pb-body">'
+      + '<div class="pb-row">' + fld('L', 'Length (ft)', 'e.g. 300') + fld('W', 'Trench width (ft)', 'e.g. 3') + '</div>'
+      + (pbBs.bed ? fld('T', 'Bedding thickness (ft)', 'e.g. 0.5', '6 in = 0.5 ft') : '')
+      + (pbBs.shade ? '<div class="pb-field"><label for="bsPipe' + i + '">Pipe</label><select id="bsPipe' + i + '" onchange="pbBsIn(' + i + ',\'pipe\',this.value)">' + PB_BS_PIPES.map(p => '<option value="' + p[0] + '"' + (s.pipe === p[0] ? ' selected' : '') + '>' + escapeHtml(p[1]) + '</option>').join('') + '</select></div>'
+          + (s.pipe ? '' : fld('od', 'Pipe OD (inches)', 'e.g. 8.4', 'Outside diameter, in inches.'))
+          + fld('S', 'Shading over the top of the pipe (ft)', 'e.g. 1', '12 in = 1 ft') : '')
+      + '</div></div>';
+  }
+  function pbBsSecCalc(s) {
+    const L = pbBsN(s.L), W = pbBsN(s.W), r = { bed: null, shade: null, err: [] };
+    if (!L || !W) { r.err.push('Type the length and trench width.'); return r; }
+    if (pbBs.bed) { const T = pbBsN(s.T); if (T) r.bed = { ft3: L * W * T, how: L + ' × ' + W + ' × ' + T + ' ft' }; else r.err.push('Type the bedding thickness.'); }
+    if (pbBs.shade) {
+      const od = s.pipe ? Number(s.pipe.split(':')[1]) : pbBsN(s.od), S = pbBsN(s.S);
+      if (!od) r.err.push('Pick the pipe or type its OD.'); else if (!S) r.err.push('Type the shading over the pipe.');
+      else { const o = od / 12; if (W <= o) r.err.push('The trench is narrower than the pipe (' + pbBsF(o, 2) + ' ft OD).');
+        else { const per = W * (o + S) - Math.PI * o * o / 4; r.shade = { ft3: L * per, how: L + ' × (' + W + ' × (' + pbBsF(o, 3) + ' + ' + S + ') − pipe ' + pbBsF(Math.PI * o * o / 4, 3) + ' ft²)' }; } }
+    }
+    return r;
+  }
+  function pbBsCalcNow() {
+    const el = document.getElementById('bsResult'); if (!el) return;
+    const ex = pbMatNorm((document.getElementById('bsExtra') || {}).value || ''), a = ex === '' ? PB_MAT_DEFAULT_EXTRA_PCT : Number(ex);
+    if (!pbBs.bed && !pbBs.shade) { el.innerHTML = '<p class="bs-err">Pick Bedding, Shading or both.</p>'; return; }
+    if (!Number.isFinite(a) || a < 0 || a > 100) { el.innerHTML = '<p class="bs-err">Compaction allowance: a number from 0 to 100.</p>'; return; }
+    const f = 1 + a / 100; let bed = 0, shade = 0, h = '', ok = false;
+    pbBs.secs.forEach((s, i) => { const r = pbBsSecCalc(s);
+      if (r.err.length) { h += '<p class="bs-err" id="bsErr' + i + '">Section ' + (i + 1) + ': ' + escapeHtml(r.err.join(' ')) + '</p>'; return; }
+      ok = true;
+      if (r.bed) { bed += r.bed.ft3; h += '<p class="bs-line">' + escapeHtml('Section ' + (i + 1) + ' bedding: ' + r.bed.how + ' = ' + pbBsF(r.bed.ft3, 1) + ' ft³ = ' + pbBsF(r.bed.ft3 / 27, 2) + ' yd³ in place') + '</p>'; }
+      if (r.shade) { shade += r.shade.ft3; h += '<p class="bs-line">' + escapeHtml('Section ' + (i + 1) + ' shading: ' + r.shade.how + ' = ' + pbBsF(r.shade.ft3, 1) + ' ft³ = ' + pbBsF(r.shade.ft3 / 27, 2) + ' yd³ in place') + '</p>'; } });
+    const box = (id, label, ft3) => { const y = ft3 / 27, o = y * f; return '<div class="pb-answer-box" id="' + id + '"><div class="pb-answer-label">' + label + ' to order</div><div class="pb-answer-val" data-yd3="' + o + '">' + pbBsF(o, 1) + ' yd³</div><div class="pb-answer-sub">' + escapeHtml(pbBsF(y, 2) + ' yd³ in place + ' + a + '% compaction = ' + pbBsF(o, 2) + ' yd³') + '</div></div>'; };
+    let out = '';
+    if (ok && pbBs.bed && bed > 0) out += box('bsBedBox', 'Bedding', bed) + pbBsWt('bedshadeB', bed / 27, a, 'Bedding');
+    if (ok && pbBs.shade && shade > 0) out += box('bsShadeBox', 'Shading', shade) + pbBsWt('bedshadeS', shade / 27, a, 'Shading');
+    if (ok && pbBs.bed && pbBs.shade && bed > 0 && shade > 0) out += '<div class="pb-answer-box" id="bsBothBox"><div class="pb-answer-label">Bedding + shading (same material)</div><div class="pb-answer-val">' + pbBsF((bed + shade) / 27 * f, 1) + ' yd³</div></div>';
+    el.innerHTML = out + h + '<p class="pb-answer-sub">Estimate.</p>';
+  }
+  function pbBsWt(c, yd3, a, label) { const S = pbWtS(c); S.extra = a; S.label = label; return pbWtHtml(c, yd3); }
+  let pbBsT = null;
+  window.pbBsCalc = function() { clearTimeout(pbBsT); pbBsT = setTimeout(pbBsCalcNow, 120); };
+  function pbBsRender() { const el = document.getElementById('bsSections'); if (el) el.innerHTML = pbBs.secs.map(pbBsSecHtml).join(''); const b = document.getElementById('bsUseBed'), s = document.getElementById('bsUseShade');
+    if (b) { b.classList.toggle('active', pbBs.bed); b.setAttribute('aria-pressed', String(pbBs.bed)); } if (s) { s.classList.toggle('active', pbBs.shade); s.setAttribute('aria-pressed', String(pbBs.shade)); } pbBsCalcNow(); }
+  window.pbBsUse = function(k) { pbBs[k] = !pbBs[k]; pbBsRender(); };
+  window.pbBsIn = function(i, k, v) { const s = pbBs.secs[i]; if (!s) return; s[k] = String(v); if (k === 'pipe') { pbBsRender(); return; } window.pbBsCalc(); };
+  window.pbBsAdd = function() { const p = pbBs.secs[pbBs.secs.length - 1] || {}; pbBs.secs.push({ L: '', W: p.W || '', pipe: p.pipe || '', od: p.od || '', T: p.T || '', S: p.S || '' }); pbBsRender(); const f = document.getElementById('bsL' + (pbBs.secs.length - 1)); if (f) { f.scrollIntoView({ block: 'center' }); f.focus(); } };
+  window.pbBsDel = function(i) { if (pbBs.secs.length > 1) { pbBs.secs.splice(i, 1); pbBsRender(); } };
+  window.pbOpenBsCalc = function() { pbGoto('bedShadeCalc'); pbBsRender(); };
+  window.__pbBsDebug = () => JSON.parse(JSON.stringify(pbBs));
+  // ==== end feat_bedshade ====
   const pbMatIsShade = (m) => m && m.source === 'bedding_calc' && m.use_as === 'shading';
   const PB_MAT_USE_TEXT = { bedding: 'Bedding: under the pipe (pipe bottom to subgrade).', shading: 'Shading: the sides of the pipe plus the shading thickness over its top.' };
   const PB_MAT_PIPE_NOTE = 'From the Pipe Installed footage crews report (counted production only).';
@@ -44441,7 +44536,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const by = {};
     list.filter(m => m && !m.archived && pbMatUseKey(m)).forEach(m => { const k = pbMatUseKey(m) + '|' + (m.footage_cat || 'pipe'); (by[k] = by[k] || []).push(m); });
     return Object.keys(by).filter(k => by[k].length > 1).map(key => { const fc = key.split('|')[1], names = by[key].map(m => m.name).join(' and ');
-      return '<p class="pb-warn photo pbm-share"><strong>' + escapeHtml(names + ' share the ' + pbMatFootName(fc) + ' footage') + '</strong>' + escapeHtml('So their used amounts can’t be told apart. Tap Edit on one and pick its own item in Footage from (Laterals, for example).') + '</p>'; }).join('');
+      return '<p class="pb-warn photo pbm-share"><strong>' + escapeHtml(names + ' share the ' + pbMatFootName(fc) + ' footage') + '</strong>' + escapeHtml('Tap Shares footage on one to give it its own item.') + '</p>'; }).join('');
   }
 
   // ---- Company production cards: a Materials block on each job ----
@@ -44544,7 +44639,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const used = g.every(m => pbMatState(m).used !== null) ? sum(s => s.used) : null, ord = sum(s => s.ord || 0), exp = sum(s => s.exp || 0);
     return '<li class="pbm-group" id="pjMatG_' + escapeHtml(g[0].id) + '" style="list-style:none;margin:0 0 12px;padding:10px 12px;border:1px solid var(--pb-divider);border-radius:12px">'
       + '<span class="pbm-line1"><span class="pbm-name">' + escapeHtml(g[0].name) + '</span><span class="pbm-chips"><span class="pb-chip pbm-chip">' + g.length + ' cost codes</span></span></span>'
-      + (same ? '<span class="pbm-line2"><span class="pbm-nums">Total: ' + escapeHtml((used === null ? '—' : pbMatFmt(used, unit)) + ' / ' + (ord ? pbMatFmt(ord, unit) : '—') + ' / ' + pbMatFmt(exp, unit) + ' ' + unit) + '</span></span>' : '')
+      + (same ? '<span class="pbm-line2"><span class="pbm-nums">Total, all cost codes: ' + escapeHtml((used === null ? '—' : pbMatFmt(used, unit)) + ' / ' + (ord ? pbMatFmt(ord, unit) : '—') + ' / ' + pbMatFmt(exp, unit) + ' ' + unit) + '</span></span>' : '')
       + '<ul class="pbm-list" style="margin-top:8px">' + g.map(m => pbMatRowHtml(Object.assign({}, m, { __line: true }))).join('') + '</ul></li>';
   }
   window.pbMatAddLine = function(id) {
@@ -44554,6 +44649,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     F.lineOf = m.id; F.base = JSON.stringify(F.v); pbMatJobPaint();
     setTimeout(() => { const s = pbProdEl('pmf_footage_cat') || pbProdEl('pmf_cost_code'); if (s) { s.scrollIntoView({ block: 'center' }); s.focus(); } }, 80);
   };
+  // feat_short: one short line on a material (the math is in Details)
+  function pbMatHowShort(m) {
+    const item = pbMatFootName(m.footage_cat) + (m.each_ft && m.footage_cat && m.footage_cat !== 'pipe' ? ' × ' + m.each_ft + ' ft each' : '');
+    if (m.source === 'pipe_footage') return 'Counts ' + item + ' footage.';
+    if (m.source === 'bedding_calc') return (pbMatIsShade(m) ? 'Shading' : 'Bedding') + ' estimate from ' + item + ' footage.';
+    return 'Recorded by hand.';
+  }
   function pbMatRowHtml(m) {
     const s = pbMatState(m), id = m.id, open = !!pbMat.open[id];
     const orders = Array.isArray(m.orders) ? m.orders : [], uses = Array.isArray(m.uses) ? m.uses : [];
@@ -44564,12 +44666,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const hist = pbMat.hist[id];
     return '<li class="pbm-row' + (s.reached || s.over ? ' alert' : '') + (m.__line ? ' pbm-line' : '') + '" id="pjMat_' + id + '"><span class="pbm-line1"><span class="pbm-name">' + escapeHtml(m.__line ? (m.cost_code || 'No cost code') + ' · ' + (m.source === 'entered' ? 'recorded by hand' : pbMatFootName(m.footage_cat)) : m.name + (m.cost_code ? ' · ' + m.cost_code : '')) + '</span><span class="pbm-chips">' + pbMatChips(m, s) + '</span></span>'
       + '<span class="pbm-line2">' + pbMatNums(m, s) + '</span>' + pbMatBar(m, s)
-      + '<span class="pbm-how' + (s.est ? ' est' : '') + '">' + escapeHtml((s.est ? '' : '') + pbMatHowText(m)) + '</span>'
+      + '<span class="pbm-how' + (s.est ? ' est' : '') + '">' + escapeHtml(pbMatHowShort(m)) + '</span>'
       + '<span class="pbm-acts"><button type="button" class="pb-btn ghost small" onclick="pbMatOrderForm(\'' + id + '\')">Add Order</button>'
       + (m.source === 'entered' ? '<button type="button" class="pb-btn ghost small" onclick="pbMatUsedForm(\'' + id + '\')">Record Use</button>' : '')
       + '<button type="button" class="pb-btn ghost small" onclick="pbMatAddExpForm(\'' + id + '\')">Add to Expected</button>'
-      + '<button type="button" class="pb-btn ghost small" onclick="pbMatAddLine(\'' + id + '\')">Add Cost Code Line</button>'
       + '<button type="button" class="pb-btn ghost small" onclick="pbMatEdit(\'' + id + '\')">Edit</button>'
+      + '<button type="button" class="pb-btn ghost small" onclick="pbMatAddLine(\'' + id + '\')">Add Cost Code Line</button>'
       + '<button type="button" class="pb-btn ghost small" aria-expanded="' + open + '" onclick="pbMatToggle(\'' + id + '\')">' + (open ? 'Hide Details' : 'Details') + '</button></span>'
       + (open ? '<div class="pbm-detail" id="pjMatD_' + id + '">'
         + (calc ? '<p class="pbp-dim pbm-calc">' + escapeHtml(calc) + '</p>' : '')
@@ -44804,7 +44906,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     let yd = L.n * per / 27 * (1 + ex / 100), unit = 'yd³', dens = '';
     if (v.basis === 'weight') { const d = num(v.density_tpy, null); if (!d) return { val: '', why: 'Fills in once the density is set (pick a preset or type it).' }; yd *= d; unit = 'tons'; dens = ' × ' + d + ' t/yd³'; }
     const val = pbMatR(yd, 1);
-    return { val: String(val), how: 'Filled in: ' + lenTxt + part + ' ÷ 27 × ' + pbMatR(1 + ex / 100, 4) + dens + ' = ' + pbMatFmt(val, unit) + ' ' + unit + '. Type your own amount to change it.' };
+    return { val: String(val), how: 'Filled in: ' + lenTxt + part + ' ÷ 27 × ' + pbMatR(1 + ex / 100, 4) + dens + ' = ' + pbMatFmt(val, unit) + ' ' + unit + '.' };
   }
   function pbMatExpApply(F, paint) {
     if (!F || F.kind !== 'mat') return;
@@ -44865,7 +44967,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     if (F.kind === 'addexp') {
       return '<form class="pbm-form" id="pmfForm" onsubmit="event.preventDefault(); pbMatFormSave();"><h4 class="pbm-h4">Add to Expected: ' + escapeHtml(m ? m.name : '') + '</h4>'
-        + '<p class="pbp-dim" id="pmfAddNow">' + escapeHtml('Expected now: ' + (m && m.expected != null ? pbMatFmt(m.expected, m.unit) + ' ' + m.unit : 'not set') + '. Add what the extra work needs (for example the laterals); the new total is saved on this material.') + '</p>'
+        + '<p class="pbp-dim" id="pmfAddNow">' + escapeHtml('Expected now: ' + (m && m.expected != null ? pbMatFmt(m.expected, m.unit) + ' ' + m.unit : 'not set') + '.') + '</p>'
         + (m && m.source === 'bedding_calc' ? '<fieldset class="pb-field pbm-fs"><legend>Add by</legend>'
             + ['amt', 'dim'].map(k => '<label class="pb-checkrow pbm-radio"><input type="radio" name="pmfAddMode" value="' + k + '"' + ((F.v.mode || 'amt') === k ? ' checked' : '') + ' onchange="pbMatFormRefresh()"> <span>' + (k === 'amt' ? 'Amount (' + escapeHtml(m.unit) + ')' : 'Dimensions (the app works it out)') + '</span></label>').join('') + '</fieldset>' : '')
         + (m && m.source === 'bedding_calc' && F.v.mode === 'dim'
@@ -44886,11 +44988,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const unitText = calc ? (v.basis === 'weight' ? 'tons' : 'yd³') : pipeFt ? 'LF' : (v.unit || 'its unit');
     const radio = (name, val, label, cur, attrs) => '<label class="pb-checkrow pbm-radio"><input type="radio" name="' + name + '" value="' + val + '"' + (cur === val ? ' checked' : '') + ' onchange="pbMatFormRefresh()"' + (attrs || '') + '> <span>' + label + '</span></label>';
     let h = '<form class="pbm-form" id="pmfForm" onsubmit="event.preventDefault(); pbMatFormSave();"><h4 class="pbm-h4">' + (F.id ? 'Edit material' : F.lineOf ? 'Another cost code line: ' + escapeHtml(v.name) : 'Add a material') + '</h4>'
-      + (F.lineOf ? '<p class="pbp-dim" id="pmfLineNote">' + escapeHtml('Same material on its own cost code and footage (for example the laterals). Pick its footage, then its cost code.') + '</p>' : '');
+      + (F.lineOf ? '<p class="pbp-dim" id="pmfLineNote">' + escapeHtml('Pick its footage and cost code.') + '</p>' : '');
     if (!F.id) h += '<div class="pb-field"><span class="pbm-flabel">Bedding presets</span><div class="pbm-presets" role="group" aria-label="Bedding presets">' + PB_MAT_PRESETS.map(p => '<button type="button" class="pb-btn ghost small' + (F.preset === p.k ? ' on' : '') + '" aria-pressed="' + (F.preset === p.k) + '" onclick="pbMatPreset(\'' + p.k + '\')">' + escapeHtml(p.name) + '</button>').join('') + '</div><p class="pb-help pbm-fhelp">Or type any material below.</p></div>';
     h += pbMatField('name', 'Material', v.name, 'type="text" maxlength="60" autocomplete="off" placeholder="e.g. 8 in PVC SDR 35"')
       + '<div class="pb-field"><label for="pmf_category">Type</label><select id="pmf_category" onchange="pbMatCatChange()">' + PB_MAT_CATS.map(c => '<option value="' + c[0] + '"' + (v.category === c[0] ? ' selected' : '') + '>' + c[1] + '</option>').join('') + '</select></div>';
-    h += '<p class="pb-alert info pbm-quick" id="pmfQuick">' + escapeHtml('Only the name is needed. Know the amount? Type it in Expected in all and tap ' + (F.id ? 'Save Changes' : 'Add Material') + '. Everything else is optional: it fills in the estimate.') + '</p>';
+    h += '<p class="pb-alert info pbm-quick" id="pmfQuick">' + escapeHtml('Only the name is needed. The rest is optional.') + '</p>';
     if (v.category === 'pipe' || bed) {
       h += '<fieldset class="pb-field pbm-fs"><legend>How “used” is counted</legend>'
         + radio('pmfSource', v.category === 'pipe' ? 'pipe_footage' : 'bedding_calc', v.category === 'pipe' ? 'From the Pipe Installed footage crews report' : 'Calculated from the footage (an estimate)', v.source)
@@ -44899,10 +45001,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const pipes = v.category !== 'pipe' ? (pbMatList() || []).filter(m => m && !m.archived && m.source === 'pipe_footage' && m.id !== F.id) : [];
         h += '<div class="pb-field"><label for="pmf_footage_cat">Footage from</label><select id="pmf_footage_cat" onchange="pbMatFormRefresh()">' + (pipes.length ? '<optgroup label="Production items">' : '') + fcs.map(c => '<option value="' + escapeHtml(c.key) + '"' + (c.key === cur ? ' selected' : '') + '>' + escapeHtml(c.name) + '</option>').join('')
           + (pipes.length ? '</optgroup><optgroup label="Same footage as a pipe">' + pipes.map(m => '<option value="mat:' + escapeHtml(m.id) + '">' + escapeHtml(m.name + ' (' + pbMatFootName(m.footage_cat) + (m.each_ft ? ' × ' + m.each_ft + ' ft each' : '') + ')') + '</option>').join('') + '</optgroup>' : '') + '</select>'
-          + '<p class="pb-help pbm-fhelp">The production item whose footage this material counts. Add an item like Laterals to the job plan to tie a material to it.</p></div>';
-        { const sh = pbMatShareWith(F); if (sh.length) h += '<p class="pb-warn pbp-manmsg" id="pmfShareWarn" role="alert"><strong>' + escapeHtml(sh.map(o => o.name).join(' and ') + (sh.length === 1 ? ' already counts ' : ' already count ') + pbMatFootName(cur) + '.') + '</strong>' + escapeHtml('If this is a different pipe (laterals, another size), pick the item it’s installed under above, or add that item to the job plan. Two on one item can’t be told apart.') + '</p>'; }
+          + '<p class="pb-help pbm-fhelp">The production item this material counts.</p></div>';
+        { const sh = pbMatShareWith(F); if (sh.length) h += '<p class="pb-warn pbp-manmsg" id="pmfShareWarn" role="alert"><strong>' + escapeHtml(sh.map(o => o.name).join(' and ') + (sh.length === 1 ? ' already counts ' : ' already count ') + pbMatFootName(cur) + '.') + '</strong>' + escapeHtml('A different pipe? Pick its own item.') + '</p>'; }
         const fcc = pbMatFootCat(cur);
-        if (cur !== 'pipe' && fcc && !fcc.lf) h += pbMatField('each_ft', 'Length each (ft per ' + escapeHtml(fcc.unit) + ')', v.each_ft, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 25" oninput="pbMatExpIn()"', escapeHtml(fcc.name.replace(/ \([^)]*\)$/, '') + ' is counted in ' + fcc.unit + '. Each one counts as this many feet of footage.')); }
+        if (cur !== 'pipe' && fcc && !fcc.lf) h += pbMatField('each_ft', 'Length each (ft per ' + escapeHtml(fcc.unit) + ')', v.each_ft, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 25" oninput="pbMatExpIn()"', escapeHtml(fcc.name.replace(/ \([^)]*\)$/, '') + ' is counted in ' + fcc.unit + '.')); }
     }
     if (calc) {
       const shade = v.use_as === 'shading';
@@ -44927,7 +45029,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const icode = (v.source === 'pipe_footage' || calc) ? pbMatItemCode(v.footage_cat) : '';
       if (!F.ccTyped && (!v.cost_code || v.cost_code === F.ccAuto)) { v.cost_code = icode; F.ccAuto = icode; }
       const codes = pbMatJobCodes();
-      h += pbMatField('cost_code', 'Cost code', v.cost_code || '', 'type="text" maxlength="60" autocomplete="off" autocapitalize="characters" list="pmfCodes" placeholder="e.g. 02-100" oninput="pbMatCodeTyped()"', escapeHtml(icode ? 'From ' + pbMatFootName(v.footage_cat) + ' (' + icode + ') unless you type another. ' : '') + 'Same material on another cost code (main and laterals)? Save this one, then use Add Cost Code Line.')
+      h += pbMatField('cost_code', 'Cost code', v.cost_code || '', 'type="text" maxlength="60" autocomplete="off" autocapitalize="characters" list="pmfCodes" placeholder="e.g. 02-100" oninput="pbMatCodeTyped()"', escapeHtml(icode ? 'From ' + pbMatFootName(v.footage_cat) + ' (' + icode + ') unless you typed one.' : 'Optional.'))
         + '<datalist id="pmfCodes">' + codes.map(c => '<option value="' + escapeHtml(c.code) + '">' + escapeHtml(c.name || '') + '</option>').join('') + '</datalist>'; }
     h += '<div class="pbm-grid">' + pbMatField('expected', (calc ? 'Expected in all, as ordered (' : 'Expected in all (') + escapeHtml(unitText) + ')', v.expected, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" aria-describedby="pmfExpHelp" oninput="pbMatExpTyped()" onblur="pbMatExpTyped(true)"')
       + pbMatField('alert_pct', 'Alert at (% of ordered)', v.alert_pct, 'type="text" inputmode="numeric" autocomplete="off" placeholder="80"') + '</div>'
