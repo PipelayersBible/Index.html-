@@ -6347,7 +6347,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   #pbApp .pbp-earlier { margin-top: 12px; }
   #pbApp .pbp-links { margin-top: 16px; }
   #pbApp .pbp-editor fieldset.pbp-prow { border: 0; margin: 0; padding: 12px 0; border-top: 1px solid var(--pb-divider); min-width: 0; }
-  #pbApp .pbp-editor .pbp-prow-nums { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 10px; }
+  #pbApp .pbp-editor .pbp-prow-nums { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 10px; align-items: end; } /* feat_perunit: a two-line label keeps the boxes level */
   #pbApp .pbp-editor .pb-field { margin: 6px 0 0 0; padding: 0; }
   #pbApp .pbp-editor .pb-field input { width: 100%; min-width: 0; }
   #pbApp .pbp-prow-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
@@ -8692,7 +8692,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.3.2 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.3.3 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -33294,7 +33294,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbProdPlanRowsFrom(D) {
     const plan = D && D.plan && Array.isArray(D.plan.categories) ? D.plan.categories : PB_PROD_DEFAULT_CATS;
     const fmt = (n) => (n === null || n === undefined || n === '') ? '' : String(n);
-    return plan.filter(c => c && c.key).map(c => ({ key: c.key, name: String(c.name || ''), unit: String(c.unit || ''), planned: fmt(c.planned), weight: fmt(c.weight), hours: fmt(c.hours) }));
+    return plan.filter(c => c && c.key).map(c => ({ key: c.key, name: String(c.name || ''), unit: String(c.unit || ''), planned: fmt(c.planned), weight: fmt(c.weight), hours: fmt(c.hours), perUnit: (Number(c.hours) > 0 && Number(c.planned) > 0) ? String(Math.round(Number(c.hours) / Number(c.planned) * 10000) / 10000) : '' }));
   }
   window.pbProdPlanEdit = function() {
     if (!pbPj.data) return;
@@ -33308,7 +33308,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   };
   function pbProdPlanRead() {
     const E = pbPj.edit; if (!E) return;
-    E.rows.forEach((r, i) => { ['name', 'unit', 'planned', 'weight', 'hours'].forEach(k => { const el = pbProdEl('pp' + k.charAt(0).toUpperCase() + k.slice(1) + i); if (el) r[k] = el.value; }); });
+    E.rows.forEach((r, i) => { ['name', 'unit', 'planned', 'weight', 'hours', 'perUnit'].forEach(k => { const el = pbProdEl('pp' + k.charAt(0).toUpperCase() + k.slice(1) + i); if (el) r[k] = el.value; }); });
     const b = pbProdEl('ppBudget'); if (b) E.budget = b.value;
   }
   function pbProdPlanHoursSum(rows) {
@@ -33317,6 +33317,18 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return t > 0 ? String(Math.round(t * 100) / 100) : '';
   }
   function pbProdBudgetHelpText(E) { return E.budgetAuto ? 'Adds up the categories\u2019 budget hours. Type a different total to change it.' : 'Your own total. Clear it to add up the categories\u2019 hours again.'; }
+  // feat_perunit: a category's budget hours = planned x hours per unit (either one can be typed)
+  const pbPpNum = (x) => { const s = String(x == null ? '' : x).replace(/,/g, '').trim(); if (s === '') return null; const n = Number(s); return Number.isFinite(n) && n >= 0 ? n : NaN; };
+  window.pbProdPlanPerIn = function(i) {
+    const E = pbPj.edit; if (!E) return; pbProdPlanRead(); const r = E.rows[i]; if (!r) return;
+    const p = pbPpNum(r.planned), u = pbPpNum(r.perUnit);
+    if (p > 0 && u !== null && !Number.isNaN(u)) { r.hours = String(Math.round(p * u * 100) / 100); const h = pbProdEl('ppHours' + i); if (h && h.value !== r.hours) h.value = r.hours; window.pbProdPlanHoursIn(); }
+  };
+  window.pbProdPlanCatHoursIn = function(i) {
+    const E = pbPj.edit; if (!E) return; pbProdPlanRead(); const r = E.rows[i];
+    if (r) { const p = pbPpNum(r.planned), h = pbPpNum(r.hours); const v = p > 0 && h !== null && !Number.isNaN(h) ? String(Math.round(h / p * 10000) / 10000) : h === null ? '' : r.perUnit; if (v !== r.perUnit) { r.perUnit = v; const el = pbProdEl('ppPerUnit' + i); if (el) el.value = v; } }
+    window.pbProdPlanHoursIn();
+  };
   window.pbProdPlanHoursIn = function() {
     const E = pbPj.edit; if (!E) return; pbProdPlanRead();
     if (E.budgetAuto) { E.budget = pbProdPlanHoursSum(E.rows); const b = pbProdEl('ppBudget'); if (b && b.value !== E.budget) b.value = E.budget; }
@@ -33340,10 +33352,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const has = '<span class="pbp-dim pbp-rowhas">' + escapeHtml((c && (c.done || c.otherUnits.length) ? pbProdQtyText(c.done, c.unit) + ' reported. ' : '') + (r.key && PB_PROD_RUN_KEYS.has(r.key) ? 'Filled in from crews\u2019 runs.' : 'Filled in by hand on the job page.')) + '</span>';
         return '<fieldset class="pbp-prow" id="ppRow' + i + '"><legend class="pb-sr">Category ' + (i + 1) + '</legend>'
           + field('ppName' + i, 'Category', r.name, 'type="text" maxlength="40" autocomplete="off"')
-          + '<div class="pbp-prow-nums">' + field('ppPlanned' + i, 'Planned', r.planned, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanNote()"')
+          + '<div class="pbp-prow-nums">' + field('ppPlanned' + i, 'Planned', r.planned, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanNote(); pbProdPlanPerIn(' + i + ')"')
           + field('ppUnit' + i, 'Unit', r.unit, 'type="text" maxlength="12" autocomplete="off" placeholder="LF"')
-          + field('ppWeight' + i, 'Weight', r.weight, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanNote()"')
-          + field('ppHours' + i, 'Budget hours', r.hours, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanHoursIn()"') + '</div>'
+          + field('ppPerUnit' + i, 'Budget hours per unit', r.perUnit || '', 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanPerIn(' + i + ')"')
+          + field('ppHours' + i, 'Budget hours (whole category)', r.hours, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanCatHoursIn(' + i + ')"')
+          + field('ppWeight' + i, 'Weight', r.weight, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanNote()"') + '</div>'
           + '<div class="pbp-prow-foot">' + has + '<button type="button" class="pb-btn ghost small" id="ppRemove' + i + '" onclick="pbProdPlanRemove(' + i + ')" aria-label="Remove ' + escapeHtml(r.name || 'this category') + '"><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-trash"/></svg>Remove</button></div></fieldset>';
       }).join('') + '</div>'
       + (E.rows.length < 20 ? '<div class="pb-btn-wrap pbp-btns"><button type="button" class="pb-btn secondary" id="ppAddBtn" onclick="pbProdPlanAdd()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Category</button></div>' : '')
@@ -33363,7 +33376,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbProdPlanAdd = function() {
     const E = pbPj.edit; if (!E || E.rows.length >= 20) return;
     pbProdPlanRead();
-    E.rows.push({ key: null, name: '', unit: 'LF', planned: '', weight: '', hours: '' });
+    E.rows.push({ key: null, name: '', unit: 'LF', planned: '', weight: '', hours: '', perUnit: '' });
     pbProdJobRender();
     const f = pbProdEl('ppName' + (E.rows.length - 1)); if (f) f.focus();
   };
