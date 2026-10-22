@@ -1699,6 +1699,8 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 #pbApp #homeShortcuts .pb-sc-head .pb-edu-h { margin: 0; }
 
 /* Current job: a compact row with a pin, no yellow bar */
+#pbApp .pb-calc-cats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 16px 4px 16px; }
+#pbApp .pb-calc-cats .pb-btn { margin: 0; min-height: 52px; font-size: 15px; padding: 8px 10px; }
 #pbApp #homeCurrentJob { padding-right: 92px; }
 #pbApp #homeCurrentJob .pb-cj-chg { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: var(--hazard, #F5C542); font-weight: 700; font-size: 14px; }
 #pbApp .pb-home-job { position: relative; margin: 16px 16px 0 16px; padding: 12px 16px 12px 52px; background: var(--pb-surface); border: 1px solid rgba(255,255,255,0.06); border-left: 1px solid rgba(255,255,255,0.06); border-radius: var(--pb-r-card); }
@@ -4089,7 +4091,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div id="homeCxJobs" class="pbx-jobs"></div>
       <div class="pbx-links" role="group" aria-label="Company">
         <button type="button" class="pbx-link" id="homeCxCrew" onclick="pbCohOpen('crew')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-people"/></svg>Crew members</button>
-        <button type="button" class="pbx-link" id="homeCxLogo" onclick="pbCohOpen('logo')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-star"/></svg>Company logo</button>
         <button type="button" class="pbx-link" id="homeCxDash" onclick="pbCohOpen('prod')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-chart"/></svg>Production details</button>
       </div>
       <button type="button" class="pb-home-tile pb-coh-row" id="homeCoTools" aria-expanded="false" aria-controls="homeStart homeShortcuts" onclick="pbCohToggleTools()"><span class="pb-coh-ic" aria-hidden="true"></span><span class="tx"><span class="name">Field tools</span><span class="sub" id="homeCoToolsSub">New run, Quick Run, permits and your shortcuts. Calculators are on the Calculators tab.</span></span><span class="chev" aria-hidden="true"></span></button>
@@ -4155,6 +4156,12 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       </div>
     </div>
     <div id="settingsCrewInvite" class="pbc-invite-wrap" hidden></div><!-- batch 13 C: crew invitation -->
+    <div class="pb-section" id="settingsCompanySection" hidden><!-- feat_navfix: company settings (company account / PMs) -->
+      <div class="pb-tag" id="settingsCompanyLabel">Company</div>
+      <div class="pb-tools-group">
+        <button type="button" class="pb-edu-row pb-tool-row" id="settingsLogoBtn" data-ic="flag" onclick="window.pbBrBackTo = 'settings'; pbOpenCompanyLogo()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Company logo</span><span class="sub">The logo at the top of every report</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
+      </div>
+    </div>
     <div class="pb-section" id="settingsPrefsSection">
       <div class="pb-tag" id="settingsPrefsLabel">Preferences</div>
       <div class="pb-body">
@@ -4310,21 +4317,15 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     </div>
     <!-- UX batch 2 (A5): one searchable list under the old category names; the category screens stay. -->
     <!-- UX batch 3 (T1): this is the Calculators tab again; its list and search hold the calculators only. -->
-    <div class="pb-field pb-tools-search" style="margin:16px 16px 0 16px;">
-      <label for="toolsSearchBox">Search calculators</label>
-      <input type="search" enterkeyhint="search" autocomplete="off" id="toolsSearchBox" placeholder="e.g. concrete, rod shot, fall, shoring" oninput="pbToolsSearch()">
-    </div>
+    <!-- feat_navfix (owner, Oct 22): the category buttons replace the search bar, at the top -->
+    <section class="pb-calc-cats" id="toolsBrowseCats" aria-label="Calculator categories">
+      <button type="button" class="pb-btn secondary" id="calcCatBtnGrade" onclick="pbGoto('calcCatGrade')">Grade &amp; Elevation</button>
+      <button type="button" class="pb-btn secondary" id="calcCatBtnSafety" onclick="pbGoto('calcCatTrench')">Safety</button>
+      <button type="button" class="pb-btn secondary" id="calcCatBtnPipe" onclick="pbGoto('calcCatPipe')">Pipe &amp; Flow</button>
+      <button type="button" class="pb-btn secondary" id="calcCatBtnStruct" onclick="pbGoto('calcCatStructures')">Structures</button>
+    </section>
     <div id="toolsSearchResults" style="display:none;" aria-live="polite"></div>
     <div id="toolsList"></div>
-    <section class="pb-sc-cats" id="toolsBrowseCats" aria-labelledby="toolsBrowseHead">
-      <h2 class="pb-edu-h" id="toolsBrowseHead">Browse by category</h2>
-      <div class="pb-sc-catrow">
-        <button type="button" class="pb-edu-link" onclick="pbGoto('calcCatGrade')">Grade &amp; Elevation</button>
-        <button type="button" class="pb-edu-link" onclick="pbGoto('calcCatTrench')">Safety</button>
-        <button type="button" class="pb-edu-link" onclick="pbGoto('calcCatPipe')">Pipe &amp; Flow</button>
-        <button type="button" class="pb-edu-link" onclick="pbGoto('calcCatStructures')">Structures</button>
-      </div>
-    </section>
   </div>
 
   <!-- TOOLS (UX batch 3, T1): the Tools tab. Quick Run, confined space permits, Education & Reference, Stats
@@ -5522,7 +5523,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   <!-- batch 16 BRAND: COMPANY LOGO (company account only). The logo every report shows in its header. Needs signal to change; nothing is queued. -->
   <div class="pb-screen" id="screen-companyLogo">
     <div class="pb-header">
-      <p class="pb-eyebrow"><span>COMPANY LOGO</span><button type="button" class="pb-back" id="brBack" title="Back" aria-label="Back" onclick="pbOpenArchive()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
+      <p class="pb-eyebrow"><span>COMPANY LOGO</span><button type="button" class="pb-back" id="brBack" title="Back" aria-label="Back" onclick="if (window.pbBrBackTo === 'settings') { window.pbBrBackTo = null; pbOpenSettings(); } else pbOpenArchive();"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
       <h1 class="pb-title">Company logo</h1>
     </div>
     <div class="pbb-wrap">
@@ -8730,7 +8731,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.8 · 2026-10-22'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.8.1 · 2026-10-22'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -27222,7 +27223,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     ['structures', 'Structures'], ['permits', 'Confined Space'], ['reference', 'Education & Reference'], ['records', 'Reports & Records']
   ];
   const PB_CALC_CATS = ['grade', 'safety', 'pipe', 'structures'];
-  const PB_TOOLS_TAB_CATS = [['run', 'Run Tools'], ['permits', 'Confined Space'], ['reference', 'Education & Reference'], ['records', 'Production']];
+  const PB_TOOLS_TAB_CATS = [['reference', 'Education & Reference'], ['records', 'Production']]; // feat_navfix: Quick Run and permits are on Home > Start work
   const PB_DESTINATIONS = [
     { id: 'quickRun', label: 'Quick Run', sub: 'Basic grade calculations', cat: 'run', gate: 'quickrun', screen: 'quickrun', words: 'quick run grade fall slope rod readings elevations stations cut fill', open: () => pbOpenQuickRun() },
     { id: 'rodElev', label: 'Rod Reading → Elevation', sub: 'Set HI from a known point, then convert any reading to an elevation', cat: 'grade', gate: 'calcHub', screen: 'rodElevCalc', words: 'rod shot rod reading hi height of instrument elevation benchmark backsight level laser', open: () => pbOpenRodElevCalc() },
@@ -33350,6 +33351,22 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const fmt = (n) => (n === null || n === undefined || n === '') ? '' : String(n);
     return plan.filter(c => c && c.key).map(c => ({ key: c.key, name: String(c.name || ''), unit: String(c.unit || ''), planned: fmt(c.planned), weight: fmt(c.weight), hours: fmt(c.hours), costCode: String(c.cost_code || ''), perUnit: (Number(c.hours) > 0 && Number(c.planned) > 0) ? String(Math.round(Number(c.hours) / Number(c.planned) * 10000) / 10000) : '' }));
   }
+  // feat_navfix (owner, Oct 22: "The pipe installed main should show the percentage like everything else"): an item with
+  // no Planned amount gets the Expected of the pipe materials that count its footage (LF items only), shown and editable.
+  function pbPlanFillFromMat(E) {
+    const fill = () => {
+      if (pbPj.edit !== E || typeof pbMatList !== 'function') return;
+      const list = (pbMatList() || []).filter(m => m && !m.archived && m.source === 'pipe_footage' && Number(m.expected) > 0 && !(Number(m.each_ft) > 0));
+      if (!list.length) return;
+      pbProdPlanRead(); let ch = false;
+      E.rows.forEach(r => { if (!r.key || String(r.planned || '').trim() !== '' || !/^\s*(lf|ft|feet)?\s*$/i.test(String(r.unit || ''))) return;
+        const sum = list.filter(m => (m.footage_cat || 'pipe') === r.key).reduce((s, m) => s + Number(m.expected), 0);
+        if (sum > 0) { r.planned = String(Math.round(sum * 100) / 100); r.plannedAuto = true; ch = true; } });
+      if (ch) { const B = pbProdEl('ppBudget'); pbProdJobRender(); }
+    };
+    fill();
+    if (typeof pbMatJobLoad === 'function') Promise.resolve(pbMatJobLoad()).then(fill).catch(() => {});
+  }
   window.pbProdPlanEdit = function() {
     if (!pbPj.data) return;
     const rows = pbProdPlanRowsFrom(pbPj.data), bh = pbPj.data.plan && pbPj.data.plan.budget_hours != null ? String(pbPj.data.plan.budget_hours) : '';
@@ -33358,6 +33375,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbPj.edit = { version: Number(pbPj.data.plan_version) || 0, rows, budget: auto ? sum : bh, budgetAuto: auto, err: '', saving: false,
       equip: pbEqOf(pbPj.data.plan && pbPj.data.plan.equipment).map(q => ({ key: q.key, name: String(q.name || ''), unitNo: String(q.unit_no || ''), costCode: String(q.cost_code || '') })) }; // feat_equip
     pbPj.edit.base = JSON.stringify([rows, pbPj.edit.budget, pbPj.edit.equip]);
+    try { pbPlanFillFromMat(pbPj.edit); } catch (e) {} // feat_navfix
     pbProdJobRender();
     const f = pbProdEl('ppName0'); if (f) f.focus({ preventScroll: true });
   };
@@ -33405,7 +33423,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>How % complete is worked out</span></summary><p class="pb-help" id="ppMathHelp">A category&rsquo;s % is done &divide; planned (it can pass 100%). The job&rsquo;s % averages the planned categories, each capped at 100%: by your weights if every planned category has one, else by budget hours if every one has them, else equally. Unplanned categories show their amount and are left out. Work counts only in the category&rsquo;s unit (other units show beside it). Budget hours are compared with the crew hours reported: closed Crew Log check-ins (laborers and operators) and crew man-hours foremen type in.</p></details>'
       + '<div id="ppRows">' + E.rows.map((r, i) => {
         const c = cats.categories.find(x => x.key === r.key);
-        const has = '<span class="pbp-dim pbp-rowhas">' + escapeHtml((c && (c.done || c.otherUnits.length) ? pbProdQtyText(c.done, c.unit) + ' reported. ' : '') + (r.key && PB_PROD_RUN_KEYS.has(r.key) ? 'Filled in from crews\u2019 runs.' : 'Foremen enter it with each run.')) + '</span>';
+        const has = '<span class="pbp-dim pbp-rowhas">' + escapeHtml((c && (c.done || c.otherUnits.length) ? pbProdQtyText(c.done, c.unit) + ' reported. ' : '') + (r.key && PB_PROD_RUN_KEYS.has(r.key) ? 'Filled in from crews\u2019 runs.' : 'Foremen enter it with each run.') + (r.plannedAuto && String(r.planned) !== '' ? ' Planned is filled in from the pipe materials’ Expected; change it if needed.' : '')) + '</span>';
         return '<fieldset class="pbp-prow" id="ppRow' + i + '"><legend class="pb-sr">Category ' + (i + 1) + '</legend>'
           + field('ppName' + i, 'Category', r.name, 'type="text" maxlength="40" autocomplete="off"')
           + '<div class="pbp-prow-nums">' + field('ppPlanned' + i, 'Planned', r.planned, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanNote(); pbProdPlanPerIn(' + i + ')"')
@@ -34236,10 +34254,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       } else rows.push({ id: 'homeCoMat', name: 'Materials', sub: s, open: 'pbCohOpen(\'mat\')' });
     }
     if (pbCohFn('pbOpenCrewMembers')) rows.push({ id: 'homeCoCrew', name: 'Crew members', sub: 'Add, change role, remove, managers', open: 'pbCohOpen(\'crew\')' });
-    if (pbCohFn('pbOpenCompanyLogo')) {
-      let has = false; try { has = pbCohFn('pbCompanyBranding') && !!window.pbCompanyBranding().logo; } catch (e) {}
-      rows.push({ id: 'homeCoLogo', name: 'Company logo', sub: has ? 'On your company’s reports' : 'No logo yet. Add one for your reports.', open: 'pbCohOpen(\'logo\')' });
-    }
+    // feat_navfix: Company logo is in Settings now
     return rows;
   }
   function pbCohBrandHtml() {
@@ -44089,7 +44104,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbBrShowRow() {
     const b = pbBrEl('archiveBrandBtn'); if (!b) return;
     const uid = pbArchiveOwnerUid, p = pbProdAccMem.get(uid), a = pbReportAccessMem.get(uid);
-    b.style.display = (p ? p.manager : (a && a.manager)) ? '' : 'none';
+    const mgr = !!(p ? p.manager : (a && a.manager));
+    b.style.display = 'none'; // feat_navfix: in Settings now
+    const s = document.getElementById('settingsCompanySection'); if (s && s.hidden === mgr) s.hidden = !mgr;
   }
   try {
     const mo = new MutationObserver(() => pbBrShowRow());
