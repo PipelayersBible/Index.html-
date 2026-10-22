@@ -1699,6 +1699,8 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 #pbApp #homeShortcuts .pb-sc-head .pb-edu-h { margin: 0; }
 
 /* Current job: a compact row with a pin, no yellow bar */
+#pbApp #homeCurrentJob { padding-right: 92px; }
+#pbApp #homeCurrentJob .pb-cj-chg { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: var(--hazard, #F5C542); font-weight: 700; font-size: 14px; }
 #pbApp .pb-home-job { position: relative; margin: 16px 16px 0 16px; padding: 12px 16px 12px 52px; background: var(--pb-surface); border: 1px solid rgba(255,255,255,0.06); border-left: 1px solid rgba(255,255,255,0.06); border-radius: var(--pb-r-card); }
 #pbApp .pb-home-job::before { content: ""; position: absolute; left: 16px; top: 50%; width: 22px; height: 22px; margin-top: -11px; background: var(--pb-text-2); -webkit-mask: var(--pb-icon-pin) center / contain no-repeat; mask: var(--pb-icon-pin) center / contain no-repeat; }
 #pbApp .pb-home-job .k { font-size: 13px; color: var(--pb-text-2); }
@@ -8728,7 +8730,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.7 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.8 · 2026-10-22'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -9835,9 +9837,19 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           if (rj) rows.push(['Run', rj]);
         } catch (e) {}
         let out = '';
-        if (rows.length === 1 || (rows.length === 2 && rows[0][1].key === rows[1][1].key)) out = '<span class="k">Current job</span><span class="v">' + pbHomeEsc(rows[0][1].text) + '</span>';
+        const pick = typeof window.pbCurJobGet === 'function' ? window.pbCurJobGet() : null; // feat_curjob: the job chosen on this phone comes first
+        if (pick) {
+          const pj = pbHomeJobOf({ jobNumber: pick.job_number, jobsite: pick.name || '' });
+          out = '<span class="k">Current job</span><span class="v">' + pbHomeEsc(pj ? pj.text : 'Job ' + pick.job_number) + '</span>'
+            + rows.filter(([, j]) => !pj || j.key !== pj.key).map(([k, j]) => '<span class="k">' + (k === 'Run' ? 'Run in progress' : 'Permit open') + '</span><span class="v">' + pbHomeEsc(j.text) + '</span>').join('');
+        }
+        else if (rows.length === 1 || (rows.length === 2 && rows[0][1].key === rows[1][1].key)) out = '<span class="k">Current job</span><span class="v">' + pbHomeEsc(rows[0][1].text) + '</span>';
         else if (rows.length === 2) out = rows.map(([k, j]) => '<span class="k">Current job — ' + k.toLowerCase() + '</span><span class="v">' + pbHomeEsc(j.text) + '</span>').join('');
+        if (!out && sbUser) out = '<span class="k">Current job</span><span class="v">None chosen. Tap to choose.</span>';
+        if (out) out += '<span class="pb-cj-chg" aria-hidden="true">Change ›</span>';
         pbSetHtml(cj, out);
+        if (cj.getAttribute('role') !== 'button') { cj.setAttribute('role', 'button'); cj.setAttribute('tabindex', '0'); cj.setAttribute('aria-label', 'Current job. Tap to change it.'); cj.style.cursor = 'pointer';
+          cj.addEventListener('click', () => window.pbCurJobOpen()); cj.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); window.pbCurJobOpen(); } }); }
         if (!!out !== (cj.style.display !== 'none')) cj.style.display = out ? '' : 'none';
       }
     } catch (e) { console.error('Home render failed:', e); }
@@ -32518,6 +32530,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbProdTimeText(t) { const d = new Date(t); if (isNaN(d)) return ''; return pbProdLocalDate(d) === pbTkToday() ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
   function pbProdCatName(key, plan) {
     if (key === PB_PROD_HOURS_KEY) return 'Crew hours';
+    if (/^_eq_/.test(String(key))) { const q = plan && Array.isArray(plan.equipment) ? plan.equipment.find(e => e && '_' + e.key === key) : null; return key === '_eq_other' ? 'Other equipment' : q ? pbEqName(q) : 'Equipment'; } // feat_equip
     if (key === '_equiphours') return 'Equipment hours'; // batch 29 ROLES
     const p = plan && Array.isArray(plan.categories) ? plan.categories.find(c => c && c.key === key) : null;
     if (p && p.name) return p.name;
@@ -33059,9 +33072,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const rows = v.categories.map(c => [c.name + (c.code ? ' · ' + c.code : ''), pbProdQtyText(c.done, c.unit), c.planned !== null ? pbProdQtyText(c.planned, c.unit) : 'Not planned', c.planned !== null ? pbProdPctText(c.pct) : '', pbProdQtyText(c.today), pbProdQtyText(c.week)]);
     v.extra.forEach(x => rows.push([pbProdCatName(x.key) + ' (not in plan)', pbProdQtyText(x.done, x.unit), 'Not planned', '', pbProdQtyText(x.today), pbProdQtyText(x.week)]));
     v.categories.forEach(c => c.otherUnits.forEach(o => rows.push([c.name + ' (in ' + (o.unit || 'no unit') + ')', pbProdQtyText(o.done, o.unit), 'Unit differs', '', pbProdQtyText(o.today), pbProdQtyText(o.week)])));
+    { const C = Array.isArray(D.cats) ? D.cats.filter(r => r && typeof r.key === 'string') : [], sum = (k, f) => C.filter(r => r.key === k).reduce((s, r) => s + (Number(r[f]) || 0), 0); // feat_equip
+      const pcs = Array.from(new Set(C.filter(r => /^_eq_/.test(r.key)).map(r => r.key)));
+      if (sum(PB_ROLES_EQ_KEY, 'done')) rows.push(['Equipment hours', pbProdQtyText(sum(PB_ROLES_EQ_KEY, 'done'), 'h'), '', '', pbProdQtyText(sum(PB_ROLES_EQ_KEY, 'today')), pbProdQtyText(sum(PB_ROLES_EQ_KEY, 'week'))]);
+      pcs.forEach(k => { const q = D.plan && Array.isArray(D.plan.equipment) ? D.plan.equipment.find(e => e && '_' + e.key === k) : null; rows.push(['  ' + pbProdCatName(k, D.plan) + (q && q.cost_code ? ' · ' + q.cost_code : ''), pbProdQtyText(sum(k, 'done'), 'h'), '', '', pbProdQtyText(sum(k, 'today')), pbProdQtyText(sum(k, 'week'))]); }); }
     if (v.hoursUsed) rows.push(['Crew hours', pbProdQtyText(v.hoursUsed, 'h'), v.budgetHours ? pbProdQtyText(v.budgetHours, 'h') : 'No budget', v.budgetHours ? pbProdPctText(v.hoursUsed / v.budgetHours) : '', pbProdQtyText(v.hoursToday), '']);
     const days = Array.isArray(D.days) ? D.days.filter(x => x && x.date) : [];
-    const dayKeys = Array.from(new Set(days.map(x => x.key))).filter(k => k !== PB_PROD_HOURS_KEY);
+    const dayKeys = Array.from(new Set(days.map(x => x.key))).filter(k => k !== PB_PROD_HOURS_KEY && !/^_eq_/.test(String(k))); // feat_equip: the pieces are under By category
     const dates = Array.from(new Set(days.map(x => String(x.date).slice(0, 10)))).sort().reverse();
     const dayRows = dates.map(d => [pbProdDayText(d)].concat(dayKeys.map(k => { const q = days.filter(x => String(x.date).slice(0, 10) === d && x.key === k).reduce((s, x) => s + (Number(x.qty) || 0), 0); return q ? pbProdQtyText(q) : ''; })));
     const reps = Array.isArray(D.reporters) ? D.reporters.filter(x => x && typeof x === 'object') : [];
@@ -33338,8 +33355,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const rows = pbProdPlanRowsFrom(pbPj.data), bh = pbPj.data.plan && pbPj.data.plan.budget_hours != null ? String(pbPj.data.plan.budget_hours) : '';
     // owner, Oct 21: the whole-job budget fills itself in from the categories' hours, and can still be changed
     const sum = pbProdPlanHoursSum(rows), auto = bh === '' || (sum !== '' && Number(bh) === Number(sum));
-    pbPj.edit = { version: Number(pbPj.data.plan_version) || 0, rows, budget: auto ? sum : bh, budgetAuto: auto, err: '', saving: false };
-    pbPj.edit.base = JSON.stringify([rows, pbPj.edit.budget]);
+    pbPj.edit = { version: Number(pbPj.data.plan_version) || 0, rows, budget: auto ? sum : bh, budgetAuto: auto, err: '', saving: false,
+      equip: pbEqOf(pbPj.data.plan && pbPj.data.plan.equipment).map(q => ({ key: q.key, name: String(q.name || ''), unitNo: String(q.unit_no || ''), costCode: String(q.cost_code || '') })) }; // feat_equip
+    pbPj.edit.base = JSON.stringify([rows, pbPj.edit.budget, pbPj.edit.equip]);
     pbProdJobRender();
     const f = pbProdEl('ppName0'); if (f) f.focus({ preventScroll: true });
   };
@@ -33347,6 +33365,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const E = pbPj.edit; if (!E) return;
     E.rows.forEach((r, i) => { ['name', 'unit', 'planned', 'weight', 'hours', 'perUnit', 'costCode'].forEach(k => { const el = pbProdEl('pp' + k.charAt(0).toUpperCase() + k.slice(1) + i); if (el) r[k] = el.value; }); });
     const b = pbProdEl('ppBudget'); if (b) E.budget = b.value;
+    (E.equip || []).forEach((q, i) => { [['name', 'ppEqName'], ['unitNo', 'ppEqUnit'], ['costCode', 'ppEqCode']].forEach(([k, id]) => { const el = pbProdEl(id + i); if (el) q[k] = el.value; }); }); // feat_equip
   }
   function pbProdPlanHoursSum(rows) {
     let t = 0;
@@ -33377,7 +33396,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (blur && v === '' && sum !== '') { E.budget = sum; const b = pbProdEl('ppBudget'); if (b) b.value = sum; }
     const h = pbProdEl('ppBudgetHelp'); if (h) h.textContent = pbProdBudgetHelpText(E);
   };
-  function pbProdPlanDirty() { const E = pbPj.edit; if (!E) return false; pbProdPlanRead(); return JSON.stringify([E.rows, E.budget]) !== E.base; }
+  function pbProdPlanDirty() { const E = pbPj.edit; if (!E) return false; pbProdPlanRead(); return JSON.stringify([E.rows, E.budget, E.equip]) !== E.base; }
   function pbProdPlanEditorHtml() {
     const E = pbPj.edit, cats = pbProdJobView(pbPj.data.plan || null, pbPj.data.cats);
     const field = (id, label, val, attrs) => '<div class="pb-field"><label for="' + id + '">' + label + '</label><input id="' + id + '" value="' + escapeHtml(val) + '" ' + attrs + '></div>';
@@ -33401,6 +33420,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<p class="pb-alert info pbp-wnote" id="ppWeightNote" role="status"' + (pbProdWeightNoteText(E.rows) ? '' : ' hidden') + '>' + escapeHtml(pbProdWeightNoteText(E.rows)) + '</p>'
       + '<div class="pbp-budget">' + (E.budgetAuto ? (E.budget = pbProdPlanHoursSum(E.rows), '') : '') + field('ppBudget', 'Budget hours for the whole job', E.budget, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" aria-describedby="ppBudgetHelp" oninput="pbProdPlanBudgetIn()" onblur="pbProdPlanBudgetIn(true)"')
         + '<p class="pb-field-help" id="ppBudgetHelp" style="margin-top:-6px">' + escapeHtml(pbProdBudgetHelpText(E)) + '</p></div>'
+      + '<h4 class="pbp-h3" id="ppEqTitle" style="margin-top:14px">Equipment</h4><p class="pbp-dim">The job’s equipment. Foremen list each piece’s hours with each run.</p><div id="ppEqRows">'
+      + (E.equip || []).map((q, i) => '<fieldset class="pbp-prow" id="ppEq' + i + '"><legend class="pb-sr">Equipment ' + (i + 1) + '</legend>'
+        + field('ppEqName' + i, 'Equipment', q.name, 'type="text" maxlength="60" autocomplete="off" placeholder="e.g. CAT 320 excavator"')
+        + '<div class="pbp-prow-nums">' + field('ppEqUnit' + i, 'Unit #', q.unitNo, 'type="text" maxlength="30" autocomplete="off" placeholder="Optional"')
+        + field('ppEqCode' + i, 'Cost code', q.costCode, 'type="text" maxlength="60" autocomplete="off" autocapitalize="characters" placeholder="Optional"') + '</div>'
+        + '<div class="pbp-prow-foot"><span></span><button type="button" class="pb-btn ghost small" id="ppEqRemove' + i + '" onclick="pbProdEqRemove(' + i + ')">Remove</button></div></fieldset>').join('') + '</div>'
+      + ((E.equip || []).length < 40 ? '<div class="pb-btn-wrap pbp-btns"><button type="button" class="pb-btn secondary" id="ppEqAddBtn" onclick="pbProdEqAdd()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Equipment</button></div>' : '')
       + (E.err ? '<div class="pb-warn" id="ppErr" role="alert"><strong>Not saved</strong>' + escapeHtml(E.err) + '</div>' : '')
       + '<div class="pb-btn-wrap pbp-btns2"><button type="button" class="pb-btn ghost" id="ppCancelBtn" onclick="pbProdPlanCancel()">Cancel</button><button type="button" class="pb-btn" id="ppSaveBtn" onclick="pbProdPlanSave()"' + (E.saving ? ' disabled' : '') + '>' + (E.saving ? 'Saving…' : 'Save Plan') + '</button></div></section>';
   }
@@ -33426,6 +33452,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (c && c.done) pbConfirm('Remove ' + (r.name || 'this category') + ' from the plan? Its ' + pbProdQtyText(c.done, c.unit) + ' already reported stays on record and shows as not in this job’s plan.', go, 'Remove Category');
     else go();
   };
+  window.pbProdEqAdd = function() { const E = pbPj.edit; if (!E) return; pbProdPlanRead(); E.equip = E.equip || []; if (E.equip.length >= 40) return; E.equip.push({ key: null, name: '', unitNo: '', costCode: '' }); pbProdJobRender(); const f = pbProdEl('ppEqName' + (E.equip.length - 1)); if (f) f.focus(); };
+  window.pbProdEqRemove = function(i) { const E = pbPj.edit; if (!E || !E.equip || !E.equip[i]) return; pbProdPlanRead(); E.equip.splice(i, 1); pbProdJobRender(); };
   window.pbProdPlanCancel = function() { pbPj.edit = null; pbProdJobRender(); const b = pbProdEl('pjEditBtn'); if (b) b.focus(); };
   window.pbProdPlanSave = async function() {
     const E = pbPj.edit, uid = pbArchiveOwnerUid, job = pbPj.job; if (!E || E.saving || !job) return;
@@ -33447,7 +33475,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!(sbClient && sbUser && sbUser.id === uid && (await pbLiveSessionIs(uid)))) { E.err = 'Sign in with signal to save the plan. Your changes are still here.'; pbProdJobRender(); return; }
     if (navigator.onLine === false) { E.err = 'No signal. Your changes are still here; save again when you have signal.'; pbProdJobRender(); return; }
     E.saving = true; E.err = ''; pbProdJobRender();
-    const r = await pbPermitRpc('pb_prod_plan_set', { p_job_number: job.job_number, p_plan: { categories: cats, budget_hours: budget }, p_expect_uid: uid, p_expect_version: E.version }, 30000);
+    const equipment = [], ekeys = (E.equip || []).filter(q => q.key).map(q => q.key); // feat_equip
+    for (const q of (E.equip || [])) {
+      const name = String(q.name || '').trim(); if (!name) { if (!q.unitNo && !q.costCode) continue; E.err = 'Every piece of equipment needs a name (or remove the empty one).'; pbProdJobRender(); return; }
+      let key = q.key; if (!key) { const base = 'eq_' + (name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 24) || 'x'); key = base; let n = 2; while (ekeys.includes(key) || key === 'eq_other') key = base + '_' + n++; ekeys.push(key); }
+      equipment.push({ key, name: name.slice(0, 60), unit_no: String(q.unitNo || '').trim().slice(0, 30) || null, cost_code: String(q.costCode || '').trim().slice(0, 60) || null });
+    }
+    const r = await pbPermitRpc('pb_prod_plan_set', { p_job_number: job.job_number, p_plan: Object.assign({ categories: cats, budget_hours: budget }, equipment.length ? { equipment } : {}), p_expect_uid: uid, p_expect_version: E.version }, 30000);
     if (pbPj.edit !== E || pbPj.job !== job || !sbUser || sbUser.id !== uid) return;
     E.saving = false;
     if (r.error || !r.data || r.data.ok !== true) {
@@ -34851,6 +34885,48 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return h + '</div>';
   }
   // The foreman's own production for this run session: what he entered (local first), its state, and the form.
+  // ---- feat_equip: a job's equipment and the hours of each piece on a run ----
+  function pbEqName(q) { return q ? String(q.name || 'Equipment') + (q.unit_no ? ' #' + q.unit_no : '') : 'Equipment'; }
+  function pbEqOf(list) { return (Array.isArray(list) ? list : []).filter(q => q && typeof q.key === 'string' && /^eq_[a-z0-9]/.test(q.key) && q.key !== 'eq_other'); }
+  // { list, rows: [{ key, qty }] } for a job with equipment, else null; a total entered before without pieces stays as Other
+  function pbEqInit(list, items) {
+    const L = pbEqOf(list); if (!L.length) return null;
+    const it = (Array.isArray(items) ? items : []).filter(i => i && typeof i.key === 'string' && i.qty != null);
+    const rows = it.filter(i => /^_eq_/.test(i.key)).map(i => ({ key: i.key.slice(1), qty: String(i.qty) }));
+    const tot = it.find(i => i.key === PB_ROLES_EQ_KEY), sum = rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+    if (tot && Number(tot.qty) - sum > 0.0005) { const o = rows.find(r => r.key === 'eq_other'); if (o) o.qty = String(+(Number(o.qty) + Number(tot.qty) - sum).toFixed(3)); else rows.push({ key: 'eq_other', qty: String(+(Number(tot.qty) - sum).toFixed(3)) }); }
+    return { list: L, rows };
+  }
+  function pbEqFormHtml(E, pre, fn) {
+    if (!E) return '';
+    const nameOf = (k) => k === 'eq_other' ? 'Other equipment' : pbEqName(E.list.find(q => q.key === k)), codeOf = (k) => { const q = E.list.find(x => x.key === k); return q && q.cost_code ? ' · ' + q.cost_code : ''; };
+    const left = E.list.filter(q => !E.rows.some(r => r.key === q.key)), other = !E.rows.some(r => r.key === 'eq_other');
+    return '<div class="pb-field" id="' + pre + 'EqSec"><span class="pbm-flabel">Equipment hours</span><p class="pb-help">Add each piece used on this run and its hours.</p>'
+      + E.rows.map((r, k) => '<div class="pb-field"><label for="' + pre + 'E' + k + '">' + escapeHtml(nameOf(r.key) + ' (h)' + codeOf(r.key)) + '</label>'
+        + '<div style="display:flex;gap:8px;align-items:center"><input id="' + pre + 'E' + k + '" type="text" inputmode="decimal" autocomplete="off" value="' + escapeHtml(r.qty) + '" oninput="' + fn + 'Typed(' + k + ', this.value)" style="flex:1">'
+        + '<button type="button" class="pb-btn ghost small" id="' + pre + 'EDel' + k + '" onclick="' + fn + 'Del(' + k + ')" aria-label="' + escapeHtml('Remove ' + nameOf(r.key)) + '">Remove</button></div></div>').join('')
+      + (left.length || other ? '<select id="' + pre + 'EqAdd" onchange="' + fn + 'Add(this.value)" aria-label="Add equipment"><option value="">+ Add equipment…</option>'
+        + left.map(q => '<option value="' + escapeHtml(q.key) + '">' + escapeHtml(pbEqName(q) + (q.cost_code ? ' · ' + q.cost_code : '')) + '</option>').join('')
+        + (other ? '<option value="eq_other">Other equipment (not on the list)</option>' : '') + '</select>' : '') + '</div>';
+  }
+  function pbEqItems(E) { // -> { items, err }
+    if (!E) return { items: [] };
+    const items = []; let sum = 0;
+    for (const r of E.rows) {
+      const t = String(r.qty || '').trim().replace(/,/g, ''); if (t === '') continue;
+      const nm = r.key === 'eq_other' ? 'Other equipment' : pbEqName(E.list.find(q => q.key === r.key));
+      if (!/^\d+(\.\d+)?$|^\.\d+$/.test(t) || Number(t) > 24 * 31) return { err: nm + ': enter the hours as a plain number (or remove it).' };
+      const q = +Number(t).toFixed(3); if (!(q > 0)) continue; sum += q; items.push({ key: '_' + r.key, qty: q, unit: 'h' });
+    }
+    if (items.length) items.push({ key: PB_ROLES_EQ_KEY, qty: +sum.toFixed(3), unit: 'h' });
+    return { items };
+  }
+  function pbEqApplyRows(F) { if (F && F.eq) F.rows = F.rows.filter(r => r.key !== PB_ROLES_EQ_KEY); } // the total is the pieces' sum
+  const pbLvPlanObj = (job) => { const P = pbLvPlans[String(job || '').trim().toLowerCase().slice(0, 60)]; return P ? { categories: P.cats || [], equipment: P.equip || [] } : null; };
+  function pbLvEqRepaint() { pbLvRender(); try { if (pbCurrentScreen === 'cxList') pbCxListRender(); } catch (e) {} }
+  window.pbLvEqTyped = function(k, v) { const F = pbLv.form; if (F && F.eq && F.eq.rows[k]) F.eq.rows[k].qty = String(v); };
+  window.pbLvEqAdd = function(key) { const F = pbLv.form; if (!F || !F.eq || !key || F.eq.rows.some(r => r.key === key)) return; F.eq.rows.push({ key, qty: '' }); pbLvEqRepaint(); };
+  window.pbLvEqDel = function(k) { const F = pbLv.form; if (!F || !F.eq || !F.eq.rows[k]) return; F.eq.rows.splice(k, 1); pbLvEqRepaint(); };
   function pbLvProdHtml(p, run, pi, ri) {
     const s = run.status || {}, cid = pbLvCid(p.id, run.session_ref), x = pbLvRuns()[cid], mine = run.mine && typeof run.mine === 'object' ? run.mine : null;
     const F = pbLv.form && pbLv.form.cid === cid ? pbLv.form : null;
@@ -34859,6 +34935,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + '<p class="pbp-dim">This session’s work only. When ' + escapeHtml(p.name || 'the pipelayer') + '’s own numbers for this run arrive, they’re marked as covered by yours, so nothing counts twice.</p>'
         + F.rows.map((r, k) => '<div class="pb-field"><label for="pmLiveQ' + k + '">' + escapeHtml(r.label || (pbProdCatName(r.key) + ' (' + r.unit + ')')) /* batch 29 ROLES */ + '</label><input id="pmLiveQ' + k + '" type="text" inputmode="decimal" autocomplete="off" value="' + escapeHtml(r.qty) + '" oninput="pbLvTyped(' + k + ', this.value)">'
           + (r.pre && r.qty === r.pre ? '<p class="pb-help pbp-livepre">' + escapeHtml((r.preText || 'Filled in from the rows marked laid.') + ' Change it if it isn’t right.') + '</p>' : '') + (r.help /* batch 29 ROLES */ ? '<p class="pb-help">' + escapeHtml(r.help) + '</p>' : '') + '</div>').join('')
+        + pbEqFormHtml(F.eq, 'pmLive', 'pbLvEq') // feat_equip
         + (F.err ? '<p class="pb-warn pbp-manmsg" role="alert"><strong>Not saved</strong>' + escapeHtml(F.err) + '</p>' : '')
         + '<div class="pb-btn-wrap pbp-btns2">' + pbCrewBtn('pmLiveCancel', 'Cancel', 'pbLvFormCancel()', 'ghost') + pbCrewBtn('pmLiveSave', 'Save Production', 'pbLvFormSave()', '') + '</div></div>';
     }
@@ -34868,7 +34945,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const theirs = run.theirs === 'covered' || (x && x.theirs === 'covered') ? escapeHtml((p.name || 'The pipelayer') + '’s own numbers for this run are marked as covered by yours (not counted twice).')
         : run.theirs === 'counted' || run.theirs === 'claimed' ? escapeHtml((p.name || 'The pipelayer') + '’s own numbers for this run already counted before yours, so yours may not be accepted.')
         : escapeHtml('When ' + (p.name || 'the pipelayer') + '’s own numbers for this run arrive, they’re marked as covered by yours.');
-      return '<div class="pbp-liveprod"><span class="pbp-dim">Your production for this run</span><span class="pbp-eq">' + escapeHtml(pbCrewQty(items)) + '</span>' + pbRolesHoursHtml(items) /* batch 29 ROLES */
+      return '<div class="pbp-liveprod"><span class="pbp-dim">Your production for this run</span><span class="pbp-eq">' + escapeHtml(pbCrewQty(items, pbLvPlanObj(run.job_number || (run.status && run.status.jobNumber)))) + '</span>' + pbRolesHoursHtml(items, pbLvPlanObj(run.job_number || (run.status && run.status.jobNumber))) /* batch 29 ROLES */
         + '<span class="pb-chip ' + (stt.k === 'ok' ? 'ok' : stt.k === 'refused' ? 'notsent' : 'notsent') + ' pbp-state">' + escapeHtml(stt.label) + '</span>'
         + (stt.k === 'ok' ? '<span class="pbp-dim">' + theirs + '</span>' : '')
         + '<span class="pbp-eact">' + pbCrewBtn('pmLiveEdit' + pi, 'Change Production', 'pbLvFormOpen(' + pi + ', ' + ri + ')', 'ghost') + (typeof window.pbRrCrewBtn === 'function' ? window.pbRrCrewBtn(p, run, 'pmLiveRpt' + pi + '_' + ri) : '') + '</span></div>';
@@ -34930,6 +35007,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return out;
   }
   function pbLvAddExtra(F, have) {
+    if (!F.eq) { const P = pbLvPlans[String(F.job || '').trim().toLowerCase().slice(0, 60)], e = pbEqInit(P && P.equip, [...have.values()]); if (e) { F.eq = e; pbEqApplyRows(F); F.labelsFromPlan = true; } } // feat_equip
     { const P = pbLvPlans[String(F.job || '').trim().toLowerCase().slice(0, 60)]; let ch = false; // r15.5: the plan's own names and cost codes on every row
       (P && Array.isArray(P.cats) ? P.cats : []).forEach(c => { const r = c && F.rows.find(x => x.key === c.key); if (!r) return; const lab = (c.name || r.key) + (r.unit ? ' (' + r.unit + ')' : '') + (c.cost_code ? ' · ' + c.cost_code : ''); if (r.label !== lab) { r.label = lab; ch = true; } });
       F.labelsFromPlan = ch || F.labelsFromPlan; }
@@ -34942,7 +35020,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const P = pbLvPlans[k]; if (P && Date.now() - P.at < 600000) return;
     const r = await pbPermitRpc('pb_prod_job_plan_crew', { p_job_number: F.job }, 20000);
     if (!r || r.error || !r.data) return;
-    pbLvPlans[k] = { at: Date.now(), cats: r.data.plan && Array.isArray(r.data.plan.categories) ? r.data.plan.categories.filter(c => c && typeof c === 'object') : [] };
+    pbLvPlans[k] = { at: Date.now(), cats: r.data.plan && Array.isArray(r.data.plan.categories) ? r.data.plan.categories.filter(c => c && typeof c === 'object') : [], equip: r.data.plan && Array.isArray(r.data.plan.equipment) ? r.data.plan.equipment.filter(c => c && typeof c === 'object') : [] }; // feat_equip
     if (pbLv.form !== F) return;
     if (pbLvAddExtra(F, have)) { pbLvRender(); try { if (pbCurrentScreen === 'cxList') pbCxListRender(); } catch (e) {} } // typed values are already in F.rows (pbLvTyped)
   }
@@ -34959,6 +35037,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!/^\d+(\.\d+)?$|^\.\d+$/.test(t) || Number(t) > 50000) { F.err = (F.rows[k].custom ? String(F.rows[k].label || F.rows[k].key).replace(/ \([^)]*\)$/, '') : pbProdCatName(F.rows[k].key)) + ': enter a plain number of ' + (F.rows[k].unit || 'it') + ' (or leave it empty).'; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); pbLvRender(); return; }
       items.push({ key: F.rows[k].key, qty: +Number(t).toFixed(3), unit: F.rows[k].unit });
     }
+    if (F.eq) { const q = pbEqItems(F.eq); if (q.err) { F.err = q.err; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); pbLvRender(); return; } items.push(...q.items); } // feat_equip
+    if (items.length > 20) { F.err = 'Too many lines for one run (20 at most). Leave out the empty ones.'; pbLvRender(); return; }
     if (!items.length) { F.err = 'Enter at least one quantity.'; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); pbLvRender(); return; }
     const held = pbProdAccMem.get(uid) || null; // the company answer HELD now decides where it is filed (review 3)
     if (!st.crewRuns || typeof st.crewRuns !== 'object') st.crewRuns = {};
@@ -36243,9 +36323,73 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }).join('');
   };
   window.pbToggleArchiveView = function(i) {
-    const el = document.getElementById('archiveView' + i);
-    el.style.display = el.style.display === 'none' ? '' : 'none';
+    const el = document.getElementById('archiveView' + i); if (!el) return;
+    // feat_pdfview (owner, Oct 22): View shows the report as its PDF; the text version is a tap away
+    const e = runArchive[i], box0 = document.getElementById('archivePdf' + i);
+    if (box0) { const open = box0.style.display === 'none'; box0.style.display = open ? '' : 'none'; const tb = document.getElementById('archiveTxtBtn' + i); if (tb) tb.style.display = open ? '' : 'none'; if (!open) el.style.display = 'none'; return; }
+    if (!e || typeof window.pbRrPdfDraw !== 'function' || typeof pdfLibReady !== 'function' || !pdfLibReady()) { el.style.display = el.style.display === 'none' ? '' : 'none'; return; }
+    el.insertAdjacentHTML('beforebegin', '<div id="archivePdf' + i + '" style="overflow:auto; -webkit-overflow-scrolling:touch; max-height:75vh; background:#5b6068; border-radius:10px; padding:6px; margin-top:8px;"><p class="pbx-none" style="color:#fff">Opening the report…</p></div>'
+      + '<button type="button" class="pb-btn ghost small" id="archiveTxtBtn' + i + '" style="margin-top:6px" onclick="pbArchiveTextToggle(' + i + ')">Text Version</button>');
+    const box = document.getElementById('archivePdf' + i), key = 'arch|' + String(e.id) + '|' + Date.now(); box.dataset.pdfKey = key;
+    window.pbRrPdfDraw(e, box, key).then(ok => { if (!ok && box.dataset.pdfKey === key) el.style.display = ''; })
+      .catch(err => { console.error('PDF view failed', err); if (box.dataset.pdfKey === key) { box.innerHTML = '<p class="pbx-none" style="color:#fff">The report couldn’t be drawn here. Download PDF, or read the text version.</p>'; el.style.display = ''; } });
   };
+  window.pbArchiveTextToggle = function(i) { const el = document.getElementById('archiveView' + i); if (el) el.style.display = el.style.display === 'none' ? '' : 'none'; };
+  // ---- feat_curjob: the current job, chosen on Home (per account, on this phone) ----
+  { let pbCj = { uid: null, v: null, jobs: null, at: 0 };
+    const PB_CJ_KEY = 'pbCurrentJob', PB_CJ_JOBS = 'pbCurrentJobList';
+    const cjLoad = async (uid) => { pbCj = { uid, v: null, jobs: null, at: 0 }; if (!uid || uid === 'shared') return;
+      try { const r = await pbGetFor(uid, PB_CJ_KEY); const o = r ? JSON.parse(r) : null; if (pbCj.uid === uid && o && o.job_number) pbCj.v = { job_number: String(o.job_number).slice(0, 60), name: String(o.name || '').slice(0, 200) }; } catch (e) {}
+      try { const r = await pbGetFor(uid, PB_CJ_JOBS); const o = r ? JSON.parse(r) : null; if (pbCj.uid === uid && o && Array.isArray(o.jobs)) { pbCj.jobs = o.jobs; pbCj.at = Number(o.at) || 0; } } catch (e) {}
+      try { window.pbRenderHome(); } catch (e) {} };
+    window.pbAccountLoadHooks.push((uid) => { cjLoad(uid); });
+    window.pbCurJobGet = () => pbCj.uid === pbArchiveOwnerUid ? pbCj.v : null;
+    async function cjSet(v) { const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared') return; pbCj.uid = uid; pbCj.v = v; await pbSetFor(uid, PB_CJ_KEY, v ? JSON.stringify(v) : '');
+      try { window.pbRenderHome(); } catch (e) {} }
+    async function cjFetch() {
+      const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared' || !sbClient || !sbUser || sbUser.id !== uid || navigator.onLine === false) return false;
+      const r = await pbPermitRpc('pb_prod_member_jobs', {}, 20000);
+      if (!r || r.error || !r.data || !Array.isArray(r.data.jobs) || pbArchiveOwnerUid !== uid) return false;
+      pbCj.jobs = r.data.jobs.filter(j => j && j.job_number).map(j => ({ job_number: String(j.job_number), name: String(j.project_name || '') })); pbCj.at = Date.now();
+      try { await pbSetFor(uid, PB_CJ_JOBS, JSON.stringify({ at: pbCj.at, jobs: pbCj.jobs })); } catch (e) {}
+      return true;
+    }
+    function cjChoices() { // the company's jobs, then the jobs on this phone's runs and permits; one row per job number
+      const out = [], seen = new Set(), add = (n, name) => { n = String(n || '').trim(); const k = n.toLowerCase(); if (!n || seen.has(k)) return; seen.add(k); out.push({ job_number: n.slice(0, 60), name: String(name || '').trim().slice(0, 200) }); };
+      (pbCj.jobs || []).forEach(j => add(j.job_number, j.name));
+      (Array.isArray(runArchive) ? runArchive.slice().sort((a, b) => (Number(b.lockTime) || 0) - (Number(a.lockTime) || 0)) : []).forEach(e => e && add(e.jobNumber, e.jobsite));
+      return out.slice(0, 80);
+    }
+    function cjRender() {
+      const d = document.getElementById('pbModalDialog'); if (!d) return;
+      d.querySelectorAll('.pb-cj-extra').forEach(x => x.remove());
+      const cur = window.pbCurJobGet(), list = cjChoices();
+      const box = document.createElement('div'); box.className = 'pb-modal-extra pb-cj-extra'; box.style.cssText = 'max-height:52vh; overflow-y:auto; margin:6px 0 10px;';
+      box.innerHTML = (list.length ? list.map((j, k) => '<button type="button" class="pb-btn ' + (cur && cur.job_number.toLowerCase() === j.job_number.toLowerCase() ? '' : 'ghost ') + 'small" id="cjPick' + k + '" style="display:block; width:100%; text-align:left; margin:0 0 6px;" data-k="' + k + '">' + escapeHtml('Job ' + j.job_number + (j.name ? ' — ' + j.name : '')) + '</button>').join('') : '<p class="pb-help">' + escapeHtml(navigator.onLine === false ? 'No signal: only the jobs on this phone are listed. Type one below.' : 'No jobs listed yet. Type one below.') + '</p>')
+        + '<div class="pb-field" style="margin-top:8px"><label for="cjType">Or type a job number</label><div style="display:flex; gap:8px"><input id="cjType" type="text" maxlength="60" autocomplete="off" placeholder="e.g. 26014" style="flex:1"><button type="button" class="pb-btn small" id="cjTypeGo">Use It</button></div></div>'
+        + (cur ? '<button type="button" class="pb-btn ghost small" id="cjClear" style="margin-top:6px">Clear Current Job</button>' : '');
+      const msg = document.getElementById('pbModalMessage'); if (msg && msg.parentNode) msg.parentNode.insertBefore(box, msg.nextSibling); else d.appendChild(box);
+      box.querySelectorAll('[id^="cjPick"]').forEach(b => b.addEventListener('click', () => { const j = list[Number(b.dataset.k)]; pbHideModal(); cjSet(j); }));
+      box.querySelector('#cjTypeGo').addEventListener('click', () => { const t = String(box.querySelector('#cjType').value || '').trim(); if (!t) { box.querySelector('#cjType').focus(); return; } const m = list.find(j => j.job_number.toLowerCase() === t.toLowerCase()); pbHideModal(); cjSet(m || { job_number: t.slice(0, 60), name: '' }); });
+      const c = box.querySelector('#cjClear'); if (c) c.addEventListener('click', () => { pbHideModal(); cjSet(null); });
+    }
+    window.pbCurJobOpen = function() {
+      if (!sbUser) { pbAlert('Sign in to choose the current job.', 'Current Job'); return; }
+      pbShowModal('Pick the job you’re working on. New runs start on it.', [{ label: 'Cancel' }], 'Current Job');
+      cjRender();
+      if (Date.now() - pbCj.at > 60000) cjFetch().then(ok => { if (ok && pbModalIsOpen() && document.querySelector('.pb-cj-extra')) cjRender(); }).catch(() => {});
+    };
+    // New Run: the form starts on the current job (Job Details on, its number; the jobsite when it's a different job)
+    window.pbCurJobPrefill = function() {
+      const v = window.pbCurJobGet(); if (!v) return;
+      const tg = document.getElementById('saEnableToggle'), jn = document.getElementById('saJobNumber'), js = document.getElementById('saJobsite'); if (!tg || !jn) return;
+      const same = String(jn.value || '').trim().toLowerCase() === v.job_number.toLowerCase();
+      jn.value = v.job_number; if (js && !same) js.value = v.name || '';
+      if (!tg.checked) { tg.checked = true; tg.dispatchEvent(new Event('change', { bubbles: true })); }
+      jn.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    window.__pbCurJob = () => ({ v: pbCj.v, jobs: pbCj.jobs });
+  }
   window.pbRetryCloudSync = async function(i) {
     const e = runArchive[i];
     if (!e) return;
@@ -41486,6 +41630,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!pbScreenAccessAllowed('input')) { pbShowSubscriptionRequiredMessage('input'); return; }
     const fromImport = pbCurrentScreen === 'cutsheetImport'; // New Run is opened from this screen only by its own import
     pbResetRunForm();
+    try { window.pbCurJobPrefill && window.pbCurJobPrefill(); } catch (e) {} // feat_curjob: a new run starts on the current job
     if (fromImport) { pbCutsheetLeaveOk = true; try { pbGoto('input'); } finally { pbCutsheetLeaveOk = false; } }
     else pbGoto('input');
   };
@@ -47376,7 +47521,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           : '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn ghost small" id="cxSendBackBtn" onclick="pbRrSendBackOpen()">Send Back to Foreman</button></div>') : '') + pdf;
       setTimeout(() => window.pbRrPdfShow(), 0);
     }
-    const keep = 'd|' + [x.id || x.sref, e.id, x.reviewed_at || '', x.sent_at || '', O.pdfOpen ? 1 : 0, O.sendBack ? 'sb:' + (O.sendBackErr || '') : '', x.sent_back_at || '', x.removed_at || '', pbRrOffKey(O, x), pbRrSetupKey(O, x), canProd ? ((pbLv.data ? 1 : 0) + ':' + (pbLv.form ? pbLv.form.cid + ':' + (pbLv.form.err || '') + ':' + pbLv.form.rows.length : '') + ':' + JSON.stringify(pbLvRuns())) : ''].join('|');
+    const keep = 'd|' + [x.id || x.sref, e.id, x.reviewed_at || '', x.sent_at || '', O.pdfOpen ? 1 : 0, O.sendBack ? 'sb:' + (O.sendBackErr || '') : '', x.sent_back_at || '', x.removed_at || '', pbRrOffKey(O, x), pbRrSetupKey(O, x), canProd ? ((pbLv.data ? 1 : 0) + ':' + (pbLv.form ? pbLv.form.cid + ':' + (pbLv.form.err || '') + ':' + pbLv.form.rows.length + ':' + (pbLv.form.eq ? pbLv.form.eq.rows.map(r => r.key).join(',') : '') : '') + ':' + JSON.stringify(pbLvRuns())) : ''].join('|');
     return { h, s: '', keep };
   }
   // ---- feat_runsetup: a sent run's setup, changed by the office (intended) or its foreman (field; his win) ----
@@ -47482,7 +47627,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   };
   // ---- feat_pmedit: the office's production on a run report ----
   const pbRrOffOn = (O, x) => !!(x && x.can_edit && x.id && !x.removed_at && !O.fromCrew && !O.fromList);
-  function pbRrOffKey(O, x) { return pbRrOffOn(O, x) ? 'off:' + JSON.stringify([x.prod, O.pe ? [O.pe.err, O.pe.saving, O.pe.rows.length] : null]) : ''; }
+  function pbRrOffKey(O, x) { return pbRrOffOn(O, x) ? 'off:' + JSON.stringify([x.prod, O.pe ? [O.pe.err, O.pe.saving, O.pe.rows.length, O.pe.eq ? O.pe.eq.rows.map(r => r.key) : null] : null]) : ''; }
   function pbRrOffRows(x) {
     const items = x.prod && Array.isArray(x.prod.items) ? x.prod.items : [], plan = Array.isArray(x.plan) ? x.plan : [];
     const have = new Map(items.filter(i => i && typeof i.key === 'string').map(i => [i.key, i])), rows = [], seen = new Set();
@@ -47495,16 +47640,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbRrOffHtml(O, x) {
     if (!pbRrOffOn(O, x)) return '';
-    const P = x.prod, items = P && Array.isArray(P.items) ? P.items : [], plan = { categories: x.plan || [] }, F = O.pe;
+    const P = x.prod, items = P && Array.isArray(P.items) ? P.items : [], plan = { categories: x.plan || [], equipment: x.equipment || [] }, F = O.pe;
     let h = '<section id="cxRunOffProd" style="margin:8px 0 12px"><h3 class="pbx-h2">Production for this run</h3>';
     if (F) {
       h += '<form id="cxRunOffForm" onsubmit="event.preventDefault(); pbRrOffSave();">' + F.rows.map((r, k) => '<div class="pb-field"><label for="cxRunOffQ' + k + '">' + escapeHtml(r.label || (pbProdCatName(r.key, plan) + ' (' + r.unit + ')')) + '</label><input id="cxRunOffQ' + k + '" type="text" inputmode="decimal" autocomplete="off" value="' + escapeHtml(r.qty) + '" oninput="pbRrOffTyped(' + k + ', this.value)">'
           + (r.help ? '<p class="pb-help">' + escapeHtml(r.help) + '</p>' : '') + '</div>').join('')
+        + pbEqFormHtml(F.eq, 'cxRunOff', 'pbRrOffEq') // feat_equip
         + (F.err ? '<p class="pb-warn pbp-manmsg" id="cxRunOffErr" role="alert"><strong>Not saved</strong>' + escapeHtml(F.err) + '</p>' : '')
         + '<div class="pb-save-offer-btns"><button type="button" class="pb-btn ghost small" id="cxRunOffCancel" onclick="pbRrOffCancel()">Cancel</button><button type="submit" class="pb-btn small" id="cxRunOffSave"' + (F.saving ? ' disabled' : '') + '>' + (F.saving ? 'Saving…' : 'Save Production') + '</button></div></form>';
     } else {
       const who = P ? (P.mine ? 'you' : (P.by_name || (P.role === 'foreman' ? 'the foreman' : 'the crew member')) + (P.role === 'foreman' ? ' (foreman)' : P.role === 'manager' ? ' (office)' : '')) : '';
-      h += P ? '<p class="pbx-note" id="cxRunOffQty"><strong>' + escapeHtml(pbCrewQty(items, plan)) + '</strong></p>' + pbRolesHoursHtml(items)
+      h += P ? '<p class="pbx-note" id="cxRunOffQty"><strong>' + escapeHtml(pbCrewQty(items, plan)) + '</strong></p>' + pbRolesHoursHtml(items, plan)
           + '<p class="pbx-note" id="cxRunOffBy">' + escapeHtml('Entered by ' + who + (P.edited_by_name && !P.mine ? ', changed by ' + P.edited_by_name : '') + '.') + '</p>'
         : '<p class="pbx-note" id="cxRunOffNone">No production entered for this run yet.</p>';
       h += '<div class="pb-save-offer-btns"><button type="button" class="pb-btn ghost small" id="cxRunOffEdit" onclick="pbRrOffOpen()">' + (P ? 'Change Production' : 'Enter Production') + '</button>'
@@ -47513,8 +47659,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     h += '<details class="pb-more" id="cxRunOffMore" style="margin-top:8px"><summary><span>More</span></summary><p class="pbx-note">Delete this run if it shouldn’t be in the company’s records (a test, a duplicate, the wrong job). Its production stops counting. The server keeps a copy.</p><button type="button" class="pb-btn ghost small" id="cxRunOffDelete" style="color:var(--rod-red)" onclick="pbRrDelete()">Delete Run</button></details>';
     return h + '</section>';
   }
-  window.pbRrOffOpen = function() { const O = pbRoFor(pbArchiveOwnerUid), x = O.open; if (!pbRrOffOn(O, x)) return; O.pe = { rows: pbRrOffRows(x), err: '', saving: false }; pbCxListRender(); setTimeout(() => { const f = document.getElementById('cxRunOffQ0'); if (f) f.focus({ preventScroll: true }); }, 30); };
+  window.pbRrOffOpen = function() { const O = pbRoFor(pbArchiveOwnerUid), x = O.open; if (!pbRrOffOn(O, x)) return; O.pe = { rows: pbRrOffRows(x), err: '', saving: false, eq: pbEqInit(x.equipment, x.prod && x.prod.items) }; pbEqApplyRows(O.pe); pbCxListRender(); setTimeout(() => { const f = document.getElementById('cxRunOffQ0'); if (f) f.focus({ preventScroll: true }); }, 30); };
   window.pbRrOffTyped = function(k, v) { const O = pbRoFor(pbArchiveOwnerUid), F = O.pe; if (F && F.rows[k]) F.rows[k].qty = String(v); };
+  window.pbRrOffEqTyped = function(k, v) { const F = pbRoFor(pbArchiveOwnerUid).pe; if (F && F.eq && F.eq.rows[k]) F.eq.rows[k].qty = String(v); };
+  function pbRrOffKeepTyped() { const F = pbRoFor(pbArchiveOwnerUid).pe; if (!F) return; F.rows.forEach((r, k) => { const el = document.getElementById('cxRunOffQ' + k); if (el) r.qty = el.value; }); }
+  window.pbRrOffEqAdd = function(key) { const F = pbRoFor(pbArchiveOwnerUid).pe; if (!F || !F.eq || !key || F.eq.rows.some(r => r.key === key)) return; pbRrOffKeepTyped(); F.eq.rows.push({ key, qty: '' }); pbCxListRender(); };
+  window.pbRrOffEqDel = function(k) { const F = pbRoFor(pbArchiveOwnerUid).pe; if (!F || !F.eq || !F.eq.rows[k]) return; pbRrOffKeepTyped(); F.eq.rows.splice(k, 1); pbCxListRender(); };
   window.pbRrOffCancel = function() { const O = pbRoFor(pbArchiveOwnerUid); O.pe = null; pbCxListRender(); };
   const PB_RR_OFF_ERR = { 'pb:changed': 'Someone changed this run’s production since you opened it. Go back and open the run again to see it.', 'pb:removed': 'This run was deleted.', 'pb:not_company_account': 'Only the company account or a listed PM can change it.',
     'pb:bad_items': 'Check the numbers.', 'pb:quota': 'Too many changes today. Try again tomorrow.', 'pb:too_many_versions': 'This run’s production has been changed too many times.', 'pb:not_found': 'This run wasn’t found.' };
@@ -47527,6 +47677,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!/^\d+(\.\d+)?$|^\.\d+$/.test(t) || Number(t) > 50000) { F.err = String(F.rows[k].label || F.rows[k].key).replace(/ \([^)]*\).*$/, '') + ': enter a plain number (or leave it empty).'; pbCxListRender(); return; }
       items.push({ key: F.rows[k].key, qty: +Number(t).toFixed(3), unit: F.rows[k].unit });
     }
+    if (F.eq) { const q = pbEqItems(F.eq); if (q.err) { F.err = q.err; pbCxListRender(); return; } items.push(...q.items); } // feat_equip
+    if (items.length > 20) { F.err = 'Too many lines for one run (20 at most). Leave out the empty ones.'; pbCxListRender(); return; }
     if (!items.length) { F.err = 'Enter at least one amount.'; pbCxListRender(); return; }
     F.saving = true; F.err = ''; pbCxListRender();
     const r = await pbPermitRpc('pb_prod_company_run_prod_save', { p_id: x.id, p_items: items, p_expect_uid: uid, p_expect_version: x.prod ? x.prod.version : null }, 30000);
@@ -47560,7 +47712,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       Object.assign(x, { sent_at: r.data.sent_at || x.sent_at, sent_how: r.data.sent_how || x.sent_how, reviewed_at: r.data.reviewed_at || null, reviewed_by_name: r.data.reviewed_by_name || null,
         sent_back_at: r.data.sent_back_at || null, sent_back_note: r.data.sent_back_note || null, sent_back_by_name: r.data.sent_back_by_name || null,
         removed_at: r.data.removed_at || x.removed_at || null, removed_reason: r.data.removed_reason || x.removed_reason || null, removed_by_name: r.data.removed_by_name || x.removed_by_name || null, can_send_back: !!r.data.can_send_back });
-      x.can_edit = !!r.data.can_edit; x.setup = r.data.setup && typeof r.data.setup === 'object' ? r.data.setup : null; O.se = null; x.prod = r.data.prod && typeof r.data.prod === 'object' ? r.data.prod : null; x.plan = Array.isArray(r.data.plan) ? r.data.plan.filter(c => c && typeof c === 'object' && typeof c.key === 'string') : []; O.pe = null; // feat_pmedit
+      x.can_edit = !!r.data.can_edit; x.setup = r.data.setup && typeof r.data.setup === 'object' ? r.data.setup : null; O.se = null; x.prod = r.data.prod && typeof r.data.prod === 'object' ? r.data.prod : null; x.equipment = Array.isArray(r.data.equipment) ? r.data.equipment : []; // feat_equip
+      x.plan = Array.isArray(r.data.plan) ? r.data.plan.filter(c => c && typeof c === 'object' && typeof c.key === 'string') : []; O.pe = null; // feat_pmedit
       try { O.rec = normalizeArchiveEntry(Object.assign({}, r.data.record, { lockTime: new Date(r.data.record.lockTime) })); } catch (err) { O.rec = null; O.recMsg = 'This run’s record couldn’t be read.'; }
     } else O.recMsg = navigator.onLine === false ? 'No signal.' : 'Couldn’t load this run.';
     pbCxListRender();
@@ -49158,9 +49311,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return PB_ROLES_HOURS.map(r => { const i = have.get(r.key); return { key: r.key, unit: 'h', qty: i && i.qty != null ? String(i.qty) : '', pre: null, typed: false, label: r.label, help: r.help, hours: true }; });
   }
   // The hours on an entry (crew man-hours, equipment hours), for the foreman's lists: '' when none.
-  function pbRolesHoursHtml(items) {
+  function pbRolesHoursHtml(items, plan) {
+    const pcs = (Array.isArray(items) ? items : []).filter(it => it && it.qty != null && /^_eq_/.test(String(it.key))).map(it => pbProdCatName(it.key, plan) + ' ' + pbProdQtyText(it.qty, it.unit || 'h')); // feat_equip
     const t = (Array.isArray(items) ? items : []).filter(it => it && it.qty != null && (it.key === PB_PROD_HOURS_KEY || it.key === PB_ROLES_EQ_KEY)).sort((a, b) => a.key === PB_PROD_HOURS_KEY ? -1 : b.key === PB_PROD_HOURS_KEY ? 1 : 0)
-      .map(it => pbProdCatName(it.key) + ' ' + pbProdQtyText(it.qty, it.unit || 'h')).join(' · ');
+      .map(it => pbProdCatName(it.key) + ' ' + pbProdQtyText(it.qty, it.unit || 'h') + (it.key === PB_ROLES_EQ_KEY && pcs.length ? ' (' + pcs.join(', ') + ')' : '')).join(' · ');
     return t ? '<span class="pbp-dim pb-roles-hours">' + escapeHtml(t) + '</span>' : '';
   }
   // A claimed run's Edit: the categories it came with (first, as before), then the run's other ones, then the two hour fields.
