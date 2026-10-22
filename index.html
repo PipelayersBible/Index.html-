@@ -8728,7 +8728,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.5.1 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.6 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -44279,7 +44279,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // a density shown to 2 places, an exact half rounded up (1.485 -> 1.49, never the float's 1.48)
   const pbMatDens2 = (n) => (Math.round(Number(n) * 100 + 1e-7) / 100).toFixed(2);
   const pbMatPresetText = () => PB_MAT_PRESETS.map(p => p.short + ' ' + pbMatDens2(p.density)).join(', ');
-  const PB_MAT_CATS = [['pipe', 'Pipe'], ['bedding_rock', 'Bedding: rock'], ['bedding_sand', 'Bedding: sand'], ['bedding_other', 'Bedding: other'],
+  // feat_paving: the Type list a PM picks from (one Bedding / Shading choice, then its kind; asphalt and concrete)
+  const PB_MAT_TYPES = [['pipe', 'Pipe'], ['bedding', 'Bedding / Shading'], ['asphalt', 'Asphalt'], ['concrete', 'Concrete'], ['fittings', 'Fittings'], ['structures', 'Structures'], ['other', 'Other']];
+  const PB_MAT_BEDKINDS = [['bedding_rock', 'Rock'], ['bedding_sand', 'Sand'], ['bedding_other', 'Other']];
+  const PB_MAT_KIND = { asphalt: { name: 'Asphalt', unit: 'ton', words: 'tons', density: 1.96, extra: 5, thk: 3 }, concrete: { name: 'Concrete', unit: 'yd³', words: 'yd³', extra: 5, thk: 6 } }; // asphalt 145 lb/ft³
+  const PB_MAT_CATS = [['pipe', 'Pipe'], ['bedding_rock', 'Bedding / Shading: rock'], ['bedding_sand', 'Bedding / Shading: sand'], ['bedding_other', 'Bedding / Shading: other'],
     ['fittings', 'Fittings'], ['structures', 'Structures'], ['other', 'Other']];
   const PB_MAT_EST_NOTE = 'Estimate from footage × trench width × bedding thickness. Actual use varies with field conditions such as trench width and grading accuracy.';
   // batch 18 M (03, after review start): shading = the sides of the pipe plus a thickness over its top
@@ -44458,7 +44462,18 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbMatNew = (uid) => ({ uid, co: null, coAt: 0, coMsg: '', coBusy: false, coGen: 0, jobs: {}, tk: {}, photos: {}, jobMsg: '', jobBusy: false, jobGen: 0, form: null, open: {}, hist: {} });
   let pbMat = pbMatNew(null);
   const pbMatIsBed = (c) => /^bedding_/.test(String(c || ''));
-  const pbMatCatName = (c) => (PB_MAT_CATS.find(x => x[0] === c) || [c, 'Other'])[1];
+  const pbMatCatName = (c, k) => k && PB_MAT_KIND[k] ? PB_MAT_KIND[k].name : (PB_MAT_CATS.find(x => x[0] === c) || [c, 'Other'])[1];
+  // feat_paving: an asphalt / concrete amount from length x width (ft) x thickness (in) -> { qty: string ('' when incomplete), how }
+  function pbMatKindDims(kind, len, wid, thk, dens, extra, unit) {
+    const n = (x) => { const s = pbMatNorm(x); const k = Number(s); return s !== '' && Number.isFinite(k) && k > 0 ? k : null; };
+    const L = n(len), W = n(wid), T = n(thk); if (!L || !W || !T) return { qty: '', how: 'Type the length and width (ft) and the thickness (in).' };
+    const e = String(extra == null ? '' : extra).trim() === '' ? 0 : Number(extra), f = 1 + (Number.isFinite(e) && e >= 0 ? e : 0) / 100;
+    const tons = /^ton/i.test(String(unit || '')), d = Number(dens);
+    if (tons && !(d > 0)) return { qty: '', how: 'Set the density to work out tons.' };
+    const yd = L * W * (T / 12) / 27, q = Math.round(yd * f * (tons ? d : 1) * 10) / 10, w = tons ? 'tons' : String(unit || 'yd³');
+    return { qty: String(q), how: L + ' × ' + W + ' ft × ' + T + ' in = ' + (Math.round(yd * 100) / 100) + ' yd³' + (f !== 1 ? ' + ' + pbMatFmt(e) + '%' : '') + (tons ? ' × ' + d + ' t/yd³' : '') + ' = ' + pbMatFmt(q, w) + ' ' + w + '.' };
+  }
+  const pbMatDimOk = (m) => !!(m && (m.source === 'bedding_calc' || (m.kind && PB_MAT_KIND[m.kind])));
   function pbMatFmt(n, unit) {
     if (n === null || n === undefined || n === '' || !Number.isFinite(Number(n))) return '—';
     const whole = /^(LF|EA|ft)$/i.test(String(unit || ''));
@@ -44623,7 +44638,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!live.length) h += '<p class="pbp-dim pbm-none" id="pjMatEmpty">No materials listed for this job yet. Add the pipe, bedding and anything else you want to track against what’s ordered.</p>';
       h += pbMatShareNote(live);
       h += '<ul class="pbm-list" id="pjMatList">' + pbMatGroups(live).map(g => g.length === 1 ? pbMatRowHtml(Object.assign({}, g[0], { __line: false })) : pbMatGroupHtml(g)).join('') + '</ul>';
-      if (arch.length) h += '<details class="pb-more pbm-arch"><summary><span>Archived (' + arch.length + ')</span></summary><ul class="pbm-list">' + arch.map(m => '<li class="pbm-row archived"><span class="pbm-name">' + escapeHtml(m.name) + '</span><span class="pbp-dim">' + escapeHtml(pbMatCatName(m.category)) + ' · kept with its orders and history</span><span class="pbm-acts"><button type="button" class="pb-btn ghost small" onclick="pbMatArchive(\'' + m.id + '\', false)">Bring Back</button></span></li>').join('') + '</ul></details>';
+      if (arch.length) h += '<details class="pb-more pbm-arch"><summary><span>Archived (' + arch.length + ')</span></summary><ul class="pbm-list">' + arch.map(m => '<li class="pbm-row archived"><span class="pbm-name">' + escapeHtml(m.name) + '</span><span class="pbp-dim">' + escapeHtml(pbMatCatName(m.category, m.kind)) + ' · kept with its orders and history</span><span class="pbm-acts"><button type="button" class="pb-btn ghost small" onclick="pbMatArchive(\'' + m.id + '\', false)">Bring Back</button></span></li>').join('') + '</ul></details>';
     }
     if (list) h += pbMatTicketsHtml();
     if (list) h += pbMatSettingsHtml();
@@ -44861,6 +44876,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         if (pm) { F.v.footage_cat = pm.footage_cat || 'pipe'; F.v.each_ft = pbMatStr(pm.each_ft); fc.value = F.v.footage_cat; if (!F.ccTyped && pm.cost_code) F.v.cost_code = pm.cost_code; } else F.v.footage_cat = fv; } // r15.4 / r15.4.1 / r15.5
       const ef = pbProdEl('pmf_each_ft'); if (ef) F.v.each_ft = String(ef.value); // r15.4.1
       const cc = pbProdEl('pmf_cost_code'); if (cc) F.v.cost_code = String(cc.value).trim(); // r15.5
+      if (pbProdEl('pmf_category')) { const t = F.v.category, bk = pbProdEl('pmf_bedkind'); // feat_paving
+        if (t === 'bedding') { F.v.category = bk ? String(bk.value) : 'bedding_rock'; F.v.kind = ''; }
+        else if (PB_MAT_KIND[t]) { F.v.category = 'other'; F.v.kind = t; } else F.v.kind = ''; }
+      const pm = document.querySelector('input[name="pmfPMode"]:checked'); if (pm) F.v.pmode = pm.value;
+      ['dl', 'dw', 'dt'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = pbMatNorm(el.value); });
     } else if (F.kind === 'job') { ['trench_width_ft', 'bed_thick_ft', 'shade_thick_ft', 'pipe_id_in', 'pipe_wall_in', 'pipe_od_in'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = String(el.value).trim(); });
     } else if (F.kind === 'tlink') { ['material', 'order', 'factor'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = String(el.value); });
     } else { ['qty', 'date', 'ref', 'note', 'reason', 'len', 'wid', 'thk'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = String(el.value); });
@@ -44882,6 +44902,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   const pbMatR = (x, d) => { const p = Math.pow(10, d); return Math.round(x * p) / p; };
   function pbMatExpCalc(v) { // -> { val, how } or { val: '', why }
+    if (v.kind && PB_MAT_KIND[v.kind]) { if (v.pmode !== 'dim') return { val: '', why: '' }; // feat_paving
+      const r = pbMatKindDims(v.kind, v.dl, v.dw, v.dt, v.density_tpy, v.extra_pct, v.unit); return r.qty ? { val: r.qty, how: r.how } : { val: '', why: r.how }; }
     const L = pbMatPlanLen(v.footage_cat, v.each_ft), S = pbMat.set && pbPj.job && pbMat.set[pbPj.job.job_key] ? pbMat.set[pbPj.job.job_key].s : null;
     const bed = pbMatIsBed(v.category), calc = v.source === 'bedding_calc' && bed, pipeFt = v.category === 'pipe' && v.source === 'pipe_footage';
     if (!calc && !pipeFt) return { val: '', why: '' };
@@ -44935,18 +44957,32 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         trench_width_ft: pbMatStr(m.trench_width_ft), bed_thick_ft: pbMatStr(m.bed_thick_ft), density_tpy: pbMatStr(m.density_tpy), extra_pct: pbMatStr(m.extra_pct), use_as: m.use_as || 'bedding', shade_thick_ft: pbMatStr(m.shade_thick_ft) }
       : { name: '', category: 'pipe', source: 'pipe_footage', basis: 'volume', unit: '', expected: '', alert_pct: '80', trench_width_ft: '', bed_thick_ft: '', density_tpy: '', extra_pct: String(PB_MAT_DEFAULT_EXTRA_PCT), use_as: 'bedding', shade_thick_ft: '', footage_cat: 'pipe' } });
     if (m && pbMat.form) { pbMat.form.v.footage_cat = m.footage_cat || 'pipe'; pbMat.form.v.each_ft = pbMatStr(m.each_ft); pbMat.form.v.cost_code = m.cost_code || ''; pbMat.form.ccTyped = !!m.cost_code; pbMat.form.base = JSON.stringify(pbMat.form.v); pbMatJobPaint(); } // r15.4
+    if (pbMat.form) { const V = pbMat.form.v, k = m && m.kind && PB_MAT_KIND[m.kind] ? m.kind : ''; // feat_paving
+      V.kind = k; pbMat.form.kindWas = k; V.pmode = 'amt'; V.dl = ''; V.dw = ''; V.dt = k ? String(PB_MAT_KIND[k].thk) : '';
+      if (k) { V.density_tpy = pbMatStr(m.density_tpy); V.extra_pct = pbMatStr(m.extra_pct); }
+      pbMat.form.base = JSON.stringify(V); pbMatJobPaint(); }
   };
   window.pbMatPreset = function(k) {
     const F = pbMatFormRead(); if (!F || F.kind !== 'mat') return;
     const p = PB_MAT_PRESETS.find(x => x.k === k); F.preset = k;
-    if (p) { F.v.name = p.name; F.v.category = p.category; F.v.source = 'bedding_calc'; F.v.density_tpy = String(p.density); if (F.v.extra_pct === '') F.v.extra_pct = String(PB_MAT_DEFAULT_EXTRA_PCT); }
+    if (p) { if (F.v.kind) pbMatKindSet(F, ''); F.v.name = p.name; F.v.category = p.category; F.v.source = 'bedding_calc'; F.v.density_tpy = String(p.density); if (F.v.extra_pct === '') F.v.extra_pct = String(PB_MAT_DEFAULT_EXTRA_PCT); }
     pbMatJobPaint();
   };
+  function pbMatKindSet(F, k) { // feat_paving: asphalt / concrete defaults (unit, density, allowance, thickness)
+    const K = PB_MAT_KIND[k], W = PB_MAT_KIND[F.kindWas || ''];
+    F.v.kind = K ? k : ''; F.kindWas = F.v.kind;
+    if (K) { F.v.category = 'other'; F.v.source = 'entered'; F.v.unit = K.unit; F.v.density_tpy = K.density ? String(K.density) : ''; F.v.extra_pct = String(K.extra); F.v.dt = String(K.thk); F.v.pmode = F.v.pmode || 'amt';
+      if (!F.v.name || (W && F.v.name === W.name) || PB_MAT_PRESETS.some(p => p.name === F.v.name)) F.v.name = K.name; }
+    else if (W) { F.v.unit = ''; F.v.density_tpy = ''; if (!pbMatIsBed(F.v.category)) F.v.extra_pct = String(PB_MAT_DEFAULT_EXTRA_PCT); }
+  }
+  window.pbMatKindPick = function(k) { const F = pbMatFormRead(); if (!F || F.kind !== 'mat') return; F.preset = k; pbMatKindSet(F, k); pbMatJobPaint(); };
+  window.pbMatPModeChange = function() { const F = pbMatFormRead(); if (!F || F.kind !== 'mat') return; F.expAuto = F.v.pmode === 'dim'; pbMatJobPaint(); };
   window.pbMatCatChange = function() {
     const F = pbMatFormRead(); if (!F || F.kind !== 'mat') return;
     const c = F.v.category;
     F.v.source = c === 'pipe' ? 'pipe_footage' : pbMatIsBed(c) ? 'bedding_calc' : 'entered';
-    if (pbMatIsBed(c) && F.v.extra_pct === '') F.v.extra_pct = String(PB_MAT_DEFAULT_EXTRA_PCT);
+    if (pbMatIsBed(c) && (F.v.extra_pct === '' || F.kindWas)) F.v.extra_pct = String(PB_MAT_DEFAULT_EXTRA_PCT);
+    if (F.v.kind !== (F.kindWas || '')) pbMatKindSet(F, F.v.kind); // feat_paving
     pbMatJobPaint();
   };
   window.pbMatFormRefresh = function() { pbMatFormRead(); pbMatJobPaint(); };
@@ -44968,12 +45004,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (F.kind === 'addexp') {
       return '<form class="pbm-form" id="pmfForm" onsubmit="event.preventDefault(); pbMatFormSave();"><h4 class="pbm-h4">Add to Expected: ' + escapeHtml(m ? m.name : '') + '</h4>'
         + '<p class="pbp-dim" id="pmfAddNow">' + escapeHtml('Expected now: ' + (m && m.expected != null ? pbMatFmt(m.expected, m.unit) + ' ' + m.unit : 'not set') + '.') + '</p>'
-        + (m && m.source === 'bedding_calc' ? '<fieldset class="pb-field pbm-fs"><legend>Add by</legend>'
+        + (pbMatDimOk(m) ? '<fieldset class="pb-field pbm-fs"><legend>Add by</legend>'
             + ['amt', 'dim'].map(k => '<label class="pb-checkrow pbm-radio"><input type="radio" name="pmfAddMode" value="' + k + '"' + ((F.v.mode || 'amt') === k ? ' checked' : '') + ' onchange="pbMatFormRefresh()"> <span>' + (k === 'amt' ? 'Amount (' + escapeHtml(m.unit) + ')' : 'Dimensions (the app works it out)') + '</span></label>').join('') + '</fieldset>' : '')
-        + (m && m.source === 'bedding_calc' && F.v.mode === 'dim'
+        + (pbMatDimOk(m) && F.v.mode === 'dim'
             ? '<div class="pbm-grid">' + pbMatField('len', 'Length (ft)', F.v.len, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 60" oninput="pbMatAddExpIn()"')
               + pbMatField('wid', 'Width (ft)', F.v.wid, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 3" oninput="pbMatAddExpIn()"') + '</div>'
-              + '<div class="pbm-grid">' + pbMatField('thk', 'Thickness (ft)', F.v.thk, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 0.5" oninput="pbMatAddExpIn()"') + '</div>'
+              + '<div class="pbm-grid">' + pbMatField('thk', m.kind && PB_MAT_KIND[m.kind] ? 'Thickness (in)' : 'Thickness (ft)', F.v.thk, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 0.5" oninput="pbMatAddExpIn()"') + '</div>'
             : pbMatField('qty', 'Add (' + escapeHtml(m ? m.unit : '') + ')', F.v.qty, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 12" oninput="pbMatAddExpIn()"'))
         + '<p class="pb-help pbm-fhelp" id="pmfAddTot" role="status">' + escapeHtml(pbMatAddExpText(m, pbMatAddQty(m, F.v))) + '</p>' + btns('Add to Expected') + '</form>';
     }
@@ -44985,13 +45021,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + pbMatField('reason', 'Why (required)', F.v.reason, 'type="text" maxlength="200" autocomplete="off" placeholder="e.g. Entered twice"') + btns('Void It') + '</form>';
     }
     const v = F.v, bed = pbMatIsBed(v.category), calc = (v.source === 'bedding_calc' && bed), pipeFt = v.category === 'pipe' && v.source === 'pipe_footage';
-    const unitText = calc ? (v.basis === 'weight' ? 'tons' : 'yd³') : pipeFt ? 'LF' : (v.unit || 'its unit');
+    const K = v.kind && PB_MAT_KIND[v.kind] ? PB_MAT_KIND[v.kind] : null; // feat_paving
+    const unitText = calc ? (v.basis === 'weight' ? 'tons' : 'yd³') : pipeFt ? 'LF' : K ? (/^ton/i.test(v.unit || '') ? 'tons' : (v.unit || K.words)) : (v.unit || 'its unit');
     const radio = (name, val, label, cur, attrs) => '<label class="pb-checkrow pbm-radio"><input type="radio" name="' + name + '" value="' + val + '"' + (cur === val ? ' checked' : '') + ' onchange="pbMatFormRefresh()"' + (attrs || '') + '> <span>' + label + '</span></label>';
     let h = '<form class="pbm-form" id="pmfForm" onsubmit="event.preventDefault(); pbMatFormSave();"><h4 class="pbm-h4">' + (F.id ? 'Edit material' : F.lineOf ? 'Another cost code line: ' + escapeHtml(v.name) : 'Add a material') + '</h4>'
       + (F.lineOf ? '<p class="pbp-dim" id="pmfLineNote">' + escapeHtml('Pick its footage and cost code.') + '</p>' : '');
-    if (!F.id) h += '<div class="pb-field"><span class="pbm-flabel">Bedding presets</span><div class="pbm-presets" role="group" aria-label="Bedding presets">' + PB_MAT_PRESETS.map(p => '<button type="button" class="pb-btn ghost small' + (F.preset === p.k ? ' on' : '') + '" aria-pressed="' + (F.preset === p.k) + '" onclick="pbMatPreset(\'' + p.k + '\')">' + escapeHtml(p.name) + '</button>').join('') + '</div><p class="pb-help pbm-fhelp">Or type any material below.</p></div>';
+    if (!F.id) h += '<div class="pb-field"><span class="pbm-flabel">Presets</span><div class="pbm-presets" role="group" aria-label="Presets">' + PB_MAT_PRESETS.map(p => '<button type="button" class="pb-btn ghost small' + (F.preset === p.k ? ' on' : '') + '" aria-pressed="' + (F.preset === p.k) + '" onclick="pbMatPreset(\'' + p.k + '\')">' + escapeHtml(p.name) + '</button>').join('')
+      + Object.keys(PB_MAT_KIND).map(k => '<button type="button" class="pb-btn ghost small' + (F.preset === k ? ' on' : '') + '" aria-pressed="' + (F.preset === k) + '" onclick="pbMatKindPick(\'' + k + '\')">' + PB_MAT_KIND[k].name + '</button>').join('') + '</div><p class="pb-help pbm-fhelp">Or type any material below.</p></div>';
     h += pbMatField('name', 'Material', v.name, 'type="text" maxlength="60" autocomplete="off" placeholder="e.g. 8 in PVC SDR 35"')
-      + '<div class="pb-field"><label for="pmf_category">Type</label><select id="pmf_category" onchange="pbMatCatChange()">' + PB_MAT_CATS.map(c => '<option value="' + c[0] + '"' + (v.category === c[0] ? ' selected' : '') + '>' + c[1] + '</option>').join('') + '</select></div>';
+      + '<div class="pb-field"><label for="pmf_category">Type</label><select id="pmf_category" onchange="pbMatCatChange()">' + PB_MAT_TYPES.map(c => '<option value="' + c[0] + '"' + ((bed ? 'bedding' : v.kind && PB_MAT_KIND[v.kind] ? v.kind : v.category) === c[0] ? ' selected' : '') + '>' + c[1] + '</option>').join('') + '</select></div>'
+      + (bed ? '<div class="pb-field"><label for="pmf_bedkind">Which kind</label><select id="pmf_bedkind" onchange="pbMatFormRefresh()">' + PB_MAT_BEDKINDS.map(c => '<option value="' + c[0] + '"' + (v.category === c[0] ? ' selected' : '') + '>' + c[1] + '</option>').join('') + '</select></div>' : '');
     h += '<p class="pb-alert info pbm-quick" id="pmfQuick">' + escapeHtml('Only the name is needed. The rest is optional.') + '</p>';
     if (v.category === 'pipe' || bed) {
       h += '<fieldset class="pb-field pbm-fs"><legend>How “used” is counted</legend>'
@@ -45019,6 +45058,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + '<p class="pb-help pbm-fhelp pbm-estnote" id="pmfEst">' + escapeHtml(shade ? PB_MAT_SHADE_NOTE : PB_MAT_EST_NOTE + ' Bedding is under the pipe, so nothing is taken off for the pipe.') + '</p>';
     } else if (pipeFt) {
       h += '<p class="pb-help pbm-fhelp">Counted in LF from the Pipe Installed footage that counts in the job’s totals.</p>';
+    } else if (K) { // feat_paving: asphalt / concrete, a total or length x width x thickness
+      const dimIn = 'type="text" inputmode="decimal" autocomplete="off" oninput="pbMatExpIn()"';
+      h += '<fieldset class="pb-field pbm-fs"><legend>Expected amount</legend>' + ['amt', 'dim'].map(k => '<label class="pb-checkrow pbm-radio"><input type="radio" name="pmfPMode" value="' + k + '"' + ((v.pmode || 'amt') === k ? ' checked' : '') + ' onchange="pbMatPModeChange()"> <span>' + (k === 'amt' ? 'Type the total' : 'Work it out from length × width × thickness') + '</span></label>').join('') + '</fieldset>';
+      if (v.pmode === 'dim') h += '<div class="pbm-grid">' + pbMatField('dl', 'Length (ft)', v.dl, dimIn + ' placeholder="e.g. 200"') + pbMatField('dw', 'Width (ft)', v.dw, dimIn + ' placeholder="e.g. 24"') + '</div>'
+        + '<div class="pbm-grid">' + pbMatField('dt', 'Thickness (in)', v.dt, dimIn + ' placeholder="e.g. ' + K.thk + '"') + '</div>';
+      if (/^ton/i.test(v.unit || '')) h += pbMatField('density_tpy', 'Density (tons per yd³)', v.density_tpy, 'type="text" inputmode="decimal" autocomplete="off" placeholder="' + (K.density || '') + '" oninput="pbMatExpIn()"', '<strong>Verify with your supplier.</strong>' + (K.density ? ' Typical: ' + K.density + '.' : ''));
+      h += pbMatField('extra_pct', 'Waste allowance (%)', v.extra_pct, 'type="text" inputmode="decimal" autocomplete="off" placeholder="0" oninput="pbMatExpIn()"');
     } else {
       h += pbMatField('unit', 'Unit', v.unit, 'type="text" maxlength="12" autocomplete="off" placeholder="e.g. EA, ton, LF"');
     }
@@ -45041,6 +45087,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbMatAddExpText(m, q) { const a = Number(pbMatNorm(q)); if (!m || !(a > 0)) return ''; const t = Math.round(((Number(m.expected) || 0) + a) * 1000) / 1000; return 'New total: ' + pbMatFmt(t, m.unit) + ' ' + m.unit + '.'; }
   // feat_adddim: the amount to add, typed or worked out from dimensions -> { qty: string, how: text } (qty '' when incomplete)
   function pbMatAddDims(m, v) {
+    if (m && m.kind && PB_MAT_KIND[m.kind]) return pbMatKindDims(m.kind, v.len, v.wid, v.thk, m.density_tpy, m.extra_pct, m.unit); // feat_paving
     const n = (x) => { const s = pbMatNorm(x); const k = Number(s); return s !== '' && Number.isFinite(k) && k > 0 ? k : null; };
     const L = n(v.len), W = n(v.wid), T = n(v.thk); if (!L || !W || !T) return { qty: '', how: 'Type the length, width and thickness in feet.' };
     const ex = Number(m.extra_pct != null ? m.extra_pct : PB_MAT_DEFAULT_EXTRA_PCT), yd = L * W * T / 27, f = 1 + (Number.isFinite(ex) ? ex : 0) / 100;
@@ -45048,11 +45095,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const q = Math.round(yd * f * (m.basis === 'weight' ? Number(m.density_tpy) : 1) * 10) / 10;
     return { qty: String(q), how: L + ' × ' + W + ' × ' + T + ' ft ÷ 27 = ' + (Math.round(yd * 100) / 100) + ' yd³ in place × ' + (Math.round(f * 10000) / 10000) + (m.basis === 'weight' ? ' × ' + m.density_tpy + ' t/yd³' : '') + ' = ' + pbMatFmt(q, m.unit) + ' ' + m.unit + ' to add.' };
   }
-  function pbMatAddQty(m, v) { return m && m.source === 'bedding_calc' && v.mode === 'dim' ? pbMatAddDims(m, v).qty : v.qty; }
+  function pbMatAddQty(m, v) { return pbMatDimOk(m) && v.mode === 'dim' ? pbMatAddDims(m, v).qty : v.qty; }
   window.pbMatAddExpForm = function(id) { const m = pbMatFind(id); if (!m) return; const S = pbMat.set && pbPj.job && pbMat.set[pbPj.job.job_key] ? pbMat.set[pbPj.job.job_key].s : null, sh = m.use_as === 'shading';
+    if (m.kind && PB_MAT_KIND[m.kind]) { pbMatSetForm({ kind: 'addexp', id, v: { qty: '', mode: 'amt', len: '', wid: '', thk: String(PB_MAT_KIND[m.kind].thk) } }); return; } // feat_paving
     pbMatSetForm({ kind: 'addexp', id, v: { qty: '', mode: 'amt', len: '', wid: pbMatStr(m.trench_width_ft != null ? m.trench_width_ft : S && S.trench_width_ft), thk: pbMatStr(sh ? (m.shade_thick_ft != null ? m.shade_thick_ft : S && S.shade_thick_ft) : (m.bed_thick_ft != null ? m.bed_thick_ft : S && S.bed_thick_ft)) } }); };
   window.pbMatAddExpIn = function() { const F = pbMatFormRead(); if (!F || F.kind !== 'addexp') return; const m = pbMatFind(F.id), el = pbProdEl('pmfAddTot');
-    if (el) { const d = m && m.source === 'bedding_calc' && F.v.mode === 'dim' ? pbMatAddDims(m, F.v) : null; el.textContent = (d ? d.how + ' ' : '') + pbMatAddExpText(m, pbMatAddQty(m, F.v)); } };
+    if (el) { const d = pbMatDimOk(m) && F.v.mode === 'dim' ? pbMatAddDims(m, F.v) : null; el.textContent = (d ? d.how + ' ' : '') + pbMatAddExpText(m, pbMatAddQty(m, F.v)); } };
   window.pbMatFormCancel = function() { pbMat.form = null; pbMatJobPaint(); };
   window.pbMatOrderForm = function(id) { const m = pbMatFind(id); if (!m) return; pbMatSetForm({ kind: 'order', id, v: { qty: '', date: pbTkToday(), ref: '', note: '' } }); };
   window.pbMatUsedForm = function(id) { const m = pbMatFind(id); if (!m) return; pbMatSetForm({ kind: 'use', id, v: { qty: '', date: pbTkToday(), note: '' } }); };
@@ -45078,7 +45126,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (F.kind === 'addexp') { // the material's own save, with Expected = now + the amount added
       const m = pbMatFind(F.id); if (!m) return fail('That material isn’t in the list any more. Refresh and try again.');
       const addq = pbMatAddQty(m, F.v);
-      if (m.source === 'bedding_calc' && F.v.mode === 'dim' && !addq) return fail(pbMatAddDims(m, F.v).how);
+      if (pbMatDimOk(m) && F.v.mode === 'dim' && !addq) return fail(pbMatAddDims(m, F.v).how);
       if (!pbMatNumOk(addq, 0.001, 1e8) || addq === '') return fail('Enter the amount to add, above 0.');
       const tot = String(Math.round(((Number(m.expected) || 0) + Number(addq)) * 1000) / 1000);
       window.pbMatEdit(F.id); const F2 = pbMat.form; if (!F2 || F2.kind !== 'mat') return;
@@ -45096,6 +45144,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const p = { name: v.name, category: v.category, source: v.source, expected: v.expected, alert_pct: v.alert_pct || '80' };
       if (F.id) p.id = F.id;
       if (v.source === 'entered') p.unit = v.unit;
+      if (v.kind && PB_MAT_KIND[v.kind]) { p.category = 'other'; p.kind = v.kind; p.extra_pct = v.extra_pct || '0'; p.density_tpy = /^ton/i.test(v.unit || '') ? (v.density_tpy || '') : ''; } // feat_paving
+      else if (v.source === 'entered') p.kind = '';
       { const sh = pbMatShareWith(F), was = F.id ? pbMatFind(F.id) : null, moved = !was || (was.footage_cat || 'pipe') !== (v.footage_cat || 'pipe') || pbMatUseKey(was) !== (v.source === 'pipe_footage' ? 'pipe' : v.source === 'bedding_calc' ? (v.use_as === 'shading' ? 'shading' : 'bedding') : null);
         if (sh.length && moved && !F.shareOk) {
           pbShowModal(sh.map(o => o.name).join(' and ') + (sh.length === 1 ? ' already counts ' : ' already count ') + pbMatFootName(v.footage_cat) + '. If ' + v.name + ' is a different pipe or run (laterals, another size), pick the item it’s installed under, so each one counts its own footage.\n\nShare only if crews pick which one they used on Run Setup.',
@@ -47262,7 +47312,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbRoWaiting = (L) => L.filter(x => pbRoStatus(x) === 'waiting' && !x.reviewed_at).length; // r15.2.1 (owner): a report the foreman reviewed isn't waiting on him
   // for Home's "Waiting on foremen": crew runs with no production at all (a run held for a foreman is already counted there)
   window.pbRrWaitingCount = function(uid) { const O = pbRoFor(uid); return O.list ? pbRoWaiting(O.list) : 0; };
-  const PB_RO_TAGS = { foreman: ['', 'Foreman entered'], counted: ['', 'Counted without a foreman'], held: ['warn', 'Held for a foreman'], waiting: ['warn', 'Waiting for a foreman'] };
+  const PB_RO_TAGS = { foreman: ['', 'Production entered'], counted: ['', 'Counted without a foreman'], held: ['warn', 'Held for a foreman'], waiting: ['warn', 'Waiting for a foreman'] };
   function pbRoTag(x) { const t = pbRoStatus(x) === 'waiting' && x.reviewed_at ? ['', 'No production entered'] : PB_RO_TAGS[pbRoStatus(x)] || PB_RO_TAGS.waiting; return '<span class="pbx-tag' + (t[0] ? ' ' + t[0] : '') + '">' + (t[0] ? pbCxIc('clock') : pbCxCheck()) + pbCxE(t[1]) + '</span>'; }
   // r15.2: "new" = a sent report not opened on this phone yet (kept per account on this phone)
   let pbRoSeen = { uid: null, set: null };
@@ -47321,14 +47371,82 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + '<details class="pb-more" id="cxRunMore" style="margin-top:14px"><summary><span>More</span></summary><p class="pbx-note">Delete this run if it shouldn’t be in the company’s records (a test, a duplicate, the wrong job). It leaves every list and its production stops counting. The office sees that you deleted it, and the server keeps a copy.</p><button type="button" class="pb-btn ghost small" id="cxRunDelete" style="color:var(--rod-red)" onclick="pbRrDelete()">Delete Run</button></details>';
       if (O.pdfOpen) setTimeout(() => window.pbRrPdfShow(), 0);
     } else {
-      h += (x.can_review && !x.reviewed_at ? '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn small" id="cxRunReviewed" onclick="pbRrReviewed()">Approve Report</button></div>' : '')
+      h += pbRrOffHtml(O, x) + (x.can_review && !x.reviewed_at ? '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn small" id="cxRunReviewed" onclick="pbRrReviewed()">Approve Report</button></div>' : '')
         + (x.can_send_back && !O.fromCrew && !O.fromList ? (O.sendBack ? '<div class="pb-field" id="cxSendBackForm" style="margin-top:14px"><label for="cxSendBackNote">What does the foreman need to add or fix?</label><textarea id="cxSendBackNote" rows="3" maxlength="500" placeholder="e.g. Add the crew hours" style="width:100%;box-sizing:border-box" oninput="pbRrSendBackType(this.value)">' + escapeHtml(O.sendBackText || '') + '</textarea>' + (O.sendBackErr ? '<p class="pb-warn pbp-manmsg" role="alert">' + pbCxE(O.sendBackErr) + '</p>' : '') + '<div class="pb-save-offer-btns"><button type="button" class="pb-btn small" id="cxSendBackGo" onclick="pbRrSendBack()">Send Back</button><button type="button" class="pb-btn ghost small" onclick="pbRrSendBackCancel()">Cancel</button></div></div>'
           : '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn ghost small" id="cxSendBackBtn" onclick="pbRrSendBackOpen()">Send Back to Foreman</button></div>') : '') + pdf;
       setTimeout(() => window.pbRrPdfShow(), 0);
     }
-    const keep = 'd|' + [x.id || x.sref, e.id, x.reviewed_at || '', x.sent_at || '', O.pdfOpen ? 1 : 0, O.sendBack ? 'sb:' + (O.sendBackErr || '') : '', x.sent_back_at || '', x.removed_at || '', canProd ? ((pbLv.data ? 1 : 0) + ':' + (pbLv.form ? pbLv.form.cid + ':' + (pbLv.form.err || '') + ':' + pbLv.form.rows.length : '') + ':' + JSON.stringify(pbLvRuns())) : ''].join('|');
+    const keep = 'd|' + [x.id || x.sref, e.id, x.reviewed_at || '', x.sent_at || '', O.pdfOpen ? 1 : 0, O.sendBack ? 'sb:' + (O.sendBackErr || '') : '', x.sent_back_at || '', x.removed_at || '', pbRrOffKey(O, x), canProd ? ((pbLv.data ? 1 : 0) + ':' + (pbLv.form ? pbLv.form.cid + ':' + (pbLv.form.err || '') + ':' + pbLv.form.rows.length : '') + ':' + JSON.stringify(pbLvRuns())) : ''].join('|');
     return { h, s: '', keep };
   }
+  // ---- feat_pmedit: the office's production on a run report ----
+  const pbRrOffOn = (O, x) => !!(x && x.can_edit && x.id && !x.removed_at && !O.fromCrew && !O.fromList);
+  function pbRrOffKey(O, x) { return pbRrOffOn(O, x) ? 'off:' + JSON.stringify([x.prod, O.pe ? [O.pe.err, O.pe.saving, O.pe.rows.length] : null]) : ''; }
+  function pbRrOffRows(x) {
+    const items = x.prod && Array.isArray(x.prod.items) ? x.prod.items : [], plan = Array.isArray(x.plan) ? x.plan : [];
+    const have = new Map(items.filter(i => i && typeof i.key === 'string').map(i => [i.key, i])), rows = [], seen = new Set();
+    const add = (key, unit, name, code) => { if (!key || seen.has(key) || key.charAt(0) === '_') return; seen.add(key); const i = have.get(key), u = unit || (i && i.unit) || '';
+      rows.push({ key, unit: u, qty: i && i.qty != null ? String(i.qty) : '', label: (name || pbProdCatName(key)) + (u ? ' (' + u + ')' : '') + (code ? ' · ' + code : '') }); };
+    PB_PROD_FIELD_MAP.forEach(m => { const c = plan.find(p => p.key === m.key); add(m.key, (c && c.unit) || m.unit, c && c.name, c && c.cost_code); });
+    plan.forEach(c => add(c.key, c.unit, c.name, c.cost_code));
+    have.forEach((i, k) => add(k, i.unit, null, null)); // something entered before stays editable
+    return rows.concat(pbRolesHourRows(items));
+  }
+  function pbRrOffHtml(O, x) {
+    if (!pbRrOffOn(O, x)) return '';
+    const P = x.prod, items = P && Array.isArray(P.items) ? P.items : [], plan = { categories: x.plan || [] }, F = O.pe;
+    let h = '<section id="cxRunOffProd" style="margin:8px 0 12px"><h3 class="pbx-h2">Production for this run</h3>';
+    if (F) {
+      h += '<form id="cxRunOffForm" onsubmit="event.preventDefault(); pbRrOffSave();">' + F.rows.map((r, k) => '<div class="pb-field"><label for="cxRunOffQ' + k + '">' + escapeHtml(r.label || (pbProdCatName(r.key, plan) + ' (' + r.unit + ')')) + '</label><input id="cxRunOffQ' + k + '" type="text" inputmode="decimal" autocomplete="off" value="' + escapeHtml(r.qty) + '" oninput="pbRrOffTyped(' + k + ', this.value)">'
+          + (r.help ? '<p class="pb-help">' + escapeHtml(r.help) + '</p>' : '') + '</div>').join('')
+        + (F.err ? '<p class="pb-warn pbp-manmsg" id="cxRunOffErr" role="alert"><strong>Not saved</strong>' + escapeHtml(F.err) + '</p>' : '')
+        + '<div class="pb-save-offer-btns"><button type="button" class="pb-btn ghost small" id="cxRunOffCancel" onclick="pbRrOffCancel()">Cancel</button><button type="submit" class="pb-btn small" id="cxRunOffSave"' + (F.saving ? ' disabled' : '') + '>' + (F.saving ? 'Saving…' : 'Save Production') + '</button></div></form>';
+    } else {
+      const who = P ? (P.mine ? 'you' : (P.by_name || (P.role === 'foreman' ? 'the foreman' : 'the crew member')) + (P.role === 'foreman' ? ' (foreman)' : P.role === 'manager' ? ' (office)' : '')) : '';
+      h += P ? '<p class="pbx-note" id="cxRunOffQty"><strong>' + escapeHtml(pbCrewQty(items, plan)) + '</strong></p>' + pbRolesHoursHtml(items)
+          + '<p class="pbx-note" id="cxRunOffBy">' + escapeHtml('Entered by ' + who + (P.edited_by_name && !P.mine ? ', changed by ' + P.edited_by_name : '') + '.') + '</p>'
+        : '<p class="pbx-note" id="cxRunOffNone">No production entered for this run yet.</p>';
+      h += '<div class="pb-save-offer-btns"><button type="button" class="pb-btn ghost small" id="cxRunOffEdit" onclick="pbRrOffOpen()">' + (P ? 'Change Production' : 'Enter Production') + '</button>'
+        + (x.reviewed_at ? '' : '<button type="button" class="pb-btn small" id="cxRunOffApprove" onclick="pbRrOffApprove()">Approve Report</button>') + '</div>';
+    }
+    h += '<details class="pb-more" id="cxRunOffMore" style="margin-top:8px"><summary><span>More</span></summary><p class="pbx-note">Delete this run if it shouldn’t be in the company’s records (a test, a duplicate, the wrong job). Its production stops counting. The server keeps a copy.</p><button type="button" class="pb-btn ghost small" id="cxRunOffDelete" style="color:var(--rod-red)" onclick="pbRrDelete()">Delete Run</button></details>';
+    return h + '</section>';
+  }
+  window.pbRrOffOpen = function() { const O = pbRoFor(pbArchiveOwnerUid), x = O.open; if (!pbRrOffOn(O, x)) return; O.pe = { rows: pbRrOffRows(x), err: '', saving: false }; pbCxListRender(); setTimeout(() => { const f = document.getElementById('cxRunOffQ0'); if (f) f.focus({ preventScroll: true }); }, 30); };
+  window.pbRrOffTyped = function(k, v) { const O = pbRoFor(pbArchiveOwnerUid), F = O.pe; if (F && F.rows[k]) F.rows[k].qty = String(v); };
+  window.pbRrOffCancel = function() { const O = pbRoFor(pbArchiveOwnerUid); O.pe = null; pbCxListRender(); };
+  const PB_RR_OFF_ERR = { 'pb:changed': 'Someone changed this run’s production since you opened it. Go back and open the run again to see it.', 'pb:removed': 'This run was deleted.', 'pb:not_company_account': 'Only the company account or a listed PM can change it.',
+    'pb:bad_items': 'Check the numbers.', 'pb:quota': 'Too many changes today. Try again tomorrow.', 'pb:too_many_versions': 'This run’s production has been changed too many times.', 'pb:not_found': 'This run wasn’t found.' };
+  window.pbRrOffSave = async function() {
+    const uid = pbArchiveOwnerUid, O = pbRoFor(uid), x = O.open, F = O.pe; if (!F || !x || F.saving) return;
+    const items = [];
+    for (let k = 0; k < F.rows.length; k++) {
+      const el = document.getElementById('cxRunOffQ' + k), t = String(el ? el.value : F.rows[k].qty).trim().replace(/,/g, ''); F.rows[k].qty = t;
+      if (t === '') continue;
+      if (!/^\d+(\.\d+)?$|^\.\d+$/.test(t) || Number(t) > 50000) { F.err = String(F.rows[k].label || F.rows[k].key).replace(/ \([^)]*\).*$/, '') + ': enter a plain number (or leave it empty).'; pbCxListRender(); return; }
+      items.push({ key: F.rows[k].key, qty: +Number(t).toFixed(3), unit: F.rows[k].unit });
+    }
+    if (!items.length) { F.err = 'Enter at least one amount.'; pbCxListRender(); return; }
+    F.saving = true; F.err = ''; pbCxListRender();
+    const r = await pbPermitRpc('pb_prod_company_run_prod_save', { p_id: x.id, p_items: items, p_expect_uid: uid, p_expect_version: x.prod ? x.prod.version : null }, 30000);
+    if (pbRo !== O || O.open !== x) return;
+    F.saving = false;
+    if (r && !r.error && r.data && r.data.ok) {
+      x.prod = Object.assign({ role: 'manager', by_name: null }, x.prod || {}, { entry_id: r.data.id, version: Number(r.data.version) || 1, items, mine: x.prod ? !!x.prod.mine : true, edited_by_name: x.prod && !x.prod.mine ? 'you' : null });
+      x.status = 'foreman'; x.confirmed = true; // entered now (the server counts the office's entry like the foreman's)
+      O.pe = null; pbCxListRender(); return true;
+    }
+    const msg = String((r && r.error && r.error.message) || ''), code = (msg.match(/pb:\w+/) || [''])[0];
+    F.err = navigator.onLine === false || /failed to fetch|networkerror|load failed|timeout/i.test(msg) ? 'No signal. Nothing was saved. Try again when you have signal.'
+      : PB_RR_OFF_ERR[code] || (/could not find the function|schema cache/i.test(msg) ? 'The company server isn’t ready for this yet.' : 'Couldn’t save it. Nothing was changed.');
+    pbCxListRender(); return false;
+  };
+  window.pbRrOffApprove = async function() {
+    const O = pbRoFor(pbArchiveOwnerUid);
+    if (O.pe && !(await window.pbRrOffSave())) return;
+    const b = document.getElementById('cxRunOffApprove'); if (b) { b.disabled = true; b.textContent = 'Approving…'; }
+    await window.pbRrReviewed();
+  };
   window.pbRrOpen = async function(i) {
     const uid = pbArchiveOwnerUid, O = pbRoFor(uid), x = O.list && O.list[i];
     if (!x) return;
@@ -47341,6 +47459,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       Object.assign(x, { sent_at: r.data.sent_at || x.sent_at, sent_how: r.data.sent_how || x.sent_how, reviewed_at: r.data.reviewed_at || null, reviewed_by_name: r.data.reviewed_by_name || null,
         sent_back_at: r.data.sent_back_at || null, sent_back_note: r.data.sent_back_note || null, sent_back_by_name: r.data.sent_back_by_name || null,
         removed_at: r.data.removed_at || x.removed_at || null, removed_reason: r.data.removed_reason || x.removed_reason || null, removed_by_name: r.data.removed_by_name || x.removed_by_name || null, can_send_back: !!r.data.can_send_back });
+      x.can_edit = !!r.data.can_edit; x.prod = r.data.prod && typeof r.data.prod === 'object' ? r.data.prod : null; x.plan = Array.isArray(r.data.plan) ? r.data.plan.filter(c => c && typeof c === 'object' && typeof c.key === 'string') : []; O.pe = null; // feat_pmedit
       try { O.rec = normalizeArchiveEntry(Object.assign({}, r.data.record, { lockTime: new Date(r.data.record.lockTime) })); } catch (err) { O.rec = null; O.recMsg = 'This run’s record couldn’t be read.'; }
     } else O.recMsg = navigator.onLine === false ? 'No signal.' : 'Couldn’t load this run.';
     pbCxListRender();
@@ -47432,12 +47551,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   };
   window.pbRrDelete = function() {
     const uid = pbArchiveOwnerUid, O = pbRoFor(uid), x = O.open; if (!x || !x.id) return;
-    pbShowModal('Delete this run?\n\n' + (x.job_number ? 'Job ' + x.job_number + ' · ' : '') + (x.label || 'this run') + (x.who ? ' (' + x.who + ')' : '') + '\n\nIt leaves every list and its production stops counting. The office sees that you deleted it, and the server keeps a copy.', [
+    pbShowModal('Delete this run?\n\n' + (x.job_number ? 'Job ' + x.job_number + ' · ' : '') + (x.label || 'this run') + (x.who ? ' (' + x.who + ')' : '') + '\n\nIt leaves every list and its production stops counting. ' + (pbRrOffOn(O, x) ? 'The server keeps a copy.' : 'The office sees that you deleted it, and the server keeps a copy.'), [
       { label: 'Cancel' },
       { label: 'Delete Run', danger: true, onClick: async () => {
         const r = await pbPermitRpc('pb_prod_run_remove', { p_id: x.id, p_reason: null, p_expect_uid: uid }, 20000);
         if (r && !r.error && r.data && r.data.ok) {
           if (pbRf.uid === uid && pbRf.list) pbRf.list = pbRf.list.filter(y => y.id !== x.id);
+          if (!x.removed_at) { x.removed_at = new Date().toISOString(); x.removed_by_name = x.removed_by_name || 'you'; } // feat_pmedit: the office's list shows it deleted
           window.pbRrClose(); try { window.pbRenderHome(); } catch (e) {}
           if (window.pbRfLoad) window.pbRfLoad(uid, true);
           try { Promise.resolve(pbLvLoad(uid, { force: true })).catch(() => null); } catch (e) {}
