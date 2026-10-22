@@ -8692,7 +8692,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.4.2 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.4.3 · 2026-10-21'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -44378,7 +44378,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbMatChips(m, s) {
     let h = '';
-    if (s.need) h += '<span class="pb-chip notsent pbm-chip">' + escapeHtml(s.need) + '</span> ';
+    if (s.need) h += m && m.fig && m.fig.status === 'split_unknown' ? '<button type="button" class="pb-chip notsent pbm-chip" style="cursor:pointer;font:inherit" onclick="pbMatFixShare(\'' + m.id + '\')" aria-label="Shares footage: pick its own item">' + escapeHtml(s.need) + ' ›</button> ' : '<span class="pb-chip notsent pbm-chip">' + escapeHtml(s.need) + '</span> ';
     if (s.reached) h += '<span class="pb-chip notsent pbm-chip pbm-reached">' + escapeHtml(s.pct + '% of ordered used') + '</span> ';
     if (s.over) h += '<span class="pb-chip overdue pbm-chip">Over expected</span> ';
     if (s.est) h += '<span class="pb-chip calculated pbm-chip">Estimate</span> ';
@@ -44406,6 +44406,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return out;
   }
   function pbMatFootName(k) { k = k || 'pipe'; const c = pbMatFootCats().find(x => x.key === k); return c ? c.name.replace(/ \([^)]*\)$/, '') : k === 'pipe' ? 'Pipe Installed' : k; }
+  // feat_sharefix: other active materials of the same use counting the same item as the form
+  function pbMatShareWith(F) {
+    if (!F || F.kind !== 'mat') return [];
+    const v = F.v, use = v.source === 'pipe_footage' ? 'pipe' : v.source === 'bedding_calc' ? (v.use_as === 'shading' ? 'shading' : 'bedding') : null;
+    if (!use) return [];
+    const fc = v.footage_cat || 'pipe';
+    return (pbMatList() || []).filter(o => o && !o.archived && o.id !== F.id && pbMatUseKey(o) === use && (o.footage_cat || 'pipe') === fc);
+  }
+  window.pbMatFixShare = function(id) { window.pbMatEdit(id); setTimeout(() => { const s = pbProdEl('pmf_footage_cat'); if (s) { s.scrollIntoView({ block: 'center' }); s.focus(); } }, 80); };
   function pbMatFootCat(k) { return pbMatFootCats().find(x => x.key === (k || 'pipe')) || null; }
   function pbMatHowText(m) { if (m.footage_cat && m.footage_cat !== 'pipe' && m.each_ft && (m.source === 'pipe_footage' || m.source === 'bedding_calc')) return 'From the ' + pbMatFootName(m.footage_cat) + ' crews report × ' + m.each_ft + ' ft each' + (m.source === 'bedding_calc' ? ', then the trench numbers (an estimate). ' + PB_MAT_USE_TEXT[pbMatIsShade(m) ? 'shading' : 'bedding'] : ' (counted production only).');
     if (m.footage_cat && m.footage_cat !== 'pipe' && (m.source === 'pipe_footage' || m.source === 'bedding_calc')) return (m.source === 'pipe_footage' ? 'From the ' + pbMatFootName(m.footage_cat) + ' footage crews report (counted production only).' : (pbMatIsShade(m) ? PB_MAT_SHADE_NOTE : PB_MAT_EST_NOTE).replace('footage', pbMatFootName(m.footage_cat) + ' footage') + ' ' + PB_MAT_USE_TEXT[pbMatIsShade(m) ? 'shading' : 'bedding']);
@@ -44857,6 +44866,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         h += '<div class="pb-field"><label for="pmf_footage_cat">Footage from</label><select id="pmf_footage_cat" onchange="pbMatFormRefresh()">' + (pipes.length ? '<optgroup label="Production items">' : '') + fcs.map(c => '<option value="' + escapeHtml(c.key) + '"' + (c.key === cur ? ' selected' : '') + '>' + escapeHtml(c.name) + '</option>').join('')
           + (pipes.length ? '</optgroup><optgroup label="Same footage as a pipe">' + pipes.map(m => '<option value="mat:' + escapeHtml(m.id) + '">' + escapeHtml(m.name + ' (' + pbMatFootName(m.footage_cat) + (m.each_ft ? ' × ' + m.each_ft + ' ft each' : '') + ')') + '</option>').join('') + '</optgroup>' : '') + '</select>'
           + '<p class="pb-help pbm-fhelp">The production item whose footage this material counts. Add an item like Laterals to the job plan to tie a material to it.</p></div>';
+        { const sh = pbMatShareWith(F); if (sh.length) h += '<p class="pb-warn pbp-manmsg" id="pmfShareWarn" role="alert"><strong>' + escapeHtml(sh.map(o => o.name).join(' and ') + (sh.length === 1 ? ' already counts ' : ' already count ') + pbMatFootName(cur) + '.') + '</strong>' + escapeHtml('If this is a different pipe (laterals, another size), pick the item it’s installed under above, or add that item to the job plan. Two on one item can’t be told apart.') + '</p>'; }
         const fcc = pbMatFootCat(cur);
         if (cur !== 'pipe' && fcc && !fcc.lf) h += pbMatField('each_ft', 'Length each (ft per ' + escapeHtml(fcc.unit) + ')', v.each_ft, 'type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 25" oninput="pbMatExpIn()"', escapeHtml(fcc.name.replace(/ \([^)]*\)$/, '') + ' is counted in ' + fcc.unit + '. Each one counts as this many feet of footage.')); }
     }
@@ -44944,6 +44954,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const p = { name: v.name, category: v.category, source: v.source, expected: v.expected, alert_pct: v.alert_pct || '80' };
       if (F.id) p.id = F.id;
       if (v.source === 'entered') p.unit = v.unit;
+      { const sh = pbMatShareWith(F), was = F.id ? pbMatFind(F.id) : null, moved = !was || (was.footage_cat || 'pipe') !== (v.footage_cat || 'pipe') || pbMatUseKey(was) !== (v.source === 'pipe_footage' ? 'pipe' : v.source === 'bedding_calc' ? (v.use_as === 'shading' ? 'shading' : 'bedding') : null);
+        if (sh.length && moved && !F.shareOk) {
+          pbShowModal(sh.map(o => o.name).join(' and ') + (sh.length === 1 ? ' already counts ' : ' already count ') + pbMatFootName(v.footage_cat) + '. If ' + v.name + ' is a different pipe or run (laterals, another size), pick the item it’s installed under, so each one counts its own footage.\n\nShare only if crews pick which one they used on Run Setup.',
+            [{ label: 'Share It', onClick: () => { F.shareOk = true; window.pbMatFormSave(); } }, { label: 'Pick Its Own Item', primary: true, onClick: () => { const s = pbProdEl('pmf_footage_cat'); if (s) { s.scrollIntoView({ block: 'center' }); s.focus(); } } }], 'Same Footage');
+          return;
+        } }
       if (calc || v.source === 'pipe_footage') { p.footage_cat = v.footage_cat || 'pipe'; const fcc = pbMatFootCat(p.footage_cat); p.each_ft = p.footage_cat !== 'pipe' && fcc && !fcc.lf ? (v.each_ft || '') : ''; } // r15.4 / r15.4.1
       if (calc) { p.use_as = v.use_as || 'bedding'; if (p.use_as === 'shading') p.shade_thick_ft = v.shade_thick_ft || ''; else p.bed_thick_ft = v.bed_thick_ft; p.basis = v.basis || 'volume'; p.trench_width_ft = v.trench_width_ft; p.extra_pct = v.extra_pct === '' ? String(PB_MAT_DEFAULT_EXTRA_PCT) : v.extra_pct; p.density_tpy = v.density_tpy; }
       fn = 'pb_mat_save'; args = { p_job_number: job.job_number, p_material: p, p_expect_uid: uid, p_expect_version: F.id ? F.version : 0, p_phone_at: now };
