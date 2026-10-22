@@ -1699,6 +1699,9 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 #pbApp #homeShortcuts .pb-sc-head .pb-edu-h { margin: 0; }
 
 /* Current job: a compact row with a pin, no yellow bar */
+#pbApp .pbx-plannote { margin: 14px 0 4px; padding: 12px 14px; border-radius: 14px; background: var(--pb-brand-soft); border: 1px solid var(--pb-brand-line); display: flex; flex-direction: column; gap: 10px; }
+#pbApp .pbx-plannote-t { margin: 0; color: var(--pb-text); font-size: 15px; line-height: 1.4; }
+#pbApp .pbx-plannote .pb-btn { margin: 0; width: 100%; min-height: 52px; }
 #pbApp .pbm-ci { margin: 4px 0 14px; }
 #pbApp .pbm-ci-list { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 #pbApp .pbm-ci-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--pb-raised); border: 1px solid var(--pb-divider); }
@@ -8756,7 +8759,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.11 · 2026-10-22'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.12 · 2026-10-22'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -33397,6 +33400,25 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     fill();
     if (typeof pbMatJobLoad === 'function') Promise.resolve(pbMatJobLoad()).then(fill).catch(() => {});
   }
+  // feat_planuse: plan items with no Planned whose pipe materials expect a length -> [{ key, name, sum }]
+  function pbPlanMatSuggest() {
+    if (typeof pbMatList !== 'function' || !pbPj.data || pbPj.edit) return [];
+    const list = (pbMatList() || []).filter(m => m && !m.archived && m.source === 'pipe_footage' && Number(m.expected) > 0 && !(Number(m.each_ft) > 0));
+    if (!list.length) return [];
+    return pbProdJobView(pbPj.data.plan || null, pbPj.data.cats).categories
+      .filter(c => c.planned === null && /^\s*(lf|ft|feet)?\s*$/i.test(String(c.unit || '')))
+      .map(c => ({ key: c.key, name: c.name, sum: Math.round(list.filter(m => (m.footage_cat || 'pipe') === c.key).reduce((s, m) => s + Number(m.expected), 0) * 100) / 100 }))
+      .filter(x => x.sum > 0);
+  }
+  window.pbPlanMatNote = function() {
+    let S = []; try { S = pbPlanMatSuggest(); } catch (e) { S = []; }
+    if (!S.length) return '';
+    const what = S.map(x => x.name + ' (' + pbProdQtyText(x.sum, 'LF') + ')').join(', ');
+    return '<div class="pbx-plannote" id="pjPlanMat" role="status"><p class="pbx-plannote-t">' + escapeHtml((S.length === 1 ? S[0].name + ' has' : S.length + ' items have') + ' no Planned amount, so ' + (S.length === 1 ? 'it shows' : 'they show') + ' no %. ' + (S.length === 1 ? 'Its pipe materials expect ' + pbProdQtyText(S[0].sum, 'LF') + '.' : 'Their pipe materials expect: ' + what + '.')) + '</p>'
+      + '<button type="button" class="pb-btn secondary" id="pjPlanMatUse" onclick="pbPlanUseMat()">' + escapeHtml(S.length === 1 ? 'Use ' + pbProdQtyText(S[0].sum, 'LF') + ' as Planned' : 'Use These as Planned') + '</button></div>';
+  };
+  // one tap: the plan editor fills it in from the materials, then saves the normal way (errors show in the editor)
+  window.pbPlanUseMat = function() { if (pbPj.edit) return; window.pbProdPlanEdit(); if (pbPj.edit && pbPj.edit.rows.some(r => r.plannedAuto)) window.pbProdPlanSave(); };
   window.pbProdPlanEdit = function() {
     if (!pbPj.data) return;
     const rows = pbProdPlanRowsFrom(pbPj.data), bh = pbPj.data.plan && pbPj.data.plan.budget_hours != null ? String(pbPj.data.plan.budget_hours) : '';
@@ -33453,7 +33475,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>How % complete is worked out</span></summary><p class="pb-help" id="ppMathHelp">A category&rsquo;s % is done &divide; planned (it can pass 100%). The job&rsquo;s % averages the planned categories, each capped at 100%: by your weights if every planned category has one, else by budget hours if every one has them, else equally. Unplanned categories show their amount and are left out. Work counts only in the category&rsquo;s unit (other units show beside it). Budget hours are compared with the crew hours reported: closed Crew Log check-ins (laborers and operators) and crew man-hours foremen type in.</p></details>'
       + '<div id="ppRows">' + E.rows.map((r, i) => {
         const c = cats.categories.find(x => x.key === r.key);
-        const has = '<span class="pbp-dim pbp-rowhas">' + escapeHtml((c && (c.done || c.otherUnits.length) ? pbProdQtyText(c.done, c.unit) + ' reported. ' : '') + (r.key && PB_PROD_RUN_KEYS.has(r.key) ? 'Filled in from crews\u2019 runs.' : 'Foremen enter it with each run.') + (r.plannedAuto && String(r.planned) !== '' ? ' Planned is filled in from the pipe materials’ Expected; change it if needed.' : '')) + '</span>';
+        const has = '<span class="pbp-dim pbp-rowhas">' + escapeHtml((c && (c.done || c.otherUnits.length) ? pbProdQtyText(c.done, c.unit) + ' reported. ' : '') + (r.key && PB_PROD_RUN_KEYS.has(r.key) ? 'Filled in from crews\u2019 runs.' : 'Foremen enter it with each run.') + (r.plannedAuto && String(r.planned) !== '' ? ' Planned is filled in from the pipe materials’ Expected; change it if needed. Tap Save Plan to keep it.' : '')) + '</span>';
         return '<fieldset class="pbp-prow" id="ppRow' + i + '"><legend class="pb-sr">Category ' + (i + 1) + '</legend>'
           + field('ppName' + i, 'Category', r.name, 'type="text" maxlength="40" autocomplete="off"')
           + '<div class="pbp-prow-nums">' + field('ppPlanned' + i, 'Planned', r.planned, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanNote(); pbProdPlanPerIn(' + i + ')"')
@@ -48262,6 +48284,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<div class="pbx-hero-pct">' + pbCxPct(v, true) + (v.pace ? '<span class="pbx-pace">' + pbCxE(v.pace.state === 'on' ? 'On pace' : v.pace.state === 'over' ? 'Over the hours pace' : '') + '</span>' : '') + '</div>'
       + (v.anyPlanned ? pbCxBar(v, true) : pbPj.edit ? '' : '<p class="pbx-noplan">No plan yet. Set one up under Edit project to see % complete.</p>')
       + pbCxLegend(v, true)
+      + (typeof window.pbPlanMatNote === 'function' ? window.pbPlanMatNote() : '') // feat_planuse
       + (v.pace ? '<p class="pbx-hero-line">' + pbCxE(pbProdQtyText(v.pace.hoursUsed) + ' of ' + pbProdQtyText(v.pace.budgetHours) + ' budget hours used (' + pbProdPctText(v.pace.hoursPct) + ')') + '</p>' : '')
       + (today.length || (dj.last_at || (Array.isArray(D.cats) && D.cats.length)) ? '<p class="pbx-hero-line">' + pbCxE(today.length ? 'Today: ' + today.join(' · ') : 'Nothing reported today yet.') + '</p>' : '')
       + (st.length ? '<div class="pbx-flags">' + st.join('') + '</div>' : '');
