@@ -8782,7 +8782,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.16 · 2026-10-22'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.17 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -45251,9 +45251,29 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const h = pbProdEl('pmfExpHelp'); if (h) { const t = F.expAuto ? (c.how || c.why || '') : (c.val ? 'Your own amount. Clear it to fill in ' + pbMatFmt(Number(c.val), '') + ' from the plan again.' : ''); h.textContent = t; h.hidden = !t; }
     return c;
   }
-  window.pbMatExpIn = function() { const F = pbMatFormRead(); pbMatExpApply(F, true); };
+  // feat_wasteadj: a typed Expected follows the waste allowance
+  const pbMatPctOf = (x) => { const t = String(x == null ? '' : x).trim(); if (t === '') return 0; const n = Number(t); return Number.isFinite(n) && n >= 0 && n <= 100 ? n : null; };
+  function pbMatRescale(F) {
+    if (!F || F.kind !== 'mat' || F.expAuto) return;
+    const now = pbMatPctOf(F.v.extra_pct); if (now === null) return;
+    if (F.extraWas === undefined) { let b = null; try { b = JSON.parse(F.base).extra_pct; } catch (e) {} F.extraWas = pbMatPctOf(b); }
+    const was = F.extraWas; if (was === null || was === now) { F.extraWas = now; return; }
+    const t = pbMatNorm(F.v.expected), exp = Number(t);
+    if (t === '' || !Number.isFinite(exp) || exp <= 0) { F.extraWas = now; return; }
+    if (F.inPlace == null) F.inPlace = exp / (1 + was / 100);
+    F.v.expected = String(Math.round(F.inPlace * (1 + now / 100) * 10) / 10);
+    const el = pbProdEl('pmf_expected'); if (el) el.value = F.v.expected;
+    F.extraWas = now;
+  }
+  function pbMatRescaleNote(F) {
+    if (!F || F.kind !== 'mat' || F.expAuto || F.inPlace == null) return;
+    const h = pbProdEl('pmfExpHelp'); if (!h) return; const u = String(F.v.unit || '').trim() || '';
+    h.textContent = 'Changed with the waste allowance: ' + pbMatFmt(Math.round(F.inPlace * 10) / 10, u) + ' before waste + ' + pbMatPctOf(F.v.extra_pct) + '% = ' + F.v.expected + (u ? ' ' + (/^ton/i.test(u) ? 'tons' : u) : '') + '.'; h.hidden = false;
+  }
+  window.pbMatExpIn = function() { const F = pbMatFormRead(); pbMatRescale(F); pbMatExpApply(F, true); pbMatRescaleNote(F); };
   window.pbMatExpTyped = function(blur) {
     const F = pbMatFormRead(); if (!F || F.kind !== 'mat') return;
+    if (!blur) { F.inPlace = null; F.extraWas = pbMatPctOf(F.v.extra_pct); } // feat_wasteadj: a typed Expected is the new starting point
     const c = pbMatExpCalc(F.v), v = String(F.v.expected || '').trim();
     F.expAuto = v === '' || (c.val !== '' && Number(v) === Number(c.val));
     if (blur && v === '' && c.val !== '') { F.v.expected = c.val; const el = pbProdEl('pmf_expected'); if (el) el.value = c.val; }
