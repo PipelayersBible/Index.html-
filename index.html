@@ -1699,6 +1699,10 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 #pbApp #homeShortcuts .pb-sc-head .pb-edu-h { margin: 0; }
 
 /* Current job: a compact row with a pin, no yellow bar */
+#pbApp .pbx-legrow.pbx-spoils { border-top: 2px solid var(--pb-divider); margin-top: 4px; grid-template-columns: minmax(0, 1fr) auto auto; }
+#pbApp .pbx-spoils .pbx-leg-n { font-weight: 650; }
+#pbApp .pbx-spoils-k { font-size: 12px; font-weight: 500; color: var(--pb-text-3); }
+#pbApp .pbx-spoils .pbx-leg-v { font-size: 13.5px; color: var(--pb-text-2); white-space: nowrap; }
 #pbApp .pbm-addtop { padding-top: 4px; padding-bottom: 12px; }
 #pbApp .pbx-itemhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 0 6px; }
 #pbApp .pbx-itemkey { font-size: 12.5px; color: var(--pb-text-3); }
@@ -8778,7 +8782,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.15 · 2026-10-22'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.16 · 2026-10-22'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -44579,9 +44583,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbMatDens2 = (n) => (Math.round(Number(n) * 100 + 1e-7) / 100).toFixed(2);
   const pbMatPresetText = () => PB_MAT_PRESETS.map(p => p.short + ' ' + pbMatDens2(p.density)).join(', ');
   // feat_paving: the Type list a PM picks from (one Bedding / Shading choice, then its kind; asphalt and concrete)
-  const PB_MAT_TYPES = [['pipe', 'Pipe'], ['bedding', 'Bedding / Shading'], ['asphalt', 'Asphalt'], ['concrete', 'Concrete'], ['fittings', 'Fittings'], ['structures', 'Structures'], ['other', 'Other']];
+  const PB_MAT_TYPES = [['pipe', 'Pipe'], ['bedding', 'Bedding / Shading'], ['roadbase', 'Road base'], ['asphalt', 'Asphalt'], ['concrete', 'Concrete'], ['fittings', 'Fittings'], ['structures', 'Structures'], ['other', 'Other']];
   const PB_MAT_BEDKINDS = [['bedding_rock', 'Rock'], ['bedding_sand', 'Sand'], ['bedding_other', 'Other']];
-  const PB_MAT_KIND = { asphalt: { name: 'Asphalt', unit: 'ton', words: 'tons', density: 1.96, extra: 5, thk: 3 }, concrete: { name: 'Concrete', unit: 'yd³', words: 'yd³', extra: 5, thk: 6 } }; // asphalt 145 lb/ft³
+  const PB_MAT_KIND = { asphalt: { name: 'Asphalt', unit: 'ton', words: 'tons', density: 1.96, extra: 5, thk: 3 }, concrete: { name: 'Concrete', unit: 'yd³', words: 'yd³', extra: 5, thk: 6 }, // asphalt 145 lb/ft³ (1.96 t/yd³, the usual estimating figure; verify with the plant)
+    base_class2: { name: 'Class 2 Road Base', short: 'Class 2', type: 'roadbase', unit: 'ton', words: 'tons', density: 2.0, extra: 5, thk: 6 }, // r15.16: 2.0 t/yd³ compacted (owner's pick)
+    base_class3: { name: 'Class 3 Road Base', short: 'Class 3', type: 'roadbase', unit: 'ton', words: 'tons', density: 2.0, extra: 5, thk: 6 },
+    base_class6: { name: 'Class 6 Road Base', short: 'Class 6', type: 'roadbase', unit: 'ton', words: 'tons', density: 2.0, extra: 5, thk: 6 } };
   const PB_MAT_CATS = [['pipe', 'Pipe'], ['bedding_rock', 'Bedding / Shading: rock'], ['bedding_sand', 'Bedding / Shading: sand'], ['bedding_other', 'Bedding / Shading: other'],
     ['fittings', 'Fittings'], ['structures', 'Structures'], ['other', 'Other']];
   const PB_MAT_EST_NOTE = 'Estimate from footage × trench width × bedding thickness. Actual use varies with field conditions such as trench width and grading accuracy.';
@@ -44593,6 +44600,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // The raw (in-place) tons have their own line, rounded like the owner's supplier app: one decimal, an exact half to
   // even (510 × 2 × 0.5 ft at 130 lb/ft³ = 33.15 -> 33.2; at 110 = 28.05 -> 28.0).
   const PB_WT_LB_PER_TPY = 2000 / 27; // 1 ton/yd³ = 74.07 lb/ft³
+  const PB_WT_MORE = [{ k: 'asph', name: 'Asphalt (hot mix)', short: 'asphalt', density: 1.96 }, { k: 'rbase', name: 'Road base (Class 2 / 3 / 6)', short: 'road base', density: 2.0 }]; // r15.16
   const PB_WT_SUP_TYPES = [['base', 'Base'], ['screen', 'Screenings'], ['clean', 'Clean stone'], ['sand', 'Sand']];
   const PB_WT_SUP_SRC = [['trap', 'Traprock'], ['lime', 'Limestone'], ['gran', 'Granite'], ['sg', 'Sand & gravel'], ['ss', 'Sandstone']];
   const PB_WT_SUP_LB = { base: [160, 138, 145, 130, 138], screen: [124, 113, 113, 112, 110], clean: [102, 96, 96, 98, 90], sand: [110, 106, 106, 110, 100] }; // lb/ft³, typical supplier values (owner, Oct 21)
@@ -44619,7 +44627,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const lb = PB_WT_SUP_LB[S.st][si];
       return { lb, tpy: lb * 27 / 2000 };
     }
-    const p = PB_MAT_PRESETS.find(x => x.k === S.k);
+    const p = PB_MAT_PRESETS.concat(PB_WT_MORE).find(x => x.k === S.k);
     return p ? { tpy: p.density, lb: p.density * PB_WT_LB_PER_TPY } : { err: 'Pick a material to see tons.' };
   }
   function pbWtOutHtml(c) {
@@ -44637,7 +44645,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbWtPanelInner(c) {
     const S = pbWtS(c);
     let h = '<div class="pb-answer-label">' + escapeHtml(S.label ? S.label + ' weight in tons' : 'Weight in tons') + '</div><div class="pb-toggle pb-toggle-wrap pb-wt-pick" role="group" aria-label="Material">'
-      + PB_MAT_PRESETS.map(p => pbWtBtn(c, 'k', p.k, S.k === p.k, p.name, pbMatDens2(p.density) + ' t/yd³ · ' + pbWtTrim(p.density * PB_WT_LB_PER_TPY, 0) + ' lb/ft³')).join('')
+      + PB_MAT_PRESETS.concat(PB_WT_MORE).map(p => pbWtBtn(c, 'k', p.k, S.k === p.k, p.name, pbMatDens2(p.density) + ' t/yd³ · ' + pbWtTrim(p.density * PB_WT_LB_PER_TPY, 0) + ' lb/ft³')).join('')
       + pbWtBtn(c, 'k', 'sup', S.k === 'sup', 'Typical supplier values', 'Type, then rock source') + pbWtBtn(c, 'k', 'custom', S.k === 'custom', 'Custom', 'Type a density') + '</div>';
     if (S.k === 'sup') {
       h += '<div class="pb-wt-step">Typical supplier values: type</div><div class="pb-toggle pb-toggle-wrap pb-wt-type" role="group" aria-label="Type">' + PB_WT_SUP_TYPES.map(t => pbWtBtn(c, 'st', t[0], S.st === t[0], t[1], '')).join('') + '</div>';
@@ -45179,7 +45187,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const cc = pbProdEl('pmf_cost_code'); if (cc) F.v.cost_code = String(cc.value).trim(); // r15.5
       const ik = pbProdEl('pmf_item_key'); if (ik) F.v.item_key = String(ik.value || ''); // feat_itemmat
       if (pbProdEl('pmf_category')) { const t = F.v.category, bk = pbProdEl('pmf_bedkind'); // feat_paving
-        if (t === 'bedding') { F.v.category = bk ? String(bk.value) : 'bedding_rock'; F.v.kind = ''; }
+        if (t === 'bedding') { const bv = bk ? String(bk.value) : 'c:bedding_rock', pp = bv.startsWith('p:') ? PB_MAT_PRESETS.find(x => x.k === bv.slice(2)) : null, cat = pp ? pp.category : bv.replace(/^c:/, ''); // r15.16
+          F.v.category = /^bedding_/.test(cat) ? cat : 'bedding_rock'; F.v.kind = ''; }
+        else if (t === 'roadbase') { const rb = pbProdEl('pmf_basekind'), cur = F.v.kind && PB_MAT_KIND[F.v.kind] && PB_MAT_KIND[F.v.kind].type === 'roadbase' ? F.v.kind : 'base_class2';
+          F.v.category = 'other'; F.v.kind = rb && PB_MAT_KIND[rb.value] ? String(rb.value) : cur; }
         else if (PB_MAT_KIND[t]) { F.v.category = 'other'; F.v.kind = t; } else F.v.kind = ''; }
       const pm = document.querySelector('input[name="pmfPMode"]:checked'); if (pm) F.v.pmode = pm.value;
       ['dl', 'dw', 'dt'].forEach(k => { const el = pbProdEl('pmf_' + k); if (el) F.v[k] = pbMatNorm(el.value); });
@@ -45361,6 +45372,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return { by, loose, count };
   };
   // ==== end feat_itemmat (materials) ====
+  // r15.16: a bedding kind from the list (a preset fills the name if it was empty or another preset, and the density)
+  window.pbMatBedKind = function() {
+    const F = pbMatFormRead(); if (!F || F.kind !== 'mat') return; const el = pbProdEl('pmf_bedkind'), val = el ? String(el.value) : '';
+    const p = val.startsWith('p:') ? PB_MAT_PRESETS.find(x => x.k === val.slice(2)) : null;
+    if (p) { F.preset = p.k; if (!String(F.v.name || '').trim() || PB_MAT_PRESETS.some(q => q.name === F.v.name)) F.v.name = p.name; F.v.category = p.category; F.v.source = 'bedding_calc'; F.v.density_tpy = String(p.density); if (F.v.extra_pct === '') F.v.extra_pct = String(PB_MAT_DEFAULT_EXTRA_PCT); }
+    else F.preset = '';
+    pbMatJobPaint();
+  };
+  window.pbMatBaseKind = function() { const F = pbMatFormRead(); if (!F || F.kind !== 'mat') return; if (F.v.kind !== (F.kindWas || '')) pbMatKindSet(F, F.v.kind); pbMatJobPaint(); };
   window.pbMatKindPick = function(k) { const F = pbMatFormRead(); if (!F || F.kind !== 'mat') return; F.preset = k; pbMatKindSet(F, k); pbMatJobPaint(); };
   window.pbMatPModeChange = function() { const F = pbMatFormRead(); if (!F || F.kind !== 'mat') return; F.expAuto = F.v.pmode === 'calc'; if (F.expAuto) pbMatExpApply(F, false); pbMatJobPaint(); };
   window.pbMatCatChange = function() {
@@ -45413,11 +45433,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const radio = (name, val, label, cur, attrs) => '<label class="pb-checkrow pbm-radio"><input type="radio" name="' + name + '" value="' + val + '"' + (cur === val ? ' checked' : '') + ' onchange="pbMatFormRefresh()"' + (attrs || '') + '> <span>' + label + '</span></label>';
     let h = '<form class="pbm-form" id="pmfForm" onsubmit="event.preventDefault(); pbMatFormSave();"><h4 class="pbm-h4">' + (F.id ? 'Edit material' : F.lineOf ? 'Another cost code line: ' + escapeHtml(v.name) : 'Add a material') + '</h4>'
       + (F.lineOf ? '<p class="pbp-dim" id="pmfLineNote">' + escapeHtml('Pick its footage and cost code.') + '</p>' : '');
-    if (!F.id) h += '<div class="pb-field"><span class="pbm-flabel">Presets</span><div class="pbm-presets" role="group" aria-label="Presets">' + PB_MAT_PRESETS.map(p => '<button type="button" class="pb-btn ghost small' + (F.preset === p.k ? ' on' : '') + '" aria-pressed="' + (F.preset === p.k) + '" onclick="pbMatPreset(\'' + p.k + '\')">' + escapeHtml(p.name) + '</button>').join('')
-      + Object.keys(PB_MAT_KIND).map(k => '<button type="button" class="pb-btn ghost small' + (F.preset === k ? ' on' : '') + '" aria-pressed="' + (F.preset === k) + '" onclick="pbMatKindPick(\'' + k + '\')">' + PB_MAT_KIND[k].name + '</button>').join('') + '</div><p class="pb-help pbm-fhelp">Or type any material below.</p></div>';
-    h += pbMatField('name', 'Material', v.name, 'type="text" maxlength="60" autocomplete="off" placeholder="e.g. 8 in PVC SDR 35"')
-      + '<div class="pb-field"><label for="pmf_category">Type</label><select id="pmf_category" onchange="pbMatCatChange()">' + PB_MAT_TYPES.map(c => '<option value="' + c[0] + '"' + ((bed ? 'bedding' : v.kind && PB_MAT_KIND[v.kind] ? v.kind : v.category) === c[0] ? ' selected' : '') + '>' + c[1] + '</option>').join('') + '</select></div>'
-      + (bed ? '<div class="pb-field"><label for="pmf_bedkind">Which kind</label><select id="pmf_bedkind" onchange="pbMatFormRefresh()">' + PB_MAT_BEDKINDS.map(c => '<option value="' + c[0] + '"' + (v.category === c[0] ? ' selected' : '') + '>' + c[1] + '</option>').join('') + '</select></div>' : '');
+    { // r15.16: Type first, then its kind (bedding presets, road base classes), then the name
+      const tsel = bed ? 'bedding' : v.kind && PB_MAT_KIND[v.kind] ? (PB_MAT_KIND[v.kind].type || v.kind) : v.category;
+      h += '<div class="pb-field"><label for="pmf_category">Type</label><select id="pmf_category" onchange="pbMatCatChange()">' + PB_MAT_TYPES.map(c => '<option value="' + c[0] + '"' + (tsel === c[0] ? ' selected' : '') + '>' + c[1] + '</option>').join('') + '</select></div>';
+      if (bed) { const pm = PB_MAT_PRESETS.find(p => p.k === F.preset && p.category === v.category) || PB_MAT_PRESETS.find(p => p.name === v.name && p.category === v.category), cur = pm ? 'p:' + pm.k : 'c:' + v.category;
+        h += '<div class="pb-field"><label for="pmf_bedkind">Which kind</label><select id="pmf_bedkind" onchange="pbMatBedKind()">' + PB_MAT_PRESETS.map(p => ['p:' + p.k, p.name]).concat([['c:bedding_rock', 'Other rock'], ['c:bedding_sand', 'Other sand'], ['c:bedding_other', 'Other']])
+          .map(o => '<option value="' + o[0] + '"' + (o[0] === cur ? ' selected' : '') + '>' + escapeHtml(o[1]) + '</option>').join('') + '</select>' + (pm ? '<p class="pb-help pbm-fhelp">' + escapeHtml(pbMatDens2(pm.density) + ' tons per yd³ to start. Verify with your supplier.') + '</p>' : '') + '</div>'; }
+      if (K && K.type === 'roadbase') h += '<div class="pb-field"><label for="pmf_basekind">Which kind</label><select id="pmf_basekind" onchange="pbMatBaseKind()">' + Object.keys(PB_MAT_KIND).filter(k => PB_MAT_KIND[k].type === 'roadbase').map(k => '<option value="' + k + '"' + (k === v.kind ? ' selected' : '') + '>' + escapeHtml(PB_MAT_KIND[k].short) + '</option>').join('') + '</select></div>';
+      h += pbMatField('name', 'Material', v.name, 'type="text" maxlength="60" autocomplete="off" placeholder="e.g. 8 in PVC SDR 35"');
+    }
     h += '<p class="pb-alert info pbm-quick" id="pmfQuick">' + escapeHtml('Only the name is needed. The rest is optional.') + '</p>';
     if (v.category === 'pipe' || bed) {
       h += '<fieldset class="pb-field pbm-fs"><legend>How “used” is counted</legend>'
@@ -45894,6 +45918,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + (Number(sp.ft_unknown) ? ' ' + pbMatFmt(sp.ft_unknown, 'LF') + ' LF has no trench width or OD and isn’t counted.' : '')) + '</p>'
       + '<p class="pb-help pbm-fhelp">' + escapeHtml(PB_MAT4_NOTE) + '</p></div>';
   }
+  // r15.16 (owner: "add the spoils amount to the end of the overview"): the job's spoils in a line
+  window.pbItemSpoils = function() {
+    try { const S = pbMat4For(), job = pbPj.job, sp = S && job && S.sp ? S.sp[job.job_key] : null; if (!sp) return null;
+      if (sp.status === 'no_footage') return { a: 'No pipe footage yet', v: '' };
+      if (sp.status !== 'ok') return { a: sp.status === 'needs_width' ? 'Needs the trench width' : sp.status === 'needs_depth' ? 'Needs the trench depth' : 'Needs the pipe OD', v: '' };
+      const haul = Number(sp.haul_loose_yd3) || 0; return { a: '≈ ' + pbMatFmt(haul, 'yd³') + ' yd³ loose', v: sp.loads ? '≈ ' + sp.loads + ' load' + (sp.loads === 1 ? '' : 's') : '' };
+    } catch (e) { return null; }
+  };
   const pbMat3OrigTk = pbMatTicketsHtml;
   pbMatTicketsHtml = function() { return pbMat3OrigTk() + pbMat3UnlistedHtml() + pbMat4SpoilsHtml(pbMat4For().sp[pbPj.job.job_key], 'pjSpoils'); };
   const pbMat3OrigSetForm = pbMatSettingsFormHtml;
@@ -47336,6 +47368,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }).join('');
     if (G && G.loose.length) { const a = G.loose.filter(m => m.alert).length;
       h += '<span class="pbx-legrow pbx-loose"><span class="pbx-leg-n">Not under an item' + (!shown && a ? '<span class="pbx-iflags">' + chip('warn', 'cube', pbCxN(a, 'material alert')) + '</span>' : '') + '</span><span class="pbx-leg-a"></span><span class="pbx-leg-v"></span></span>' + (shown ? matRows(G.loose) : ''); }
+    { const SP = typeof window.pbItemSpoils === 'function' ? window.pbItemSpoils() : null; // r15.16: spoils last
+      if (SP) h += '<span class="pbx-legrow pbx-spoils" id="pjItemSpoils"><span class="pbx-leg-n">Spoils to haul<span class="pbx-spoils-k">Estimate</span></span><span class="pbx-leg-a">' + pbCxE(SP.a) + '</span><span class="pbx-leg-v">' + pbCxE(SP.v) + '</span></span>'; }
     return h + '</span>';
   };
   // ==== end feat_itemmat (overview) ====
