@@ -1699,6 +1699,7 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 #pbApp #homeShortcuts .pb-sc-head .pb-edu-h { margin: 0; }
 
 /* Current job: a compact row with a pin, no yellow bar */
+#pbApp .pbm-addtop { padding-top: 4px; padding-bottom: 12px; }
 #pbApp .pbx-itemhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 0 6px; }
 #pbApp .pbx-itemkey { font-size: 12.5px; color: var(--pb-text-3); }
 #pbApp .pbx-matrows-tog { -webkit-appearance: none; appearance: none; min-height: 36px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--pb-divider); background: var(--pb-raised); color: var(--pb-text); font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
@@ -8777,7 +8778,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.14 · 2026-10-22'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.15 · 2026-10-22'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -44933,6 +44934,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const st = M.jobBusy ? (list ? 'Updating…' : 'Loading materials…') : M.jobMsg ? M.jobMsg + (list && J.at ? ' Showing the copy from ' + pbProdTimeText(J.at) + '.' : '') : J && J.cached ? 'Copy from ' + pbProdTimeText(J.at) + '.' : '';
     h += '<p class="pb-rpt-status pbm-status' + (M.jobMsg ? ' pbp-err' : '') + '" id="pjMatStatus" role="status">' + escapeHtml(st) + '</p>';
     if (M.form) return h + pbMatFormHtml() + '</section>';
+    h += '<div class="pb-btn-wrap pbp-btns pbm-addtop"><button type="button" class="pb-btn secondary" id="pjMatAdd" onclick="pbMatEdit(null)"' + (list ? '' : ' disabled') + '><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Material</button></div>';
     if (list) {
       const live = list.filter(m => !m.archived), arch = list.filter(m => m.archived);
       if (!live.length) h += '<p class="pbp-dim pbm-none" id="pjMatEmpty">No materials listed for this job yet. Add the pipe, bedding and anything else you want to track against what’s ordered.</p>';
@@ -44942,7 +44944,6 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     if (list) h += pbMatTicketsHtml();
     if (list) h += pbMatSettingsHtml();
-    h += '<div class="pb-btn-wrap pbp-btns"><button type="button" class="pb-btn secondary" id="pjMatAdd" onclick="pbMatEdit(null)"' + (list ? '' : ' disabled') + '><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Material</button></div>';
     h += '<details class="pb-more pbp-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>How materials are counted</span></summary><p class="pb-help" id="pjMatHelp">'
       + 'Each line reads used / ordered / expected. <strong>Pipe</strong>: the Pipe Installed footage crews report (only what counts in the totals). <strong>Bedding</strong> (under the pipe, pipe bottom to subgrade): an estimate, the job’s pipe footage × trench width × bedding thickness ÷ 27 = cubic yards (nothing taken off: it’s below the pipe). <strong>Shading</strong> (the sides of the pipe plus a thickness over its top): footage × (trench width × (pipe OD + shading thickness) − the pipe’s own area) ÷ 27. Both get your compaction allowance (15% unless you change it), times the density when counted in tons. Actual use varies with field conditions such as trench width and grading accuracy. <strong>Other materials</strong>: the amounts you record. “+ waiting” is crew work still inside its 24 hours for a foreman: not in the used number yet, but it counts toward the alert. A pending edit of a run that already counts isn’t added until it’s approved. Two materials of the same use (two pipes, two beddings, two shadings) show “Split unknown” and no amount until crews say which went where; a bedding and a shading on one job is normal. A delivery ticket counts only while it still says what it said when linked; a ticket changed or moved to another job stops counting and shows as needing a look. When used + waiting reaches the material’s alert % of what’s ordered (80% unless you change it), the company account and managers get one notification for that order level; adding an order sets it up again. No notifications 8:55 PM to 6:00 AM: they go out after 6:00 AM.</p></details>';
     return h + '</section>';
