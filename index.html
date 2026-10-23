@@ -1789,6 +1789,12 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 #pbApp .pbx-legrow .pbx-leg-n { display: flex; flex-direction: column; }
 #pbApp .pbx-loose .pbx-leg-n { color: var(--pb-text-2); font-size: 13.5px; }
 #pbApp .pbp-auto { margin: 2px 0 6px; }
+#pbApp .pbp-rowmore { margin: 0 0 4px; }
+#pbApp .pbp-rowmore > summary { width: 100%; min-height: 44px; gap: 8px; }
+#pbApp .pbp-rowmore > summary > .pbp-more-h { flex: none; }
+#pbApp .pbp-rowmore > summary > .pbp-more-sum { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; color: var(--pb-text-3); font-size: 13px; }
+#pbApp .pbp-rowmore[open] > summary > .pbp-more-sum { visibility: hidden; }
+#pbApp .pbp-rowmore > .pbp-prow-nums { margin-top: 2px; }
 #pbApp .pbp-alerts { margin: 2px 0 6px; padding: 10px 12px 4px; border-radius: 12px; background: var(--pb-surface-2, rgba(127,127,127,.06)); }
 #pbApp .pbp-al-h { margin: 0 0 6px; font-size: 13.5px; font-weight: 650; color: var(--pb-text-2); }
 #pbApp .pbp-al-help { margin: 0 0 6px; }
@@ -8868,7 +8874,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.22 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.23 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -33590,6 +33596,18 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     r.alerts.push({ pct: '', label: '' }); pbProdJobRender(); const f = pbProdEl('ppAlP' + i + '_' + (r.alerts.length - 1)); if (f) f.focus({ preventScroll: true }); };
   window.pbPlanAlRemove = function(i, k) { const E = pbPj.edit; if (!E || !E.rows[i]) return; pbProdPlanRead(); (E.rows[i].alerts || []).splice(k, 1); pbProdJobRender(); const f = pbProdEl('ppAlAdd' + i) || pbProdEl('ppMute' + i); if (f) f.focus({ preventScroll: true }); };
   // ==== end feat_itemalerts (plan) ====
+  // ==== feat_planmore: one line that says what the item's optional settings are ====
+  function pbPlanMoreSummary(r) {
+    const has = (x) => String(x == null ? '' : x).trim() !== '', out = [];
+    if (has(r.hours) && Number(String(r.hours).replace(/,/g, '')) > 0) out.push(String(r.hours).trim() + ' h budget');
+    const ap = String(r.alertPct == null ? '' : r.alertPct).trim(); if (ap !== '' && ap !== '80') out.push('Alert at ' + ap + '%');
+    if (has(r.costCode)) out.push(String(r.costCode).trim());
+    const n = (r.alerts || []).filter(a => a && (String(a.pct || '').trim() !== '' || String(a.label || '').trim() !== '')).length; if (n) out.push(n + ' more alert' + (n === 1 ? '' : 's'));
+    if (r.muted) out.push('Silenced');
+    return out.length ? out.join(' · ') : 'Budget hours, alerts, cost code';
+  }
+  window.pbPlanMoreToggle = function(i, open) { const E = pbPj.edit; if (!E || !E.rows[i]) return; E.rows[i].more = !!open; if (!open) { pbProdPlanRead(); const s = pbProdEl('ppMoreSum' + i); if (s) s.textContent = pbPlanMoreSummary(E.rows[i]); } };
+  // ==== end feat_planmore ====
   window.pbProdPlanEdit = function() {
     if (!pbPj.data) return;
     const rows = pbProdPlanRowsFrom(pbPj.data), bh = pbPj.data.plan && pbPj.data.plan.budget_hours != null ? String(pbPj.data.plan.budget_hours) : '';
@@ -33597,7 +33615,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const sum = pbProdPlanHoursSum(rows), auto = bh === '' || (sum !== '' && Number(bh) === Number(sum));
     pbPj.edit = { version: Number(pbPj.data.plan_version) || 0, rows, budget: auto ? sum : bh, budgetAuto: auto, err: '', saving: false,
       equip: pbEqOf(pbPj.data.plan && pbPj.data.plan.equipment).map(q => ({ key: q.key, name: String(q.name || ''), unitNo: String(q.unit_no || ''), costCode: String(q.cost_code || '') })) }; // feat_equip
-    pbPj.edit.base = JSON.stringify([rows, pbPj.edit.budget, pbPj.edit.equip]);
+    pbPj.edit.base = JSON.stringify([pbPlanRowsCmp(rows), pbPj.edit.budget, pbPj.edit.equip]);
     try { const E0 = pbPj.edit; pbPlanAutoApply(E0); if (typeof pbMatJobLoad === 'function') Promise.resolve(pbMatJobLoad()).then(() => { if (pbPj.edit === E0 && pbPlanAutoApply(E0)) pbProdJobRender(); }).catch(() => {}); } catch (e) {} // feat_navfix, feat_itemmat
     pbProdJobRender();
     const f = pbProdEl('ppName0'); if (f) f.focus({ preventScroll: true });
@@ -33640,7 +33658,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (blur && v === '' && sum !== '') { E.budget = sum; const b = pbProdEl('ppBudget'); if (b) b.value = sum; }
     const h = pbProdEl('ppBudgetHelp'); if (h) h.textContent = pbProdBudgetHelpText(E);
   };
-  function pbProdPlanDirty() { const E = pbPj.edit; if (!E) return false; pbProdPlanRead(); return JSON.stringify([E.rows, E.budget, E.equip]) !== E.base; }
+  const pbPlanRowsCmp = (rows) => rows.map(r => { const o = Object.assign({}, r); delete o.more; return o; }); // feat_planmore
+  function pbProdPlanDirty() { const E = pbPj.edit; if (!E) return false; pbProdPlanRead(); return JSON.stringify([pbPlanRowsCmp(E.rows), E.budget, E.equip]) !== E.base; }
   function pbProdPlanEditorHtml() {
     const E = pbPj.edit, cats = pbProdJobView(pbPj.data.plan || null, pbPj.data.cats);
     const field = (id, label, val, attrs) => '<div class="pb-field"><label for="' + id + '">' + label + '</label><input id="' + id + '" value="' + escapeHtml(val) + '" ' + attrs + '></div>';
@@ -33654,12 +33673,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           + field('ppName' + i, 'Category', r.name, 'type="text" maxlength="40" autocomplete="off"')
           + pbPlanAutoHtml(r, i)
           + '<div class="pbp-prow-nums">' + field('ppPlanned' + i, 'Planned', r.planned, (r.plannedAuto === true && pbPlanIsLF(r.unit) ? 'readonly aria-readonly="true" ' : '') + 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanNote(); pbProdPlanPerIn(' + i + ')"')
-          + field('ppUnit' + i, 'Unit', r.unit, 'type="text" maxlength="12" autocomplete="off" placeholder="LF" onchange="pbProdPlanUnitIn(' + i + ')"')
-          + field('ppPerUnit' + i, 'Budget hours per unit', r.perUnit || '', 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanPerIn(' + i + ')"')
+          + field('ppUnit' + i, 'Unit', r.unit, 'type="text" maxlength="12" autocomplete="off" placeholder="LF" onchange="pbProdPlanUnitIn(' + i + ')"') + '</div>' // feat_planmore: the rest behind More settings
+          + '<details class="pb-more pbp-rowmore" id="ppMore' + i + '"' + (r.more ? ' open' : '') + ' ontoggle="pbPlanMoreToggle(' + i + ', this.open)"><summary><span class="pbp-more-h">More settings</span><span class="pbp-more-sum" id="ppMoreSum' + i + '">' + escapeHtml(pbPlanMoreSummary(r)) + '</span></summary>'
+          + '<div class="pbp-prow-nums">' + field('ppPerUnit' + i, 'Budget hours per unit', r.perUnit || '', 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanPerIn(' + i + ')"')
           + field('ppHours' + i, 'Budget hours (whole category)', r.hours, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanCatHoursIn(' + i + ')"')
           + field('ppAlert' + i, 'Alert at (% of planned)', r.alertPct || '80', 'type="text" inputmode="numeric" autocomplete="off" maxlength="3"')
           + field('ppCostCode' + i, 'Cost code', r.costCode || '', 'type="text" maxlength="60" autocomplete="off" autocapitalize="characters" placeholder="e.g. 02-200"') + '</div>'
           + pbPlanAlertsHtml(r, i) // feat_itemalerts
+          + '</details>'
           + '<div class="pbp-prow-foot">' + has + '<button type="button" class="pb-btn ghost small" id="ppRemove' + i + '" onclick="pbProdPlanRemove(' + i + ')" aria-label="Remove ' + escapeHtml(r.name || 'this category') + '"><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-trash"/></svg>Remove</button></div></fieldset>';
       }).join('') + '</div>'
       + (E.rows.length < 20 ? '<div class="pb-btn-wrap pbp-btns"><button type="button" class="pb-btn secondary" id="ppAddBtn" onclick="pbProdPlanAdd()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Category</button></div>' : '')
@@ -35995,7 +36016,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbLimitOf(el) {
     if (!el || !el.matches || !el.matches('textarea[maxlength], input[maxlength]')) return 0;
     const m = parseInt(el.getAttribute('maxlength'), 10);
-    return m > 0 ? m : 0;
+    return m >= 8 ? m : 0; // feat_planmore: no counter on a 3-digit % box
   }
   function pbUpdateCharCount(el) {
     const max = pbLimitOf(el); if (!max) return;
@@ -44977,13 +44998,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbMatState(m) {
     const f = (m && m.fig) || {}, used = f.used === null || f.used === undefined ? null : Number(f.used), wait = Number(f.waiting) || 0, ord = Number(f.ordered) || 0;
     const exp = m.expected === null || m.expected === undefined ? null : Number(m.expected), pct = Number(m.alert_pct) || 80;
-    const need = { needs_width: 'Needs trench width', needs_thickness: 'Needs bedding thickness', needs_density: 'Needs a density', needs_shading_thickness: 'Needs shading thickness', needs_od: 'Needs pipe OD', width_under_od: 'Trench narrower than the pipe', split_unknown: 'Shares footage' }[f.status] || null;
+    const need = { needs_width: 'Needs trench width', needs_thickness: 'Needs bedding thickness', needs_density: 'Needs a density', needs_shading_thickness: 'Needs shading thickness', needs_od: 'Needs pipe OD', width_under_od: 'Trench narrower than the pipe', split_unknown: 'Shares footage', needs_each: 'Needs a length each' }[f.status] || null; // r15.23: needs_each
     const mu = !!(m && m.muted === true), reached = !mu && used !== null && ord > 0 && used + wait >= ord * pct / 100; // feat_itemalerts: silenced
     return { used, wait, ord, exp, pct, need, reached, muted: mu, over: !mu && used !== null && exp !== null && exp > 0 && used > exp, est: !!f.estimate, share: ord > 0 && used !== null ? (used + wait) / ord : null };
   }
   function pbMatChips(m, s) {
     let h = '';
-    if (s.need) h += m && m.fig && m.fig.status === 'split_unknown' ? '<button type="button" class="pb-chip notsent pbm-chip" style="cursor:pointer;font:inherit" onclick="event.stopPropagation(); pbMatFixShare(\'' + m.id + '\')" aria-label="Shares footage: pick its own item">' + escapeHtml(s.need) + ' ›</button> ' : '<span class="pb-chip notsent pbm-chip">' + escapeHtml(s.need) + '</span> ';
+    if (s.need) h += m && m.fig && m.fig.status === 'split_unknown' ? '<button type="button" class="pb-chip notsent pbm-chip" style="cursor:pointer;font:inherit" onclick="event.stopPropagation(); pbMatFixShare(\'' + m.id + '\')" aria-label="Shares footage: pick its own item">' + escapeHtml(s.need) + ' ›</button> '
+      : m && m.fig && m.fig.status === 'needs_each' ? '<button type="button" class="pb-chip notsent pbm-chip" style="cursor:pointer;font:inherit" onclick="event.stopPropagation(); pbMatFixEach(\'' + m.id + '\')" aria-label="Needs a length each: type it">' + escapeHtml(s.need) + ' ›</button> ' // r15.23
+      : '<span class="pb-chip notsent pbm-chip">' + escapeHtml(s.need) + '</span> ';
     if (s.reached) h += '<span class="pb-chip notsent pbm-chip pbm-reached">' + escapeHtml(s.pct + '% of ordered used') + '</span> ';
     if (s.over) h += '<span class="pb-chip overdue pbm-chip">Over expected</span> ';
     if (s.est) h += '<span class="pb-chip calculated pbm-chip">Estimate</span> ';
@@ -45899,6 +45922,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     m.muted = !!on; pbMatJobPaint(); pbMatPlanReload(); pbMatCoInvalidate();
     const b = pbProdEl('pjMatMute_' + id); if (b) b.focus({ preventScroll: true });
   };
+  window.pbMatFixEach = function(id) { window.pbMatEdit(id); setTimeout(() => { const f = pbProdEl('pmf_each_ft'); if (f) { f.focus({ preventScroll: true }); if (f.scrollIntoView) f.scrollIntoView({ block: 'center' }); } }, 80); }; // r15.23
   window.pbMatHistory = async function(id) {
     const uid = pbArchiveOwnerUid, job = pbPj.job;
     if (!(await pbMatCanAsk(uid))) { pbMat.hist[id] = { err: 'No signal: history loads with signal.' }; pbMatJobPaint(); return; }
