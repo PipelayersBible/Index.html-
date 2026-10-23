@@ -4386,6 +4386,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <label class="pb-set-switch" for="notifTypeMat" id="notifTypeMatRow" hidden><span class="tx"><span class="name">Material alerts</span><span class="sub">When a job’s material reaches its alert level</span></span><input type="checkbox" role="switch" id="notifTypeMat" class="pb-pn-switch" checked onchange="pbPushSetPref('material_alert', this.checked)"></label>
         <label class="pb-set-switch" for="notifTypeNudge" id="notifTypeNudgeRow" hidden><span class="tx"><span class="name">Nudges from the office</span><span class="sub">When your company is waiting on a run’s information</span></span><input type="checkbox" role="switch" id="notifTypeNudge" class="pb-pn-switch" checked onchange="pbPushSetPref('crew_nudge', this.checked)"></label><!-- r14 integration -->
         <label class="pb-set-switch" for="notifTypePermit" id="notifTypePermitRow" hidden><span class="tx"><span class="name">Crew permit closed</span><span class="sub">Foreman account: when a pipelayer on your crew closes a confined space permit</span></span><input type="checkbox" role="switch" id="notifTypePermit" class="pb-pn-switch" checked onchange="pbPushSetPref('permit_closed', this.checked)"></label>
+        <label class="pb-set-switch" for="notifTypeDue" id="notifTypeDueRow" hidden><span class="tx"><span class="name">Air test and comm check due</span><span class="sub">A notice on this phone when a check on your open permit is due. It supplements the alarm in the app and doesn’t replace it</span></span><input type="checkbox" role="switch" id="notifTypeDue" class="pb-pn-switch" checked onchange="pbPushSetPref('permit_due', this.checked)"></label>
         <label class="pb-set-switch" for="notifTypeCrew"><span class="tx"><span class="name">Crew production reminders</span><span class="sub">When your crew starts or finishes a run and its production isn’t entered</span></span><input type="checkbox" role="switch" id="notifTypeCrew" class="pb-pn-switch" checked onchange="pbCrewPushSet(this.checked); pbPushCrewKind(this.checked)"></label><!-- batch 14 F -->
         <p class="pb-help pb-pn-msg" id="notifCrewMsg" role="status" hidden></p><!-- batch 14 F -->
         <p class="pb-help pb-pn-msg" id="notifPrefsMsg" role="status" hidden></p>
@@ -30462,8 +30463,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   try { pbRawGet(PB_PUSH_KEY_KEY).then(v => { if (!pbPushVapid && typeof v === 'string' && /^[A-Za-z0-9_-]{80,100}$/.test(v)) pbPushVapid = v; }).catch(() => {}); } catch (e) {}
   const PB_PUSH_ORIGIN = 'https://pipelayersbible.github.io', PB_PUSH_PATH = '/Index.html-/';
   const PB_PUSH_DEVICE_KEY = 'pbPushDevice'; // per phone, not per account: { uid, want: 'on'|'off', synced, endpoint, why, at }
-  const PB_PUSH_TYPES = ['runs_waiting', 'mgmt_report', 'crew_production', 'run_end_ask', 'material_alert', 'crew_nudge', 'permit_closed']; // r14 integration: a row shows only when the server reports the kind
-  const PB_PUSH_ROWS = { run_end_ask: 'notifTypeRunEndRow', material_alert: 'notifTypeMatRow', crew_nudge: 'notifTypeNudgeRow', permit_closed: 'notifTypePermitRow' }; // crew_production: batch 14 F's own row
+  const PB_PUSH_TYPES = ['runs_waiting', 'mgmt_report', 'crew_production', 'run_end_ask', 'material_alert', 'crew_nudge', 'permit_closed', 'permit_due']; // r14 integration: a row shows only when the server reports the kind
+  const PB_PUSH_ROWS = { run_end_ask: 'notifTypeRunEndRow', material_alert: 'notifTypeMatRow', crew_nudge: 'notifTypeNudgeRow', permit_closed: 'notifTypePermitRow', permit_due: 'notifTypeDueRow' }; // crew_production: batch 14 F's own row
   let pbPushReg = null, pbPushSwFailed = false, pbPushRegP = null, pbPushBusy = null, pbPushTimer = null;
   let pbPushMsg = { text: '', at: 0 };
   function pbPushHostOk() {
@@ -30959,13 +30960,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     '/home': () => pbGoto('home'),
     '/settings/notifications': () => window.pbOpenNotifications(),
     '/reports/inbox': () => window.pbOpenReportsInbox(),
-    '/permits/crew': () => window.pbOpenCrewPermits()
+    '/permits/crew': () => window.pbOpenCrewPermits(),
+    '/permits/active': () => { if (confinedPermit) pbGoto('confinedActive'); else pbGoto('home'); }
   };
   window.pbPushOpen = function(hash) {
     const m = /^#(\/[a-z0-9/_-]{1,60})$/.exec(String(hash || ''));
     if (!m) return false;
     if (pbLinkBusyWhy()) return false; // stay on the work (or the live permit) on screen
-    const f = (typeof window.pbPushRoutes[m[1]] === 'function' && window.pbPushRoutes[m[1]]) || PB_PUSH_BUILTIN_ROUTES[m[1]] || PB_PUSH_BUILTIN_ROUTES['/home'];
+    const rk = m[1].replace(/\/\d{6,}$/, ''); // a trailing number (a due time) is not part of the route
+    const f = (typeof window.pbPushRoutes[rk] === 'function' && window.pbPushRoutes[rk]) || PB_PUSH_BUILTIN_ROUTES[rk] || PB_PUSH_BUILTIN_ROUTES['/home'];
     try { f(); return true; } catch (e) { console.warn('Notifications: link not opened.'); return false; }
   };
   // A notification that opened the app: its link is read once, after the account's records have loaded.
@@ -31607,6 +31610,51 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.addEventListener('online', () => setTimeout(() => { if (confinedPermit) pbOpenBackupTick(); }, 4000));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && confinedPermit) setTimeout(pbOpenBackupTick, 3000); });
   window.__pbOpenBackupTick = pbOpenBackupTick;
+  // ---------- push notice when a check is due ----------
+  // READS the permit's timers and tells the server the due times (pb_permit_due_set). The server queues a notice for
+  // each due time and one 5 minutes later. Sent only while someone is inside and no emergency is open; closing the
+  // permit, an emergency or nobody inside cancels them. It never changes the permit or its in-app alarms.
+  let pbDue = { uid: null, ref: null, key: '', busy: false, until: 0 };
+  async function pbDueRpc(uid, ref, space, atmo, comm) {
+    const iso = (t) => t ? new Date(t).toISOString() : null;
+    return pbPermitRpc('pb_permit_due_set', { p_permit_ref: ref, p_space: space, p_atmo_due: iso(atmo), p_comm_due: iso(comm), p_expect_uid: uid }, 20000);
+  }
+  async function pbDuePushTick() {
+    if (pbDue.busy || Date.now() < pbDue.until) return;
+    try {
+      const uid = sbUser && sbUser.id;
+      if (!uid || !sbClient || typeof sbClient.rpc !== 'function' || navigator.onLine === false || !pbAuthBackgroundOk()) return;
+      if (pbDue.uid && pbDue.uid !== uid) pbDue = { uid: null, ref: null, key: '', busy: false, until: 0 };
+      let ref = null, space = '', atmo = null, comm = null;
+      if (confinedPermit && confinedSessionOwnerUid === uid && confinedPermit.sessionId) {
+        ref = String(confinedPermit.sessionId); space = String(confinedPermit.space || '');
+        const inside = (confinedRoster || []).some(r => r && r.status === 'in');
+        if (inside && !pbEmergencyOpen()) {
+          if (confinedAtmoTimer && confinedAtmoNextDue) atmo = Math.floor(confinedAtmoNextDue.getTime() / 1000) * 1000;
+          if (confinedCommTimer && confinedCommNextDue) comm = Math.floor(confinedCommNextDue.getTime() / 1000) * 1000;
+        }
+        if (!/^[A-Za-z0-9_.:-]{1,60}$/.test(ref)) return;
+      }
+      const key = JSON.stringify([ref, atmo, comm]);
+      if (pbDue.uid === uid && pbDue.key === key) return;
+      if (!ref && !(pbDue.uid === uid && pbDue.ref)) return; // nothing was scheduled, nothing open
+      pbDue.busy = true;
+      if (pbDue.uid === uid && pbDue.ref && pbDue.ref !== ref) { // another permit than the one scheduled: cancel the old one
+        const c = await pbDueRpc(uid, pbDue.ref, '', null, null);
+        if (c.error) return;
+        pbDue.ref = null; pbDue.key = '';
+      }
+      if (!ref) { const c = await pbDueRpc(uid, pbDue.ref, '', null, null); if (!c.error) pbDue = { uid, ref: null, key: '', busy: false, until: 0 }; return; }
+      if (!(await pbLiveSessionIs(uid)) || !sbUser || sbUser.id !== uid) return;
+      const r = await pbDueRpc(uid, ref, space, atmo, comm);
+      if (!r.error && r.data && r.data.ok === true) { pbDue.uid = uid; pbDue.ref = ref; pbDue.key = key; return; }
+      const msg = String((r.error && r.error.message) || '');
+      if (/pb:\w+|does not exist|Could not find/i.test(msg)) pbDue.until = Date.now() + 10 * 60000; // refused, or not on the server yet: later
+    } catch (e) {} finally { pbDue.busy = false; }
+  }
+  setInterval(() => { if (confinedPermit || pbDue.ref) pbDuePushTick(); }, 15 * 1000);
+  window.addEventListener('online', () => setTimeout(() => { if (confinedPermit || pbDue.ref) pbDuePushTick(); }, 3000));
+  window.__pbDuePushTick = pbDuePushTick;
   function pbOpenSnapText(sn, savedAt) {
     const fmt = (t) => { const d = new Date(t); return isNaN(d) ? '' : d.toLocaleString(); };
     const flat = (o) => Object.keys(o || {}).filter(k => o[k] !== null && o[k] !== undefined && o[k] !== '' && typeof o[k] !== 'object').map(k => k + ': ' + (/time|At$/i.test(k) && Number(o[k]) > 1e12 ? fmt(Number(o[k])) : o[k])).join(' | ');

@@ -65,10 +65,15 @@ self.addEventListener('push', (event) => {
         body = clip(d.b, 180);
         url = SAFE_URL.test(String(d.u || '')) ? d.u : '#/home';
         tag = 'pb-' + clip(String(d.g || 'general').replace(/[^a-z_]/g, ''), 20);
+        // A due notice that reached the phone late (it was offline) says so instead of claiming a check is due now.
+        if (d.g === 'permit_due') {
+          const m = /\/(\d{9,11})$/.exec(String(d.u || '')), due = m ? Number(m[1]) * 1000 : 0;
+          if (due && Date.now() - due > 20 * 60 * 1000) { title = 'Earlier permit reminder'; body = 'An air test or comm check was due earlier. Open the app to see the permit.'; }
+        }
       }
     }
     await self.registration.showNotification(title, {
-      body, tag, data: { u: url }, icon: 'icon-192.png', badge: 'icon-192.png', lang: 'en', renotify: false,
+      body, tag, data: { u: url }, icon: 'icon-192.png', badge: 'icon-192.png', lang: 'en', renotify: tag === 'pb-permit_due',
     });
   })());
 });
