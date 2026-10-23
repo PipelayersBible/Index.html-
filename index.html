@@ -4177,6 +4177,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     </div>
     <div id="homeCrewInvite" class="pbc-invite-wrap" hidden></div><!-- batch 13 C: crew invitation -->
     <div class="pb-coh-brand" id="homeCoBrand" role="group" aria-label="Your company" hidden></div><!-- batch 20 HOME -->
+    <div id="homeFmPulse" class="pbx-pulse" role="group" aria-label="Your crew right now" hidden></div><!-- foreman home: crew live card -->
     <!-- PB2:job -->
     <div class="pb-home-job" id="homeCurrentJob" style="display:none;"></div>
     <!-- PB2:work -->
@@ -35426,6 +35427,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       } else pbLv.msg = navigator.onLine === false || /failed to fetch|networkerror|load failed|timeout/i.test(String((r.error && r.error.message) || '')) ? 'No signal.' : 'Couldn’t load your crew’s runs.';
     } finally { pbLv.busy = false; }
     pbLvRender();
+    try { pbFmHomeRender(); } catch (e) {}
   }
   window.pbLvRefresh = function() { pbLvLoad(pbArchiveOwnerUid, { force: true }).catch(() => null); };
   function pbLvResetFor(uid) {
@@ -35648,6 +35650,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       else pbCpm.msg = 'Couldn’t load your crew’s permits.';
     } finally { pbCpm.busy = false; }
     pbCpmRender();
+    try { pbFmHomeRender(); } catch (e) {}
   }
   function pbCpmHtml() {
     const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared' || !pbLvIsForeman(uid) || pbCpm.uid !== uid) return '';
@@ -35671,6 +35674,54 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbAccountLoadHooks.push((uid) => { if (pbCpm.uid !== uid) { pbCpm = { uid, data: null, at: 0, busy: false, msg: '' }; const el = document.getElementById('pmCrewPermits'); if (el) el.innerHTML = ''; } });
   window.pbScreenHooks.push((name) => { if (name === 'prodMine') { if (pbCpm.uid !== pbArchiveOwnerUid) pbCpm = { uid: pbArchiveOwnerUid, data: null, at: 0, busy: false, msg: '' }; pbCpmRender(); pbCpmLoad(pbArchiveOwnerUid).catch(() => null); } });
   setInterval(() => { if (pbCurrentScreen === 'prodMine' && document.visibilityState === 'visible') pbCpmLoad(pbArchiveOwnerUid).catch(() => null); }, 60 * 1000);
+  // ---- foreman home: the company home's "Live now" card and tiles, for his own crew ----
+  let pbFmLast = '';
+  function pbFmCount() {
+    const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared' || !pbLvIsForeman(uid)) return null;
+    const D = pbLv.uid === uid ? pbLv.data : null, P = pbCpm.uid === uid ? pbCpm.data : null;
+    const crew = D && Array.isArray(D.crew) ? D.crew.filter(c => c && c.id) : null;
+    const permits = P && Array.isArray(P.permits) ? P.permits : null;
+    let runs = null, wait = null;
+    if (crew) {
+      runs = 0; wait = 0;
+      crew.forEach(c => (Array.isArray(c.runs) ? c.runs : []).forEach(r => {
+        if (!r || !r.session_ref) return;
+        if (!r.ended) runs++;
+        else if (!r.mine && !r.theirs && !pbLvRuns()[pbLvCid(c.id, r.session_ref)]) wait++;
+      }));
+    }
+    const open = permits ? permits.filter(x => !x.closed) : null;
+    return { crew: crew ? crew.length : null, runs, wait, open: open ? open.length : null, closed: permits ? permits.length - open.length : null,
+             emerg: open ? open.filter(x => x.status && x.status.emergency).length : 0, at: Math.max(pbLv.at || 0, pbCpm.at || 0) };
+  }
+  function pbFmHomeRender() {
+    const el = document.getElementById('homeFmPulse'); if (!el) return;
+    const C = pbFmCount(); let h = '';
+    if (C) {
+      const n = (v) => v === null ? '–' : String(v), ic = (nm) => '<svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-' + nm + '"/></svg>';
+      const act = (id, icon, num, label, sub, hot, on) => '<button type="button" class="pbx-act' + (hot ? ' hot' : '') + '" id="' + id + '" onclick="' + on + '"><span class="pbx-act-ic">' + ic(icon) + '</span><span class="pbx-num">' + escapeHtml(num) + '</span><span class="pbx-lbl">' + escapeHtml(label) + '</span><span class="pbx-sub">' + escapeHtml(sub) + '</span></button>';
+      h = '<button type="button" class="pbx-now' + (C.emerg ? ' emerg' : '') + '" id="homeFmLive" onclick="pbOpenProdMine()"><span class="pbx-now-h">' + ic(C.emerg ? 'siren' : 'pin') + (C.emerg ? 'EMERGENCY reported on ' + C.emerg + (C.emerg === 1 ? ' permit' : ' permits') : 'My crew now') + '</span>'
+        + '<span class="pbx-now-n"><span class="pbx-num" id="homeFmRuns">' + n(C.runs) + '</span><span class="pbx-lbl">active run' + (C.runs === 1 ? '' : 's') + '</span></span>'
+        + '<span class="pbx-now-n"><span class="pbx-num" id="homeFmPermits">' + n(C.open) + '</span><span class="pbx-lbl">active permit' + (C.open === 1 ? '' : 's') + '</span></span>'
+        + '<span class="pbx-sub">' + escapeHtml(C.at ? 'As your crew’s phones last sent · ' + pbProdTimeText(C.at) : 'Loads with signal') + '</span></button>'
+        + act('homeFmWait', 'clock', n(C.wait), 'Waiting on you', C.wait ? 'Ended runs need production' : C.wait === null ? 'Loads with signal' : 'Nothing waiting', C.wait > 0, 'pbOpenProdMine()')
+        + act('homeFmClosed', 'reports', n(C.closed), C.closed === 1 ? 'Permit closed' : 'Permits closed', 'Records from your crew', false, 'pbOpenCrewPermits()')
+        + act('homeFmCrew', 'cube', n(C.crew), 'On my crew', C.crew ? 'Add or remove crew' : 'No one linked yet', false, 'pbOpenProdMine()');
+    }
+    if (h === pbFmLast && (el.hidden === !h)) return;
+    pbFmLast = h; if (h) pbSetHtml(el, h); else el.innerHTML = ''; el.hidden = !h;
+  }
+  window.pbFmHomeRender = pbFmHomeRender;
+  { const r1 = window.pbRenderHome; if (typeof r1 === 'function') window.pbRenderHome = function() { const out = r1.apply(this, arguments); try { pbFmHomeRender(); } catch (e) { console.error(e); } return out; }; }
+  async function pbFmHomeLoad() {
+    const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared' || !pbLvIsForeman(uid)) return;
+    if (pbCpm.uid !== uid) pbCpm = { uid, data: null, at: 0, busy: false, msg: '' };
+    if (Date.now() - (pbCpm.at || 0) > 30000) pbCpmLoad(uid).catch(() => null);
+    pbLvLoad(uid).catch(() => null);
+  }
+  window.pbScreenHooks.push((name) => { if (name === 'home') { pbFmHomeRender(); pbFmHomeLoad(); } });
+  setInterval(() => { if (pbCurrentScreen === 'home' && document.visibilityState === 'visible') pbFmHomeLoad(); }, 60 * 1000);
+  window.pbAccountLoadHooks.push(() => { pbFmLast = ''; setTimeout(() => { pbFmHomeRender(); pbFmHomeLoad(); }, 1500); });
   document.addEventListener('focusout', () => { if (pbLv.dirty) setTimeout(() => { if (pbLv.dirty) pbLvRender(); }, 0); });
   // ================= end batch 14 F live crew view =================
   // ================= batch 14 F (owner decisions A and B, Oct 19 15:04): company "Live now" board, live permit status,
