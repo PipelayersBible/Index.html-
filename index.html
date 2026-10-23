@@ -4384,6 +4384,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <label class="pb-set-switch" for="notifTypeRunEnd" id="notifTypeRunEndRow" hidden><span class="tx"><span class="name">Run still open reminder</span><span class="sub">When a run you started hours ago was never ended</span></span><input type="checkbox" role="switch" id="notifTypeRunEnd" class="pb-pn-switch" checked onchange="pbPushSetPref('run_end_ask', this.checked)"></label>
         <label class="pb-set-switch" for="notifTypeMat" id="notifTypeMatRow" hidden><span class="tx"><span class="name">Material alerts</span><span class="sub">When a job’s material reaches its alert level</span></span><input type="checkbox" role="switch" id="notifTypeMat" class="pb-pn-switch" checked onchange="pbPushSetPref('material_alert', this.checked)"></label>
         <label class="pb-set-switch" for="notifTypeNudge" id="notifTypeNudgeRow" hidden><span class="tx"><span class="name">Nudges from the office</span><span class="sub">When your company is waiting on a run’s information</span></span><input type="checkbox" role="switch" id="notifTypeNudge" class="pb-pn-switch" checked onchange="pbPushSetPref('crew_nudge', this.checked)"></label><!-- r14 integration -->
+        <label class="pb-set-switch" for="notifTypePermit" id="notifTypePermitRow" hidden><span class="tx"><span class="name">Crew permit closed</span><span class="sub">Foreman account: when a pipelayer on your crew closes a confined space permit</span></span><input type="checkbox" role="switch" id="notifTypePermit" class="pb-pn-switch" checked onchange="pbPushSetPref('permit_closed', this.checked)"></label>
         <label class="pb-set-switch" for="notifTypeCrew"><span class="tx"><span class="name">Crew production reminders</span><span class="sub">When your crew starts or finishes a run and its production isn’t entered</span></span><input type="checkbox" role="switch" id="notifTypeCrew" class="pb-pn-switch" checked onchange="pbCrewPushSet(this.checked); pbPushCrewKind(this.checked)"></label><!-- batch 14 F -->
         <p class="pb-help pb-pn-msg" id="notifCrewMsg" role="status" hidden></p><!-- batch 14 F -->
         <p class="pb-help pb-pn-msg" id="notifPrefsMsg" role="status" hidden></p>
@@ -30459,8 +30460,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   try { pbRawGet(PB_PUSH_KEY_KEY).then(v => { if (!pbPushVapid && typeof v === 'string' && /^[A-Za-z0-9_-]{80,100}$/.test(v)) pbPushVapid = v; }).catch(() => {}); } catch (e) {}
   const PB_PUSH_ORIGIN = 'https://pipelayersbible.github.io', PB_PUSH_PATH = '/Index.html-/';
   const PB_PUSH_DEVICE_KEY = 'pbPushDevice'; // per phone, not per account: { uid, want: 'on'|'off', synced, endpoint, why, at }
-  const PB_PUSH_TYPES = ['runs_waiting', 'mgmt_report', 'crew_production', 'run_end_ask', 'material_alert', 'crew_nudge']; // r14 integration: a row shows only when the server reports the kind
-  const PB_PUSH_ROWS = { run_end_ask: 'notifTypeRunEndRow', material_alert: 'notifTypeMatRow', crew_nudge: 'notifTypeNudgeRow' }; // crew_production: batch 14 F's own row
+  const PB_PUSH_TYPES = ['runs_waiting', 'mgmt_report', 'crew_production', 'run_end_ask', 'material_alert', 'crew_nudge', 'permit_closed']; // r14 integration: a row shows only when the server reports the kind
+  const PB_PUSH_ROWS = { run_end_ask: 'notifTypeRunEndRow', material_alert: 'notifTypeMatRow', crew_nudge: 'notifTypeNudgeRow', permit_closed: 'notifTypePermitRow' }; // crew_production: batch 14 F's own row
   let pbPushReg = null, pbPushSwFailed = false, pbPushRegP = null, pbPushBusy = null, pbPushTimer = null;
   let pbPushMsg = { text: '', at: 0 };
   function pbPushHostOk() {
@@ -30854,7 +30855,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (b) b.checked = L.prefs.mgmt_report;
     if (row) row.hidden = !L.reader && !L.also.includes('material_alert'); // r14 integration: before the paste a PM's material alerts are filed under this kind
     { const sub = row ? row.querySelector('.sub') : null; if (sub) sub.textContent = L.also.includes('material_alert') ? (L.reader ? 'Company account only. Also material alerts, until they get their own switch' : 'Material alerts for your jobs, until they get their own switch') : 'Company account only'; }
-    Object.keys(PB_PUSH_ROWS).forEach(k => { const r = document.getElementById(PB_PUSH_ROWS[k]), inp = r ? r.querySelector('input') : null; if (r) r.hidden = !L.kinds.includes(k); if (inp) inp.checked = L.prefs[k]; });
+    Object.keys(PB_PUSH_ROWS).forEach(k => { const r = document.getElementById(PB_PUSH_ROWS[k]), inp = r ? r.querySelector('input') : null; if (r) r.hidden = !L.kinds.includes(k) || (k === 'permit_closed' && !(typeof window.pbLvIsForeman === 'function' && window.pbLvIsForeman(pbArchiveOwnerUid))); if (inp) inp.checked = L.prefs[k]; });
     const m = document.getElementById('notifPrefsMsg');
     if (m) { const n = Object.keys(L.pending).length; m.hidden = !n; m.textContent = n ? 'Saved on this phone. The change is sent when there’s signal.' : ''; }
   }
@@ -30955,7 +30956,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const PB_PUSH_BUILTIN_ROUTES = {
     '/home': () => pbGoto('home'),
     '/settings/notifications': () => window.pbOpenNotifications(),
-    '/reports/inbox': () => window.pbOpenReportsInbox()
+    '/reports/inbox': () => window.pbOpenReportsInbox(),
+    '/permits/crew': () => window.pbOpenCrewPermits()
   };
   window.pbPushOpen = function(hash) {
     const m = /^#(\/[a-z0-9/_-]{1,60})$/.exec(String(hash || ''));
@@ -35330,6 +35332,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return out;
   }
   // ---- the live view ----
+  window.pbLvIsForeman = pbLvIsForeman;
   function pbLvIsForeman(uid) { const a = pbProdAccMem.get(uid); return !!(a && a.member && a.role === 'foreman'); }
   async function pbLvLoad(uid, opts) {
     opts = opts || {};
