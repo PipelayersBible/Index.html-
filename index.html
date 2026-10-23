@@ -1753,6 +1753,24 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 #pbApp .pbm-more.open .pb-ic { transform: rotate(180deg); }
 #pbApp .pbm-addline { margin: -2px 0 10px; }
 #pbApp .pbx-legrow.pbx-spoils { border-top: 2px solid var(--pb-divider); margin-top: 4px; grid-template-columns: minmax(0, 1fr) auto auto; }
+#pbApp .pbx-legrow.pbx-insp { grid-template-columns: minmax(0, 1fr) auto 28px; cursor: pointer; border-radius: 10px; -webkit-tap-highlight-color: transparent; }
+#pbApp .pbx-legrow.pbx-insp:active { background: var(--pb-highlight); }
+#pbApp .pbx-legrow.pbx-insp:focus-visible { outline: 2px solid var(--pb-brand); outline-offset: 2px; }
+#pbApp .pbx-insp .pbx-leg-n { font-weight: 650; }
+#pbApp .pbx-insp.done .pbx-leg-a { color: var(--pb-ok-text, var(--pb-text)); }
+#pbApp .pbx-insp-chev { display: flex; justify-content: flex-end; align-self: center; color: var(--pb-text-3); }
+#pbApp .pbx-insp-chev .pb-ic { width: 18px; height: 18px; transition: transform .15s; }
+#pbApp .pbx-insp-chev.open .pb-ic { transform: rotate(180deg); }
+#pbApp .pbx-insprows { display: flex; flex-direction: column; gap: 2px; margin: -2px 0 6px; padding: 0 0 4px 14px; border-left: 2px solid var(--pb-divider); margin-left: 4px; }
+#pbApp .pbx-insprow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 4px 0; font-variant-numeric: tabular-nums; min-height: 32px; }
+#pbApp .pbx-insp-n { font-size: 13.5px; color: var(--pb-text-2); }
+#pbApp .pbx-insp-a { font-size: 13.5px; color: var(--pb-text); text-align: right; white-space: nowrap; }
+#pbApp .pbx-insp-sub { display: block; font-size: 12px; color: var(--pb-text-3); font-weight: 500; }
+#pbApp .pbx-insp-req { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--pb-text-3); }
+#pbApp .pbx-insp-req input { width: 64px; min-height: 40px; padding: 6px 8px; text-align: right; font: inherit; font-size: 15px; border: 1px solid var(--pb-divider); border-radius: 10px; background: var(--pb-surface, transparent); color: var(--pb-text); }
+#pbApp .pbx-insp-none { font-size: 13.5px; color: var(--pb-text-3); padding: 4px 0; }
+#pbApp .pbx-insp-err { font-size: 13px; color: var(--pb-danger-text, var(--pb-text)); padding: 4px 0; }
+#pbApp .pbx-insp-btns { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 6px 0 2px; }
 #pbApp .pbx-spoils .pbx-leg-n { font-weight: 650; }
 #pbApp .pbx-spoils-k { font-size: 12px; font-weight: 500; color: var(--pb-text-3); }
 #pbApp .pbx-spoils .pbx-leg-v { font-size: 13.5px; color: var(--pb-text-2); white-space: nowrap; }
@@ -8850,7 +8868,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.21 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.22 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -45192,8 +45210,76 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const prog = pbProdEl('pjProgress');
     if (prog && prog.parentNode) prog.parentNode.insertBefore(nw, prog.nextSibling); else body.insertBefore(nw, body.firstChild);
   }
+  // ==== feat_insp: the job's inspections on the overview ====
+  let pbCxInsp = { uid: null, jobs: {}, busy: null, gen: 0, edit: null };
+  async function pbCxInspLoad() {
+    const uid = pbArchiveOwnerUid, job = pbPj.job; if (!job || !job.job_number) return;
+    if (pbCxInsp.uid !== uid) pbCxInsp = { uid, jobs: {}, busy: null, gen: 0, edit: null };
+    const I = pbCxInsp, key = job.job_key;
+    if (!I.jobs[key]) { const c = await pbProdCacheGet(uid, 'insp:' + key); if (c && pbCxInsp === I && !I.jobs[key]) { I.jobs[key] = { items: c.data.items || [], at: c.at || 0, cached: true }; pbCxInspPaint(); } }
+    if (I.busy === key || !(await pbDlyCanAsk(uid))) return;
+    const gen = ++I.gen; I.busy = key;
+    const r = await pbPermitRpc('pb_insp_job', { p_job_number: job.job_number, p_expect_uid: uid }, 30000);
+    if (pbCxInsp !== I || I.gen !== gen) return;
+    I.busy = null;
+    if (!sbUser || sbUser.id !== uid || !pbPj.job || pbPj.job.job_key !== key) return;
+    if (r.error || !r.data || !Array.isArray(r.data.items)) { if (!I.jobs[key]) I.jobs[key] = { items: null, at: 0, err: pbDlyMissing(r) ? 'not_ready' : 'load' }; pbCxInspPaint(); return; }
+    I.jobs[key] = { items: r.data.items, at: Date.now(), cached: false };
+    pbProdCacheSet(uid, 'insp:' + key, { at: I.jobs[key].at, data: { items: r.data.items.map(i => ({ id: i.id, kind: i.kind, kind_detail: i.kind_detail, status: i.status, last_result: i.last_result })) } });
+    pbCxInspPaint();
+  }
+  // done / expected per type, and in all
+  window.pbInspSummary = function() {
+    const job = pbPj.job, D = pbPj.data, J = job && pbCxInsp.uid === pbArchiveOwnerUid ? pbCxInsp.jobs[job.job_key] : null;
+    const req = D && D.plan && D.plan.inspections && typeof D.plan.inspections === 'object' ? D.plan.inspections : {};
+    const items = J && Array.isArray(J.items) ? J.items.filter(i => i && i.status !== 'canceled') : null;
+    const rows = PB_INS_KINDS.map(k => { const mine = items ? items.filter(i => i.kind === k[0]) : [], done = mine.filter(i => i.status === 'done').length, rq = Number(req[k[0]]) > 0 ? Math.round(Number(req[k[0]])) : 0;
+      return { kind: k[0], name: k[1], done, have: mine.length, required: rq, expected: Math.max(rq, mine.length) }; });
+    const used = rows.filter(x => x.expected > 0 || x.done > 0);
+    return { loaded: !!items, err: J && J.err, cached: !!(J && J.cached), rows: used, done: used.reduce((a, x) => a + x.done, 0), expected: used.reduce((a, x) => a + x.expected, 0), all: rows };
+  };
+  function pbCxInspPaint() { try { if (pbCurrentScreen === 'prodJob' && pbPj.job && !pbPj.edit && typeof window.pbCxJobPaint === 'function') window.pbCxJobPaint(); } catch (e) {} }
+  const pbInspOpen = () => { try { return localStorage.getItem('pbInspRows') === 'show'; } catch (e) { return false; } };
+  window.pbInspToggle = function() { const on = !pbInspOpen(); try { localStorage.setItem('pbInspRows', on ? 'show' : 'hide'); } catch (e) {} if (!on) pbCxInsp.edit = null; pbCxInspPaint(); const b = document.getElementById('pjInspRow'); if (b) b.focus({ preventScroll: true }); };
+  window.pbInspEditReq = function(on) { const S = window.pbInspSummary(); pbCxInsp.edit = on ? { v: Object.fromEntries(S.all.map(x => [x.kind, x.required ? String(x.required) : ''])), err: '', saving: false } : null; pbCxInspPaint();
+    const f = document.getElementById(on ? 'pjInspReq_' + PB_INS_KINDS[0][0] : 'pjInspEditBtn'); if (f) f.focus({ preventScroll: true }); };
+  window.pbInspReqSave = async function() {
+    const E = pbCxInsp.edit, uid = pbArchiveOwnerUid, job = pbPj.job; if (!E || E.saving || !job) return;
+    PB_INS_KINDS.forEach(k => { const el = document.getElementById('pjInspReq_' + k[0]); if (el) E.v[k[0]] = el.value; });
+    const out = {};
+    for (const k of PB_INS_KINDS) { const t = String(E.v[k[0]] || '').trim(); if (t === '' || t === '0') { out[k[0]] = null; continue; } const n = Number(t);
+      if (!(Number.isInteger(n) && n >= 1 && n <= 999)) { E.err = k[1] + ': a whole number up to 999 (or blank).'; pbCxInspPaint(); return; } out[k[0]] = n; }
+    if (!(await pbDlyCanAsk(uid))) { E.err = 'No signal. Try again when you have signal.'; pbCxInspPaint(); return; }
+    E.saving = true; E.err = ''; pbCxInspPaint();
+    const r = await pbPermitRpc('pb_prod_insp_required', { p_job_number: job.job_number, p_required: out, p_expect_uid: uid }, 30000);
+    if (pbCxInsp.edit !== E || pbPj.job !== job) return;
+    E.saving = false;
+    if (r.error || !r.data || r.data.ok !== true) { const m = String((r.error && r.error.message) || ''); E.err = /pb:no_plan/.test(m) ? 'Set up the job plan first (Edit project › Job plan).' : /pb:not_company_account/.test(m) ? 'Only the company account and its managers can set these.' : pbProdErrText(r); pbCxInspPaint(); return; }
+    pbCxInsp.edit = null;
+    pbPj.data = Object.assign({}, pbPj.data, { plan: r.data.plan, plan_version: r.data.version });
+    if (pbPd.data && Array.isArray(pbPd.data.jobs)) pbPd.data.jobs.forEach(j => { if (j && j.job_key === job.job_key) { j.plan = r.data.plan; j.plan_version = r.data.version; } });
+    pbCxInspPaint(); const b = document.getElementById('pjInspEditBtn'); if (b) b.focus({ preventScroll: true });
+  };
+  window.pbInspOpenAll = function() { const job = pbPj.job, D = pbPj.data; if (!job) return; window.pbOpenInspJob(job.job_number, (D && D.jobsite) || job.jobsite || ''); };
+  window.pbInspRowsHtml = function() {
+    const S = window.pbInspSummary(), open = pbInspOpen(), E = pbCxInsp.edit, id = 'pjInspRow';
+    const a = !S.loaded ? (S.err === 'not_ready' ? 'Not on the company server yet' : S.err ? 'Couldn’t load' : 'Loads with signal') : S.expected || S.done ? S.done + ' / ' + S.expected + ' done' : 'None set up';
+    let h = '<span class="pbx-legrow pbx-insp' + (S.loaded && S.expected && S.done >= S.expected ? ' done' : '') + '" id="' + id + '" role="button" tabindex="0" aria-expanded="' + open + '" aria-controls="pjInspRows" onclick="pbInspToggle()" onkeydown="if (event.key === \'Enter\' || event.key === \' \') { event.preventDefault(); pbInspToggle(); }">'
+      + '<span class="pbx-leg-n">Inspections<span class="pbx-spoils-k">' + (S.cached ? 'Copy on this phone' : 'Done / expected') + '</span></span><span class="pbx-leg-a">' + pbCxE(a) + '</span><span class="pbx-leg-v pbx-insp-chev' + (open ? ' open' : '') + '">' + pbCxIc('chevron-down') + '</span></span>';
+    if (!open) return h;
+    h += '<span class="pbx-insprows" id="pjInspRows" role="group" aria-label="Inspections by type">';
+    const L = E ? S.all : S.rows;
+    if (!L.length) h += '<span class="pbx-insp-none">No inspections or tests yet' + (S.loaded ? '' : ' on this phone') + '.</span>';
+    h += L.map(x => '<span class="pbx-insprow" id="pjInsp_' + x.kind + '"><span class="pbx-insp-n">' + pbCxE(x.name) + '</span>'
+      + (E ? '<span class="pbx-insp-req"><label class="pb-sr" for="pjInspReq_' + x.kind + '">' + pbCxE(x.name + ' required') + '</label><input id="pjInspReq_' + x.kind + '" type="text" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="' + (x.have || '–') + '" value="' + pbCxE(E.v[x.kind] || '') + '"><span>required</span></span>'
+        : '<span class="pbx-insp-a">' + x.done + ' / ' + x.expected + (x.required && x.have !== x.required ? '<span class="pbx-insp-sub">' + x.have + ' set up</span>' : '') + '</span>') + '</span>').join('');
+    if (E) h += (E.err ? '<span class="pbx-insp-err" role="alert">' + pbCxE(E.err) + '</span>' : '') + '<span class="pbx-insp-btns"><button type="button" class="pb-btn ghost small" id="pjInspCancel" onclick="pbInspEditReq(false)">Cancel</button><button type="button" class="pb-btn small" id="pjInspSave" onclick="pbInspReqSave()"' + (E.saving ? ' disabled' : '') + '>' + (E.saving ? 'Saving…' : 'Save') + '</button></span>';
+    else h += '<span class="pbx-insp-btns"><button type="button" class="pbx-link" id="pjInspAllBtn" onclick="pbInspOpenAll()">' + pbCxIc('clipboard') + 'All inspections</button>' + (pbCxDashOn() ? '<button type="button" class="pbx-link" id="pjInspEditBtn" onclick="pbInspEditReq(true)">' + pbCxIc('pencil') + 'Set required</button>' : '') + '</span>';
+    return h + '</span>';
+  };
+  // ==== end feat_insp ====
   const pbMatOrigJobLoad = window.pbProdJobLoad, pbMatOrigJobRender = window.pbProdJobRender;
-  window.pbProdJobLoad = function() { const p = pbMatOrigJobLoad.apply(this, arguments); pbMatJobLoad(); return p; };
+  window.pbProdJobLoad = function() { const p = pbMatOrigJobLoad.apply(this, arguments); pbMatJobLoad(); try { pbCxInspLoad(); } catch (e) {} return p; }; // feat_insp
   window.pbProdJobRender = function() {
     const keep = pbMatFormRead();
     const r = pbMatOrigJobRender.apply(this, arguments);
@@ -47580,6 +47666,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       h += '<span class="pbx-legrow pbx-loose"><span class="pbx-leg-n">Not under an item' + (!shown && a ? '<span class="pbx-iflags">' + chip('warn', 'cube', pbCxN(a, 'material alert')) + '</span>' : '') + '</span><span class="pbx-leg-a"></span><span class="pbx-leg-v"></span></span>' + (shown ? matRows(G.loose) : ''); }
     { const SP = typeof window.pbItemSpoils === 'function' ? window.pbItemSpoils() : null; // r15.16: spoils last
       if (SP) h += '<span class="pbx-legrow pbx-spoils" id="pjItemSpoils"><span class="pbx-leg-n">Spoils to haul<span class="pbx-spoils-k">Estimate</span></span><span class="pbx-leg-a">' + pbCxE(SP.a) + '</span><span class="pbx-leg-v">' + pbCxE(SP.v) + '</span></span>'; }
+    try { if (typeof window.pbInspRowsHtml === 'function' && pbCxDashOn()) h += window.pbInspRowsHtml(); } catch (e) { console.error(e); } // feat_insp: inspections last
     return h + '</span>';
   };
   // ==== end feat_itemmat (overview) ====
@@ -48607,6 +48694,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbCx.tab = tab && PB_CX_TABS.some(t => t[0] === tab) ? tab : 'overview'; // a job opens on Overview unless the way in names a tab
     pbCx.jobKey = key; pbCx.menu = false;
     await window.pbOpenProdJob(i);
+    try { pbCxInspLoad(); } catch (e) {} // feat_insp
     window.pbCxJobPaint();
     try { document.scrollingElement.scrollTop = 0; } catch (e) {}
   };
