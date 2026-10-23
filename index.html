@@ -1699,6 +1699,32 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 #pbApp #homeShortcuts .pb-sc-head .pb-edu-h { margin: 0; }
 
 /* Current job: a compact row with a pin, no yellow bar */
+#pbApp .pbx-eq-tot { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 4px 0 6px; font-size: 15px; color: var(--pb-text-2); }
+#pbApp .pbx-eq-tot strong { color: var(--pb-text); font-size: 18px; }
+#pbApp .pbx-eq-key { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: 12.5px; color: var(--pb-text-3); }
+#pbApp .pbx-eq-sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-left: 6px; }
+#pbApp .pbx-eq-sw:first-child { margin-left: 0; }
+#pbApp .pbx-eq-sw.u, #pbApp .pbx-eq-seg.u { background: var(--pb-brand); }
+#pbApp .pbx-eq-sw.i, #pbApp .pbx-eq-seg.i { background: var(--pb-info); }
+#pbApp .pbx-eq-sw.d, #pbApp .pbx-eq-seg.d { background: var(--pb-danger-line); }
+#pbApp .pbx-eq-seg.z { flex: 1 1 0; background: var(--pb-raised-2); }
+#pbApp .pbx-eq-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+#pbApp .pbx-eq-row { display: flex; flex-direction: column; gap: 5px; padding: 12px 0; border-top: 1px solid var(--pbx-line, var(--pb-divider)); }
+#pbApp .pbx-eq-row:first-child { border-top: 0; }
+#pbApp .pbx-eq-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+#pbApp .pbx-eq-name { font-weight: 650; color: var(--pb-text); overflow-wrap: anywhere; }
+#pbApp .pbx-eq-code { font-weight: 500; color: var(--pb-text-3); }
+#pbApp .pbx-eq-used { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--pb-text); }
+#pbApp .pbx-eq-bar { display: flex; gap: 2px; height: 10px; border-radius: 5px; overflow: hidden; }
+#pbApp .pbx-eq-sub { font-size: 13.5px; color: var(--pb-text-2); }
+#pbApp .pbeq-piece { padding: 10px 12px; border-radius: 12px; background: var(--pb-raised); border: 1px solid var(--pb-divider); }
+#pbApp .pbeq-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+#pbApp .pbeq-head .pb-btn { margin: 0; width: auto; }
+#pbApp .pbeq-name { font-weight: 650; overflow-wrap: anywhere; }
+#pbApp .pbeq-boxes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+#pbApp .pbeq-box { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+#pbApp .pbeq-k { font-size: 12.5px; font-weight: 650; color: var(--pb-text-2); }
+#pbApp .pbeq-box input { width: 100%; min-height: 44px; }
 #pbApp .pbp-wts { margin: 14px 0 6px; padding: 14px; border-radius: 14px; background: var(--pb-raised); border: 1px solid var(--pb-divider); }
 #pbApp .pbp-wts-h { margin: 0 0 2px; }
 #pbApp .pbp-wt-modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 10px 0 6px; padding: 4px; border-radius: 12px; background: var(--pb-input); border: 1px solid var(--pb-divider); }
@@ -8554,6 +8580,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp #screen-prodJob.pbx-jobscr #pjBody:not([data-cxtab="overview"]) :is(#pjCxOverview, #pjPmSec, #pjDaily) { display: none; } /* #pjDaily: r15 batch 23 DAILY (inspections, tests, daily reports) */
 #pbApp #screen-prodJob.pbx-jobscr #pjBody:not([data-cxtab="waiting"]) :is(#pjCxWait, #pjApprovalsSec, #pjCrewSec, #pjCovered) { display: none; }
 #pbApp #screen-prodJob.pbx-jobscr #pjBody:not([data-cxtab="materials"]) :is(#pjMatSec, #pjTicketsSec) { display: none; }
+#pbApp #screen-prodJob.pbx-jobscr #pjBody:not([data-cxtab="equipment"]) #pjCxEquip { display: none; }
+#pbApp #screen-prodJob:not(.pbx-jobscr) #pjCxEquip { display: none; }
 #pbApp #screen-prodJob.pbx-jobscr #pjBody:not([data-cxtab="production"]) :is(#pjProgress, #pjManualSec, #pjTableSec, #pjDaysSec, #pjRecentSec, #pjWhoSec, #pjSiteLogSec) { display: none; } /* #pjSiteLogSec: r15 batch 22 NOTES */
 #pbApp #screen-prodJob.pbx-jobscr #pjBody > :first-child, #pbApp #screen-prodJob.pbx-jobscr #pjBody .pbp-col > .pbp-block:first-child { margin-top: 12px; }
 #pbApp #screen-prodJob.pbx-jobscr #pjBody #pjPmSec { margin-top: 12px; padding: 14px 16px; border-radius: var(--pb-r-card, 14px); background: var(--pb-surface); box-shadow: var(--pb-elev-1); }
@@ -8809,7 +8837,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.19 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.20 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -32614,6 +32642,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbProdTimeText(t) { const d = new Date(t); if (isNaN(d)) return ''; return pbProdLocalDate(d) === pbTkToday() ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
   function pbProdCatName(key, plan) {
     if (key === PB_PROD_HOURS_KEY) return 'Crew hours';
+    { const m = /^_e([id])_(.+)$/.exec(String(key)); if (m) return pbProdCatName('_eq_' + m[2], plan) + (m[1] === 'i' ? ' idle' : ' down'); } // feat_eqtab
     if (/^_eq_/.test(String(key))) { const q = plan && Array.isArray(plan.equipment) ? plan.equipment.find(e => e && '_' + e.key === key) : null; return key === '_eq_other' ? 'Other equipment' : q ? pbEqName(q) : 'Equipment'; } // feat_equip
     if (key === '_equiphours') return 'Equipment hours'; // batch 29 ROLES
     const p = plan && Array.isArray(plan.categories) ? plan.categories.find(c => c && c.key === key) : null;
@@ -33162,7 +33191,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       pcs.forEach(k => { const q = D.plan && Array.isArray(D.plan.equipment) ? D.plan.equipment.find(e => e && '_' + e.key === k) : null; rows.push(['  ' + pbProdCatName(k, D.plan) + (q && q.cost_code ? ' · ' + q.cost_code : ''), pbProdQtyText(sum(k, 'done'), 'h'), '', '', pbProdQtyText(sum(k, 'today')), pbProdQtyText(sum(k, 'week'))]); }); }
     if (v.hoursUsed) rows.push(['Crew hours', pbProdQtyText(v.hoursUsed, 'h'), v.budgetHours ? pbProdQtyText(v.budgetHours, 'h') : 'No budget', v.budgetHours ? pbProdPctText(v.hoursUsed / v.budgetHours) : '', pbProdQtyText(v.hoursToday), '']);
     const days = Array.isArray(D.days) ? D.days.filter(x => x && x.date) : [];
-    const dayKeys = Array.from(new Set(days.map(x => x.key))).filter(k => k !== PB_PROD_HOURS_KEY && !/^_eq_/.test(String(k))); // feat_equip: the pieces are under By category
+    const dayKeys = Array.from(new Set(days.map(x => x.key))).filter(k => k !== PB_PROD_HOURS_KEY && !/^_(eq|ei|ed)_/.test(String(k))); // feat_equip: the pieces are under By category
     const dates = Array.from(new Set(days.map(x => String(x.date).slice(0, 10)))).sort().reverse();
     const dayRows = dates.map(d => [pbProdDayText(d)].concat(dayKeys.map(k => { const q = days.filter(x => String(x.date).slice(0, 10) === d && x.key === k).reduce((s, x) => s + (Number(x.qty) || 0), 0); return q ? pbProdQtyText(q) : ''; })));
     const reps = Array.isArray(D.reporters) ? D.reporters.filter(x => x && typeof x === 'object') : [];
@@ -35120,7 +35149,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbEqInit(list, items) {
     const L = pbEqOf(list); if (!L.length) return null;
     const it = (Array.isArray(items) ? items : []).filter(i => i && typeof i.key === 'string' && i.qty != null);
-    const rows = it.filter(i => /^_eq_/.test(i.key)).map(i => ({ key: i.key.slice(1), qty: String(i.qty) }));
+    const rows = it.filter(i => /^_eq_/.test(i.key)).map(i => ({ key: i.key.slice(1), qty: String(i.qty), idle: '', down: '' }));
+    it.filter(i => /^_e[id]_/.test(i.key)).forEach(i => { const k = i.key.slice(4) === 'other' ? 'eq_other' : 'eq_' + i.key.slice(4); let r0 = rows.find(r => r.key === k); if (!r0) { r0 = { key: k, qty: '', idle: '', down: '' }; rows.push(r0); } r0[i.key.charAt(2) === 'i' ? 'idle' : 'down'] = String(i.qty); }); // feat_eqtab
     const tot = it.find(i => i.key === PB_ROLES_EQ_KEY), sum = rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
     if (tot && Number(tot.qty) - sum > 0.0005) { const o = rows.find(r => r.key === 'eq_other'); if (o) o.qty = String(+(Number(o.qty) + Number(tot.qty) - sum).toFixed(3)); else rows.push({ key: 'eq_other', qty: String(+(Number(tot.qty) - sum).toFixed(3)) }); }
     return { list: L, rows };
@@ -35130,9 +35160,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const nameOf = (k) => k === 'eq_other' ? 'Other equipment' : pbEqName(E.list.find(q => q.key === k)), codeOf = (k) => { const q = E.list.find(x => x.key === k); return q && q.cost_code ? ' · ' + q.cost_code : ''; };
     const left = E.list.filter(q => !E.rows.some(r => r.key === q.key)), other = !E.rows.some(r => r.key === 'eq_other');
     return '<div class="pb-field" id="' + pre + 'EqSec"><span class="pbm-flabel">Equipment hours</span><p class="pb-help">Add each piece used on this run and its hours.</p>'
-      + E.rows.map((r, k) => '<div class="pb-field"><label for="' + pre + 'E' + k + '">' + escapeHtml(nameOf(r.key) + ' (h)' + codeOf(r.key)) + '</label>'
-        + '<div style="display:flex;gap:8px;align-items:center"><input id="' + pre + 'E' + k + '" type="text" inputmode="decimal" autocomplete="off" value="' + escapeHtml(r.qty) + '" oninput="' + fn + 'Typed(' + k + ', this.value)" style="flex:1">'
-        + '<button type="button" class="pb-btn ghost small" id="' + pre + 'EDel' + k + '" onclick="' + fn + 'Del(' + k + ')" aria-label="' + escapeHtml('Remove ' + nameOf(r.key)) + '">Remove</button></div></div>').join('')
+      + E.rows.map((r, k) => { pbEqForms[pre] = E; // feat_eqtab: used / idle / down
+        const box = (f, label, id, on) => '<label class="pbeq-box" for="' + id + '"><span class="pbeq-k">' + label + '</span><input id="' + id + '" type="text" inputmode="decimal" autocomplete="off" value="' + escapeHtml(r[f] || '') + '" placeholder="0" oninput="' + on + '"></label>';
+        return '<div class="pb-field pbeq-piece"><div class="pbeq-head"><span class="pbeq-name">' + escapeHtml(nameOf(r.key) + codeOf(r.key)) + '</span>'
+          + '<button type="button" class="pb-btn ghost small" id="' + pre + 'EDel' + k + '" onclick="' + fn + 'Del(' + k + ')" aria-label="' + escapeHtml('Remove ' + nameOf(r.key)) + '">Remove</button></div>'
+          + '<div class="pbeq-boxes">' + box('qty', 'Used h', pre + 'E' + k, fn + 'Typed(' + k + ', this.value)') + box('idle', 'Idle h', pre + 'EI' + k, "pbEqFieldIn('" + pre + "'," + k + ",'idle',this.value)") + box('down', 'Down h', pre + 'ED' + k, "pbEqFieldIn('" + pre + "'," + k + ",'down',this.value)") + '</div></div>'; }).join('')
       + (left.length || other ? '<select id="' + pre + 'EqAdd" onchange="' + fn + 'Add(this.value)" aria-label="Add equipment"><option value="">+ Add equipment…</option>'
         + left.map(q => '<option value="' + escapeHtml(q.key) + '">' + escapeHtml(pbEqName(q) + (q.cost_code ? ' · ' + q.cost_code : '')) + '</option>').join('')
         + (other ? '<option value="eq_other">Other equipment (not on the list)</option>' : '') + '</select>' : '') + '</div>';
@@ -35141,14 +35173,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!E) return { items: [] };
     const items = []; let sum = 0;
     for (const r of E.rows) {
-      const t = String(r.qty || '').trim().replace(/,/g, ''); if (t === '') continue;
-      const nm = r.key === 'eq_other' ? 'Other equipment' : pbEqName(E.list.find(q => q.key === r.key));
-      if (!/^\d+(\.\d+)?$|^\.\d+$/.test(t) || Number(t) > 24 * 31) return { err: nm + ': enter the hours as a plain number (or remove it).' };
-      const q = +Number(t).toFixed(3); if (!(q > 0)) continue; sum += q; items.push({ key: '_' + r.key, qty: q, unit: 'h' });
+      const nm = r.key === 'eq_other' ? 'Other equipment' : pbEqName(E.list.find(q => q.key === r.key)), sk = r.key === 'eq_other' ? 'other' : r.key.replace(/^eq_/, '');
+      for (const [f, pre, word] of [['qty', '_' + r.key, 'used'], ['idle', '_ei_' + sk, 'idle'], ['down', '_ed_' + sk, 'down']]) { // feat_eqtab
+        const t = String(r[f] || '').trim().replace(/,/g, ''); if (t === '') continue;
+        if (!/^\d+(\.\d+)?$|^\.\d+$/.test(t) || Number(t) > 24 * 31) return { err: nm + ': enter the ' + word + ' hours as a plain number (or remove it).' };
+        const q = +Number(t).toFixed(3); if (!(q > 0)) continue; if (f === 'qty') sum += q; items.push({ key: pre, qty: q, unit: 'h' });
+      }
     }
-    if (items.length) items.push({ key: PB_ROLES_EQ_KEY, qty: +sum.toFixed(3), unit: 'h' });
+    if (sum > 0) items.push({ key: PB_ROLES_EQ_KEY, qty: +sum.toFixed(3), unit: 'h' });
     return { items };
   }
+  const pbEqForms = {}; window.pbEqFieldIn = function(pre, k, f, v) { const E = pbEqForms[pre]; if (E && E.rows[k]) E.rows[k][f] = String(v); }; // feat_eqtab
   function pbEqApplyRows(F) { if (F && F.eq) F.rows = F.rows.filter(r => r.key !== PB_ROLES_EQ_KEY); } // the total is the pieces' sum
   const pbLvPlanObj = (job) => { const P = pbLvPlans[String(job || '').trim().toLowerCase().slice(0, 60)]; return P ? { categories: P.cats || [], equipment: P.equip || [] } : null; };
   function pbLvEqRepaint() { pbLvRender(); try { if (pbCurrentScreen === 'cxList') pbCxListRender(); } catch (e) {} }
@@ -47333,7 +47368,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const PB_CX_DOCS_LABEL = 'Records'; // feat_nav159: one name for everyone // the "Reports" tab's name for company / PM accounts (owner's choice, Oct 20). Field accounts keep "Reports".
   const PB_CX_FIELD_LABEL = 'Records';
   const PB_CX_SIDE_MQ = '(min-width: 1024px)';
-  const PB_CX_TABS = [['overview', 'Overview'], ['waiting', 'Waiting'], ['materials', 'Materials'], ['production', 'Production']];
+  const PB_CX_TABS = [['overview', 'Overview'], ['waiting', 'Waiting'], ['materials', 'Materials'], ['equipment', 'Equipment'], ['production', 'Production']]; // feat_eqtab
   const PB_CX_JOBS_MAX = 60; // Home lists at most this many jobs at once (Show all for the rest)
   let pbCx = { uid: null, on: false, inbox: null, inboxBusy: false, inboxGen: 0, loadAt: 0, tab: 'overview', jobKey: null, menu: false, list: null, allJobs: false, nf: null };
   const pbCxE = (t) => escapeHtml(String(t == null ? '' : t));
@@ -48589,10 +48624,34 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return C.wait ? '<p class="pbx-note" id="pjCxWaitNote">Pipelayers’ runs held for a foreman (they count on their own after 24 hours) and edits waiting for your approval. Nudge a foreman from a run below.</p>'
       : '<div class="pbx-panel"><p class="pbx-none" id="pjCxWaitNone">' + (pbPj.data && pbPj.data.partial ? 'Loads with signal.' : 'Nothing is waiting on a foreman for this job.') + '</p></div>';
   }
+  // ==== feat_eqtab: the Equipment tab ====
+  function pbCxEquipHtml() {
+    const D = pbPj.data || {}, C = Array.isArray(D.cats) ? D.cats.filter(r => r && typeof r.key === 'string') : [];
+    const sum = (k, f) => C.filter(r => r.key === k).reduce((s, r) => s + (Number(r[f]) || 0), 0);
+    const plan = (D.plan && Array.isArray(D.plan.equipment) ? D.plan.equipment : []).filter(q => q && typeof q.key === 'string' && /^eq_[a-z0-9]/.test(q.key) && q.key !== 'eq_other');
+    const keys = plan.map(q => q.key);
+    C.forEach(r => { const m = /^_(eq_.+)$/.exec(r.key) || (/^_e[id]_(.+)$/.exec(r.key) ? [null, (/^_e[id]_(.+)$/.exec(r.key)[1] === 'other' ? 'eq_other' : 'eq_' + /^_e[id]_(.+)$/.exec(r.key)[1])] : null); if (m && !keys.includes(m[1])) keys.push(m[1]); });
+    const sk = (k) => k === 'eq_other' ? 'other' : k.replace(/^eq_/, '');
+    const nameOf = (k) => { const q = plan.find(x => x.key === k); return k === 'eq_other' ? 'Other equipment' : q ? String(q.name || 'Equipment') + (q.unit_no ? ' #' + q.unit_no : '') : k.replace(/^eq_/, '').replace(/_/g, ' ') + ' (not on the plan)'; };
+    const h1 = (x) => pbProdQtyText(Math.round(x * 10) / 10, 'h');
+    let h = '<section class="pbx-panel" id="pjCxEquipSec" aria-labelledby="pjCxEquipH"><h3 class="pbx-h3" id="pjCxEquipH">Equipment</h3>';
+    if (!keys.length) return h + '<p class="pbx-none">No equipment on this job yet. Add it under Edit project &gt; Job plan; foremen then enter each piece’s used, idle and down hours with each run.</p></section>';
+    const P = keys.map(k => ({ k, used: sum('_' + k, 'done'), idle: sum('_ei_' + sk(k), 'done'), down: sum('_ed_' + sk(k), 'done'), today: sum('_' + k, 'today'), week: sum('_' + k, 'week') }));
+    const T = P.reduce((a, p) => ({ used: a.used + p.used, idle: a.idle + p.idle, down: a.down + p.down }), { used: 0, idle: 0, down: 0 });
+    h += '<p class="pbx-eq-tot" id="pjEqTotal"><span><strong>' + pbCxE(h1(T.used)) + '</strong> used</span><span>' + pbCxE(h1(T.idle)) + ' idle</span><span>' + pbCxE(h1(T.down)) + ' down</span></p>'
+      + '<p class="pbx-eq-key"><span class="pbx-eq-sw u"></span>Used <span class="pbx-eq-sw i"></span>Idle <span class="pbx-eq-sw d"></span>Down</p><ul class="pbx-eq-list">';
+    h += P.map(p => { const all = p.used + p.idle + p.down, q = plan.find(x => x.key === p.k);
+      return '<li class="pbx-eq-row" id="pjEq_' + pbCxE(p.k) + '"><span class="pbx-eq-top"><span class="pbx-eq-name">' + pbCxE(nameOf(p.k)) + (q && q.cost_code ? '<span class="pbx-eq-code"> · ' + pbCxE(q.cost_code) + '</span>' : '') + '</span><span class="pbx-eq-used">' + pbCxE(h1(p.used)) + ' used</span></span>'
+        + '<span class="pbx-eq-bar" aria-hidden="true">' + (all > 0 ? ['used', 'idle', 'down'].map((f, j) => p[f] > 0 ? '<span class="pbx-eq-seg ' + 'uid'[j] + '" style="flex:' + p[f] + ' 1 0"></span>' : '').join('') : '<span class="pbx-eq-seg z"></span>') + '</span>'
+        + '<span class="pbx-eq-sub">' + pbCxE('Idle ' + h1(p.idle) + ' · Down ' + h1(p.down) + (all > 0 ? ' · ' + Math.round(p.used / all * 100) + '% of its hours used' : ' · nothing reported yet')) + '</span>'
+        + (p.today || p.week ? '<span class="pbx-eq-sub">' + pbCxE('Used today ' + h1(p.today) + ' · last 7 days ' + h1(p.week)) + '</span>' : '') + '</li>'; }).join('');
+    return h + '</ul><p class="pbx-note">From the hours foremen enter on each run (Enter Production).</p></section>';
+  }
+  // ==== end feat_eqtab ====
   function pbCxPut(parent, id, cls, html, first) {
     let el = document.getElementById(id);
     if (!el) { el = document.createElement('div'); el.id = id; el.className = cls; if (first) parent.insertBefore(el, parent.firstChild); else parent.appendChild(el); }
-    else if (first && parent.firstChild !== el && el.parentNode === parent && !(id === 'pjCxWait' && parent.firstChild && parent.firstChild.id === 'pjCxOverview')) parent.insertBefore(el, parent.firstChild);
+    else if (first && parent.firstChild !== el && el.parentNode === parent && !((id === 'pjCxWait' || id === 'pjCxEquip') && (() => { let p = el.previousSibling; while (p && (p.id === 'pjCxOverview' || p.id === 'pjCxWait')) p = p.previousSibling; return !p; })())) parent.insertBefore(el, parent.firstChild); // feat_eqtab: Overview, Wait, Equipment stay put (no redraw loop)
     pbSetHtml(el, html);
   }
   let pbCxPainting = false;
@@ -48618,8 +48677,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (tabs) { const h = pbCxTabsHtml(C); if (pbSetHtml(tabs, h)) { const b = document.getElementById('pjCxTab_' + pbCx.tab); if (b && tabs.scrollWidth > tabs.clientWidth) { const l = b.offsetLeft - 16, rr = b.offsetLeft + b.offsetWidth + 16 - tabs.clientWidth; if (tabs.scrollLeft > l) tabs.scrollLeft = l; else if (tabs.scrollLeft < rr) tabs.scrollLeft = rr; } } if (tabs.hidden !== !!pbPj.edit) tabs.hidden = !!pbPj.edit; tabs.classList.toggle('pbx-more-r', tabs.scrollLeft + tabs.clientWidth < tabs.scrollWidth - 2); }
       if (body) {
         const want = pbPj.edit ? 'edit' : pbCx.tab; if (body.dataset.cxtab !== want) body.dataset.cxtab = want;
-        if (pbPj.edit) { ['pjCxOverview', 'pjCxWait'].forEach(id => { const el = document.getElementById(id); if (el) el.remove(); }); }
-        else { pbCxPut(body, 'pjCxWait', 'pbx-wait', pbCxWaitHtml(C), true); pbCxPut(body, 'pjCxOverview', 'pbx-ov', pbCxOverviewHtml(C), true); }
+        if (pbPj.edit) { ['pjCxOverview', 'pjCxWait', 'pjCxEquip'].forEach(id => { const el = document.getElementById(id); if (el) el.remove(); }); }
+        else { pbCxPut(body, 'pjCxEquip', 'pbx-eq', pbCxEquipHtml(), true); pbCxPut(body, 'pjCxWait', 'pbx-wait', pbCxWaitHtml(C), true); pbCxPut(body, 'pjCxOverview', 'pbx-ov', pbCxOverviewHtml(C), true); } // feat_eqtab
       }
     } finally { pbCxPainting = false; }
   };
@@ -49748,7 +49807,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   // The hours on an entry (crew man-hours, equipment hours), for the foreman's lists: '' when none.
   function pbRolesHoursHtml(items, plan) {
-    const pcs = (Array.isArray(items) ? items : []).filter(it => it && it.qty != null && /^_eq_/.test(String(it.key))).map(it => pbProdCatName(it.key, plan) + ' ' + pbProdQtyText(it.qty, it.unit || 'h')); // feat_equip
+    const pcs = (Array.isArray(items) ? items : []).filter(it => it && it.qty != null && /^_(eq|ei|ed)_/.test(String(it.key))).map(it => pbProdCatName(it.key, plan) + ' ' + pbProdQtyText(it.qty, it.unit || 'h')); // feat_equip, feat_eqtab
     const t = (Array.isArray(items) ? items : []).filter(it => it && it.qty != null && (it.key === PB_PROD_HOURS_KEY || it.key === PB_ROLES_EQ_KEY)).sort((a, b) => a.key === PB_PROD_HOURS_KEY ? -1 : b.key === PB_PROD_HOURS_KEY ? 1 : 0)
       .map(it => pbProdCatName(it.key) + ' ' + pbProdQtyText(it.qty, it.unit || 'h') + (it.key === PB_ROLES_EQ_KEY && pcs.length ? ' (' + pcs.join(', ') + ')' : '')).join(' · ');
     return t ? '<span class="pbp-dim pb-roles-hours">' + escapeHtml(t) + '</span>' : '';
