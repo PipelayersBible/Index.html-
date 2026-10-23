@@ -7967,6 +7967,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   #pbApp .pbp-livepre { margin: 4px 0 0 0; }
   #pbApp .pbp-liveday > summary { min-height: 44px; display: flex; align-items: center; font-weight: 600; cursor: pointer; }
   #pbApp .pbp-livecard .pbp-btns, #pbApp .pbp-livecard .pbp-btns2 { padding: 0; margin: 4px 0 0 0; }
+#pbApp #cxRunProdBox .pbp-btns2 { display: none !important; } /* feat_runedit: Approve Report is the one button on the review */
   #pbApp .pbp-livecard .pb-btn { min-height: 48px; }
   @media (min-width: 1024px) { #pbApp .pbp-livelist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
   /* the company's Live now board */
@@ -8878,7 +8879,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.24 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.25 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -42908,7 +42909,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     'pb:not_pending': 'That invitation was already answered, withdrawn or replaced. Refresh to see the list.',
     'pb:company_inactive': 'That company isn’t active right now, so the invitation can’t be accepted.',
     'pb:unlist_failed': 'Manager access couldn’t be taken off. Nothing was changed. Try again.',
-    'pb:no_signal': 'Needs signal. Nothing was changed. Try again when you have signal.',
+    'pb:no_signal': 'No signal. Nothing was changed; try again when you have signal.',
     'pb:no_answer': 'No answer from the company server. The change may or may not have gone through. Tap Refresh to see the list.',
     'pb:not_ready': 'The company server isn’t ready for this yet. Nothing was changed.',
     'pb:server': 'The company server didn’t answer properly. Refresh to see what changed, then try again.'
@@ -44303,7 +44304,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     'pb:png_too_big': 'The picture is over 300 KB, the most the company server keeps. Nothing was changed. Try a simpler logo file.',
     'pb:logo_limit': 'Your company has uploaded a logo 20 times in the last 24 hours, the most allowed. Try again tomorrow. Remove still works.',
     'pb:bad_request': 'The app sent something the server couldn’t read. Nothing was changed. Refresh and try again.',
-    'pb:no_signal': 'Needs signal. Nothing was changed. Try again when you have signal.',
+    'pb:no_signal': 'No signal. Nothing was changed; try again when you have signal.',
     'pb:no_answer': 'No answer from the company server. The logo may or may not have changed. Tap Refresh to check.',
     'pb:not_ready': 'The company server isn’t ready for logos yet. Nothing was changed.',
     'pb:server': 'The company server didn’t answer properly. Nothing was changed. Try again.'
@@ -48575,6 +48576,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return h;
   };
   window.pbRrProdChange = function() { const O = pbRoFor(pbArchiveOwnerUid), L = O.open && pbRrLocate(O.open); if (L) pbLvFormOpen(L.pi, L.ri); pbCxListRender(); };
+  document.addEventListener('input', (ev) => { const t = ev.target; if (!(t && t.closest && t.closest('#cxRunProdBox'))) return; const err = document.getElementById('cxRunApproveErr'); if (err && err.style.display !== 'none') { err.style.display = 'none'; err.textContent = ''; } }); // feat_runedit: a fixed box clears the message
   window.pbRrApprove = async function() {
     const uid = pbArchiveOwnerUid, O = pbRoFor(uid), x = O.open; if (!x || !x.id) return;
     const btn = document.getElementById('cxRunApproveBtn'), err = document.getElementById('cxRunApproveErr');
@@ -48883,7 +48885,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const nameOf = (k) => { const q = plan.find(x => x.key === k); return k === 'eq_other' ? 'Other equipment' : q ? String(q.name || 'Equipment') + (q.unit_no ? ' #' + q.unit_no : '') : k.replace(/^eq_/, '').replace(/_/g, ' ') + ' (not on the plan)'; };
     const h1 = (x) => pbProdQtyText(Math.round(x * 10) / 10, 'h');
     let h = '<section class="pbx-panel" id="pjCxEquipSec" aria-labelledby="pjCxEquipH"><h3 class="pbx-h3" id="pjCxEquipH">Equipment</h3>';
-    if (!keys.length) return h + '<p class="pbx-none">No equipment on this job yet. Add it under Edit project &gt; Job plan; foremen then enter each piece’s used, idle and down hours with each run.</p></section>';
+    if (!keys.length) { const lump = sum('_equiphours', 'done'); // feat_runedit: hours entered as one total, before the pieces
+      return h + '<p class="pbx-none">' + (lump > 0 ? pbCxE(h1(lump)) + ' of equipment reported as one total, no pieces yet. ' : 'No equipment on this job yet. ') + 'Add the pieces under Edit project &gt; Job plan; foremen then enter each piece’s used, idle and down hours with each run.</p></section>'; }
     const P = keys.map(k => ({ k, used: sum('_' + k, 'done'), idle: sum('_ei_' + sk(k), 'done'), down: sum('_ed_' + sk(k), 'done'), today: sum('_' + k, 'today'), week: sum('_' + k, 'week') }));
     const T = P.reduce((a, p) => ({ used: a.used + p.used, idle: a.idle + p.idle, down: a.down + p.down }), { used: 0, idle: 0, down: 0 });
     h += '<p class="pbx-eq-tot" id="pjEqTotal"><span><strong>' + pbCxE(h1(T.used)) + '</strong> used</span><span>' + pbCxE(h1(T.idle)) + ' idle</span><span>' + pbCxE(h1(T.down)) + ' down</span></p>'
