@@ -4298,6 +4298,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <button type="button" class="pb-edu-row pb-tool-row" id="settingsCrewBtn" data-ic="people" onclick="pbOpenCrewMembers()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Crew members</span><span class="sub">Add, change role, remove, project managers</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
         <button type="button" class="pb-edu-row pb-tool-row" id="settingsLogoBtn" data-ic="flag" onclick="window.pbBrBackTo = 'settings'; pbOpenCompanyLogo()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Company logo</span><span class="sub">The logo at the top of every report</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
       </div>
+      <div id="settingsCoTime" class="pbx-name pbx-cotime" hidden></div><!-- feat_cotz: the company's time zone and morning email -->
     </div>
     <div class="pb-section" id="settingsPrefsSection">
       <div class="pb-tag" id="settingsPrefsLabel">Preferences</div>
@@ -8753,6 +8754,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
 #pbApp .pbx-namerow-v { flex: 1 1 auto; min-width: 0; font-size: 15.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
 #pbApp .pbx-namerow-a { flex: 0 0 auto; font-size: 15px; font-weight: 650; color: var(--pb-brand); }
 #pbApp .pbx-name-edit { padding: 12px 0 4px 0; border-top: 1px solid var(--pb-divider); border-bottom: 1px solid var(--pb-divider); }
+#pbApp .pbx-cotime { margin-top: 8px; }
+#pbApp .pbx-cotime .pbx-namerow[disabled] { opacity: 1; cursor: default; }
+#pbApp .pbx-cotime .pb-help.pb-err { color: var(--pb-danger-text, var(--pb-text)); }
 #pbApp .pbx-name-edit[hidden] { display: none; }
 #pbApp .pbx-name-edit .pb-help { margin: 4px 0 0 0; }
 #pbApp .pbx-name-edit .pbx-btnrow .pb-btn { width: auto; min-height: 44px; }
@@ -8874,7 +8878,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.23 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.24 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -43258,6 +43262,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbPmAlertsRender = function() {
     const sec = pbCmEl('crAlerts'), body = pbCmEl('crAlertsBody'); if (!sec || !body) return;
     const D = pbCmSt.data;
+    if (true) { sec.hidden = true; body.innerHTML = ''; return; } // feat_cotz: in Settings › Company now
     if (!D || !D.alerts || typeof D.alerts !== 'object') { sec.hidden = true; body.innerHTML = ''; return; }
     sec.hidden = false;
     const A = D.alerts, on = A.owner_copies !== false, t = String(A.digest_time || '06:00').slice(0, 5), z = String(A.tz || 'America/Chicago');
@@ -43292,6 +43297,72 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbCmRender(); pbCmLoad();
   };
   window.__debugPmCrew = () => ({ roles: PB_CM_ROLES });
+  // ==== feat_cotz: Settings › Company: time zone and the morning email ====
+  let pbCoTz = { uid: null, data: null, at: 0, busy: false, edit: false, msg: '', msgKind: '' };
+  const pbCoTzEl = (id) => document.getElementById(id);
+  const pbCoTzPhone = () => { try { const z = Intl.DateTimeFormat().resolvedOptions().timeZone; return typeof z === 'string' && /^[A-Za-z_]+\/[A-Za-z_\/+-]+$/.test(z) ? z : null; } catch (e) { return null; } };
+  window.pbCoTzLoad = async function(force) {
+    const uid = pbArchiveOwnerUid; if (!uid) return;
+    if (pbCoTz.uid !== uid) pbCoTz = { uid, data: null, at: 0, busy: false, edit: false, msg: '', msgKind: '' };
+    const S = pbCoTz;
+    if (S.busy || (!force && S.data && Date.now() - S.at < 600000)) return;
+    if (!(sbClient && typeof sbClient.rpc === 'function' && sbUser && sbUser.id === uid && navigator.onLine !== false && (await pbLiveSessionIs(uid)))) return;
+    if (!(await pbProdIsManager(uid))) return;
+    S.busy = true;
+    try {
+      let r = await pbPermitRpc('pb_company_settings_get', { p_expect_uid: uid }, 30000);
+      if (pbCoTz !== S) return;
+      if (r.error || !r.data || r.data.ok !== true) { S.busy = false; return; }
+      S.data = r.data; S.at = Date.now();
+      // the first time: the owner's phone sets the company's time zone (no tap)
+      const z = pbCoTzPhone();
+      if (S.data.is_owner && !S.data.tz_set && z && z !== S.data.tz) {
+        const w = await pbPermitRpc('pb_pm_settings_set', { p_owner_copies: null, p_digest_time: null, p_tz: z, p_expect_uid: uid }, 30000);
+        if (pbCoTz !== S) return;
+        if (w.data && w.data.ok === true) { S.data.tz = w.data.tz; S.data.tz_set = true; S.data.from_phone = true; }
+      }
+    } finally { if (pbCoTz === S) S.busy = false; }
+    pbCoTzRender();
+  };
+  window.pbCoTzRender = function() {
+    const w = pbCoTzEl('settingsCoTime'); if (!w) return;
+    const S = pbCoTz, D = S.uid === pbArchiveOwnerUid ? S.data : null;
+    if (!D) { w.hidden = true; w.innerHTML = ''; return; }
+    w.hidden = false;
+    const t = String(D.digest_time || '06:00').slice(0, 5), z = String(D.tz || 'America/Chicago'), on = D.owner_copies !== false;
+    const line = pbPmTzText(z) + ' · morning email ' + pbPmTimeText(t);
+    if (!S.edit) {
+      w.innerHTML = '<button type="button" class="pbx-namerow" id="settingsCoTimeRow" aria-expanded="false"' + (D.is_owner ? ' onclick="pbCoTzEdit(true)"' : ' disabled') + '><span class="pbx-namerow-k">Time zone</span><span class="pbx-namerow-v" id="settingsCoTimeShown">' + escapeHtml(line) + '</span>' + (D.is_owner ? '<span class="pbx-namerow-a">Edit</span>' : '') + '</button>'
+        + (D.from_phone ? '<p class="pb-help" id="settingsCoTimeNote">Set from this phone. Alerts, quiet hours and the morning email use it.</p>' : '')
+        + (S.msg ? '<p class="pb-help' + (S.msgKind === 'err' ? ' pb-err' : '') + '" id="settingsCoTimeMsg" role="status">' + escapeHtml(S.msg) + '</p>' : '');
+      return;
+    }
+    const times = []; for (let h = 4; h <= 11; h++) for (let q = 0; q < 60; q += 15) times.push((h < 10 ? '0' : '') + h + ':' + (q ? q : '00'));
+    if (!times.includes(t)) times.unshift(t);
+    const zones = PB_PM_TZS.some(x => x[0] === z) ? PB_PM_TZS : [[z, z]].concat(PB_PM_TZS);
+    w.innerHTML = '<div class="pbx-name-edit" id="settingsCoTimeEdit">'
+      + '<div class="pb-field"><label for="settingsCoTz">Company time zone</label><select id="settingsCoTz">' + zones.map(x => '<option value="' + escapeHtml(x[0]) + '"' + (x[0] === z ? ' selected' : '') + '>' + escapeHtml(x[1]) + '</option>').join('') + '</select></div>'
+      + '<div class="pb-field"><label for="settingsCoTime2">Morning email time</label><select id="settingsCoTime2">' + times.map(x => '<option value="' + x + '"' + (x === t ? ' selected' : '') + '>' + pbPmTimeText(x) + '</option>').join('') + '</select></div>'
+      + '<label class="pb-checkrow pbp-auto-row" for="settingsCoCopies"><input type="checkbox" id="settingsCoCopies"' + (on ? ' checked' : '') + '> <span>Send my own copies to this account</span></label>'
+      + '<p class="pb-help">Each job’s alerts go to its assigned PMs: a push right away, and one email in the morning on days something needs a look. A job with no PM sends them to this account. Quiet hours (8:55 PM to 6 AM) and the morning email follow the time zone.</p>'
+      + '<div class="pbx-btnrow"><button type="button" class="pb-btn secondary small" id="settingsCoTimeSave" onclick="pbCoTzSave()"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? 'Saving…' : 'Save') + '</button><button type="button" class="pb-btn ghost small" id="settingsCoTimeCancel" onclick="pbCoTzEdit(false)">Cancel</button></div>'
+      + (S.msg ? '<p class="pb-help' + (S.msgKind === 'err' ? ' pb-err' : '') + '" id="settingsCoTimeMsg" role="status">' + escapeHtml(S.msg) + '</p>' : '') + '</div>';
+  };
+  window.pbCoTzEdit = function(on) { pbCoTz.edit = !!on; pbCoTz.msg = ''; pbCoTzRender(); const f = pbCoTzEl(on ? 'settingsCoTz' : 'settingsCoTimeRow'); if (f) f.focus({ preventScroll: true }); };
+  window.pbCoTzSave = async function() {
+    const S = pbCoTz, uid = pbArchiveOwnerUid; if (!S.data || !S.data.is_owner || S.busy || S.uid !== uid) return;
+    const z = pbCoTzEl('settingsCoTz') ? pbCoTzEl('settingsCoTz').value : null, t = pbCoTzEl('settingsCoTime2') ? pbCoTzEl('settingsCoTime2').value : null, on = !!(pbCoTzEl('settingsCoCopies') && pbCoTzEl('settingsCoCopies').checked);
+    if (!(sbClient && sbUser && sbUser.id === uid && navigator.onLine !== false && (await pbLiveSessionIs(uid)))) { S.msg = 'No signal. Nothing was changed; try again with signal.'; S.msgKind = 'err'; pbCoTzRender(); return; }
+    S.busy = true; S.msg = ''; pbCoTzRender();
+    let r; try { r = await pbPermitRpc('pb_pm_settings_set', { p_owner_copies: on, p_digest_time: t, p_tz: z, p_expect_uid: uid }, 30000); } finally { if (pbCoTz === S) S.busy = false; }
+    if (pbCoTz !== S) return;
+    const d = r && r.data;
+    if (d && d.ok === true) { S.data = Object.assign({}, S.data, { tz: d.tz, digest_time: String(d.digest_time || t).slice(0, 5), owner_copies: d.owner_copies, tz_set: true, from_phone: false }); S.at = Date.now(); S.edit = false; S.msg = 'Saved.'; S.msgKind = 'ok'; }
+    else { const code = (d && d.code) || (/pb:[a-z_]+/.exec(String((r && r.error && r.error.message) || '')) || [])[0]; S.msg = code === 'pb:owner_only' ? 'Only the owner changes these.' : code === 'pb:bad_tz' ? 'That time zone isn’t known.' : code === 'pb:bad_time' ? 'Pick a time on the quarter hour.' : 'Not saved. Nothing was changed; try again.'; S.msgKind = 'err'; }
+    pbCoTzRender(); const f = pbCoTzEl('settingsCoTimeRow'); if (f) f.focus({ preventScroll: true });
+  };
+  window.pbAccountLoadHooks.push(() => { setTimeout(() => { try { window.pbCoTzLoad(); } catch (e) {} }, 1500); });
+  // ==== end feat_cotz ====
   // ================= end batch 19 PM (crew) =================
   // ================= batch 19 PM: NAMES (sql/02_names.sql) =================
   // A person's own name (Account & Settings > Your name; asked once on the first sign-in after joining a company, can be
@@ -44451,6 +44522,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const mgr = !!(p ? p.manager : (a && a.manager));
     b.style.display = 'none'; // feat_navfix: in Settings now
     const s = document.getElementById('settingsCompanySection'); if (s && s.hidden === mgr) s.hidden = !mgr;
+    if (mgr && typeof window.pbCoTzLoad === 'function') { try { window.pbCoTzLoad(); } catch (e) {} } // feat_cotz
   }
   try {
     const mo = new MutationObserver(() => pbBrShowRow());
