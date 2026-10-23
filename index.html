@@ -5755,6 +5755,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div id="archiveOfficeWrap"><h2 class="pb-reports-heading" id="archiveOfficeHead">Office</h2>
       <div class="pb-tools-group" id="archiveOfficeGroup" role="group" aria-label="Office">
         <button type="button" class="pb-edu-row pb-tool-row" id="archiveInboxBtn" data-ic="people" style="display:none;" onclick="pbOpenReportsInbox()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Management inbox</span><span class="sub">Reports from your company&rsquo;s crews</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
+        <button type="button" class="pb-edu-row pb-tool-row" id="archiveOpenPermitsBtn" data-ic="lock" onclick="pbOpenUnfinishedPermits()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Unfinished permits in your account</span><span class="sub">Permits that were open when this phone last had signal</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
         <button type="button" class="pb-edu-row pb-tool-row" id="archiveCrewPermitsBtn" data-ic="lock" style="display:none;" onclick="pbOpenCrewPermits()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Crew permit records</span><span class="sub">Closed permits from your crew</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
         <button type="button" class="pb-edu-row pb-tool-row" id="archiveCompanyPermitsBtn" data-ic="lock" style="display:none;" onclick="pbOpenCompanyPermits()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Company permit records</span><span class="sub">Every closed permit your crews backed up</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
         <button type="button" class="pb-edu-row pb-tool-row" id="archiveTicketsDashBtn" data-ic="chart" style="display:none;" onclick="pbOpenTicketsDashboard()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Company tickets</span><span class="sub">Totals by job, mix, use and cost code</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
@@ -31568,6 +31569,62 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
   }
   window.pbPermitBackupNow = function() { pbPermitBkForce = true; pbPermitBackupSoon(0); };
+  // ---------- open (in-progress) permit backup ----------
+  // READS the copy the phone already saved (activeConfinedSession) on a timer and sends the latest snapshot to
+  // pb_permit_open_put (one row per open permit, replaced on each change). It never writes to the permit, never
+  // waits on anything, and a failure only delays the next try. Emergency, check-in/out and logs never wait on it.
+  let pbOpenBk = { uid: null, sid: null, hash: null, busy: false, until: 0 };
+  function pbOpenSnapStrip(o, depth) {
+    if (Array.isArray(o)) return o.map(x => pbOpenSnapStrip(x, (depth || 0) + 1));
+    if (o && typeof o === 'object') { const r = {}; Object.keys(o).forEach(k => { if (k === 'photos' || k === 'miscPhotos' || k === 'saveRev') return; r[k] = pbOpenSnapStrip(o[k], (depth || 0) + 1); }); return r; }
+    return typeof o === 'string' && o.length > 20000 ? o.slice(0, 20000) : o;
+  }
+  async function pbOpenBackupTick() {
+    if (pbOpenBk.busy || Date.now() < pbOpenBk.until) return;
+    try {
+      const uid = sbUser && sbUser.id;
+      if (!uid || !sbClient || typeof sbClient.rpc !== 'function' || navigator.onLine === false || archiveLoadFailed) return;
+      if (!confinedPermit || confinedSessionOwnerUid !== uid || pbArchiveOwnerUid !== uid || !pbAuthBackgroundOk()) return;
+      const sid = confinedPermit.sessionId; if (!sid) return;
+      pbOpenBk.busy = true;
+      let raw = null; try { raw = await pbGetCriticalFor(uid, 'activeConfinedSession'); } catch (e) { return; }
+      if (!raw || typeof raw !== 'string') return;
+      let d = null; try { d = JSON.parse(raw); } catch (e) { return; }
+      if (!d || !d.permit || d.permit.sessionId !== sid) return;
+      const snap = pbOpenSnapStrip(d); snap.space = String(d.permit.space || ''); snap.jobsite = String(d.permit.jobsite || d.permit.address || ''); snap.jobNumber = String(d.permit.jobNumber || ''); snap.kind = 'confined-open';
+      const json = JSON.stringify(snap); if (json.length > 1900000) return;
+      const h = pbHashText(json);
+      if (pbOpenBk.uid === uid && pbOpenBk.sid === sid && pbOpenBk.hash === h) return;
+      if (!(await pbLiveSessionIs(uid)) || !sbUser || sbUser.id !== uid || !confinedPermit || confinedPermit.sessionId !== sid) return;
+      const r = await pbPermitRpc('pb_permit_open_put', { p_client_permit_id: 'cps-' + String(sid).slice(0, 90), p_snapshot: snap, p_expect_uid: uid }, 30000);
+      if (!r.error && r.data && r.data.ok === true) { pbOpenBk.uid = uid; pbOpenBk.sid = sid; pbOpenBk.hash = h; return; }
+      const msg = String((r.error && r.error.message) || ''), code = (msg.match(/pb:\w+/) || [''])[0];
+      if (code || /update_app|does not exist|Could not find/i.test(msg)) pbOpenBk.until = Date.now() + 10 * 60000; // refused or not installed on the server yet: try again later
+    } catch (e) {} finally { pbOpenBk.busy = false; }
+  }
+  setInterval(() => { if (confinedPermit) pbOpenBackupTick(); }, 30 * 1000);
+  window.addEventListener('online', () => setTimeout(() => { if (confinedPermit) pbOpenBackupTick(); }, 4000));
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && confinedPermit) setTimeout(pbOpenBackupTick, 3000); });
+  window.__pbOpenBackupTick = pbOpenBackupTick;
+  function pbOpenSnapText(sn, savedAt) {
+    const fmt = (t) => { const d = new Date(t); return isNaN(d) ? '' : d.toLocaleString(); };
+    const flat = (o) => Object.keys(o || {}).filter(k => o[k] !== null && o[k] !== undefined && o[k] !== '' && typeof o[k] !== 'object').map(k => k + ': ' + (/time|At$/i.test(k) && Number(o[k]) > 1e12 ? fmt(Number(o[k])) : o[k])).join(' | ');
+    const p = sn.permit || {}, L = ['UNFINISHED PERMIT (last copy sent from the phone: ' + fmt(savedAt) + ')', '', flat(p), '', 'AIR TESTS'];
+    (sn.atmoLog || []).forEach(r => L.push('  ' + flat(r)));
+    L.push('', 'ROSTER');
+    (sn.roster || []).forEach(r => { L.push('  ' + (r.name || 'Person') + ' - ' + (r.status || '') + (r.role ? ' (' + r.role + ')' : '')); (r.log || []).forEach(x => L.push('     ' + (typeof x === 'object' ? flat(x) : x))); });
+    L.push('', 'COMM CHECKS'); (sn.commLog || []).forEach(r => L.push('  ' + (typeof r === 'object' ? flat(r) : r)));
+    if ((sn.emergencyIncidents || []).length) { L.push('', 'EMERGENCIES'); sn.emergencyIncidents.forEach(r => L.push('  ' + flat(r))); }
+    return L.join('\n');
+  }
+  window.pbOpenUnfinishedPermits = async function() {
+    if (!sbClient || !sbUser) { pbAlert('Log in with a connection to see unfinished permits.', 'Not Signed In'); return; }
+    const uid = sbUser.id;
+    if (pbArchiveOwnerUid !== uid) { pbAlert('This phone’s Records isn’t loaded for your account yet. Try again in a moment.', 'Not Ready'); return; }
+    pbCpr = { uid, rows: [], done: false, busy: false, mode: 'open' };
+    pbCprTitles(); pbGoto('companyPermits'); pbCompanyPermitsRender();
+    pbCompanyPermitsLoad(false);
+  };
   // ---------- batch 6b: Company permit records (company account only, read-only, memory only) ----------
   let pbCpr = { uid: null, rows: [], done: false, busy: false, mode: 'company' };
   window.pbOpenCompanyPermits = async function() {
@@ -31582,8 +31639,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!pbCpr.rows.length) pbCompanyPermitsLoad(false);
   };
   function pbCprTitles() {
-    const crew = pbCpr.mode === 'crew', t = document.getElementById('cprTitle'), l = document.getElementById('cprLead');
-    if (t) t.textContent = crew ? 'Crew permit records' : 'Company permit records';
+    const crew = pbCpr.mode === 'crew', open = pbCpr.mode === 'open', t = document.getElementById('cprTitle'), l = document.getElementById('cprLead');
+    if (t) t.textContent = open ? 'Unfinished permits' : crew ? 'Crew permit records' : 'Company permit records';
+    if (open && l) { l.innerHTML = 'Permits that were still open the last time a phone on your account had signal. If a phone was lost or broke during an entry, the air tests, roster and logs from its last copy are here. A closed permit moves to Records and leaves this list.'; return; }
     if (l) l.innerHTML = crew ? 'Closed confined space permits your crew backed up, from the time each pipelayer was linked to you. They can&rsquo;t be changed or removed.' : 'Closed confined space permits your crews backed up. They can&rsquo;t be changed or removed. If a permit was updated on a phone after closing (for example, marked as emailed), every version is kept.';
   }
   window.pbOpenCrewPermits = async function() {
@@ -31604,6 +31662,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const lastRow = more && pbCpr.rows.length ? pbCpr.rows[pbCpr.rows.length - 1] : null;
     pbCpr.busy = true; if (st) st.textContent = 'Loading…';
     let r;
+    if (pbCpr.mode === 'open') {
+      r = await pbPermitRpc('pb_permit_open_mine', {}, 60000); pbCpr.busy = false;
+      if (!sbUser || sbUser.id !== uid || pbCpr.uid !== uid || pbCpr.mode !== 'open') return;
+      const s2 = document.getElementById('cprStatus');
+      if (!r || r.error || !Array.isArray(r.data)) { if (s2) s2.textContent = /does not exist|Could not find/i.test(String((r && r.error && r.error.message) || '')) ? 'Not switched on for your account yet.' : 'Couldn’t load — check your signal and tap Refresh.'; return; }
+      pbCpr.rows = r.data.map(x => ({ row_id: x.client_permit_id, open: true, x })); pbCpr.done = true; pbCompanyPermitsRender(); return;
+    }
     try { r = await Promise.race([sbClient.rpc(pbCpr.mode === 'crew' ? 'pb_permit_crew_page' : 'pb_permit_company_page', { p_before_closed: lastRow ? lastRow.closed_at : null, p_before_id: lastRow ? lastRow.row_id : null, p_limit: 50 }), new Promise(res => setTimeout(() => res({ data: null, error: { message: 'timeout' } }), 60000))]); }
     catch (x) { r = { data: null, error: { message: String((x && x.message) || x) } }; }
     pbCpr.busy = false;
@@ -31626,6 +31691,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (st && pbCpr.rows.length) st.textContent = pbCpr.rows.length + ' permit record' + (pbCpr.rows.length === 1 ? '' : 's') + (pbCpr.done ? '' : ' so far');
     else if (st && !pbCpr.busy && pbCpr.uid && pbCpr.done) st.textContent = 'No permit records backed up yet.';
     if (mw) mw.style.display = pbCpr.rows.length && !pbCpr.done ? '' : 'none';
+    if (pbCpr.mode === 'open') {
+      if (st) st.textContent = pbCpr.rows.length ? pbCpr.rows.length + ' unfinished permit' + (pbCpr.rows.length === 1 ? '' : 's') : (pbCpr.done ? 'No unfinished permits.' : st.textContent);
+      list.innerHTML = pbCpr.rows.map((o, i) => { const x = o.x, d = new Date(x.saved_at);
+        return '<div class="pb-review-item pb-arch-row pb-arch-confined"><span class="k">Confined Space — ' + escapeHtml(x.space || '') + '</span><div class="pb-arch-chips"><span class="pb-chip notsent">Not closed out</span></div>'
+          + '<div class="pb-cpr-meta">Last copy ' + escapeHtml(isNaN(d) ? '' : d.toLocaleString()) + '<br>' + escapeHtml((x.jobsite || '') + (x.job_number ? ' — #' + x.job_number : '')) + '</div>'
+          + '<div class="pb-arch-actions"><button type="button" class="pb-btn ghost small" onclick="pbCprToggle(' + i + ')">View</button></div>'
+          + '<pre id="cprView' + i + '" style="display:none;">' + escapeHtml(pbOpenSnapText(x.snapshot || {}, x.saved_at)) + '</pre></div>'; }).join('');
+      return;
+    }
     list.innerHTML = pbCpr.rows.map((x, i) => {
       const e = x.record, p = e.permit || {}, d = new Date(x.closed_at || e.lockTime);
       const em = p.emergencyDurationSec !== null && p.emergencyDurationSec !== undefined;
