@@ -1699,6 +1699,24 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 #pbApp #homeShortcuts .pb-sc-head .pb-edu-h { margin: 0; }
 
 /* Current job: a compact row with a pin, no yellow bar */
+#pbApp .pbp-wts { margin: 14px 0 6px; padding: 14px; border-radius: 14px; background: var(--pb-raised); border: 1px solid var(--pb-divider); }
+#pbApp .pbp-wts-h { margin: 0 0 2px; }
+#pbApp .pbp-wt-modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 10px 0 6px; padding: 4px; border-radius: 12px; background: var(--pb-input); border: 1px solid var(--pb-divider); }
+#pbApp .pbp-wt-mode { -webkit-appearance: none; appearance: none; min-height: 44px; border: 0; border-radius: 9px; background: transparent; color: var(--pb-text-2); font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; padding: 6px 4px; }
+#pbApp .pbp-wt-mode.on { background: var(--pb-brand); color: var(--pb-brand-ink); }
+#pbApp .pbp-wt-mode:disabled { opacity: .45; cursor: default; }
+#pbApp .pbp-wt-bar { display: flex; gap: 3px; height: 18px; margin: 12px 0 10px; border-radius: 9px; overflow: hidden; }
+#pbApp .pbp-wt-seg { min-width: 0; transition: flex .12s; }
+#pbApp .pbp-wt-rows { display: flex; flex-direction: column; gap: 4px; }
+#pbApp .pbp-wt-row { display: grid; grid-template-columns: 12px minmax(0, 1fr) minmax(90px, 1.2fr) 72px; gap: 10px; align-items: center; min-height: 48px; }
+#pbApp .pbp-wt-dot { width: 12px; height: 12px; border-radius: 50%; }
+#pbApp .pbp-wt-name { font-size: 14.5px; color: var(--pb-text); overflow-wrap: anywhere; margin: 0; }
+#pbApp .pbp-wt-range { width: 100%; accent-color: var(--pb-brand); min-height: 32px; margin: 0; }
+#pbApp .pbp-wt-range:disabled { opacity: .5; }
+#pbApp .pbp-wt-pctbox { display: flex; align-items: center; gap: 4px; color: var(--pb-text-2); font-weight: 650; }
+#pbApp .pbp-wt-pct { width: 52px; min-height: 40px; padding: 6px 8px; text-align: right; border-radius: 10px; border: 1px solid var(--pb-divider); background: var(--pb-input); color: var(--pb-text); font: inherit; font-variant-numeric: tabular-nums; }
+#pbApp .pbp-wt-pct:disabled { opacity: .7; }
+#pbApp .pbp-wt-help { margin: 6px 0 0; }
 #pbApp .pbm-head { display: block; cursor: pointer; border-radius: 10px; margin: -4px -6px 0; padding: 4px 6px 2px; -webkit-tap-highlight-color: transparent; }
 #pbApp .pbm-head:active { background: var(--pb-highlight); }
 #pbApp .pbm-head:focus-visible { outline: 2px solid var(--pb-brand); outline-offset: 2px; }
@@ -8791,7 +8809,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.18 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.19 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -33532,7 +33550,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     window.pbProdPlanHoursIn();
   };
   window.pbProdPlanHoursIn = function() {
-    const E = pbPj.edit; if (!E) return; pbProdPlanRead();
+    const E = pbPj.edit; if (!E) return; pbProdPlanRead(); if (E.wmode === 'hours') setTimeout(pbPlanWtPaint, 0); // feat_weights
     if (E.budgetAuto) { E.budget = pbProdPlanHoursSum(E.rows); const b = pbProdEl('ppBudget'); if (b && b.value !== E.budget) b.value = E.budget; }
   };
   window.pbProdPlanBudgetIn = function(blur) {
@@ -33559,13 +33577,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           + field('ppUnit' + i, 'Unit', r.unit, 'type="text" maxlength="12" autocomplete="off" placeholder="LF" onchange="pbProdPlanUnitIn(' + i + ')"')
           + field('ppPerUnit' + i, 'Budget hours per unit', r.perUnit || '', 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanPerIn(' + i + ')"')
           + field('ppHours' + i, 'Budget hours (whole category)', r.hours, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanCatHoursIn(' + i + ')"')
-          + field('ppWeight' + i, 'Weight', r.weight, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanNote()"')
           + field('ppAlert' + i, 'Alert at (% of planned)', r.alertPct || '80', 'type="text" inputmode="numeric" autocomplete="off" maxlength="3"')
           + field('ppCostCode' + i, 'Cost code', r.costCode || '', 'type="text" maxlength="60" autocomplete="off" autocapitalize="characters" placeholder="e.g. 02-200"') + '</div>'
           + '<div class="pbp-prow-foot">' + has + '<button type="button" class="pb-btn ghost small" id="ppRemove' + i + '" onclick="pbProdPlanRemove(' + i + ')" aria-label="Remove ' + escapeHtml(r.name || 'this category') + '"><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-trash"/></svg>Remove</button></div></fieldset>';
       }).join('') + '</div>'
       + (E.rows.length < 20 ? '<div class="pb-btn-wrap pbp-btns"><button type="button" class="pb-btn secondary" id="ppAddBtn" onclick="pbProdPlanAdd()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Category</button></div>' : '')
-      + '<p class="pb-alert info pbp-wnote" id="ppWeightNote" role="status"' + (pbProdWeightNoteText(E.rows) ? '' : ' hidden') + '>' + escapeHtml(pbProdWeightNoteText(E.rows)) + '</p>'
+      + '<div id="ppWts">' + pbPlanWtHtml(E) + '</div>' // feat_weights
       + '<div class="pbp-budget">' + (E.budgetAuto ? (E.budget = pbProdPlanHoursSum(E.rows), '') : '') + field('ppBudget', 'Budget hours for the whole job', E.budget, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" aria-describedby="ppBudgetHelp" oninput="pbProdPlanBudgetIn()" onblur="pbProdPlanBudgetIn(true)"')
         + '<p class="pb-field-help" id="ppBudgetHelp" style="margin-top:-6px">' + escapeHtml(pbProdBudgetHelpText(E)) + '</p></div>'
       + '<h4 class="pbp-h3" id="ppEqTitle" style="margin-top:14px">Equipment</h4><p class="pbp-dim">The job’s equipment. Foremen list each piece’s hours with each run.</p><div id="ppEqRows">'
@@ -33584,7 +33601,71 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const planned = rows.filter(r => has(r.planned)), w = planned.filter(r => has(r.weight));
     return w.length && w.length < planned.length ? 'Weights are ignored for now: they only count when every category with a planned quantity has one (' + w.length + ' of ' + planned.length + ' do). Until then each planned category counts the same.' : '';
   }
-  window.pbProdPlanNote = function() { if (!pbPj.edit) return; pbProdPlanRead(); const el = pbProdEl('ppWeightNote'); if (!el) return; const t = pbProdWeightNoteText(pbPj.edit.rows); el.textContent = t; el.hidden = !t; };
+  // ==== feat_weights: "How much each item counts" ====
+  const pbWtHas = (x) => { const t = String(x == null ? '' : x).trim().replace(/,/g, ''); return t !== '' && Number(t) > 0; };
+  function pbPlanWtMode(E) {
+    if (E.wmode) return E.wmode;
+    const pl = E.rows.filter(r => pbWtHas(r.planned));
+    E.wmode = pl.length && pl.every(r => pbWtHas(r.weight)) ? 'custom' : pl.length && pl.every(r => pbWtHas(r.hours)) ? 'hours' : 'equal';
+    return E.wmode;
+  }
+  // whole %s that add up to 100 (largest remainder)
+  function pbWtPct(vals) {
+    const tot = vals.reduce((a, b) => a + b, 0); if (!(tot > 0)) return vals.map((x, i) => (i === 0 && vals.length ? 100 : 0));
+    const raw = vals.map(v => v / tot * 100), out = raw.map(Math.floor); let left = 100 - out.reduce((a, b) => a + b, 0);
+    raw.map((v, i) => [v - Math.floor(v), i]).sort((a, b) => b[0] - a[0]).forEach(([, i]) => { if (left > 0) { out[i]++; left--; } });
+    return out;
+  }
+  function pbWtShares(E) { // [{ i, row, pct }]
+    const mode = pbPlanWtMode(E), L = E.rows.map((row, i) => ({ i, row })).filter(x => pbWtHas(x.row.planned));
+    const num = (x) => Number(String(x).replace(/,/g, ''));
+    const vals = mode === 'custom' ? L.map(x => pbWtHas(x.row.weight) ? num(x.row.weight) : 0) : mode === 'hours' && L.every(x => pbWtHas(x.row.hours)) ? L.map(x => num(x.row.hours)) : L.map(() => 1);
+    const p = pbWtPct(vals); return L.map((x, k) => Object.assign(x, { pct: p[k] }));
+  }
+  const PB_WT_TONES = ['var(--pb-brand)', '#8CC2FF', '#5FD39A', '#FFAA4D', '#C9A2FF', '#FF8F96', '#7FD6D0', '#E8D27A'];
+  function pbPlanWtHtml(E) {
+    const S = pbWtShares(E), mode = pbPlanWtMode(E);
+    if (S.length < 2) return '<div class="pbp-wts" id="ppWtsPanel"><h4 class="pbp-h3 pbp-wts-h">How much each item counts</h4><p class="pbp-dim">Once two or more items have a Planned amount, set how much each counts toward the job’s %.</p></div>';
+    const allHours = S.every(x => pbWtHas(x.row.hours));
+    const tab = (k, label, dis) => '<button type="button" role="radio" aria-checked="' + (mode === k) + '" class="pbp-wt-mode' + (mode === k ? ' on' : '') + '" id="ppWtMode_' + k + '"' + (dis ? ' disabled' : '') + ' onclick="pbPlanWtSetMode(\'' + k + '\')">' + label + '</button>';
+    let h = '<div class="pbp-wts" id="ppWtsPanel"><h4 class="pbp-h3 pbp-wts-h">How much each item counts</h4>'
+      + '<p class="pbp-dim">Toward the job’s % complete. They always add up to 100%.</p>'
+      + '<div class="pbp-wt-modes" role="radiogroup" aria-label="How the items count">' + tab('equal', 'Equal') + tab('hours', 'By budget hours', !allHours) + tab('custom', 'Custom') + '</div>'
+      + (!allHours ? '<p class="pb-help pbp-wt-help">By budget hours needs hours on every planned item.</p>' : '')
+      + '<div class="pbp-wt-bar" id="ppWtBar" aria-hidden="true">' + S.map((x, k) => '<span class="pbp-wt-seg" id="ppWtSeg' + x.i + '" style="flex:' + Math.max(x.pct, 0.0001) + ' 1 0;background:' + PB_WT_TONES[k % PB_WT_TONES.length] + '"></span>').join('') + '</div>'
+      + '<div class="pbp-wt-rows">' + S.map((x, k) => '<div class="pbp-wt-row"><span class="pbp-wt-dot" style="background:' + PB_WT_TONES[k % PB_WT_TONES.length] + '" aria-hidden="true"></span>'
+        + '<label class="pbp-wt-name" for="ppWr' + x.i + '">' + escapeHtml(String(x.row.name || 'Item').trim() || 'Item') + '</label>'
+        + '<input type="range" class="pbp-wt-range" id="ppWr' + x.i + '" min="0" max="100" step="1" value="' + x.pct + '"' + (mode === 'custom' ? '' : ' disabled') + ' oninput="pbPlanWtSlide(' + x.i + ', this.value)" aria-valuetext="' + x.pct + '%">'
+        + '<span class="pbp-wt-pctbox"><input type="text" inputmode="numeric" class="pbp-wt-pct" id="ppWeight' + x.i + '" value="' + (mode === 'custom' ? x.pct : '') + '" placeholder="' + x.pct + '"' + (mode === 'custom' ? '' : ' disabled') + ' aria-label="' + escapeHtml((x.row.name || 'Item') + ' %') + '" onchange="pbPlanWtSlide(' + x.i + ', this.value)">%</span></div>').join('') + '</div>'
+      + (mode !== 'custom' ? '<p class="pb-help pbp-wt-help">Tap Custom to set your own.</p>' : '') + '</div>';
+    return h;
+  }
+  function pbPlanWtPaint() { const E = pbPj.edit, el = pbProdEl('ppWts'); if (E && el) el.innerHTML = pbPlanWtHtml(E); }
+  window.pbPlanWtSetMode = function(k) {
+    const E = pbPj.edit; if (!E) return; pbProdPlanRead();
+    const S = pbWtShares(E); E.wmode = k;
+    if (k === 'custom') S.forEach(x => { x.row.weight = String(x.pct); }); // starts from what it was
+    else E.rows.forEach(r => { r.weight = ''; });                       // none: equal, or by budget hours when every item has them
+    pbPlanWtPaint(); const b = pbProdEl('ppWtMode_' + k); if (b) b.focus({ preventScroll: true });
+  };
+  // one item to v%: the others share what is left, keeping their proportions
+  window.pbPlanWtSlide = function(i, v) {
+    const E = pbPj.edit; if (!E || pbPlanWtMode(E) !== 'custom') return;
+    let n = Math.round(Number(String(v).replace(/[^0-9.]/g, ''))); if (!Number.isFinite(n)) n = 0; n = Math.max(0, Math.min(100, n));
+    const S = pbWtShares(E), me = S.find(x => x.i === i); if (!me) return;
+    const others = S.filter(x => x.i !== i), rest = 100 - n, base = others.reduce((a, x) => a + x.pct, 0);
+    const p = others.length ? pbWtPct(others.map(x => base > 0 ? x.pct : 1)).map(q => q * rest / 100) : [];
+    const fixed = others.length ? pbWtPct(p.length && p.some(q => q > 0) ? p : others.map(() => 1)).map(q => Math.round(q * rest / 100)) : [];
+    // make it exact: put the rounding on the largest of the others
+    let sum = n + fixed.reduce((a, b) => a + b, 0); if (fixed.length && sum !== 100) { const j = fixed.indexOf(Math.max(...fixed)); fixed[j] += 100 - sum; }
+    me.row.weight = String(n); others.forEach((x, k) => { x.row.weight = String(Math.max(0, fixed[k])); });
+    if (n === 100 && !others.length) me.row.weight = '100';
+    // update in place (keeps the slider being dragged)
+    S.forEach(x => { const pct = Number(x.row.weight) || 0, rg = pbProdEl('ppWr' + x.i), bx = pbProdEl('ppWeight' + x.i), sg = pbProdEl('ppWtSeg' + x.i);
+      if (rg && String(rg.value) !== String(pct)) rg.value = pct; if (rg) rg.setAttribute('aria-valuetext', pct + '%'); if (bx && (x.i !== i || document.activeElement !== bx)) bx.value = pct; if (sg) sg.style.flex = Math.max(pct, 0.0001) + ' 1 0'; });
+  };
+  window.pbProdPlanNote = function() { if (!pbPj.edit) return; pbProdPlanRead(); const was = pbPj.edit.__wtKeys, now = pbPj.edit.rows.map(r => pbWtHas(r.planned) ? 1 : 0).join(''); pbPj.edit.__wtKeys = now; if (was !== undefined && was !== now) pbPlanWtPaint(); };
+  // ==== end feat_weights ====
   window.pbProdPlanAdd = function() {
     const E = pbPj.edit; if (!E || E.rows.length >= 20) return;
     pbProdPlanRead();
