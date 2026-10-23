@@ -1699,6 +1699,15 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 #pbApp #homeShortcuts .pb-sc-head .pb-edu-h { margin: 0; }
 
 /* Current job: a compact row with a pin, no yellow bar */
+#pbApp .pbm-head { display: block; cursor: pointer; border-radius: 10px; margin: -4px -6px 0; padding: 4px 6px 2px; -webkit-tap-highlight-color: transparent; }
+#pbApp .pbm-head:active { background: var(--pb-highlight); }
+#pbApp .pbm-head:focus-visible { outline: 2px solid var(--pb-brand); outline-offset: 2px; }
+#pbApp .pbm-head > span { display: block; }
+#pbApp .pbm-head > .pbm-line1 { display: flex; }
+#pbApp .pbm-more { display: inline-flex !important; align-items: center; gap: 4px; margin-top: 4px; font-size: 13px; font-weight: 650; color: var(--pb-text-2); }
+#pbApp .pbm-more .pb-ic { width: 14px; height: 14px; transition: transform .15s; }
+#pbApp .pbm-more.open .pb-ic { transform: rotate(180deg); }
+#pbApp .pbm-addline { margin: -2px 0 10px; }
 #pbApp .pbx-legrow.pbx-spoils { border-top: 2px solid var(--pb-divider); margin-top: 4px; grid-template-columns: minmax(0, 1fr) auto auto; }
 #pbApp .pbx-spoils .pbx-leg-n { font-weight: 650; }
 #pbApp .pbx-spoils-k { font-size: 12px; font-weight: 500; color: var(--pb-text-3); }
@@ -8782,7 +8791,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.17 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.18 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -44801,7 +44810,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbMatChips(m, s) {
     let h = '';
-    if (s.need) h += m && m.fig && m.fig.status === 'split_unknown' ? '<button type="button" class="pb-chip notsent pbm-chip" style="cursor:pointer;font:inherit" onclick="pbMatFixShare(\'' + m.id + '\')" aria-label="Shares footage: pick its own item">' + escapeHtml(s.need) + ' ›</button> ' : '<span class="pb-chip notsent pbm-chip">' + escapeHtml(s.need) + '</span> ';
+    if (s.need) h += m && m.fig && m.fig.status === 'split_unknown' ? '<button type="button" class="pb-chip notsent pbm-chip" style="cursor:pointer;font:inherit" onclick="event.stopPropagation(); pbMatFixShare(\'' + m.id + '\')" aria-label="Shares footage: pick its own item">' + escapeHtml(s.need) + ' ›</button> ' : '<span class="pb-chip notsent pbm-chip">' + escapeHtml(s.need) + '</span> ';
     if (s.reached) h += '<span class="pb-chip notsent pbm-chip pbm-reached">' + escapeHtml(s.pct + '% of ordered used') + '</span> ';
     if (s.over) h += '<span class="pb-chip overdue pbm-chip">Over expected</span> ';
     if (s.est) h += '<span class="pb-chip calculated pbm-chip">Estimate</span> ';
@@ -44988,15 +44997,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         ? gw + ' ft wide × (' + (Number(G.od_in) / 12).toFixed(4) + ' ft OD [' + G.od_in + ' in' + (G.od_from === 'id_wall' ? ', ID + 2 × wall' : '') + '] + ' + gt + ' ft over the pipe) − ' + (Math.PI * Math.pow(Number(G.od_in) / 12, 2) / 4).toFixed(4) + ' ft² of pipe = ' + Number(G.ft3_per_ft).toFixed(4) + ' ft³ ÷ 27 = '
         : gw + ' ft wide × ' + gt + ' ft thick ÷ 27 = ') + Number(m.fig.yd3_per_ft).toFixed(4) + ' yd³ in place' + (G && (G.width_from === 'job' || G.thick_from === 'job') ? ' (job settings)' : '') + ', + ' + pbMatFmt(m.extra_pct) + '% compaction allowance' + (m.basis === 'weight' ? ', × ' + m.density_tpy + ' tons per yd³' : '') + '. Footage counted: ' + pbMatFmt(m.fig.ft, 'LF') + ' LF' + (Number(m.fig.ft_waiting) ? ' (+' + pbMatFmt(m.fig.ft_waiting, 'LF') + ' LF waiting)' : '') + '.' : '';
     const hist = pbMat.hist[id];
-    return '<li class="pbm-row' + (s.reached || s.over ? ' alert' : '') + (m.__line ? ' pbm-line' : '') + '" id="pjMat_' + id + '"><span class="pbm-line1"><span class="pbm-name">' + escapeHtml(m.__line ? (m.cost_code || 'No cost code') + ' · ' + (m.source === 'entered' ? 'recorded by hand' : pbMatFootName(m.footage_cat)) : m.name + (m.cost_code ? ' · ' + m.cost_code : '')) + '</span><span class="pbm-chips">' + pbMatChips(m, s) + '</span></span>'
+    return '<li class="pbm-row' + (s.reached || s.over ? ' alert' : '') + (m.__line ? ' pbm-line' : '') + '" id="pjMat_' + id + '"><div class="pbm-head" role="button" tabindex="0" aria-expanded="' + open + '" aria-controls="pjMatD_' + id + '" onclick="pbMatToggle(\'' + id + '\')" onkeydown="if (event.key === \'Enter\' || event.key === \' \') { event.preventDefault(); pbMatToggle(\'' + id + '\'); }"><span class="pbm-line1"><span class="pbm-name">' + escapeHtml(m.__line ? (m.cost_code || 'No cost code') + ' · ' + (m.source === 'entered' ? 'recorded by hand' : pbMatFootName(m.footage_cat)) : m.name + (m.cost_code ? ' · ' + m.cost_code : '')) + '</span><span class="pbm-chips">' + pbMatChips(m, s) + '</span></span>'
       + '<span class="pbm-line2">' + pbMatNums(m, s) + '</span>' + pbMatBar(m, s)
       + '<span class="pbm-how' + (s.est ? ' est' : '') + '">' + escapeHtml(pbMatHowShort(m)) + '</span>'
+      + '<span class="pbm-more' + (open ? ' open' : '') + '" aria-hidden="true">' + (open ? 'Hide details' : 'Details') + '<svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-chevron-down"/></svg></span></div>'
       + '<span class="pbm-acts"><button type="button" class="pb-btn ghost small" onclick="pbMatOrderForm(\'' + id + '\')">Add Order</button>'
       + (m.source === 'entered' ? '<button type="button" class="pb-btn ghost small" onclick="pbMatUsedForm(\'' + id + '\')">Record Use</button>' : '')
       + '<button type="button" class="pb-btn ghost small" onclick="pbMatAddExpForm(\'' + id + '\')">Add to Expected</button>'
       + '<button type="button" class="pb-btn ghost small" onclick="pbMatEdit(\'' + id + '\')">Edit</button>'
-      + '<button type="button" class="pb-btn ghost small" onclick="pbMatAddLine(\'' + id + '\')">Add Cost Code Line</button>'
-      + '<button type="button" class="pb-btn ghost small" aria-expanded="' + open + '" onclick="pbMatToggle(\'' + id + '\')">' + (open ? 'Hide Details' : 'Details') + '</button></span>'
+      + '</span>'
       + (open ? '<div class="pbm-detail" id="pjMatD_' + id + '">'
         + (calc ? '<p class="pbp-dim pbm-calc">' + escapeHtml(calc) + '</p>' : '')
         + '<p class="pbp-dim">Alert at ' + escapeHtml(String(s.pct)) + '% of ordered' + (s.share !== null ? ' · now ' + Math.round(s.share * 100) + '% (used + waiting)' : '') + (m.alert ? ' · last notified ' + escapeHtml(pbProdTimeText(m.alert.at)) + (m.alert.current ? '' : ' (an earlier order level)') : '') + '</p>'
@@ -45509,7 +45518,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         h += '<div class="pb-field"><label for="pmf_item_key">Overview item</label><select id="pmf_item_key" onchange="pbMatFormRefresh()"><option value="">None</option>' + opts.map(c => '<option value="' + escapeHtml(c.key) + '"' + (c.key === ik ? ' selected' : '') + '>' + escapeHtml(c.name) + '</option>').join('') + '</select><p class="pb-help pbm-fhelp">It shows under this item on the job overview.</p></div>'; }
       const codes = pbMatJobCodes();
       h += pbMatField('cost_code', 'Cost code', v.cost_code || '', 'type="text" maxlength="60" autocomplete="off" autocapitalize="characters" list="pmfCodes" placeholder="e.g. 02-100" oninput="pbMatCodeTyped()"', escapeHtml(icode ? 'From ' + pbMatFootName(v.footage_cat) + ' (' + icode + ') unless you typed one.' : 'Optional.'))
-        + '<datalist id="pmfCodes">' + codes.map(c => '<option value="' + escapeHtml(c.code) + '">' + escapeHtml(c.name || '') + '</option>').join('') + '</datalist>'; }
+        + '<datalist id="pmfCodes">' + codes.map(c => '<option value="' + escapeHtml(c.code) + '">' + escapeHtml(c.name || '') + '</option>').join('') + '</datalist>';
+        if (F.id && !F.lineOf) h += '<div class="pb-btn-wrap pbm-addline"><button type="button" class="pb-btn ghost small" id="pmfAddLine" onclick="pbMatFormCancel(); pbMatAddLine(\'' + F.id + '\')">Add Another Cost Code Line</button><p class="pb-help pbm-fhelp">The same material on another cost code, with its own footage.</p></div>'; } // feat_matcard
     h += '<div class="pbm-grid">' + pbMatField('expected', (calc ? 'Expected in all, as ordered (' : 'Expected in all (') + escapeHtml(unitText) + ')', v.expected, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" aria-describedby="pmfExpHelp" oninput="pbMatExpTyped()" onblur="pbMatExpTyped(true)"')
       + pbMatField('alert_pct', 'Alert at (% of ordered)', v.alert_pct, 'type="text" inputmode="numeric" autocomplete="off" placeholder="80"') + '</div>'
       + '<p class="pb-help pbm-fhelp" id="pmfExpHelp"' + (xt ? '' : ' hidden') + '>' + escapeHtml(xt) + '</p>'
