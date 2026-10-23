@@ -1771,6 +1771,19 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 #pbApp .pbx-legrow .pbx-leg-n { display: flex; flex-direction: column; }
 #pbApp .pbx-loose .pbx-leg-n { color: var(--pb-text-2); font-size: 13.5px; }
 #pbApp .pbp-auto { margin: 2px 0 6px; }
+#pbApp .pbp-alerts { margin: 2px 0 6px; padding: 10px 12px 4px; border-radius: 12px; background: var(--pb-surface-2, rgba(127,127,127,.06)); }
+#pbApp .pbp-al-h { margin: 0 0 6px; font-size: 13.5px; font-weight: 650; color: var(--pb-text-2); }
+#pbApp .pbp-al-help { margin: 0 0 6px; }
+#pbApp .pb-field.pbp-alrow { display: grid; margin: 0 0 8px; grid-template-columns: 84px minmax(0, 1fr) 44px; gap: 8px; align-items: center; margin-bottom: 8px; }
+#pbApp .pbp-al-pctbox { display: flex; align-items: center; gap: 4px; }
+#pbApp .pbp-al-pctbox span { color: var(--pb-text-3); font-weight: 600; }
+#pbApp .pbp-alrow input { min-width: 0; width: 100%; box-sizing: border-box; }
+#pbApp .pbp-al-pctbox input { text-align: right; }
+#pbApp .pbp-al-x { min-width: 44px; min-height: 44px; padding: 0; justify-content: center; }
+#pbApp .pbp-al-add { margin: 0 0 2px; }
+#pbApp .pbp-mute-row { font-size: 14px; }
+#pbApp .pbx-ichip.pbx-muted { background: var(--pb-highlight); color: var(--pb-text-3); padding-left: 8px; }
+#pbApp .pbm-muted { background: var(--pb-highlight); color: var(--pb-text-3); }
 #pbApp .pbp-auto-row { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
 #pbApp .pbp-auto-row input { width: 22px; height: 22px; flex: none; margin: 0; accent-color: var(--pb-brand); }
 #pbApp .pbp-auto-help { margin: 0 0 4px; }
@@ -8837,7 +8850,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.20 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.21 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -32541,6 +32554,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const done = same.reduce((s, r) => s + r.done, 0), today = same.reduce((s, r) => s + r.today, 0), week = same.reduce((s, r) => s + r.week, 0);
       const hasPlan = planned !== null && planned > 0;
       return { key: c.key, name: String(c.name || c.key), code: String(c.cost_code || ''), unit, planned: hasPlan ? planned : null, weight: weight !== null && weight > 0 ? weight : null, hours: hours !== null && hours >= 0 ? hours : null, alertPct: (a => a !== null && a >= 10 && a <= 100 ? a : 80)(pbProdNumOrNull(c.alert_pct)), // feat_itemmat
+        alerts: Array.isArray(c.alerts) ? c.alerts.filter(a => a && Number(a.pct) > 0).map(a => ({ pct: Number(a.pct), label: String(a.label || '') })).sort((a, b) => a.pct - b.pct) : [], muted: c.muted === true, // feat_itemalerts
         done, today, week, pct: hasPlan ? done / planned : null, share: 0, contrib: 0,
         otherUnits: mine.filter(r => pbProdUnitKey(r.unit) !== pbProdUnitKey(unit) && r.done).map(r => ({ unit: r.unit, done: r.done, today: r.today, week: r.week })) };
     });
@@ -33462,6 +33476,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const plan = D && D.plan && Array.isArray(D.plan.categories) ? D.plan.categories : PB_PROD_DEFAULT_CATS;
     const fmt = (n) => (n === null || n === undefined || n === '') ? '' : String(n);
     return plan.filter(c => c && c.key).map(c => ({ key: c.key, name: String(c.name || ''), unit: String(c.unit || ''), planned: fmt(c.planned), plannedAuto: c.planned_auto === true ? true : c.planned_auto === false ? false : null, plannedFrom: String(c.planned_from || ''), alertPct: String(c.alert_pct != null ? c.alert_pct : 80), // feat_autoplan, feat_itemmat (80 shown = 80 kept: opening the plan is not a change)
+      alerts: Array.isArray(c.alerts) ? c.alerts.map(a => ({ pct: String(a && a.pct != null ? a.pct : ''), label: String(a && a.label || '') })) : [], muted: c.muted === true, // feat_itemalerts
       weight: fmt(c.weight), hours: fmt(c.hours), costCode: String(c.cost_code || ''), perUnit: (Number(c.hours) > 0 && Number(c.planned) > 0) ? String(Math.round(Number(c.hours) / Number(c.planned) * 10000) / 10000) : '' }));
   }
   // feat_navfix (owner, Oct 22: "The pipe installed main should show the percentage like everything else"): an item with
@@ -33541,6 +33556,22 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbMatFootNameSafe(k) { try { return typeof pbMatFootName === 'function' ? pbMatFootName(k) : k; } catch (e) { return k; } }
   // ==== end feat_itemmat (plan) ====
+  // ==== feat_itemalerts: more alerts per item, each with a label; silence ====
+  function pbPlanAlertsHtml(r, i) {
+    const L = r.alerts || [], nm = escapeHtml(String(r.name || '').trim() || 'this item');
+    let h = '<div class="pbp-alerts" id="ppAlerts' + i + '"><p class="pbp-al-h">More alerts</p>';
+    if (!L.length) h += '<p class="pb-help pbp-al-help">Add another % with a note, e.g. 100% · Call for pressure test.</p>';
+    h += L.map((a, k) => '<div class="pb-field pbp-alrow" id="ppAlRow' + i + '_' + k + '"><span class="pbp-al-pctbox"><input id="ppAlP' + i + '_' + k + '" class="pbp-al-pct" value="' + escapeHtml(a.pct) + '" type="text" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="100" aria-label="Alert ' + (k + 2) + ' for ' + nm + ': % of planned"><span aria-hidden="true">%</span></span>'
+      + '<input id="ppAlL' + i + '_' + k + '" class="pbp-al-label" value="' + escapeHtml(a.label) + '" type="text" maxlength="60" autocomplete="off" placeholder="Label, e.g. Call for pressure test" aria-label="Alert ' + (k + 2) + ' for ' + nm + ': label">'
+      + '<button type="button" class="pb-btn ghost small pbp-al-x" id="ppAlX' + i + '_' + k + '" onclick="pbPlanAlRemove(' + i + ', ' + k + ')" aria-label="Remove this alert"><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-x"/></svg></button></div>').join('');
+    if (L.length < 5) h += '<button type="button" class="pb-btn ghost small pbp-al-add" id="ppAlAdd' + i + '" onclick="pbPlanAlAdd(' + i + ')"><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add an Alert</button>';
+    h += '<label class="pb-checkrow pbp-auto-row pbp-mute-row" for="ppMute' + i + '"><input type="checkbox" id="ppMute' + i + '"' + (r.muted ? ' checked' : '') + '> <span>Silence alerts for this item</span></label>';
+    return h + '</div>';
+  }
+  window.pbPlanAlAdd = function(i) { const E = pbPj.edit; if (!E || !E.rows[i]) return; pbProdPlanRead(); const r = E.rows[i]; r.alerts = r.alerts || []; if (r.alerts.length >= 5) return;
+    r.alerts.push({ pct: '', label: '' }); pbProdJobRender(); const f = pbProdEl('ppAlP' + i + '_' + (r.alerts.length - 1)); if (f) f.focus({ preventScroll: true }); };
+  window.pbPlanAlRemove = function(i, k) { const E = pbPj.edit; if (!E || !E.rows[i]) return; pbProdPlanRead(); (E.rows[i].alerts || []).splice(k, 1); pbProdJobRender(); const f = pbProdEl('ppAlAdd' + i) || pbProdEl('ppMute' + i); if (f) f.focus({ preventScroll: true }); };
+  // ==== end feat_itemalerts (plan) ====
   window.pbProdPlanEdit = function() {
     if (!pbPj.data) return;
     const rows = pbProdPlanRowsFrom(pbPj.data), bh = pbPj.data.plan && pbPj.data.plan.budget_hours != null ? String(pbPj.data.plan.budget_hours) : '';
@@ -33556,7 +33587,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbProdPlanRead() {
     const E = pbPj.edit; if (!E) return;
     E.rows.forEach((r, i) => { ['name', 'unit', 'planned', 'weight', 'hours', 'perUnit', 'costCode'].forEach(k => { const el = pbProdEl('pp' + k.charAt(0).toUpperCase() + k.slice(1) + i); if (el) r[k] = el.value; });
-      const f = pbProdEl('ppFrom' + i); if (f) r.plannedFrom = f.value; const al = pbProdEl('ppAlert' + i); if (al) r.alertPct = al.value; }); // feat_itemmat
+      const f = pbProdEl('ppFrom' + i); if (f) r.plannedFrom = f.value; const al = pbProdEl('ppAlert' + i); if (al) r.alertPct = al.value; // feat_itemmat
+      (r.alerts || []).forEach((a, k) => { const p = pbProdEl('ppAlP' + i + '_' + k), l = pbProdEl('ppAlL' + i + '_' + k); if (p) a.pct = p.value; if (l) a.label = l.value; }); // feat_itemalerts
+      const mu = pbProdEl('ppMute' + i); if (mu) r.muted = !!mu.checked; });
     const b = pbProdEl('ppBudget'); if (b) E.budget = b.value;
     (E.equip || []).forEach((q, i) => { [['name', 'ppEqName'], ['unitNo', 'ppEqUnit'], ['costCode', 'ppEqCode']].forEach(([k, id]) => { const el = pbProdEl(id + i); if (el) q[k] = el.value; }); }); // feat_equip
   }
@@ -33608,6 +33641,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           + field('ppHours' + i, 'Budget hours (whole category)', r.hours, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanCatHoursIn(' + i + ')"')
           + field('ppAlert' + i, 'Alert at (% of planned)', r.alertPct || '80', 'type="text" inputmode="numeric" autocomplete="off" maxlength="3"')
           + field('ppCostCode' + i, 'Cost code', r.costCode || '', 'type="text" maxlength="60" autocomplete="off" autocapitalize="characters" placeholder="e.g. 02-200"') + '</div>'
+          + pbPlanAlertsHtml(r, i) // feat_itemalerts
           + '<div class="pbp-prow-foot">' + has + '<button type="button" class="pb-btn ghost small" id="ppRemove' + i + '" onclick="pbProdPlanRemove(' + i + ')" aria-label="Remove ' + escapeHtml(r.name || 'this category') + '"><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-trash"/></svg>Remove</button></div></fieldset>';
       }).join('') + '</div>'
       + (E.rows.length < 20 ? '<div class="pb-btn-wrap pbp-btns"><button type="button" class="pb-btn secondary" id="ppAddBtn" onclick="pbProdPlanAdd()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Category</button></div>' : '')
@@ -33698,7 +33732,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbProdPlanAdd = function() {
     const E = pbPj.edit; if (!E || E.rows.length >= 20) return;
     pbProdPlanRead();
-    E.rows.push({ key: null, name: '', unit: 'LF', planned: '', weight: '', hours: '', perUnit: '', costCode: '' });
+    E.rows.push({ key: null, name: '', unit: 'LF', planned: '', weight: '', hours: '', perUnit: '', costCode: '', alerts: [], muted: false });
     pbProdJobRender();
     const f = pbProdEl('ppName' + (E.rows.length - 1)); if (f) f.focus();
   };
@@ -33725,9 +33759,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!name) { E.err = 'Every category needs a name (or remove the empty one).'; pbProdJobRender(); return; }
       if ([planned, weight, hours].some(x => Number.isNaN(x))) { E.err = name + ': planned, weight and budget hours must be plain numbers (or left empty).'; pbProdJobRender(); return; }
       if (planned !== null && planned > 10000000 || hours !== null && hours > 1000000 || weight !== null && weight > 1000) { E.err = name + ': that number is too large. Check for a typo.'; pbProdJobRender(); return; }
+      const alerts = []; // feat_itemalerts
+      for (const a of (r.alerts || [])) { const pt = String(a.pct == null ? '' : a.pct).trim().replace(/%$/, ''), lb = String(a.label || '').replace(/\s+/g, ' ').trim();
+        if (pt === '' && lb === '') continue; const pn = Number(pt);
+        if (!(pt !== '' && Number.isInteger(pn) && pn >= 1 && pn <= 200)) { E.err = (name || 'A category') + ': each extra alert needs a whole % from 1 to 200.'; pbProdJobRender(); return; }
+        alerts.push(lb ? { pct: pn, label: lb.slice(0, 60) } : { pct: pn }); }
       const key = r.key || pbProdNewKey(name, taken); if (!r.key) taken.push(key);
       cats.push({ key, name: name.slice(0, 40), unit: String(r.unit || '').trim().slice(0, 12), planned, weight: weight || null, hours, cost_code: String(r.costCode || '').trim().slice(0, 60) || null, // r15.5
-        alert_pct: alert === null ? 80 : alert, ...(pbPlanIsLF(r.unit) && (r.plannedAuto === true || r.plannedAuto === false) ? { planned_auto: r.plannedAuto, ...(r.plannedAuto && r.plannedFrom ? { planned_from: r.plannedFrom } : {}) } : {}) }); // feat_itemmat
+        alert_pct: alert === null ? 80 : alert, ...(pbPlanIsLF(r.unit) && (r.plannedAuto === true || r.plannedAuto === false) ? { planned_auto: r.plannedAuto, ...(r.plannedAuto && r.plannedFrom ? { planned_from: r.plannedFrom } : {}) } : {}), ...(alerts.length ? { alerts } : {}), ...(r.muted ? { muted: true } : {}) }); // feat_itemmat, feat_itemalerts
     }
     const budget = num(E.budget);
     if (Number.isNaN(budget)) { E.err = 'Budget hours must be a plain number (or left empty).'; pbProdJobRender(); return; }
@@ -44921,8 +44960,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const f = (m && m.fig) || {}, used = f.used === null || f.used === undefined ? null : Number(f.used), wait = Number(f.waiting) || 0, ord = Number(f.ordered) || 0;
     const exp = m.expected === null || m.expected === undefined ? null : Number(m.expected), pct = Number(m.alert_pct) || 80;
     const need = { needs_width: 'Needs trench width', needs_thickness: 'Needs bedding thickness', needs_density: 'Needs a density', needs_shading_thickness: 'Needs shading thickness', needs_od: 'Needs pipe OD', width_under_od: 'Trench narrower than the pipe', split_unknown: 'Shares footage' }[f.status] || null;
-    const reached = used !== null && ord > 0 && used + wait >= ord * pct / 100;
-    return { used, wait, ord, exp, pct, need, reached, over: used !== null && exp !== null && exp > 0 && used > exp, est: !!f.estimate, share: ord > 0 && used !== null ? (used + wait) / ord : null };
+    const mu = !!(m && m.muted === true), reached = !mu && used !== null && ord > 0 && used + wait >= ord * pct / 100; // feat_itemalerts: silenced
+    return { used, wait, ord, exp, pct, need, reached, muted: mu, over: !mu && used !== null && exp !== null && exp > 0 && used > exp, est: !!f.estimate, share: ord > 0 && used !== null ? (used + wait) / ord : null };
   }
   function pbMatChips(m, s) {
     let h = '';
@@ -44930,6 +44969,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (s.reached) h += '<span class="pb-chip notsent pbm-chip pbm-reached">' + escapeHtml(s.pct + '% of ordered used') + '</span> ';
     if (s.over) h += '<span class="pb-chip overdue pbm-chip">Over expected</span> ';
     if (s.est) h += '<span class="pb-chip calculated pbm-chip">Estimate</span> ';
+    if (s.muted) h += '<span class="pb-chip pbm-chip pbm-muted">Alerts silenced</span> '; // feat_itemalerts
     return h;
   }
   // "120 / 150 / 400 yd³" (used / ordered / expected), and "+12 waiting".
@@ -45124,13 +45164,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '</span>'
       + (open ? '<div class="pbm-detail" id="pjMatD_' + id + '">'
         + (calc ? '<p class="pbp-dim pbm-calc">' + escapeHtml(calc) + '</p>' : '')
-        + '<p class="pbp-dim">Alert at ' + escapeHtml(String(s.pct)) + '% of ordered' + (s.share !== null ? ' · now ' + Math.round(s.share * 100) + '% (used + waiting)' : '') + (m.alert ? ' · last notified ' + escapeHtml(pbProdTimeText(m.alert.at)) + (m.alert.current ? '' : ' (an earlier order level)') : '') + '</p>'
+        + '<p class="pbp-dim">Alert at ' + escapeHtml(String(s.pct)) + '% of ordered' + (s.muted ? ' (silenced)' : '') + (s.share !== null ? ' · now ' + Math.round(s.share * 100) + '% (used + waiting)' : '') + (m.alert ? ' · last notified ' + escapeHtml(pbProdTimeText(m.alert.at)) + (m.alert.current ? '' : ' (an earlier order level)') : '') + '</p>'
         + pbMatLinkedHtml(m)
         + '<h4 class="pbm-h4">Orders</h4>' + (orders.length ? '<ul class="pbm-sub">' + orders.map(o => '<li class="' + (o.voided ? 'pbp-voided' : '') + '"><span>' + escapeHtml(pbMatFmt(o.qty, o.unit) + ' ' + o.unit + ' · ordered ' + pbProdDayText(o.ordered_on) + (o.ref ? ' · ' + o.ref : '') + (o.note ? ' · ' + o.note : '') + pbMatOrderTk(m, o)) + '</span>'
             + (o.voided ? '<span class="pbp-dim">Voided ' + escapeHtml(pbProdTimeText(o.voided_at) + (o.void_reason ? ': ' + o.void_reason : '')) + '</span>' : '<button type="button" class="pb-btn ghost small" onclick="pbMatVoidForm(\'order\', \'' + id + '\', \'' + o.id + '\')">Void</button>') + '</li>').join('') + '</ul>' : '<p class="pbp-dim pbp-none">No orders yet.</p>')
         + (m.source === 'entered' ? '<h4 class="pbm-h4">Amounts used</h4>' + (uses.length ? '<ul class="pbm-sub">' + uses.map(u => '<li class="' + (u.voided ? 'pbp-voided' : '') + '"><span>' + escapeHtml(pbMatFmt(u.qty, u.unit) + ' ' + u.unit + ' · ' + pbProdDayText(u.used_on) + (u.note ? ' · ' + u.note : '')) + '</span>'
             + (u.voided ? '<span class="pbp-dim">Voided ' + escapeHtml(pbProdTimeText(u.voided_at) + (u.void_reason ? ': ' + u.void_reason : '')) + '</span>' : '<button type="button" class="pb-btn ghost small" onclick="pbMatVoidForm(\'use\', \'' + id + '\', \'' + u.id + '\')">Void</button>') + '</li>').join('') + '</ul>' : '<p class="pbp-dim pbp-none">None recorded yet.</p>') : '')
-        + '<div class="pbm-acts"><button type="button" class="pb-btn ghost small" onclick="pbMatHistory(\'' + id + '\')">' + (hist ? 'Refresh History' : 'Show History') + '</button><button type="button" class="pb-btn ghost small" onclick="pbMatArchive(\'' + id + '\', true)">Archive</button></div>'
+        + '<div class="pbm-acts"><button type="button" class="pb-btn ghost small" onclick="pbMatHistory(\'' + id + '\')">' + (hist ? 'Refresh History' : 'Show History') + '</button><button type="button" class="pb-btn ghost small" id="pjMatMute_' + id + '" onclick="pbMatMute(\'' + id + '\', ' + !s.muted + ')">' + (s.muted ? 'Turn Alerts Back On' : 'Silence Alerts') + '</button><button type="button" class="pb-btn ghost small" onclick="pbMatArchive(\'' + id + '\', true)">Archive</button></div>'
         + (hist ? pbMatHistHtml(hist) : '') + '</div>' : '') + '</li>';
   }
   const PB_MAT_ACT = { create: 'Added', update: 'Changed', archive: 'Archived', unarchive: 'Brought back', order_add: 'Order added', order_void: 'Order voided', used_add: 'Use recorded', used_void: 'Use voided', ticket_link: 'Ticket counted', ticket_unlink: 'Ticket unassigned' };
@@ -45763,6 +45803,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         pbMatPlanReload(); pbMatCoInvalidate();
       } }], 'Materials');
   };
+  window.pbMatMute = async function(id, on) { // feat_itemalerts
+    const m = pbMatFind(id), uid = pbArchiveOwnerUid, job = pbPj.job; if (!m || m.__muting) return;
+    if (!(await pbMatCanAsk(uid))) { pbAlert('No signal. Nothing was changed; try again when you have signal.', 'Not Changed'); return; }
+    m.__muting = true; let r;
+    try { r = await pbPermitRpc('pb_mat_mute', { p_material_id: id, p_muted: !!on, p_expect_uid: uid }, 30000); } finally { m.__muting = false; }
+    if (pbPj.job !== job) return;
+    if (r.error || !r.data || r.data.ok !== true) { pbAlert(pbMatErrText(r) + ' Nothing was changed.', 'Not Changed'); return; }
+    m.muted = !!on; pbMatJobPaint(); pbMatPlanReload(); pbMatCoInvalidate();
+    const b = pbProdEl('pjMatMute_' + id); if (b) b.focus({ preventScroll: true });
+  };
   window.pbMatHistory = async function(id) {
     const uid = pbArchiveOwnerUid, job = pbPj.job;
     if (!(await pbMatCanAsk(uid))) { pbMat.hist[id] = { err: 'No signal: history loads with signal.' }; pbMatJobPaint(); return; }
@@ -45774,6 +45824,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // A material notification opens Company production (pb_mat.alert_send links '#/prod/materials').
   window.pbPushRoutes = window.pbPushRoutes && typeof window.pbPushRoutes === 'object' ? window.pbPushRoutes : {};
   window.pbPushRoutes['/prod/materials'] = () => window.pbOpenProdDashboard();
+  { const open0 = window.pbPushOpen; // feat_itemalerts: '#/job/<key>' (pb_prod.item_alert_send)
+    if (typeof open0 === 'function') window.pbPushOpen = function(hash) {
+      const m = /^#\/job\/([a-z0-9_-]{1,40})$/.exec(String(hash || ''));
+      if (!m) return open0(hash);
+      if (pbLinkBusyWhy()) return false;
+      try { if (typeof window.pbCxOpenJob === 'function' && pbCx && pbCx.on) window.pbCxOpenJob(m[1], 'overview'); else window.pbOpenProdDashboard(); return true; } catch (e) { return false; }
+    }; }
   window.__debugMat = () => pbMat;
   // ==== end batch 18 M2 ====
   // ==== batch 18 M3 + M4 (r15): Run Setup materials per run / section, typed items, spoils ====
@@ -47495,7 +47552,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbCxDashOverall(p) { return pbCxDashOn() ? pbCxPctText(p >= 1 ? p : Math.min(p, 0.999999)) : pbProdPctText(p); }
   // the categories in words under the bar (rows: the job screen's table, with done / planned)
   // ==== feat_itemmat: the overview rows ====
-  function pbItemAtAlert(c) { return !!(c && c.planned !== null && c.pct !== null && c.pct >= (c.alertPct || 80) / 100 && c.pct < 1); }
+  function pbItemAtAlert(c) { return !!pbItemAlertHit(c); }
+  // feat_itemalerts: the highest alert an item has reached: its "Alert at" % (until it is done) or a labeled one
+  function pbItemAlertHit(c) {
+    if (!c || c.muted || c.planned === null || c.pct === null) return null;
+    let hit = c.pct >= (c.alertPct || 80) / 100 && c.pct < 1 ? { pct: c.alertPct || 80, label: '' } : null;
+    (c.alerts || []).forEach(a => { if (c.pct >= a.pct / 100 && (!hit || a.pct >= hit.pct)) hit = { pct: a.pct, label: a.label || '' }; });
+    return hit;
+  }
   function pbItemMatShown() { try { return localStorage.getItem('pbItemMatRows') !== 'hide'; } catch (e) { return true; } }
   window.pbItemMatToggle = function() { const on = !pbItemMatShown(); try { localStorage.setItem('pbItemMatRows', on ? 'show' : 'hide'); } catch (e) {} window.__pbItemMatHidden = !on; pbProdJobRender(); const b = document.getElementById('pjItemMatTog'); if (b) b.focus({ preventScroll: true }); };
   window.pbItemRowsHtml = function(items) {
@@ -47508,7 +47572,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (anyMat) h += '<span class="pbx-itemhead"><span class="pbx-itemkey">' + (shown ? 'Materials: used / ordered / expected' : 'Materials hidden') + '</span><button type="button" class="pbx-matrows-tog" id="pjItemMatTog" aria-pressed="' + (shown ? 'false' : 'true') + '" onclick="pbItemMatToggle()">' + (shown ? 'Hide Materials' : 'Show Materials') + '</button></span>';
     h += '<span class="pbx-legrows">' + items.map(c => {
       const L = G && c.key && G.by[c.key] ? G.by[c.key] : [], matAlerts = L.filter(m => m.alert).length;
-      const flags = (pbItemAtAlert(c) ? chip('warn', 'warn', 'Reached ' + (c.alertPct || 80) + '% of planned') : '') + (!shown && matAlerts ? chip('warn', 'cube', pbCxN(matAlerts, 'material alert')) : '');
+      const hit = pbItemAlertHit(c), flags = (hit ? chip('warn', 'warn', 'Reached ' + hit.pct + '% of planned' + (hit.label ? ' · ' + hit.label : '')) : '') + (c.muted && c.planned !== null ? '<span class="pbx-ichip pbx-muted">Alerts silenced</span>' : '') + (!shown && matAlerts ? chip('warn', 'cube', pbCxN(matAlerts, 'material alert')) : ''); // feat_itemalerts
       return '<span class="pbx-legrow' + (pbItemAtAlert(c) ? ' alert' : '') + '"><span class="pbx-leg-n">' + pbCxE(c.name) + (c.extra ? ' (not in plan)' : '') + (flags ? '<span class="pbx-iflags">' + flags + '</span>' : '') + '</span><span class="pbx-leg-a">' + pbCxE(c.planned !== null ? pbProdQtyText(c.done) + ' / ' + pbProdQtyText(c.planned, c.unit) : pbProdQtyText(c.done, c.unit)) + '</span><span class="pbx-leg-v">' + val(c) + '</span></span>'
         + (shown && L.length ? matRows(L) : '');
     }).join('');
