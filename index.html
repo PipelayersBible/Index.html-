@@ -8759,7 +8759,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.12 · 2026-10-22'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.13 · 2026-10-22'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -33382,7 +33382,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbProdPlanRowsFrom(D) {
     const plan = D && D.plan && Array.isArray(D.plan.categories) ? D.plan.categories : PB_PROD_DEFAULT_CATS;
     const fmt = (n) => (n === null || n === undefined || n === '') ? '' : String(n);
-    return plan.filter(c => c && c.key).map(c => ({ key: c.key, name: String(c.name || ''), unit: String(c.unit || ''), planned: fmt(c.planned), weight: fmt(c.weight), hours: fmt(c.hours), costCode: String(c.cost_code || ''), perUnit: (Number(c.hours) > 0 && Number(c.planned) > 0) ? String(Math.round(Number(c.hours) / Number(c.planned) * 10000) / 10000) : '' }));
+    return plan.filter(c => c && c.key).map(c => ({ key: c.key, name: String(c.name || ''), unit: String(c.unit || ''), planned: fmt(c.planned), plannedAuto: c.planned_auto === true, // feat_autoplan
+      weight: fmt(c.weight), hours: fmt(c.hours), costCode: String(c.cost_code || ''), perUnit: (Number(c.hours) > 0 && Number(c.planned) > 0) ? String(Math.round(Number(c.hours) / Number(c.planned) * 10000) / 10000) : '' }));
   }
   // feat_navfix (owner, Oct 22: "The pipe installed main should show the percentage like everything else"): an item with
   // no Planned amount gets the Expected of the pipe materials that count its footage (LF items only), shown and editable.
@@ -33475,7 +33476,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>How % complete is worked out</span></summary><p class="pb-help" id="ppMathHelp">A category&rsquo;s % is done &divide; planned (it can pass 100%). The job&rsquo;s % averages the planned categories, each capped at 100%: by your weights if every planned category has one, else by budget hours if every one has them, else equally. Unplanned categories show their amount and are left out. Work counts only in the category&rsquo;s unit (other units show beside it). Budget hours are compared with the crew hours reported: closed Crew Log check-ins (laborers and operators) and crew man-hours foremen type in.</p></details>'
       + '<div id="ppRows">' + E.rows.map((r, i) => {
         const c = cats.categories.find(x => x.key === r.key);
-        const has = '<span class="pbp-dim pbp-rowhas">' + escapeHtml((c && (c.done || c.otherUnits.length) ? pbProdQtyText(c.done, c.unit) + ' reported. ' : '') + (r.key && PB_PROD_RUN_KEYS.has(r.key) ? 'Filled in from crews\u2019 runs.' : 'Foremen enter it with each run.') + (r.plannedAuto && String(r.planned) !== '' ? ' Planned is filled in from the pipe materials’ Expected; change it if needed. Tap Save Plan to keep it.' : '')) + '</span>';
+        const has = '<span class="pbp-dim pbp-rowhas">' + escapeHtml((c && (c.done || c.otherUnits.length) ? pbProdQtyText(c.done, c.unit) + ' reported. ' : '') + (r.key && PB_PROD_RUN_KEYS.has(r.key) ? 'Filled in from crews\u2019 runs.' : 'Foremen enter it with each run.') + (r.plannedAuto && String(r.planned) !== '' ? ' Planned comes from the pipe materials’ Expected and follows it when they change. Type a different number to set your own.' : '')) + '</span>';
         return '<fieldset class="pbp-prow" id="ppRow' + i + '"><legend class="pb-sr">Category ' + (i + 1) + '</legend>'
           + field('ppName' + i, 'Category', r.name, 'type="text" maxlength="40" autocomplete="off"')
           + '<div class="pbp-prow-nums">' + field('ppPlanned' + i, 'Planned', r.planned, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanNote(); pbProdPlanPerIn(' + i + ')"')
@@ -45490,18 +45491,20 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (r.error || !r.data || r.data.ok !== true) return fail(pbMatErrText(r) + ' Nothing was saved.');
     pbMat.form = null; pbMat.hist = {}; pbMat.setHist = null;
     if (F.kind === 'mat' && r.data.material && r.data.material.id) pbMat.open[r.data.material.id] = pbMat.open[r.data.material.id] || false;
-    pbMatJobPaint(); pbMatJobLoad(); pbMatCoInvalidate();
+    pbMatJobPaint(); pbMatPlanReload(); pbMatCoInvalidate();
   };
+  // feat_autoplan: a material's Expected can change the plan's Planned on the server; load the plan again with the list
+  function pbMatPlanReload() { if (!pbPj.edit && typeof window.pbProdJobLoad === 'function') window.pbProdJobLoad(); else pbMatJobLoad(); }
   function pbMatCoInvalidate() { pbMat.co = null; }
   window.pbMatArchive = function(id, on) {
     const m = pbMatFind(id), uid = pbArchiveOwnerUid, job = pbPj.job; if (!m) return;
-    pbShowModal(on ? 'Records ' + m.name + '? It leaves the list and the dashboard and gets no more alerts. Its orders and history are kept, and you can bring it back.' : 'Bring ' + m.name + ' back to the list?',
+    pbShowModal(on ? 'Archive ' + m.name + '? It leaves the list and the dashboard and gets no more alerts. Its orders and history are kept, and you can bring it back.' : 'Bring ' + m.name + ' back to the list?',
       [{ label: 'Cancel' }, { label: on ? 'Archive' : 'Bring Back', primary: true, onClick: async () => {
         if (!(await pbMatCanAsk(uid))) { pbAlert('No signal. Nothing was changed; try again when you have signal.', 'Not Changed'); return; }
         const r = await pbPermitRpc('pb_mat_archive', { p_material_id: id, p_archived: !!on, p_expect_uid: uid, p_expect_version: m.version, p_phone_at: new Date().toISOString() }, 30000);
         if (pbPj.job !== job) return;
         if (r.error || !r.data || r.data.ok !== true) { pbAlert(pbMatErrText(r) + ' Nothing was changed.', 'Not Changed'); return; }
-        pbMatJobLoad(); pbMatCoInvalidate();
+        pbMatPlanReload(); pbMatCoInvalidate();
       } }], 'Materials');
   };
   window.pbMatHistory = async function(id) {
