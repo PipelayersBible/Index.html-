@@ -5754,6 +5754,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div id="archiveOfficeWrap"><h2 class="pb-reports-heading" id="archiveOfficeHead">Office</h2>
       <div class="pb-tools-group" id="archiveOfficeGroup" role="group" aria-label="Office">
         <button type="button" class="pb-edu-row pb-tool-row" id="archiveInboxBtn" data-ic="people" style="display:none;" onclick="pbOpenReportsInbox()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Management inbox</span><span class="sub">Reports from your company&rsquo;s crews</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
+        <button type="button" class="pb-edu-row pb-tool-row" id="archiveCrewPermitsBtn" data-ic="lock" style="display:none;" onclick="pbOpenCrewPermits()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Crew permit records</span><span class="sub">Closed permits from your crew</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
         <button type="button" class="pb-edu-row pb-tool-row" id="archiveCompanyPermitsBtn" data-ic="lock" style="display:none;" onclick="pbOpenCompanyPermits()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Company permit records</span><span class="sub">Every closed permit your crews backed up</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
         <button type="button" class="pb-edu-row pb-tool-row" id="archiveTicketsDashBtn" data-ic="chart" style="display:none;" onclick="pbOpenTicketsDashboard()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Company tickets</span><span class="sub">Totals by job, mix, use and cost code</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
         <button type="button" class="pb-edu-row pb-tool-row" id="archiveProdDashBtn" data-ic="chart" style="display:none;" onclick="pbOpenProdDashboard()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Company production</span><span class="sub">Every job, every crew, % complete</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button><!-- batch 11 D -->
@@ -5938,9 +5939,9 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   <div class="pb-screen" id="screen-companyPermits">
     <div class="pb-header">
       <p class="pb-eyebrow"><span>COMPANY PERMITS</span><button type="button" class="pb-back" title="Back" aria-label="Back" onclick="pbBackOr(pbOpenArchive)"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
-      <h1 class="pb-title">Company permit records</h1>
+      <h1 class="pb-title" id="cprTitle">Company permit records</h1>
     </div>
-    <p class="pb-help pb-cpr-lead">Closed confined space permits your crews backed up. They can&rsquo;t be changed or removed. If a permit was updated on a phone after closing (for example, marked as emailed), every version is kept.</p>
+    <p class="pb-help pb-cpr-lead" id="cprLead">Closed confined space permits your crews backed up. They can&rsquo;t be changed or removed. If a permit was updated on a phone after closing (for example, marked as emailed), every version is kept.</p>
     <p id="cprStatus" class="pb-rpt-status" role="status"></p>
     <div id="cprList"></div>
     <div class="pb-btn-wrap" id="cprMoreWrap" style="display:none;"><button type="button" class="pb-btn secondary" id="cprMoreBtn" onclick="pbCompanyPermitsLoad(true)">Load Older Permits</button></div>
@@ -6426,6 +6427,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div class="pb-btn-wrap" id="pmRetryWrap" style="display:none;"><button type="button" class="pb-btn secondary" id="pmRetryBtn" onclick="pbProdRetryLoad()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Try Again</button></div>
       <div class="pb-btn-wrap"><button type="button" class="pb-btn secondary" id="pmSyncBtn" onclick="pbProdSyncNow()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Sync Now</button></div>
       <div id="pmLive" class="pbp-crew pbp-live"></div><!-- batch 14 F: my crew now -->
+      <div id="pmCrewPermits" class="pbp-crew pbp-live"></div><!-- foreman: crew live permits -->
       <div id="pmCrew" class="pbp-crew"></div><!-- batch 12 D2: crew runs, claims and crew links -->
       <div class="pbp-cols"><div class="pbp-col">
         <h2 class="pb-h2 pbp-h2">Today</h2>
@@ -31218,6 +31220,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const a = pbReportAccessMem.get(pbArchiveOwnerUid);
     const btn = document.getElementById('archiveInboxBtn');
     if (btn) btn.style.display = a && a.manager ? '' : 'none';
+    const crb = document.getElementById('archiveCrewPermitsBtn'); if (crb) crb.style.display = (typeof pbLvIsForeman === 'function' && pbLvIsForeman(pbArchiveOwnerUid)) ? '' : 'none';
     const cpb = document.getElementById('archiveCompanyPermitsBtn'); if (cpb) cpb.style.display = a && a.manager ? '' : 'none'; // batch 6b
     const ctb = document.getElementById('archiveTicketsDashBtn'); if (ctb) ctb.style.display = a && a.manager ? '' : 'none'; // batch 7
     const cpd = document.getElementById('archiveProdDashBtn'); if (cpd) cpd.style.display = a && a.manager ? '' : 'none'; // batch 11 D
@@ -31564,13 +31567,29 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   window.pbPermitBackupNow = function() { pbPermitBkForce = true; pbPermitBackupSoon(0); };
   // ---------- batch 6b: Company permit records (company account only, read-only, memory only) ----------
-  let pbCpr = { uid: null, rows: [], done: false, busy: false };
+  let pbCpr = { uid: null, rows: [], done: false, busy: false, mode: 'company' };
   window.pbOpenCompanyPermits = async function() {
     if (!pbCanOpen('reports', { explain: true })) return;
     const uid = pbArchiveOwnerUid;
     const a = (await pbReportAccessFor(uid)) || null;
     if (!(a && a.manager)) { pbAlert('Only your company account can see the company’s permit records.', 'Company Permit Records'); return; }
-    if (pbCpr.uid !== uid) pbCpr = { uid, rows: [], done: false, busy: false };
+    if (pbCpr.uid !== uid || pbCpr.mode !== 'company') pbCpr = { uid, rows: [], done: false, busy: false, mode: 'company' };
+    pbCprTitles();
+    pbGoto('companyPermits');
+    pbCompanyPermitsRender();
+    if (!pbCpr.rows.length) pbCompanyPermitsLoad(false);
+  };
+  function pbCprTitles() {
+    const crew = pbCpr.mode === 'crew', t = document.getElementById('cprTitle'), l = document.getElementById('cprLead');
+    if (t) t.textContent = crew ? 'Crew permit records' : 'Company permit records';
+    if (l) l.innerHTML = crew ? 'Closed confined space permits your crew backed up, from the time each pipelayer was linked to you. They can&rsquo;t be changed or removed.' : 'Closed confined space permits your crews backed up. They can&rsquo;t be changed or removed. If a permit was updated on a phone after closing (for example, marked as emailed), every version is kept.';
+  }
+  window.pbOpenCrewPermits = async function() {
+    if (!pbCanOpen('reports', { explain: true })) return;
+    const uid = pbArchiveOwnerUid;
+    if (!(typeof pbLvIsForeman === 'function' && pbLvIsForeman(uid))) { pbAlert('Only a foreman account can see crew permit records.', 'Crew Permit Records'); return; }
+    if (pbCpr.uid !== uid || pbCpr.mode !== 'crew') pbCpr = { uid, rows: [], done: false, busy: false, mode: 'crew' };
+    pbCprTitles();
     pbGoto('companyPermits');
     pbCompanyPermitsRender();
     if (!pbCpr.rows.length) pbCompanyPermitsLoad(false);
@@ -31579,18 +31598,18 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const st = document.getElementById('cprStatus'), uid = pbArchiveOwnerUid;
     if (pbCpr.busy) return;
     if (!(sbClient && typeof sbClient.rpc === 'function' && sbUser && sbUser.id === uid && (await pbLiveSessionIs(uid)))) { if (st) st.textContent = 'Sign in with signal to see the company’s permit records.'; return; }
-    if (pbCpr.uid !== uid) pbCpr = { uid, rows: [], done: false, busy: false };
+    if (pbCpr.uid !== uid) pbCpr = { uid, rows: [], done: false, busy: false, mode: pbCpr.mode || 'company' };
     const lastRow = more && pbCpr.rows.length ? pbCpr.rows[pbCpr.rows.length - 1] : null;
     pbCpr.busy = true; if (st) st.textContent = 'Loading…';
     let r;
-    try { r = await Promise.race([sbClient.rpc('pb_permit_company_page', { p_before_closed: lastRow ? lastRow.closed_at : null, p_before_id: lastRow ? lastRow.row_id : null, p_limit: 50 }), new Promise(res => setTimeout(() => res({ data: null, error: { message: 'timeout' } }), 60000))]); }
+    try { r = await Promise.race([sbClient.rpc(pbCpr.mode === 'crew' ? 'pb_permit_crew_page' : 'pb_permit_company_page', { p_before_closed: lastRow ? lastRow.closed_at : null, p_before_id: lastRow ? lastRow.row_id : null, p_limit: 50 }), new Promise(res => setTimeout(() => res({ data: null, error: { message: 'timeout' } }), 60000))]); }
     catch (x) { r = { data: null, error: { message: String((x && x.message) || x) } }; }
     pbCpr.busy = false;
     if (!sbUser || sbUser.id !== uid || pbCpr.uid !== uid || !(await pbLiveSessionIs(uid)) || !sbUser || sbUser.id !== uid) return; // answered for this login only (review B)
     const stNow = document.getElementById('cprStatus');
     if (!r || r.error || !Array.isArray(r.data)) {
       const m = String((r && r.error && r.error.message) || '');
-      if (stNow) stNow.textContent = /pb:not_company_account/.test(m) ? 'This account isn’t your company account.' : 'Couldn’t load — check your signal and tap Refresh.';
+      if (stNow) stNow.textContent = /pb:not_company_account|pb:not_foreman/.test(m) ? (pbCpr.mode === 'crew' ? 'This account isn’t a foreman account.' : 'This account isn’t your company account.') : 'Couldn’t load — check your signal and tap Refresh.';
       return;
     }
     const rows = r.data.filter(x => x && x.record && x.record.kind === 'confined');
@@ -35536,6 +35555,45 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbAccountLoadHooks.push((uid) => { pbLvResetFor(uid); });
   window.pbScreenHooks.push((name) => { if (name === 'prodMine') { pbLvRender(); pbLvLoad(pbArchiveOwnerUid, { force: true }).catch(() => null); } });
   setInterval(() => { if (pbCurrentScreen === 'prodMine' && document.visibilityState === 'visible') pbLvLoad(pbArchiveOwnerUid).catch(() => null); }, 60 * 1000);
+  // ---- foreman: his crew's live confined space permits ----
+  let pbCpm = { uid: null, data: null, at: 0, busy: false, msg: '' };
+  async function pbCpmLoad(uid) {
+    if (!uid || uid === 'shared' || pbCpm.busy || !pbLvIsForeman(uid)) return;
+    if (!sbClient || typeof sbClient.rpc !== 'function' || !sbUser || sbUser.id !== uid) return;
+    if (pbCpm.uid !== uid) pbCpm = { uid, data: null, at: 0, busy: false, msg: '' };
+    if (navigator.onLine === false) { pbCpm.msg = 'No signal.'; pbCpmRender(); return; }
+    if (!(await pbLiveSessionIs(uid))) return;
+    pbCpm.busy = true; pbCpmRender();
+    try {
+      const r = await pbPermitRpc('pb_prod_crew_live_permits', {}, 30000);
+      if (pbCpm.uid !== uid || !sbUser || sbUser.id !== uid) return;
+      if (!r.error && r.data && Array.isArray(r.data.permits)) { pbCpm.data = r.data; pbCpm.at = Date.now(); pbCpm.msg = ''; }
+      else pbCpm.msg = 'Couldn’t load your crew’s permits.';
+    } finally { pbCpm.busy = false; }
+    pbCpmRender();
+  }
+  function pbCpmHtml() {
+    const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared' || !pbLvIsForeman(uid) || pbCpm.uid !== uid) return '';
+    const D = pbCpm.data, list = D ? D.permits : null;
+    const line = pbCpm.busy && !list ? 'Loading…' : pbCpm.msg ? pbCpm.msg : list ? 'Updated ' + pbProdTimeText(pbCpm.at) + '.' : '';
+    let h = '<section class="pbp-block" id="pmCpmSec"><h3 class="pb-h2 pbp-h3">My crew’s confined space permits</h3><p class="pb-rpt-status pbp-livestatus" id="pmCpmStatus" role="status">' + escapeHtml(line) + '</p>';
+    if (list && !list.length) h += '<p class="pbp-dim pbp-none">No permits open right now.</p>';
+    else if (list) h += '<ul class="pbp-livelist">' + list.map((x, i) => {
+      const s = x.status || {}, ago = Math.max(0, Math.round((Date.now() - new Date(x.updated_at).getTime() - 0) / 60000));
+      const stale = !x.closed && ago > 5;
+      return '<li class="pbp-livecard" id="pmCpm' + i + '"><span class="pbp-livename">' + escapeHtml(x.who || 'Pipelayer') + ' — ' + escapeHtml(s.space || '') + (x.closed ? ' (closed)' : '') + '</span>'
+        + '<p class="pbp-dim">' + escapeHtml((s.jobsite || '') + (s.jobNumber ? ' — #' + s.jobNumber : '')) + '</p>'
+        + '<p>' + (s.emergency ? '<strong>EMERGENCY</strong> · ' : '') + escapeHtml(x.closed ? 'Closed' : (Number(s.inside) || 0) + ' inside') + (s.lastAirAt && !x.closed ? ' · last air test ' + escapeHtml(pbProdTimeText(s.lastAirAt)) + (s.airOk === false ? ' <strong>(out of limits)</strong>' : '') : '') + '</p>'
+        + (stale ? '<p class="pbp-dim">Phone last reported ' + escapeHtml(pbProdTimeText(x.updated_at)) + ' — the phone sends only while the app is open.</p>' : '') + '</li>';
+    }).join('') + '</ul>';
+    h += '<div class="pb-btn-wrap pbp-btns">' + pbCrewBtn('pmCpmRefresh', '<svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Refresh', 'pbCpmRefresh()', 'ghost') + pbCrewBtn('pmCpmRecords', 'Crew Permit Records', 'pbOpenCrewPermits()', 'ghost') + '</div></section>';
+    return h;
+  }
+  function pbCpmRender() { const el = document.getElementById('pmCrewPermits'); if (!el) return; pbSetHtml(el, pbCpmHtml()); }
+  window.pbCpmRefresh = function() { pbCpmLoad(pbArchiveOwnerUid).catch(() => null); };
+  window.pbAccountLoadHooks.push((uid) => { if (pbCpm.uid !== uid) { pbCpm = { uid, data: null, at: 0, busy: false, msg: '' }; const el = document.getElementById('pmCrewPermits'); if (el) el.innerHTML = ''; } });
+  window.pbScreenHooks.push((name) => { if (name === 'prodMine') { if (pbCpm.uid !== pbArchiveOwnerUid) pbCpm = { uid: pbArchiveOwnerUid, data: null, at: 0, busy: false, msg: '' }; pbCpmRender(); pbCpmLoad(pbArchiveOwnerUid).catch(() => null); } });
+  setInterval(() => { if (pbCurrentScreen === 'prodMine' && document.visibilityState === 'visible') pbCpmLoad(pbArchiveOwnerUid).catch(() => null); }, 60 * 1000);
   document.addEventListener('focusout', () => { if (pbLv.dirty) setTimeout(() => { if (pbLv.dirty) pbLvRender(); }, 0); });
   // ================= end batch 14 F live crew view =================
   // ================= batch 14 F (owner decisions A and B, Oct 19 15:04): company "Live now" board, live permit status,
