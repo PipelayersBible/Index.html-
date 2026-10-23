@@ -4,30 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Pipelayer's Bible</title>
-<style id="cpTopStyle">
-#pbApp#pbApp #screen-confinedActive .cp-top { margin: 14px 16px 0 16px; }
-#pbApp#pbApp #screen-confinedActive .cp-timer-row { display: flex; gap: 10px; }
-#pbApp#pbApp #screen-confinedActive .cp-timer-chip { flex: 1 1 0; min-width: 0; border: 1px solid var(--pb-divider, #2a3140); border-radius: 12px; padding: 8px 10px 10px 10px; background: var(--pb-surface, #161a22); }
-#pbApp#pbApp #screen-confinedActive .cp-tc-k { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--pb-text-2); }
-#pbApp#pbApp #screen-confinedActive .cp-tc-v { font-size: 24px; font-weight: 800; line-height: 1.2; margin: 2px 0 6px 0; font-variant-numeric: tabular-nums; color: var(--pb-text); }
-#pbApp#pbApp #screen-confinedActive .cp-timer-chip.is-off .cp-tc-v { font-size: 15px; font-weight: 600; color: var(--pb-text-2); margin: 8px 0 12px 0; }
-#pbApp#pbApp #screen-confinedActive .cp-timer-chip.is-due { border-color: var(--pb-danger-text, #ff6b7d); background: rgba(226, 74, 94, .16); }
-#pbApp#pbApp #screen-confinedActive .cp-timer-chip.is-due .cp-tc-v { color: var(--pb-danger-text, #ff6b7d); animation: cpDueBlink 1s steps(2, start) infinite; }
-@keyframes cpDueBlink { to { opacity: .35; } }
-@media (prefers-reduced-motion: reduce) { #pbApp#pbApp #screen-confinedActive .cp-timer-chip.is-due .cp-tc-v { animation: none; } }
-#pbApp#pbApp #screen-confinedActive .cp-tc-btn { width: 100%; margin: 0 !important; min-height: 44px; }
-#pbApp#pbApp #screen-confinedActive .cp-timer-note { margin: 6px 2px 0 2px; font-size: 12.5px; color: var(--pb-text-2); }
-#pbApp#pbApp #screen-confinedActive .cp-timer-about { margin: 0 0 4px 0; }
-#pbApp#pbApp #screen-confinedActive .cp-top #cpRosterSection { margin: 12px 0 0 0; }
-#pbApp#pbApp #screen-confinedActive .cp-roster-row > .cp-tog { min-height: 54px; min-width: 130px; flex: 1 1 130px; font-size: 17px; font-weight: 800; }
-#pbApp#pbApp #screen-confinedActive .cp-roster-row > .cp-tog-in { background: var(--pb-ok, #1f6b3a); border-color: var(--pb-ok, #1f6b3a); color: var(--pb-on-ok, #052e16); }
-#pbApp#pbApp #screen-confinedActive .cp-roster-row > .cp-tog-out { background: transparent; color: var(--pb-text); }
-#pbApp#pbApp #screen-confinedActive .cp-roster-row > .k { font-size: 18px; }
-#pbApp#pbApp #screen-confinedActive .cp-hist { margin-top: 4px; }
-#pbApp#pbApp #screen-confinedActive .cp-hist summary { cursor: pointer; color: var(--pb-text-2); }
-/* Permit Status keeps the air readings and the window check; who is inside and the attendant are the roster's job now */
-#pbApp#pbApp #screen-confinedActive #cpStatusGrid .cp-tiles > .cp-tile:nth-child(-n+2) { display: none; }
-</style>
 </head>
 <body>
 <script>
@@ -7270,14 +7246,22 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
           <div class="cp-tc-k">Air test</div>
           <div class="cp-tc-v" id="cpAtmoCountdown">—</div>
           <button type="button" class="pb-btn ghost small cp-tc-btn" onclick="pbQuickAddAtmoTest()">+ Log Air Test</button>
+          <button type="button" class="cp-tc-set" onclick="pbOpenLateReminder('atmo')">Set reminder</button>
         </div>
         <div class="cp-timer-chip" id="cpCommTimerSection" style="display:none;">
           <div class="cp-tc-k">Comm check</div>
           <div class="cp-tc-v" id="cpCommCountdown">—</div>
           <button type="button" class="pb-btn ghost small cp-tc-btn" onclick="pbLogCommCheck()">+ Log Check</button>
+          <button type="button" class="cp-tc-set" onclick="pbOpenLateReminder('comm')">Set reminder</button>
         </div>
       </div>
       <p class="pb-help cp-timer-note">Reminders only. They run while this screen is open and awake, and may not sound if the phone is locked.</p>
+      <div id="cpLateForm" class="cp-late" style="display:none;">
+        <div class="pb-field"><label id="cpLateLabel" for="cpLateMin"></label><input type="number" enterkeyhint="done" step="1" min="1" max="480" id="cpLateMin" inputmode="numeric"></div>
+        <p class="pb-help" style="margin:4px 0 0 0;">A repeating reminder only. It does not change the permit&rsquo;s air limits or the 20-minute check-in rule, and it is recorded on the permit with the time it was set.</p>
+        <div id="cpLateErr" class="pb-help" style="color:var(--pb-danger-text, #ff6b7d); margin:4px 0 0 0;"></div>
+        <div class="pb-btn-row" style="padding-top:8px;"><button type="button" class="pb-btn ghost small" onclick="pbCancelLateReminder()">Cancel</button><button type="button" class="pb-btn small" onclick="pbApplyLateReminder()">Start Reminder</button></div>
+      </div>
     <div class="pb-section" id="cpRosterSection">
       <div class="pb-tag">Entrant / Attendant Roster</div>
       <div class="pb-body">
@@ -8778,6 +8762,39 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
 #pbApp .pbx-name-edit .pbx-btnrow .pb-btn { width: auto; min-height: 44px; }
 #pbApp.pb-text-big .pbx-namerow { flex-wrap: wrap; padding: 6px 2px; }
 #pbApp.pb-text-big .pbx-namerow-v { flex-basis: 100%; order: 3; text-align: left; white-space: normal; }
+</style>
+<style id="cpTopStyle">
+#pbApp#pbApp #screen-confinedActive .cp-top { margin: 14px 16px 0 16px; }
+#pbApp#pbApp #screen-confinedActive .cp-timer-row { display: flex; gap: 10px; }
+#pbApp#pbApp #screen-confinedActive .cp-timer-chip { flex: 1 1 0; min-width: 0; border: 1px solid var(--pb-divider, #2a3140); border-radius: 12px; padding: 8px 10px 10px 10px; background: var(--pb-surface, #161a22); }
+#pbApp#pbApp #screen-confinedActive .cp-tc-k { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--pb-text-2); }
+#pbApp#pbApp #screen-confinedActive .cp-tc-v { font-size: 24px; font-weight: 800; line-height: 1.2; margin: 2px 0 6px 0; font-variant-numeric: tabular-nums; color: var(--pb-text); }
+#pbApp#pbApp #screen-confinedActive .cp-timer-chip.is-off .cp-tc-v { font-size: 15px; font-weight: 600; color: var(--pb-text-2); margin: 8px 0 12px 0; }
+#pbApp#pbApp #screen-confinedActive .cp-timer-chip.is-due { border-color: var(--pb-danger-text, #ff6b7d); background: rgba(226, 74, 94, .16); }
+#pbApp#pbApp #screen-confinedActive .cp-timer-chip.is-due .cp-tc-v { color: var(--pb-danger-text, #ff6b7d); animation: cpDueBlink 1s steps(2, start) infinite; }
+@keyframes cpDueBlink { to { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { #pbApp#pbApp #screen-confinedActive .cp-timer-chip.is-due .cp-tc-v { animation: none; } }
+#pbApp#pbApp #screen-confinedActive .cp-tc-btn { width: 100%; margin: 0 !important; min-height: 44px; }
+#pbApp#pbApp #screen-confinedActive .cp-timer-note { margin: 6px 2px 0 2px; font-size: 12.5px; color: var(--pb-text-2); }
+#pbApp#pbApp #screen-confinedActive .cp-timer-about { margin: 0 0 4px 0; }
+#pbApp#pbApp #screen-confinedActive .cp-top #cpRosterSection { margin: 12px 0 0 0; }
+#pbApp#pbApp #screen-confinedActive .cp-roster-row > .cp-tog { min-height: 54px; min-width: 130px; flex: 1 1 130px; font-size: 17px; font-weight: 800; }
+#pbApp#pbApp #screen-confinedActive .cp-roster-row > .cp-tog-in { background: var(--pb-ok, #1f6b3a); border-color: var(--pb-ok, #1f6b3a); color: var(--pb-on-ok, #052e16); }
+#pbApp#pbApp #screen-confinedActive .cp-roster-row > .cp-tog-out { background: transparent; color: var(--pb-text); }
+#pbApp#pbApp #screen-confinedActive .cp-roster-row > .k { font-size: 18px; }
+#pbApp#pbApp #screen-confinedActive .cp-hist { margin-top: 4px; }
+#pbApp#pbApp #screen-confinedActive .cp-hist summary { cursor: pointer; color: var(--pb-text-2); }
+/* Permit Status keeps the air readings and the window check; who is inside and the attendant are the roster's job now */
+#pbApp#pbApp #screen-confinedActive #cpStatusGrid .cp-tiles > .cp-tile:nth-child(-n+2) { display: none; }
+#pbApp#pbApp #screen-confinedActive .cp-tc-set { display: none; width: 100%; margin: 6px 0 0 0; padding: 8px 0; background: transparent; border: 0; color: var(--pb-accent, #f2c230); font-weight: 700; font-size: 14px; text-decoration: underline; }
+#pbApp#pbApp #screen-confinedActive .cp-timer-chip.is-unset .cp-tc-set { display: block; }
+#pbApp#pbApp #screen-confinedActive .cp-late { margin: 10px 0 0 0; padding: 12px; border: 1px solid var(--pb-divider, #2a3140); border-radius: 12px; background: var(--pb-surface, #161a22); }
+/* roster: the Check In / Check Out button sits on the right, under the thumb */
+#pbApp#pbApp #screen-confinedActive .cp-roster-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; row-gap: 4px; align-items: center; }
+#pbApp#pbApp #screen-confinedActive .cp-roster-row > .k, #pbApp#pbApp #screen-confinedActive .cp-roster-row > .cp-inout, #pbApp#pbApp #screen-confinedActive .cp-roster-row > .cp-row-log, #pbApp#pbApp #screen-confinedActive .cp-roster-row > .pb-against-block { grid-column: 1; }
+#pbApp#pbApp #screen-confinedActive .cp-roster-row > .cp-inout { justify-self: start; }
+#pbApp#pbApp #screen-confinedActive .cp-roster-row > .cp-tog { grid-column: 2; grid-row: 1 / span 3; align-self: center; justify-self: end; min-width: 124px; min-height: 64px; flex: none; margin: 0 !important; }
+#pbApp#pbApp #screen-confinedActive .cp-roster-row > .pb-btn:not(.cp-tog) { grid-column: 1; justify-self: start; }
 </style>
 <!-- B14R3:jobgrp -->
 <script>
@@ -21817,7 +21834,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       <div class="pb-summary-item"><div class="k">Purpose</div><div class="v">${escapeHtml(confinedPermit.purpose)}</div></div>
       <div class="pb-summary-item"><div class="k">Authorized Window</div><div class="v">${escapeHtml(pbPermitWindowText(confinedPermit) || ((confinedPermit.date || '—') + ' ' + (confinedPermit.start || '') + (confinedPermit.end ? '–' + confinedPermit.end : '')))}<br><span id="cpWindowStatus"></span></div></div>
       <div class="pb-summary-item"><div class="k">App Air Limits</div><div class="v">${escapeHtml(pbLimitsText(confinedPermit))}</div></div>
-      <div class="pb-summary-item"><div class="k">Reminders (not limits)</div><div class="v">${escapeHtml(pbRemindersText(confinedPermit.atmoInterval, confinedPermit.commInterval))}</div></div>
+      <div class="pb-summary-item"><div class="k">Reminders (not limits)</div><div class="v">${escapeHtml(pbRemindersFor(confinedPermit))}</div></div>
       <div class="pb-summary-item"><div class="k">EMERGENCY Dials</div><div class="v">${escapeHtml(pbDialNumberNow())}</div></div>
       <div class="pb-summary-item"><div class="k">Supervisor</div><div class="v">${escapeHtml(confinedPermit.supervisor)}${confinedPermit.supervisorInitials ? ' (authorized: ' + escapeHtml(confinedPermit.supervisorInitials) + ')' : ''}</div></div>
       <div class="pb-summary-item"><div class="k">Attendant</div><div class="v">${escapeHtml(confinedPermit.attendant)}</div></div>
@@ -21889,12 +21906,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const one = (secId, cdId, ivl, running) => {
         const sec = document.getElementById(secId), cd = document.getElementById(cdId); if (!sec || !cd) return;
         sec.style.display = '';
+        const unset = !(typeof ivl === 'number' && ivl > 0);
+        sec.classList.toggle('is-unset', unset);
         if (running) { sec.classList.remove('is-off'); return; }
         sec.classList.add('is-off'); sec.classList.remove('is-due');
         cd.textContent = !(typeof ivl === 'number' && ivl > 0) ? 'Not set' : pbEmergencyOpen() ? 'Paused' : insideNow ? 'Not running' : 'Starts at first check-in';
       };
-      one('cpAtmoTimerSection', 'cpAtmoCountdown', p.atmoInterval, !!confinedAtmoTimer);
-      one('cpCommTimerSection', 'cpCommCountdown', p.commInterval, !!confinedCommTimer);
+      one('cpAtmoTimerSection', 'cpAtmoCountdown', pbEffInterval(p, 'atmo'), !!confinedAtmoTimer);
+      one('cpCommTimerSection', 'cpCommCountdown', pbEffInterval(p, 'comm'), !!confinedCommTimer);
     } catch (e) {}
   }
   function pbRenderCpDash() {
@@ -21937,7 +21956,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // A reading still on its first save is "saving"; one waiting on a retry did NOT save (the red banner says so too).
     const rows = confinedAtmoLog.map(r => ({ r, saving: r.confirmed === false })).concat(pend.map(r => ({ r, unsaved: true })));
     const gases = [['o2', 'O2', '%'], ['lel', 'LEL', '%'], ['h2s', 'H2S', ' ppm'], ['co', 'CO', ' ppm']];
-    const ivl = typeof p.atmoInterval === 'number' && p.atmoInterval > 0 ? p.atmoInterval : null;
+    const ivl = pbEffInterval(p, 'atmo');
     let air = '';
     // UX batch 3: one re-test chip by the "Latest Air Readings" heading (every gas is tested at the same
     // time with one meter), shown once a gas has been measured, as the per-tile chips were.
@@ -21988,7 +22007,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     air += '<div class="cp-st-note cp-air-qual">Logged readings, not an entry approval.</div>'; // UX batch 2 (B8): stays visible
     air += '<details class="pb-more b4-more cp-limits-more"><summary>' + PB_B4_INFO + '<span>Limits these are checked against</span></summary><div class="cp-st-note">Checked against: ' + escapeHtml(pbLimitsText(p)) + '. These are the readings logged here, not an entry approval.</div></details>';
     h += '<div class="cp-air"><div class="cp-air-headrow"><div class="cp-air-head">Latest Air Readings</div>' + (anyMeasured ? '<span class="cp-due-slot" id="cpAirDueSlot">' + pbCpAirDueChip() + '</span>' : '') + '</div>' + air + '</div>';
-    h += row('Reminders', escapeHtml(pbRemindersText(p.atmoInterval, p.commInterval)) + (pbEmergencyOpen() ? '<div class="cp-st-bad">Paused while the EMERGENCY is open.</div>' : '') + '<details class="pb-more b4-more"><summary>' + PB_B4_INFO + '<span>When reminders run</span></summary><div class="cp-st-note">The countdowns below appear once someone has checked in. They only run while this screen is open and awake.</div></details>', 'cp-rem-row');
+    h += row('Reminders', escapeHtml(pbRemindersFor(p)) + (pbEmergencyOpen() ? '<div class="cp-st-bad">Paused while the EMERGENCY is open.</div>' : '') + '<details class="pb-more b4-more"><summary>' + PB_B4_INFO + '<span>When reminders run</span></summary><div class="cp-st-note">The countdowns below appear once someone has checked in. They only run while this screen is open and awake.</div></details>', 'cp-rem-row');
     // UX batch 2 (B9): keep which disclosures were open, and the focused one, across the periodic rebuild
     const pbOpenKeys = Array.from(grid.querySelectorAll('details[open] > summary')).map(x => x.textContent);
     const pbFocusKey = (document.activeElement && grid.contains(document.activeElement) && document.activeElement.tagName === 'SUMMARY') ? document.activeElement.textContent : null;
@@ -23707,19 +23726,80 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbReminderShown = due; pbReminderShownMsg = due.map(r => r.message).join('\n\n');
     pbAlert(pbReminderShownMsg, due[due.length - 1].title);
   }
+  // A reminder interval can be set AFTER the permit is locked (permit.lateReminders). It only starts a repeating reminder:
+  // it never changes the locked interval fields, the air limits, or the entry freshness rule (which still reads atmoInterval alone).
+  function pbEffInterval(p, kind) {
+    if (!p) return null;
+    const o = kind === 'atmo' ? p.atmoInterval : p.commInterval;
+    if (typeof o === 'number' && o > 0) return o;
+    const l = p.lateReminders && p.lateReminders[kind];
+    return l && typeof l.min === 'number' && l.min > 0 ? l.min : null;
+  }
+  function pbRemindersFor(p) {
+    const base = pbRemindersText(p.atmoInterval, p.commInterval), L = p && p.lateReminders;
+    if (!L) return base;
+    const bit = (k, label) => L[k] && L[k].min ? label + ' every ' + L[k].min + ' min (started during the entry, ' + new Date(L[k].at).toLocaleTimeString() + ')' : '';
+    const parts = [bit('atmo', 'air test re-check'), bit('comm', 'communication check')].filter(Boolean);
+    return base + (parts.length ? '; set during the entry: ' + parts.join('; ') : '');
+  }
+  let pbLateKind = null;
+  window.pbOpenLateReminder = function(kind) {
+    if (!confinedPermit || (kind !== 'atmo' && kind !== 'comm')) return;
+    if (pbEffInterval(confinedPermit, kind)) return; // already set: never changed from here
+    pbLateKind = kind;
+    const f = document.getElementById('cpLateForm'); if (!f) return;
+    document.getElementById('cpLateLabel').textContent = (kind === 'atmo' ? 'Air test re-check' : 'Communication check') + ' reminder: repeat every how many minutes?';
+    const inp = document.getElementById('cpLateMin'); inp.value = ''; inp.placeholder = kind === 'atmo' ? 'e.g. 15' : 'e.g. 5';
+    document.getElementById('cpLateErr').textContent = '';
+    f.style.display = '';
+    try { inp.focus({ preventScroll: true }); } catch (e) {}
+  };
+  window.pbCancelLateReminder = function() { pbLateKind = null; const f = document.getElementById('cpLateForm'); if (f) f.style.display = 'none'; };
+  window.pbApplyLateReminder = async function() {
+    const err = document.getElementById('cpLateErr');
+    if (!confinedPermit) { pbAlert('This permit is already closed out.', 'Permit Closed'); return; }
+    const kind = pbLateKind; if (kind !== 'atmo' && kind !== 'comm') return;
+    const raw = String(document.getElementById('cpLateMin').value || '').trim();
+    const min = Number(raw);
+    if (!raw || !isFinite(min) || min < 1 || min > 480 || Math.floor(min) !== min) { err.textContent = 'Enter a whole number of minutes from 1 to 480.'; return; }
+    if (pbEffInterval(confinedPermit, kind)) { err.textContent = 'A reminder is already set for this permit.'; return; }
+    const sid = confinedPermit.sessionId;
+    return pbRunOnSession(async () => {
+      if (!pbSessionIs(sid)) return;
+      if (pbEffInterval(confinedPermit, kind)) return;
+      const prev = confinedPermit.lateReminders;
+      confinedPermit.lateReminders = Object.assign({}, prev || {}, { [kind]: { min, at: Date.now() } });
+      const tokGen = confinedSaveOkGen;
+      const savedOk = await saveActiveConfinedSession();
+      if (!savedOk) {
+        if (pbSessionIs(sid)) {
+          if (prev) confinedPermit.lateReminders = prev; else delete confinedPermit.lateReminders;
+          pbConfinedRepairIfNeeded(tokGen, sid);
+          pbCpDashSafe();
+        }
+        pbAlert('This reminder did NOT save. Storage may be full or unavailable. Try again.', 'Reminder Not Saved');
+        return;
+      }
+      if (!pbSessionIs(sid)) return;
+      pbCancelLateReminder();
+      // Runs now if someone is already inside (reminders start at the first check-in otherwise) and no emergency is open.
+      if (confinedCommStarted && !pbEmergencyOpen()) { if (kind === 'atmo') startConfinedAtmoTimer(); else startConfinedCommTimer(); }
+      pbCpDashSafe();
+    });
+  };
   function pbCpTimerOff(secId, cdId) {
-    try { const sec = document.getElementById(secId), cd = document.getElementById(cdId); if (!sec || !cd) return; sec.classList.add('is-off'); sec.classList.remove('is-due'); cd.textContent = 'Not set'; sec.style.display = ''; } catch (e) {} // display only
+    try { const sec = document.getElementById(secId), cd = document.getElementById(cdId); if (!sec || !cd) return; sec.classList.add('is-off', 'is-unset'); sec.classList.remove('is-due'); cd.textContent = 'Not set'; sec.style.display = ''; } catch (e) {} // display only
   }
   const PB_OVERDUE_REPEAT_MS = 60000; // an unanswered (overdue) air test or comm check sounds again this often
   function startConfinedAtmoTimer() {
     stopConfinedAtmoTimer();
-    if (!confinedPermit || !confinedPermit.atmoInterval || confinedPermit.atmoInterval <= 0) {
+    if (!confinedPermit || !pbEffInterval(confinedPermit, 'atmo')) {
       pbCpTimerOff('cpAtmoTimerSection', 'cpAtmoCountdown'); // not set: the chip stays, saying so (the Log button still works)
       return;
     }
-    document.getElementById('cpAtmoTimerSection').classList.remove('is-off');
+    document.getElementById('cpAtmoTimerSection').classList.remove('is-off', 'is-unset');
     document.getElementById('cpAtmoTimerSection').style.display = '';
-    const ms = confinedPermit.atmoInterval * 60 * 1000;
+    const ms = pbEffInterval(confinedPermit, 'atmo') * 60 * 1000;
     // A reading stamped later than the clock now was taken by a fast clock that has
     // since been corrected: its real age is unknown, so count from the newest
     // reading that isn't, or call the retest due now (as the entry check does).
@@ -23768,13 +23848,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
 
   function startConfinedCommTimer() {
     stopConfinedCommTimer();
-    if (!confinedPermit || !confinedPermit.commInterval || confinedPermit.commInterval <= 0) {
+    if (!confinedPermit || !pbEffInterval(confinedPermit, 'comm')) {
       pbCpTimerOff('cpCommTimerSection', 'cpCommCountdown');
       return;
     }
-    document.getElementById('cpCommTimerSection').classList.remove('is-off');
+    document.getElementById('cpCommTimerSection').classList.remove('is-off', 'is-unset');
     document.getElementById('cpCommTimerSection').style.display = '';
-    const ms = confinedPermit.commInterval * 60 * 1000;
+    const ms = pbEffInterval(confinedPermit, 'comm') * 60 * 1000;
     const lastCheck = confinedCommLog.length ? confinedCommLog[confinedCommLog.length - 1] : null;
     // Counted from the latest logged check, or from when entry began (the first
     // check-in), whichever is later. Never from "now": a reload or app restart
@@ -23916,7 +23996,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     lines.push('Ventilation-failure detection: ' + p.ventFail);
     lines.push('Acceptable entry conditions: ' + (p.conditions || '\u2014') + ' (limits: O2 min ' + pbMinO2(p) + '%, O2 max ' + pbMaxO2(p) + '%, LEL max ' + pbMaxLEL(p) + '%, H2S max ' + pbMaxH2S(p) + ' ppm, CO max ' + pbMaxCO(p) + ' ppm)');
     lines.push('App air limits (every logged test is checked against these; H2S/CO when measured): ' + pbLimitsText(p));
-    lines.push('Reminders (not limits): ' + pbRemindersText(p.atmoInterval, p.commInterval));
+    lines.push('Reminders (not limits): ' + pbRemindersFor(p));
     lines.push('Rescue/emergency services: ' + p.rescue);
     (p.dialNumberLog || []).forEach(c => lines.push('Emergency number changed from ' + c.from + ' to ' + c.to + ' at ' + new Date(c.time).toLocaleString()));
     lines.push('Communication procedures: ' + p.comms);
@@ -24576,7 +24656,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         eqPPE: confinedPermit.eqPPE, eqTest: confinedPermit.eqTest, eqComm: confinedPermit.eqComm,
         eqAlarm: confinedPermit.eqAlarm, eqRescue: confinedPermit.eqRescue, eqNotes: confinedPermit.eqNotes,
         addlPermits: confinedPermit.addlPermits,
-        limitOrigin: confinedPermit.limitOrigin, atmoInterval: confinedPermit.atmoInterval, commInterval: confinedPermit.commInterval,
+        limitOrigin: confinedPermit.limitOrigin, atmoInterval: confinedPermit.atmoInterval, commInterval: confinedPermit.commInterval, lateReminders: confinedPermit.lateReminders || undefined,
         windowStartMs: confinedPermit.windowStartMs, windowEndMs: confinedPermit.windowEndMs, windowTz: confinedPermit.windowTz,
         miscNotes: confinedPermit.miscNotes, emergencyDurationSec: emergencyDurationSec,
         emergencyIncidents: confinedEmergencyIncidents.map(inc => ({ start: inc.start, end: inc.end, ...pbIncOutcome(inc) })), // every incident during this permit, preserved individually — never collapsed into a single combined figure
