@@ -4,6 +4,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Pipelayer's Bible</title>
+<style id="cpTopStyle">
+#pbApp#pbApp #screen-confinedActive .cp-top { margin: 14px 16px 0 16px; }
+#pbApp#pbApp #screen-confinedActive .cp-timer-row { display: flex; gap: 10px; }
+#pbApp#pbApp #screen-confinedActive .cp-timer-chip { flex: 1 1 0; min-width: 0; border: 1px solid var(--pb-divider, #2a3140); border-radius: 12px; padding: 8px 10px 10px 10px; background: var(--pb-surface, #161a22); }
+#pbApp#pbApp #screen-confinedActive .cp-tc-k { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--pb-text-2); }
+#pbApp#pbApp #screen-confinedActive .cp-tc-v { font-size: 24px; font-weight: 800; line-height: 1.2; margin: 2px 0 6px 0; font-variant-numeric: tabular-nums; color: var(--pb-text); }
+#pbApp#pbApp #screen-confinedActive .cp-timer-chip.is-off .cp-tc-v { font-size: 15px; font-weight: 600; color: var(--pb-text-2); margin: 8px 0 12px 0; }
+#pbApp#pbApp #screen-confinedActive .cp-timer-chip.is-due { border-color: var(--pb-danger-text, #ff6b7d); background: rgba(226, 74, 94, .16); }
+#pbApp#pbApp #screen-confinedActive .cp-timer-chip.is-due .cp-tc-v { color: var(--pb-danger-text, #ff6b7d); animation: cpDueBlink 1s steps(2, start) infinite; }
+@keyframes cpDueBlink { to { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { #pbApp#pbApp #screen-confinedActive .cp-timer-chip.is-due .cp-tc-v { animation: none; } }
+#pbApp#pbApp #screen-confinedActive .cp-tc-btn { width: 100%; margin: 0 !important; min-height: 44px; }
+#pbApp#pbApp #screen-confinedActive .cp-timer-note { margin: 6px 2px 0 2px; font-size: 12.5px; color: var(--pb-text-2); }
+#pbApp#pbApp #screen-confinedActive .cp-timer-about { margin: 0 0 4px 0; }
+#pbApp#pbApp #screen-confinedActive .cp-top #cpRosterSection { margin: 12px 0 0 0; }
+#pbApp#pbApp #screen-confinedActive .cp-roster-row > .cp-tog { min-height: 54px; min-width: 130px; flex: 1 1 130px; font-size: 17px; font-weight: 800; }
+#pbApp#pbApp #screen-confinedActive .cp-roster-row > .cp-tog-in { background: var(--pb-ok, #1f6b3a); border-color: var(--pb-ok, #1f6b3a); color: var(--pb-on-ok, #052e16); }
+#pbApp#pbApp #screen-confinedActive .cp-roster-row > .cp-tog-out { background: transparent; color: var(--pb-text); }
+#pbApp#pbApp #screen-confinedActive .cp-roster-row > .k { font-size: 18px; }
+#pbApp#pbApp #screen-confinedActive .cp-hist { margin-top: 4px; }
+#pbApp#pbApp #screen-confinedActive .cp-hist summary { cursor: pointer; color: var(--pb-text-2); }
+/* Permit Status keeps the air readings and the window check; who is inside and the attendant are the roster's job now */
+#pbApp#pbApp #screen-confinedActive #cpStatusGrid .cp-tiles > .cp-tile:nth-child(-n+2) { display: none; }
+</style>
 </head>
 <body>
 <script>
@@ -7239,54 +7263,21 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div id="cpEmergencySaveStatusText"></div>
       <button class="pb-btn small" style="margin-top:8px;" onclick="pbRetryEmergencySave()">Retry Save</button>
     </div>
-    <!-- UX batch 2 (C4): Permit Status. A summary of what the app holds, never an entry decision. -->
-    <div id="cpStatusBlock" class="cp-dash-block">
-      <div class="cp-dash-head">Permit Status</div>
-      <div id="cpStatusGrid" class="cp-status"></div>
-    <div class="pb-section" id="cpAtmoTimerSection" style="display:none;">
-      <div class="pb-tag">Air Test Re-Check Timer</div>
-      <div class="pb-body">
-        <div class="pb-answer-box" style="margin-top:0;">
-          <div class="pb-answer-label">Next Air Test Due</div>
-          <div class="pb-answer-val" id="cpAtmoCountdown">—</div>
+    <!-- Active Permit top panel: timers and roster sit right under the Emergency area (these are the controls used most). -->
+    <div id="cpTopPanel" class="cp-top">
+      <div class="cp-timer-row">
+        <div class="cp-timer-chip" id="cpAtmoTimerSection" style="display:none;">
+          <div class="cp-tc-k">Air test</div>
+          <div class="cp-tc-v" id="cpAtmoCountdown">—</div>
+          <button type="button" class="pb-btn ghost small cp-tc-btn" onclick="pbQuickAddAtmoTest()">+ Log Air Test</button>
         </div>
-        <p class="pb-help cp-timer-short">Only runs while this screen is open and awake.</p>
-        <details class="pb-more b4-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>About this reminder</span></summary><p class="pb-help">Reminds you to log a fresh reading below. Same limit as the comms timer — only fires while open and awake.</p></details>
-        <div class="pb-btn-wrap" style="padding-top:6px;"><button class="pb-btn ghost small" style="width:100%;" onclick="pbQuickAddAtmoTest()">+ Add Atmospheric Test</button></div>
-      </div>
-    </div>
-
-    <div class="pb-section" id="cpCommTimerSection" style="display:none;">
-      <div class="pb-tag">Communication Timer</div>
-      <div class="pb-body">
-        <div class="pb-answer-box" style="margin-top:0;">
-          <div class="pb-answer-label">Next Check Due</div>
-          <div class="pb-answer-val" id="cpCommCountdown">—</div>
+        <div class="cp-timer-chip" id="cpCommTimerSection" style="display:none;">
+          <div class="cp-tc-k">Comm check</div>
+          <div class="cp-tc-v" id="cpCommCountdown">—</div>
+          <button type="button" class="pb-btn ghost small cp-tc-btn" onclick="pbLogCommCheck()">+ Log Check</button>
         </div>
-        <p class="pb-help cp-timer-short">Only runs while this screen is open and awake.</p>
-        <details class="pb-more b4-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>About this reminder</span></summary><p class="pb-help">Reminders only fire while this screen is open and awake — browsers suspend background timers, so don't rely on this if the phone might sleep.</p></details>
-        <div class="pb-btn-wrap" style="padding-top:6px;"><button class="pb-btn ghost small" style="width:100%;" onclick="pbLogCommCheck()">+ Log Communication Check</button></div>
       </div>
-    </div>
-    </div>
-
-    <!-- UX batch 2 (C4): the recurring actions together. They call the existing functions. -->
-    <div id="cpActionRow" class="cp-actions">
-      <button type="button" class="pb-btn" id="cpActLogAir" onclick="pbQuickAddAtmoTest()">Log Air Test</button>
-      <button type="button" class="pb-btn ghost" id="cpActLogComm" onclick="pbLogCommCheck()">Log Communication Check</button>
-      <button type="button" class="pb-btn ghost" id="cpActRoster" onclick="pbCpScrollTo('cpRosterSection')">Manage Roster</button>
-    </div>
-
-    <!-- UX batch 2 (C4): Recent Activity (read-only). The full logs below are the record. -->
-    <div class="pb-section" id="cpRecentSection">
-      <div class="pb-tag">Recent Activity</div>
-      <div class="pb-body">
-        <div id="cpRecentList"></div>
-        <div class="pb-btn-wrap" style="padding:10px 0 0 0;"><button type="button" class="pb-btn ghost small" style="width:100%;" id="cpViewFullLog" onclick="pbCpScrollTo('cpRosterSection')">View Full Log</button></div>
-      </div>
-    </div>
-
-    <div class="cp-dash-sub" id="cpFullLogsHead">Full Logs</div>
+      <p class="pb-help cp-timer-note">Reminders only. They run while this screen is open and awake, and may not sound if the phone is locked.</p>
     <div class="pb-section" id="cpRosterSection">
       <div class="pb-tag">Entrant / Attendant Roster</div>
       <div class="pb-body">
@@ -7304,7 +7295,31 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-btn-wrap" style="padding-top:10px;"><button class="pb-btn ghost small" style="width:100%;" onclick="pbOpenRosterAddForm()">+ Add Person</button></div>
       </div>
     </div>
+    <div class="cp-timer-about"><details class="pb-more b4-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>About the air test reminder</span></summary><p class="pb-help">Reminds you to log a fresh reading below. Same limit as the comms timer — only fires while open and awake.</p></details><details class="pb-more b4-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>About the comm check reminder</span></summary><p class="pb-help">Reminders only fire while this screen is open and awake — browsers suspend background timers, so don't rely on this if the phone might sleep.</p></details></div>
+    </div>
+    <!-- UX batch 2 (C4): Permit Status. A summary of what the app holds, never an entry decision. -->
+    <div id="cpStatusBlock" class="cp-dash-block">
+      <div class="cp-dash-head">Permit Status</div>
+      <div id="cpStatusGrid" class="cp-status"></div>
+    </div>
 
+    <!-- UX batch 2 (C4): the recurring actions together. They call the existing functions. -->
+    <div id="cpActionRow" class="cp-actions" style="display:none;">
+      <button type="button" class="pb-btn" id="cpActLogAir" onclick="pbQuickAddAtmoTest()">Log Air Test</button>
+      <button type="button" class="pb-btn ghost" id="cpActLogComm" onclick="pbLogCommCheck()">Log Communication Check</button>
+      <button type="button" class="pb-btn ghost" id="cpActRoster" onclick="pbCpScrollTo('cpRosterSection')">Manage Roster</button>
+    </div>
+
+    <!-- UX batch 2 (C4): Recent Activity (read-only). The full logs below are the record. -->
+    <div class="pb-section" id="cpRecentSection" style="display:none;">
+      <div class="pb-tag">Recent Activity</div>
+      <div class="pb-body">
+        <div id="cpRecentList"></div>
+        <div class="pb-btn-wrap" style="padding:10px 0 0 0;"><button type="button" class="pb-btn ghost small" style="width:100%;" id="cpViewFullLog" onclick="pbCpScrollTo('cpRosterSection')">View Full Log</button></div>
+      </div>
+    </div>
+
+    <div class="cp-dash-sub" id="cpFullLogsHead">Full Logs</div>
     <div class="pb-section" id="cpAtmoLogSection">
       <div class="pb-tag">Atmospheric Test Log</div>
       <div class="pb-body">
@@ -10533,6 +10548,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const ctx = pbGetAudioCtx();
     if (!ctx) return;
     if (ctx.state === 'suspended') ctx.resume();
+    try { if (navigator.vibrate) navigator.vibrate(kind === 'evacuate' ? [300, 100, 300, 100, 300] : [250, 120, 250, 120, 250]); } catch (e) {} // phones that support it (not iPhone); sound is unchanged
     let t = ctx.currentTime;
     // Comm check: three quick high beeps. Air test: two lower, longer alternating tones.
     const pattern = kind === 'atmo'
@@ -21768,9 +21784,21 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // check-ins and with reminders paused (nobody in, or an emergency), so the
   // banner keeps its own light refresh, independent of those timers.
   setInterval(() => { if (confinedPermit) pbRenderWindowBanner(); }, 30000);
+  function pbSetAirPlaceholders() {
+    try {
+      const p = confinedPermit; if (!p) return;
+      const f = (v) => String(Math.round(v * 100) / 100);
+      const set = (id, t) => { const el = document.getElementById(id); if (el) el.placeholder = t; };
+      set('cpAtmoO2', f(pbMinO2(p)) + ' \u2013 ' + f(pbMaxO2(p)));
+      set('cpAtmoLEL', '0 \u2013 ' + f(pbMaxLEL(p)));
+      set('cpAtmoH2S', 'max ' + f(pbMaxH2S(p)));
+      set('cpAtmoCO', 'max ' + f(pbMaxCO(p)));
+    } catch (e) {} // hint text only
+  }
   function renderConfinedActive() {
     pbRenderWindowBanner();
     if (!confinedPermit) return;
+    pbSetAirPlaceholders();
     pbLastDialNumber = { uid: confinedSessionOwnerUid, num: confinedPermit.emergencyDialNumber || null };
     { const ds = document.getElementById('cpDialShown'); if (ds) ds.textContent = pbDialNumberNow(); }
     document.getElementById('cpLockband').textContent = 'Permit locked ' + confinedPermit.lockTime.toLocaleString(); // UX batch 2 (B4): sentence case
@@ -21852,11 +21880,29 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   // The chips follow the existing countdown as it ticks (display only; no timer of its own).
   { const cd = document.getElementById('cpAtmoCountdown'); if (cd && typeof MutationObserver === 'function') new MutationObserver(() => { try { const html = pbCpAirDueChip(); document.querySelectorAll('#cpStatusGrid .cp-due-slot').forEach(s => { pbSetHtml(s, html); }); } catch (e) {} }).observe(cd, { childList: true, characterData: true, subtree: true }); }
+  // The two timer chips always show. Reminders start at the first check-in (as before); until then, or when no
+  // interval was set, the chip says so instead of staying hidden. Display only: it never starts or stops a timer.
+  function pbCpSyncTimerChips() {
+    try {
+      const p = confinedPermit; if (!p) return;
+      const insideNow = confinedRoster.some(x => x.status === 'in');
+      const one = (secId, cdId, ivl, running) => {
+        const sec = document.getElementById(secId), cd = document.getElementById(cdId); if (!sec || !cd) return;
+        sec.style.display = '';
+        if (running) { sec.classList.remove('is-off'); return; }
+        sec.classList.add('is-off'); sec.classList.remove('is-due');
+        cd.textContent = !(typeof ivl === 'number' && ivl > 0) ? 'Not set' : pbEmergencyOpen() ? 'Paused' : insideNow ? 'Not running' : 'Starts at first check-in';
+      };
+      one('cpAtmoTimerSection', 'cpAtmoCountdown', p.atmoInterval, !!confinedAtmoTimer);
+      one('cpCommTimerSection', 'cpCommCountdown', p.commInterval, !!confinedCommTimer);
+    } catch (e) {}
+  }
   function pbRenderCpDash() {
     const grid = document.getElementById('cpStatusGrid'), recent = document.getElementById('cpRecentList');
-    const blocks = ['cpStatusBlock', 'cpActionRow', 'cpRecentSection', 'cpFullLogsHead', 'cpDetailsHead'];
+    const blocks = ['cpStatusBlock', 'cpFullLogsHead', 'cpDetailsHead']; // the action buttons and Recent Activity are hidden now (timers and roster sit at the top)
     const p = confinedPermit;
     blocks.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = p ? '' : 'none'; });
+    pbCpSyncTimerChips();
     if (!grid || !recent) return;
     { const hero = document.getElementById('cpHero'); if (hero && !p) hero.innerHTML = ''; }
     if (!p) { grid.innerHTML = ''; recent.innerHTML = ''; return; }
@@ -22799,8 +22845,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return `<div class="pb-review-item cp-row cp-roster-row ${p.status === 'in' ? 'is-in' : 'is-out'}" style="margin:10px 0 0 0;">
         <span class="k">${escapeHtml(p.name)} — ${escapeHtml(p.role)}</span>
         <span class="cp-inout" style="float:right; color:${statusColor}; font-weight:600; text-transform:uppercase; font-size:11px;">${escapeHtml(p.status)}</span><br>
-        <span class="cp-row-log" style="font-size:11px;">${logText}</span>${againstTag}<br>
-        <button class="pb-btn ghost small" style="margin-top:6px;" onclick="pbToggleRosterStatus(${i})">${p.status === 'in' ? 'Check Out' : 'Check In'}</button>${p.role === 'Attendant' ? ` <button class="pb-btn ghost small" style="margin-top:6px;" onclick="pbStartAttendantReassign(${i})">Reassign Attendant</button>` : ''}
+        <span class="cp-row-log" style="font-size:11px;">${p.log.length > 1 ? escapeHtml(p.log[p.log.length - 1].action) + ' ' + p.log[p.log.length - 1].time.toLocaleTimeString() + (p.log[p.log.length - 1].outsideWindow ? ' (outside permit window)' : '') + escapeHtml(pbAgainstBlockText(p.log[p.log.length - 1])) + '<details class="cp-hist"><summary>History (' + p.log.length + ')</summary>' + logText + '</details>' : logText}</span>${againstTag}<br>
+        <button class="pb-btn small cp-tog ${p.status === 'in' ? 'cp-tog-out' : 'cp-tog-in'}" style="margin-top:6px;" onclick="pbToggleRosterStatus(${i})">${p.status === 'in' ? 'Check Out' : 'Check In'}</button>${p.role === 'Attendant' ? ` <button class="pb-btn ghost small" style="margin-top:6px;" onclick="pbStartAttendantReassign(${i})">Reassign Attendant</button>` : ''}
       </div>`;
     }).join('');
   }
@@ -23661,13 +23707,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbReminderShown = due; pbReminderShownMsg = due.map(r => r.message).join('\n\n');
     pbAlert(pbReminderShownMsg, due[due.length - 1].title);
   }
+  function pbCpTimerOff(secId, cdId) {
+    try { const sec = document.getElementById(secId), cd = document.getElementById(cdId); if (!sec || !cd) return; sec.classList.add('is-off'); sec.classList.remove('is-due'); cd.textContent = 'Not set'; sec.style.display = ''; } catch (e) {} // display only
+  }
   const PB_OVERDUE_REPEAT_MS = 60000; // an unanswered (overdue) air test or comm check sounds again this often
   function startConfinedAtmoTimer() {
     stopConfinedAtmoTimer();
     if (!confinedPermit || !confinedPermit.atmoInterval || confinedPermit.atmoInterval <= 0) {
-      document.getElementById('cpAtmoTimerSection').style.display = 'none';
+      pbCpTimerOff('cpAtmoTimerSection', 'cpAtmoCountdown'); // not set: the chip stays, saying so (the Log button still works)
       return;
     }
+    document.getElementById('cpAtmoTimerSection').classList.remove('is-off');
     document.getElementById('cpAtmoTimerSection').style.display = '';
     const ms = confinedPermit.atmoInterval * 60 * 1000;
     // A reading stamped later than the clock now was taken by a fast clock that has
@@ -23713,14 +23763,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const mins = Math.floor(diff / 60000);
     const secs = Math.floor((diff % 60000) / 1000);
     el.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+    try { const sec = document.getElementById('cpAtmoTimerSection'); if (sec) sec.classList.toggle('is-due', diff === 0); } catch (e) {}
   }
 
   function startConfinedCommTimer() {
     stopConfinedCommTimer();
     if (!confinedPermit || !confinedPermit.commInterval || confinedPermit.commInterval <= 0) {
-      document.getElementById('cpCommTimerSection').style.display = 'none';
+      pbCpTimerOff('cpCommTimerSection', 'cpCommCountdown');
       return;
     }
+    document.getElementById('cpCommTimerSection').classList.remove('is-off');
     document.getElementById('cpCommTimerSection').style.display = '';
     const ms = confinedPermit.commInterval * 60 * 1000;
     const lastCheck = confinedCommLog.length ? confinedCommLog[confinedCommLog.length - 1] : null;
@@ -23773,6 +23825,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const mins = Math.floor(diff / 60000);
     const secs = Math.floor((diff % 60000) / 1000);
     el.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+    try { const sec = document.getElementById('cpCommTimerSection'); if (sec) sec.classList.toggle('is-due', diff === 0); } catch (e) {}
   }
   window.pbQuickAddAtmoTest = function() {
     document.getElementById('cpAtmoAddForm').style.display = '';
