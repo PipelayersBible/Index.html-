@@ -120,7 +120,7 @@ const shot = process.env.PB_SHOT_DIR;
   await tap('#pbWt-bedding button[data-wt="k:pea"]');
   const bv = await ev(() => Number(document.querySelector('#pbWtOut-bedding .pb-wt-raw .pb-answer-val').dataset.tons));
   L.check('bedding: pea gravel 36 × 0.5 / 27 × 1.40 = 0.933 t', Math.abs(bv - 36 * 0.5 / 27 * 1.4) < 1e-9);
-  L.check('bedding thickness echo: "0.5 ft = 6 in"', (await ev(() => document.getElementById('beddingThkFtIn').textContent)) === '0.5 ft = 6 in');
+  L.check('bedding thickness echo: one helper, "= 6 in" (r15.33 K5)', (await ev(() => !document.getElementById('beddingThkFtIn') && /= 6 in/.test(document.getElementById('beddingThkUnitEcho').textContent))));
   if (shot) await page.screenshot({ path: shot + '/bedding.png', fullPage: true });
   await ev(() => pbOpenVolumeCalc()); await rect(510, 2, 0.5);
   o = await out(); L.check('Material Volume still on Custom 110 (choices are per calculator)', o.rawTxt === '≈ 28.0 tons');

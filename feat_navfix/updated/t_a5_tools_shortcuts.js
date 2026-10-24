@@ -124,7 +124,7 @@ const noSideScroll = (page) => page.evaluate(() => document.documentElement.scro
       await page.click('#homeTileQuickRun'); await sleep(page, 300);
       L.check('Quick Run opens from Home', await active(page) === 'screen-quickrun');
       await page.evaluate(() => pbGoto('calcHub')); await sleep(page, 200);
-      await page.click('#screen-calcHub [onclick="pbGoto(\'calcCatPipe\')"]'); await sleep(page, 200);
+      await page.evaluate(() => pbGoto('calcCatPipe')); await sleep(page, 200); /* r15.33 K6: the category buttons now scroll the tab; the screens stay reachable by pbGoto */
       L.check('CONTROL: the old category screens are still reachable from Tools', await active(page) === 'screen-calcCatPipe');
       await page.click('#screen-calcCatPipe .pb-back'); await sleep(page, 200);
       L.check('CONTROL: category Back still returns to Tools', await active(page) === 'screen-calcHub');

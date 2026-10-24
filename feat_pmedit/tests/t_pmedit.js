@@ -86,8 +86,8 @@ const txt = (page, id) => page.evaluate((i) => ((document.getElementById(i) || {
     check('office opens a run with no production: "No production entered", Enter Production and Approve Report', found >= 0 && !!(await page.$('#cxRunOffEdit')) && /Enter Production/.test(await txt(page, 'cxRunOffEdit')) && !!(await page.$('#cxRunOffApprove')));
     await page.tap('#cxRunOffEdit'); await sleep(page, 500);
     const labels = await page.evaluate(() => [...document.querySelectorAll('#cxRunOffForm label')].map(l => l.textContent));
-    check('form: plan names and codes, laterals, hours (' + labels.join(' | ') + ')', labels.includes('Pipe Installed - Main (LF) · 02-100') && labels.includes('Laterals (EA) · 02-200') && labels.some(l => /Crew man-hours/.test(l)) && labels.some(l => /Excavat/.test(l)));
-    const li = labels.indexOf('Laterals (EA) · 02-200'), pi = labels.indexOf('Pipe Installed - Main (LF) · 02-100'), hi = labels.findIndex(l => /Crew man-hours/.test(l));
+    check('form: plan names and codes, laterals, hours (' + labels.join(' | ') + ')', labels.includes('Pipe Installed - Main (LF) · 02-100') && labels.includes('Laterals (EA) · 02-200') && labels.some(l => /Crew hours \(h\)/.test(l)) && labels.some(l => /Excavat/.test(l)));
+    const li = labels.indexOf('Laterals (EA) · 02-200'), pi = labels.indexOf('Pipe Installed - Main (LF) · 02-100'), hi = labels.findIndex(l => /Crew hours \(h\)/.test(l));
     await page.fill('#cxRunOffQ' + pi, 'abc'); await page.tap('#cxRunOffSave'); await sleep(page, 500);
     check('a bad number is refused on the phone', /Pipe Installed - Main: enter a plain number/.test(await txt(page, 'cxRunOffErr')) && !(await page.evaluate(() => window.__rpcLog.some(x => x.fn === 'pb_prod_company_run_prod_save'))));
     await page.fill('#cxRunOffQ' + pi, '180'); await page.fill('#cxRunOffQ' + li, '3'); await page.fill('#cxRunOffQ' + hi, '16');

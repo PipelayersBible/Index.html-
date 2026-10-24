@@ -112,7 +112,9 @@ const endRun = (page) => page.evaluate(() => { const e = window.__debugGetCurren
       await page.click('#cxPdfZoomOut'); await sleep(page, 800);
       await page.screenshot({ path: '/home/claude/feat_pmruns/shots/review_detail.png' });
       await page.click('#cxRunApproveBtn'); await sleep(page, 1200);
-      check('Approve with nothing entered: says what to enter, not approved', await page.evaluate(() => /Enter at least one quantity/.test((document.getElementById('cxRunApproveErr') || {}).textContent || '') && !window.__rpcLog.some(x => x.fn === 'pb_prod_run_report_review')));
+      const mm = await page.evaluate(() => { const ov = document.getElementById('pbModalOverlay'); if (!ov || getComputedStyle(ov).display === 'none') return null; return { msg: document.getElementById('pbModalMessage').textContent, buttons: [...document.querySelectorAll('#pbModalButtons button')].map(b => b.textContent) }; });
+      check('Approve with nothing entered: asks "No production entered for this run. Approve the report anyway? Nothing is counted for it." (Cancel / Approve Without Production), not approved', !!mm && /^No production entered for this run\. Approve the report anyway\? Nothing is counted for it\.$/.test(mm.msg) && mm.buttons.join('|') === 'Cancel|Approve Without Production' && !(await page.evaluate(() => window.__rpcLog.some(x => x.fn === 'pb_prod_run_report_review'))));
+      await page.evaluate(() => [...document.querySelectorAll('#pbModalButtons button')].find(b => b.textContent === 'Cancel').click()); await sleep(page, 400);
       const k = await page.evaluate(() => [...document.querySelectorAll('#cxRunProdBox label')].findIndex(l => /Pipe Installed/.test(l.textContent)));
       await page.fill('#cxRunLiveQ' + k, '140'); await sleep(page, 200);
       await page.screenshot({ path: '/home/claude/feat_pmruns/shots/approve_form.png' });

@@ -80,7 +80,7 @@ const hscroll = (p) => p.evaluate(() => document.documentElement.scrollWidth > w
     check('tabs: arrow keys move the selection and focus', await page.evaluate(() => __pbCxDebug().tab === 'equipment' && document.activeElement.id === 'pjCxTab_equipment'));
     // ---- Edit project ----
     await page.click('#pjCxEdit'); await page.waitForTimeout(200);
-    check('edit: menu with 4 items, expanded', await page.evaluate(() => document.querySelectorAll('#pjCxMenu .pbx-menu-btn').length === 4 && document.getElementById('pjCxEdit').getAttribute('aria-expanded') === 'true'));
+    check('edit: menu with 5 items (r15.34: Project details), expanded', await page.evaluate(() => document.querySelectorAll('#pjCxMenu .pbx-menu-btn').length === 5 && document.getElementById('pjCxEdit').getAttribute('aria-expanded') === 'true'));
     await page.click('#pjCxEdit_trench'); await page.waitForTimeout(400);
     check('edit: Trench settings opens the job settings form on Materials', await page.evaluate(() => __pbCxDebug().tab === 'materials' && !!document.getElementById('pmfForm')));
     await page.evaluate(() => pbMatFormCancel()); await page.waitForTimeout(200);

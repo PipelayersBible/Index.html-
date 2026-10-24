@@ -27,7 +27,7 @@ require('/home/claude/batch27/CONSOLE/tests/cx_shim.js')(M); // batch 27 CONSOLE
     await page.evaluate(() => pbOpenProdDashboard()); await page.waitForTimeout(1200);
     const card = await page.evaluate(() => { const b = [...document.querySelectorAll('#pdJobs .pbp-job')].find(x => /Job 24-101/.test(x.textContent)); return b ? b.innerText.replace(/\s+/g, ' ') : ''; });
     check('dashboard card: a Materials block headed "Used / Ordered / Expected"', /Materials Used \/ Ordered \/ Expected/.test(card), card.slice(0, 300));
-    check('dashboard: "8in PVC SDR 35: 360 / 400 / 1,000 LF +40 waiting" with the 80% chip in words', /8in PVC SDR 35: 360 \/ 400 \/ 1,000 LF \+40 waiting 80% of ordered/.test(card));
+    check('dashboard: "8in PVC SDR 35: 360 / 400 / 1,000 LF +40 waiting" with the 80% chip in words', /8in PVC SDR 35: 360 \/ 400 \/ 1,000 LF \+40 waiting All of what’s ordered used/.test(card));
     check('dashboard: bedding marked (est.) with ≈, and its key line', /Fine sand \(mason sand\) \(est\.\): ≈ 23 \/ — \/ 10 yd³/.test(card) && /est\. = estimate from footage × trench width × bedding thickness/.test(card) && /Over expected/.test(card));
     check('dashboard: no trench width = no number, "Needs trench width"', /3\/4" crushed rock \(est\.\): — \/ — \/ — ton Needs trench width/.test(card));
     check('dashboard: entered material "Tees: 3 / — / 12 EA"', /Tees: 3 \/ — \/ 12 EA/.test(card));
@@ -143,7 +143,7 @@ require('/home/claude/batch27/CONSOLE/tests/cx_shim.js')(M); // batch 27 CONSOLE
     // sticks -> LF needs the PM's factor; counted inside an order
     await page.evaluate(() => { const li = [...document.querySelectorAll('#pjTkList li')].find(x => /sticks/.test(x.textContent)); [...li.querySelectorAll('button')].find(b => /Assign/.test(b.textContent)).click(); }); await page.waitForTimeout(250);
     await page.selectOption('#pmf_material', 'mp1'); await page.waitForTimeout(200);
-    check('a unit that doesn\'t convert asks for the factor', await page.evaluate(() => !!document.getElementById('pmf_factor') && /LF per sticks/.test(pmf_factor.parentNode.textContent)));
+    check('a unit that doesn\'t convert asks for the factor', await page.evaluate(() => !!document.getElementById('pmf_factor') && /LF per stick(?!s)/.test(pmf_factor.parentNode.textContent)));
     await page.click('#pmfSave'); await page.waitForTimeout(200);
     check('no factor: says what\'s needed, nothing sent', /how many LF one sticks is/.test(await page.evaluate(() => pmfErr.textContent)) && (await T.matLog(page, 'pb_mat_ticket_link')).length === 1);
     await page.fill('#pmf_factor', '20'); await page.waitForTimeout(100);

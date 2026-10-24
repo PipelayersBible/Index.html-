@@ -72,7 +72,7 @@ const screenText = (page) => page.evaluate(() => { const s = document.getElement
         // the open run: pipe from the laid marks, plus the two hour fields
         await page.evaluate(() => pbLvFormOpen(0, 0)); await page.waitForTimeout(300);
         const labels = await page.$$eval('#pmLiveForm label', x => x.map(e => e.textContent));
-        check('the form has Crew man-hours (h) and Equipment hours (h)', labels.includes('Crew man-hours (h)') && labels.includes('Equipment hours (h)'), labels.join(' | '));
+        check('the form has Crew hours (h) and Equipment hours (h)', labels.includes('Crew hours (h)') && labels.includes('Equipment hours (h)'), labels.join(' | '));
         check('the open run: pipe filled in from the rows marked laid (30)', (await page.$eval('#pmLiveQ2', e => e.value)) === '30' && /Filled in from the rows marked laid\. Change it if it isn’t right\./.test(await text(page, 'pmLiveForm')));
         await page.evaluate(() => pbLvFormCancel()); await page.waitForTimeout(200);
         // the ended run (end entered the next day, batch 17 END): pipe to where it ended
@@ -103,9 +103,9 @@ const screenText = (page) => page.evaluate(() => { const s = document.getElement
         await page.evaluate(() => pbCrewEditOpen(0)); await page.waitForTimeout(300);
         const labels = await page.$$eval('#pmClaimed0 label', x => x.map(e => e.textContent));
         check('its Edit has every category (Excavation too, not only the pipe it came with)', labels.includes('Excavation (LF)') && labels.includes('Pipe Installed (LF)'), labels.join(' | '));
-        check('…and Crew man-hours (h) and Equipment hours (h)', labels.includes('Crew man-hours (h)') && labels.includes('Equipment hours (h)'), labels.join(' | '));
+        check('…and Crew hours (h) and Equipment hours (h)', labels.includes('Crew hours (h)') && labels.includes('Equipment hours (h)'), labels.join(' | '));
         const idx = (l) => labels.indexOf(l);
-        await page.fill('#pmEdit' + idx('Excavation (LF)'), '55'); await page.fill('#pmEdit' + idx('Crew man-hours (h)'), '24'); await page.fill('#pmEdit' + idx('Equipment hours (h)'), '8');
+        await page.fill('#pmEdit' + idx('Excavation (LF)'), '55'); await page.fill('#pmEdit' + idx('Crew hours (h)'), '24'); await page.fill('#pmEdit' + idx('Equipment hours (h)'), '8');
         await page.evaluate(() => { window.__rpcLog.length = 0; pbCrewEditSave(); });
         const ok = await waitFor(page, () => window.__rpcLog.some(x => x.fn === 'pb_prod_claimed_edit'), 20000);
         const sv = (await rpcs(page, 'pb_prod_claimed_edit')).pop(), it = (k) => sv && (sv.args.p_items.find(i => i.key === k) || {}).qty;
