@@ -26,7 +26,7 @@ function mockInit() {
         first = false;
         return Promise.resolve({ data: { session: getU() ? { user: getU() } : null } });
       },
-      signInWithPassword: async ({ email }) => { const u = users[email]; if (!u) return { data: {}, error: { message: 'bad' } }; localStorage.setItem('__mockSess', JSON.stringify(u)); return { data: { user: u }, error: null }; },
+      signInWithPassword: async ({ email }) => { const u = users[email]; if (!u) return { data: {}, error: { message: localStorage.getItem('__loginErr') || 'bad' } }; /* r15.35: __loginErr = the service's text to answer with */ localStorage.setItem('__mockSess', JSON.stringify(u)); return { data: { user: u }, error: null }; },
       signOut: async () => { localStorage.removeItem('__mockSess'); return {}; },
       onAuthStateChange: (f) => { window.__authEvent = f; return { data: { subscription: { unsubscribe() {} } } }; }
     },
