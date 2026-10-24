@@ -7379,8 +7379,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div class="pb-btn-wrap"><button class="pb-btn" onclick="pbCloseConfinedPermit()">Close Out Permit</button></div>
     </div>
     <div id="cpCloseoutPanel" style="display:none;">
-      <div class="pb-clean" style="margin-top:16px;">This permit is saved in Records. Email a copy below if needed, then tap Finish &amp; Return Home.</div>
-      <div class="pb-section">
+      <div class="pb-clean" style="margin-top:16px;">This permit is saved in Records, with its PDF. Tap Finish &amp; Return Home.</div>
+      <div class="pb-section" hidden><!-- feat_phonechk K3: the email card is retired (the PDF in Records is the copy to send); kept for the code that fills it -->
         <div class="pb-tag">Closeout Report</div>
         <div class="pb-body">
           <div class="pb-field"><label>Send report to (email, optional)</label><input type="email" enterkeyhint="next" id="cpCloseoutEmail" placeholder="supervisor@example.com"></div>
@@ -8937,7 +8937,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.29 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.30 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -24476,6 +24476,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbRetireClosedPermitState() {
     stopConfinedCommTimer(); stopConfinedAtmoTimer(); stopConfinedEmergencyTimer();
     confinedPermit = null;
+    try { if (typeof window.__pbLivePermitTick === 'function') setTimeout(() => { window.__pbLivePermitTick(); }, 300); } catch (e) {} // feat_phonechk K1: the board hears "closed" now, not at the next minute
     { const left = lastConfinedArchiveEntry ? pbCpLatePhotos(lastConfinedArchiveEntry) : []; // bughunt Oct 19 (5): never dropped
       if (window._pbPhotos) { if (left.length) window._pbPhotos['cpMisc'] = left.map(ph => ({ ...ph })); else delete window._pbPhotos['cpMisc']; } renderPhotoList('cpMisc'); // FIX permit photos: the closed permit's photos are its record's; the next permit starts with its own empty list
       if (left.length) setTimeout(() => pbAlert(left.length + ' permit photo' + (left.length === 1 ? '' : 's') + ' finished processing while the closeout was saving and couldn’t be added to the closed permit’s record. ' + (left.length === 1 ? 'It is' : 'They are') + ' still on the permit form: keep ' + (left.length === 1 ? 'it' : 'them') + ' for the next permit, or remove ' + (left.length === 1 ? 'it' : 'them') + ' there.', 'Photo Not in the Record'), 0); }
@@ -24850,6 +24851,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     document.getElementById('cpCloseoutPanel').style.display = 'none';
     document.getElementById('confinedResumeTile').style.display = 'none';
+    try { if (typeof window.__pbLivePermitTick === 'function') window.__pbLivePermitTick(); } catch (e) {} // feat_phonechk K1
     document.getElementById('confinedResumeTile2').style.display = 'none';
     pbGoto('home');
   };
@@ -30838,7 +30840,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           try { await pbReportRpc('pb_push_unsubscribe', { p_endpoint: endpoint }); } catch (e) {}
         }
         if (sub) { try { await sub.unsubscribe(); } catch (e) {} }
-        await pbPushSaveDevice({ uid: null, want: 'off', synced: true, why: 'signed_out', endpoint: null });
+        await pbPushSaveDevice({ uid: null, want: 'off', synced: true, why: 'signed_out', endpoint: null, wasOn: dev.want === 'on' ? dev.uid : null }); // feat_phonechk K2: so the same account gets them back
       })(), new Promise(res => setTimeout(res, 5000))]);
     } catch (e) { console.warn('Notifications: sign-out step skipped.'); }
   };
@@ -30886,6 +30888,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (dev && dev.uid && dev.uid === now) {
       if (dev.want === 'on') await pbPushSetOwner(now);
       setTimeout(() => pbPushSync({ background: true, check: dev.want === 'on' }), 4000);
+      return;
+    }
+    // feat_phonechk K2: Log Out ended this phone's notifications for this very account; it is back, and the phone still
+    // allows them, so they come back too (registered again in the background; the Notifications screen shows how it went).
+    if (dev && !dev.uid && now && dev.wasOn === now && dev.why === 'signed_out' && pbPushPerm() === 'granted' && pbPushHostOk()) {
+      await pbPushSaveDevice({ uid: now, want: 'on', synced: false, why: '', endpoint: null });
+      await pbPushSetOwner(now);
+      setTimeout(() => pbPushSync({ background: true }), 4000);
     }
   }
   window.pbAccountLoadHooks = Array.isArray(window.pbAccountLoadHooks) ? window.pbAccountLoadHooks : [];
@@ -31778,7 +31788,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       list.innerHTML = pbCpr.rows.map((o, i) => { const x = o.x, d = new Date(x.saved_at);
         return '<div class="pb-review-item pb-arch-row pb-arch-confined"><span class="k">Confined Space — ' + escapeHtml(x.space || '') + '</span><div class="pb-arch-chips"><span class="pb-chip notsent">Not closed out</span></div>'
           + '<div class="pb-cpr-meta">Last copy ' + escapeHtml(isNaN(d) ? '' : d.toLocaleString()) + '<br>' + escapeHtml((x.jobsite || '') + (x.job_number ? ' — #' + x.job_number : '')) + '</div>'
-          + '<div class="pb-arch-actions"><button type="button" class="pb-btn ghost small" onclick="pbCprToggle(' + i + ')">View</button></div>'
+          + '<div class="pb-arch-actions">' + (confinedPermit && confinedPermit.sessionId && 'cps-' + confinedPermit.sessionId === String(x.client_permit_id) ? '<button type="button" class="pb-btn small" onclick="pbGoto(\'confinedActive\')">Open on this phone</button>' : '') + '<button type="button" class="pb-btn ghost small" onclick="pbCprToggle(' + i + ')">View</button></div>' // feat_phonechk K4
           + '<pre id="cprView' + i + '" style="display:none;">' + escapeHtml(pbOpenSnapText(x.snapshot || {}, x.saved_at)) + '</pre></div>'; }).join('');
       return;
     }
