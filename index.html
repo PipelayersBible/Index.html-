@@ -2544,6 +2544,8 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 
 /* Batch 4 (R2): Settings > Privacy, the "Send crash reports" switch */
 #pbApp #settingsPrivacyLabel { --pb-set-icon: var(--pb-icon-lock); }
+#pbApp .pb-table.pb-notes-fixed { table-layout: fixed; width: 100%; } #pbApp .pb-table.pb-notes-fixed th:nth-child(1), #pbApp .pb-table.pb-notes-fixed td:nth-child(1) { width: 30%; } #pbApp .pb-table.pb-notes-fixed th:nth-child(2), #pbApp .pb-table.pb-notes-fixed td:nth-child(2) { width: 22%; } #pbApp .pb-table.pb-notes-fixed td { white-space: normal; overflow-wrap: anywhere; } #pbApp .pb-table.pb-notes-fixed .pb-dim { color: var(--pb-text-3); font-size: 12px; } /* feat_records R5 */
+html.pb-cx #homeFmPulse, html.pb-cx #homeCurrentJob { display: none !important; } /* feat_company32 C7/C9: the company Home has its own pulse and does not start runs */
 #pbApp#pbApp #screen-settings .pb-set-switch { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 56px; margin: 0; padding: 4px 0; cursor: pointer; font-size: 16px; font-weight: 600; line-height: 1.35; color: var(--pb-text); }
 #pbApp#pbApp #screen-settings .pb-set-switch > span { flex: 1 1 auto; min-width: 0; overflow-wrap: break-word; }
 #pbApp#pbApp #crashReportsToggle { -webkit-appearance: none; appearance: none; position: relative; flex: 0 0 auto; width: 56px; height: 48px; min-width: 56px; min-height: 48px; margin: 0; padding: 0; border: none; border-radius: 999px; background: transparent; cursor: pointer; }
@@ -3432,7 +3434,9 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp #screen-confinedActive #cpSummaryGrid .pb-summary-item:first-child { border-top: none; padding-top: 0; }
 #pbApp#pbApp #screen-confinedActive #cpSummaryGrid .pb-summary-item .v { font-size: 16px; font-weight: 500; line-height: 1.45; overflow-wrap: anywhere; }
 /* closeout: the four reasons as a 2 x 2 choice, separate from the emergency controls */
+#pbApp #screen-confinedActive.is-closed > .pb-btn-wrap:has(.pb-emergency-btn), #pbApp #screen-confinedActive.is-closed #cpDialInfo, #pbApp #screen-confinedActive.is-closed #cpDialEdit, #pbApp #screen-confinedActive.is-closed > .pb-rescue, #pbApp #screen-confinedActive.is-closed #cpTopPanel, #pbApp #screen-confinedActive.is-closed #cpRosterSection, #pbApp #screen-confinedActive.is-closed #cpActionRow, #pbApp #screen-confinedActive.is-closed #cpRecentSection, #pbApp #screen-confinedActive.is-closed #cpFullLogsHead, #pbApp #screen-confinedActive.is-closed #cpAtmoLogSection, #pbApp #screen-confinedActive.is-closed #cpCommLogSection, #pbApp #screen-confinedActive.is-closed #cpDetailsHead, #pbApp #screen-confinedActive.is-closed #cpLockband, #pbApp #screen-confinedActive.is-closed #cpSummaryGrid, #pbApp #screen-confinedActive.is-closed #cpCloseSection, #pbApp #screen-confinedActive.is-closed #cpWindowBanner, #pbApp #screen-confinedActive.is-closed #cpUnsafeBanner { display: none !important; } /* feat_permit32 P1: a closed permit shows a closed screen */
 #pbApp#pbApp #screen-confinedActive #cpCloseoutReasonToggle { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; }
+#pbApp #screen-confinedActive .cp-tc-set { min-height: 44px; padding: 12px 0; } #pbApp #screen-confinedActive .cp-hist summary { min-height: 44px; display: flex; align-items: center; } /* feat_permit32 P5 */
 #pbApp#pbApp #screen-confinedActive #cpCloseoutReasonToggle button { min-height: 52px; white-space: normal; line-height: 1.25; padding: 8px 10px; }
 #pbApp.pb-text-big #screen-confinedActive #cpCloseoutReasonToggle { grid-template-columns: minmax(0, 1fr); }
 #pbApp#pbApp #screen-confinedActive .cp-close .cp-close-note { color: var(--pb-text-2); font-size: 14px; }
@@ -7280,7 +7284,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <p class="pb-help cp-timer-note">Reminders only. They run while this screen is open and awake, and may not sound if the phone is locked.</p>
       <div id="cpLateForm" class="cp-late" style="display:none;">
         <div class="pb-field"><label id="cpLateLabel" for="cpLateMin"></label><input type="number" enterkeyhint="done" step="1" min="1" max="480" id="cpLateMin" inputmode="numeric"></div>
-        <p class="pb-help" style="margin:4px 0 0 0;">A repeating reminder only. It does not change the permit&rsquo;s air limits or the 20-minute check-in rule, and it is recorded on the permit with the time it was set.</p>
+        <p class="pb-help" style="margin:4px 0 0 0;">A repeating reminder only. It does not change the permit&rsquo;s air limits or its check-in rule, and it is recorded on the permit with the time it was set.</p>
         <div id="cpLateErr" class="pb-help" style="color:var(--pb-danger-text, #ff6b7d); margin:4px 0 0 0;"></div>
         <div class="pb-btn-row" style="padding-top:8px;"><button type="button" class="pb-btn ghost small" onclick="pbCancelLateReminder()">Cancel</button><button type="button" class="pb-btn small" onclick="pbApplyLateReminder()">Start Reminder</button></div>
       </div>
@@ -7341,9 +7345,9 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
           </div>
           <div class="pb-field"><label>Other contaminant reading (optional)</label><input type="text" enterkeyhint="next" id="cpAtmoOther" maxlength="200"></div>
           <div class="pb-field"><label>Tester name</label><input type="text" enterkeyhint="next" id="cpAtmoTester" maxlength="200"></div>
-          <div class="pb-btn-wrap" style="padding:10px 0 0 0;"><button class="pb-btn small" id="cpAtmoSaveBtn" onclick="pbSaveAtmoReading()">Save Reading</button></div>
+          <div class="pb-btn-wrap" style="padding:10px 0 0 0;"><button class="pb-btn small" id="cpAtmoSaveBtn" onclick="pbSaveAtmoReading()">Save Reading</button><button type="button" class="pb-btn ghost small" onclick="pbCpAtmoFormOpen(false)">Cancel</button></div>
         </div>
-        <div class="pb-btn-wrap" style="padding-top:10px;"><button class="pb-btn ghost small" style="width:100%;" onclick="document.getElementById('cpAtmoAddForm').style.display='';">+ Add Test Reading</button></div>
+        <div class="pb-btn-wrap" id="cpAtmoAddWrap" style="padding-top:10px;"><button class="pb-btn ghost small" style="width:100%;" onclick="pbCpAtmoFormOpen(true)">+ Add Test Reading</button></div>
       </div>
     </div>
 
@@ -8646,7 +8650,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp #screen-prodJob.pbx-jobscr #pjBody:not([data-cxtab="materials"]) :is(#pjMatSec, #pjTicketsSec) { display: none; }
 #pbApp #screen-prodJob.pbx-jobscr #pjBody:not([data-cxtab="equipment"]) #pjCxEquip { display: none; }
 #pbApp #screen-prodJob:not(.pbx-jobscr) #pjCxEquip { display: none; }
-#pbApp #screen-prodJob.pbx-jobscr #pjBody:not([data-cxtab="production"]) :is(#pjProgress, #pjManualSec, #pjTableSec, #pjDaysSec, #pjRecentSec, #pjWhoSec, #pjSiteLogSec) { display: none; } /* #pjSiteLogSec: r15 batch 22 NOTES */
+#pbApp #screen-prodJob.pbx-jobscr #pjBody:not([data-cxtab="production"]) :is(#pjProgress, #pjNoRunWrap, #pjManualSec, #pjTableSec, #pjDaysSec, #pjRecentSec, #pjWhoSec, #pjSiteLogSec) { display: none; } /* #pjSiteLogSec: r15 batch 22 NOTES */
 #pbApp #screen-prodJob.pbx-jobscr #pjBody > :first-child, #pbApp #screen-prodJob.pbx-jobscr #pjBody .pbp-col > .pbp-block:first-child { margin-top: 12px; }
 #pbApp #screen-prodJob.pbx-jobscr #pjBody #pjPmSec { margin-top: 12px; padding: 14px 16px; border-radius: var(--pb-r-card, 14px); background: var(--pb-surface); box-shadow: var(--pb-elev-1); }
 #pbApp #screen-prodJob.pbx-jobscr #pjBody #pjPmSec .pbp-who { margin-top: 8px; }
@@ -8937,7 +8941,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.31 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.32 · 2026-10-24'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -10004,7 +10008,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const ids = new Set(runArchive.filter(x => x && x.cloudSyncFailed).map(x => x.id));
       pendingLockRetries.forEach(p => { if (p && p.syncStatus === 'failed') ids.add(p.entryId); });
       const n = ids.size;
-      return n ? { id: 'notSent', info: true, html: '<span class="t">' + n + ' run' + (n > 1 ? 's' : '') + ' saved on this phone but NOT sent</span>The cloud copy didn’t go through. Saved on this phone is not the same as sent.' + reportsRoute() } : null;
+      return n ? { id: 'notSent', info: true, html: '<span class="t">' + n + ' run' + (n > 1 ? 's' : '') + ' with no cloud copy</span>The upload to your account didn’t go through. The run is saved on this phone; tap Retry Sync in Records.' + reportsRoute() } : null;
     });
     add(() => (typeof window.pbProdHomeAttention === 'function' ? window.pbProdHomeAttention() : null)); // batch 12 D2: crew runs waiting
     return items;
@@ -21552,7 +21556,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     document.getElementById('cpAtmoTimerSection').style.display = 'none';
     document.getElementById('cpEmergencyPanel').style.display = 'none';
     stopConfinedEmergencyTimer();
-    document.getElementById('cpCloseoutPanel').style.display = 'none';
+    document.getElementById('cpCloseoutPanel').style.display = 'none'; document.getElementById('screen-confinedActive').classList.remove('is-closed'); // feat_permit32 P1
     const reasonToggle = document.getElementById('cpCloseoutReasonToggle');
     reasonToggle.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.val === 'normal'));
     document.getElementById('cpCloseoutReasonDetail').value = '';
@@ -21665,7 +21669,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!box) return;
     const val = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
     const wt = pbPermitWindowText({ date: val('cpDate'), start: val('cpStart'), end: val('cpEnd') }, null, true);
-    const winHtml = wt ? escapeHtml(wt) : 'Enter the entry date and both times to see the full window.';
+    const winEnded = (() => { try { const w = pbPermitWindow({ date: val('cpDate'), start: val('cpStart'), end: val('cpEnd') }); return !!(w && w.end.getTime() < Date.now()); } catch (e) { return false; } })(); // feat_permit32 P3
+    const winHtml = (wt ? escapeHtml(wt) : 'Enter the entry date and both times to see the full window.') + (winEnded ? ' <strong class="cp-win-ended">This window has already ended — check the date before locking.</strong>' : '');
     if (wp) wp.innerHTML = '<strong>Window:</strong> ' + winHtml;
     const lim = { limitOrigin: {} }; let bad = false;
     [['minO2', 'cpMinO2'], ['maxO2', 'cpMaxO2'], ['maxLEL', 'cpMaxLEL'], ['maxH2S', 'cpMaxH2S'], ['maxCO', 'cpMaxCO']].forEach(([k, id]) => {
@@ -21867,9 +21872,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       ${confinedPermit.landmarks ? `<div class="pb-summary-item"><div class="k">Entrance / Landmarks</div><div class="v">${escapeHtml(confinedPermit.landmarks)}</div></div>` : ''}
       <div class="pb-summary-item"><div class="k">Space</div><div class="v">${escapeHtml(confinedPermit.space)}</div></div>
       <div class="pb-summary-item"><div class="k">Purpose</div><div class="v">${escapeHtml(confinedPermit.purpose)}</div></div>
-      <div class="pb-summary-item"><div class="k">Authorized Window</div><div class="v">${escapeHtml(pbPermitWindowText(confinedPermit) || ((confinedPermit.date || '—') + ' ' + (confinedPermit.start || '') + (confinedPermit.end ? '–' + confinedPermit.end : '')))}<br><span id="cpWindowStatus"></span></div></div>
+      <div class="pb-summary-item"><div class="k">Hazards</div><div class="v">${escapeHtml(confinedPermit.hazards) || '—'}</div></div>
+      <div class="pb-summary-item"><div class="k">Isolation / Controls</div><div class="v">${escapeHtml(confinedPermit.controls) || '—'}</div></div>
+      <div class="pb-summary-item"><div class="k">If Ventilation Fails</div><div class="v">${escapeHtml(confinedPermit.ventFail) || '—'}</div></div>
+      <div class="pb-summary-item"><div class="k">Rescue</div><div class="v">${escapeHtml(confinedPermit.rescue) || '—'}</div></div>
+      <div class="pb-summary-item"><div class="k">Communication</div><div class="v">${escapeHtml(confinedPermit.comms) || '—'}</div></div>
+      <div class="pb-summary-item" hidden><div class="k">Authorized Window</div><div class="v">${escapeHtml(pbPermitWindowText(confinedPermit) || ((confinedPermit.date || '—') + ' ' + (confinedPermit.start || '') + (confinedPermit.end ? '–' + confinedPermit.end : '')))}<br><span id="cpWindowStatus"></span></div></div>
       <div class="pb-summary-item"><div class="k">App Air Limits</div><div class="v">${escapeHtml(pbLimitsText(confinedPermit))}</div></div>
-      <div class="pb-summary-item"><div class="k">Reminders (not limits)</div><div class="v">${escapeHtml(pbRemindersFor(confinedPermit))}</div></div>
+      <div class="pb-summary-item" hidden><div class="k">Reminders (not limits)</div><div class="v">${escapeHtml(pbRemindersFor(confinedPermit))}</div></div>
       <div class="pb-summary-item"><div class="k">EMERGENCY Dials</div><div class="v">${escapeHtml(pbDialNumberNow())}</div></div>
       <div class="pb-summary-item"><div class="k">Supervisor</div><div class="v">${escapeHtml(confinedPermit.supervisor)}${confinedPermit.supervisorInitials ? ' (authorized: ' + escapeHtml(confinedPermit.supervisorInitials) + ')' : ''}</div></div>
       <div class="pb-summary-item"><div class="k">Attendant</div><div class="v">${escapeHtml(confinedPermit.attendant)}</div></div>
@@ -21958,7 +21968,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     blocks.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = p ? '' : 'none'; });
     pbCpSyncTimerChips();
     if (!grid || !recent) return;
-    { const hero = document.getElementById('cpHero'); if (hero && !p) hero.innerHTML = ''; }
+    { const hero = document.getElementById('cpHero'); if (hero && !p) { const closedShown = document.getElementById('screen-confinedActive').classList.contains('is-closed') && lastConfinedArchiveEntry; hero.innerHTML = closedShown ? '<div class="cp-hero-space">' + (escapeHtml(lastConfinedArchiveEntry.space) || 'Confined space') + '</div><div class="cp-hero-job">Closed out</div>' : ''; } } // feat_permit32 P1
     if (!p) { grid.innerHTML = ''; recent.innerHTML = ''; return; }
     const row = (k, v, cls) => '<div class="cp-st-row' + (cls ? ' ' + cls : '') + '"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>';
     let h = '';
@@ -22027,7 +22037,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           return;
         }
       }
-      if (!best) { air += '<div class="cp-gas"><span class="g">' + label + '</span> <span class="none">Not measured on this permit yet</span></div>'; return; }
+      if (!best) return; // feat_permit32 P11: unmeasured gases are said once, below
       anyMeasured = true;
       const t = new Date(best.r.time).getTime();
       const old = ivl && !isNaN(t) && Date.now() - t > ivl * 60000;
@@ -22036,13 +22046,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + (isNaN(t) ? 'time unknown' : new Date(t).toLocaleTimeString() + ' · ' + pbCpAgeText(t))
         + (best.unsaved ? ' · <b>NOT SAVED YET (retrying)</b>' : best.saving ? ' · saving…' : '') + (old ? ' · <b class="cp-overdue">older than the ' + ivl + '-min re-check</b>' : '') + '</span>' + (outLim ? '<span class="cp-out">Outside the limit</span>' : '') + dueSlot + '</div>';
     });
+    if (!anyMeasured) air += '<div class="cp-gas"><span class="none">No air test logged on this permit yet.</span></div>'; // feat_permit32 P11
     air += '</div>';
     let other = null; rows.forEach(x => { if (x.r.other && (!other || pbObsOrder(x.r) >= pbObsOrder(other.r))) other = x; });
     if (other) air += '<div class="cp-gas"><span class="g">Other</span> ' + escapeHtml(other.r.other) + ' · ' + new Date(other.r.time).toLocaleTimeString() + '</div>';
     air += '<div class="cp-st-note cp-air-qual">Logged readings, not an entry approval.</div>'; // UX batch 2 (B8): stays visible
     air += '<details class="pb-more b4-more cp-limits-more"><summary>' + PB_B4_INFO + '<span>Limits these are checked against</span></summary><div class="cp-st-note">Checked against: ' + escapeHtml(pbLimitsText(p)) + '. These are the readings logged here, not an entry approval.</div></details>';
     h += '<div class="cp-air"><div class="cp-air-headrow"><div class="cp-air-head">Latest Air Readings</div>' + (anyMeasured ? '<span class="cp-due-slot" id="cpAirDueSlot">' + pbCpAirDueChip() + '</span>' : '') + '</div>' + air + '</div>';
-    h += row('Reminders', escapeHtml(pbRemindersFor(p)) + (pbEmergencyOpen() ? '<div class="cp-st-bad">Paused while the EMERGENCY is open.</div>' : '') + '<details class="pb-more b4-more"><summary>' + PB_B4_INFO + '<span>When reminders run</span></summary><div class="cp-st-note">The countdowns below appear once someone has checked in. They only run while this screen is open and awake.</div></details>', 'cp-rem-row');
+    h += row('Reminders', escapeHtml(pbRemindersFor(p)) + (pbEmergencyOpen() ? '<div class="cp-st-bad">Paused while the EMERGENCY is open.</div>' : '') + '<details class="pb-more b4-more"><summary>' + PB_B4_INFO + '<span>When reminders run</span></summary><div class="cp-st-note">The countdowns at the top of this screen start once someone has checked in. They only run while this screen is open and awake.</div></details>', 'cp-rem-row');
     // UX batch 2 (B9): keep which disclosures were open, and the focused one, across the periodic rebuild
     const pbOpenKeys = Array.from(grid.querySelectorAll('details[open] > summary')).map(x => x.textContent);
     const pbFocusKey = (document.activeElement && grid.contains(document.activeElement) && document.activeElement.tagName === 'SUMMARY') ? document.activeElement.textContent : null;
@@ -22785,7 +22796,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       // never be the one that gets hidden.
       const kept = pbAtmoPending.some(p => p.r === newReading);
       if (kept) { // kept and retried: typing it again would log it twice
-        if (atmoFormIds.every((id, i) => document.getElementById(id).value === submittedForm[i])) { atmoFormIds.forEach(id => { document.getElementById(id).value = ''; }); document.getElementById('cpAtmoAddForm').style.display = 'none'; }
+        if (atmoFormIds.every((id, i) => document.getElementById(id).value === submittedForm[i])) { atmoFormIds.filter(id => id !== 'cpAtmoTester').forEach(id => { document.getElementById(id).value = ''; }); /* feat_permit32 P4: the tester stays */ document.getElementById('cpAtmoAddForm').style.display = 'none'; }
         const why = keptOnPhone
           ? 'this reading did NOT save yet (storage may be full or unavailable). It is kept on this phone and retried automatically \u2014 the red banner stays until it saves. ' + pbSaveAdvice(true)
           : 'this reading did NOT save yet, and the phone had no room to keep it either (storage is full). It is held on this screen only and retried automatically \u2014 do NOT close the app, reload or log out until the red banner goes away. ' + pbSaveAdvice(true);
@@ -22823,7 +22834,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // Only clear the form if it still holds what was saved: a newer draft typed
     // while this save was in flight belongs to the person, not to this save.
     if (atmoFormIds.every((id, i) => document.getElementById(id).value === submittedForm[i])) {
-      atmoFormIds.forEach(id => { document.getElementById(id).value = ''; });
+      atmoFormIds.filter(id => id !== 'cpAtmoTester').forEach(id => { document.getElementById(id).value = ''; }); // feat_permit32 P4: the tester stays
       document.getElementById('cpAtmoAddForm').style.display = 'none';
     }
     });
@@ -23605,7 +23616,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const inNow = confinedRoster.filter(person => person.status === 'in');
     const count = inNow.length;
     const address = p.address || '[address not entered]';
-    let script = `"I'm calling about a confined space emergency at ${address}`;
+    let script = `"I'm calling about a confined space emergency at ${address}${p.space ? ' (' + p.space + ')' : ''}`;
     if (p.landmarks) script += `. Entrance is ${p.landmarks}`;
     if (p.jobsite) script += `, jobsite ${p.jobsite}`;
     script += '. ';
@@ -23705,7 +23716,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbNumbersReachedText = (p) => (p && Array.isArray(p.numbersReached) ? p.numbersReached : []).filter(n => n && typeof n === 'object' && n.number).map(n => n.number + ' (recorded ' + new Date(n.time).toLocaleString() + ')').join('; ');
   window.pbSendEmergencyReport = function() {
     if (!confinedPermit && pbClosedEmergencyShown) { pbSendKeptEmergencyReport(); return; } // Pass 25: the kept panel's emergency is still open
-    if (!confinedPermit) { pbAlert('This permit is already closed out \u2014 send its closeout report from the closeout screen or Records instead.', 'Permit Closed'); return; }
+    if (!confinedPermit) { pbAlert('This permit is already closed out \u2014 its report is in Records, with its PDF.', 'Permit Closed'); return; }
     pbRecordNumberReached(); // what the box says now is what this report states
     const email = document.getElementById('cpEmergencyEmail').value.trim();
     if (!email) { pbAlert('Enter an email address to send the report to.'); return; }
@@ -23749,7 +23760,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     pbReminderShown = (ours ? pbReminderShown.filter(r => r.kind !== kind) : []).concat([{ kind, message, title }]);
     pbReminderShownMsg = pbReminderShown.map(r => r.message).join('\n\n');
-    pbAlert(pbReminderShownMsg, title);
+    pbAlert(pbReminderShownMsg, (pbReminderShown && pbReminderShown.length > 1) ? 'Air Test and Communication Check Due' : title); // feat_permit32 P6
   }
   function pbFlushReminders() {
     if (pbModalOpen()) return;
@@ -23759,7 +23770,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbReminderQueue = [];
     if (!due.length) return;
     pbReminderShown = due; pbReminderShownMsg = due.map(r => r.message).join('\n\n');
-    pbAlert(pbReminderShownMsg, due[due.length - 1].title);
+    pbAlert(pbReminderShownMsg, due.length > 1 ? 'Air Test and Communication Check Due' : due[due.length - 1].title); // feat_permit32 P6
   }
   // A reminder interval can be set AFTER the permit is locked (permit.lateReminders). It only starts a repeating reminder:
   // it never changes the locked interval fields, the air limits, or the entry freshness rule (which still reads atmoInterval alone).
@@ -23773,9 +23784,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbRemindersFor(p) {
     const base = pbRemindersText(p.atmoInterval, p.commInterval), L = p && p.lateReminders;
     if (!L) return base;
-    const bit = (k, label) => L[k] && L[k].min ? label + ' every ' + L[k].min + ' min (started during the entry, ' + new Date(L[k].at).toLocaleTimeString() + ')' : '';
-    const parts = [bit('atmo', 'air test re-check'), bit('comm', 'communication check')].filter(Boolean);
-    return base + (parts.length ? '; set during the entry: ' + parts.join('; ') : '');
+    // feat_permit32 P8: one phrase per kind — the locked interval, else the one set during the entry, else Off
+    const one = (v, k, label) => (typeof v === 'number' && isFinite(v) && v >= 1) ? label + ' every ' + v + ' min'
+      : (L[k] && L[k].min) ? label + ' every ' + L[k].min + ' min (set during the entry at ' + new Date(L[k].at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ')'
+      : (v === null || v === undefined || v === '') ? label + ' Off' : null;
+    const a = one(p.atmoInterval, 'atmo', 'air test re-check'), c = one(p.commInterval, 'comm', 'communication check');
+    if (a === null || c === null) return base;
+    return a + '; ' + c;
   }
   let pbLateKind = null;
   window.pbOpenLateReminder = function(kind) {
@@ -23942,8 +23957,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     el.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
     try { const sec = document.getElementById('cpCommTimerSection'); if (sec) sec.classList.toggle('is-due', diff === 0); } catch (e) {}
   }
+  // feat_permit32 P4: one way to open/close the air-test form; the tester defaults to the permit's attendant
+  window.pbCpAtmoFormOpen = function(show) {
+    const f = document.getElementById('cpAtmoAddForm'), w = document.getElementById('cpAtmoAddWrap'), t = document.getElementById('cpAtmoTester');
+    if (f) f.style.display = show ? '' : 'none';
+    if (w) w.style.display = show ? 'none' : '';
+    if (show && t && !t.value.trim() && confinedPermit && confinedPermit.attendant) t.value = confinedPermit.attendant;
+  };
   window.pbQuickAddAtmoTest = function() {
-    document.getElementById('cpAtmoAddForm').style.display = '';
+    pbCpAtmoFormOpen(true);
     document.getElementById('cpAtmoAddForm').scrollIntoView({ behavior: 'smooth' });
   };
   window.pbLogCommCheck = async function() {
@@ -24086,9 +24108,19 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // Close Out is bound to the permit it was tapped for. That permit is
   // re-checked after the confirmation, when the queued work starts, and after
   // the save — a delayed closeout must never archive or retire another permit.
-  window.pbCloseConfinedPermit = function() {
+  window.pbCloseConfinedPermit = function(reasonConfirmed) {
     if (!confinedPermit) return;
     const sid = confinedPermit.sessionId;
+    // feat_permit32 P2: a reason that contradicts what the permit holds is asked about once (asked, never blocked)
+    if (reasonConfirmed !== true) {
+      let reason = 'normal'; try { reason = activeVal('cpCloseoutReasonToggle'); } catch (e) {}
+      const unsafe = !!(confinedLastObservation && confinedLastObservation.unsafe), emOpen = (confinedEmergencyIncidents || []).some(i => i && i.start && !i.end);
+      const entered = (confinedRoster || []).some(p => (p.log || []).some(l => /checked in/i.test(String(l && l.action || l || ''))));
+      let q = null;
+      if (reason === 'normal' && (unsafe || emOpen)) q = (unsafe ? 'The last air test was outside this permit\u2019s limits and no acceptable retest was logged.' : 'An EMERGENCY is still open on this permit.') + '\n\nClose it out as \u201cCompleted Normally\u201d anyway? (Cancel to pick Evacuated / Prohibited Condition or Other.)';
+      else if (reason === 'aborted' && entered) q = 'Someone checked in on this permit, so entry did happen.\n\nClose it out as \u201cAborted Before Entry\u201d anyway? (Cancel to pick another reason.)';
+      if (q) { pbConfirm(q, () => pbCloseConfinedPermit(true), 'Check the Closeout Reason'); return; }
+    }
     const stillIn = confinedRoster.filter(p => p.status === 'in');
     if (stillIn.length) {
       const names = stillIn.map(p => p.name).join(', ');
@@ -24610,7 +24642,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         document.getElementById('cpCloseoutEmail').value = savedEmailExisting || ''; // this account's own address, or none
         lastConfinedArchiveEntry = existingClosedEntry;
         document.getElementById('cpCloseoutReportPreview').textContent = existingClosedEntry.reportText;
-        document.getElementById('cpCloseoutPanel').style.display = '';
+        document.getElementById('cpCloseoutPanel').style.display = ''; document.getElementById('screen-confinedActive').classList.add('is-closed'); try { pbRenderCpDash(); } catch (e) {} // feat_permit32 P1: the hero reads the class
         document.getElementById('cpCloseoutPanel').scrollIntoView({ behavior: 'smooth' });
         pbAlert('This permit was already closed out \u2014 showing the existing record rather than creating a duplicate.', 'Already Closed Out');
         pbKeepClosedEmergencyPanel(openEmergencyEx, !markerOkEx);
@@ -24809,7 +24841,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     document.getElementById('cpCloseoutReportPreview').textContent = reportText;
     const savedEmail = await pbGet('lastEmergencyEmail');
     document.getElementById('cpCloseoutEmail').value = savedEmail || ''; // this account's own address, or none
-    document.getElementById('cpCloseoutPanel').style.display = '';
+    document.getElementById('cpCloseoutPanel').style.display = ''; document.getElementById('screen-confinedActive').classList.add('is-closed'); try { pbRenderCpDash(); } catch (e) {} // feat_permit32 P1: the hero reads the class
     document.getElementById('cpCloseoutPanel').scrollIntoView({ behavior: 'smooth' });
     pbKeepClosedEmergencyPanel(openEmergency, !markerOk);
     } finally {
@@ -24850,7 +24882,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       pbConfirm('The emergency is still OPEN. Leave the emergency panel?\n\nIt stays reachable from the red \u201cClosed permit \u2014 emergency still OPEN\u201d tile on Home.', () => pbFinishCloseOut(true), 'Emergency Still Open');
       return;
     }
-    document.getElementById('cpCloseoutPanel').style.display = 'none';
+    document.getElementById('cpCloseoutPanel').style.display = 'none'; document.getElementById('screen-confinedActive').classList.remove('is-closed'); // feat_permit32 P1
     document.getElementById('confinedResumeTile').style.display = 'none';
     try { if (typeof window.__pbLivePermitTick === 'function') window.__pbLivePermitTick(); } catch (e) {} // feat_phonechk K1
     document.getElementById('confinedResumeTile2').style.display = 'none';
@@ -30103,7 +30135,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (e.delivery === 'sent' && e.thread && e.thread.missing) return { cls: 'pb-rr-bad', chip: 'Not received', words: 'Not received \u2014 the server doesn\u2019t have this report (it may have been dropped in a flood of anonymous reports). It is sent again on its own, still anonymous' + ((e.resends || 0) >= 3 ? ' \u2014 it has been tried 3 times, so tap Send It Again to try once more.' : '.'), bad: true };
     switch (e.delivery) {
       case 'sent': return { cls: 'ok', chip: 'Sent', words: 'Sent — your company’s management has it in the app.' + (e.anonymous ? ' They see it as Anonymous, with only the hour it was sent, and it shows in their inbox at the top of the next hour.' : ''), bad: false };
-      case 'held': return { cls: 'notsent', chip: 'Not sent', words: 'Not sent — saved only. Nothing was sent. Send it from My Management Reports when you’re ready.', bad: true };
+      case 'held': return { cls: 'notsent', chip: 'Not sent', words: 'Saved only — nothing was sent yet.', bad: true };
       case 'nobackend': return { cls: 'notsent', chip: 'Not sent yet', words: 'Reports can’t be sent yet — saved on this phone. Sending reports through the app isn’t switched on yet; it goes by itself once it is.', bad: true };
       case 'refused': return { cls: 'pb-rr-bad', chip: 'Not sent', words: 'Not sent — ' + pbReportRefusedWords(e.deliveryWhy) + ' It’s kept on this phone.', bad: true };
       default: {
@@ -31702,7 +31734,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbOpenSnapText(sn, savedAt) {
     const fmt = (t) => { const d = new Date(t); return isNaN(d) ? '' : d.toLocaleString(); };
     const flat = (o) => Object.keys(o || {}).filter(k => o[k] !== null && o[k] !== undefined && o[k] !== '' && typeof o[k] !== 'object').map(k => k + ': ' + (/time|At$/i.test(k) && Number(o[k]) > 1e12 ? fmt(Number(o[k])) : o[k])).join(' | ');
-    const p = sn.permit || {}, L = ['UNFINISHED PERMIT (last copy sent from the phone: ' + fmt(savedAt) + ')', '', flat(p), '', 'AIR TESTS'];
+    const p = sn.permit || {};
+    // feat_permit32 P9: the permit the way a person reads it, not the stored object's keys
+    const PL = [['space', 'Space'], ['jobsite', 'Jobsite'], ['jobNumber', 'Job number'], ['address', 'Address'], ['landmarks', 'Entrance / landmarks'], ['purpose', 'Purpose'], ['supervisor', 'Entry supervisor'], ['attendant', 'Attendant'], ['hazards', 'Hazards'], ['controls', 'Isolation / controls'], ['ventFail', 'If ventilation fails'], ['rescue', 'Rescue'], ['comms', 'Communication'], ['emergencyNumber', 'Emergency number']];
+    const lim = [p.minO2 !== undefined && p.minO2 !== '' ? 'O2 ' + p.minO2 + '–' + (p.maxO2 || '23.5') + '%' : '', p.maxLEL !== undefined && p.maxLEL !== '' ? 'LEL max ' + p.maxLEL + '%' : '', p.maxH2S !== undefined && p.maxH2S !== '' ? 'H2S max ' + p.maxH2S + ' ppm' : '', p.maxCO !== undefined && p.maxCO !== '' ? 'CO max ' + p.maxCO + ' ppm' : ''].filter(Boolean).join(', ');
+    const head = PL.filter(([k]) => p[k] !== undefined && p[k] !== null && String(p[k]).trim() !== '').map(([k, lab]) => lab + ': ' + p[k]);
+    if (p.date || p.start || p.end) head.push('Authorized window: ' + [p.date, p.start, p.end].filter(Boolean).join(' '));
+    if (lim) head.push('Air limits: ' + lim);
+    if (p.atmoInterval || p.commInterval) head.push('Reminders: ' + (p.atmoInterval ? 'air test every ' + p.atmoInterval + ' min' : 'air test Off') + '; ' + (p.commInterval ? 'communication check every ' + p.commInterval + ' min' : 'communication check Off'));
+    if (p.lockTime) head.push('Locked: ' + fmt(p.lockTime));
+    const L = ['UNFINISHED PERMIT (last copy sent from the phone: ' + fmt(savedAt) + ')', ''].concat(head.length ? head : [flat(p)], ['', 'AIR TESTS']);
     (sn.atmoLog || []).forEach(r => L.push('  ' + flat(r)));
     L.push('', 'ROSTER');
     (sn.roster || []).forEach(r => { L.push('  ' + (r.name || 'Person') + ' - ' + (r.status || '') + (r.role ? ' (' + r.role + ')' : '')); (r.log || []).forEach(x => L.push('     ' + (typeof x === 'object' ? flat(x) : x))); });
@@ -31734,6 +31775,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbCprTitles() {
     const crew = pbCpr.mode === 'crew', open = pbCpr.mode === 'open', t = document.getElementById('cprTitle'), l = document.getElementById('cprLead');
     if (t) t.textContent = open ? 'Unfinished permits' : crew ? 'Crew permit records' : 'Company permit records';
+    try { const eb = document.querySelector('#screen-companyPermits .pb-eyebrow span'); if (eb) eb.textContent = open ? 'RECORDS' : crew ? 'CREW PERMITS' : 'COMPANY PERMITS'; } catch (e) {} // feat_permit32 P9
     if (open && l) { l.innerHTML = 'Permits that were still open the last time a phone on your account had signal. If a phone was lost or broke during an entry, the air tests, roster and logs from its last copy are here. A closed permit moves to Records and leaves this list.'; return; }
     if (l) l.innerHTML = crew ? 'Closed confined space permits your crew backed up, from the time each pipelayer was linked to you. They can&rsquo;t be changed or removed.' : 'Closed confined space permits your crews backed up. They can&rsquo;t be changed or removed. If a permit was updated on a phone after closing (for example, marked as emailed), every version is kept.';
   }
@@ -34146,7 +34188,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       let key = q.key; if (!key) { const base = 'eq_' + (name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 24) || 'x'); key = base; let n = 2; while (ekeys.includes(key) || key === 'eq_other') key = base + '_' + n++; ekeys.push(key); }
       equipment.push({ key, name: name.slice(0, 60), unit_no: String(q.unitNo || '').trim().slice(0, 30) || null, cost_code: String(q.costCode || '').trim().slice(0, 60) || null });
     }
-    const r = await pbPermitRpc('pb_prod_plan_set', { p_job_number: job.job_number, p_plan: Object.assign({ categories: cats, budget_hours: budget }, equipment.length ? { equipment } : {}), p_expect_uid: uid, p_expect_version: E.version }, 30000);
+    const r = await pbPermitRpc('pb_prod_plan_set', { p_job_number: job.job_number, p_plan: Object.assign({ categories: cats, budget_hours: budget }, equipment.length ? { equipment } : {}, pbPj.data && pbPj.data.plan && pbPj.data.plan.inspections ? { inspections: pbPj.data.plan.inspections } : {}), p_expect_uid: uid, p_expect_version: E.version }, 30000); // feat_company32 C1: the required inspections ride along
     if (pbPj.edit !== E || pbPj.job !== job || !sbUser || sbUser.id !== uid) return;
     E.saving = false;
     if (r.error || !r.data || r.data.ok !== true) {
@@ -35797,7 +35839,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + '<span class="pbx-now-n"><span class="pbx-num" id="homeFmRuns">' + n(C.runs) + '</span><span class="pbx-lbl">active run' + (C.runs === 1 ? '' : 's') + '</span></span>'
         + '<span class="pbx-now-n"><span class="pbx-num" id="homeFmPermits">' + n(C.open) + '</span><span class="pbx-lbl">active permit' + (C.open === 1 ? '' : 's') + '</span></span>'
         + '<span class="pbx-sub">' + escapeHtml(C.at ? 'As your crew’s phones last sent · ' + pbProdTimeText(C.at) : 'Loads with signal') + '</span></button>'
-        + act('homeFmWait', 'clock', n(C.wait), 'Waiting on you', C.wait ? 'Ended runs need production' : C.wait === null ? 'Loads with signal' : 'Nothing waiting', C.wait > 0, 'pbOpenProdMine()')
+        + act('homeFmWait', 'clock', n(C.wait), 'Runs need production', C.wait ? 'Your crew’s ended runs' : C.wait === null ? 'Loads with signal' : 'None right now', C.wait > 0, 'pbOpenProdMine()')
         + act('homeFmClosed', 'reports', n(C.closed), C.closed === 1 ? 'Permit closed' : 'Permits closed', 'Records from your crew', false, 'pbOpenCrewPermits()')
         + act('homeFmCrew', 'cube', n(C.crew), 'On my crew', C.crew ? 'Add or remove crew' : 'No one linked yet', false, 'pbOpenProdMine()');
     }
@@ -36677,8 +36719,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       });
     });
     const totalManHours = laborerHours + operatorHours;
+    const carriedManHours = runs.reduce((a, r) => a + pbChainOf(r).reduce((b, x) => b + (typeof x.deletedEarlierManHours === 'number' ? x.deletedEarlierManHours : 0), 0), 0); // feat_records R1: hours a deleted earlier session left behind (in the rates)
     const crewHours = crewLogRuns ? {
-      laborerHours, operatorHours, equipmentHours,
+      laborerHours, operatorHours, equipmentHours, carriedManHours,
       manHoursByCategory, equipHoursByCategory,
       categories: Array.from(new Set(Object.keys(manHoursByCategory).concat(Object.keys(equipHoursByCategory).filter(k => equipHoursByCategory[k] > 0)))).sort(), // every category with man- or equipment-hours
       equipmentUsed: Object.fromEntries(Object.keys(equipmentUsed).map(k => [k, { hours: equipmentUsed[k].hours, days: equipmentUsed[k].days.size }])),
@@ -36897,6 +36940,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
             <div class="pb-summary-item"><div class="k">Operator Hours</div><div class="v">${s.crewHours.operatorHours.toFixed(1)} hr</div></div>
             <div class="pb-summary-item" style="grid-column:1/-1;"><div class="k">Equipment Hours</div><div class="v">${s.crewHours.equipmentHours.toFixed(1)} hr</div></div>
           </div></div>
+          ${s.crewHours.carriedManHours > 0 ? `<p class="pb-help" style="margin:8px 0 0 0;">+ ${s.crewHours.carriedManHours.toFixed(1)} h of crew time from a deleted earlier session: counted in Footage / Man-Hour, not in the hours above (its crew log went with it).</p>` : ''}
           ${Object.keys(s.crewHours.equipmentUsed).length ? `<div class="pb-table-wrap" style="margin-top:10px;"><table class="pb-table pb-tnum"><thead><tr><th>Equipment</th><th>Hours</th><th>Days Used</th></tr></thead><tbody>${Object.keys(s.crewHours.equipmentUsed).sort().map(k => `<tr><td>${escapeHtml(k)}</td><td>${s.crewHours.equipmentUsed[k].hours.toFixed(1)} hr</td><td>${s.crewHours.equipmentUsed[k].days}</td></tr>`).join('')}</tbody></table></div>` : ''}
           ${s.crewHours.categories.length ? `<p class="pb-help" style="margin:12px 0 4px 0;">Man-hours (laborer + operator) by category.</p><div class="pb-table-wrap"><table class="pb-table pb-tnum"><thead><tr><th>Category</th><th>Man-Hours</th><th>Equip. Hours</th></tr></thead><tbody>${s.crewHours.categories.map(k => `<tr><td>${escapeHtml(k)}</td><td>${k in s.crewHours.manHoursByCategory ? s.crewHours.manHoursByCategory[k].toFixed(1) + ' hr' : '\u2014'}</td><td>${s.crewHours.equipHoursByCategory[k] ? s.crewHours.equipHoursByCategory[k].toFixed(1)+' hr' : '\u2014'}</td></tr>`).join('')}</tbody></table></div>` : ''}
           ` : `<p class="pb-help" id="jsCrewEmpty" style="margin:0;">${escapeHtml(pbRolesEmptyText('crew')) /* batch 29 ROLES */}</p>`}
@@ -36925,7 +36969,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       <div class="pb-section">
         <div class="pb-tag">Field Notes (${s.fieldNotes.length})</div>
         <div class="pb-body">
-          ${s.fieldNotes.length ? `<div class="pb-table-wrap"><table class="pb-table"><thead><tr><th>Date</th><th>Run</th><th>Station</th><th>Note</th></tr></thead><tbody>${s.fieldNotes.map(n => `<tr><td>${n.runDate.toLocaleDateString()}</td><td>${escapeHtml(n.runLabel)}</td><td>${escapeHtml(n.station)}${n.pointLabel ? ' (' + escapeHtml(n.pointLabel) + ')' : ''}</td><td>${escapeHtml(n.text) || '\u2014'}${Number(n.photoCount) ? ' <span class="pb-b5-photos">' + Number(n.photoCount) + (Number(n.photoCount) === 1 ? ' photo' : ' photos') + '</span>' : ''}</td></tr>`).join('')}</tbody></table></div>` : `<p class="pb-help" style="margin:0;">No field notes logged across any run in this job.</p>`}
+          ${s.fieldNotes.length ? `<div class="pb-table-wrap"><table class="pb-table pb-notes-fixed"><thead><tr><th>Run</th><th>Station</th><th>Note</th></tr></thead><tbody>${s.fieldNotes.map(n => `<tr><td>${escapeHtml(n.runLabel)}<br><span class="pb-dim">${n.runDate.toLocaleDateString()}</span></td><td>${escapeHtml(n.station)}${n.pointLabel ? ' (' + escapeHtml(n.pointLabel) + ')' : ''}</td><td>${escapeHtml(n.text) || '\u2014'}${Number(n.photoCount) ? ' <span class="pb-b5-photos">' + Number(n.photoCount) + (Number(n.photoCount) === 1 ? ' photo' : ' photos') + '</span>' : ''}</td></tr>`).join('')}</tbody></table></div>` : `<p class="pb-help" style="margin:0;">No field notes logged across any run in this job.</p>`}
         </div>
       </div>
       ${s.confinedSpace ? `<div class="pb-section">
@@ -37054,10 +37098,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const endUnsaved = pbUnsavedEndGen.get(e) === pbSaveOkGen; // UX batch 2 (B8): an End Run that has not finished saving
       const onDisk = pbLastPersistedEntryIds.has(e.id) && !endUnsaved, cloud = !!(e.supabaseId || e.managementReportSupabaseId);
       const kindCls = e.kind === 'confined' ? 'confined' : e.kind === 'report' ? 'report' : e.kind === 'stats-snapshot' ? 'stats' : 'run';
-      const meta = `${e.jobsite ? escapeHtml(e.jobsite) + (e.jobNumber ? ' — #' + escapeHtml(e.jobNumber) : '') + '<br>' : e.jobNumber ? 'Job #' + escapeHtml(e.jobNumber) + '<br>' : ''}${e.kind === 'run' ? (e.completedDistance !== undefined ? e.completedDistance : e.distance).toFixed(1) + ' ft' + (e.incomplete ? ' (incomplete)' : '') + (e.crew ? ' · ' + escapeHtml(e.crew) : '') + '<br>' : e.kind === 'stats-snapshot' ? (Number(e.runCount) || 0) + ' run(s), ' + e.distance.toFixed(0) + ' ft total' + (e.crew ? ' · ' + escapeHtml(e.crew) : '') + '<br>' : e.crew ? escapeHtml(e.crew) + '<br>' : ''}${pbCutFillLine(pbCutFillStakesOf(e)) ? escapeHtml(pbCutFillLine(pbCutFillStakesOf(e))) + '<br>' : ''}${(e.volumeYd3 != null || e.volumeIncomplete) ? (e.volumeYd3 != null ? '~' + e.volumeYd3.toFixed(1) + ' yd³ backfill (est.)' + escapeHtml(pbVolumeScopeNote(e)) + (e.volumeIncomplete ? ' (partial)' : '') : (e.volumeStopUnknown ? 'Backfill volume unavailable (run ended early)' : 'Backfill volume unavailable (missing data)')) + '<br>' : ''}${Number(e.photoCount) ? Number(e.photoCount) + ' photo(s) attached<br>' : ''}`;
+      const meta = `${e.jobsite ? escapeHtml(e.jobsite) + (e.jobNumber ? ' — #' + escapeHtml(e.jobNumber) : '') + '<br>' : e.jobNumber ? 'Job #' + escapeHtml(e.jobNumber) + '<br>' : ''}${e.kind === 'run' ? (e.completedDistance !== undefined ? e.completedDistance : e.distance).toFixed(1) + ' ft' + (e.resumedIntoId ? ' · continued in a later session' : e.incomplete ? ' (incomplete)' : '') + (e.resumedFromLabel ? ' · resumes ' + escapeHtml(e.resumedFromLabel) : '') + (e.crew ? ' · ' + escapeHtml(e.crew) : '') + '<br>' : e.kind === 'stats-snapshot' ? (Number(e.runCount) || 0) + ' run(s), ' + e.distance.toFixed(0) + ' ft total' + (e.crew ? ' · ' + escapeHtml(e.crew) : '') + '<br>' : e.crew ? escapeHtml(e.crew) + '<br>' : ''}${pbCutFillLine(pbCutFillStakesOf(e)) ? escapeHtml(pbCutFillLine(pbCutFillStakesOf(e))) + '<br>' : ''}${(e.volumeYd3 != null || e.volumeIncomplete) ? (e.volumeYd3 != null ? '~' + e.volumeYd3.toFixed(1) + ' yd³ backfill (est.)' + escapeHtml(pbVolumeScopeNote(e)) + (e.volumeIncomplete ? ' (partial)' : '') : (e.volumeStopUnknown ? 'Backfill volume unavailable (run ended early)' : 'Backfill volume unavailable (missing data)')) + '<br>' : ''}${Number(e.photoCount) ? Number(e.photoCount) + ' photo(s) attached<br>' : ''}`;
       return `
       <div class="pb-review-item pb-arch-row pb-arch-${kindCls}${hadEmergency ? ' pb-arch-em' : ''}">
-        <div class="pb-arch-head"><span class="pb-arch-ic" aria-hidden="true"></span><div class="pb-arch-main"><span class="k">${e.kind === 'confined' ? 'Confined Space — ' + escapeHtml(e.space) : e.kind === 'report' ? 'Report — ' + escapeHtml(e.category) + (e.anonymous ? ' (anonymous)' : '') : e.kind === 'stats-snapshot' ? 'Stats Snapshot' : escapeHtml(e.startLabel) + ' → ' + escapeHtml(e.endLabel)}</span><span class="pb-arch-date">${e.kind === 'run' ? 'Locked ' : ''}${e.lockTime.toLocaleString()}</span></div></div>
+        <div class="pb-arch-head"><span class="pb-arch-ic" aria-hidden="true"></span><div class="pb-arch-main"><span class="k">${e.kind === 'confined' ? 'Confined Space — ' + escapeHtml(e.space) : e.kind === 'report' ? 'Report — ' + escapeHtml(e.category) + (e.anonymous ? ' (anonymous)' : '') : e.kind === 'stats-snapshot' ? 'Stats Snapshot' : escapeHtml(e.startLabel) + ' → ' + escapeHtml(e.endLabel)}</span><span class="pb-arch-date">${e.kind === 'run' ? 'Locked ' : e.kind === 'confined' ? 'Closed ' : ''}${e.lockTime.toLocaleString()}</span></div></div>
         <div class="pb-arch-chips">${hadEmergency ? '<span class="pb-chip overdue">EMERGENCY</span>' : ''}${onDisk ? '<span class="pb-chip saved">Saved on this phone</span>' : endUnsaved ? '<span class="pb-chip pb-arch-unsaved">End not saved yet</span>' : '<span class="pb-chip pb-arch-unsaved">Not saved yet</span>'}${(typeof window.pbRrArchiveChip === 'function' && window.pbRrArchiveChip(e)) || (e.sent ? '<span class="pb-chip ok">Sent</span>' : '<span class="pb-chip notsent">Not sent</span>')}${cloud ? '<span class="pb-chip ok pb-arch-cloud">Cloud copy</span>' : ''}${e.kind === 'confined' ? pbPermitBkChip(e) : ''}${e.kind === 'confined' && e.restoredFromCloud && (Number(e.photoCount) || 0) > 0 ? '<span class="pb-chip notsent">' + (Number(e.photoCount) > 1 ? e.photoCount + ' photos' : '1 photo') + ' not restored: kept only on the phone that took ' + (Number(e.photoCount) > 1 ? 'them' : 'it') + '</span>' : ''}</div>
         ${hadEmergency ? `<span class="pb-arch-alert em">Emergency declared during this entry — see report for details</span>` : ''}
         ${e.kind === 'report' && e.via === 'app' ? pbReportArchiveLine(e) : ''}
@@ -37309,7 +37353,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         }
         const capturedBatchText = batch.map(e => ({ entry: e, text: e.reportText })); // exact content per entry, captured now — verified again before marking anything sent
         const batchText = batch.map(e => e.reportText).join('\n\n' + '='.repeat(40) + '\n\n');
-        pbNavigateExternal('mailto:?subject=' + encodeURIComponent(batch.length + ' Run Report(s)') + '&body=' + encodeURIComponent(batchText));
+        pbNavigateExternal('mailto:?subject=' + encodeURIComponent(batch.length + ' report(s) from The Pipelayer’s Bible') + '&body=' + encodeURIComponent(batchText));
         pbConfirm('Did your email app open, and did you actually send this batch of ' + batch.length + '? (There\u2019s no way for the app to tell on its own.)', () => {
           const matched = pbBulkStillMatching(capturedBatchText), stillMatching = matched.map(c => c.x);
           const changedCount = batch.length - stillMatching.length;
@@ -37330,7 +37374,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return;
     }
     const capturedAllText = unsent.map(e => ({ entry: e, text: e.reportText })); // exact content per entry, captured now — verified again before marking anything sent
-    pbNavigateExternal('mailto:?subject=' + encodeURIComponent(unsent.length + ' Run Report(s)') + '&body=' + encodeURIComponent(combined));
+    pbNavigateExternal('mailto:?subject=' + encodeURIComponent(unsent.length + ' report(s) from The Pipelayer’s Bible') + '&body=' + encodeURIComponent(combined));
     pbConfirm('Did your email app open, and did you actually send all ' + unsent.length + '? (There\u2019s no way for the app to tell on its own.)', () => {
       const matched = pbBulkStillMatching(capturedAllText), stillMatching = matched.map(c => c.x);
       const changedCount = unsent.length - stillMatching.length;
@@ -37352,7 +37396,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (e.kind === 'confined') return 'Confined Space — ' + e.space;
     if (e.kind === 'report') return 'Report — ' + e.category + (e.anonymous ? ' (anonymous)' : '');
     if (e.kind === 'stats-snapshot') return 'Stats Snapshot';
-    return e.startLabel + ' \u2192 ' + e.endLabel;
+    const twin = runArchive.some(o => o !== e && o.kind === 'run' && o.startLabel === e.startLabel && o.endLabel === e.endLabel); // feat_records R4: two sessions share the labels
+    return e.startLabel + ' \u2192 ' + e.endLabel + (twin && e.lockTime ? ' (locked ' + new Date(e.lockTime).toLocaleDateString() + (e.stoppedAtStation ? ', stopped at ' + e.stoppedAtStation : '') + ')' : '');
   }
   window.pbDeleteArchiveEntry = function(i) {
     const e = runArchive[i];
@@ -37374,7 +37419,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     let warningPrefix = dependent
       ? (isMiddleDeletion
           ? 'This run sits between two sessions (' + archiveEntryLabel(olderEntry) + ' and ' + archiveEntryLabel(dependent) + '). Deleting it will remove its own corrections permanently, but those two sessions will be reconnected so totals stay correct. '
-          : 'This run\u2019s corrections are referenced by a later session (' + archiveEntryLabel(dependent) + '). Deleting it will permanently remove those corrections from that later run\u2019s history \u2014 they won\u2019t be recoverable. ')
+          : ((e.correctionHistory || []).length ? 'This run\u2019s corrections are referenced by a later session (' + archiveEntryLabel(dependent) + '). Deleting it will permanently remove those corrections from that later run\u2019s history \u2014 they won\u2019t be recoverable. ' : 'This is an earlier session of ' + archiveEntryLabel(dependent) + '. That later session keeps this one\u2019s time and crew hours in the job totals; this session\u2019s own report goes. ')) // feat_records R4
       : '';
     if (extraDependents.length) {
       warningPrefix += 'This run also has ' + extraDependents.length + ' additional session' + (extraDependents.length > 1 ? 's' : '') + ' branching from it (' + extraDependents.map(archiveEntryLabel).join(', ') + ') \u2014 that\u2019s unusual and can\u2019t all be reconnected the same way. Those will lose their link back to earlier history, though their own records stay intact. ';
@@ -37740,7 +37785,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return '<div class="pb-job-rec"><span class="pb-job-rec-t">Permit · ' + escapeHtml(e.space || 'Confined space') + '</span> ' +
         '<span class="pb-job-rec-m">' + escapeHtml(day) + ' · <span class="pb-job-rec-state">Closed</span> <span class="pb-chip ' + (pbJobRecSent(e) ? 'ok' : 'notsent') + '">' + (pbJobRecSent(e) ? 'Sent' : 'Not sent') + '</span></span></div>';
     }
-    const state = e.completed ? 'Finished' : e.incomplete ? 'Ended early' : 'Not finished yet';
+    const state = e.resumedIntoId ? 'Continued later' : e.completed ? 'Finished' : e.incomplete ? 'Ended early' : 'Not finished yet'; // feat_records R2
     return '<div class="pb-job-rec"><span class="pb-job-rec-t">Run · ' + escapeHtml(String(e.startLabel || '')) + ' → ' + escapeHtml(String(e.endLabel || '')) + '</span> ' +
       '<span class="pb-job-rec-m">' + escapeHtml(day) + ' · <span class="pb-job-rec-state">' + state + '</span> <span class="pb-chip ' + (pbJobRecSent(e) ? 'ok' : 'notsent') + '">' + (pbJobRecSent(e) ? 'Sent' : 'Not sent') + '</span></span></div>';
   }
@@ -37758,13 +37803,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const recs = j.records.slice().sort((a, b) => (pbJobRecSent(a) - pbJobRecSent(b)) || (new Date(b.lockTime) - new Date(a.lockTime))); // not sent first
       const runs = recs.filter(e => e.kind === 'run').length, permits = recs.length - runs;
       h += '<h2 class="pb-jobs-heading">Runs and permits</h2>';
-      if (!recs.length) h += '<div class="pb-job-empty">Nothing in your Reports is saved under this job yet.</div>';
+      if (!recs.length) h += '<div class="pb-job-empty">Nothing in your Records is saved under this job yet.</div>';
       else {
-        h += '<p class="pb-jobs-intro" style="padding-top:4px;">' + pbPlural(runs, 'run', 'runs') + ', ' + pbPlural(permits, 'permit', 'permits') + ' in your Reports on this phone.</p>';
+        h += '<p class="pb-jobs-intro" style="padding-top:4px;">' + pbPlural(runs, 'run', 'runs') + ', ' + pbPlural(permits, 'permit', 'permits') + ' in your Records on this phone.</p>';
         h += '<div class="pb-job-records" id="jobsRecordList">' + recs.slice(0, 20).map(pbJobRecordRow).join('') + '</div>';
         if (recs.length > 20) h += '<p class="pb-jobs-intro">' + (recs.length - 20) + ' more in Records.</p>';
         h += '<div class="pb-btn-wrap"><button type="button" class="pb-btn ghost" id="jobsShowInReportsBtn" data-key="' + k + '" onclick="pbJobsShowInReports(this.dataset.key)">Show in Records</button></div>';
-        h += '<details class="pb-more pb-b5-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>About Show in Records</span></summary><p class="pb-help" style="margin:0 16px;">Opens Reports searched for ' + escapeHtml(j.number ? 'job number ' + j.number : 'this jobsite') + ', where each record can be opened, sent or downloaded.</p></details>';
+        h += '<details class="pb-more pb-b5-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>About Show in Records</span></summary><p class="pb-help" style="margin:0 16px;">Opens Records searched for ' + escapeHtml(j.number ? 'job number ' + j.number : 'this jobsite') + ', where each record can be opened, sent or downloaded.</p></details>';
       }
     } else {
       const st = j.stats;
@@ -45488,12 +45533,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const mu = !!(m && m.muted === true), reached = !mu && used !== null && ord > 0 && used + wait >= ord * pct / 100; // feat_itemalerts: silenced
     return { used, wait, ord, exp, pct, need, reached, muted: mu, over: !mu && used !== null && exp !== null && exp > 0 && used > exp, est: !!f.estimate, share: ord > 0 && used !== null ? (used + wait) / ord : null };
   }
+  function pbMatShareText(s) { return s.share !== null && s.share >= 1 ? 'All of what’s ordered used' : (s.share !== null ? Math.floor(s.share * 100) : s.pct) + '% of ordered used'; } // feat_company32 C4: the real share (used + waiting), never the alert line
   function pbMatChips(m, s) {
     let h = '';
     if (s.need) h += m && m.fig && m.fig.status === 'split_unknown' ? '<button type="button" class="pb-chip notsent pbm-chip" style="cursor:pointer;font:inherit" onclick="event.stopPropagation(); pbMatFixShare(\'' + m.id + '\')" aria-label="Shares footage: pick its own item">' + escapeHtml(s.need) + ' ›</button> '
       : m && m.fig && m.fig.status === 'needs_each' ? '<button type="button" class="pb-chip notsent pbm-chip" style="cursor:pointer;font:inherit" onclick="event.stopPropagation(); pbMatFixEach(\'' + m.id + '\')" aria-label="Needs a length each: type it">' + escapeHtml(s.need) + ' ›</button> ' // r15.23
       : '<span class="pb-chip notsent pbm-chip">' + escapeHtml(s.need) + '</span> ';
-    if (s.reached) h += '<span class="pb-chip notsent pbm-chip pbm-reached">' + escapeHtml(s.pct + '% of ordered used') + '</span> ';
+    if (s.reached) h += '<span class="pb-chip notsent pbm-chip pbm-reached">' + escapeHtml(pbMatShareText(s)) + '</span> '; // feat_company32 C4
     if (s.over) h += '<span class="pb-chip overdue pbm-chip">Over expected</span> ';
     if (s.est) h += '<span class="pb-chip calculated pbm-chip">Estimate</span> ';
     if (s.muted) h += '<span class="pb-chip pbm-chip pbm-muted">Alerts silenced</span> '; // feat_itemalerts
@@ -46144,7 +46190,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const by = {}, loose = []; let count = 0;
     list.filter(m => m && !m.archived).forEach(m => {
       const s = pbMatState(m), u = m.unit || '', f = (x) => x === null || x === undefined ? '–' : pbMatFmt(Number(x), u);
-      const row = { name: m.name, alert: !!(s.reached || s.over), alertText: s.over ? 'Over expected' : s.reached ? s.pct + '% of ordered used' : '',
+      const row = { name: m.name, alert: !!(s.reached || s.over), alertText: s.over ? 'Over expected' : s.reached ? pbMatShareText(s) : '',
         amounts: f(s.used) + ' / ' + f(s.ord) + ' / ' + (s.exp === null ? '–' : pbMatFmt(s.exp, u)) + ' ' + u };
       const k = pbMatItemOf(m); count++;
       if (k && keys.includes(k)) (by[k] = by[k] || []).push(row); else loose.push(row);
@@ -48414,7 +48460,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       h = '<p class="pbx-note">Materials where crews have used the alert share of what’s ordered (80% unless the PM set another), or more than expected. Each line reads used / ordered / expected.</p>';
       if (A) h += A.list.length ? '<div class="pbx-rows">' + A.list.map((x, i) => pbCxRowBtn(pbCxJobKnown(uid, x.job_number) || { job_key: x.job_key }, 'materials', '<span class="pbx-row-tx"><span class="pbx-row-h">' + pbCxE(x.m.name) + (x.s.est ? ' (est.)' : '') + '</span>'
           + '<span class="pbx-row-s">' + pbCxE(pbProdJobLabel(x.job_number)) + '</span><span class="pbx-row-s pbx-matnums">' + pbMatNums(x.m, x.s) + '</span>'
-          + '<span class="pbx-row-flags">' + (x.s.reached ? '<span class="pbx-tag warn">' + pbCxIc('warn') + pbCxE(x.s.pct + '% of ordered used') + '</span>' : '') + (x.s.over ? '<span class="pbx-tag warn">' + pbCxIc('warn') + 'Over expected</span>' : '') + '</span></span>', 'cxMat' + i)).join('') + '</div>'
+          + '<span class="pbx-row-flags">' + (x.s.reached ? '<span class="pbx-tag warn">' + pbCxIc('warn') + pbCxE(pbMatShareText(x.s)) + '</span>' : '') + (x.s.over ? '<span class="pbx-tag warn">' + pbCxIc('warn') + 'Over expected</span>' : '') + '</span></span>', 'cxMat' + i)).join('') + '</div>'
         : '<p class="pbx-none" id="cxMatNone">No material is near what’s ordered.</p>';
     } else if (kind === 'runs' || kind === 'crewreports') {
       const o = kind === 'runs' ? window.pbRrListHtml(uid) : window.pbRfListHtml(uid); h = o.h; s = o.s;
@@ -49226,7 +49272,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbCxJobCounts() {
     const uid = pbArchiveOwnerUid, D = pbPj.data, job = pbPj.job;
     let wait = 0;
-    if (D && !D.partial) wait = (Array.isArray(D.crew) ? D.crew.filter(x => x && !x.voided && (x.status === 'pending' || x.status === 'assigned' || x.pending_edit)).length : 0) + (Array.isArray(D.approvals) ? D.approvals.filter(x => x && x.id).length : 0);
+    if (D && !D.partial) wait = (Array.isArray(D.crew) ? D.crew.filter(x => x && !x.voided && (x.status === 'pending' || x.status === 'assigned')).length /* feat_company32 C3: approvals carry every pending edit */ : 0) + (Array.isArray(D.approvals) ? D.approvals.filter(x => x && x.id).length : 0);
     else { const j = pbPd.data && (pbPd.data.jobs || []).find(x => x && job && x.job_key === job.job_key); wait = j ? (Number(j.waiting) || 0) + (Number(j.edits_waiting) || 0) : 0; }
     let mats = null;
     try { const list = pbMat.uid === uid ? pbMatList() : null; const src = list || ((pbCxMatCo(uid) || { data: { jobs: [] } }).data.jobs.find(x => x && job && x.job_key === job.job_key) || {}).materials || null; if (src) mats = src.filter(m => m && !m.archived).map(m => pbMatState(m)).filter(s => s.reached || s.over).length; } catch (e) { mats = null; }
@@ -49243,7 +49289,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (C.mats) st.push(pbCxFlag('mat', 'cube', pbCxN(C.mats, 'material alert')));
     { const n = v.categories.filter(c => pbItemAtAlert(c)).length; if (n) st.push(pbCxFlag('mat', 'warn', pbCxN(n, 'item') + ' at alert')); } // feat_itemmat
     const menu = pbCx.menu ? '<div class="pbx-menu" id="pjCxMenu" role="group" aria-label="Edit project">'
-      + [['plan', 'Job plan', 'Categories, planned amounts, weights and budget hours'], ['mat', 'Materials', 'The material list, orders, amounts used and delivery tickets'], ['trench', 'Trench settings', 'Trench width, bedding and shading thickness, pipe size'], ['pms', 'Assigned PMs', 'Who gets this job’s alerts']]
+      + [['plan', 'Job plan', 'Categories, planned amounts, budget hours, alerts, cost codes and equipment'], ['mat', 'Materials', 'The material list, orders, amounts used and delivery tickets'], ['trench', 'Trench settings', 'Trench width, bedding and shading thickness, pipe size'], ['pms', 'Assigned PMs', 'Who gets this job’s alerts']]
         .map(x => '<button type="button" class="pbx-menu-btn" id="pjCxEdit_' + x[0] + '" onclick="pbCxEdit(\'' + x[0] + '\')"><span class="pbx-menu-h">' + pbCxE(x[1]) + '</span><span class="pbx-menu-s">' + pbCxE(x[2]) + '</span></button>').join('') + '</div>' : '';
     const dj = pbPd.data && Array.isArray(pbPd.data.jobs) ? pbPd.data.jobs.find(x => x && x.job_key === job.job_key) || {} : {};
     return '<div class="pbx-hero-top"><div class="pbx-hero-id"><p class="pbx-hero-site">' + pbCxE(dj.project_name || (D && D.jobsite) || job.jobsite || dj.address || 'No project name') + '</p><p class="pbx-hero-num">' + pbCxE(pbProdJobLabel(job.job_number) + (dj.address ? ' · ' + dj.address : '') + (dj.start_date && !dj.last_at ? ' · starts ' + pbProdDayText(String(dj.start_date).slice(0, 10)) : '')) + '</p></div>'
@@ -49294,7 +49340,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return h;
   }
   function pbCxWaitHtml(C) {
-    return C.wait ? '<p class="pbx-note" id="pjCxWaitNote">Pipelayers’ runs held for a foreman (they count on their own after 24 hours) and edits waiting for your approval. Nudge a foreman from a run below.</p>'
+    return C.wait ? '<p class="pbx-note" id="pjCxWaitNote">Pipelayers’ runs held for a foreman (they count on their own after 24 hours) and edits waiting for your approval. Nudge the pipelayer or the assigned foreman from a run below.</p>'
       : '<div class="pbx-panel"><p class="pbx-none" id="pjCxWaitNone">' + (pbPj.data && pbPj.data.partial ? 'Loads with signal.' : 'Nothing is waiting on a foreman for this job.') + '</p></div>';
   }
   // ==== feat_eqtab: the Equipment tab ====
@@ -49319,7 +49365,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + '<span class="pbx-eq-bar" aria-hidden="true">' + (all > 0 ? ['used', 'idle', 'down'].map((f, j) => p[f] > 0 ? '<span class="pbx-eq-seg ' + 'uid'[j] + '" style="flex:' + p[f] + ' 1 0"></span>' : '').join('') : '<span class="pbx-eq-seg z"></span>') + '</span>'
         + '<span class="pbx-eq-sub">' + pbCxE('Idle ' + h1(p.idle) + ' · Down ' + h1(p.down) + (all > 0 ? ' · ' + Math.round(p.used / all * 100) + '% of its hours used' : ' · nothing reported yet')) + '</span>'
         + (p.today || p.week ? '<span class="pbx-eq-sub">' + pbCxE('Used today ' + h1(p.today) + ' · last 7 days ' + h1(p.week)) + '</span>' : '') + '</li>'; }).join('');
-    return h + '</ul><p class="pbx-note">From the hours foremen enter on each run (Enter Production).</p></section>';
+    return h + '</ul><p class="pbx-note">From the hours foremen enter for their pipelayers’ runs (My crew now) and the office enters on run reports.</p></section>';
   }
   // ==== end feat_eqtab ====
   function pbCxPut(parent, id, cls, html, first) {
