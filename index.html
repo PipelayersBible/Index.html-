@@ -8937,7 +8937,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.28 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.29 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -26138,6 +26138,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // what lets a normal, successful Lock get the exact same follow-through
   // protection as a recovered failed one (Item 4's fix), instead of only
   // entries that failed archive-save ever being tracked at all.
+  // ==== feat_xtab: the cross-tab lease for the reconciliation pass ====
+  const PB_XTAB_LEASE_MS = 30000, PB_XTAB_RETRY_MS = 10000;
+  // pbTabId: the app's existing per-tab id (sessionStorage, set near the Supabase client); it is settled long before any pass runs.
+  let pbReconRetryTimer = null;
+  function pbReconLeaseKey(uid) { return uid + ':pendingReconcileLease'; }
+  function pbReconLeaseRead(uid) { try { const v = JSON.parse(localStorage.getItem(pbReconLeaseKey(uid)) || 'null'); return v && typeof v.tab === 'string' && Number.isFinite(v.at) ? v : null; } catch (e) { return null; } }
+  function pbReconLeaseWrite(uid) { try { localStorage.setItem(pbReconLeaseKey(uid), JSON.stringify({ tab: pbTabId, at: Date.now() })); } catch (e) {} }
+  function pbReconLeaseMine(uid) { const l = pbReconLeaseRead(uid); return !l || l.tab === pbTabId; } // no lease at all (an older build's tab) counts as mine
+  function pbReconLeaseClear(uid) { try { const l = pbReconLeaseRead(uid); if (l && l.tab === pbTabId) localStorage.removeItem(pbReconLeaseKey(uid)); } catch (e) {} }
+  window.__pbReconLease = { read: pbReconLeaseRead, tab: () => pbTabId }; // read-only (tests)
   async function processOnePendingEntry(pending, targetEntry, passStale) {
     // If a correction changed the entry's distance after this Lock attempt
     // originally failed, the captured calc's totalDist would be stale — use
@@ -26242,8 +26252,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // stops there, leaving that account's list alone: the new account's own
     // load runs its own pass, and this one's work is retried when it is back.
     const passUid = pbArchiveOwnerUid;
-    const passStale = () => pbArchiveOwnerUid !== passUid || pbPendingOwnerUid !== passUid || pbCompletedOwnerUid !== passUid || (sbUser ? sbUser.id : cachedStorageUserId) !== passUid;
-    try {
+    const passStale = () => pbArchiveOwnerUid !== passUid || pbPendingOwnerUid !== passUid || pbCompletedOwnerUid !== passUid || (sbUser ? sbUser.id : cachedStorageUserId) !== passUid || !pbReconLeaseMine(passUid); // feat_xtab: another tab took the pass over
+    let xtabSkipped = false, xtabHb = null; // feat_xtab
+    const pass = async () => {
     const stillPending = [];
     const alreadyCompletedIds = await pbFreshCompletedIds(passUid);
     if (passStale()) return;
@@ -26379,7 +26390,21 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pendingLockRetries = stillPending;
     const finalSaveOk = await savePendingLockRetries(passUid);
     if (!finalSaveOk) console.error('Reconciliation pass completed but its final queue-state save failed — in-memory state is correct, but has not reached disk yet. The next triggered save will retry it.');
-    } finally {
+    }; // end of the pass (feat_xtab)
+    try {
+      // feat_xtab: one tab at a time. The lock is taken only if free; a dead lease (its tab frozen or gone) is taken over.
+      const lease = pbReconLeaseRead(passUid), dead = !!lease && Date.now() - lease.at > PB_XTAB_LEASE_MS; // whoever wrote it stopped beating 30 s ago
+      const run = async (lock) => {
+        if (!lock) { xtabSkipped = true; return; }
+        pbReconLeaseWrite(passUid); xtabHb = setInterval(() => pbReconLeaseWrite(passUid), 5000);
+        await pass();
+      };
+      if (navigator.locks && typeof navigator.locks.request === 'function') await navigator.locks.request('pb-pending-reconcile:' + passUid, dead ? { steal: true } : { ifAvailable: true }, run);
+      else await run(!lease || lease.tab === pbTabId || dead);
+    } catch (e) { console.error(e); } finally {
+      if (xtabHb) clearInterval(xtabHb);
+      pbReconLeaseClear(passUid);
+      if (xtabSkipped) { if (!pbReconRetryTimer) pbReconRetryTimer = setTimeout(() => { pbReconRetryTimer = null; reconcilePendingLockRetries(); }, PB_XTAB_RETRY_MS); }
       pbReconcilingPendingRetries = false;
       if (pbReconcilePendingRerunRequested) {
         pbReconcilePendingRerunRequested = false;
