@@ -1,12 +1,12 @@
 # The Pipelayer's Bible — workbench
 
-The build chain and the release test suite for the app in `PipelayersBible/Index.html-` (one file: `index.html`). Nothing here ships; users never see this repo. No keys live here (the app's publishable key is in the app itself; everything secret is in Supabase vault / Edge Function secrets).
+The build chain and the release test suite for the app in `PipelayersBible/Index.html-` (one file: `index.html` on `main`). This is the `workbench` branch of that repo: an orphan branch, no shared history with `main`. Nothing here ships; users never see this branch (GitHub Pages serves only `main`). No keys live here (the app's publishable key is in the app itself; everything secret is in Supabase vault / Edge Function secrets).
 
 ## Layout (mirrors the workspace it was built in)
 Tests `require()` each other by absolute path `/home/claude/...`, so **check this repo out at `/home/claude`** (the files land beside anything else there):
 
 ```bash
-cd /home/claude && git clone https://github.com/PipelayersBible/workbench.git _wb && cp -a _wb/. . && rm -rf _wb
+cd /home/claude && git clone -b workbench --single-branch https://github.com/PipelayersBible/Index.html-.git _wb && cp -a _wb/. . && rm -rf _wb
 cd /home/claude && git clone https://github.com/PipelayersBible/Index.html-.git index.html-
 bash setup.sh          # checks node, playwright/chromium, pdftoppm, pdftotext, python3
 ```
