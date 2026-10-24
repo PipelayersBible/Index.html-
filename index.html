@@ -4449,6 +4449,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <label class="pb-set-switch" for="notifTypePermitDue" id="notifTypePermitDueRow" hidden><span class="tx"><span class="name">Permit checks due</span><span class="sub">On your open confined space permit: when an air test or communication check comes due, and once more 5 minutes later. The alarm in the app stays the main reminder.</span></span><input type="checkbox" role="switch" id="notifTypePermitDue" class="pb-pn-switch" checked onchange="pbPushSetPref('permit_due', this.checked)"></label>
         <label class="pb-set-switch" for="notifTypeLoc" id="notifTypeLocRow" hidden><span class="tx"><span class="name">Locate tickets expiring</span><span class="sub">An open 811 ticket on your jobs: 7 days before it expires, 2 days before, and on the day</span></span><input type="checkbox" role="switch" id="notifTypeLoc" class="pb-pn-switch" checked onchange="pbPushSetPref('locates', this.checked)"></label><!-- feat_locates --><!-- feat_permitdue -->
         <label class="pb-set-switch" for="notifTypeSafety" id="notifTypeSafetyRow" hidden><span class="tx"><span class="name">Safety events</span><span class="sub">When a foreman adds a near miss, first aid, incident, property damage or stop work on your jobs</span></span><input type="checkbox" role="switch" id="notifTypeSafety" class="pb-pn-switch" checked onchange="pbPushSetPref('safety', this.checked)"></label><!-- feat_jobbook -->
+        <label class="pb-set-switch" for="notifTypeSchedule" id="notifTypeScheduleRow" hidden><span class="tx"><span class="name">Schedule</span><span class="sub">When a job falls behind its end date or hits a checkpoint</span></span><input type="checkbox" role="switch" id="notifTypeSchedule" class="pb-pn-switch" checked onchange="pbPushSetPref('schedule', this.checked)"></label><!-- feat_schedule -->
         <label class="pb-set-switch" for="notifTypeCrew"><span class="tx"><span class="name">Crew production reminders</span><span class="sub">When your crew starts or finishes a run and its production isn’t entered</span></span><input type="checkbox" role="switch" id="notifTypeCrew" class="pb-pn-switch" checked onchange="pbCrewPushSet(this.checked); pbPushCrewKind(this.checked)"></label><!-- batch 14 F -->
         <p class="pb-help pb-pn-msg" id="notifCrewMsg" role="status" hidden></p><!-- batch 14 F -->
         <p class="pb-help pb-pn-msg" id="notifPrefsMsg" role="status" hidden></p>
@@ -8656,11 +8657,31 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp .pbx-flag { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 3px 10px 3px 8px; border-radius: 999px; font-size: 13px; font-weight: 600; line-height: 1.25; background: var(--pb-raised-2); color: var(--pb-text); }
 #pbApp .pbx-flag .pb-ic { width: 16px; height: 16px; }
 #pbApp .pbx-flag.live .pb-ic { color: var(--pb-ok); }
-#pbApp .pbx-flag.wait .pb-ic, #pbApp .pbx-flag.mat .pb-ic { color: var(--pb-warn); }
+#pbApp .pbx-flag.wait .pb-ic, #pbApp .pbx-flag.mat .pb-ic, #pbApp .pbx-flag.late .pb-ic { color: var(--pb-warn); } /* feat_schedule: late */
 #pbApp .pbx-flag.nopm { color: var(--pb-text-2); }
 #pbApp .pbx-flag.nopm .pb-ic { color: var(--pb-text-3); }
 #pbApp .pbx-etanote { display: block; font-size: 12px; color: var(--pb-text-3); padding: 6px 0 0; }
 #pbApp .pbx-eta { font-size: 12.5px; font-weight: 500; color: var(--pb-text-3); margin-top: 1px; }
+/* feat_schedule: the Schedule panel and its form */
+#pbApp .pbx-sched-ms { list-style: none; margin: 8px 0 0; padding: 0; }
+#pbApp .pbx-sched-ms li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 6px 0; border-top: 1px solid var(--pbx-line); font-size: 14px; color: var(--pb-text); }
+#pbApp .pbx-sched-ms li .s { color: var(--pb-text-2); white-space: nowrap; }
+#pbApp .pbx-sched-ms li.late .s { color: var(--pb-warn-text); font-weight: 650; }
+#pbApp .pbx-sched-ms li.ok .s { color: var(--pb-ok); }
+#pbApp .pbx-sched-muted { margin: 8px 0 0; font-size: 13px; color: var(--pb-text-3); }
+#pbApp .pbx-sched-pend.err { color: var(--pb-warn-text); font-weight: 600; }
+#pbApp .pbx-sched-x { -webkit-appearance: none; appearance: none; min-width: 44px; min-height: 44px; padding: 0; border: 1px solid var(--pbx-line-2); border-radius: 999px; background: transparent; color: var(--pb-text-2); font: inherit; font-size: 20px; line-height: 1; cursor: pointer; }
+#pbApp .pbx-sched-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0 0; font-size: 15px; font-weight: 700; color: var(--pb-text); }
+#pbApp .pbx-sched-m { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 6px 8px; align-items: start; padding: 10px 0; border-top: 1px solid var(--pbx-line); }
+#pbApp .pbx-sched-m > input, #pbApp .pbx-sched-m > select { grid-column: 1; width: 100%; box-sizing: border-box; min-height: 44px; margin: 0; }
+#pbApp .pbx-sched-m > .pbx-sched-x { grid-column: 2; grid-row: 1; }
+#pbApp .pbx-sched-hol { display: flex; gap: 8px; align-items: center; }
+#pbApp .pbx-sched-hol input { flex: 1 1 auto; min-width: 0; margin: 0; }
+#pbApp .pbx-sched-hl { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+#pbApp .pbx-sched-hl li { display: inline-flex; align-items: center; gap: 2px; padding: 0 2px 0 10px; border-radius: 999px; background: var(--pb-raised-2); font-size: 13px; color: var(--pb-text); }
+#pbApp .pbx-sched-hl li .pbx-sched-x { min-width: 40px; min-height: 40px; border: 0; }
+#pbApp .pbx-sched-wrap .pbd-check { display: flex; align-items: center; gap: 10px; min-height: 44px; margin: 8px 0 0; font-size: 15px; color: var(--pb-text); }
+#pbApp .pbx-sched-wrap .pbx-dim { margin: 6px 0 0; font-size: 13px; color: var(--pb-text-3); }
 #pbApp .pbx-flag.emerg { background: var(--pb-danger); color: var(--pb-danger-ink); font-weight: 750; }
 #pbApp .pbx-meta { font-size: 13px; color: var(--pb-text-2); }
 #pbApp .pbx-empty { margin: 0; padding: 20px 16px; border-radius: var(--pb-r-card, 14px); background: var(--pb-surface); color: var(--pb-text-2); font-size: 15px; }
@@ -9070,7 +9091,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.40 · 2026-10-24'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.41 · 2026-10-24'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -30875,8 +30896,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   try { pbRawGet(PB_PUSH_KEY_KEY).then(v => { if (!pbPushVapid && typeof v === 'string' && /^[A-Za-z0-9_-]{80,100}$/.test(v)) pbPushVapid = v; }).catch(() => {}); } catch (e) {}
   const PB_PUSH_ORIGIN = 'https://pipelayersbible.github.io', PB_PUSH_PATH = '/Index.html-/';
   const PB_PUSH_DEVICE_KEY = 'pbPushDevice'; // per phone, not per account: { uid, want: 'on'|'off', synced, endpoint, why, at }
-  const PB_PUSH_TYPES = ['runs_waiting', 'mgmt_report', 'crew_production', 'run_end_ask', 'material_alert', 'crew_nudge', 'permit_closed', 'permit_due', 'locates']; // feat_locates // feat_permitdue // r14 integration: a row shows only when the server reports the kind
-  const PB_PUSH_ROWS = { run_end_ask: 'notifTypeRunEndRow', material_alert: 'notifTypeMatRow', crew_nudge: 'notifTypeNudgeRow', permit_closed: 'notifTypePermitRow', permit_due: 'notifTypePermitDueRow', locates: 'notifTypeLocRow' }; // feat_locates // feat_permitdue // crew_production: batch 14 F's own row
+  const PB_PUSH_TYPES = ['runs_waiting', 'mgmt_report', 'crew_production', 'run_end_ask', 'material_alert', 'crew_nudge', 'permit_closed', 'permit_due', 'locates', 'schedule']; // feat_schedule // feat_locates // feat_permitdue // r14 integration: a row shows only when the server reports the kind
+  const PB_PUSH_ROWS = { run_end_ask: 'notifTypeRunEndRow', material_alert: 'notifTypeMatRow', crew_nudge: 'notifTypeNudgeRow', permit_closed: 'notifTypePermitRow', permit_due: 'notifTypePermitDueRow', locates: 'notifTypeLocRow', schedule: 'notifTypeScheduleRow' /* feat_schedule */ }; // feat_locates // feat_permitdue // crew_production: batch 14 F's own row
   PB_PUSH_TYPES.push('safety'); PB_PUSH_ROWS.safety = 'notifTypeSafetyRow'; // feat_jobbook: a row shows only when the server reports the kind (sql/OWNER_PASTE.sql)
   let pbPushReg = null, pbPushSwFailed = false, pbPushRegP = null, pbPushBusy = null, pbPushTimer = null;
   let pbPushMsg = { text: '', at: 0 };
@@ -31355,7 +31376,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (b) b.checked = L.prefs.mgmt_report;
     if (row) row.hidden = !L.reader && !L.also.includes('material_alert'); // r14 integration: before the paste a PM's material alerts are filed under this kind
     { const sub = row ? row.querySelector('.sub') : null; if (sub) sub.textContent = L.also.includes('material_alert') ? (L.reader ? 'Company account only. Also material alerts, until they get their own switch' : 'Material alerts for your jobs, until they get their own switch') : 'Company account only'; }
-    Object.keys(PB_PUSH_ROWS).forEach(k => { const r = document.getElementById(PB_PUSH_ROWS[k]), inp = r ? r.querySelector('input') : null; if (r) r.hidden = !L.kinds.includes(k) || (k === 'safety' && !pbDlyAcc(pbArchiveOwnerUid).manager) || (k === 'permit_closed' && !(typeof window.pbLvIsForeman === 'function' && window.pbLvIsForeman(pbArchiveOwnerUid))); if (inp) inp.checked = L.prefs[k]; });
+    Object.keys(PB_PUSH_ROWS).forEach(k => { const r = document.getElementById(PB_PUSH_ROWS[k]), inp = r ? r.querySelector('input') : null; if (r) r.hidden = !L.kinds.includes(k) || (k === 'safety' && !pbDlyAcc(pbArchiveOwnerUid).manager) || (k === 'permit_closed' && !(typeof window.pbLvIsForeman === 'function' && window.pbLvIsForeman(pbArchiveOwnerUid))) || (k === 'schedule' && !pbCxDashOn()); /* feat_schedule: company accounts */ if (inp) inp.checked = L.prefs[k]; });
     const m = document.getElementById('notifPrefsMsg');
     if (m) { const n = Object.keys(L.pending).length; m.hidden = !n; m.textContent = n ? 'Saved on this phone. The change is sent when there’s signal.' : ''; }
   }
@@ -48970,6 +48991,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (w) f.push(pbCxFlag('wait', 'clock', w + ' waiting on foremen'));
     const ma = A ? A.list.filter(x => x.job_key === j.job_key).length : 0;
     if (ma) f.push(pbCxFlag('mat', 'cube', pbCxN(ma, 'material alert')));
+    try { const sf = window.pbSchedFlag ? window.pbSchedFlag(j) : ''; if (sf) f.push(sf); } catch (e) {} // feat_schedule
     if (j.pms === 0 && pbCxDashOn()) f.push(pbCxFlag('nopm', 'user', 'No PM assigned')); // feat_pace: its alerts go to the company account only
     return f.length ? '<span class="pbx-flags">' + f.join('') + '</span>' : '';
   }
@@ -50469,12 +50491,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (C.mats) st.push(pbCxFlag('mat', 'cube', pbCxN(C.mats, 'material alert')));
     { const n = v.categories.filter(c => pbItemAtAlert(c)).length; if (n) st.push(pbCxFlag('mat', 'warn', pbCxN(n, 'item') + ' at alert')); } // feat_itemmat
     const menu = pbCx.menu ? '<div class="pbx-menu" id="pjCxMenu" role="group" aria-label="Edit project">'
-      + [['plan', 'Job plan', 'Categories, planned amounts, budget hours, alerts, cost codes and equipment'], ['mat', 'Materials', 'The material list, orders, amounts used and delivery tickets'], ['trench', 'Trench settings', 'Trench width, bedding and shading thickness, pipe size'], ['pms', 'Assigned PMs', 'Who gets this job’s alerts'], ['info', 'Project details', 'Name, address and start date']]
+      + [['plan', 'Job plan', 'Categories, planned amounts, budget hours, alerts, cost codes and equipment'], ['mat', 'Materials', 'The material list, orders, amounts used and delivery tickets'], ['trench', 'Trench settings', 'Trench width, bedding and shading thickness, pipe size'], ['pms', 'Assigned PMs', 'Who gets this job’s alerts'], ['info', 'Project details', 'Name, address and start date'], ['sched', 'Schedule', 'End date, milestones, checkpoints and holidays']] /* feat_schedule */
         .map(x => '<button type="button" class="pbx-menu-btn" id="pjCxEdit_' + x[0] + '" onclick="pbCxEdit(\'' + x[0] + '\')"><span class="pbx-menu-h">' + pbCxE(x[1]) + '</span><span class="pbx-menu-s">' + pbCxE(x[2]) + '</span></button>').join('') + '</div>' : '';
     const dj = pbPd.data && Array.isArray(pbPd.data.jobs) ? pbPd.data.jobs.find(x => x && x.job_key === job.job_key) || {} : {};
     return '<div class="pbx-hero-top"><div class="pbx-hero-id"><p class="pbx-hero-site">' + pbCxE(dj.project_name || (D && D.jobsite) || job.jobsite || dj.address || 'No project name') + '</p><p class="pbx-hero-num">' + pbCxE(pbProdJobLabel(job.job_number) + (dj.address ? ' · ' + dj.address : '') + (dj.start_date && !dj.last_at ? ' · starts ' + pbProdDayText(String(dj.start_date).slice(0, 10)) : '')) + '</p></div>'
       + '<button type="button" class="pbx-editbtn" id="pjCxEdit" aria-expanded="' + (pbCx.menu ? 'true' : 'false') + '" aria-controls="pjCxMenu" onclick="pbCxMenu()">' + pbCxIc('pencil') + '<span>Edit project</span></button></div>' + menu
-      + '<div class="pbx-hero-pct">' + pbCxPct(v, true) + (v.pace ? '<span class="pbx-pace">' + pbCxE(v.pace.state === 'on' ? 'On pace' : v.pace.state === 'over' ? 'Over the hours pace' : '') + '</span>' : '') + '</div>'
+      + '<div class="pbx-hero-pct">' + pbCxPct(v, true) + (v.pace ? '<span class="pbx-pace">' + pbCxE(v.pace.state === 'on' ? 'On the hours budget' : v.pace.state === 'over' ? 'Over the hours pace' : '') + '</span>' : '') + '</div>'
       + (v.anyPlanned ? pbCxBar(v, true) : pbPj.edit ? '' : '<p class="pbx-noplan">No plan yet. Set one up under Edit project to see % complete.</p>')
       + pbCxLegend(v, true)
       + (typeof window.pbPlanMatNote === 'function' ? window.pbPlanMatNote() : '') // feat_planuse
@@ -50505,6 +50527,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (C.live) C.live.runs.forEach(x => { if (x.p && x.p.name) names.add(x.p.name); });
     h += '<section class="pbx-panel" id="pjCxCrew" aria-labelledby="pjCxCrewH"><h3 class="pbx-h3" id="pjCxCrewH">Crew today</h3>'
       + (names.size ? '<ul class="pbx-people">' + [...names].map(n => '<li>' + pbCxIc('user') + pbCxE(n) + '</li>').join('') + '</ul>' : '<p class="pbx-none">' + (D.partial ? 'Loads with signal.' : 'Nobody has reported on this job today.') + '</p>') + '</section>';
+    try { h += window.pbSchedPanelHtml ? window.pbSchedPanelHtml() : ''; } catch (e) { console.error(e); } // feat_schedule
     if (C.wait) h += '<section class="pbx-panel pbx-panel-wait" id="pjCxWaitSum"><h3 class="pbx-h3">Waiting on foremen</h3><p class="pbx-line">' + pbCxE(C.wait + ' waiting: runs held for a foreman and edits waiting for your approval.') + '</p><button type="button" class="pbx-link" onclick="pbCxTab(\'waiting\')">Review what’s waiting</button></section>';
     // recent documents: delivery tickets (batch 7, as materials read them) and the crews' production entries
     const T = pbMat.uid === uid && job ? pbMat.tk[job.job_key] : null, tl = T && Array.isArray(T.lines) ? T.lines.filter(x => x && typeof x === 'object') : [];
@@ -50617,6 +50640,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     if (what === 'pms') { window.pbCxTab('overview'); if (pbPj.pms) window.pbPmJobEdit(); else pbAlert(pbPj.pmMsg || 'Assigned PMs load with signal.', 'Assigned PMs'); at('pjPmSec'); return; }
     if (what === 'info') { window.pbCxJobPaint(); window.pbCxInfoForm(null, ''); }
+    if (what === 'sched') { window.pbCxJobPaint(); window.pbSchedForm(null, ''); } // feat_schedule
   };
   // feat_office34 O9: Project details (name, address, start date) — the New job wizard's step-1 fields, editable afterwards.
   // Server: public.pb_prod_job_info_set (feat_office34/sql/35_job_info_set.sql), the same guards as pb_prod_job_create.
@@ -50665,6 +50689,280 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   setInterval(() => { try { if (pbCx.on && pbCurrentScreen === 'prodJob' && document.visibilityState === 'visible') window.pbCxJobPaint(); } catch (e) {} }, 5000); // live board answers land on their own
   window.__pbCxDebug = () => ({ on: pbCx.on, uid: pbCx.uid, tab: pbCx.tab, jobKey: pbCx.jobKey, list: pbCx.list, inbox: pbCx.inbox, side: window.pbCxSideNav(), label: (document.querySelector('#pbTabReports .lb') || {}).textContent });
   window.__pbCxCardFor = (j, vr) => pbCxJobCard(j, 0, null, null, vr); // the bar variants, for the owner's comparison
+
+  // ================= feat_schedule: a job SCHEDULE (end date, milestones, pace projection, checkpoints) =================
+  // Server: sql/36_schedule.sql. The phone shows the SERVER's projection (pb_prod.schedule_state: the dashboard's
+  // schedule_state per job, the job page's schedule.state). It runs the same rules itself (pbSchedCalc) only while a
+  // change waits on the phone or the answer has no projection; tests/t_schedule.js checks app == server on shared
+  // fixtures (sql/parity.json). Rules: work days are Mon–Fri minus the company's holidays; COMPLETED days only: an
+  // item's pace is its production over the 7 days before today (pace_week) divided by the work days in them, what is
+  // left is planned minus what was done before today, and today is the first day still to work; the job finishes with
+  // its slowest item, and not at all while an item with work left has no pace; past the end date it is at least that late.
+  const pbSchedDN = (s) => { const m = /^(\d{4})-(\d\d)-(\d\d)/.exec(String(s || '')); return m ? Math.round(Date.UTC(+m[1], +m[2] - 1, +m[3]) / 86400000) : null; };
+  const pbSchedDS = (n) => new Date(n * 86400000).toISOString().slice(0, 10);
+  const pbSchedIsWork = (n, hol) => ((n + 3) % 7) + 1 <= 5 && !hol.has(pbSchedDS(n));
+  function pbSchedWork(a, b, hol) { if (a === null || b === null || b < a) return 0; let k = 0; for (let n = a; n <= b && n - a <= 7300; n++) if (pbSchedIsWork(n, hol)) k++; return k; }
+  function pbSchedAdd(n, d, hol) { let x = n, k = 0; while (k < Math.min(d, 7300)) { x++; if (pbSchedIsWork(x, hol)) k++; } return x; }
+  // a date in words; with the year when it isn't the reference date's year
+  const pbSchedDay = (s, ref) => { const d = new Date(String(s).slice(0, 10) + 'T12:00:00'); if (isNaN(d)) return String(s); const o = { month: 'short', day: 'numeric' }; if (String(s).slice(0, 4) !== String(ref || s).slice(0, 4)) o.year = 'numeric'; return d.toLocaleDateString(undefined, o); };
+  const pbSchedWd = (n) => n + (n === 1 ? ' work day' : ' work days');
+  const pbSchedNum = (x) => x === null || x === undefined || x === '' ? null : (Number.isFinite(Number(x)) ? Number(x) : null);
+  // the job's schedule fields from the dashboard copy (dj) and/or the job page's detail (D), in one shape
+  function pbSchedInfo(dj, D) {
+    const S = D && D.schedule && typeof D.schedule === 'object' ? D.schedule : null, dash = pbCxDash(pbArchiveOwnerUid), top = dash && dash.data ? dash.data : {};
+    const pick = (k) => dj && dj[k] !== undefined ? dj[k] : S ? S[k] : undefined;
+    const co = (k) => S && S[k] !== undefined ? S[k] : top[k]; // the company's: the job page's (fresher), else the dashboard's
+    const ds = (v) => (typeof v === 'string' && /^\d{4}-\d\d-\d\d/.test(v)) ? v.slice(0, 10) : null;
+    const ms = pick('milestones'), hol = co('holidays');
+    const st = S && S.state && typeof S.state === 'object' ? S.state : dj && dj.schedule_state && typeof dj.schedule_state === 'object' ? dj.schedule_state : null;
+    const pw = S && Array.isArray(S.pace_week) ? S.pace_week : dj && Array.isArray(dj.pace_week) ? dj.pace_week : null;
+    return { known: !!(dj && 'end_date' in dj) || !!S, start: ds(pick('start_date')), end: ds(pick('end_date')), muted: pick('schedule_muted') === true,
+      weather: Math.max(0, Math.round(Number(st ? st.weather_days : pick('weather_days')) || 0)),
+      milestones: Array.isArray(ms) ? ms.filter(m => m && typeof m === 'object' && ds(m.date)).map(m => ({ id: String(m.id || ''), label: String(m.label || ''), date: ds(m.date), cat: m.category_key ? String(m.category_key) : null, pct: m.category_key ? null : (Number(m.pct) > 0 ? Number(m.pct) : null) })) : [],
+      holidays: (Array.isArray(hol) ? hol : []).map(ds).filter(Boolean), checkpoints: String(co('checkpoints') || '25'),
+      ver: pbSchedNum(pick('schedule_ver')) || 0, hver: pbSchedNum(co('holidays_ver')) || 0, canCo: co('can_set_company') !== false, state: st, paceWeek: pw };
+  }
+  // the numbers, by the server's rules (only while a change waits, or with no projection in the answer); null without an end date
+  function pbSchedCalc(info, v, pw, today) {
+    if (!info || !info.end) return null;
+    const hol = new Set(info.holidays), T = pbSchedDN(today), E = pbSchedDN(info.end), S0 = info.start ? pbSchedDN(info.start) : null, U = pbProdUnitKey;
+    const wd = pbSchedWork(T - 7, T - 1, hol), rows = Array.isArray(pw) ? pw : [];
+    const items = (v && Array.isArray(v.categories) ? v.categories : []).filter(c => c.planned !== null).map(c => {
+      const week = rows.filter(r => r && r.key === c.key && U(r.unit) === U(c.unit)).reduce((s, r) => s + (pbProdNumOrNull(r.qty) || 0), 0);
+      const left = c.planned - c.done, leftB = Math.max(c.planned - (c.done - (c.today || 0)), 0), pace = wd > 0 && week > 0 ? week / wd : null;
+      return { key: c.key, name: c.name, unit: c.unit, planned: c.planned, done: c.done, left: Math.max(left, 0), leftB, week, pace, share: c.share, eta: left > 0 && pace ? Math.min(Math.ceil(leftB * wd / week - 1e-9), 7300) : null };
+    });
+    const overall = v && v.overall !== null && v.overall !== undefined ? v.overall : null, complete = overall !== null && overall >= 0.999999999;
+    const overallB = items.reduce((s, i) => s + i.share * Math.min(Math.max(1 - i.leftB / i.planned, 0), 1), 0);
+    const going = items.filter(i => i.left > 0), noPace = going.filter(i => i.pace === null).map(i => i.name);
+    const finishDays = complete ? 0 : overall !== null && !noPace.length && going.length ? Math.max(...going.map(i => i.eta)) : null;
+    const F = complete ? T : finishDays === null ? null : pbSchedAdd(T - 1, finishDays, hol), far = !complete && F !== null && F > T + 730;
+    const past = T > E ? pbSchedWork(E + 1, T, hol) : 0;
+    const late = complete ? 0 : F !== null ? Math.max(F > E ? pbSchedWork(E + 1, F, hol) : 0, past) : past > 0 ? past : null;
+    const total = S0 !== null && S0 <= E ? pbSchedWork(S0, E, hol) : null, gone = total !== null ? pbSchedWork(S0, Math.min(T, E), hol) : null, leftDays = pbSchedWork(T, E, hol);
+    const opace = going.filter(i => i.eta !== null).reduce((s, i) => s + i.share * (i.week / wd) / i.planned, 0);
+    const ms = info.milestones.map(m => { let proj = null; const M = pbSchedDN(m.date); let state = M < T ? 'passed' : 'date';
+      if (m.cat) { const it = items.find(i => i.key === m.cat); if (!it) state = 'no_item'; else if (it.left <= 0) state = 'done'; else if (it.eta === null) state = 'no_pace'; else proj = pbSchedAdd(T - 1, it.eta, hol); }
+      else if (m.pct) { const p = m.pct / 100; if (overall === null) state = 'no_plan'; else if (overall >= p - 1e-9) state = 'done'; else if (!(opace > 0)) state = 'no_pace'; else proj = pbSchedAdd(T - 1, Math.min(Math.max(Math.ceil((p - overallB) / opace - 1e-9), 0), 7300), hol); }
+      const lateDays = proj !== null && proj > M ? pbSchedWork(M + 1, proj, hol) : 0;
+      if (proj !== null) state = lateDays > 0 ? 'late' : 'on_track';
+      return Object.assign({}, m, { projected: proj === null ? null : pbSchedDS(proj), lateDays, state }); });
+    return { start: info.start, end: info.end, today, total, gone, timePct: total > 0 ? Math.round(gone * 100 / total) : null, startAfter: S0 !== null && S0 > E, pastEnd: past,
+      workPct: overall === null ? null : complete ? 100 : Math.min(99, Math.floor(overall * 100 + 1e-9)), workFrac: overall, complete, finishDays, finish: F === null ? null : pbSchedDS(F), far, late, leftDays,
+      noPace, weather: info.weather, muted: info.muted, items, milestones: ms };
+  }
+  // the server's projection in the same shape
+  function pbSchedFromState(st, info) {
+    const d = (x) => typeof x === 'string' && /^\d{4}-\d\d-\d\d/.test(x) ? x.slice(0, 10) : null, n = pbSchedNum;
+    return { start: d(st.start_date), end: d(st.end_date), today: d(st.today), total: n(st.total_days), gone: n(st.day_n), timePct: n(st.time_pct), startAfter: st.start_after_end === true, pastEnd: n(st.past_end_days) || 0,
+      workPct: n(st.work_pct), workFrac: n(st.work_frac), complete: st.complete === true, finishDays: n(st.finish_days), finish: d(st.finish_date), far: st.far === true, late: n(st.late_days), leftDays: n(st.work_days_left),
+      noPace: Array.isArray(st.no_pace) ? st.no_pace.map(String) : [], weather: Math.max(0, Math.round(Number(st.weather_days) || 0)), muted: info ? info.muted : st.muted === true,
+      items: (Array.isArray(st.items) ? st.items : []).map(i => ({ key: i.key, name: String(i.name || i.key), unit: i.unit || '', planned: n(i.planned), done: n(i.done), left: n(i.left), leftB: n(i.left_b), week: n(i.week), pace: n(i.pace), eta: n(i.eta) })),
+      milestones: (Array.isArray(st.milestones) ? st.milestones : []).map(m => ({ id: String(m.id || ''), label: String(m.label || ''), date: d(m.date), cat: m.category_key ? String(m.category_key) : null, pct: m.category_key ? null : (Number(m.pct) > 0 ? Number(m.pct) : null), projected: d(m.projected), lateDays: n(m.late_days) || 0, state: String(m.state || '') })),
+      server: true };
+  }
+  // what the phone shows: the server's projection unless a change waits on the phone
+  function pbSchedR(info, plan, cats, today) {
+    if (!info || !info.end) return null;
+    if (info.state && !info.overlaid && (typeof info.state.end_date === 'string' ? info.state.end_date.slice(0, 10) : null) === info.end) return pbSchedFromState(info.state, info);
+    return pbSchedCalc(info, pbProdJobView(plan || null, cats), info.paceWeek, today);
+  }
+  // the one line the panel, the pushes and the email share (the server's pb_prod.sched_line says the same)
+  function pbSchedLine(R) {
+    const r = R.today, np = R.noPace.length, going = R.items.filter(i => i.left > 0).length;
+    return [R.pastEnd > 0 ? pbSchedWd(R.pastEnd) + ' past the end date ' + pbSchedDay(R.end, r) : R.startAfter ? 'Start date is after the end date' : R.total > 0 ? 'Day ' + R.gone + ' of ' + R.total + ' (' + R.timePct + '% of the time)' : 'Ends ' + pbSchedDay(R.end, r),
+      R.workPct !== null ? (R.workPct === 0 && R.workFrac > 0 ? '<1%' : R.workPct + '%') + ' of the work' : '',
+      R.complete ? 'work complete' : R.finish && R.far ? 'finish more than 2 years out at last week’s pace' : R.finish ? 'finishing ≈ ' + pbSchedDay(R.finish, r) + ' at last week’s pace — ' + (R.late > 0 ? pbSchedWd(R.late) + ' late' : 'on time')
+        : R.workPct === null ? '' : np === 0 || np >= going ? 'no production last week to project a finish' : 'can’t project yet (no pace on ' + (np === 1 ? R.noPace[0] : np + ' items') + ')',
+      R.weather > 0 ? pbSchedWd(R.weather) + ' lost to weather' : ''].filter(Boolean).join(' · ');
+  }
+  function pbSchedMsText(m) {
+    return m.state === 'late' ? pbSchedWd(m.lateDays) + ' behind' : m.state === 'on_track' ? 'on track' : m.state === 'done' ? 'done' : m.state === 'no_pace' ? 'no pace yet' : m.state === 'no_item' ? 'item not on the plan' : m.state === 'no_plan' ? 'no plan yet' : m.state === 'passed' ? 'date passed' : '';
+  }
+  function pbSchedHere() { const job = pbPj.job, D = pbPj.data; if (!job || !D || !pbCxDashOn()) return null; return pbSchedInfo(pbCxKnownJob(job.job_number), D); }
+  function pbSchedPendHtml(key) { const e = pbSchedPending(key); if (!e) return ''; setTimeout(() => { try { window.pbSchedFlush(false); } catch (x) {} }, 0);
+    return '<p class="pbx-sched-muted pbx-sched-pend' + (e.err ? ' err' : '') + '" id="pjSchedPend">' + pbCxE(e.err ? 'Schedule change not saved: ' + e.err + ' Open Edit project › Schedule to fix it.' : navigator.onLine === false ? 'Schedule change kept on this phone; it’s sent when there’s signal.' : 'Sending the schedule change…') + '</p>'; }
+  // S2: the Overview panel
+  window.pbSchedPanelHtml = function() {
+    const info0 = pbSchedHere(); if (!info0) return ''; const info = pbSchedOverlay(info0, pbPj.job.job_key), pend = pbSchedPendHtml(pbPj.job.job_key);
+    let h = '<section class="pbx-panel" id="pjCxSched" aria-labelledby="pjCxSchedH"><h3 class="pbx-h3" id="pjCxSchedH">Schedule</h3>';
+    if (!info.end) return h + '<p class="pbx-none" id="pjSchedLine">No end date set — add one in Edit project › Schedule.</p>' + pend + '</section>';
+    const R = pbSchedR(info, pbPj.data.plan || null, pbPj.data.cats, pbTkToday());
+    h += '<p class="pbx-line" id="pjSchedLine">' + pbCxE(pbSchedLine(R)) + '</p>';
+    if (R.milestones.length) h += '<ul class="pbx-sched-ms" id="pjSchedMs">' + R.milestones.map(m => '<li class="' + (m.state === 'late' ? 'late' : m.state === 'on_track' || m.state === 'done' ? 'ok' : '') + '"><span>' + pbCxE(m.label + ' · ' + pbSchedDay(m.date, R.today)) + '</span>' + (pbSchedMsText(m) ? '<span class="s">' + pbCxE(pbSchedMsText(m)) + '</span>' : '') + '</li>').join('') + '</ul>';
+    if (R.muted) h += '<p class="pbx-sched-muted">Schedule alerts silenced for this job.</p>';
+    return h + pend + '</section>';
+  };
+  // S3: the Home card flag (more than 3 work days late; past the end date counts even with no pace)
+  window.pbSchedFlag = function(j) {
+    if (!j || !pbCxDashOn() || !(j.end_date || pbSchedPending(j.job_key))) return '';
+    const R = pbSchedR(pbSchedOverlay(pbSchedInfo(j, null), j.job_key), j.plan || null, j.cats, pbTkToday());
+    if (!R || !(R.late > 3)) return '';
+    return pbCxFlag('late', 'clock', R.far ? 'Finish over 2 years out at this pace' : R.finish ? pbSchedWd(R.late) + ' late at this pace' : pbSchedWd(R.pastEnd) + ' past the end date');
+  };
+  // S1: Edit project › Schedule
+  let pbSchedF = null;
+  const pbSchedCkText = { '25': 'At 25, 50 and 75 % of the time', '10': 'Every 10 % of the time', off: 'Off' };
+  window.pbSchedForm = function(v, err) {
+    const job = pbPj.job; if (!job) return;
+    const info = pbSchedHere() || pbSchedInfo(pbCxKnownJob(job.job_number), pbPj.data);
+    const pend = v ? null : pbSchedPending(job.job_key); if (pend && pend.F) { v = Object.assign({}, pend.F); if (pend.err && !err) err = pend.err + ' Not saved yet; what you typed is still here.'; }
+    pbSchedF = v || { end: info.end || '', ms: info.milestones.map(m => ({ id: m.id, label: m.label, date: m.date, tie: m.cat ? 'cat:' + m.cat : m.pct ? 'pct' : '', pct: m.pct ? String(m.pct) : '' })), ck: info.checkpoints, hol: info.holidays.slice(), hol0: info.holidays.slice(), ck0: info.checkpoints, mute: info.muted, newHol: '', ver: info.ver, hver: info.hver, canCo: info.canCo };
+    pbShowModal((err ? err + ' ' : '') + 'Work days are Mon–Fri minus the company holidays; the finish is projected at last week’s pace.', [{ label: 'Cancel' }, { label: 'Save', primary: true, onClick: () => pbSchedSave(pbSchedF) }], 'Schedule · ' + pbProdJobLabel(job.job_number));
+    const wrap = document.createElement('div'); wrap.className = 'pb-modal-extra pbx-sched-wrap'; wrap.id = 'cxsWrap'; wrap.style.cssText = 'margin:0 0 14px 0; flex:0 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;';
+    document.getElementById('pbModalMessage').insertAdjacentElement('afterend', wrap);
+    pbSchedPaint();
+    setTimeout(() => { const el = document.getElementById('cxsEnd'); if (el) el.focus({ preventScroll: true }); }, 50);
+  };
+  const pbSchedHolText = (d) => new Date(d + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  function pbSchedPaint() {
+    const wrap = document.getElementById('cxsWrap'), F = pbSchedF; if (!wrap || !F) return;
+    const cats = (pbPj.data && pbPj.data.plan && Array.isArray(pbPj.data.plan.categories) ? pbPj.data.plan.categories : []).filter(c => c && c.key && Number(c.planned) > 0);
+    const opt = (val, text, cur) => '<option value="' + pbCxE(val) + '"' + (cur === val ? ' selected' : '') + '>' + pbCxE(text) + '</option>';
+    let h = '<div class="pb-field"><label for="cxsEnd">End date</label><input type="date" id="cxsEnd" value="' + pbCxE(F.end) + '"></div>'
+      + '<div class="pbx-sched-head"><span id="cxsMsHead">Milestones' + (F.ms.length ? ' (' + F.ms.length + ' of 6)' : '') + '</span>' + (F.ms.length < 6 ? '<button type="button" class="pb-btn ghost small" id="cxsAdd">Add</button>' : '') + '</div>'
+      + F.ms.map((m, i) => '<div class="pbx-sched-m" data-i="' + i + '"><input type="text" class="cxs-ml" maxlength="60" autocomplete="off" placeholder="Pipe done" aria-label="Milestone ' + (i + 1) + '" value="' + pbCxE(m.label) + '"><button type="button" class="pbx-sched-x cxs-mx" aria-label="Remove milestone ' + (i + 1) + '">×</button>'
+        + '<input type="date" class="cxs-md" aria-label="Date of milestone ' + (i + 1) + '" value="' + pbCxE(m.date) + '">'
+        + '<select class="cxs-mt" aria-label="What milestone ' + (i + 1) + ' tracks">' + opt('', 'Just a date', m.tie) + opt('pct', 'Overall % of the work', m.tie) + cats.map(c => opt('cat:' + c.key, String(c.name || c.key) + ' done', m.tie)).join('') + '</select>'
+        + (m.tie === 'pct' ? '<input type="number" class="cxs-mp" min="1" max="100" step="1" inputmode="numeric" placeholder="50" aria-label="Overall % for milestone ' + (i + 1) + '" value="' + pbCxE(m.pct) + '">' : '') + '</div>').join('')
+      + (F.ms.length ? '' : '<p class="pbx-dim">A milestone can track a plan item or an overall %, and says on track or how far behind.</p>')
+      // the company's part: the owner sets it; everyone else sees it (S8)
+      + (F.canCo ? '<div class="pb-field" style="margin-top:12px;"><label for="cxsCk">Status checkpoints <span class="pbx-opt">(every job)</span></label><select id="cxsCk">' + opt('25', pbSchedCkText['25'], F.ck) + opt('10', pbSchedCkText['10'], F.ck) + opt('off', pbSchedCkText.off, F.ck) + '</select></div>'
+        + '<div class="pb-field"><label for="cxsHol">Company holidays <span class="pbx-opt">(not work days)</span></label><div class="pbx-sched-hol"><input type="date" id="cxsHol" value="' + pbCxE(F.newHol) + '"><button type="button" class="pb-btn ghost small" id="cxsHolAdd">Add</button></div>'
+        + (F.hol.length ? '<ul class="pbx-sched-hl" id="cxsHolList">' + F.hol.map((d, i) => '<li>' + pbCxE(pbSchedHolText(d)) + '<button type="button" class="pbx-sched-x cxs-hx" data-i="' + i + '" aria-label="Remove holiday ' + pbCxE(d) + '">×</button></li>').join('') + '</ul>' : '') + '</div>'
+        : '<p class="pbx-dim" id="cxsCoRo">' + pbCxE('Status checkpoints: ' + (pbSchedCkText[F.ck] || pbSchedCkText['25']) + '. Company holidays: ' + (F.hol.length ? F.hol.map(pbSchedHolText).join(', ') : 'none') + '. Set by the company owner.') + '</p>')
+      + '<label class="pbd-check" for="cxsMute"><input type="checkbox" id="cxsMute"' + (F.mute ? ' checked' : '') + '> Silence schedule alerts for this job</label>';
+    wrap.innerHTML = h;
+    const on = (sel, ev, fn) => wrap.querySelectorAll(sel).forEach(el => el.addEventListener(ev, fn));
+    on('#cxsEnd', 'input', (e) => { F.end = e.target.value; }); on('#cxsEnd', 'change', (e) => { F.end = e.target.value; });
+    on('#cxsCk', 'change', (e) => { F.ck = e.target.value; });
+    on('#cxsMute', 'change', (e) => { F.mute = e.target.checked; });
+    on('#cxsHol', 'input', (e) => { F.newHol = e.target.value; }); on('#cxsHol', 'change', (e) => { F.newHol = e.target.value; });
+    on('#cxsAdd', 'click', () => { if (F.ms.length < 6) { F.ms.push({ id: '', label: '', date: '', tie: '', pct: '' }); pbSchedPaint(); const L = wrap.querySelectorAll('.cxs-ml'); if (L.length) L[L.length - 1].focus({ preventScroll: true }); } });
+    on('#cxsHolAdd', 'click', () => { const d = F.newHol; if (!/^\d{4}-\d\d-\d\d$/.test(d)) return; if (!F.hol.includes(d) && F.hol.length < 60) { F.hol.push(d); F.hol.sort(); } F.newHol = ''; pbSchedPaint(); const b = document.getElementById('cxsHol'); if (b) b.focus({ preventScroll: true }); });
+    on('.cxs-hx', 'click', (e) => { F.hol.splice(Number(e.currentTarget.dataset.i), 1); pbSchedPaint(); });
+    const row = (el) => F.ms[Number(el.closest('.pbx-sched-m').dataset.i)];
+    on('.cxs-ml', 'input', (e) => { row(e.target).label = e.target.value; });
+    on('.cxs-md', 'input', (e) => { row(e.target).date = e.target.value; }); on('.cxs-md', 'change', (e) => { row(e.target).date = e.target.value; });
+    on('.cxs-mp', 'input', (e) => { row(e.target).pct = e.target.value; });
+    on('.cxs-mt', 'change', (e) => { const m = row(e.target); m.tie = e.target.value; pbSchedPaint(); if (m.tie === 'pct') { const p = wrap.querySelector('.pbx-sched-m[data-i="' + F.ms.indexOf(m) + '"] .cxs-mp'); if (p) p.focus({ preventScroll: true }); } });
+    on('.cxs-mx', 'click', (e) => { F.ms.splice(Number(e.currentTarget.closest('.pbx-sched-m').dataset.i), 1); pbSchedPaint(); });
+  }
+  // the on-phone queue: <uid>:schedQ = { job_key: { job_number, F, ms, co, ver, hver, at, err, jobDone } } — a Save is kept
+  // here first, sent when there is signal (now, on 'online', when a job page paints), and only dropped once the server has it.
+  // ver / hver: the versions the form opened on; the server refuses a save made on an older one (pb:stale), never overwrites.
+  const pbSchedQK = (uid) => uid + ':schedQ';
+  function pbSchedQ(uid) { try { const q = JSON.parse(localStorage.getItem(pbSchedQK(uid)) || '{}'); return q && typeof q === 'object' && !Array.isArray(q) ? q : {}; } catch (e) { return {}; } }
+  function pbSchedQSet(uid, q) { try { if (Object.keys(q).length) localStorage.setItem(pbSchedQK(uid), JSON.stringify(q)); else localStorage.removeItem(pbSchedQK(uid)); return true; } catch (e) { return false; } }
+  function pbSchedPending(key) { const uid = pbArchiveOwnerUid; return uid && key ? pbSchedQ(uid)[key] || null : null; }
+  // what the phone shows while a change waits: the typed values over the server's (not for a change the server refused)
+  function pbSchedOverlay(info, key) {
+    const e = pbSchedPending(key); if (!info || !e || !e.F || e.err) return info;
+    const o = Object.assign({}, info, { overlaid: true, end: e.F.end || null, muted: !!e.F.mute, milestones: (e.ms || []).map(m => ({ id: m.id, label: m.label, date: m.date, cat: m.category_key || null, pct: m.category_key ? null : m.pct || null })) });
+    if (e.co) { o.holidays = e.co.holidays.slice(); o.checkpoints = e.co.checkpoints; }
+    return o;
+  }
+  // the server's saved values into the copies on the phone (their old projection goes until the next read)
+  function pbSchedApply(jobNumber, key, vals) {
+    const dj = pbCxKnownJob(jobNumber); if (dj) Object.assign(dj, vals, { schedule_state: null });
+    if (pbPj.job && pbPj.job.job_key === key && pbPj.data && pbPj.data.schedule) Object.assign(pbPj.data.schedule, vals, { state: null });
+  }
+  function pbSchedCoApply(uid, c) {
+    const vals = { holidays: Array.isArray(c.holidays) ? c.holidays : [], checkpoints: String(c.checkpoints || '25'), holidays_ver: pbSchedNum(c.ver) || 0 };
+    const dash = pbCxDash(uid); if (dash && dash.data) { Object.assign(dash.data, vals); (dash.data.jobs || []).forEach(j => { if (j) j.schedule_state = null; }); }
+    if (pbPj.data && pbPj.data.schedule) Object.assign(pbPj.data.schedule, vals, { state: null });
+  }
+  const pbSchedBusy = new Set();
+  // send one queued change; interactive = the Save tap itself (a refusal then reopens the form)
+  async function pbSchedSend(uid, key, interactive) {
+    if (pbSchedBusy.has(key)) return 'busy';
+    let e = pbSchedQ(uid)[key]; if (!e) return 'none';
+    if (navigator.onLine === false) return 'wait';
+    if (!(sbClient && typeof sbClient.rpc === 'function' && sbUser && sbUser.id === uid && (await pbLiveSessionIs(uid)))) return 'wait';
+    pbSchedBusy.add(key);
+    try {
+      const at = e.at, net = (m) => navigator.onLine === false || /failed to fetch|networkerror|load failed|no client|timeout/i.test(m);
+      const refuse = (text) => { const q = pbSchedQ(uid); if (q[key] && q[key].at === at) { q[key].err = text; pbSchedQSet(uid, q); } pbSchedRepaint(key); if (interactive && pbPj.job && pbPj.job.job_key === key) window.pbSchedForm(null, ''); return 'refused'; };
+      if (!e.jobDone) {
+        const r = await pbPermitRpc('pb_prod_job_schedule_set', { p_job_number: e.job_number, p_end_date: e.F.end || null, p_milestones: e.ms, p_expect_uid: uid, p_muted: !!e.F.mute, p_expect_ver: typeof e.ver === 'number' ? e.ver : null }, 30000);
+        if (!sbUser || sbUser.id !== uid) return 'wait';
+        const m = String((r && r.error && r.error.message) || '');
+        if (r && !r.error && r.data && r.data.ok === false && r.data.code === 'pb:stale') { // changed elsewhere since the form opened: nothing written
+          const c = r.data.current || {}, cur = { end_date: c.end_date || null, milestones: Array.isArray(c.milestones) ? c.milestones : [], schedule_muted: c.schedule_muted === true, schedule_ver: pbSchedNum(c.schedule_ver) || 0 };
+          pbSchedApply(e.job_number, key, cur);
+          const q = pbSchedQ(uid); if (q[key] && q[key].at === at) { q[key].ver = cur.schedule_ver; if (q[key].F) q[key].F.ver = cur.schedule_ver; pbSchedQSet(uid, q); }
+          return refuse('Someone else changed this job’s schedule since you opened it (now: ' + (cur.end_date ? 'ends ' + pbSchedDay(cur.end_date, pbTkToday()) : 'no end date') + ', ' + cur.milestones.length + (cur.milestones.length === 1 ? ' milestone' : ' milestones') + '). Save again to replace it with yours.');
+        }
+        if (!r || r.error || !r.data || r.data.ok !== true) {
+          if (net(m) || !r) return 'wait';
+          return refuse(/Could not find the function|function .* does not exist/i.test(m) ? 'The company server can’t keep a schedule yet.' : /pb:end_before_start/.test(m) ? 'The server says the end date is before the start date.' : /pb:bad_date/.test(m) ? 'The server didn’t accept that end date.' : /pb:bad_milestones/.test(m) ? 'The server didn’t accept the milestones: each needs a name and a date.' : /pb:not_found/.test(m) ? 'This job isn’t on the company server any more.' : pbProdErrText(r));
+        }
+        const saved = r.data;
+        pbSchedApply(e.job_number, key, { end_date: saved.end_date || null, milestones: Array.isArray(saved.milestones) ? saved.milestones : [], schedule_muted: saved.schedule_muted === true, schedule_ver: pbSchedNum(saved.schedule_ver) || 0 });
+        const q = pbSchedQ(uid); if (q[key] && q[key].at === at) { if (q[key].co) q[key].jobDone = true; else delete q[key]; pbSchedQSet(uid, q); }
+        e = pbSchedQ(uid)[key];
+      }
+      let note = '';
+      if (e && e.at === at && e.co) { // the company's part, only when it changed (the owner's)
+        const r2 = await pbPermitRpc('pb_company_schedule_set', { p_holidays: e.co.holidays, p_checkpoints: e.co.checkpoints, p_expect_uid: uid, p_expect_ver: typeof e.hver === 'number' ? e.hver : null }, 30000);
+        const m2 = String((r2 && r2.error && r2.error.message) || ''), d2 = r2 && !r2.error && r2.data ? r2.data : null;
+        if (d2 && d2.ok === true) pbSchedCoApply(uid, { holidays: Array.isArray(d2.holidays) ? d2.holidays : e.co.holidays, checkpoints: d2.checkpoints || e.co.checkpoints, ver: d2.ver });
+        else if (d2 && d2.ok === false && d2.code === 'pb:stale') { if (d2.current) pbSchedCoApply(uid, d2.current); note = 'The schedule was saved; the holidays and checkpoints were not: they were changed on another phone since you opened the form. Open it again to see them.'; }
+        else if (d2 && d2.ok === false && d2.code === 'pb:owner_only') note = 'The schedule was saved; only the company owner can change the holidays and checkpoints.';
+        else if (!r2 || net(m2)) return 'wait';
+        else note = 'The schedule was saved; the holidays and checkpoints were not' + (/Could not find the function|function .* does not exist/i.test(m2) ? ' (the company server can’t keep them yet).' : ': ' + pbProdErrText(r2));
+        const q = pbSchedQ(uid); if (q[key] && q[key].at === at) { delete q[key]; pbSchedQSet(uid, q); }
+      }
+      try { if (pbCxDash(uid)) pbProdCacheSet(uid, 'dash', { at: pbPd.at || Date.now(), data: pbPd.data }); } catch (x) {}
+      pbSchedRepaint(key);
+      if (note) pbAlert(note, 'Schedule');
+      try { window.pbCxRefresh(true); } catch (x) {}
+      return 'sent';
+    } finally { pbSchedBusy.delete(key); }
+  }
+  function pbSchedRepaint(key) { try { if (pbPj.job && pbPj.job.job_key === key) window.pbCxJobPaint(); } catch (e) {} try { if (pbCurrentScreen !== 'prodJob' && typeof window.pbCxRender === 'function') window.pbCxRender(); } catch (e) {} }
+  let pbSchedFlushAt = 0;
+  window.pbSchedFlush = function(force) {
+    const uid = pbArchiveOwnerUid; if (!uid || navigator.onLine === false) return;
+    if (!force && Date.now() - pbSchedFlushAt < 20000) return; pbSchedFlushAt = Date.now();
+    const q = pbSchedQ(uid); Object.keys(q).forEach(k => { if (!q[k].err) pbSchedSend(uid, k, false).catch(() => {}); });
+  };
+  window.addEventListener('online', () => setTimeout(() => window.pbSchedFlush(true), 1500));
+  setTimeout(() => { try { window.pbSchedFlush(true); } catch (e) {} }, 6000);
+  async function pbSchedSave(F) {
+    const uid = pbArchiveOwnerUid, job = pbPj.job; if (!job || !F) return;
+    const again = (t) => window.pbSchedForm(F, t + ' Nothing was saved; what you typed is still here.');
+    const D = /^\d{4}-\d\d-\d\d$/;
+    if (F.end && !D.test(F.end)) return again('The end date isn’t a date. Pick one, or leave it empty.');
+    for (const m of F.ms) {
+      if (!String(m.label || '').trim()) return again('Every milestone needs a name.');
+      if (!D.test(m.date || '')) return again('Every milestone needs a date.');
+      if (m.tie === 'pct' && !(Number(m.pct) >= 1 && Number(m.pct) <= 100)) return again('An overall-% milestone needs a % from 1 to 100.');
+    }
+    const info = pbSchedHere();
+    if (F.end && info && info.start && F.end < info.start) return again('The end date is before the start date (' + pbSchedDay(info.start, pbTkToday()) + ').');
+    F.ms.forEach((m, i) => { if (!m.id) m.id = 'm' + (i + 1) + '-' + Date.now().toString(36); });
+    const ms = F.ms.map(m => ({ id: m.id, label: String(m.label).trim().slice(0, 60), date: m.date, category_key: /^cat:/.test(m.tie) ? m.tie.slice(4) : null, pct: m.tie === 'pct' ? Math.round(Number(m.pct)) : null }));
+    const co = F.canCo && (F.ck !== F.ck0 || F.hol.join(',') !== F.hol0.join(',')) ? { holidays: F.hol.slice(), checkpoints: F.ck } : null;
+    const q = pbSchedQ(uid); q[job.job_key] = { job_number: job.job_number, F: Object.assign({}, F, { err: '' }), ms, co, ver: typeof F.ver === 'number' ? F.ver : null, hver: typeof F.hver === 'number' ? F.hver : null, at: Date.now(), err: '' };
+    if (!pbSchedQSet(uid, q)) return again('The phone’s storage is full.');
+    pbSchedRepaint(job.job_key);
+    const r = await pbSchedSend(uid, job.job_key, true);
+    if (r === 'wait') pbSchedRepaint(job.job_key);
+  }
+  // tests
+  window.__pbSchedHere = () => { const i = pbSchedHere(); return i ? pbSchedR(pbSchedOverlay(i, pbPj.job.job_key), pbPj.data.plan || null, pbPj.data.cats, pbTkToday()) : null; };
+  window.__pbSchedCalc = (dj, D, today) => pbSchedCalc(pbSchedInfo(dj, D), pbProdJobView((D || dj || {}).plan || null, (D || dj || {}).cats), (pbSchedInfo(dj, D) || {}).paceWeek, today || pbTkToday());
+  // app == server: a job page answer (plan, cats, schedule with its state) → the app's own math and the server's, in one shape, with both lines
+  window.__pbSchedParity = (P) => {
+    const st = P.schedule && P.schedule.state, D = Object.assign({}, P, { schedule: Object.assign({}, P.schedule, { state: null }) }), info = pbSchedInfo(null, D);
+    const app = pbSchedCalc(info, pbProdJobView(D.plan || null, D.cats), info.paceWeek, P.today), srv = st ? pbSchedFromState(st, info) : null;
+    const pick = (R) => R && { total: R.total, gone: R.gone, timePct: R.timePct, startAfter: R.startAfter, pastEnd: R.pastEnd, workPct: R.workPct, complete: R.complete, finishDays: R.finishDays, finish: R.finish, far: R.far, late: R.late, leftDays: R.leftDays, noPace: R.noPace, weather: R.weather,
+      etas: R.items.map(i => i.key + ':' + i.eta).join(','), milestones: R.milestones.map(m => m.id + ':' + m.state + ':' + m.projected + ':' + m.lateDays).join(',') };
+    return { app: pick(app), srv: pick(srv), lineApp: app ? pbSchedLine(app) : null, lineSrv: srv ? pbSchedLine(srv) : null };
+  };
+  window.__pbSchedLine = (R) => pbSchedLine(R);
+  // ================= end feat_schedule =================
   // ================= end batch 27 CONSOLE =================
   // ================= batch 27 CONSOLE: NEW PROJECT (owner, Oct 20: "I don't see where the PM is supposed to add a new job") =================
   // The company account, a manager or a PM creates a job before any crew reports on it:
