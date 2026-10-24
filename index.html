@@ -4359,6 +4359,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <button type="button" class="pb-edu-row pb-tool-row" id="settingsLogoBtn" data-ic="flag" onclick="window.pbBrBackTo = 'settings'; pbOpenCompanyLogo()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Company logo</span><span class="sub">The logo at the top of every report</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
       </div>
       <div id="settingsCoTime" class="pbx-name pbx-cotime" hidden></div><!-- feat_cotz: the company's time zone and morning email -->
+      <div id="settingsCoLocate" class="pbx-name pbx-cotime" hidden></div><!-- feat_locates: a new dig ticket is good for N days -->
     </div>
     <div class="pb-section" id="settingsPrefsSection">
       <div class="pb-tag" id="settingsPrefsLabel">Preferences</div>
@@ -4442,10 +4443,11 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <label class="pb-set-switch" for="notifTypeRuns"><span class="tx"><span class="name">Runs waiting for me</span><span class="sub">Foreman: pipelayers’ runs assigned or held for you</span></span><input type="checkbox" role="switch" id="notifTypeRuns" class="pb-pn-switch" checked onchange="pbPushSetPref('runs_waiting', this.checked)"></label>
         <label class="pb-set-switch" for="notifTypeReports" id="notifTypeReportsRow" hidden><span class="tx"><span class="name">Management reports arrived</span><span class="sub">Company account only</span></span><input type="checkbox" role="switch" id="notifTypeReports" class="pb-pn-switch" checked onchange="pbPushSetPref('mgmt_report', this.checked)"></label>
         <label class="pb-set-switch" for="notifTypeRunEnd" id="notifTypeRunEndRow" hidden><span class="tx"><span class="name">Run still open reminder</span><span class="sub">When a run you started hours ago was never ended</span></span><input type="checkbox" role="switch" id="notifTypeRunEnd" class="pb-pn-switch" checked onchange="pbPushSetPref('run_end_ask', this.checked)"></label>
-        <label class="pb-set-switch" for="notifTypeMat" id="notifTypeMatRow" hidden><span class="tx"><span class="name">Material alerts</span><span class="sub">When a job’s material reaches its alert level</span></span><input type="checkbox" role="switch" id="notifTypeMat" class="pb-pn-switch" checked onchange="pbPushSetPref('material_alert', this.checked)"></label>
+        <label class="pb-set-switch" for="notifTypeMat" id="notifTypeMatRow" hidden><span class="tx"><span class="name">Material alerts</span><span class="sub">When a job’s material reaches its alert level, or it’s time to order more</span></span><input type="checkbox" role="switch" id="notifTypeMat" class="pb-pn-switch" checked onchange="pbPushSetPref('material_alert', this.checked)"></label>
         <label class="pb-set-switch" for="notifTypeNudge" id="notifTypeNudgeRow" hidden><span class="tx"><span class="name">Nudges from the office</span><span class="sub">When your company is waiting on a run’s information</span></span><input type="checkbox" role="switch" id="notifTypeNudge" class="pb-pn-switch" checked onchange="pbPushSetPref('crew_nudge', this.checked)"></label><!-- r14 integration -->
         <label class="pb-set-switch" for="notifTypePermit" id="notifTypePermitRow" hidden><span class="tx"><span class="name">Crew permit closed</span><span class="sub">Foreman account: when a pipelayer on your crew closes a confined space permit</span></span><input type="checkbox" role="switch" id="notifTypePermit" class="pb-pn-switch" checked onchange="pbPushSetPref('permit_closed', this.checked)"></label>
-        <label class="pb-set-switch" for="notifTypePermitDue" id="notifTypePermitDueRow" hidden><span class="tx"><span class="name">Permit checks due</span><span class="sub">On your open confined space permit: when an air test or communication check comes due, and once more 5 minutes later. The alarm in the app stays the main reminder.</span></span><input type="checkbox" role="switch" id="notifTypePermitDue" class="pb-pn-switch" checked onchange="pbPushSetPref('permit_due', this.checked)"></label><!-- feat_permitdue -->
+        <label class="pb-set-switch" for="notifTypePermitDue" id="notifTypePermitDueRow" hidden><span class="tx"><span class="name">Permit checks due</span><span class="sub">On your open confined space permit: when an air test or communication check comes due, and once more 5 minutes later. The alarm in the app stays the main reminder.</span></span><input type="checkbox" role="switch" id="notifTypePermitDue" class="pb-pn-switch" checked onchange="pbPushSetPref('permit_due', this.checked)"></label>
+        <label class="pb-set-switch" for="notifTypeLoc" id="notifTypeLocRow" hidden><span class="tx"><span class="name">Locate tickets expiring</span><span class="sub">An open 811 ticket on your jobs: 7 days before it expires, 2 days before, and on the day</span></span><input type="checkbox" role="switch" id="notifTypeLoc" class="pb-pn-switch" checked onchange="pbPushSetPref('locates', this.checked)"></label><!-- feat_locates --><!-- feat_permitdue -->
         <label class="pb-set-switch" for="notifTypeCrew"><span class="tx"><span class="name">Crew production reminders</span><span class="sub">When your crew starts or finishes a run and its production isn’t entered</span></span><input type="checkbox" role="switch" id="notifTypeCrew" class="pb-pn-switch" checked onchange="pbCrewPushSet(this.checked); pbPushCrewKind(this.checked)"></label><!-- batch 14 F -->
         <p class="pb-help pb-pn-msg" id="notifCrewMsg" role="status" hidden></p><!-- batch 14 F -->
         <p class="pb-help pb-pn-msg" id="notifPrefsMsg" role="status" hidden></p>
@@ -6436,6 +6438,38 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <p id="ijStatus" class="pb-rpt-status" role="status"></p>
       <div id="ijBody"></div>
       <div class="pb-btn-wrap"><button type="button" class="pb-btn secondary" id="ijRefreshBtn" onclick="pbInsJobLoad()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Refresh</button></div>
+    </div>
+  </div>
+
+  <!-- feat_locates: LOCATES (811 dig tickets) of one job: the company account and the job's foremen -->
+  <style>
+  #pbApp .pbloc-card { border-left: 4px solid var(--pb-divider); }
+  #pbApp .pbloc-card.amber { border-left-color: var(--pb-warn-text); }
+  #pbApp .pbloc-card.red { border-left-color: var(--pb-danger); }
+  #pbApp .pbloc-card.closed { opacity: .85; }
+  #pbApp .pbloc-no { font-size: 17px; overflow-wrap: anywhere; }
+  #pbApp .pbloc-chip.notsent, #pbApp .pbloc-mchip.notsent { --pb-chip-icon: var(--pb-icon-warn); }
+  #pbApp .pbloc-help { margin: -4px 0 12px; }
+  #pbApp .pbloc-err { margin: 8px 0; }
+  #pbApp .pbloc-btns .pb-btn { min-height: 48px; }
+  #pbApp .pbloc-closed { margin-top: 16px; }
+  #pbApp .pbloc-closed > summary { min-height: 44px; display: flex; align-items: center; }
+  #pbApp .pbloc-fmbtn { display: flex; align-items: center; justify-content: flex-start; gap: 8px; width: 100%; min-height: 44px; margin: 10px 0 0; text-align: left; }
+  #pbApp .pbloc-fmbtn.amber { color: var(--pb-warn-text); }
+  #pbApp .pbloc-fmbtn.red { color: var(--pb-danger-text); }
+  #pbApp .pbloc-fc { margin: 4px 0; }
+  #pbApp #homeAttentionList #homeAttention_locates.info::before { -webkit-mask-image: var(--pb-icon-warn); mask-image: var(--pb-icon-warn); }
+  </style>
+  <div class="pb-screen" id="screen-locates">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span id="locEyebrow">Job</span><button type="button" class="pb-back" id="locBack" title="Back" aria-label="Back" onclick="pbGoBack()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
+      <h1 class="pb-title">Locates</h1>
+    </div>
+    <div class="pbd-wrap">
+      <div id="locHead" class="pbp-head"></div>
+      <p id="locStatus" class="pb-rpt-status" role="status"></p>
+      <div id="locBody"></div>
+      <div class="pb-btn-wrap"><button type="button" class="pb-btn secondary" id="locRefreshBtn" onclick="pbLocLoad()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Refresh</button></div>
     </div>
   </div>
 
@@ -9002,7 +9036,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.38 · 2026-10-24'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.39 · 2026-10-24'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -10086,6 +10120,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return n ? { id: 'notSent', info: true, html: '<span class="t">' + n + ' run' + (n > 1 ? 's' : '') + ' with no cloud copy</span>The upload to your account didn’t go through. The run is saved on this phone; tap Retry Sync in Records.' + reportsRoute() } : null;
     });
     add(() => (typeof window.pbProdHomeAttention === 'function' ? window.pbProdHomeAttention() : null)); // batch 12 D2: crew runs waiting
+    add(() => (typeof window.pbLocHomeAttention === 'function' ? window.pbLocHomeAttention() : null)); // feat_locates: dig tickets about to expire
     return items;
   }
   window.pbRenderHome = function() {
@@ -30806,8 +30841,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   try { pbRawGet(PB_PUSH_KEY_KEY).then(v => { if (!pbPushVapid && typeof v === 'string' && /^[A-Za-z0-9_-]{80,100}$/.test(v)) pbPushVapid = v; }).catch(() => {}); } catch (e) {}
   const PB_PUSH_ORIGIN = 'https://pipelayersbible.github.io', PB_PUSH_PATH = '/Index.html-/';
   const PB_PUSH_DEVICE_KEY = 'pbPushDevice'; // per phone, not per account: { uid, want: 'on'|'off', synced, endpoint, why, at }
-  const PB_PUSH_TYPES = ['runs_waiting', 'mgmt_report', 'crew_production', 'run_end_ask', 'material_alert', 'crew_nudge', 'permit_closed', 'permit_due']; // feat_permitdue // r14 integration: a row shows only when the server reports the kind
-  const PB_PUSH_ROWS = { run_end_ask: 'notifTypeRunEndRow', material_alert: 'notifTypeMatRow', crew_nudge: 'notifTypeNudgeRow', permit_closed: 'notifTypePermitRow', permit_due: 'notifTypePermitDueRow' }; // feat_permitdue // crew_production: batch 14 F's own row
+  const PB_PUSH_TYPES = ['runs_waiting', 'mgmt_report', 'crew_production', 'run_end_ask', 'material_alert', 'crew_nudge', 'permit_closed', 'permit_due', 'locates']; // feat_locates // feat_permitdue // r14 integration: a row shows only when the server reports the kind
+  const PB_PUSH_ROWS = { run_end_ask: 'notifTypeRunEndRow', material_alert: 'notifTypeMatRow', crew_nudge: 'notifTypeNudgeRow', permit_closed: 'notifTypePermitRow', permit_due: 'notifTypePermitDueRow', locates: 'notifTypeLocRow' }; // feat_locates // feat_permitdue // crew_production: batch 14 F's own row
   let pbPushReg = null, pbPushSwFailed = false, pbPushRegP = null, pbPushBusy = null, pbPushTimer = null;
   let pbPushMsg = { text: '', at: 0 };
   function pbPushHostOk() {
@@ -34629,7 +34664,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (jl) jl.innerHTML = !jobs ? '' : !jobs.length ? '<p class="pbp-dim pbp-none">Your jobs show here once your production has synced.</p>' : jobs.map((j, i) => {
       const v = pbProdJobView(j.plan || null, j.cats), mine = Array.isArray(j.mine) ? j.mine.filter(m => m && Number(m.today) && String(m.key).charAt(0) !== '_') : []; /* feat_crew34 4: the work only; hours have their own line */
       return '<div class="pbp-job static" id="pmJob' + i + '"><span class="pbp-jobhead"><span class="pbp-jobname"><span class="pbp-jobnum">' + escapeHtml(pbProdJobLabel(j.job_number)) + '</span><span class="pbp-jobsite">Company progress' + (j.plan ? ' · company plan' : '') + '</span></span>' + pbProdOverallHtml(v) + '</span>'
-        + pbProdBar(v) + pbProdLegend(v) + (mine.length ? '<span class="pbp-today">Your work today: ' + escapeHtml(mine.map(m => pbProdCatName(m.key, j.plan) + ' ' + pbProdQtyText(m.today, m.unit)).join(' · ')) + '</span>' : '') + '</div>';
+        + pbProdBar(v) + pbProdLegend(v) + (mine.length ? '<span class="pbp-today">Your work today: ' + escapeHtml(mine.map(m => pbProdCatName(m.key, j.plan) + ' ' + pbProdQtyText(m.today, m.unit)).join(' · ')) + '</span>' : '') + (window.pbLocFmJobLine ? window.pbLocFmJobLine(j, i) : '') /* feat_locates */ + '</div>';
     }).join('');
     if (jl) pbProdFitBars(jl);
     pbCrewRender(); // batch 12 D2
@@ -46359,8 +46394,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + (calc ? '<p class="pbp-dim pbm-calc">' + escapeHtml(calc) + '</p>' : '')
         + '<p class="pbp-dim">Alert at ' + escapeHtml(String(s.pct)) + '% of ordered' + (s.muted ? ' (silenced)' : '') + (s.share !== null ? ' · now ' + Math.round(s.share * 100) + '% (used + waiting)' : '') + (m.alert ? ' · last notified ' + escapeHtml(pbProdTimeText(m.alert.at)) + (m.alert.current ? '' : ' (an earlier order level)') : '') + '</p>'
         + pbMatLinkedHtml(m)
-        + '<h4 class="pbm-h4">Orders</h4>' + (orders.length ? '<ul class="pbm-sub">' + orders.map(o => '<li class="' + (o.voided ? 'pbp-voided' : '') + '"><span>' + escapeHtml(pbMatFmt(o.qty, o.unit) + ' ' + o.unit + ' · ordered ' + pbProdDayText(o.ordered_on) + (o.ref ? ' · ' + o.ref : '') + (o.note ? ' · ' + o.note : '') + pbMatOrderTk(m, o)) + '</span>'
-            + (o.voided ? '<span class="pbp-dim">Voided ' + escapeHtml(pbProdTimeText(o.voided_at) + (o.void_reason ? ': ' + o.void_reason : '')) + '</span>' : '<button type="button" class="pb-btn ghost small" onclick="pbMatVoidForm(\'order\', \'' + id + '\', \'' + o.id + '\')">Void</button>') + '</li>').join('') + '</ul>' : '<p class="pbp-dim pbp-none">No orders yet.</p>')
+        + '<h4 class="pbm-h4">Orders</h4>' + (orders.length ? '<ul class="pbm-sub">' + orders.map(o => '<li class="' + (o.voided ? 'pbp-voided' : '') + '"><span>' + escapeHtml(pbMatFmt(o.qty, o.unit) + ' ' + o.unit + ' · ordered ' + pbProdDayText(o.ordered_on) + (o.ref ? ' · ' + o.ref : '') + (o.note ? ' · ' + o.note : '') + pbMatOrderTk(m, o) + pbLocOrderTxt(o)) + '</span>'
+            + (o.voided ? '<span class="pbp-dim">Voided ' + escapeHtml(pbProdTimeText(o.voided_at) + (o.void_reason ? ': ' + o.void_reason : '')) + '</span>' : pbLocOrderBtn(id, o) + '<button type="button" class="pb-btn ghost small" onclick="pbMatVoidForm(\'order\', \'' + id + '\', \'' + o.id + '\')">Void</button>') + '</li>').join('') + '</ul>' : '<p class="pbp-dim pbp-none">No orders yet.</p>')
         + (m.source === 'entered' ? '<h4 class="pbm-h4">Amounts used</h4>' + (uses.length ? '<ul class="pbm-sub">' + uses.map(u => '<li class="' + (u.voided ? 'pbp-voided' : '') + '"><span>' + escapeHtml(pbMatFmt(u.qty, u.unit) + ' ' + u.unit + ' · ' + pbProdDayText(u.used_on) + (u.note ? ' · ' + u.note : '')) + '</span>'
             + (u.voided ? '<span class="pbp-dim">Voided ' + escapeHtml(pbProdTimeText(u.voided_at) + (u.void_reason ? ': ' + u.void_reason : '')) + '</span>' : '<button type="button" class="pb-btn ghost small" onclick="pbMatVoidForm(\'use\', \'' + id + '\', \'' + u.id + '\')">Void</button>') + '</li>').join('') + '</ul>' : '<p class="pbp-dim pbp-none">None recorded yet.</p>') : '')
         + '<div class="pbm-acts"><button type="button" class="pb-btn ghost small" onclick="pbMatHistory(\'' + id + '\')">' + (hist ? 'Refresh History' : 'Show History') + '</button><button type="button" class="pb-btn ghost small" id="pjMatMute_' + id + '" onclick="pbMatMute(\'' + id + '\', ' + !s.muted + ')">' + (s.muted ? 'Turn Alerts Back On' : 'Silence Alerts') + '</button><button type="button" class="pb-btn ghost small" onclick="pbMatArchive(\'' + id + '\', true)">Archive</button></div>'
@@ -47019,12 +47054,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       p.cost_code = String(v.cost_code || '').trim().slice(0, 60); // r15.5
       if (calc || v.source === 'pipe_footage') { p.footage_cat = v.footage_cat || 'pipe'; const fcc = pbMatFootCat(p.footage_cat); p.each_ft = p.footage_cat !== 'pipe' && fcc && !fcc.lf ? (v.each_ft || '') : ''; } // r15.4 / r15.4.1
       if (calc) { p.use_as = v.use_as || 'bedding'; if (p.use_as === 'shading') p.shade_thick_ft = v.shade_thick_ft || ''; else p.bed_thick_ft = v.bed_thick_ft; p.basis = v.basis || 'volume'; p.trench_width_ft = v.trench_width_ft; p.extra_pct = v.extra_pct === '' ? String(PB_MAT_DEFAULT_EXTRA_PCT) : v.extra_pct; p.density_tpy = v.density_tpy; }
+      { const e = typeof pbLocMatLead === 'function' ? pbLocMatLead(F, p) : ''; if (e) return fail(e); } // feat_locates B: lead time
       fn = 'pb_mat_save'; args = { p_job_number: job.job_number, p_material: p, p_expect_uid: uid, p_expect_version: F.id ? F.version : 0, p_phone_at: now };
     } else if (F.kind === 'order' || F.kind === 'use') {
       if (!pbMatNumOk(F.v.qty, 0.001, 1e8) || F.v.qty === '') return fail('Enter an amount above 0.');
       if (!/^\d{4}-\d{2}-\d{2}$/.test(F.v.date || '')) return fail('Pick the date.');
       F.cid = F.cid || pbMatCid();
-      if (F.kind === 'order') { fn = 'pb_mat_order_add'; args = { p_material_id: F.id, p_client_order_id: F.cid, p_qty: Number(F.v.qty), p_ordered_on: F.v.date, p_ref: F.v.ref || null, p_note: F.v.note || null, p_expect_uid: uid, p_phone_at: now }; }
+      if (F.kind === 'order') { fn = 'pb_mat_order_add'; args = { p_material_id: F.id, p_client_order_id: F.cid, p_qty: Number(F.v.qty), p_ordered_on: F.v.date, p_ref: F.v.ref || null, p_note: F.v.note || null, p_expect_uid: uid, p_phone_at: now }; { const e = typeof pbLocOrderArgs === 'function' ? pbLocOrderArgs(F, args) : ''; if (e) return fail(e); if (args.p_expected_at) fn = 'pb_mat_order_add2'; } /* feat_locates B */ }
       else { fn = 'pb_mat_used_add'; args = { p_material_id: F.id, p_client_use_id: F.cid, p_qty: Number(F.v.qty), p_used_on: F.v.date, p_note: F.v.note || null, p_expect_uid: uid, p_phone_at: now }; }
     } else if (F.kind === 'job') {
       const nums = [['trench_width_ft', 0.01, 100, 'Trench width'], ['bed_thick_ft', 0.01, 20, 'Bedding thickness'], ['shade_thick_ft', 0.01, 20, 'Shading thickness'], ['pipe_id_in', 0.1, 240, 'Pipe ID'], ['pipe_wall_in', 0.01, 24, 'Wall thickness'], ['pipe_od_in', 0.1, 240, 'Pipe OD']];
@@ -50426,6 +50462,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       h += '<p class="pbx-row-d">' + pbCxE('What crews’ phones last sent' + (L.at ? (L.cached ? ', copy from ' : ', ') + pbProdTimeText(L.at) : '') + '. Not live if a phone is offline.') + '</p>';
     }
     h += '</section>';
+    try { h += window.pbLocJobPanel ? window.pbLocJobPanel(C) : ''; } catch (e) { console.error(e); } // feat_locates: the Locates row
     // crew working it today: who reported today, and who is live on it now
     const names = new Set();
     (Array.isArray(D.reporters) ? D.reporters : []).forEach(x => { if (x && x.today && x.name) names.add(x.name); });
@@ -51729,6 +51766,575 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return crew;
   }
   // ================= end batch 29 ROLES =================
+  // ================= feat_locates (owner, Oct 24): 811 LOCATE TICKETS and MATERIAL DELIVERY DATES =================
+  // A. Dig tickets per job (sql/36: pb_prod.locates). The company account and the company's foremen add, edit and close
+  //    them on the Locates screen. Every save is kept on this phone first (<uid>:pbLocates, a uuid per ticket so a retry
+  //    stays one row) and sent when there is signal; a refused save stays on the phone with the reason, to fix or discard.
+  //    The job page's Overview has one Locates row (amber within 7 days, red within 2 days or expired); the foreman opens
+  //    the screen from his job card (My production) and gets a Needs-attention line for tickets within 7 days.
+  // B. Materials (sql/37): an order's expected delivery date, a material's lead time, and the server's run-out forecast as
+  //    one chip ("Order by Nov 3", "Delivery expected Nov 5", "Delivery Nov 15 after run-out (≈ Nov 12)").
+  const PB_LOC_KEY = 'pbLocates';
+  const pbLocNew = (uid) => ({ uid, st: null, job: null, busy: false, msg: '', form: null, mineBusy: false, gen: 0, loading: null });
+  let pbLoc = pbLocNew(null);
+  const pbLocE = (id) => document.getElementById(id);
+  const pbLocQ = (s) => escapeHtml(JSON.stringify(String(s)));
+  const pbLocDayMs = (d) => Date.parse(String(d || '').slice(0, 10) + 'T12:00:00Z');
+  const pbLocIsDay = (d) => /^\d{4}-\d{2}-\d{2}$/.test(String(d || '')) && isFinite(pbLocDayMs(d));
+  function pbLocDay(d) { const t = pbLocDayMs(d); return isFinite(t) ? new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) : String(d || ''); }
+  function pbLocAddDays(d, n) { const t = pbLocDayMs(d); return isFinite(t) ? new Date(t + n * 86400000).toISOString().slice(0, 10) : ''; }
+  function pbLocLeft(l) { const a = pbLocDayMs(l && l.expires_at), b = pbLocDayMs(pbTkToday()); return isFinite(a) && isFinite(b) ? Math.round((a - b) / 86400000) : null; }
+  function pbLocLevel(l) { const d = pbLocLeft(l); return d === null || l.closed ? '' : d <= 2 ? 'red' : d <= 7 ? 'amber' : ''; } // red: 2 days or less, or expired
+  function pbLocLeftText(l) { const d = pbLocLeft(l); return d === null ? '' : d < 0 ? 'Expired ' + (-d) + (d === -1 ? ' day ago' : ' days ago') : d === 0 ? 'Expires today' : d === 1 ? 'Expires tomorrow' : d + ' days left'; }
+  // an expired ticket isn't something to "refresh" and keep digging on: the crew stops until a new one is valid (review S4)
+  function pbLocDueText(l) { const d = pbLocLeft(l), x = pbLocDay(l.expires_at); return d === null ? '' : d < 0 ? 'expired ' + x + ' — don’t dig until it’s refreshed' : d === 0 ? 'expires today (' + x + ')' : d === 1 ? 'expires tomorrow (' + x + ')' : 'expires in ' + d + ' days (' + x + ')'; }
+  const pbLocByExp = (a, b) => String(a.expires_at || '').localeCompare(String(b.expires_at || ''));
+  function pbLocUuid() {
+    try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+    const b = new Uint8Array(16); try { crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256); }
+    b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128; const h = Array.from(b).map(x => x.toString(16).padStart(2, '0')).join('');
+    return h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12, 16) + '-' + h.slice(16, 20) + '-' + h.slice(20);
+  }
+  async function pbLocLoadSt(uid) {
+    if (!uid || uid === 'shared') return null;
+    if (pbLoc.uid === uid && pbLoc.st) return pbLoc.st;
+    if (pbLoc.uid === uid && pbLoc.loading) return pbLoc.loading;
+    if (pbLoc.uid !== uid) pbLoc = pbLocNew(uid);
+    const L = pbLoc;
+    L.loading = (async () => {
+      let st = null; try { st = JSON.parse((await pbGetFor(uid, PB_LOC_KEY)) || 'null'); } catch (e) { st = null; }
+      st = pbLocValid(st);
+      if (pbLoc === L) { L.st = st; L.loading = null; }
+      return pbLoc === L ? st : null;
+    })();
+    return L.loading;
+  }
+  function pbLocValid(st) {
+    if (!st || typeof st !== 'object' || !st.jobs || typeof st.jobs !== 'object' || !Array.isArray(st.queue)) st = { v: 1, jobs: {}, queue: [], mine: null };
+    if (!st.gone || typeof st.gone !== 'object') st.gone = {};
+    return st;
+  }
+  // Two tabs of the same account (review S7): every write re-reads what is stored and merges it in, under a Web Lock
+  // (like the app's other queues). A change is one record (cid); a sent or discarded one leaves a tombstone in st.gone so
+  // another tab's older copy can't bring it back; for one ticket the newest unsent change wins; job lists keep the newest.
+  const pbLocUpd = (q) => Number(q && (q.upd || Date.parse(q.savedAt))) || 0;
+  function pbLocMerge(st, o) {
+    if (!o || o === st) return false;
+    const before = JSON.stringify(st), now = Date.now();
+    Object.keys(o.gone || {}).forEach(c => { if (!st.gone[c]) st.gone[c] = o.gone[c]; });
+    Object.keys(st.gone).forEach(c => { if (now - Number(st.gone[c]) > 30 * 86400000) delete st.gone[c]; });
+    const by = new Map();
+    st.queue.concat(o.queue || []).forEach(q => { if (!q || !q.cid || !q.id || st.gone[q.cid]) return; const w = by.get(q.cid); if (!w || pbLocUpd(q) > pbLocUpd(w)) by.set(q.cid, q); });
+    const top = new Map(); [...by.values()].forEach(q => { const w = top.get(q.id); if (!w || String(q.savedAt) > String(w.savedAt)) top.set(q.id, q); });
+    st.queue = st.queue.filter(q => top.get(q.id) === q).concat([...top.values()].filter(q => !st.queue.includes(q)));
+    Object.keys(o.jobs || {}).forEach(k => { const a = st.jobs[k], b = o.jobs[k]; if (b && (!a || (b.at || 0) > (a.at || 0))) st.jobs[k] = b; });
+    if (o.mine && (!st.mine || (o.mine.at || 0) > (st.mine.at || 0))) st.mine = o.mine;
+    return JSON.stringify(st) !== before;
+  }
+  async function pbLocReadStored(uid) { let o = null; try { o = JSON.parse((await pbGetFor(uid, PB_LOC_KEY)) || 'null'); } catch (e) { o = null; } return o && typeof o === 'object' && Array.isArray(o.queue) ? pbLocValid(o) : null; }
+  let pbLocSaveQ = Promise.resolve();
+  function pbLocSave(uid, quiet) {
+    const run = async () => {
+      if (pbLoc.uid !== uid || !pbLoc.st) return false;
+      const st = pbLoc.st; pbLocMerge(st, await pbLocReadStored(uid));
+      if (pbLoc.uid !== uid || pbLoc.st !== st) return false;
+      return pbSetFor(uid, PB_LOC_KEY, JSON.stringify(st));
+    };
+    const locked = () => (navigator.locks && typeof navigator.locks.request === 'function') ? navigator.locks.request('pb-locates-save:' + uid, run) : run();
+    const p = pbLocSaveQ.then(locked, locked).then(ok => { if (!ok && !quiet && pbLoc.uid === uid) pbAlert('This phone’s storage is full, so this could not be saved. Free some space (old runs or photos) and try again.', 'Not Saved'); return !!ok; }, () => false);
+    pbLocSaveQ = p; return p;
+  }
+  window.addEventListener('storage', (e) => { // another tab saved this account's tickets: take its changes in
+    const uid = pbLoc.uid; if (!uid || !pbLoc.st || e.key !== uid + ':' + PB_LOC_KEY) return;
+    pbLocReadStored(uid).then(o => { if (pbLoc.uid === uid && pbLoc.st && pbLocMerge(pbLoc.st, o)) pbLocRefreshScreens(); }).catch(() => {});
+  });
+  const pbLocServerRows = (key) => { const J = pbLoc.st && pbLoc.st.jobs[key]; return J && Array.isArray(J.locates) ? J.locates.filter(l => l && l.id) : null; };
+  const pbLocPend = (q) => q && (q.state === 'waiting' || q.state === 'refused');
+  // the server's tickets with this phone's unsent changes on top
+  function pbLocOverlay(list, key) {
+    const out = list.map(l => Object.assign({}, l));
+    (pbLoc.st ? pbLoc.st.queue : []).filter(q => pbLocPend(q) && (key === null || q.key === key)).forEach(q => {
+      const i = out.findIndex(l => l.id === q.id), was = i >= 0 ? out[i] : { by_name: null };
+      const v = Object.assign({}, was, { id: q.id, job_number: q.job_number, ticket_no: q.ticket_no, called_at: q.called_at, expires_at: q.expires_at, note: q.note, closed: q.closed === null || q.closed === undefined ? !!was.closed : !!q.closed, pend: q });
+      if (i >= 0) out[i] = v; else out.push(v);
+    });
+    return out;
+  }
+  const pbLocRows = (key) => pbLocOverlay(pbLocServerRows(key) || [], key);
+  // a newer copy of a job's tickets from the job page (company) or the foreman's job cards
+  function pbLocTake(key, num, list, at, extra) {
+    if (!pbLoc.st || !key || !Array.isArray(list)) return false;
+    const J = pbLoc.st.jobs[key] || (pbLoc.st.jobs[key] = { job_number: num, locates: null, at: 0 });
+    if (J.locates && (J.at || 0) >= (at || 0)) return false;
+    J.locates = list; J.at = at || Date.now(); if (!J.job_number) J.job_number = num;
+    if (extra) Object.keys(extra).forEach(k => { if (extra[k] !== null && extra[k] !== undefined) J[k] = extra[k]; });
+    return true;
+  }
+  function pbLocSeed(uid) {
+    if (!pbLoc.st || pbLoc.uid !== uid) return;
+    let ch = false;
+    try { if (pbPj.uid === uid && pbPj.job && pbPj.data && !pbPj.data.partial && Array.isArray(pbPj.data.locates)) ch = pbLocTake(pbPj.job.job_key, pbPj.job.job_number, pbPj.data.locates, pbPj.at, { locate_days: pbPj.data.locate_days }) || ch; } catch (e) {}
+    try { if (pbPm.uid === uid && pbPm.scope && Array.isArray(pbPm.scope.jobs)) pbPm.scope.jobs.forEach(j => { if (j && j.job_number && Array.isArray(j.locates)) ch = pbLocTake(pbDlyKey(j.job_number), j.job_number, j.locates, pbPm.at) || ch; }); } catch (e) {}
+    if (ch) pbLocSave(uid, true);
+  }
+  // a fresh list from the server goes everywhere this phone shows it
+  function pbLocPush(uid, key, list) {
+    try { if (pbPj.uid === uid && pbPj.job && pbPj.job.job_key === key && pbPj.data && !pbPj.data.partial) pbPj.data.locates = list; } catch (e) {}
+    try { if (pbPm.uid === uid && pbPm.scope && Array.isArray(pbPm.scope.jobs)) pbPm.scope.jobs.forEach(j => { if (j && pbDlyKey(j.job_number) === key) j.locates = list; }); } catch (e) {}
+    const st = pbLoc.uid === uid ? pbLoc.st : null;
+    if (st && st.mine && Array.isArray(st.mine.locates)) st.mine.locates = st.mine.locates.filter(l => l && pbDlyKey(l.job_number) !== key).concat(list.filter(l => l && !l.closed));
+  }
+  function pbLocJobInfo(job) {
+    const J = (pbLoc.st && job && pbLoc.st.jobs[job.key]) || {}; let k = null;
+    try { k = pbCxKnownJob(job.job_number); } catch (e) { k = null; }
+    return { name: (k && k.project_name) || J.name || '', address: (k && k.address) || J.address || '' };
+  }
+  function pbLocDefaultDays(key) {
+    const J = pbLoc.st && pbLoc.st.jobs[key], M = pbLoc.st && pbLoc.st.mine;
+    let n = Number((J && J.locate_days) || (M && M.locate_days) || 0);
+    if (!(n >= 1)) { try { n = Number(pbCoTz && pbCoTz.data && pbCoTz.data.locate_days) || 0; } catch (e) { n = 0; } }
+    return n >= 1 && n <= 60 ? Math.round(n) : 14;
+  }
+  function pbLocRefreshScreens() {
+    try { if (pbCurrentScreen === 'locates') window.pbLocRender(); } catch (e) { console.error(e); }
+    try { if (pbCurrentScreen === 'prodJob' && typeof window.pbCxJobPaint === 'function') window.pbCxJobPaint(); } catch (e) {}
+    try { if (pbCurrentScreen === 'prodMine' && typeof window.pbProdMineRender === 'function') window.pbProdMineRender(); } catch (e) {}
+    try { if (pbCurrentScreen === 'home') window.pbRenderHome(); } catch (e) {}
+  }
+
+  // ---- sending (the offline queue) ----
+  const PB_LOC_ERR = { 'pb:foremen_only': 'Only foremen and the company account keep locate tickets.', 'pb:not_company_member': 'This account isn’t in a company.', 'pb:not_company_account': 'This account isn’t your company account.',
+    'pb:bad_ticket_no': 'The ticket number is missing.', 'pb:bad_date': 'Check the dates: it can’t expire before it was called in, nor more than a year after.', 'pb:bad_job': 'The job number isn’t right.',
+    'pb:quota': 'Too many tickets for now (40 open on a job, 200 a day).', 'pb:not_found': 'That ticket isn’t on the company server (another company’s, or removed).', 'pb:bad_request': 'The server couldn’t read it.',
+    'pb:no_job': 'That job isn’t on the company server yet. Add the job first, then send this again.' };
+  // no answer at all (no signal, a timeout, the network): try the same change later, and stop for now (review S8)
+  const pbLocNoAnswer = (m) => navigator.onLine === false || /^(timeout|no answer|no client)$/.test(m) || /failed to fetch|networkerror|network request|load failed|fetch failed|aborted|offline/i.test(m);
+  // the version this phone's change was made on: an unsent change keeps the one it started from; after a "changed on the
+  // server" refusal the person has seen the server's copy, so a fix goes on top of that (review S6)
+  const pbLocBaseVer = (l) => l && l.pend && !(l.pend.state === 'refused' && l.pend.code === 'pb:stale') ? Number(l.pend.ver) || 0 : Number(l && l.version) || 0;
+  let pbLocSyncBusy = false, pbLocSyncT = null;
+  function pbLocSyncSoon(ms) { clearTimeout(pbLocSyncT); pbLocSyncT = setTimeout(() => { pbLocSync().catch(e => console.error(e)); }, ms || 0); }
+  function pbLocSync() { // one tab at a time sends this account's tickets
+    const uid = pbArchiveOwnerUid; if (pbLocSyncBusy || !uid || uid === 'shared') return Promise.resolve();
+    if (navigator.locks && typeof navigator.locks.request === 'function') return navigator.locks.request('pb-locates-sync:' + uid, { ifAvailable: true }, (lk) => lk ? pbLocSyncRun(uid) : null);
+    return pbLocSyncRun(uid);
+  }
+  async function pbLocSyncRun(uid) {
+    if (pbLocSyncBusy) return;
+    const st = await pbLocLoadSt(uid); if (!st) return;
+    pbLocMerge(st, await pbLocReadStored(uid)); // what another tab may have queued or sent
+    if (!st.queue.some(q => q.state === 'waiting')) return;
+    if (!(await pbDlyCanAsk(uid))) return;
+    pbLocSyncBusy = true; let changed = false, sent = 0;
+    const mark = (q, o) => { Object.assign(q, o, { upd: Date.now() }); changed = true; };
+    try {
+      for (const q of st.queue.filter(x => x.state === 'waiting')) {
+        if (pbLoc.uid !== uid || pbLoc.st !== st || pbArchiveOwnerUid !== uid) return;
+        if (st.gone[q.cid]) continue;
+        const r = await pbPermitRpc('pb_prod_locate_set', { p_job_number: q.job_number, p_id: q.id, p_ticket_no: q.ticket_no, p_called_at: q.called_at, p_expires_at: q.expires_at, p_note: q.note || null, p_closed: q.closed === null || q.closed === undefined ? null : !!q.closed, p_expect_version: Number(q.ver) || 0, p_expect_uid: uid }, 30000);
+        if (pbLoc.uid !== uid || pbLoc.st !== st) return;
+        const m = String((r && r.error && r.error.message) || ''), code = (/pb:[a-z_]+/.exec(m) || [])[0] || null, D = r && !r.error && r.data;
+        if (D && Array.isArray(D.locates)) { const J = st.jobs[q.key] || (st.jobs[q.key] = { job_number: q.job_number, locates: null, at: 0 }); J.locates = D.locates; J.at = Date.now(); pbLocPush(uid, q.key, D.locates); }
+        if (D && D.ok === true) { st.gone[q.cid] = Date.now(); st.queue = st.queue.filter(x => x.cid !== q.cid); changed = true; sent++; continue; }
+        if (D && D.stale) { // the office changed it after this phone loaded it: not applied; say what the server has now
+          const cur = D.locate || {}, now = cur.closed ? 'it is closed there now' : cur.expires_at ? 'it now expires ' + pbLocDay(cur.expires_at) : '';
+          mark(q, { state: 'refused', code: 'pb:stale', why: 'Changed on the company server after this phone loaded it' + (now ? ' (' + now + ')' : '') + '. Discard yours to keep that, or Fix and Send Again to redo yours on it.' }); continue;
+        }
+        if (/Could not find the function|function .* does not exist/i.test(m)) { if (q.why !== 'not_ready') mark(q, { why: 'not_ready' }); break; } // kept: sent once the server has it
+        if (code && /pb:(signed_out|wrong_account)/.test(code)) { if (q.why !== 'signin') mark(q, { why: 'signin' }); break; } // signed out: try later
+        if (!code && pbLocNoAnswer(m)) { if (q.why) mark(q, { why: '' }); break; } // no signal: the rest won't go either
+        if (!code) { // the server answered with an error of its own (not one of ours): tried again later, refused after 3 tries
+          const n = (Number(q.tries) || 0) + 1;
+          if (n < 3) mark(q, { tries: n, why: 'retry' });
+          else mark(q, { tries: n, state: 'refused', code: 'server', why: 'The company server couldn’t take it (' + m.slice(0, 80) + '). Fix and send it again, or discard it.' });
+          continue;
+        }
+        mark(q, { state: 'refused', code, why: PB_LOC_ERR[code] || 'The company server didn’t take it.' });
+      }
+    } finally {
+      pbLocSyncBusy = false;
+      if (changed && pbLoc.uid === uid && pbLoc.st === st) { if (sent && pbCurrentScreen === 'locates' && /^Saved/.test(pbLoc.msg)) pbLoc.msg = ''; await pbLocSave(uid, true); pbLocRefreshScreens(); }
+    }
+  }
+  function pbLocWaitWhy(q) { return q.why === 'not_ready' ? 'The company server isn’t ready for locate tickets yet. Kept on this phone; it is sent once it is.' : q.why === 'signin' ? 'Sign in again with this account to send it.' : q.why === 'retry' ? 'The company server had a problem with it. Kept on this phone; it is tried again in a few minutes.' : navigator.onLine === false ? 'Saved on this phone. It is sent when there is signal.' : 'Saved on this phone. Sending…'; }
+  // a change from this phone: it replaces any unsent change of the same ticket
+  async function pbLocQueue(uid, rec) {
+    const st = await pbLocLoadSt(uid); if (!st) { pbAlert('This phone’s saved tickets couldn’t be read, so nothing was saved. Try again.', 'Not Saved'); return false; }
+    const keep = st.queue.slice(), was = st.queue.filter(q => q.id === rec.id && pbLocPend(q));
+    st.queue = st.queue.filter(q => !was.includes(q)).concat([rec]); was.forEach(q => { st.gone[q.cid] = Date.now(); });
+    if (!(await pbLocSave(uid))) { st.queue = keep; was.forEach(q => { delete st.gone[q.cid]; }); return false; }
+    pbLoc.msg = navigator.onLine === false ? 'Saved on this phone. It is sent when there is signal.' : 'Saved on this phone. Sending…';
+    pbLocRefreshScreens(); pbLocSyncSoon(0);
+    return true;
+  }
+  const pbLocRec = (job, id, v, closed, ver) => ({ cid: 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), id, key: job.key, job_number: job.job_number, ticket_no: v.ticket_no, called_at: v.called_at, expires_at: v.expires_at, note: String(v.note || '').replace(/\s+/g, ' ').trim().slice(0, 300), closed, ver: Number(ver) || 0, savedAt: new Date().toISOString(), state: 'waiting', why: '' });
+
+  // ---- the Locates screen ----
+  window.pbOpenLocates = async function(jobNumber) {
+    const n = String(jobNumber || '').trim(); if (!n) return;
+    if (!pbCanOpen('locates', { explain: true })) return;
+    const uid = pbArchiveOwnerUid;
+    if (!uid || uid === 'shared') { pbAlert('Sign in with your company or foreman account to see locate tickets.', 'Locates'); return; }
+    const a = pbDlyAcc(uid);
+    if (a.known && !a.manager && !a.foreman) { pbAlert('Locate tickets are kept by the foremen and the company account.', 'Locates'); return; }
+    const from = pbCurrentScreen;
+    const st = await pbLocLoadSt(uid); if (!st || pbArchiveOwnerUid !== uid) return;
+    pbLocSeed(uid);
+    pbLoc.job = { key: pbDlyKey(n), job_number: n }; pbLoc.form = null; pbLoc.msg = ''; pbLoc.busy = false; pbLoc.gen++;
+    PB_SCREEN_TABS.locates = from === 'home' || (from === 'prodJob' && pbCxDashOn()) ? 'home' : 'reports';
+    pbGoto('locates'); if (pbCurrentScreen !== 'locates') return;
+    try { document.scrollingElement.scrollTop = 0; } catch (e) {}
+    window.pbLocRender(); window.pbLocLoad(); pbLocSyncSoon(300);
+  };
+  window.pbLocLoad = async function() {
+    const uid = pbArchiveOwnerUid, job = pbLoc.job; if (!job || pbLoc.busy || pbLoc.uid !== uid || !pbLoc.st) return;
+    if (!(await pbDlyCanAsk(uid))) { pbLoc.msg = pbLoc.msg && /^Saved/.test(pbLoc.msg) ? pbLoc.msg : navigator.onLine === false ? 'No signal. Showing what this phone last loaded.' : 'Sign in with signal to see the latest.'; window.pbLocRender(); return; }
+    const gen = ++pbLoc.gen; pbLoc.busy = true; if (!/^Saved/.test(pbLoc.msg)) pbLoc.msg = ''; window.pbLocRender();
+    const r = await pbPermitRpc('pb_prod_locates', { p_job_number: job.job_number }, 30000);
+    if (pbLoc.gen !== gen || pbLoc.job !== job || pbLoc.uid !== uid || !pbLoc.st) return;
+    pbLoc.busy = false;
+    if (r.error || !r.data || !Array.isArray(r.data.locates)) {
+      const m = String((r.error && r.error.message) || '');
+      pbLoc.msg = /pb:foremen_only/.test(m) ? PB_LOC_ERR['pb:foremen_only'] : /Could not find the function|function .* does not exist/i.test(m) ? 'The company server isn’t ready for locate tickets yet.' : pbProdErrText(r) + (pbLocServerRows(job.key) ? ' Showing what this phone last loaded.' : '');
+      window.pbLocRender(); return;
+    }
+    const J = pbLoc.st.jobs[job.key] || (pbLoc.st.jobs[job.key] = {}), jb = r.data.job && typeof r.data.job === 'object' ? r.data.job : {};
+    Object.assign(J, { job_number: J.job_number || job.job_number, locates: r.data.locates, at: Date.now(), locate_days: r.data.locate_days || J.locate_days || null, address: jb.address || J.address || null, name: jb.project_name || J.name || null });
+    pbLocPush(uid, job.key, r.data.locates); pbLocSave(uid, true);
+    const F = pbLoc.form; if (F && F.mode === 'add' && !F.noteTyped && !F.v.note && J.address) F.v.note = J.address; // the job's address, once it is known
+    if (F && F.mode === 'add' && !F.expTyped && J.locate_days && Number(J.locate_days) !== F.days) { F.days = Number(J.locate_days); F.v.expires_at = pbLocAddDays(F.v.called_at, F.days); }
+    window.pbLocRender();
+  };
+  function pbLocCard(l) {
+    const lv = pbLocLevel(l), p = l.pend, sid = escapeHtml(String(l.id)), addr = pbLoc.job ? pbLocJobInfo(pbLoc.job).address : '';
+    const chip = l.closed ? '<span class="pb-chip calculated pbd-chip">Closed</span>'
+      : '<span class="pb-chip pbd-chip pbloc-chip' + (lv === 'red' ? ' overdue' : lv === 'amber' ? ' notsent' : '') + '">' + escapeHtml(pbLocLeftText(l)) + '</span>';
+    const line = 'Called in ' + pbLocDay(l.called_at) + ' · expires ' + pbLocDay(l.expires_at) + (l.by_name && !p ? ' · ' + l.by_name : '');
+    let h = '<div class="pbd-card pbloc-card' + (lv ? ' ' + lv : '') + (l.closed ? ' closed' : '') + '" id="locT_' + sid + '"><div class="pbd-ihead"><strong class="pbloc-no">Ticket ' + escapeHtml(l.ticket_no) + '</strong> ' + chip + '</div>'
+      + '<p class="pbd-dim">' + escapeHtml(line) + '</p>' + (l.note && l.note !== addr ? '<p class="pbd-note">' + escapeHtml(l.note) + '</p>' : '') // the job's own address is in the header already
+      + (!l.closed && pbLocLeft(l) !== null && pbLocLeft(l) < 0 ? '<p class="pbp-err pbloc-nodig" id="locNoDig_' + sid + '">' + escapeHtml('Expired ' + pbLocDay(l.expires_at) + ' — don’t dig until it’s refreshed.') + '</p>' : '');
+    if (p) h += '<p class="pbd-pend" id="locPend_' + sid + '"><span class="pb-chip ' + (p.state === 'refused' ? 'overdue' : 'notsent') + ' pbd-chip">' + (p.state === 'refused' ? 'Not accepted' : 'Waiting to send') + '</span>' + (p.state === 'refused' || p.why ? ' <span class="pbd-why" id="locWhy_' + sid + '">' + escapeHtml(p.state === 'refused' ? (p.why || '') : pbLocWaitWhy(p)) + '</span>' : '') + '</p>'; // the plain wait is said once, in the status line
+    if (p && p.state === 'refused') h += '<div class="pbd-acts"><button type="button" class="pb-btn secondary small" id="locFix_' + sid + '" onclick="pbLocEdit(' + pbLocQ(l.id) + ')">Fix and Send Again</button><button type="button" class="pb-btn ghost small" id="locDiscard_' + sid + '" onclick="pbLocDiscard(' + pbLocQ(l.id) + ')">Discard</button></div>';
+    else if (l.closed) h += '<div class="pbd-acts"><button type="button" class="pb-btn ghost small" id="locReopen_' + sid + '" onclick="pbLocReopen(' + pbLocQ(l.id) + ')">Reopen</button></div>';
+    else h += '<div class="pbd-acts"><button type="button" class="pb-btn secondary small" id="locEdit_' + sid + '" onclick="pbLocEdit(' + pbLocQ(l.id) + ')">Edit</button><button type="button" class="pb-btn ghost small" id="locClose_' + sid + '" onclick="pbLocClose(' + pbLocQ(l.id) + ')">Mark Closed</button></div>';
+    return h + '</div>';
+  }
+  window.pbLocRender = function() {
+    const head = pbLocE('locHead'), st = pbLocE('locStatus'), body = pbLocE('locBody'), eb = pbLocE('locEyebrow'); if (!body) return;
+    const job = pbLoc.job; if (!job || !pbLoc.st || pbLoc.uid !== pbArchiveOwnerUid) { body.innerHTML = ''; if (head) head.innerHTML = ''; return; }
+    const J = pbLoc.st.jobs[job.key] || {}, info = pbLocJobInfo(job);
+    if (eb) eb.textContent = pbProdJobLabel(job.job_number);
+    if (head) head.innerHTML = '<p class="pbp-sub" id="locJobLine">' + escapeHtml([pbProdJobLabel(job.job_number), info.name, info.address].filter(Boolean).join(' · ')) + '</p>';
+    const waiting = pbLocRows(job.key).some(l => l.pend && l.pend.state === 'waiting' && !l.pend.why);
+    if (st) st.textContent = waiting ? (navigator.onLine === false ? 'Saved on this phone. It is sent when there is signal.' : 'Saved on this phone. Sending…') : pbLoc.busy ? 'Loading…' : pbLoc.msg && !/^Saved/.test(pbLoc.msg) ? pbLoc.msg : J.at ? 'Updated ' + pbProdTimeText(J.at) + '.' : '';
+    if (pbLoc.form) { body.innerHTML = pbLocFormHtml(); pbLocFormWire(); return; }
+    const rows = pbLocRows(job.key), open = rows.filter(l => !l.closed).sort(pbLocByExp), closed = rows.filter(l => l.closed);
+    let h = '<div class="pb-btn-wrap pbd-bw"><button type="button" class="pb-btn" id="locAddBtn" onclick="pbLocAdd()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Dig Ticket</button></div>';
+    if (!pbLocServerRows(job.key) && !rows.length) h += pbLoc.busy ? '' : '<p class="pbd-dim" id="locNoData">Loads with signal.</p>';
+    else h += open.length ? open.map(pbLocCard).join('') : '<p class="pbd-dim" id="locNoneOpen">' + (closed.length ? 'No open dig tickets on this job.' : 'No dig tickets on this job yet.') + '</p>';
+    if (closed.length) h += '<details class="pb-more pbloc-closed" id="locClosed"' + (closed.some(l => l.pend && l.pend.state === 'refused') ? ' open' : '') + '><summary>Closed (' + closed.length + ')</summary>' + closed.map(pbLocCard).join('') + '</details>'; // a refused change is never folded away
+    body.innerHTML = h;
+  };
+  // the form: everything is filled in from the job; the ticket number is the one thing to type
+  window.pbLocAdd = function() {
+    const job = pbLoc.job; if (!job) return;
+    const days = pbLocDefaultDays(job.key), t = pbTkToday(), info = pbLocJobInfo(job);
+    pbLoc.form = { mode: 'add', id: pbLocUuid(), ver: 0, days, expTyped: false, noteTyped: false, err: '', v: { ticket_no: '', called_at: t, expires_at: pbLocAddDays(t, days), note: info.address || '' } };
+    window.pbLocRender(); setTimeout(() => { const el = pbLocE('locNo'); if (el) el.focus(); }, 50);
+  };
+  window.pbLocEdit = function(id) {
+    const job = pbLoc.job; if (!job) return;
+    let l = pbLocRows(job.key).find(x => x.id === id); if (!l) return;
+    if (l.pend && l.pend.code === 'pb:stale') { const sv = (pbLocServerRows(job.key) || []).find(x => x.id === id); if (sv) l = Object.assign({}, sv, { pend: l.pend }); } // redo it on the server's copy, never over it
+    pbLoc.form = { mode: 'edit', id: l.id, ver: pbLocBaseVer(l), was: l.ticket_no, days: pbLocDefaultDays(job.key), expTyped: true, noteTyped: true, err: l.pend && l.pend.state === 'refused' ? l.pend.why || '' : '', closed: l.pend && l.pend.closed !== undefined ? l.pend.closed : null, v: { ticket_no: l.ticket_no || '', called_at: l.called_at || pbTkToday(), expires_at: l.expires_at || '', note: l.note || '' } };
+    window.pbLocRender(); setTimeout(() => { const el = pbLocE('locNo'); if (el) el.focus(); }, 50);
+  };
+  window.pbLocFormCancel = function() { pbLoc.form = null; window.pbLocRender(); const b = pbLocE('locAddBtn'); if (b) b.focus({ preventScroll: true }); };
+  function pbLocExpHelp(F) { return F.expTyped ? 'Your own date. Clear it to use the called-in day + ' + F.days + ' days.' : 'The called-in day + ' + F.days + ' days (Settings › Company).'; }
+  function pbLocFormHtml() {
+    const F = pbLoc.form;
+    return '<div class="pbd-card pbloc-form" id="locForm"><h3 class="pb-h2 pbd-h3">' + (F.mode === 'add' ? 'New dig ticket' : 'Ticket ' + escapeHtml(F.was || '')) + '</h3>'
+      + '<div class="pb-field"><label for="locNo">811 ticket number</label><input type="text" id="locNo" maxlength="40" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="next" placeholder="From the 811 call or email"></div>'
+      + '<div class="pbd-two"><div class="pb-field"><label for="locCalled">Called in</label><input type="date" id="locCalled"></div><div class="pb-field"><label for="locExp">Expires</label><input type="date" id="locExp" aria-describedby="locExpHelp"></div></div>'
+      + '<p class="pb-help pbloc-help" id="locExpHelp">' + escapeHtml(pbLocExpHelp(F)) + '</p>'
+      + '<div class="pb-field"><label for="locNote">Where <span class="pbx-opt">(optional)</span></label><input type="text" id="locNote" maxlength="300" autocomplete="off" placeholder="e.g. Elm St, MH-7 to MH-10"></div>'
+      + '<p class="pbp-err pbloc-err" id="locErr" role="alert"' + (F.err ? '' : ' hidden') + '>' + escapeHtml(F.err || '') + '</p>'
+      + '<div class="pb-btn-row pbloc-btns"><button type="button" class="pb-btn" id="locSave" onclick="pbLocFormSave()">Save Ticket</button><button type="button" class="pb-btn ghost" id="locCancel" onclick="pbLocFormCancel()">Cancel</button></div></div>';
+  }
+  function pbLocFormWire() {
+    const F = pbLoc.form; if (!F) return;
+    const no = pbLocE('locNo'), c = pbLocE('locCalled'), x = pbLocE('locExp'), nt = pbLocE('locNote'), help = pbLocE('locExpHelp');
+    if (!no || !c || !x || !nt) return;
+    no.value = F.v.ticket_no; c.value = F.v.called_at; x.value = F.v.expires_at; nt.value = F.v.note;
+    no.addEventListener('input', () => { F.v.ticket_no = no.value; });
+    const called = () => { F.v.called_at = c.value; if (!F.expTyped && pbLocIsDay(c.value)) { F.v.expires_at = pbLocAddDays(c.value, F.days); x.value = F.v.expires_at; } };
+    c.addEventListener('input', called); c.addEventListener('change', called);
+    const exp = () => { F.v.expires_at = x.value; F.expTyped = x.value !== ''; if (!x.value && pbLocIsDay(F.v.called_at)) { F.v.expires_at = pbLocAddDays(F.v.called_at, F.days); x.value = F.v.expires_at; } if (help) help.textContent = pbLocExpHelp(F); };
+    x.addEventListener('input', exp); x.addEventListener('change', exp);
+    nt.addEventListener('input', () => { F.v.note = nt.value; F.noteTyped = true; });
+  }
+  window.pbLocFormSave = async function() {
+    const F = pbLoc.form, job = pbLoc.job, uid = pbArchiveOwnerUid; if (!F || !job || F.saving) return;
+    ['locNo', 'locCalled', 'locExp', 'locNote'].forEach((id, i) => { const el = pbLocE(id); if (el) F.v[['ticket_no', 'called_at', 'expires_at', 'note'][i]] = el.value; });
+    const v = F.v, fail = (t) => { F.err = t; const e = pbLocE('locErr'); if (e) { e.textContent = t; e.hidden = false; e.scrollIntoView({ block: 'nearest' }); } };
+    v.ticket_no = String(v.ticket_no || '').replace(/\s+/g, ' ').trim();
+    if (!v.ticket_no) return fail('Enter the 811 ticket number.');
+    if (!pbLocIsDay(v.called_at)) return fail('Pick the day it was called in.');
+    if (!pbLocIsDay(v.expires_at)) return fail('Pick the day it expires.');
+    if (v.expires_at < v.called_at) return fail('It can’t expire before the day it was called in.');
+    if (pbLocDayMs(v.expires_at) - pbLocDayMs(v.called_at) > 365 * 86400000) return fail('That expiry is more than a year after the call-in. Check the dates.');
+    if (pbLocDayMs(v.called_at) > pbLocDayMs(pbTkToday()) + 30 * 86400000) return fail('The called-in day is more than 30 days ahead. Check the date.');
+    F.saving = true;
+    const ok = await pbLocQueue(uid, pbLocRec(job, F.id, v, F.mode === 'add' ? false : F.closed === undefined ? null : F.closed, F.ver));
+    F.saving = false;
+    if (!ok) return fail('Not saved. This phone’s storage is full.');
+    if (pbLoc.form === F) pbLoc.form = null;
+    window.pbLocRender(); const b = pbLocE('locAddBtn'); if (b) b.focus({ preventScroll: true });
+  };
+  function pbLocFind(id) { const job = pbLoc.job; return job ? pbLocRows(job.key).find(x => x.id === id) || null : null; }
+  window.pbLocClose = function(id) {
+    const l = pbLocFind(id), job = pbLoc.job; if (!l || !job) return;
+    pbConfirm('Close ticket ' + l.ticket_no + '? It leaves the open list and its expiry reminders stop. You can reopen it.', () => { pbLocQueue(pbArchiveOwnerUid, pbLocRec(job, l.id, l, true, pbLocBaseVer(l))); }, 'Close Locate Ticket', { no: 'Keep Open', yes: 'Mark Closed' });
+  };
+  window.pbLocReopen = function(id) { const l = pbLocFind(id), job = pbLoc.job; if (!l || !job) return; pbLocQueue(pbArchiveOwnerUid, pbLocRec(job, l.id, l, false, pbLocBaseVer(l))); };
+  window.pbLocDiscard = function(id) {
+    const uid = pbArchiveOwnerUid, l = pbLocFind(id); if (!l || !l.pend) return;
+    pbConfirm('Discard this change to ticket ' + l.ticket_no + '? The company server keeps what it had.', async () => {
+      const st = await pbLocLoadSt(uid); if (!st) return;
+      const keep = st.queue.slice(), was = st.queue.filter(q => q.id === id && pbLocPend(q));
+      st.queue = st.queue.filter(q => !was.includes(q)); was.forEach(q => { st.gone[q.cid] = Date.now(); });
+      if (!(await pbLocSave(uid))) { st.queue = keep; was.forEach(q => { delete st.gone[q.cid]; }); return; }
+      pbLoc.msg = ''; pbLocRefreshScreens();
+    }, 'Discard Change', { no: 'Keep It', yes: 'Discard' });
+  };
+
+  // ---- the job page's Overview row (company account) ----
+  let pbLocBootAsked = null;
+  window.pbLocJobPanel = function() {
+    const uid = pbArchiveOwnerUid, job = pbPj.job, D = pbPj.data; if (!job || !D || !uid) return '';
+    if (pbLoc.uid !== uid || !pbLoc.st) { if (pbLocBootAsked !== uid) { pbLocBootAsked = uid; pbLocLoadSt(uid).then(() => { try { if (pbCurrentScreen === 'prodJob') window.pbCxJobPaint(); } catch (e) {} }); } }
+    else pbLocSeed(uid);
+    const key = job.job_key, have = pbLoc.uid === uid && pbLoc.st ? pbLocServerRows(key) : null;
+    const rows = pbLoc.uid === uid && pbLoc.st ? pbLocRows(key) : Array.isArray(D.locates) ? D.locates.slice() : null;
+    if (!have && !Array.isArray(D.locates) && !(rows && rows.length)) return ''; // the server hasn't sent tickets (not on it yet, or still loading)
+    const open = (rows || []).filter(l => l && !l.closed).sort(pbLocByExp), next = open[0] || null, lv = next ? pbLocLevel(next) : '', pend = (rows || []).filter(l => l && l.pend).length;
+    const sub = !open.length ? (rows && rows.length ? 'No open tickets.' : 'No dig tickets yet. Tap to add one.') : open.length + ' open · next: ' + next.ticket_no + ', ' + pbLocDay(next.expires_at);
+    const tags = (next ? '<span class="pbx-tag' + (lv === 'red' ? ' emerg' : lv === 'amber' ? ' warn' : '') + '" id="pjLocTag">' + pbCxIc(lv ? 'warn' : 'clock') + pbCxE(pbLocLeftText(next)) + '</span>' : '')
+      + (pend ? '<span class="pbx-tag" id="pjLocPend">' + pbCxIc('cloud-off') + pbCxE(pend + ' not sent yet') + '</span>' : '');
+    return '<section class="pbx-panel pbx-locpanel" id="pjCxLoc"><div class="pbx-rows flat"><button type="button" class="pbx-row" id="pjLocRow" data-job="' + pbCxE(job.job_number) + '" onclick="pbOpenLocates(this.dataset.job)">'
+      + '<span class="pbx-doc-ic">' + pbCxIc('flag') + '</span><span class="pbx-row-tx"><span class="pbx-row-h">Locates</span><span class="pbx-row-s" id="pjLocSub">' + pbCxE(sub) + '</span>' + (tags ? '<span class="pbx-row-flags">' + tags + '</span>' : '') + '</span>'
+      + '<span class="pbx-chev" aria-hidden="true">' + pbCxIc('chevron-right') + '</span></button></div></section>';
+  };
+  // ---- the foreman's job card (My production) ----
+  window.pbLocFmJobLine = function(j, i) {
+    const uid = pbArchiveOwnerUid; if (!j || !j.job_number || !uid || uid === 'shared') return '';
+    const a = pbDlyAcc(uid); if (!a.foreman && !a.manager) return '';
+    const key = pbDlyKey(j.job_number);
+    if (pbLoc.uid === uid && pbLoc.st) pbLocSeed(uid);
+    const rows = pbLoc.uid === uid && pbLoc.st ? pbLocRows(key) : Array.isArray(j.locates) ? j.locates.slice() : null;
+    if (!rows || (!rows.length && !Array.isArray(j.locates) && !(pbLoc.st && pbLocServerRows(key)))) return '';
+    const open = rows.filter(l => l && !l.closed).sort(pbLocByExp), next = open[0] || null, lv = next ? pbLocLevel(next) : '';
+    return '<button type="button" class="pb-btn ghost small pbloc-fmbtn' + (lv ? ' ' + lv : '') + '" id="pmJobLoc' + i + '" data-job="' + escapeHtml(j.job_number) + '" onclick="pbOpenLocates(this.dataset.job)"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-flag"/></svg>'
+      + escapeHtml(open.length ? 'Locates · ' + open.length + ' open · ' + pbLocLeftText(next).replace(/^E/, 'e') : 'Locates · add a dig ticket') + '</button>';
+  };
+  // ---- the foreman's Needs attention: his jobs' open tickets within 7 days ----
+  function pbLocMineRows() {
+    const st = pbLoc.st; if (!st) return [];
+    const map = new Map(), mineAt = st.mine && st.mine.at || 0;
+    (st.mine && Array.isArray(st.mine.locates) ? st.mine.locates : []).forEach(l => { if (l && l.id) map.set(l.id, l); });
+    const keys = new Set([...map.values()].map(l => pbDlyKey(l.job_number)));
+    Object.keys(st.jobs).forEach(k => { const J = st.jobs[k]; if (!J || !Array.isArray(J.locates) || (J.at || 0) <= mineAt) return; if (!keys.has(k) && st.mine) return; J.locates.forEach(l => { if (l && l.id) map.set(l.id, l); }); });
+    return pbLocOverlay([...map.values()], null);
+  }
+  window.pbLocHomeAttention = function() {
+    const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared' || pbLoc.uid !== uid || !pbLoc.st || !pbCanOpen('locates')) return null;
+    if (!pbDlyAcc(uid).foreman) return null;
+    const L = pbLocMineRows().filter(l => l && !l.closed && pbLocLeft(l) !== null && pbLocLeft(l) <= 7).sort(pbLocByExp);
+    if (!L.length) return null;
+    const red = L.some(l => pbLocLevel(l) === 'red'), gone = L.some(l => pbLocLeft(l) < 0), jobs = [...new Set(L.map(l => String(l.job_number || '')))].filter(Boolean);
+    const t = L.length === 1 ? 'Locate ticket ' + L[0].ticket_no + ' ' + pbLocDueText(L[0]) : L.length + ' locate tickets ' + (gone ? 'expired or expiring' : 'expire within 7 days');
+    const body = L.length === 1 ? pbProdJobLabel(L[0].job_number) + (gone ? '. Call 811 for a new ticket, then update it here.' : '. Call 811 for a refresh, then update the ticket.')
+      : L.slice(0, 4).map(l => pbProdJobLabel(l.job_number) + ': ' + l.ticket_no + ' ' + pbLocDueText(l)).join('; ') + (L.length > 4 ? '; and ' + (L.length - 4) + ' more' : '') + '. Call 811 for a refresh.';
+    const btns = jobs.slice(0, 3).map((n, i) => '<button type="button" class="pb-btn small" id="homeLocBtn' + i + '" data-job="' + escapeHtml(n) + '" onclick="pbOpenLocates(this.dataset.job)">' + escapeHtml(jobs.length > 1 ? 'Locates · ' + pbProdJobLabel(n) : 'Open Locates') + '</button>').join('');
+    return { id: 'locates', info: !red, html: '<span class="t">' + escapeHtml(t) + '</span>' + escapeHtml(body) + btns };
+  };
+  async function pbLocMineLoad(uid) {
+    if (pbLoc.uid !== uid || !pbLoc.st || pbLoc.mineBusy) return;
+    if (!pbDlyAcc(uid).foreman || !(await pbDlyCanAsk(uid))) return;
+    pbLoc.mineBusy = true; let r = null;
+    try { r = await pbPermitRpc('pb_prod_locates_mine', {}, 30000); } finally { if (pbLoc.uid === uid) pbLoc.mineBusy = false; }
+    if (pbLoc.uid !== uid || !pbLoc.st || pbArchiveOwnerUid !== uid) return;
+    if (r && !r.error && r.data && Array.isArray(r.data.locates)) { pbLoc.st.mine = { at: Date.now(), locates: r.data.locates, locate_days: r.data.locate_days || null }; await pbLocSave(uid, true); try { if (pbCurrentScreen === 'home') window.pbRenderHome(); } catch (e) {} }
+  }
+  async function pbLocBoot() {
+    const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared') return;
+    const st = await pbLocLoadSt(uid); if (!st || pbArchiveOwnerUid !== uid) return;
+    pbLocSyncSoon(0);
+    let a = pbDlyAcc(uid); if (!a.known) a = await pbDlyAccFresh(uid);
+    if (a.foreman) await pbLocMineLoad(uid);
+    try { if (pbCurrentScreen === 'home') window.pbRenderHome(); } catch (e) {}
+  }
+  window.pbAccountLoadHooks.push(() => { setTimeout(() => { pbLocBoot().catch(e => console.error(e)); }, 2500); });
+  window.addEventListener('online', () => { pbLocSyncSoon(3000); setTimeout(() => { const uid = pbArchiveOwnerUid; if (uid && pbLoc.uid === uid && pbLoc.st && !(pbLoc.st.mine && Date.now() - pbLoc.st.mine.at < 600000)) pbLocMineLoad(uid).catch(() => {}); }, 4000); });
+  setInterval(() => { pbLocSync().catch(() => {}); const uid = pbArchiveOwnerUid; if (uid && pbLoc.uid === uid && pbLoc.st && pbCurrentScreen === 'home' && !document.hidden && !(pbLoc.st.mine && Date.now() - pbLoc.st.mine.at < 1800000)) pbLocMineLoad(uid).catch(() => {}); }, 120000);
+  PB_CONTRACTOR_SCREENS.push('locates'); PB_SCREEN_TABS.locates = 'reports';
+  window.__debugLocates = () => ({ uid: pbLoc.uid, st: pbLoc.st ? JSON.parse(JSON.stringify(pbLoc.st)) : null, job: pbLoc.job });
+
+  // ---- Settings › Company: how long a new ticket is good for ----
+  let pbLocCo = { edit: false, busy: false, msg: '', kind: '' };
+  const pbLocOrigCoTzRender = window.pbCoTzRender;
+  window.pbCoTzRender = function() { const r = pbLocOrigCoTzRender.apply(this, arguments); try { pbLocCoRender(); } catch (e) { console.error(e); } return r; };
+  function pbLocCoRender() {
+    const w = pbLocE('settingsCoLocate'); if (!w) return;
+    const D = pbCoTz.uid === pbArchiveOwnerUid ? pbCoTz.data : null, S = pbLocCo;
+    if (!D || D.locate_days === undefined || D.locate_days === null) { if (!w.hidden) w.hidden = true; if (w.innerHTML) w.innerHTML = ''; return; }
+    w.hidden = false;
+    const n = Math.round(Number(D.locate_days) || 14), msg = S.msg ? '<p class="pb-help' + (S.kind === 'err' ? ' pb-err' : '') + '" id="settingsCoLocMsg" role="status">' + escapeHtml(S.msg) + '</p>' : '';
+    if (!S.edit) { w.innerHTML = '<button type="button" class="pbx-namerow" id="settingsCoLocRow" aria-expanded="false" onclick="pbLocCoEdit(true)"><span class="pbx-namerow-k">Locate tickets</span><span class="pbx-namerow-v" id="settingsCoLocShown">' + escapeHtml('Good for ' + n + ' days') + '</span><span class="pbx-namerow-a">Edit</span></button>' + msg; return; }
+    w.innerHTML = '<div class="pbx-name-edit" id="settingsCoLocEdit"><div class="pb-field"><label for="settingsCoLocDays">A new dig ticket is good for (days)</label><input type="text" inputmode="numeric" maxlength="2" autocomplete="off" id="settingsCoLocDays" value="' + n + '"></div>'
+      + '<p class="pb-help">The expiry a new ticket starts with: the called-in day plus this many days (1 to 60). Each ticket’s date can still be changed. Check your state’s 811 rules.</p>'
+      + '<div class="pbx-btnrow"><button type="button" class="pb-btn secondary small" id="settingsCoLocSave" onclick="pbLocCoSave()"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? 'Saving…' : 'Save') + '</button><button type="button" class="pb-btn ghost small" id="settingsCoLocCancel" onclick="pbLocCoEdit(false)">Cancel</button></div>' + msg + '</div>';
+  }
+  window.pbLocCoEdit = function(on) { pbLocCo.edit = !!on; pbLocCo.msg = ''; pbLocCoRender(); const f = pbLocE(on ? 'settingsCoLocDays' : 'settingsCoLocRow'); if (f) f.focus({ preventScroll: true }); };
+  window.pbLocCoSave = async function() {
+    const S = pbLocCo, uid = pbArchiveOwnerUid, el = pbLocE('settingsCoLocDays'); if (S.busy || !el || !pbCoTz.data) return;
+    const t = String(el.value || '').trim(), n = Number(t);
+    if (!/^\d{1,2}$/.test(t) || n < 1 || n > 60) { S.msg = 'Enter whole days from 1 to 60.'; S.kind = 'err'; pbLocCoRender(); return; }
+    if (!(await pbDlyCanAsk(uid))) { S.msg = 'No signal. Nothing was changed; try again with signal.'; S.kind = 'err'; pbLocCoRender(); return; }
+    S.busy = true; S.msg = ''; pbLocCoRender();
+    let r; try { r = await pbPermitRpc('pb_company_locate_days_set', { p_days: n, p_expect_uid: uid }, 30000); } finally { S.busy = false; }
+    if (pbArchiveOwnerUid !== uid) return;
+    const m = String((r && r.error && r.error.message) || '');
+    if (r && !r.error && r.data && r.data.ok === true) { pbCoTz.data = Object.assign({}, pbCoTz.data, { locate_days: r.data.locate_days }); S.edit = false; S.msg = 'Saved. New tickets are good for ' + r.data.locate_days + ' days.'; S.kind = 'ok'; if (pbLoc.uid === uid && pbLoc.st) Object.keys(pbLoc.st.jobs).forEach(k => { pbLoc.st.jobs[k].locate_days = r.data.locate_days; }); }
+    else { S.msg = /pb:not_company_account/.test(m) ? 'Only the company account and its managers change this.' : /Could not find the function|does not exist/i.test(m) ? 'The company server isn’t ready for this yet.' : 'Not saved. Nothing was changed. Try again.'; S.kind = 'err'; }
+    pbLocCoRender();
+  };
+
+  // ---- B. materials: expected delivery, lead time, the run-out forecast ----
+  const pbLocFc = (m) => m && !m.archived && m.forecast && typeof m.forecast === 'object' ? m.forecast : null;
+  // the server's rule (sql/37): orders expected after today are on order, not on hand; out = nothing on hand or on order
+  function pbLocFcKind(f) { return !f ? '' : f.state === 'out' ? (f.order_by_due ? 'out' : !(Number(f.ordered) > 0) ? 'none' : '') : f.late_delivery && f.delivery && f.runs_out ? 'late' : f.state === 'order_by' && f.order_by ? 'order' : f.state === 'delivery' && f.delivery ? 'delivery' : ''; }
+  function pbLocMatChip(m) {
+    const f = pbLocFc(m), k = pbLocFcKind(f); if (!k) return '';
+    const cls = (c) => 'pb-chip pbm-chip pbloc-mchip' + (m.muted === true || !c ? '' : ' ' + c), id = ' id="pjMatFc_' + escapeHtml(String(m.id)) + '"', none = !(Number(f.ordered) > 0);
+    const chip = (c, t) => '<span class="' + cls(c) + '"' + id + '>' + escapeHtml(t) + '</span> ';
+    if (k === 'out') return chip('overdue', none ? 'Nothing ordered yet — order now' : 'Out — order now');
+    if (k === 'none') return chip('', 'Nothing ordered yet');
+    if (k === 'late') return chip('overdue', f.runs_out <= f.today ? 'None left — delivery ' + pbLocDay(f.delivery) : 'Delivery ' + pbLocDay(f.delivery) + ' after run-out (≈ ' + pbLocDay(f.runs_out) + ')');
+    if (k === 'order') return chip(f.order_by_past ? 'overdue' : f.order_by_due ? 'notsent' : '', f.order_by_past ? 'Order now (was due ' + pbLocDay(f.order_by) + ')' : 'Order by ' + pbLocDay(f.order_by));
+    return chip('', 'Delivery expected ' + pbLocDay(f.delivery));
+  }
+  // the details say why (what the chip doesn't already say)
+  function pbLocMatFcLine(m) {
+    const f = pbLocFc(m), lead = m && m.lead_days !== null && m.lead_days !== undefined && m.lead_days !== '' ? Math.round(Number(m.lead_days)) : null, id = ' id="pjMatFcD_' + escapeHtml(String(m && m.id)) + '"';
+    if (!f) return lead !== null ? '<p class="pbp-dim pbloc-fc"' + id + '>' + escapeHtml('Lead time ' + lead + (lead === 1 ? ' day.' : ' days.') + ' Not used in the last 7 days, so no order-by day yet.') + '</p>' : '';
+    const k = pbLocFcKind(f), u = m.unit || '', bits = [], use = Number(f.rate_days) > 0 && Number(f.rate_days) < 5 ? 'At the use since it started' : 'At last week’s use';
+    if (f.state === 'out') { if (k !== 'none') bits.push(Number(f.ordered) > 0 ? 'Everything ordered is used.' : 'It is in use and nothing is ordered.'); }
+    else if (f.state === 'no_rate') bits.push('Not used in the last 7 days, so no run-out day yet.');
+    else if (f.state === 'not_soon') bits.push(use + ' it lasts more than a year.');
+    else if (f.runs_out) bits.push(Number(f.on_hand) > 0 ? use + ' (' + pbMatFmt(f.rate_per_day, u) + ' ' + u + ' a work day), the ' + pbMatFmt(f.on_hand, u) + ' ' + u + ' on hand runs out ≈ ' + pbLocDay(f.runs_out) + '.' : 'None on hand now.');
+    if (Number(f.on_order) > 0) bits.push(pbMatFmt(f.on_order, u) + ' ' + u + ' on order count once they arrive.');
+    if (lead !== null) bits.push('Lead time ' + lead + (lead === 1 ? ' day' : ' days') + (f.order_by && k !== 'order' && k !== 'out' ? (f.order_by_past ? ': order now (was due ' + pbLocDay(f.order_by) + ')' : ': order by ' + pbLocDay(f.order_by)) : '') + '.');
+    if (f.delivery && k !== 'delivery' && k !== 'late') bits.push('Delivery expected ' + pbLocDay(f.delivery) + '.');
+    return bits.length ? '<p class="pbp-dim pbloc-fc"' + id + '>' + escapeHtml(bits.join(' ')) + '</p>' : '';
+  }
+  function pbLocOrderTxt(o) { return o && !o.voided && o.expected_at ? ' · delivery expected ' + pbLocDay(o.expected_at) : ''; }
+  function pbLocOrderBtn(mid, o) { return '<button type="button" class="pb-btn ghost small" id="pjMatExp_' + escapeHtml(String(o.id)) + '" onclick="pbLocExpForm(' + pbLocQ(mid) + ', ' + pbLocQ(o.id) + ')">' + (o.expected_at ? 'Change Delivery' : 'Delivery Date') + '</button>'; }
+  window.pbLocExpForm = function(mid, oid) {
+    const m = pbMatFind(mid); if (!m) return;
+    const o = (m.orders || []).find(x => x && x.id === oid); if (!o || o.voided) return;
+    pbMatSetForm({ kind: 'expect', id: mid, rid: oid, label: pbMatFmt(o.qty, o.unit) + ' ' + o.unit + ', ordered ' + pbProdDayText(o.ordered_on), v: { expected_at: o.expected_at ? String(o.expected_at).slice(0, 10) : '' } });
+  };
+  function pbLocMatLead(F, p) { // the material save: lead time in days (blank clears it)
+    if (!F || F.v.lead_days === undefined) return '';
+    const t = String(F.v.lead_days || '').trim();
+    if (t !== '' && !(/^\d{1,3}$/.test(t) && Number(t) <= 365)) return 'Lead time: whole days from 0 to 365, or leave it blank.';
+    p.lead_days = t; return '';
+  }
+  function pbLocOrderArgs(F, args) { // a new order: its expected delivery (optional)
+    const d = String((F && F.v.expected_at) || '').trim(); if (!d) return '';
+    if (!pbLocIsDay(d)) return 'Expected delivery: pick a date, or leave it blank.';
+    if (F.v.date && d < F.v.date) return 'The delivery can’t be expected before the day it was ordered.';
+    args.p_expected_at = d; return '';
+  }
+  const pbLocOrigMatRead = pbMatFormRead;
+  pbMatFormRead = function() {
+    const F = pbLocOrigMatRead.apply(this, arguments);
+    if (F && pbProdEl('pmfForm')) {
+      if (F.kind === 'mat') { const el = pbProdEl('pmf_lead_days'); if (el) F.v.lead_days = String(el.value).trim(); }
+      if (F.kind === 'order' || F.kind === 'expect') { const el = pbProdEl('pmf_expected_at'); if (el) F.v.expected_at = String(el.value); }
+    }
+    return F;
+  };
+  const pbLocOrigMatHtml = pbMatFormHtml;
+  pbMatFormHtml = function() {
+    const F = pbMat.form;
+    if (F && F.kind === 'expect') {
+      const m = pbMatFind(F.id);
+      return '<form class="pbm-form" id="pmfForm" onsubmit="event.preventDefault(); pbMatFormSave();"><h4 class="pbm-h4">Expected delivery: ' + escapeHtml((m ? m.name + ', ' : '') + (F.label || '')) + '</h4>'
+        + pbMatField('expected_at', 'Delivery expected', F.v.expected_at || '', 'type="date"', 'Clear it if the date isn’t known. If it lands after the material runs out, the job’s PMs are told in the morning.')
+        + (F.err ? '<p class="pbp-err pbm-ferr" id="pmfErr" role="alert">' + escapeHtml(F.err) + '</p>' : '')
+        + '<div class="pb-btn-wrap pbp-btns pbm-fbtns"><button type="button" class="pb-btn" id="pmfSave" onclick="pbMatFormSave()"' + (F.saving ? ' disabled' : '') + '>' + (F.saving ? 'Saving…' : 'Save Date') + '</button><button type="button" class="pb-btn ghost" id="pmfCancel" onclick="pbMatFormCancel()">Cancel</button></div></form>';
+    }
+    let h = pbLocOrigMatHtml.apply(this, arguments);
+    if (F && (F.kind === 'mat' || F.kind === 'order')) {
+      const fld = F.kind === 'mat' ? pbMatField('lead_days', 'Lead time, days <span class="pbx-opt">(optional)</span>', F.v.lead_days || '', 'type="text" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="e.g. 10"', 'How long an order takes to arrive. With last week’s use, the card then says when to order.')
+        : pbMatField('expected_at', 'Expected delivery <span class="pbx-opt">(optional)</span>', F.v.expected_at || '', 'type="date"');
+      const at = h.lastIndexOf(F.err ? '<p class="pbp-err pbm-ferr" id="pmfErr"' : '<div class="pb-btn-wrap pbp-btns pbm-fbtns">');
+      if (at > 0) h = h.slice(0, at) + fld + h.slice(at);
+    }
+    return h;
+  };
+  const pbLocOrigMatSave = window.pbMatFormSave;
+  window.pbMatFormSave = async function() {
+    const F = pbMatFormRead(), uid = pbArchiveOwnerUid, job = pbPj.job;
+    if (F && F.kind === 'expect') {
+      if (F.saving || !job) return;
+      const d = String(F.v.expected_at || '').trim();
+      if (d && !pbLocIsDay(d)) { F.err = 'Pick a date, or clear it.'; pbMatJobPaint(); return; }
+      if (!(await pbMatCanAsk(uid))) { F.err = 'No signal. Nothing was saved; what you typed is still here. Try again with signal.'; pbMatJobPaint(); return; }
+      F.saving = true; F.err = ''; pbMatJobPaint();
+      const r = await pbPermitRpc('pb_mat_order_expect', { p_order_id: F.rid, p_expected_at: d || null, p_expect_uid: uid, p_phone_at: new Date().toISOString() }, 30000);
+      if (pbMat.form !== F || pbPj.job !== job) return;
+      if (r.error || !r.data || r.data.ok !== true) { F.saving = false; F.err = pbMatErrText(r) + ' Nothing was saved.'; pbMatJobPaint(); return; }
+      pbMat.form = null; pbMat.hist = {}; pbMatJobPaint(); pbMatJobLoad(); pbMatCoInvalidate(); return;
+    }
+    return pbLocOrigMatSave.apply(this, arguments);
+  };
+  const pbLocOrigMatErr = pbMatErrText;
+  pbMatErrText = function(r) {
+    const m = String((r && r.error && r.error.message) || '');
+    if (pbMatServerMissing(r) && /pb_mat_order_add2/.test(m)) return 'The company server isn’t ready for delivery dates yet. Clear the expected delivery to save the order.';
+    if (pbMatServerMissing(r) && /pb_mat_order_expect/.test(m)) return 'The company server isn’t ready for delivery dates yet.';
+    if (/pb:voided/.test(m)) return 'That order was voided.';
+    return pbLocOrigMatErr.apply(this, arguments);
+  };
+  const pbLocOrigMatEdit = window.pbMatEdit;
+  window.pbMatEdit = function(id) {
+    const r = pbLocOrigMatEdit.apply(this, arguments), F = pbMat.form;
+    if (F && F.kind === 'mat' && F.v.lead_days === undefined) { const m = F.id ? pbMatFind(F.id) : null; F.v.lead_days = m && m.lead_days !== null && m.lead_days !== undefined ? String(m.lead_days) : ''; F.base = JSON.stringify(F.v); pbMatJobPaint(); }
+    return r;
+  };
+  const pbLocOrigOrderForm = window.pbMatOrderForm;
+  window.pbMatOrderForm = function(id) { const r = pbLocOrigOrderForm.apply(this, arguments), F = pbMat.form; if (F && F.kind === 'order' && F.v.expected_at === undefined) { F.v.expected_at = ''; F.base = JSON.stringify(F.v); } return r; };
+  // History: a delivery-date change says so, with the dates (review S9; 'order_expect' once the owner paste allows the
+  // word, before that 'order_add' with before / after)
+  const pbLocOrigHist = pbMatHistHtml;
+  pbMatHistHtml = function(H) {
+    try {
+      if (H && Array.isArray(H.changes)) H = Object.assign({}, H, { changes: H.changes.map(x => {
+        if (!x || !(x.action === 'order_expect' || (x.action === 'order_add' && x.before && typeof x.before === 'object' && 'expected_at' in x.before))) return x;
+        const d = (v) => v ? pbLocDay(v) : 'none', b = (x.before && x.before.expected_at) || null, a = (x.after && x.after.expected_at) || null;
+        return Object.assign({}, x, { action: 'Delivery date changed (' + d(b) + ' → ' + d(a) + ')' });
+      }) });
+    } catch (e) { console.error(e); }
+    return pbLocOrigHist.apply(this, [H]);
+  };
+  const pbLocOrigChips = pbMatChips;
+  pbMatChips = function(m, s) { let h = pbLocOrigChips.apply(this, arguments); try { h += pbLocMatChip(m); } catch (e) { console.error(e); } return h; };
+  const pbLocOrigLinked = pbMatLinkedHtml;
+  pbMatLinkedHtml = function(m) { let h = ''; try { h = pbLocMatFcLine(m); } catch (e) { console.error(e); } return h + pbLocOrigLinked.apply(this, arguments); };
+  // ================= end feat_locates =================
 
   pbRunScreenHooks(pbCurrentScreen, false); // UX batch 2: Home is shown by the markup at start-up, not by pbGoto
   const pbBootGuard = setTimeout(() => {
