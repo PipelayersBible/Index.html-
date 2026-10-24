@@ -4448,6 +4448,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <label class="pb-set-switch" for="notifTypePermit" id="notifTypePermitRow" hidden><span class="tx"><span class="name">Crew permit closed</span><span class="sub">Foreman account: when a pipelayer on your crew closes a confined space permit</span></span><input type="checkbox" role="switch" id="notifTypePermit" class="pb-pn-switch" checked onchange="pbPushSetPref('permit_closed', this.checked)"></label>
         <label class="pb-set-switch" for="notifTypePermitDue" id="notifTypePermitDueRow" hidden><span class="tx"><span class="name">Permit checks due</span><span class="sub">On your open confined space permit: when an air test or communication check comes due, and once more 5 minutes later. The alarm in the app stays the main reminder.</span></span><input type="checkbox" role="switch" id="notifTypePermitDue" class="pb-pn-switch" checked onchange="pbPushSetPref('permit_due', this.checked)"></label>
         <label class="pb-set-switch" for="notifTypeLoc" id="notifTypeLocRow" hidden><span class="tx"><span class="name">Locate tickets expiring</span><span class="sub">An open 811 ticket on your jobs: 7 days before it expires, 2 days before, and on the day</span></span><input type="checkbox" role="switch" id="notifTypeLoc" class="pb-pn-switch" checked onchange="pbPushSetPref('locates', this.checked)"></label><!-- feat_locates --><!-- feat_permitdue -->
+        <label class="pb-set-switch" for="notifTypeSafety" id="notifTypeSafetyRow" hidden><span class="tx"><span class="name">Safety events</span><span class="sub">When a foreman adds a near miss, first aid, incident, property damage or stop work on your jobs</span></span><input type="checkbox" role="switch" id="notifTypeSafety" class="pb-pn-switch" checked onchange="pbPushSetPref('safety', this.checked)"></label><!-- feat_jobbook -->
         <label class="pb-set-switch" for="notifTypeCrew"><span class="tx"><span class="name">Crew production reminders</span><span class="sub">When your crew starts or finishes a run and its production isn’t entered</span></span><input type="checkbox" role="switch" id="notifTypeCrew" class="pb-pn-switch" checked onchange="pbCrewPushSet(this.checked); pbPushCrewKind(this.checked)"></label><!-- batch 14 F -->
         <p class="pb-help pb-pn-msg" id="notifCrewMsg" role="status" hidden></p><!-- batch 14 F -->
         <p class="pb-help pb-pn-msg" id="notifPrefsMsg" role="status" hidden></p>
@@ -5842,6 +5843,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <button type="button" class="pb-edu-row pb-tool-row" id="archiveNoRunBtn" data-ic="clipboard" style="display:none;" onclick="pbOpenNoRun()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Work without a run</span><span class="sub">Production for work done without the run calculator</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button><!-- batch 28 MANUAL -->
         <button type="button" class="pb-edu-row pb-tool-row" id="archiveDailyBtn" data-ic="clipboard" style="display:none;" onclick="pbOpenDailyReport()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Daily report</span><span class="sub">Your signed report for the day, with weather</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button><!-- batch 23 DAILY -->
         <button type="button" class="pb-edu-row pb-tool-row" id="archiveInspMineBtn" data-ic="clipboard" style="display:none;" onclick="pbOpenInspMine()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">My inspections &amp; tests</span><span class="sub">Check off the ones assigned to you</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button><!-- batch 23 DAILY -->
+        <button type="button" class="pb-edu-row pb-tool-row" id="archiveJobBookBtn" data-ic="clipboard" style="display:none;" onclick="pbJbOpenMine()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Job book</span><span class="sub">Issues, rework and safety events on your job</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button><!-- feat_jobbook -->
       </div>
       <h2 class="pb-reports-heading" id="archiveMyReportsHeading">My runs &amp; permits</h2>
     </div>
@@ -6532,6 +6534,38 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div id="nrList"></div>
     </div>
   </div>
+  <!-- feat_jobbook: the JOB BOOK (issues, rework, safety events, closeout) -->
+  <div class="pb-screen" id="screen-jobBook">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>JOB BOOK</span><button type="button" class="pb-back" id="jbBack" title="Back" aria-label="Back" onclick="pbJbBack()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
+      <h1 class="pb-title">Job book</h1>
+    </div>
+    <div class="pbd-wrap">
+      <div id="jbHead" class="pbp-head"></div>
+      <div id="jbTabs" class="pbx-tabs pbjb-tabs" role="tablist" aria-label="Job book lists"></div>
+      <p id="jbStatus" class="pb-rpt-status" role="status"></p>
+      <div id="jbBody"></div>
+      <div class="pb-btn-wrap pbd-bw"><button type="button" class="pb-btn secondary" id="jbRefreshBtn" onclick="pbJbRefresh()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Refresh</button></div>
+    </div>
+  </div>
+  <style>
+  /* feat_jobbook */
+  #pbApp .pbjb-tabs { margin-top: 8px; }
+  #pbApp .pbjb-tabs[hidden] { display: none; }
+  #pbApp .pbjb-total { margin: 10px 0 0; font-size: 15px; font-weight: 650; color: var(--pb-text); }
+  #pbApp .pbjb-list .pbx-row, #pbApp .pbjb-closed .pbx-row { min-height: 56px; }
+  #pbApp .pbjb-closed { margin-top: 12px; }
+  #pbApp .pbjb-dl { margin: 10px 0 0; display: grid; gap: 8px; }
+  #pbApp .pbjb-dl dt { font-size: 13px; color: var(--pb-text-2); }
+  #pbApp .pbjb-dl dd { margin: 2px 0 0; font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  #pbApp .pbjb-co { padding-top: 4px; }
+  #pbApp .pbjb-cochk { margin: 10px 0 0; }
+  #pbApp .pbjb-cotx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  #pbApp .pbjb-cotx .pbd-dim { margin: 0; font-size: 13px; }
+  #pbApp #screen-jobBook textarea { min-height: 88px; width: 100%; box-sizing: border-box; }
+  #pbApp #screen-jobBook .pb-section { margin-left: 0; margin-right: 0; }
+  #pbApp #screen-jobBook .pb-btn-wrap[hidden] { display: none; }
+  </style>
   <!-- batch 11 D: MY PRODUCTION (every member): own entries and their sync state, the jobs worked on -->
   <div class="pb-screen" id="screen-prodMine">
     <div class="pb-header">
@@ -9036,7 +9070,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.39 · 2026-10-24'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.40 · 2026-10-24'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -30843,6 +30877,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const PB_PUSH_DEVICE_KEY = 'pbPushDevice'; // per phone, not per account: { uid, want: 'on'|'off', synced, endpoint, why, at }
   const PB_PUSH_TYPES = ['runs_waiting', 'mgmt_report', 'crew_production', 'run_end_ask', 'material_alert', 'crew_nudge', 'permit_closed', 'permit_due', 'locates']; // feat_locates // feat_permitdue // r14 integration: a row shows only when the server reports the kind
   const PB_PUSH_ROWS = { run_end_ask: 'notifTypeRunEndRow', material_alert: 'notifTypeMatRow', crew_nudge: 'notifTypeNudgeRow', permit_closed: 'notifTypePermitRow', permit_due: 'notifTypePermitDueRow', locates: 'notifTypeLocRow' }; // feat_locates // feat_permitdue // crew_production: batch 14 F's own row
+  PB_PUSH_TYPES.push('safety'); PB_PUSH_ROWS.safety = 'notifTypeSafetyRow'; // feat_jobbook: a row shows only when the server reports the kind (sql/OWNER_PASTE.sql)
   let pbPushReg = null, pbPushSwFailed = false, pbPushRegP = null, pbPushBusy = null, pbPushTimer = null;
   let pbPushMsg = { text: '', at: 0 };
   function pbPushHostOk() {
@@ -31320,7 +31355,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (b) b.checked = L.prefs.mgmt_report;
     if (row) row.hidden = !L.reader && !L.also.includes('material_alert'); // r14 integration: before the paste a PM's material alerts are filed under this kind
     { const sub = row ? row.querySelector('.sub') : null; if (sub) sub.textContent = L.also.includes('material_alert') ? (L.reader ? 'Company account only. Also material alerts, until they get their own switch' : 'Material alerts for your jobs, until they get their own switch') : 'Company account only'; }
-    Object.keys(PB_PUSH_ROWS).forEach(k => { const r = document.getElementById(PB_PUSH_ROWS[k]), inp = r ? r.querySelector('input') : null; if (r) r.hidden = !L.kinds.includes(k) || (k === 'permit_closed' && !(typeof window.pbLvIsForeman === 'function' && window.pbLvIsForeman(pbArchiveOwnerUid))); if (inp) inp.checked = L.prefs[k]; });
+    Object.keys(PB_PUSH_ROWS).forEach(k => { const r = document.getElementById(PB_PUSH_ROWS[k]), inp = r ? r.querySelector('input') : null; if (r) r.hidden = !L.kinds.includes(k) || (k === 'safety' && !pbDlyAcc(pbArchiveOwnerUid).manager) || (k === 'permit_closed' && !(typeof window.pbLvIsForeman === 'function' && window.pbLvIsForeman(pbArchiveOwnerUid))); if (inp) inp.checked = L.prefs[k]; });
     const m = document.getElementById('notifPrefsMsg');
     if (m) { const n = Object.keys(L.pending).length; m.hidden = !n; m.textContent = n ? 'Saved on this phone. The change is sent when there’s signal.' : ''; }
   }
@@ -47828,6 +47863,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (opts.checkBtn && i.status === 'open' && i.mine && !pend.length) h += '<div class="pb-btn-wrap pbd-bw"><button type="button" class="pb-btn" id="insCheckBtn_' + escapeHtml(i.id) + '" onclick="pbInsOpenCheck(' + escapeHtml(JSON.stringify(i.id)) + ')">Check Off</button></div>';
     if (opts.edit && i.status === 'done') h += '<div class="pbd-acts"><button type="button" class="pb-btn secondary small" id="insEdit_' + escapeHtml(i.id) + '" onclick="pbInsEdit(' + escapeHtml(JSON.stringify(i.id)) + ')">Amend</button></div>';
     if (opts.edit && i.status === 'open') h += '<div class="pbd-acts"><button type="button" class="pb-btn secondary small" id="insEdit_' + escapeHtml(i.id) + '" onclick="pbInsEdit(' + escapeHtml(JSON.stringify(i.id)) + ')">' + ((i.checks || []).length ? 'Amend' : 'Edit') + '</button><button type="button" class="pb-btn ghost small" id="insCancel_' + escapeHtml(i.id) + '" onclick="pbInsCancel(' + escapeHtml(JSON.stringify(i.id)) + ')">Cancel Item</button></div>';
+    try { if (window.pbJbReworkBtn) h += window.pbJbReworkBtn(i, pend); } catch (e) {} /* feat_jobbook: Add Rework on a failed item */
     if (opts.history && Array.isArray(i.history) && i.history.length) h += '<details class="pb-more pbd-hist"><summary>History (' + i.history.length + ')</summary><ul>' + i.history.map(v => '<li>v' + v.version + ' ' + escapeHtml(v.action) + ' by ' + escapeHtml(v.by || '—') + ', ' + escapeHtml(pbDlyTimeIn(v.at)) + (v.reason ? ': ' + escapeHtml(v.reason) : '') + '</li>').join('') + '</ul></details>';
     return h + '</div>';
   }
@@ -50475,6 +50511,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const tks = tl.slice().sort((a, b) => String(b.ticket_date || '').localeCompare(String(a.ticket_date || ''))).slice(0, 3);
     const rec = (Array.isArray(D.recent) ? D.recent.filter(x => x && typeof x === 'object' && !x.voided) : []).slice(0, 3);
     try { h += window.pbRrJobPanel ? window.pbRrJobPanel(job) : ''; } catch (e) { console.error(e); } // feat_jobruns
+    try { h += window.pbJbPanel ? window.pbJbPanel(job) : ''; } catch (e) { console.error(e); } // feat_jobbook: the Job book row
     h += '<section class="pbx-panel" id="pjCxDocs" aria-labelledby="pjCxDocsH"><h3 class="pbx-h3" id="pjCxDocsH">Recent documents</h3>';
     if (!tks.length && !rec.length) h += '<p class="pbx-none">' + (D.partial ? 'Loads with signal.' : 'No tickets or production entries yet.') + '</p>';
     else h += '<div class="pbx-rows flat">'
@@ -52335,6 +52372,518 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbLocOrigLinked = pbMatLinkedHtml;
   pbMatLinkedHtml = function(m) { let h = ''; try { h = pbLocMatFcLine(m); } catch (e) { console.error(e); } return h + pbLocOrigLinked.apply(this, arguments); };
   // ================= end feat_locates =================
+
+  // ================= feat_jobbook (owner, Oct 24): the JOB BOOK — issues, rework, safety events, closeout =================
+  // One screen per job (screen-jobBook) holding four lists of ONE record shape: pb_prod.job_items (kind issue | rework |
+  // safety | closeout, data jsonb, status open | closed | void). One save (pb_prod_job_item_set, idempotent by the
+  // client's uuid), one list (pb_prod_job_items), photos one per call (pb_prod_job_item_photo_add) as inspection
+  // check-offs keep theirs. Every save is kept on the phone first (per account 'jobBook': the job lists + a queue) and sent
+  // when there is signal; a refused one says why and can be fixed or discarded. The company account / managers / PMs
+  // open it from the job page's Overview (one row); a foreman from Records › Job book (his Current job) and from a failed
+  // inspection ("Add rework"). The closeout checklist appears when the job is at 100 % or past its end date.
+  const PB_JB_KEY = 'jobBook';
+  const PB_JB_PHOTOS = 6;
+  const PB_JB_KINDS = {
+    issue: { name: 'Issues', one: 'issue', add: 'Raise an Issue', close: 'Close Issue', reopen: 'Reopen', foreman: true, photos: true,
+      fields: [{ k: 'title', l: 'The question or conflict', t: 'text', req: true, max: 120, ph: 'e.g. Gas main conflicts with the storm line at STA 4+50' },
+        { k: 'owner', l: 'Who has the ball', t: 'pick', opts: ['Engineer', 'Owner', 'Utility', 'Inspector', 'Us', 'Other'] },
+        { k: 'raised', l: 'Raised', t: 'date' }, { k: 'blocking', l: 'Blocking the work', t: 'yesno' },
+        { k: 'note', l: 'Note', t: 'textarea', max: 2000, ph: 'What was asked, who was told, what was answered' }] },
+    rework: { name: 'Rework', one: 'rework entry', add: 'Add Rework', foreman: true, photos: false,
+      fields: [{ k: 'hours', l: 'Hours', t: 'num', req: true, ph: 'e.g. 6' }, { k: 'crew', l: 'Crew size', t: 'int' }, { k: 'date', l: 'Date', t: 'date' },
+        { k: 'note', l: 'What was redone and why', t: 'textarea', max: 2000 }] },
+    safety: { name: 'Safety', one: 'safety event', add: 'Add Safety Event', foreman: true, photos: true, note: 'No medical details here; the company handles those.',
+      fields: [{ k: 'kind', l: 'What kind', t: 'pick', req: true, opts: ['Near miss', 'First aid', 'Incident', 'Property damage', 'Stop work'], none: 'Pick one' },
+        { k: 'date', l: 'Date', t: 'date' }, { k: 'time', l: 'Time', t: 'time' }, { k: 'people', l: 'People involved', t: 'text', max: 500, ph: 'Names' },
+        { k: 'what', l: 'What happened', t: 'textarea', req: true, max: 2000 }, { k: 'done', l: 'What was done', t: 'textarea', max: 2000 }] },
+    closeout: { name: 'Closeout', one: 'closeout checklist', foreman: false, photos: false, fields: [] }
+  };
+  const PB_JB_CLOSEOUT = [['inspections', 'Final inspections done'], ['restoration', 'Restoration complete'], ['asbuilts', 'As-builts sent'], ['tickets', 'Tickets reconciled'], ['materials', 'Materials returned'], ['punch', 'Punch list clear'], ['signoff', 'Owner sign-off']];
+  const PB_JB_WORDS = { 'pb:need_title': 'The issue needs its title.', 'pb:need_hours': 'Rework needs its hours.', 'pb:need_what': 'Say what happened.', 'pb:bad_status': 'That status isn’t allowed here.',
+    'pb:bad_id': 'The record has no id.', 'pb:not_company_member': 'This account isn’t in a company.', 'pb:not_found': 'The record belongs to another company.',
+    'pb:job_unknown': 'This job isn’t on the company server.', 'pb:changed': 'Someone else changed this record since. Check it, then resend yours or discard it.',
+    'pb:quota': 'The company’s daily limit for these was reached. Try tomorrow.', 'pb:quota_user': 'Your daily limit for these was reached. Try tomorrow.', 'pb:too_big': 'It is too big to send.',
+    'pb:no_photos': 'This record takes no photos.', 'pb:item_removed': 'The record was removed.', 'pb:photo_storage': 'The company’s photo storage is full.' };
+  const PB_JB_RETRY_H = 48; // a record on a job the server doesn't know yet is retried this long (the job's entries may still be on their way)
+  const pbJbWhy = (code, r) => PB_JB_WORDS[code] || pbDlyWhy(code, r);
+  const pbJbKey = (n) => pbDlyKey(n);
+  let pbJb = { uid: null, st: null, failed: false, job: null, kind: 'issue', form: null, open: null, busy: false, msg: '', from: null, gen: 0 };
+  let pbJbSyncBusy = false, pbJbSyncTimer = null;
+  window.pbAccountLoadHooks.push(() => { pbJb = { uid: null, st: null, failed: false, job: null, kind: 'issue', form: null, open: null, busy: false, msg: '', from: null, gen: 0 }; pbJbSyncSoon(8000); }); // what waits on this phone goes once the account is loaded
+  // ---- the per-account store: { v, jobs: { key: { at, items, can } }, queue: [ { cid, id, jobNumber, jobKey, kind, data, status, photos, state, why, code, savedAt } ] } ----
+  async function pbJbLoadStore(uid) {
+    if (pbJb.uid === uid && pbJb.st) return pbJb.st;
+    let st = null, failed = false;
+    try { const raw = await pbGetCriticalFor(uid, PB_JB_KEY); st = raw ? JSON.parse(raw) : { v: 1, jobs: {}, queue: [] }; } catch (e) { failed = true; }
+    if (st && (!st.jobs || typeof st.jobs !== 'object' || !Array.isArray(st.queue))) { failed = true; st = null; }
+    if (pbJb.uid !== uid) pbJb = { uid, st: null, failed: false, job: null, kind: 'issue', form: null, open: null, busy: false, msg: '', from: null, gen: 0 };
+    pbJb.st = st; pbJb.failed = failed;
+    return st;
+  }
+  async function pbJbSaveStore(uid) {
+    if (pbJb.uid !== uid || !pbJb.st) return false;
+    const ok = await pbSetFor(uid, PB_JB_KEY, JSON.stringify(pbJb.st));
+    if (!ok) pbAlert('This phone’s storage is full, so this could not be saved. Free some space (old runs or photos) and try again.', 'Not Saved');
+    return ok;
+  }
+  // the job's records as this phone knows them: the server's list with the queue's newer versions on top
+  function pbJbItems(key) {
+    const st = pbJb.st; if (!st) return null;
+    const J = st.jobs[key], base = J && Array.isArray(J.items) ? J.items.slice() : (J ? [] : null);
+    const Q = st.queue.filter(q => q.jobKey === key).sort((a, b) => (a.seq || 0) - (b.seq || 0)); // in the order they were made
+    if (base === null && !Q.length) return null;
+    const out = (base || []).map(x => Object.assign({}, x));
+    Q.forEach(q => { const i = out.findIndex(x => x.id === q.id), cur = i >= 0 ? out[i] : { id: q.id, kind: q.kind, created_at: q.savedAt, by: 'you', mine: true, photo_count: 0, history: [], data: {} };
+      const data = q.statusOnly ? cur.data : q.kind === 'closeout' ? pbJbTicked(cur.data, q.data && q.data.ticks, q.savedAt) : q.data; // Close / Remove keep the data; the closeout's ticks go on top
+      const it = Object.assign({}, cur, { data, status: q.status, _q: q, updated_at: q.savedAt, _photos: (cur._photos || []).concat(q.photos || []) });
+      if (i >= 0) out[i] = it; else out.unshift(it); });
+    return out.filter(x => x.status !== 'void').sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+  }
+  // the closeout as this phone shows it: the stored list with this phone's ticks not yet sent (the server stamps who/when)
+  function pbJbTicked(d, ticks, at) {
+    const L = d && Array.isArray(d.items) ? d.items : [];
+    return Object.assign({}, d, { items: PB_JB_CLOSEOUT.map(([k]) => { const it = L.find(i => i.k === k) || { k, done: false }; if (!ticks || !(k in ticks)) return it; return ticks[k] ? (it.done ? it : { k, done: true, by: pbJbMyName(), at }) : { k, done: false }; }) });
+  }
+  const pbJbToday = () => pbTkToday();
+  const pbJbDays = (d) => { const t = Date.parse(String(d || '').slice(0, 10) + 'T12:00:00'), n = Date.parse(pbJbToday() + 'T12:00:00'); return isFinite(t) ? Math.max(0, Math.round((n - t) / 86400000)) : 0; };
+  const pbJbH = (n) => { const x = Math.round(Number(n) * 10) / 10; return x.toLocaleString(undefined, { maximumFractionDigits: 1 }) + ' h'; };
+  // the four summary lines (the Overview row, the tabs). From the phone's list when it has one, else the job detail's counts.
+  function pbJbCounts(job) {
+    const key = job && job.job_key, items = key ? pbJbItems(key) : null, D = pbPj.job && pbPj.job.job_key === key ? pbPj.data : null;
+    const C = { have: false, issues: { open: 0, blocking: 0, oldest: 0 }, rework: { hours: 0, n: 0 }, safety: { month: 0, total: 0 }, closeout: null };
+    if (items) {
+      C.have = true;
+      items.filter(x => x.kind === 'issue' && x.status === 'open').forEach(x => { C.issues.open++; if (x.data.blocking) C.issues.blocking++; C.issues.oldest = Math.max(C.issues.oldest, pbJbDays(x.data.raised || x.created_at)); });
+      items.filter(x => x.kind === 'rework').forEach(x => { C.rework.n++; C.rework.hours += Number(x.data.hours) || 0; });
+      items.filter(x => x.kind === 'safety').forEach(x => { C.safety.total++; if (String(x.data.date || '').slice(0, 7) === pbJbToday().slice(0, 7)) C.safety.month++; });
+      const co = items.find(x => x.kind === 'closeout'); if (co) C.closeout = { done: (co.data.items || []).filter(i => i.done).length, total: PB_JB_CLOSEOUT.length };
+    } else if (D && D.job_items && typeof D.job_items === 'object') {
+      const S = D.job_items; C.have = true;
+      if (S.issues) C.issues = { open: Number(S.issues.open) || 0, blocking: Number(S.issues.blocking) || 0, oldest: Number(S.issues.oldest_days) || 0 };
+      if (S.rework) C.rework = { hours: Number(S.rework.hours) || 0, n: Number(S.rework.n) || 0 };
+      if (S.safety) C.safety = { month: Number(S.safety.month) || 0, total: Number(S.safety.total) || 0 };
+      if (S.closeout && S.closeout.total) C.closeout = { done: Number(S.closeout.done) || 0, total: Number(S.closeout.total) || PB_JB_CLOSEOUT.length };
+    }
+    return C;
+  }
+  function pbJbLines(C, closeoutOn) {
+    const L = []; // the first line is the row's heading; a list with nothing in it adds no line (said once, not "No …" four times)
+    L.push(C.issues.open ? pbCxN(C.issues.open, 'open issue') + (C.issues.blocking ? ' · ' + C.issues.blocking + ' blocking' : '') + (C.issues.oldest ? ' (oldest ' + pbCxN(C.issues.oldest, 'day') + ')' : '') : 'No open issues');
+    if (C.rework.n) L.push('Rework: ' + pbJbH(C.rework.hours) + ' (' + pbCxN(C.rework.n, 'item') + ')');
+    if (C.safety.month) L.push(pbCxN(C.safety.month, 'safety event') + ' this month');
+    if (C.closeout) L.push('Closeout ' + C.closeout.done + ' of ' + C.closeout.total + ' done'); else if (closeoutOn) L.push('Closeout 0 of ' + PB_JB_CLOSEOUT.length + ' done');
+    return L;
+  }
+  // the closeout shows once the job is at 100 % (every planned item done) or its end date has passed
+  function pbJbCloseoutOn(job) {
+    try {
+      if (!job || !pbPj.job || pbPj.job.job_key !== job.job_key || !pbPj.data) return false;
+      const D = pbPj.data, v = pbProdJobView(D.plan || null, D.cats);
+      if ((v.overall !== null && v.overall !== undefined && v.overall >= 1) || pbCxComplete(v)) return true;
+      const dj = pbCxKnownJob(job.job_number) || {}, end = dj.end_date ? String(dj.end_date).slice(0, 10) : '';
+      return !!(end && /^\d{4}-\d{2}-\d{2}$/.test(end) && end < pbJbToday());
+    } catch (e) { return false; }
+  }
+  // ---- the Overview panel: one row into the Job book ----
+  window.pbJbPanel = function(job) {
+    if (!job || !pbCxDashOn()) return '';
+    const C = pbJbCounts(job), on = pbJbCloseoutOn(job) || !!C.closeout;
+    const L = C.have ? pbJbLines(C, on) : ['Loads with signal'];
+    const none = C.have && !C.issues.open && !C.rework.n && !C.safety.total && !C.closeout && !on;
+    return '<section class="pbx-panel" id="pjCxBook" aria-labelledby="pjCxBookH"><h3 class="pbx-h3" id="pjCxBookH">Job book</h3><div class="pbx-rows flat">'
+      + '<button type="button" class="pbx-row" id="pjCxBookRow" onclick="pbJbOpenJob()"><span class="pbx-row-tx">'
+      + (none ? '<span class="pbx-row-h">Nothing recorded yet</span><span class="pbx-row-s">Issues, rework and safety events</span>'
+        : '<span class="pbx-row-h">' + pbCxE(L[0]) + '</span>' + L.slice(1).map(t => '<span class="pbx-row-s">' + pbCxE(t) + '</span>').join(''))
+      + '</span><span class="pbx-chev" aria-hidden="true">' + pbCxIc('chevron-right') + '</span></button></div></section>';
+  };
+  // ---- opening ----
+  window.pbJbOpenJob = function(kind) { const job = pbPj.job; if (!job) return; const dj = pbCxKnownJob(job.job_number) || {}; window.pbJbOpen(job.job_number, { key: job.job_key, name: dj.project_name || (pbPj.data && pbPj.data.jobsite) || job.jobsite || '', kind, from: 'job' }); };
+  window.pbJbOpen = async function(jobNumber, o) {
+    o = o || {};
+    if (!pbCanOpen('jobBook', { explain: true })) return;
+    const uid = pbArchiveOwnerUid, a = await pbDlyAccFresh(uid);
+    if (!a.manager && !a.foreman) { pbAlert('Only the company account, managers, PMs and foremen keep the job book.', 'Job Book'); return; }
+    const num = String(jobNumber || '').trim(); if (!num) return;
+    await pbJbLoadStore(uid);
+    pbJb.job = { job_number: num, job_key: o.key || pbJbKey(num), name: String(o.name || '') }; pbJb.manager = a.manager; pbJb.from = o.from || 'records';
+    if (a.manager && !(pbMyName && pbMyName.uid === uid && pbMyName.loaded)) pbMyNameLoad().catch(() => null); // the closeout's "who": the account's own name when it has one
+    pbJb.kind = o.kind && PB_JB_KINDS[o.kind] ? o.kind : (pbJb.kind && pbJb.kind !== 'closeout' ? pbJb.kind : 'issue'); pbJb.form = null; pbJb.open = null; pbJb.msg = '';
+    PB_SCREEN_TABS.jobBook = pbJb.from === 'job' ? (pbScreenTab('prodJob') || 'reports') : 'reports';
+    pbGoto('jobBook'); pbJbRender();
+    if (o.prefill) pbJbFormOpen(pbJb.kind, null, o.prefill);
+    pbJbLoad(); pbJbSyncSoon(500);
+  };
+  // Records › Job book (a foreman): his Current job, or the pick of the company's jobs
+  window.pbJbOpenMine = function() {
+    const cur = typeof window.pbCurJobGet === 'function' ? window.pbCurJobGet() : null;
+    if (cur && cur.job_number) { window.pbJbOpen(cur.job_number, { name: cur.name || '', from: 'records' }); return; }
+    const list = typeof window.pbCurJobChoices === 'function' ? window.pbCurJobChoices() : [];
+    if (!list.length) { pbAlert('No jobs are listed on this phone yet. Choose the Current job on Home with signal, then come back.', 'Job Book'); return; }
+    pbShowModal('Which job?', [{ label: 'Cancel' }], 'Job Book');
+    const box = document.createElement('div'); box.className = 'pb-modal-extra'; box.style.cssText = 'max-height:52vh; overflow-y:auto; margin:6px 0 10px;';
+    box.innerHTML = list.map((j, k) => '<button type="button" class="pb-btn ghost small" id="jbPick' + k + '" style="display:block; width:100%; text-align:left; margin:0 0 6px;" data-k="' + k + '">' + escapeHtml('Job ' + j.job_number + (j.name ? ' — ' + j.name : '')) + '</button>').join('');
+    const msg = document.getElementById('pbModalMessage'); if (msg && msg.parentNode) msg.parentNode.insertBefore(box, msg.nextSibling);
+    box.querySelectorAll('[id^="jbPick"]').forEach(b => b.addEventListener('click', () => { const j = list[Number(b.dataset.k)]; pbHideModal(); window.pbJbOpen(j.job_number, { name: j.name || '', from: 'records' }); }));
+  };
+  window.pbJbBack = function() {
+    if (pbJb.form) { pbJbFormCancel(); return; }
+    if (pbJb.open) { const st = pbJb.st; if (st && st.photoWhy && st.photoWhy[pbJb.open]) { delete st.photoWhy[pbJb.open]; pbJbSaveStore(pbJb.uid); } pbJb.open = null; pbJbRender(); return; } // a refused photo's message was seen
+    const job = pbJb.job;
+    pbBackOr(() => {
+      if (pbJb.from === 'job' && job && pbCxDashOn()) window.pbCxOpenJob(job.job_key, 'overview');
+      else if (pbJb.from === 'job' && job) window.pbGotoTab('home');
+      else if (pbJb.from === 'inspJob' || pbJb.from === 'inspMine') { pbGoto(pbJb.from); try { if (pbJb.from === 'inspJob') window.pbInsJobRender(); else window.pbInsMineRender(); } catch (e) {} }
+      else pbOpenArchive();
+    });
+  };
+  // ---- loading the job's list ----
+  async function pbJbLoad() {
+    const uid = pbArchiveOwnerUid, job = pbJb.job; if (!job || !(await pbJbLoadStore(uid))) return;
+    if (!(await pbDlyCanAsk(uid))) { pbJb.msg = navigator.onLine === false ? 'No signal. Showing what this phone has.' : 'Sign in with signal to see the latest.'; pbJbRender(); return; }
+    const gen = ++pbJb.gen; pbJb.busy = true; pbJb.msg = ''; pbJbRender();
+    const r = await pbPermitRpc('pb_prod_job_items', { p_job_number: job.job_number, p_expect_uid: uid }, 30000);
+    if (pbJb.gen !== gen || pbJb.uid !== uid || !pbJb.st) return;
+    pbJb.busy = false;
+    if (r.error || !r.data || !Array.isArray(r.data.items)) { pbJb.msg = pbDlyMissing(r) ? 'The company server isn’t ready for the job book yet.' : pbProdErrText(r) === 'Couldn’t load.' ? 'Couldn’t load. Showing what this phone has.' : pbProdErrText(r); pbJbRender(); return; }
+    // a list read before a save of this phone landed never puts the older copy back (per record: the higher version wins; a record saved after the list was read stays)
+    const prev = ((pbJb.st.jobs[job.job_key] || {}).items) || [], at = Date.parse(r.data.server_at || '') || 0;
+    const items = r.data.items.map(x => { const o = prev.find(y => y.id === x.id); return o && Number(o.version) > Number(x.version) ? o : x; });
+    prev.forEach(o => { if (!items.some(x => x.id === o.id) && at && Date.parse(o.updated_at || '') > at) items.push(o); });
+    pbJb.st.jobs[job.job_key] = { at: Date.now(), items, can: r.data.can_manage === true, job_number: r.data.job_number || job.job_number };
+    if (typeof r.data.can_manage === 'boolean') pbJb.manager = r.data.can_manage;
+    await pbJbSaveStore(uid); pbJbRender(); pbJbPaintJob();
+  }
+  window.pbJbRefresh = function() { pbJbLoad(); pbJbSyncSoon(200); };
+  function pbJbPaintJob() { try { if (pbCurrentScreen === 'prodJob' && typeof window.pbCxJobPaint === 'function') window.pbCxJobPaint(); } catch (e) {} }
+  // ---- sending what is waiting: the record, then its photos; retried until the server answers ----
+  // Review B2: the queue holds one entry per change of a record, in the order made (seq). An entry being sent is never
+  // changed: an edit saved meanwhile becomes the next entry, sent after it on the version it makes (chain), so the answer
+  // to the earlier send can never stand in for the newer edit. Each edit carries the version it was made on (base): a
+  // stale one is refused by the server (pb:changed) instead of overwriting a newer one.
+  const pbJbInflight = new Set(); // cids being sent now (never written to the phone's store)
+  const pbJbServerVersion = (st, q) => { const J = st.jobs[q.jobKey], it = J && Array.isArray(J.items) ? J.items.find(x => x.id === q.id) : null; return it && it.version ? Number(it.version) : null; };
+  const pbJbSendData = (q) => q.statusOnly ? null : q.kind === 'closeout' ? { ticks: Object.keys((q.data && q.data.ticks) || {}).map(k => ({ k, done: !!q.data.ticks[k] })) } : q.data;
+  function pbJbKeepItem(st, q, item) { const J = st.jobs[q.jobKey] || (st.jobs[q.jobKey] = { at: 0, items: [], can: null }); const i = J.items.findIndex(x => x.id === item.id); if (i >= 0) J.items[i] = item; else J.items.unshift(item); }
+  // a refused entry with a later change of the same record waiting behind it: the later one carries both (its photos, its ticks)
+  function pbJbFold(st, q) {
+    const nx = st.queue.find(x => x !== q && x.id === q.id && x.state === 'waiting' && !x.sent && (x.seq || 0) > (q.seq || 0)); if (!nx) return false;
+    nx.chain = false; nx.base = q.base; nx.photos = (q.photos || []).concat(nx.photos || []); nx.at0 = q.at0 || q.savedAt;
+    if (q.kind === 'closeout') nx.data = { ticks: Object.assign({}, q.data && q.data.ticks, nx.data && nx.data.ticks) };
+    else if (nx.statusOnly && !q.statusOnly) { nx.data = q.data; nx.statusOnly = false; }
+    st.queue.splice(st.queue.indexOf(q), 1); return true;
+  }
+  function pbJbSyncSoon(ms) { clearTimeout(pbJbSyncTimer); pbJbSyncTimer = setTimeout(() => { pbJbSync().catch(() => {}); }, ms || 1500); }
+  async function pbJbSync() {
+    const uid = pbArchiveOwnerUid;
+    if (pbJbSyncBusy || !uid || uid === 'shared') return;
+    const st = await pbJbLoadStore(uid); if (!st) return;
+    if (!st.queue.some(q => q.state === 'waiting') || !(await pbDlyCanAsk(uid))) return;
+    pbJbSyncBusy = true;
+    let changed = false, stop = false; const tried = new Set();
+    try {
+      for (const q of st.queue.filter(x => x.state === 'waiting').sort((a, b) => (a.seq || 0) - (b.seq || 0))) {
+        if (pbArchiveOwnerUid !== uid || stop) break;
+        if (st.queue.indexOf(q) < 0 || q.state !== 'waiting' || q.chain) continue; // folded away, or waiting for the change before it
+        tried.add(q.cid);
+        if (!q.sent) {
+          pbJbInflight.add(q.cid); let r;
+          try { r = await pbPermitRpc('pb_prod_job_item_set', { p_job_number: q.jobNumber, p_id: q.id, p_kind: q.kind, p_data: pbJbSendData(q), p_status: q.status, p_expect_uid: uid, p_base_version: q.kind === 'closeout' || q.base == null ? null : q.base }, 45000); }
+          finally { pbJbInflight.delete(q.cid); }
+          const A = pbDlyAnswer(r);
+          if (A.k === 'retry') { if (A.why && q.why !== A.why) { q.why = A.why; changed = true; } stop = true; break; }
+          changed = true;
+          if (A.k !== 'ok' && A.code === 'pb:job_unknown' && Date.now() - (Date.parse(q.at0 || q.savedAt) || 0) < PB_JB_RETRY_H * 3600000) { q.why = 'The company server doesn’t have this job yet (its entries may still be on their way). It is tried again on its own.'; continue; } // Review S8
+          if (A.k !== 'ok') {
+            if (A.d && A.d.item && A.d.item.id) pbJbKeepItem(st, q, A.d.item); // pb:changed: the server's current record, for Discard and the next try
+            q.state = 'refused'; q.code = A.code; q.why = pbJbWhy(A.code, r) + (A.d && A.d.detail ? ' (' + A.d.detail + ')' : '');
+            pbJbFold(st, q); continue;
+          }
+          q.sent = true; q.why = ''; q.code = null;
+          if (A.d.item) {
+            const was = q.id; pbJbKeepItem(st, q, A.d.item);
+            if (A.d.item.id !== was) { const J = st.jobs[q.jobKey]; J.items = J.items.filter(x => x.id !== was || x === A.d.item); st.queue.forEach(x => { if (x.id === was) x.id = A.d.item.id; }); } // another phone's closeout row
+            const nx = st.queue.find(x => x !== q && x.id === q.id && x.chain); if (nx) { nx.chain = false; nx.base = Number(A.d.item.version) || null; } // the next change goes on the version this one made
+          }
+        }
+        while ((q.photos || []).length) {
+          const p = q.photos[0];
+          const r = await pbPermitRpc('pb_prod_job_item_photo_add', { p_id: q.id, p_b64: p.b64, p_sha256: p.sha || null, p_expect_uid: uid }, 90000);
+          const A = pbDlyAnswer(r);
+          if (A.k === 'retry') { if (A.why && q.why !== A.why) { q.why = A.why; changed = true; } stop = true; break; }
+          changed = true;
+          if (A.k !== 'ok' && A.code === 'pb:photo_quota') { q.why = 'The company’s photo limit for today was reached. The photos are sent tomorrow.'; break; } // kept on the phone
+          if (A.k !== 'ok') { q.photos.shift(); (st.photoWhy || (st.photoWhy = {}))[q.id] = pbJbWhy(A.code, r); continue; } // a refused photo is left out; the message stays until it was seen (Review S7)
+          q.photos.shift(); q.why = ''; const J = st.jobs[q.jobKey], it = J ? J.items.find(x => x.id === q.id) : null; if (it && A.d.photo_count != null) it.photo_count = Number(A.d.photo_count);
+        }
+        if (stop) break;
+        if (q.sent && !(q.photos || []).length) { st.queue.splice(st.queue.indexOf(q), 1); changed = true; }
+      }
+    } finally { pbJbSyncBusy = false; }
+    if (changed && pbJb.uid === uid) { await pbJbSaveStore(uid); if (pbCurrentScreen === 'jobBook') pbJbRender(); pbJbPaintJob(); }
+    if (!stop && pbArchiveOwnerUid === uid && st.queue.some(q => q.state === 'waiting' && !q.sent && !q.chain && !tried.has(q.cid))) pbJbSyncSoon(300); // saved while this round was sending
+  }
+  window.addEventListener('online', () => pbJbSyncSoon(4000));
+  setInterval(() => { pbJbSync().catch(() => {}); }, 180000);
+  // ---- saving: on the phone first, then the queue ----
+  // entry: { cid, id, jobNumber, jobKey, kind, data, status, statusOnly, photos, state, why, savedAt }
+  async function pbJbQueue(entry) {
+    const uid = pbArchiveOwnerUid; const st = await pbJbLoadStore(uid);
+    if (!st) { pbAlert('This phone’s saved job book couldn’t be read, so nothing was saved. Try again.', 'Not Saved'); return false; }
+    st.seq = (st.seq || 0) + 1; entry.seq = st.seq; entry.at0 = entry.savedAt;
+    const old = st.queue.find(q => q.id === entry.id && q.state === 'refused'); // a refused one is replaced by the fix, which carries its photos (Review S7) and its ticks
+    if (old) {
+      st.queue.splice(st.queue.indexOf(old), 1); entry.photos = (old.photos || []).concat(entry.photos || []);
+      if (entry.kind === 'closeout') entry.data = { ticks: Object.assign({}, old.data && old.data.ticks, entry.data && entry.data.ticks) };
+      else if (entry.statusOnly && !old.statusOnly) { entry.data = old.data; entry.statusOnly = false; }
+    }
+    const same = st.queue.find(q => q.id === entry.id && q.state === 'waiting' && !q.sent && !pbJbInflight.has(q.cid)); // a second change before the first went: one send — never into one being sent
+    if (same) {
+      if (entry.kind === 'closeout') same.data = { ticks: Object.assign({}, same.data && same.data.ticks, entry.data && entry.data.ticks) };
+      else if (!entry.statusOnly) { same.data = entry.data; same.statusOnly = false; }
+      same.status = entry.status; same.photos = (same.photos || []).concat(entry.photos || []); same.savedAt = entry.savedAt;
+    } else {
+      entry.chain = st.queue.some(q => q.id === entry.id && !q.sent); // the record's earlier change is still on its way: this one goes after it
+      entry.base = entry.chain || entry.kind === 'closeout' ? null : pbJbServerVersion(st, entry);
+      st.queue.push(entry);
+    }
+    if (!(await pbJbSaveStore(uid))) { if (!same) st.queue.splice(st.queue.indexOf(entry), 1); return false; }
+    pbJbSyncSoon(300); pbJbPaintJob();
+    return true;
+  }
+  // who ticked a closeout item, shown until the server answers with its own: the account's name, else the company's name, else "Company account" (never an e-mail)
+  const pbJbMyName = () => { const n = pbMyName && pbMyName.uid === (sbUser && sbUser.id) && pbMyName.name ? String(pbMyName.name) : '', c = (() => { try { return String((sbCachedSubscription && sbCachedSubscription.companyName) || ''); } catch (e) { return ''; } })();
+    return (n && !/@/.test(n) ? n : '') || (c && !/@/.test(c) ? c : '') || 'Company account'; };
+  // Close / Reopen / Remove: the status only; the server keeps its data (Review S4: a phone's older copy never goes back)
+  window.pbJbSetStatus = async function(id, status) {
+    const items = pbJbItems(pbJb.job.job_key) || [], it = items.find(x => x.id === id); if (!it) return;
+    const go = async () => { if (await pbJbQueue({ cid: pbDlyId(), id, jobNumber: pbJb.job.job_number, jobKey: pbJb.job.job_key, kind: it.kind, data: null, statusOnly: true, status, photos: [], state: 'waiting', why: '', savedAt: new Date().toISOString() })) { if (status === 'void') pbJb.open = null; pbJbRender(); } };
+    if (status === 'void') pbConfirm('Remove this ' + PB_JB_KINDS[it.kind].one + '? It leaves the lists and the totals; the company server keeps its history.', go, 'Remove', { no: 'Keep It', yes: 'Remove' });
+    else go();
+  };
+  window.pbJbDiscard = function(cid) { const st = pbJb.st; if (!st) return; const q = st.queue.find(x => x.cid === cid); if (!q) return;
+    pbConfirm('Discard this change? ' + (q.sent ? 'The record was sent; only its photos were not.' : 'It was never sent to the company.'), async () => { st.queue.splice(st.queue.indexOf(q), 1); await pbJbSaveStore(pbJb.uid); pbJb.open = null; pbJbRender(); pbJbPaintJob(); }, 'Discard', { no: 'Keep It', yes: 'Discard' }); };
+  window.pbJbRetry = async function(cid) { const st = pbJb.st; if (!st) return; const q = st.queue.find(x => x.cid === cid); if (!q) return; q.state = 'waiting'; q.why = ''; q.at0 = new Date().toISOString(); await pbJbSaveStore(pbJb.uid); pbJbRender(); pbJbSync(); };
+  // ---- the screen ----
+  const pbJbEl = (id) => document.getElementById(id);
+  const pbJbCan = (kind, it) => { if (pbJb.manager) return true; const K = PB_JB_KINDS[kind]; return !!(K && K.foreman && (!it || (it.mine && it.status === 'open'))); };
+  function pbJbKinds() { const C = pbJbCounts(pbJb.job); const co = pbJbCloseoutOn(pbJb.job) || !!C.closeout || pbJb.kind === 'closeout'; return ['issue', 'rework', 'safety'].concat(co ? ['closeout'] : []); }
+  window.pbJbTab = function(k) { if (!PB_JB_KINDS[k]) return; pbJb.kind = k; pbJb.open = null; pbJb.form = null; pbJbRender(); };
+  window.pbJbRender = function() {
+    const head = pbJbEl('jbHead'), st = pbJbEl('jbStatus'), body = pbJbEl('jbBody'), tabs = pbJbEl('jbTabs'); if (!body) return;
+    const job = pbJb.job; if (!job) { body.innerHTML = ''; return; }
+    head.innerHTML = '<h2 class="pbp-h">' + escapeHtml(pbProdJobLabel(job.job_number)) + '</h2>' + (job.name ? '<p class="pbp-sub">' + escapeHtml(job.name) + '</p>' : '');
+    const C = pbJbCounts(job), J = pbJb.st && pbJb.st.jobs[job.job_key];
+    const n = { issue: C.issues.open, rework: C.rework.n, safety: C.safety.total, closeout: 0 }; // the closeout's count is its own heading ("3 of 7 done")
+    tabs.innerHTML = pbJbKinds().map(k => '<button type="button" role="tab" class="pbx-tab" id="jbTab_' + k + '" aria-selected="' + (pbJb.kind === k) + '" aria-controls="jbBody" onclick="pbJbTab(\'' + k + '\')">' + PB_JB_KINDS[k].name + (n[k] ? '<span class="pbx-badge">' + n[k] + '</span>' : '') + '</button>').join('');
+    tabs.hidden = !!pbJb.form; { const rb = pbJbEl('jbRefreshBtn'); if (rb) rb.parentNode.hidden = !!pbJb.form; } // no Refresh under a form being typed
+    const q = pbJb.st ? pbJb.st.queue.filter(x => x.jobKey === job.job_key) : [], waiting = q.filter(x => x.state === 'waiting').length, refused = q.filter(x => x.state === 'refused').length;
+    st.textContent = pbJb.form ? '' : pbJb.busy ? 'Loading…' : [pbJb.msg || (J && J.at ? (navigator.onLine === false ? 'Copy from ' : 'Updated ') + pbProdTimeText(J.at) + '.' : ''), waiting ? pbCxN(waiting, 'change') + ' waiting to send.' : '', refused ? pbCxN(refused, 'change') + ' not accepted.' : ''].filter(Boolean).join(' ');
+    if (pbJb.form) { body.innerHTML = pbJbFormHtml(); pbJbFormWire(); return; }
+    if (pbJb.kind === 'closeout') { body.innerHTML = pbJbCloseoutHtml(); return; }
+    const items = (pbJbItems(job.job_key) || []).filter(x => x.kind === pbJb.kind), K = PB_JB_KINDS[pbJb.kind];
+    if (pbJb.open) { const it = items.find(x => x.id === pbJb.open); if (it) { body.innerHTML = pbJbDetailHtml(it); return; } pbJb.open = null; }
+    const open = items.filter(x => x.status === 'open'), closed = items.filter(x => x.status === 'closed');
+    let h = pbJbCan(pbJb.kind) ? '<div class="pb-btn-wrap pbd-bw"><button type="button" class="pb-btn" id="jbAddBtn" onclick="pbJbFormOpen(\'' + pbJb.kind + '\')">' + K.add + '</button></div>' : '';
+    if (!pbJbItems(job.job_key)) h += '<p class="pbd-dim" id="jbNoData">' + (pbJb.busy ? '' : 'Loads with signal.') + '</p>';
+    else if (!items.length) h += '<p class="pbd-dim" id="jbNone">' + escapeHtml(pbJb.kind === 'issue' ? 'No issues on this job.' : pbJb.kind === 'rework' ? 'No rework on this job.' : 'No safety events on this job.') + '</p>';
+    else {
+      if (pbJb.kind === 'rework') h += '<p class="pbjb-total" id="jbTotal">' + escapeHtml(pbJbH(C.rework.hours) + ' of rework in ' + pbCxN(C.rework.n, 'item') + '. Not in the production totals.') + '</p>';
+      h += '<div class="pbx-rows flat pbjb-list" id="jbList">' + open.map(x => pbJbRowHtml(x)).join('') + '</div>';
+      if (closed.length) h += '<details class="pb-more pbjb-closed" id="jbClosed"><summary>Closed (' + closed.length + ')</summary><div class="pbx-rows flat">' + closed.map(x => pbJbRowHtml(x)).join('') + '</div></details>';
+    }
+    body.innerHTML = h;
+  };
+  function pbJbState(it) {
+    const q = it._q, pw = pbJb.st && pbJb.st.photoWhy && pbJb.st.photoWhy[it.id];
+    if (!q) return pw ? '<span class="pbx-tag warn">Photo not accepted</span>' : '';
+    return '<span class="pbx-tag ' + (q.state === 'refused' ? 'warn' : '') + '">' + escapeHtml(q.state === 'refused' ? 'Not accepted' : q.sent ? 'Photos waiting to send' : 'Waiting to send') + '</span>';
+  }
+  function pbJbRowHtml(x) {
+    const d = x.data || {}, k = x.kind; let h1 = '', h2 = '';
+    if (k === 'issue') { h1 = d.title || 'Issue'; h2 = [d.owner || 'Other', 'raised ' + pbProdDayText(d.raised) + (x.status === 'open' && pbJbDays(d.raised) ? ' (' + pbCxN(pbJbDays(d.raised), 'day') + ')' : ''), x.status === 'closed' ? 'closed ' + pbProdDayText(x.closed_at || x.updated_at) : '', x.photo_count ? pbCxN(x.photo_count, 'photo') : ''].filter(Boolean).join(' · '); } /* "Blocking" is the row's tag: said once */
+    else if (k === 'rework') { h1 = pbJbH(d.hours) + (d.crew ? ' · crew of ' + d.crew : ''); h2 = [pbProdDayText(d.date), d.insp_label ? 'after ' + d.insp_label : '', d.note || ''].filter(Boolean).join(' · '); }
+    else if (k === 'safety') { h1 = (d.kind || 'Safety event') + ' · ' + pbProdDayText(d.date) + (d.time ? ' ' + d.time : ''); h2 = [d.what || '', x.photo_count ? pbCxN(x.photo_count, 'photo') : ''].filter(Boolean).join(' · '); }
+    return '<button type="button" class="pbx-row" id="jbRow_' + escapeHtml(x.id) + '" onclick="pbJbOpenItem(' + escapeHtml(JSON.stringify(x.id)) + ')"><span class="pbx-row-tx"><span class="pbx-row-h">' + escapeHtml(h1) + (d.blocking && x.status === 'open' ? '<span class="pbx-tag warn">' + pbCxIc('warn') + 'Blocking</span>' : '') + '</span>'
+      + (h2 ? '<span class="pbx-row-s">' + escapeHtml(h2) + '</span>' : '') + (pbJbState(x) ? '<span class="pbx-row-flags">' + pbJbState(x) + '</span>' : '') + '</span><span class="pbx-chev" aria-hidden="true">' + pbCxIc('chevron-right') + '</span></button>';
+  }
+  window.pbJbOpenItem = function(id) { pbJb.open = id; pbJbRender(); try { document.getElementById('jbBody').scrollIntoView({ block: 'start' }); } catch (e) {} };
+  function pbJbDetailHtml(it) {
+    const K = PB_JB_KINDS[it.kind], d = it.data || {}, q = it._q;
+    const val = (f) => { const v = d[f.k]; if (v === null || v === undefined || v === '') return ''; if (f.t === 'yesno') return v ? 'Yes' : 'No'; if (f.t === 'date') return pbProdDayText(v); if (f.t === 'num') return pbJbH(v); return String(v); };
+    let h = '<div class="pbd-card pbjb-detail" id="jbDetail"><div class="pbd-ihead"><strong>' + escapeHtml(it.kind === 'issue' ? d.title || 'Issue' : it.kind === 'rework' ? 'Rework · ' + pbJbH(d.hours) : (d.kind || 'Safety event')) + '</strong>'
+      + (it.kind === 'issue' ? '<span class="pb-chip ' + (it.status === 'closed' ? 'calculated' : d.blocking ? 'overdue' : 'notsent') + ' pbd-chip">' + (it.status === 'closed' ? 'Closed' : d.blocking ? 'Open · blocking' : 'Open') + '</span>' : '') + pbJbState(it) + '</div>';
+    h += '<dl class="pbjb-dl">' + K.fields.filter(f => !(it.kind === 'issue' && f.k === 'title') && !(it.kind === 'rework' && f.k === 'hours') && !(it.kind === 'safety' && f.k === 'kind')).map(f => { const v = val(f); return v ? '<div><dt>' + escapeHtml(f.l) + '</dt><dd>' + escapeHtml(v) + '</dd></div>' : ''; }).join('')
+      + (d.insp_label ? '<div><dt>After the failed inspection</dt><dd>' + escapeHtml(d.insp_label) + '</dd></div>' : '') + '</dl>';
+    const np = Number(it.photo_count) || 0, pend = it._photos || [], pwhy = pbJb.st && pbJb.st.photoWhy ? pbJb.st.photoWhy[it.id] : '';
+    if (K.photos && (np || pend.length)) h += '<p class="pbd-dim">' + escapeHtml(pbCxN(np + pend.length, 'photo')) + (pend.length ? ' (' + pend.length + ' not sent yet)' : '') + (np ? ' <button type="button" class="pb-btn ghost small pbd-ph" onclick="pbJbViewPhotos(' + escapeHtml(JSON.stringify(it.id)) + ',' + np + ')">View</button>' : '') + '</p>'
+      + (pend.length ? '<div class="pbd-thumbs">' + pend.map((p, i) => '<span class="pbd-thumb"><img src="data:image/jpeg;base64,' + p.b64 + '" alt="Photo ' + (np + i + 1) + ', not sent yet"></span>').join('') + '</div>' : '');
+    h += '<p class="pbd-dim">' + escapeHtml((it.by === 'you' ? 'Added by you' : 'Added by ' + (it.by || 'the office')) + ' · ' + pbProdTimeText(it.created_at) + (it.updated_by ? ' · changed by ' + it.updated_by + ' ' + pbProdTimeText(it.updated_at) : '') + (it.closed_at && it.status === 'closed' ? ' · closed ' + pbProdTimeText(it.closed_at) : '')) + '</p>';
+    if (q && q.state === 'refused') h += '<p class="pbd-pend" id="jbWhy"><strong>Not accepted:</strong> ' + escapeHtml(q.why || '') + '</p>';
+    else if (q && q.why) h += '<p class="pbd-pend" id="jbWhy">' + escapeHtml(q.why) + '</p>';
+    if (pwhy) h += '<p class="pbd-pend" id="jbPhotoWhy">' + escapeHtml('A photo was not accepted: ' + pwhy) + '</p>';
+    const acts = [];
+    if (q && q.state === 'refused') { if (q.code !== 'pb:changed') acts.push('<button type="button" class="pb-btn secondary small" id="jbRetry" onclick="pbJbRetry(' + escapeHtml(JSON.stringify(q.cid)) + ')">Try Sending Again</button>'); acts.push('<button type="button" class="pb-btn ghost small" id="jbDiscard" onclick="pbJbDiscard(' + escapeHtml(JSON.stringify(q.cid)) + ')">Discard the Change</button>'); }
+    if (pbJbCan(it.kind, it)) acts.push('<button type="button" class="pb-btn secondary small" id="jbEdit" onclick="pbJbFormOpen(\'' + it.kind + '\',' + escapeHtml(JSON.stringify(it.id)) + ')">' + (q && q.state === 'refused' ? 'Fix and Resend' : 'Edit') + '</button>');
+    if (pbJb.manager && K.close) acts.push('<button type="button" class="pb-btn small" id="jbClose" onclick="pbJbSetStatus(' + escapeHtml(JSON.stringify(it.id)) + ',\'' + (it.status === 'closed' ? 'open' : 'closed') + '\')">' + (it.status === 'closed' ? K.reopen : K.close) + '</button>');
+    if (pbJb.manager) acts.push('<button type="button" class="pb-btn ghost small" id="jbRemove" onclick="pbJbSetStatus(' + escapeHtml(JSON.stringify(it.id)) + ',\'void\')">Remove</button>');
+    if (acts.length) h += '<div class="pbd-acts">' + acts.join('') + '</div>';
+    if (Array.isArray(it.history) && it.history.length > 1) h += '<details class="pb-more pbd-hist"><summary>History (' + it.history.length + ')</summary><ul>' + it.history.map(v => '<li>v' + v.version + ' · ' + escapeHtml(v.status) + ' · ' + escapeHtml(v.by || '—') + ', ' + escapeHtml(pbProdTimeText(v.at)) + '</li>').join('') + '</ul></details>';
+    return h + '</div><div class="pb-btn-wrap pbd-bw"><button type="button" class="pb-btn ghost" id="jbDetailBack" onclick="pbJbBack()">Back to ' + K.name + '</button></div>';
+  }
+  window.pbJbViewPhotos = async function(id, n) {
+    const uid = pbArchiveOwnerUid; if (!(await pbDlyCanAsk(uid))) { pbAlert('Photos load from the company server. Try again with signal.', 'Photos'); return; }
+    const out = [];
+    for (let k = 1; k <= Math.min(PB_JB_PHOTOS, n); k++) { const r = await pbPermitRpc('pb_prod_job_item_photo', { p_id: id, p_n: k, p_expect_uid: uid }, 30000); if (r.data && r.data.ok) out.push(r.data); }
+    const w = pbJbEl('pbdPhotoView') || (() => { const d = document.createElement('div'); d.id = 'pbdPhotoView'; d.className = 'pbd-photoview'; document.body.appendChild(d); return d; })();
+    w.innerHTML = '<div class="pbd-pvbox" role="dialog" aria-label="Photos"><button type="button" class="pb-btn secondary" onclick="document.getElementById(\'pbdPhotoView\').hidden=true">Close</button>'
+      + (out.length ? out.map((p, i) => '<figure><img alt="Photo ' + (i + 1) + '" src="data:image/jpeg;base64,' + p.b64 + '"><figcaption>Photo ' + (i + 1) + ' · received ' + escapeHtml(pbDlyTimeIn(p.received_at)) + '</figcaption></figure>').join('') : '<p>No photos could be loaded.</p>') + '</div>';
+    w.hidden = false;
+  };
+  // ---- the form: one component, the kind's fields ----
+  window.pbJbFormOpen = function(kind, id, prefill) {
+    const K = PB_JB_KINDS[kind]; if (!K || !pbJb.job) return;
+    const it = id ? (pbJbItems(pbJb.job.job_key) || []).find(x => x.id === id) : null;
+    if (id && !it) return;
+    if (!pbJbCan(kind, it)) { pbAlert(pbJbWhy('pb:not_company_account'), 'Job Book'); return; }
+    const v = Object.assign({}, it ? it.data : {}, it ? {} : (prefill || {}));
+    if (!it) K.fields.forEach(f => { if (f.t === 'date' && !v[f.k]) v[f.k] = pbJbToday(); if (f.t === 'pick' && !v[f.k] && !f.req && f.opts) v[f.k] = f.opts[f.opts.length - 1]; });
+    if (!it && kind === 'safety' && !v.time) { const d = new Date(); v.time = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+    pbJb.kind = kind; pbJb.form = { kind, id: it ? it.id : pbDlyId(), it, v, photos: [], err: '', status: it ? it.status : 'open' }; pbJb.open = null;
+    pbJbRender();
+    setTimeout(() => { const f = pbJbEl('jbf_' + K.fields[0].k); if (f) f.focus({ preventScroll: true }); }, 60);
+  };
+  function pbJbFormHtml() {
+    const F = pbJb.form, K = PB_JB_KINDS[F.kind], v = F.v;
+    let h = '<h2 class="pb-h2 pbd-h2" id="jbFormHead">' + escapeHtml((F.it ? 'Edit ' : 'New ') + K.one) + '</h2>';
+    if (K.note) h += '<p class="pbd-dim" id="jbFormNote">' + escapeHtml(K.note) + '</p>';
+    if (v.insp_label) h += '<p class="pbd-dim" id="jbFormInsp">' + escapeHtml('After the failed ' + v.insp_label) + '</p>';
+    const two = [];
+    K.fields.forEach(f => {
+      const id = 'jbf_' + f.k, lab = '<label for="' + id + '">' + escapeHtml(f.l) + (f.req || f.t === 'pick' || f.t === 'date' ? '' : ' <span class="pbx-opt">(optional)</span>') + '</label>', val = v[f.k] === null || v[f.k] === undefined ? '' : v[f.k];
+      let inp = '';
+      if (f.t === 'text') inp = '<input type="text" id="' + id + '" maxlength="' + (f.max || 120) + '" autocomplete="off" value="' + escapeHtml(String(val)) + '"' + (f.ph ? ' placeholder="' + escapeHtml(f.ph) + '"' : '') + '>';
+      else if (f.t === 'textarea') inp = '<textarea id="' + id + '" rows="3" maxlength="' + (f.max || 2000) + '"' + (f.ph ? ' placeholder="' + escapeHtml(f.ph) + '"' : '') + '>' + escapeHtml(String(val)) + '</textarea>';
+      else if (f.t === 'pick') inp = '<select id="' + id + '">' + (f.none ? '<option value="">' + escapeHtml(f.none) + '</option>' : '') + f.opts.map(o => '<option value="' + escapeHtml(o) + '"' + (val === o ? ' selected' : '') + '>' + escapeHtml(o) + '</option>').join('') + '</select>';
+      else if (f.t === 'date') inp = '<input type="date" id="' + id + '" value="' + escapeHtml(String(val)) + '">';
+      else if (f.t === 'time') inp = '<input type="time" id="' + id + '" value="' + escapeHtml(String(val)) + '">';
+      else if (f.t === 'num') inp = '<input type="text" inputmode="decimal" id="' + id + '" maxlength="8" autocomplete="off" value="' + escapeHtml(String(val)) + '"' + (f.ph ? ' placeholder="' + escapeHtml(f.ph) + '"' : '') + '>';
+      else if (f.t === 'int') inp = '<input type="text" inputmode="numeric" id="' + id + '" maxlength="3" autocomplete="off" value="' + escapeHtml(String(val)) + '">';
+      else if (f.t === 'yesno') { h += '<label class="pbd-check" for="' + id + '"><input type="checkbox" id="' + id + '"' + (val === true ? ' checked' : '') + '> ' + escapeHtml(f.l) + '</label>'; return; }
+      const fh = '<div class="pb-field">' + lab + inp + '</div>';
+      if (f.t === 'date' || f.t === 'time' || f.t === 'num' || f.t === 'int') two.push(fh); else { if (two.length) { h += '<div class="pbd-two">' + two.join('') + '</div>'; two.length = 0; } h += fh; }
+    });
+    if (two.length) h += '<div class="pbd-two">' + two.join('') + '</div>';
+    if (K.photos) { const have = F.it ? Number(F.it.photo_count) || 0 : 0;
+      h += '<div class="pb-section"><div class="pb-tag">Photos' + (have ? ' (' + have + ' already on the record)' : '') + '</div><div class="pb-body"><div id="jbPhotos" class="pbd-thumbs"></div>'
+        + '<input type="file" accept="image/*" multiple id="jbPhotoInput" aria-label="Add photo" style="display:none;" onchange="pbJbPhotoPicked(this)">'
+        + '<div class="pb-btn-row"><button type="button" class="pb-btn secondary" id="jbPhotoBtn" onclick="document.getElementById(\'jbPhotoInput\').click()">Add Photo</button></div></div></div>'; }
+    h += '<p id="jbFormErr" class="pb-rpt-status" role="alert">' + escapeHtml(F.err || '') + '</p>';
+    h += '<div class="pb-btn-wrap pbd-bw"><button type="button" class="pb-btn" id="jbSaveBtn" onclick="pbJbFormSave()">' + (F.it ? 'Save Changes' : 'Save') + '</button></div><div class="pb-btn-wrap pbd-bw"><button type="button" class="pb-btn ghost" id="jbCancelBtn" onclick="pbJbFormCancel()">Cancel</button></div>';
+    return h;
+  }
+  function pbJbFormWire() { pbJbPhotosRender(); const b = pbJbEl('jbBody'); if (b && !b._jbWired) { b._jbWired = true; const clr = () => { if (pbJb.form && pbJb.form.err) { pbJb.form.err = ''; const e = pbJbEl('jbFormErr'); if (e) e.textContent = ''; } }; b.addEventListener('input', clr); b.addEventListener('change', clr); } } // a fixed field clears the old message
+  function pbJbFormRead() {
+    const F = pbJb.form, K = PB_JB_KINDS[F.kind]; if (!F) return;
+    K.fields.forEach(f => { const el = pbJbEl('jbf_' + f.k); if (!el) return; F.v[f.k] = f.t === 'yesno' ? !!el.checked : String(el.value || '').trim(); });
+  }
+  function pbJbPhotosRender() {
+    const w = pbJbEl('jbPhotos'), F = pbJb.form; if (!w || !F) return;
+    w.innerHTML = F.photos.map((p, i) => '<span class="pbd-thumb"><img src="data:image/jpeg;base64,' + p.b64 + '" alt="Photo ' + (i + 1) + '"><button type="button" class="pb-btn ghost small" onclick="pbJbPhotoRemove(' + i + ')" aria-label="Remove photo ' + (i + 1) + '">Remove</button></span>').join('');
+    const have = F.it ? Number(F.it.photo_count) || 0 : 0, b = pbJbEl('jbPhotoBtn'); if (b) b.disabled = have + F.photos.length >= PB_JB_PHOTOS;
+  }
+  window.pbJbPhotoRemove = function(i) { if (pbJb.form) { pbJb.form.photos.splice(i, 1); pbJbPhotosRender(); } };
+  window.pbJbPhotoPicked = async function(input) {
+    const files = Array.from((input && input.files) || []), F = pbJb.form; if (!F) return;
+    const have = F.it ? Number(F.it.photo_count) || 0 : 0;
+    for (const f of files) {
+      if (have + F.photos.length >= PB_JB_PHOTOS) { pbAlert('At most ' + PB_JB_PHOTOS + ' photos on one record.', 'Photos'); break; }
+      const b64 = await pbDlyShrink(f); if (!b64) { pbAlert('That photo couldn’t be read.', 'Photo'); continue; }
+      let sha = null; try { sha = pbSha256Bytes(Uint8Array.from(atob(b64), ch => ch.charCodeAt(0))); } catch (e) {}
+      F.photos.push({ b64, sha });
+    }
+    try { input.value = ''; } catch (e) {}
+    pbJbPhotosRender();
+  };
+  window.pbJbFormCancel = function() {
+    const F = pbJb.form; if (!F) return;
+    pbJbFormRead();
+    const typed = !F.it && (F.photos.length || PB_JB_KINDS[F.kind].fields.some(f => (f.t === 'text' || f.t === 'textarea' || f.t === 'num' || f.t === 'int') && F.v[f.k]));
+    const go = () => { pbJb.form = null; pbJbRender(); };
+    if (typed) pbConfirm('Leave without saving? What you typed is lost.', go, 'Leave', { no: 'Stay', yes: 'Leave' }); else go();
+  };
+  window.pbJbFormSave = async function() {
+    const F = pbJb.form, job = pbJb.job; if (!F || !job) return;
+    pbJbFormRead();
+    const K = PB_JB_KINDS[F.kind], v = F.v, say = (t) => { F.err = t; const e = pbJbEl('jbFormErr'); if (e) e.textContent = t; };
+    for (const f of K.fields) {
+      const x = v[f.k];
+      if (f.req && (x === '' || x === null || x === undefined)) { say(f.t === 'pick' ? 'Pick ' + f.l.toLowerCase() + '.' : f.l + ' is required.'); const el = pbJbEl('jbf_' + f.k); if (el) el.focus(); return; }
+      if (f.t === 'num' && x !== '') { const n = Number(String(x).replace(',', '.')); if (!isFinite(n) || n <= 0 || n > 99999) { say(f.l + ': a number of hours above 0.'); return; } v[f.k] = Math.round(n * 100) / 100; }
+      if (f.t === 'int' && x !== '') { const n = Number(x); if (!Number.isInteger(n) || n < 0 || n > 999) { say(f.l + ': a whole number.'); return; } v[f.k] = n; }
+      if (f.t === 'date' && x && !/^\d{4}-\d{2}-\d{2}$/.test(x)) { say(f.l + ' isn’t a date.'); return; }
+      if (f.t === 'date' && x && x > pbJbToday()) { say(f.l + ' is in the future.'); return; }
+      if ((f.t === 'text' || f.t === 'textarea') && x === '') delete v[f.k];
+      if ((f.t === 'num' || f.t === 'int' || f.t === 'time') && x === '') delete v[f.k];
+    }
+    const data = {}; Object.keys(v).forEach(k => { if (v[k] !== '' && v[k] !== null && v[k] !== undefined) data[k] = v[k]; });
+    const ok = await pbJbQueue({ cid: pbDlyId(), id: F.id, jobNumber: job.job_number, jobKey: job.job_key, kind: F.kind, data, status: F.status, photos: F.photos.slice(), state: 'waiting', why: '', savedAt: new Date().toISOString() });
+    if (!ok) return;
+    pbJb.form = null; pbJb.open = F.it ? F.id : null;
+    pbJbRender();
+    const st = pbJbEl('jbStatus'); if (st) st.textContent = navigator.onLine === false ? 'Saved on this phone. It is sent to the company as soon as there is signal.' : 'Saved. Sending it to the company now.';
+  };
+  // ---- the closeout checklist: one record per job, the office ticks it ----
+  function pbJbCloseoutHints() {
+    const H = {};
+    try { if (typeof window.pbInspSummary === 'function' && pbPj.job && pbJb.job && pbPj.job.job_key === pbJb.job.job_key) { const S = window.pbInspSummary(); if (S.loaded) H.inspections = S.expected || S.done ? S.done + ' of ' + S.expected + ' done' : 'None set up'; } } catch (e) {}
+    try { if (typeof pbRoFor === 'function' && pbJb.job) { const O = pbRoFor(pbArchiveOwnerUid), n = (O.list || []).filter(x => String(x.job_key || '').toLowerCase() === pbJb.job.job_key || String(x.job_number || '').trim().toLowerCase() === pbJb.job.job_number.toLowerCase()).length; if (O.list) H.asbuilts = n ? pbCxN(n, 'run report') + ' on this job' : 'No run reports on this job yet'; } } catch (e) {}
+    return H;
+  }
+  function pbJbCloseoutHtml() {
+    const items = pbJbItems(pbJb.job.job_key) || [], rec = items.find(x => x.kind === 'closeout'), L = rec && Array.isArray(rec.data.items) ? rec.data.items : [], H = pbJbCloseoutHints();
+    const done = L.filter(i => i.done).length, on = pbJbCloseoutOn(pbJb.job);
+    let h = '<p class="pbjb-total" id="jbCoHead">' + escapeHtml(done + ' of ' + PB_JB_CLOSEOUT.length + ' done' + (rec && rec._q ? ' · ' + (rec._q.state === 'refused' ? 'not accepted: ' + (rec._q.why || '') : 'waiting to send') : '')) + '</p>'
+      + (on || rec ? '' : '<p class="pbd-dim">The checklist is for a job at 100 % or past its end date.</p>');
+    h += '<div class="pbd-card pbjb-co" id="jbCoList">' + PB_JB_CLOSEOUT.map(([k, name]) => { const it = L.find(i => i.k === k) || {}, hint = H[k];
+      return '<label class="pbd-check pbjb-cochk" for="jbco_' + k + '"><input type="checkbox" id="jbco_' + k + '"' + (it.done ? ' checked' : '') + (pbJb.manager ? '' : ' disabled') + ' onchange="pbJbCloseoutTick(\'' + k + '\', this.checked)"><span class="pbjb-cotx"><span>' + escapeHtml(name) + '</span>'
+        + '<span class="pbd-dim">' + escapeHtml(it.done ? (it.by ? it.by + ' · ' : '') + pbProdTimeText(it.at) : hint || 'Not yet') + '</span></span></label>'; }).join('') + '</div>';
+    if (!pbJb.manager) h += '<p class="pbd-dim">The office ticks these.</p>';
+    return h;
+  }
+  window.pbJbCloseoutTick = async function(k, on) {
+    const job = pbJb.job; if (!job || !pbJb.manager) return;
+    const items = pbJbItems(job.job_key) || [], rec = items.find(x => x.kind === 'closeout');
+    // Review S2: only this item goes ({k, done}); the server merges it into the stored list and stamps who and when
+    const ok = await pbJbQueue({ cid: pbDlyId(), id: rec ? rec.id : pbDlyId(), jobNumber: job.job_number, jobKey: job.job_key, kind: 'closeout', data: { ticks: { [k]: !!on } }, status: 'open', photos: [], state: 'waiting', why: '', savedAt: new Date().toISOString() });
+    if (ok) pbJbRender(); else { const el = pbJbEl('jbco_' + k); if (el) el.checked = !on; }
+  };
+  // ---- a failed inspection: "Add rework" on its card (the company's job page, the foreman's list) ----
+  window.pbJbReworkBtn = function(i, pend) {
+    try {
+      const failed = i && (i.last_result === 'fail' || (Array.isArray(pend) && pend.some(c => c.result === 'fail')));
+      if (!failed || i.status === 'canceled') return '';
+      const a = pbDlyAcc(pbArchiveOwnerUid); if (!a.manager && !a.foreman) return '';
+      return '<div class="pbd-acts"><button type="button" class="pb-btn ghost small" id="jbRework_' + escapeHtml(i.id) + '" onclick="pbJbReworkFor(' + escapeHtml(JSON.stringify(i.id)) + ')">Add Rework</button></div>';
+    } catch (e) { return ''; }
+  };
+  window.pbJbReworkFor = function(itemId) {
+    const it = (pbDly.st && pbDly.st.items[itemId]) || (pbInsJob.data && (pbInsJob.data.items || []).find(x => x.id === itemId)) || (pbInsMine.data && (pbInsMine.data.items || []).find(x => x.id === itemId)) || (pbCxInsp.jobs[pbPj.job && pbPj.job.job_key] && (pbCxInsp.jobs[pbPj.job.job_key].items || []).find(x => x.id === itemId));
+    if (!it) return;
+    const name = pbDlyKindName(it.kind, it.kind_detail), where = (() => { try { return pbDlyWhere(it); } catch (e) { return ''; } })();
+    const num = it.job_number || (pbCurrentScreen === 'inspJob' && pbInsJob.job ? pbInsJob.job.job_number : '') || (pbPj.job ? pbPj.job.job_number : ''); if (!num) return;
+    const job = pbPj.job && pbPj.job.job_number && pbJbKey(pbPj.job.job_number) === pbJbKey(num) ? pbPj.job : null;
+    const from = pbCurrentScreen === 'prodJob' ? 'job' : (pbCurrentScreen === 'inspJob' || pbCurrentScreen === 'inspMine') ? pbCurrentScreen : 'records';
+    window.pbJbOpen(num, { key: job ? job.job_key : pbJbKey(num), name: it.jobsite || (job && job.jobsite) || (pbInsJob.job && pbJbKey(pbInsJob.job.job_number) === pbJbKey(num) ? pbInsJob.job.jobsite : '') || '', kind: 'rework', from, prefill: { insp_id: it.id, insp_label: name + (where ? ' · ' + where : ''), date: pbJbToday() } });
+  };
+  PB_CONTRACTOR_SCREENS.push('jobBook'); PB_SCREEN_TABS.jobBook = 'reports';
+  // Records › Job book: a foreman's row (the office opens the job book from the job's Overview)
+  function pbJbShowRow() { const b = document.getElementById('archiveJobBookBtn'); if (b) b.style.display = pbDlyAcc(pbArchiveOwnerUid).foreman ? '' : 'none'; }
+  const pbJbOrigShowRows = pbProdShowRows;
+  pbProdShowRows = function() { const r = pbJbOrigShowRows.apply(this, arguments); try { pbJbShowRow(); } catch (e) {} return r; };
+  const pbJbOrigOpenArchive = window.pbOpenArchive;
+  window.pbOpenArchive = function() { const r = pbJbOrigOpenArchive.apply(this, arguments); try { pbJbShowRow(); } catch (e) {} return r; };
+  window.__pbJbDebug = () => ({ uid: pbJb.uid, job: pbJb.job, kind: pbJb.kind, form: !!pbJb.form, open: pbJb.open, queue: pbJb.st ? pbJb.st.queue.map(q => ({ id: q.id, kind: q.kind, state: q.state, sent: !!q.sent, photos: (q.photos || []).length, why: q.why })) : null, jobs: pbJb.st ? Object.keys(pbJb.st.jobs) : null, counts: pbJb.job ? pbJbCounts(pbJb.job) : null, me: pbJbMyName(), acc: (() => { try { const a = pbProdAccMem.get(pbArchiveOwnerUid); return a ? { manager: a.manager, member: a.member } : null; } catch (e) { return 'err'; } })(), sub: (() => { try { return sbCachedSubscription ? { n: sbCachedSubscription.companyName || null, r: sbCachedSubscription.companyRole || null } : null; } catch (e) { return 'err ' + e.message; } })() });
+  // ================= end feat_jobbook =================
 
   pbRunScreenHooks(pbCurrentScreen, false); // UX batch 2: Home is shown by the markup at start-up, not by pbGoto
   const pbBootGuard = setTimeout(() => {
