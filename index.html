@@ -4117,7 +4117,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div class="pb-tag">Log In</div>
       <div class="pb-body">
         <div class="pb-field"><label>Email</label><input type="email" enterkeyhint="next" id="loginEmail" autocomplete="username"></div>
-        <div class="pb-field"><label>Password</label><input type="password" enterkeyhint="done" id="loginPassword" autocomplete="off"></div>
+        <div class="pb-field"><label>Password</label><input type="password" enterkeyhint="go" id="loginPassword" autocomplete="current-password"></div>
         <button type="button" class="pb-btn ghost small" id="forgotPwLink" onclick="pbToggleForgotPassword()">Forgot password?</button>
       </div>
     </div>
@@ -5838,10 +5838,10 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-field">
           <label for="archiveFilterPeriod">Time period</label>
           <select id="archiveFilterPeriod" onchange="renderArchiveList()">
-            <option value="all">All time</option>
+            <option value="all">All Time</option>
             <option value="today">Today</option>
-            <option value="week">Last 7 days</option>
-            <option value="month">Last 31 days</option>
+            <option value="week">Last 7 Days</option>
+            <option value="month">Last 31 Days</option>
           </select>
         </div>
         <div class="pb-field">
@@ -5922,7 +5922,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     </div>
     <!-- Batch 4 (R3): reports go through the app (no email). Anonymous: no name, no account, no exact time. -->
     <div class="pb-info" id="riAnonWarn">
-      <strong class="pb-ri-anonline">Management won&rsquo;t see your name, your account or the exact time. What you write or photograph may still show who you are. It goes out a few minutes after you send it and reaches them at the end of that hour. For anything urgent, call.</strong>
+      <strong class="pb-ri-anonline">Management won&rsquo;t see your name, your account or the exact time. What you write or photograph may still show who you are. It goes out a few minutes after you send it and reaches them at the end of that hour.</strong>
       <details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>About anonymous reports</span></summary><span>An anonymous report goes through the app with no login attached. Your company sees &ldquo;Anonymous&rdquo; and only the hour it was sent &mdash; never your name, your account or the exact time &mdash; and nothing stored with the report links it to you. For your privacy it leaves this phone on its own a few minutes after the app&rsquo;s other traffic (usually within 15 minutes while the app is open), and reaches management at the end of that hour. Management can reply in the app; you read replies in My Management Reports and stay anonymous. What is still true: the app&rsquo;s hosting service (Supabase) keeps request logs for 1 to 7 days &mdash; the internet address, the phone and browser type, and the time of every request. Only the app owner can see those logs, and with them could match an anonymous request to this phone. What you write, and what your photos show, can also give you away. Your phone keeps your own copy and the secret key for reading replies.</span></details>
     </div>
     <div class="pb-field" id="riNameWrap" style="padding:0 16px;">
@@ -6348,8 +6348,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         </div>
         <label class="pbd-check" id="icCloseWrap" hidden><input type="checkbox" id="icClose"> Close this item with no retest (otherwise it stays open for the retest)</label>
       </div></div>
-      <div class="pb-field"><label for="icInspector">Inspector&rsquo;s name</label><input type="text" id="icInspector" maxlength="120" autocomplete="off"></div>
-      <div class="pb-field"><label for="icAgency">Agency or company</label><input type="text" id="icAgency" maxlength="160" autocomplete="off" placeholder="e.g. City of Springfield, Acme Testing Labs"></div>
+      <div class="pb-field"><label for="icInspector">Inspector&rsquo;s name</label><input type="text" id="icInspector" maxlength="120" autocomplete="off" autocapitalize="words"></div>
+      <div class="pb-field"><label for="icAgency">Agency or company</label><input type="text" id="icAgency" maxlength="160" autocomplete="off" autocapitalize="words" placeholder="e.g. City of Springfield, Acme Testing Labs"></div>
       <div class="pbd-two">
         <div class="pb-field"><label for="icDate">Date</label><input type="date" id="icDate"></div>
         <div class="pb-field"><label for="icTime">Time</label><input type="time" id="icTime"></div>
@@ -8958,7 +8958,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.34 · 2026-10-24'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.35 · 2026-10-24'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -9501,7 +9501,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     catch (e) { pbPasswordSigningIn = false; btn.disabled = false; btn.textContent = 'Log In'; errEl.textContent = 'Couldn\u2019t reach the login service \u2014 check your connection and try again.'; errEl.style.display = ''; return; }
     pbPasswordSigningIn = false;
     btn.disabled = false; btn.textContent = 'Log In';
-    if (result.error) { errEl.textContent = 'Login failed: ' + result.error.message; errEl.style.display = ''; return; }
+    if (result.error) { errEl.textContent = (/invalid login credentials/i.test(String(result.error.message || '')) ? 'Wrong email or password. Check both, or use Forgot password.' : 'Login failed: ' + result.error.message); errEl.style.display = ''; return; }
     pbForgetLinkSignIn(); // logged in with a password: not the link's sign-in any more
     if (await pbSwitchToSignedInUser(result.data.user)) pbGoto('home', true);
   }
@@ -11895,6 +11895,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     refreshAllPredictedReadingFills();
   });
   pbChainField('cpAtmoTester', 'cpAtmoSaveBtn', true);
+  pbChainField('loginPassword', 'loginSubmitBtn', true); // feat_wording35 D6: Enter on the password logs in
   document.getElementById('runRememberWtId').addEventListener('change', (e) => { pbSet('lastRememberWtId', e.target.checked ? 'yes' : 'no'); });
   function updateHiBmDerived() {
     const bm = getElevVal('bmElev'), bs = getElevVal('bmBS');
@@ -47399,7 +47400,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const st = i.status === 'done' ? '<span class="pb-chip calculated pbd-chip">Done' + (i.last_result ? ': ' + pbDlyResName(i.last_result) : '') + '</span>'
       : i.status === 'canceled' ? '<span class="pb-chip pbd-chip">Canceled</span>'
       : (i.last_result ? '<span class="pb-chip notsent pbd-chip">Open · last: ' + escapeHtml(pbDlyResName(i.last_result)) + ', retest</span>' : '<span class="pb-chip notsent pbd-chip">Open</span>');
-    const lines = [pbDlyWhere(i), i.scheduled_date ? 'Scheduled ' + pbDlyDayText(i.scheduled_date) : 'No date scheduled', opts.job ? 'Job ' + (i.job_number || '') : '', opts.foreman ? 'Foreman: ' + (i.foreman || 'not named') : ''].filter(Boolean);
+    const lines = [pbDlyWhere(i), i.scheduled_date ? 'Scheduled ' + pbDlyDayText(i.scheduled_date) + (i.status === 'open' && i.scheduled_date < pbTkToday() ? ' — past due' : '') : 'No date scheduled', opts.job ? 'Job ' + (i.job_number || '') : '', opts.foreman ? 'Foreman: ' + (i.foreman || 'not named') : ''].filter(Boolean);
     let h = '<div class="pbd-card pbd-item" id="' + escapeHtml((opts.idp || 'insItem') + '_' + i.id) + '"><div class="pbd-ihead"><strong>' + escapeHtml(pbDlyKindName(i.kind, i.kind_detail)) + '</strong> ' + st + '</div>'
       + '<p class="pbd-dim">' + escapeHtml(lines.join(' · ')) + '</p>' + (i.note ? '<p class="pbd-note">' + escapeHtml(i.note) + '</p>' : '');
     if (checks.length) h += '<ul class="pbd-checks">' + checks.map(c => '<li><strong>' + escapeHtml(pbDlyResName(c.result)) + '</strong> · ' + escapeHtml(pbDlyTimeIn(c.done_at, c.done_tz)) + ' · ' + escapeHtml(c.inspector_name + ', ' + c.inspector_agency)
@@ -47419,7 +47420,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (st) st.textContent = pbInsMine.busy ? 'Loading…' : pbInsMine.msg || (pbInsMine.at ? 'Updated ' + pbProdTimeText(pbInsMine.at) + '.' : '');
     if (!items) { list.innerHTML = ''; return; }
     const open = items.filter(i => i.status === 'open'), done = items.filter(i => i.status !== 'open');
-    list.innerHTML = '<h2 class="pb-h2 pbd-h2">Open (' + open.length + ')</h2>' + (open.length ? open.map(i => pbInsItemCard(i, { job: true, checkBtn: true })).join('') : '<p class="pbd-dim" id="imNoneOpen">Nothing assigned to you is open. The office adds inspections and tests to a job and assigns a foreman.</p>')
+    list.innerHTML = '<h2 class="pb-h2 pbd-h2">Open (' + open.length + ')</h2>' + (open.length ? open.map(i => pbInsItemCard(i, { job: true, checkBtn: true })).join('') : '<p class="pbd-dim" id="imNoneOpen">Nothing assigned to you is open.</p>')
       + '<h2 class="pb-h2 pbd-h2">Done, last 30 days (' + done.length + ')</h2>' + (done.length ? done.map(i => pbInsItemCard(i, { job: true })).join('') : '<p class="pbd-dim">None.</p>');
   };
 
@@ -47725,7 +47726,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbDlyView.job = pbDlyEl('drJob').value.trim(); pbDlyView.date = pbDlyEl('drDate').value || pbTkToday();
     const j = pbDlyJobsToday(pbArchiveOwnerUid, pbDlyView.date).find(x => pbDlyKey(x.n) === pbDlyKey(pbDlyView.job)); pbDlyView.jobsite = j ? j.s : '';
     pbDlyView.snap = null; pbDlyView.weather = null; pbDlyView.wMsg = ''; pbDlyView.server = null; pbDlyView.amend = null; pbDlyView.needLoc = false; pbDlyView.wxConfirmed = false; pbDlyView.changed = false; pbDlyView.wNext = null;
-    ['drNarrative', 'drAmendReason'].forEach(id => { const el = pbDlyEl(id); if (el) el.value = ''; });
+    ['drNarrative', 'drAmendReason'].forEach(id => { const el = pbDlyEl(id); if (el) el.value = ''; }); try { pbDlySigClear(); } catch (e) {} /* feat_wording35 D1: a day's report starts with a clean pad */
     pbDlyRender();
     if (!pbDlyView.job) return;
     await pbDlyBuild();
@@ -48104,7 +48105,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     else if (V.needLoc) wh = '<p id="drNeedLoc">This job has no location yet, so there’s no weather. The company account, a manager or a PM sets it on the job’s Inspections & tests page.</p>'
       + (pbDlyAcc(pbArchiveOwnerUid).manager ? '<div class="pb-btn-row"><button type="button" class="pb-btn secondary small" id="drSetLocBtn" onclick="pbOpenInspJob(' + escapeHtml(JSON.stringify(V.job)) + ')">Set the Job Location</button></div>' : '');
     else wh = '<p class="pbd-dim" id="drWeatherNone">' + escapeHtml(V.wMsg || 'Not looked up yet.') + '</p>';
-    wh += '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" id="drWeatherBtn" onclick="pbDlyWeather({})"' + (V.wBusy || (V.weather && V.weather.complete) ? ' disabled' : '') + '>' + (V.weather ? 'Update Weather' : 'Get Weather') + '</button></div>'
+    wh += '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" id="drWeatherBtn" onclick="pbDlyWeather({})"' + (V.wBusy || (V.weather && V.weather.complete) ? ' disabled' : '') + '>' + (V.weather ? 'Update Weather' : V.needLoc ? 'Check Again' : 'Get Weather') + '</button></div>'
       + (V.weather && V.weather.complete ? '<p class="pbd-dim" id="drWxDone">The whole day is in; it is not looked up again.</p>' : V.wNext ? '<p class="pbd-dim" id="drWxNext">Weather is looked up at most once an hour per job; next after ' + escapeHtml(pbDlyTimeIn(V.wNext)) + '.</p>' : '');
     // Ruling (review S8): weather for a day that isn't over is used only with the foreman's explicit confirm.
     if (V.weather && V.weather.data && !V.weather.complete) wh += '<label class="pbd-check" id="drWxConfirmWrap"><input type="checkbox" id="drWxConfirm"' + (V.wxConfirmed ? ' checked' : '') + ' onchange="pbDlyWxConfirm(this.checked)"> Work for the day is over: use the weather observed so far (through ' + escapeHtml(pbDlyTimeIn(V.weather.data.last_obs)) + ')</label>';
