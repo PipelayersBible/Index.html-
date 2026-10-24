@@ -667,7 +667,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       if (fr.length) ex.stacktrace = { frames: fr };
       return {
         event_id: hex32(), timestamp: Date.now() / 1000, platform: 'javascript', level: opts.level || 'error',
-        release: BUILD, environment: isLocal ? 'test' : 'production',
+        release: rel(), environment: isLocal ? 'test' : 'production',
         exception: { values: [ex] },
         tags: { screen: screen, plan: plan, online: navigator.onLine === false ? 'no' : 'yes' },
         contexts: { browser: ua.browser, os: ua.os },
@@ -743,6 +743,20 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       } catch (x) {}
     });
     window.addEventListener('online', function () { try { flush(); } catch (x) {} });
+    // feat_sentry (r15.28): the release follows the app build; errors the app catches and only logs are reported too.
+    function rel() { try { var b = String(window.PB_APP_BUILD || '').split(' ')[0]; return 'pipelayers-bible@' + (/^r\d/.test(b) ? b : BUILD.split('@')[1]); } catch (x) { return BUILD; } }
+    try {
+      var origErr = console.error, NETISH = /Failed to fetch|Load failed|NetworkError|network|timed? ?out|abort|offline|signal is aborted|ERR_/i;
+      console.error = function () {
+        try {
+          if (navigator.onLine !== false) for (var i = 0; i < arguments.length; i++) {
+            var a = arguments[i];
+            if (a && typeof a === 'object' && typeof a.stack === 'string' && a.stack) { /* an Error (frames say where); server answers and plain strings are never reported */ if (!NETISH.test(String(a.message || ''))) capture(a, { source: 'console', handled: true }); break; }
+          }
+        } catch (x) {}
+        return origErr.apply(console, arguments);
+      };
+    } catch (x) {}
 
     // Waiting reports from an earlier visit (only if the switch is still on).
     if (enabled) {
@@ -770,7 +784,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       isEnabled: function () { return enabled; },
       flush: function () { flush(); },
       scrub: function (s) { try { return scrub(s, personalValues({})); } catch (x) { return ''; } },
-      state: function () { return { enabled: enabled, local: isLocal, testSend: testSend(), taken: takenThisLoad, queued: queue.length, build: BUILD }; }
+      state: function () { return { enabled: enabled, local: isLocal, testSend: testSend(), taken: takenThisLoad, queued: queue.length, build: rel() }; }
     };
   } catch (e) { /* the reporter must never affect the app */ }
 })();
@@ -4329,7 +4343,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div class="pb-body">
         <label class="pb-set-switch" for="crashReportsToggle"><span id="crashReportsLabel">Send crash reports</span><input type="checkbox" role="switch" id="crashReportsToggle" checked onchange="pbSetCrashReports(this.checked)"></label>
         <p class="pb-help" id="crashReportsMsg" style="display:none;" aria-live="polite"></p>
-        <details class="pb-more" id="crashReportsMore"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>What crash reports send</span></summary><p class="pb-help" id="crashReportsHelp">If something in the app breaks, this phone sends a short error report so it can be fixed.<br><strong>Sent:</strong> the kind of error (its message only when it is one of the browser&rsquo;s standard error messages, which name parts of the app&rsquo;s code, never your words), where in the app&rsquo;s code it happened, the app&rsquo;s version, the screen, your plan type (none, individual or contractor), the browser and system version, and the time.<br><strong>Never sent:</strong> your name, email or account, job numbers, jobsites, readings, permits, reports, photos or anything you typed. Nothing records your screen.<br>Nothing is sent while a report screen is open or an anonymous report is being sent. With no signal, up to 10 reports wait on this phone; turning this off deletes them. The error service sees the phone&rsquo;s internet address when a report arrives; the app asks it not to keep it. This setting is for this phone.</p></details>
+        <details class="pb-more" id="crashReportsMore"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>What crash reports send</span></summary><p class="pb-help" id="crashReportsHelp">If something in the app breaks, this phone sends a short error report so it can be fixed.<br><strong>Sent:</strong> the kind of error (its message only when it is one of the browser&rsquo;s standard error messages, which name parts of the app&rsquo;s code, never your words), where in the app&rsquo;s code it happened (also for errors the app catches and logs itself), the app&rsquo;s version, the screen, your plan type (none, individual or contractor), the browser and system version, and the time.<br><strong>Never sent:</strong> your name, email or account, job numbers, jobsites, readings, permits, reports, photos or anything you typed. Nothing records your screen.<br>Nothing is sent while a report screen is open or an anonymous report is being sent. With no signal, up to 10 reports wait on this phone; turning this off deletes them. The error service sees the phone&rsquo;s internet address when a report arrives; the app asks it not to keep it. This setting is for this phone.</p><button type="button" class="pb-btn ghost small" id="crashTestSendBtn" onclick="pbCrashTestSend()">Send a test report</button><p class="pb-help" id="crashTestSendMsg" role="status" hidden></p></details><!-- feat_sentry -->
       </div>
     </div>
     <div class="pb-section" id="settingsHelpSection">
@@ -8923,7 +8937,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.27 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.28 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -10894,6 +10908,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const meta = sbUser && sbUser.user_metadata && typeof sbUser.user_metadata === 'object' ? Object.values(sbUser.user_metadata).filter(v => typeof v === 'string') : [];
     return { screen: pbCurrentScreen, plan: (s.tier === 'individual' || s.tier === 'contractor') && s.status === 'active' ? s.tier : 'none',
       secrets: [em, em.split('@')[0], s.companyName, s.companyRole, sbUser && sbUser.id, cachedStorageUserId].concat(meta).filter(v => typeof v === 'string' && v && v !== 'shared') };
+  };
+  // feat_sentry (r15.28): proves the path from a real phone. What goes: the fixed label, the app version, the screen.
+  window.pbCrashTestSend = function() {
+    const m = document.getElementById('crashTestSendMsg'); let ok = false, st = null;
+    try { st = window.pbCrash && window.pbCrash.state(); } catch (e) { st = null; }
+    if (!st || !st.enabled) { if (m) { m.hidden = false; m.textContent = 'Crash reports are off on this phone.'; } return; }
+    try { ok = !!window.pbCrash.note('Test report from Settings', '', 'info'); } catch (e) { ok = false; }
+    if (m) { m.hidden = false; m.textContent = ok ? (navigator.onLine === false ? 'Queued. It goes when this phone has signal.' : 'Sent. It shows in the error service within a minute (' + st.build + ').') : 'Already sent since the app was opened (each report goes once). Close and reopen the app to send another.'; }
   };
   function pbRenderCrashSwitch() {
     const t = document.getElementById('crashReportsToggle');
