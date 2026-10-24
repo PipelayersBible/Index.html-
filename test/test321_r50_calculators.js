@@ -1,0 +1,36 @@
+const L = require('./lib.js');
+(async () => {
+  const browser = await L.chromium.launch();
+  const page = await L.newPage(browser, 'uR50');
+  const res = () => page.evaluate(() => document.getElementById('volumeResult').textContent.replace(/\s+/g, ' ').trim());
+  const num = (t) => { const m = t.match(/(-?[\d,]+\.\d+)\s*ft/); return m ? parseFloat(m[1].replace(/,/g, '')) : null; };
+  await page.evaluate(() => pbOpenVolumeCalc ? pbOpenVolumeCalc() : pbGoto('volumeCalc')); await page.waitForTimeout(300);
+  await page.click('#volShapeToggle button[data-val="encase"]'); await page.waitForTimeout(150);
+  await page.fill('#volEncL', '100'); await page.fill('#volEncW', '4'); await page.fill('#volEncD', '4');
+  await page.fill('#volEncOD', '12'); await page.fill('#volEncCount', '1'); await page.fill('#volEncPipeL', '100');
+  await page.evaluate(() => pbCalcVolume());
+  L.check('hand check: 100x4x4 minus one 12" pipe over 100 ft = 1521.46 ft3', Math.abs(num(await res()) - 1521.46) < 0.01);
+  await page.click('button[onclick="pbAddEncExtraPipe()"]').catch(() => page.evaluate(() => { const b = Array.from(document.querySelectorAll('button')).find(x => /Add Another Pipe/i.test(x.textContent)); b.click(); })); await page.waitForTimeout(150);
+  const id = await page.evaluate(() => document.querySelector('#volEncExtraContainer [data-enc-extra]').dataset.encExtra);
+  await page.fill('#' + id + 'OD', '24'); await page.fill('#' + id + 'Count', '1'); await page.fill('#' + id + 'L', '100');
+  await page.evaluate(() => pbCalcVolume());
+  L.check('hand check: with a second 24" pipe = 1207.30 ft3', Math.abs(num(await res()) - 1207.30) < 0.01);
+  await page.fill('#' + id + 'L', ''); await page.evaluate(() => pbCalcVolume());
+  let t = await res();
+  L.check('R50-1: a second pipe with its length cleared STOPS the calculation (no believable incomplete total)', num(t) === null && /Additional pipe 1/.test(t));
+  await page.fill('#' + id + 'L', '-100'); await page.evaluate(() => pbCalcVolume()); t = await res();
+  L.check('R50-1: a negative second-pipe length also stops it', num(t) === null && /Additional pipe 1/.test(t));
+  await page.fill('#' + id + 'L', '100'); await page.evaluate(() => pbCalcVolume());
+  L.check('corrected card: back to 1207.30', Math.abs(num(await res()) - 1207.30) < 0.01);
+  await page.fill('#' + id + 'OD', ''); await page.fill('#' + id + 'L', ''); await page.fill('#' + id + 'Count', '1'); await page.evaluate(() => pbCalcVolume());
+  L.check('an entirely untouched optional card is ignored (1521.46)', Math.abs(num(await res()) - 1521.46) < 0.01);
+  // slope converter
+  await page.evaluate(() => pbGoto('slopeConvCalc')); await page.waitForTimeout(200);
+  const slope = async (mode, v) => { await page.evaluate((m) => document.querySelectorAll('#slopeConvToggle button').forEach(b => b.classList.toggle('active', b.dataset.val === m)), mode); await page.fill('#slopeConvVal', String(v)); await page.evaluate(() => pbCalcSlopeConv()); return page.evaluate(() => document.getElementById('slopeConvResult').textContent.replace(/\s+/g, ' ')); };
+  L.check('control: 45 degrees = 100.00%, 1:1.00', /100\.00%/.test(await slope('deg', 45)) && /1 : 1\.00/.test(await slope('deg', 45)));
+  L.check('control: 2% = 1.15 degrees', /1\.15/.test(await slope('pct', 2)));
+  for (const d of [90, 180, 360]) L.check(`R50-2: ${d} degrees is rejected with an explanation, not a finite grade`, /below 90/.test(await slope('deg', d)));
+  L.check('control: 89 degrees still works (5729.00%)', /5729\.00%/.test(await slope('deg', 89)));
+  L.check('no JS errors', page._errors.length === 0);
+  await browser.close();
+})();
