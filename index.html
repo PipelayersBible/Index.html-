@@ -513,6 +513,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     function quiet(ctx) {
       try { if (+window.pbReportAnonInFlight > 0) return true; } catch (e) {}
       try { var a = document.querySelector('.pb-screen.active'); if (a && REPORT_SCREENS.test(String(a.id || '').replace(/^screen-/, ''))) return true; } catch (e) {}
+      try { if (typeof window.pbPdfViewShowsReport === 'function' && window.pbPdfViewShowsReport()) return true; } catch (e) {} /* feat_pdfview: a management report on the PDF viewer */
       try { if (!ctx && typeof window.pbCrashContext === 'function') ctx = window.pbCrashContext(); } catch (e) { ctx = null; }
       return !!(ctx && REPORT_SCREENS.test(String(ctx.screen || '')));
     }
@@ -2104,6 +2105,23 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
   --pb-img-flag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F4F6F8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 21V4'/%3E%3Cpath d='M5 4h11l-2 4 2 4H5'/%3E%3C/svg%3E");
   --pb-img-gear: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F4F6F8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3Cpath d='M12 2.5v2.6M12 18.9v2.6M4.7 4.7l1.8 1.8M17.5 17.5l1.8 1.8M2.5 12h2.6M18.9 12h2.6M4.7 19.3l1.8-1.8M17.5 6.5l1.8-1.8'/%3E%3C/svg%3E");
 }
+/* feat_pdfview: the PDF viewer screen */
+#pbApp #screen-pdfView .pb-pdfv-sub { margin: 10px 20px 0 20px; }
+#pbApp #screen-pdfView .pb-pdfv-status { margin: 10px 20px 0 20px; }
+#pbApp #screen-pdfView .pb-pdfv-pages { overflow-x: auto; -webkit-overflow-scrolling: touch; background: #5b6068; padding: 8px; margin: 10px 16px 0 16px; border-radius: 10px; min-height: 80px; }
+#pbApp #screen-pdfView .pb-pdfv-page { position: relative; background: #fff; margin: 0 auto 8px auto; box-shadow: 0 1px 4px rgba(0,0,0,0.45); }
+#pbApp #screen-pdfView .pb-pdfv-page:last-child { margin-bottom: 0; }
+#pbApp #screen-pdfView .pb-pdfv-page:not(.drawn):not(.failed)::after { content: attr(aria-label); position: absolute; left: 0; right: 0; top: 40%; text-align: center; color: #9aa0a8; font: 600 14px/1.3 var(--pb-font, 'Inter', sans-serif); }
+#pbApp #screen-pdfView .pb-pdfv-page canvas { display: block; }
+#pbApp #screen-pdfView .pb-pdfv-retry { position: absolute; left: 12px; right: 12px; top: 40%; min-height: 48px; padding: 10px 12px; border: 1px solid #C9CED6; border-radius: 10px; background: #fff; color: #1A1D21; font: 600 15px/1.3 var(--pb-font, 'Inter', sans-serif); cursor: pointer; }
+#pbApp #screen-pdfView #pdfvTitle:focus { outline: none; }
+#pbApp #screen-pdfView .pb-pdfv-bar .pb-btn:disabled { opacity: 0.5; }
+#pbApp .pb-arch-emailed::before { content: '\2713\00a0'; }
+#pbApp #screen-pdfView .pb-pdfv-text { white-space: pre-wrap; overflow-wrap: anywhere; font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.45; background: #fff; color: #1A1D21; padding: 10px; border-radius: 10px; margin: 10px 16px 0 16px; }
+#pbApp #screen-pdfView .pb-pdfv-bar { position: sticky; bottom: calc(var(--pb-shell-h, 0px) / var(--pb-text-zoom, 1)); z-index: 5; display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0 0; padding: 10px 16px; background: rgba(16,19,24,0.94); border-top: 1px solid var(--pb-divider, rgba(255,255,255,0.1)); box-shadow: 0 -6px 16px rgba(0,0,0,0.45); }
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) { #pbApp #screen-pdfView .pb-pdfv-bar { background: rgba(16,19,24,0.82); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); } }
+#pbApp #screen-pdfView .pb-pdfv-bar .pb-btn { flex: 1 1 96px; width: auto; margin: 0; min-height: 44px; }
+#pbApp #screen-pdfView .pb-pdfv-bar #pdfvZoom { flex: 0 0 64px; }
 /* PB2:css:shell */
 /* A1: the tab bar and the active bar sit on body, outside #pbApp, so they take Text Size through
    --pb-text-zoom (as #pbCopyToast does) and spell out their colours (the app's variables live on .pb-app).
@@ -5996,6 +6014,24 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div class="pb-btn-wrap"><button type="button" class="pb-btn secondary" id="cprRefreshBtn" onclick="pbCompanyPermitsLoad(false)"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Refresh</button></div>
   </div>
 
+  <!-- PDF VIEWER (feat_pdfview, Oct 24): every "View" of a record shows the PDF the Download button makes -->
+  <div class="pb-screen" id="screen-pdfView">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span id="pdfvEyebrow">RECORDS</span><button type="button" class="pb-back" id="pdfvBack" title="Back" aria-label="Back" onclick="pbPdfViewBack()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
+      <h1 class="pb-title" id="pdfvTitle" tabindex="-1">Report</h1>
+    </div>
+    <p class="pb-help pb-pdfv-sub" id="pdfvSub"></p>
+    <p class="pb-rpt-status pb-pdfv-status" id="pdfvStatus" role="status" style="display:none;"></p>
+    <div class="pb-pdfv-pages" id="pdfvPages" aria-label="Report pages"></div>
+    <pre class="pb-pdfv-text" id="pdfvText" style="display:none;"></pre>
+    <div class="pb-pdfv-bar" id="pdfvBar">
+      <button type="button" class="pb-btn ghost small" id="pdfvZoom" onclick="pbPdfViewZoom()" aria-label="Zoom">100%</button>
+      <button type="button" class="pb-btn ghost small" id="pdfvDownload" onclick="pbPdfViewDownload()">Download</button>
+      <button type="button" class="pb-btn ghost small" id="pdfvShare" onclick="pbPdfViewShare()" style="display:none;">Share</button>
+      <button type="button" class="pb-btn ghost small" id="pdfvTextBtn" onclick="pbPdfViewText()">Text version</button>
+    </div>
+  </div>
+
   <!-- FIELD TICKETS (batch 7): this account's delivery, material and sub tickets -->
   <div class="pb-screen" id="screen-tickets">
     <div class="pb-header">
@@ -8966,7 +9002,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.36 · 2026-10-24'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.37 · 2026-10-24'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -10978,7 +11014,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbRenderCrashSwitch();
   };
   // Crash reports wait while a report screen is open (the reporter checks); leaving one sends what waited.
-  window.pbScreenHooks.push(function(name) { if (name === 'settings') pbRenderCrashSwitch(); if (!/^(reportIssue|reportReceipt|myReports|reportsInbox)$/.test(name)) { try { if (window.pbCrash) window.pbCrash.flush(); } catch (e) {} } });
+  window.pbScreenHooks.push(function(name) { if (name === 'settings') pbRenderCrashSwitch(); if (!/^(reportIssue|reportReceipt|myReports|reportsInbox)$/.test(name) && !(name === 'pdfView' && typeof window.pbPdfViewShowsReport === 'function' && window.pbPdfViewShowsReport())) { try { if (window.pbCrash) window.pbCrash.flush(); } catch (e) {} } });
   pbRawGet('pbCrashReports').then(v => { if (v === '0' || v === '1') { try { if (window.pbCrash) window.pbCrash.setEnabled(v === '1'); } catch (e) {} } pbRenderCrashSwitch(); }, () => {});
   async function initAutofill() {
     pbApplyTextSize(await pbGet('textSize')); // this account's own size, before the start-up cover lifts
@@ -31843,7 +31879,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbPermitBkChipFor(e, st) {
     const id = escapeHtml(pbPermitClientId(e));
     const label = st.k === 'ok' ? (Array.isArray(e.photos) && e.photos.length ? 'Backed up · photos only on this phone' : 'Backed up') : st.k === 'refused' ? 'Not backed up: ' + st.why : st.k === 'failing' ? 'Couldn’t back up yet (tried ' + st.n + ' times)'
-      : st.k === 'signedout' ? 'Not backed up (log in)' : st.k === 'unknown' ? 'Checking backup…' : st.k === 'quota' ? 'Waiting: today’s backup limit reached' : st.had ? 'Changes not backed up yet' : 'Not backed up yet';
+      : st.k === 'signedout' ? 'Not backed up (log in)' : st.k === 'unknown' ? 'Checking backup…' : st.k === 'quota' ? 'Waiting: today’s backup limit reached' : (st.had ? 'Changes not backed up yet' : 'Not backed up yet') + (navigator.onLine === false ? ' — needs signal' : ' — will send');
     const cls = st.k === 'ok' ? 'ok' : (st.k === 'refused' || st.k === 'failing') ? 'overdue' : 'notsent';
     return '<span class="pb-chip ' + cls + ' pb-arch-bk" data-bk="' + id + '">' + escapeHtml(label) + '</span>';
   }
@@ -32133,15 +32169,31 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + '<pre id="cprView' + i + '" style="display:none;">' + escapeHtml(e.reportText || '') + '</pre></div>';
     }).join('');
   }
-  window.pbCprToggle = function(i) { const el = document.getElementById('cprView' + i); if (el) el.style.display = el.style.display === 'none' ? '' : 'none'; };
-  window.pbCprPdf = async function(i) {
-    const x = pbCpr.rows[i]; if (!x) return;
-    if (!pdfLibReady()) { pbAlert('PDF library didn\'t load — check your connection and try again.'); return; }
+  window.pbCprToggle = function(i) {
+    // feat_pdfview (owner, Oct 24): a closed permit's View opens the PDF viewer screen; an unfinished permit (a snapshot, no PDF) keeps its text
+    const x = pbCpr.rows[i];
+    if (x && pbCpr.mode !== 'open' && x.record && typeof window.pbPdfViewOpen === 'function') {
+      const e = pbCprEntry(x), d = new Date(x.closed_at || e.lockTime);
+      window.pbPdfViewOpen({ key: 'cpr|' + String(x.row_id) + '|' + String(x.version || ''), eyebrow: pbCpr.mode === 'crew' ? 'CREW PERMITS' : 'COMPANY PERMITS', title: 'Confined Space — ' + (e.space || x.space || ''),
+        sub: 'Closed ' + (isNaN(d) ? '' : d.toLocaleString()), entry: e, make: async () => pbCprPdfDoc(x).doc, name: pbCprPdfName(e) });
+      return;
+    }
+    const el = document.getElementById('cprView' + i); if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
+  };
+  function pbCprPdfName(entry) { return 'permit-' + String(entry.space || 'record').replace(/[^A-Za-z0-9_-]+/g, '_').slice(0, 40) + '-' + (isNaN(entry.lockTime) ? 'undated' : entry.lockTime.toISOString().slice(0, 10)) + '.pdf'; }
+  function pbCprPdfDoc(x) {
     const entry = pbCprEntry(x);
     Object.defineProperty(entry, '__pbServerCopy', { value: { version: x.version, closedAt: x.closed_at }, enumerable: false }); // batch 15 PDF: made from the account's backed-up copy (not part of the record)
     const doc = pbNewPdf(); doc.__pbUnreadable = [];
     addEntryToPDF(doc, entry, 20);
-    doc.save('permit-' + String(entry.space || 'record').replace(/[^A-Za-z0-9_-]+/g, '_').slice(0, 40) + '-' + (isNaN(entry.lockTime) ? 'undated' : entry.lockTime.toISOString().slice(0, 10)) + '.pdf');
+    if (typeof window.pbFxIosSave === 'function') window.pbFxIosSave(doc); // feat_pdfview: an iPhone Home Screen app hands the PDF to the share sheet
+    return { doc, entry };
+  }
+  window.pbCprPdf = async function(i) {
+    const x = pbCpr.rows[i]; if (!x) return;
+    if (!pdfLibReady()) { pbAlert('PDF library didn\'t load — check your connection and try again.'); return; }
+    const m = pbCprPdfDoc(x);
+    m.doc.save(pbCprPdfName(m.entry));
   };
 
   // Restore on a new phone: permit records in the account that this phone doesn't have are added to Records.
@@ -32197,7 +32249,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       pbAlert('Restored ' + fresh.length + ' permit record' + (fresh.length > 1 ? 's' : '') + ' to this phone’s Records.', 'Restored');
     }, 'Restore Permits');
   };
-  window.addEventListener('online', () => { pbPermitBkBackoffN = 0; pbPermitBkBackoffUntil = 0; pbPermitBackupSoon(8000); }); // signal back: try now (review A)
+  window.addEventListener('online', () => { pbPermitBkBackoffN = 0; pbPermitBkBackoffUntil = 0; pbPermitBackupSoon(8000); pbPermitBkRefreshUI(); }); // signal back: try now (review A)
+  window.addEventListener('offline', () => pbPermitBkRefreshUI()); // feat_pdfview: the amber chip says "needs signal" only while there is none
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pbPermitBackupSoon(4000, { background: true }); });
   setInterval(() => { if (sbUser) pbPermitBackupSoon(0, { background: true }); }, 10 * 60 * 1000);
 
@@ -36657,10 +36710,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (typeof window.pbW10ClearArchiveFilters === 'function') window.pbW10ClearArchiveFilters(); else renderArchiveList();
     const i = runArchive.findIndex(x => x && x.id === id), pre = i === -1 ? null : document.getElementById('archiveView' + i);
     if (!pre) return;
-    pre.style.display = '';
     const row = pre.closest('.pb-arch-row');
     if (row) { row.classList.add('pb-fx-focus'); const det = row.querySelector('details.pb-arch-moreacts'); if (det) det.open = true; }
     try { pre.scrollIntoView({ block: 'center' }); } catch (e) {}
+    window.pbToggleArchiveView(i); // feat_pdfview: the report as its PDF, on the viewer screen (Back lands on this row)
   };
   window.pbFxSavePdf = function(id) {
     if (!pbCanOpen('archive', { explain: true })) return;
@@ -36784,6 +36837,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     document.getElementById('rrText').textContent = e.reportText || '';
   }
   window.pbToggleReceiptReport = function() {
+    if (pbReceiptEntry && typeof window.pbPdfViewEntry === 'function') { window.pbPdfViewEntry(pbReceiptEntry, 'REPORT TO MANAGEMENT'); return; } // feat_pdfview
     const t = document.getElementById('rrText'), open = t.style.display === 'none';
     t.style.display = open ? '' : 'none';
     document.getElementById('rrViewBtn').textContent = open ? 'Hide Report' : 'View Report';
@@ -37355,7 +37409,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // The list on screen can be older than the archive (a recovered Lock, or a
   // record another tab saved, inserted since it was drawn), and a position
   // would then point at a different record.
-  const pbArchiveTapActions = ['pbSendArchiveEntry', 'pbDownloadArchivePDF', 'pbToggleArchiveSent', 'pbDeleteArchiveEntry', 'pbResumeIncompleteRun', 'pbRetryCloudSync', 'pbAdjustEndTime', 'pbDownloadEmergencyPDF', 'pbExportRecordJSON']; // batch 15 PDF: emergency incident report, record data
+  const pbArchiveTapActions = ['pbSendArchiveEntry', 'pbDownloadArchivePDF', 'pbToggleArchiveSent', 'pbDeleteArchiveEntry', 'pbResumeIncompleteRun', 'pbRetryCloudSync', 'pbAdjustEndTime', 'pbDownloadEmergencyPDF', 'pbExportRecordJSON', 'pbToggleArchiveView']; // batch 15 PDF: emergency incident report, record data; feat_pdfview: View
   window.pbArchiveTap = function(action, id) {
     if (!pbArchiveTapActions.includes(action)) return;
     const i = runArchive.findIndex(e => e.id === id);
@@ -37422,16 +37476,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return `
       <div class="pb-review-item pb-arch-row pb-arch-${kindCls}${hadEmergency ? ' pb-arch-em' : ''}">
         <div class="pb-arch-head"><span class="pb-arch-ic" aria-hidden="true"></span><div class="pb-arch-main"><span class="k">${e.kind === 'confined' ? 'Confined Space — ' + escapeHtml(e.space) : e.kind === 'report' ? 'Report — ' + escapeHtml(e.category) + (e.anonymous ? ' (anonymous)' : '') : e.kind === 'stats-snapshot' ? 'Stats Snapshot' : escapeHtml(e.startLabel) + ' → ' + escapeHtml(e.endLabel)}</span><span class="pb-arch-date">${e.kind === 'run' ? 'Locked ' : e.kind === 'confined' ? 'Closed ' : ''}${e.lockTime.toLocaleString()}</span></div></div>
-        <div class="pb-arch-chips">${hadEmergency ? '<span class="pb-chip overdue">EMERGENCY</span>' : ''}${onDisk ? '<span class="pb-chip saved">Saved on this phone</span>' : endUnsaved ? '<span class="pb-chip pb-arch-unsaved">End not saved yet</span>' : '<span class="pb-chip pb-arch-unsaved">Not saved yet</span>'}${(typeof window.pbRrArchiveChip === 'function' && window.pbRrArchiveChip(e)) || (e.sent ? '<span class="pb-chip ok">Sent</span>' : '<span class="pb-chip notsent">Not sent</span>')}${cloud ? '<span class="pb-chip ok pb-arch-cloud">Cloud copy</span>' : ''}${e.kind === 'confined' ? pbPermitBkChip(e) : ''}${e.kind === 'confined' && e.restoredFromCloud && (Number(e.photoCount) || 0) > 0 ? '<span class="pb-chip notsent">' + (Number(e.photoCount) > 1 ? e.photoCount + ' photos' : '1 photo') + ' not restored: kept only on the phone that took ' + (Number(e.photoCount) > 1 ? 'them' : 'it') + '</span>' : ''}</div>
+        <div class="pb-arch-chips">${hadEmergency ? '<span class="pb-chip overdue">EMERGENCY</span>' : ''}${onDisk ? '<span class="pb-chip saved">Saved on this phone</span>' : endUnsaved ? '<span class="pb-chip pb-arch-unsaved">End not saved yet</span>' : '<span class="pb-chip pb-arch-unsaved">Not saved yet</span>'}${(typeof window.pbRrArchiveChip === 'function' && window.pbRrArchiveChip(e)) || (e.kind === 'confined' ? '' : e.sent ? '<span class="pb-chip ok">Sent</span>' : '<span class="pb-chip notsent">Not sent</span>')}${cloud ? '<span class="pb-chip ok pb-arch-cloud">Cloud copy</span>' : ''}${e.kind === 'confined' ? pbPermitBkChip(e) + (e.sent ? '<span class="pb-chip pb-arch-emailed">Emailed</span>' : '<span class="pb-chip pb-arch-noemail">Not emailed</span>') : ''}${e.kind === 'confined' && e.restoredFromCloud && (Number(e.photoCount) || 0) > 0 ? '<span class="pb-chip notsent">' + (Number(e.photoCount) > 1 ? e.photoCount + ' photos' : '1 photo') + ' not restored: kept only on the phone that took ' + (Number(e.photoCount) > 1 ? 'them' : 'it') + '</span>' : ''}</div>
         ${hadEmergency ? `<span class="pb-arch-alert em">Emergency declared during this entry — see report for details</span>` : ''}
         ${e.kind === 'report' && e.via === 'app' ? pbReportArchiveLine(e) : ''}
         <div class="pb-arch-meta">${meta}</div>
         ${e.cloudSyncFailed ? `<span class="pb-arch-alert cloudfail">This run’s local copy is correct, but it could not be confirmed as synced to the cloud after repeated attempts.${escapeHtml(pbCloudFailText(e))} <button class="pb-btn ghost small" onclick="${pbArchiveTapAttr('pbRetryCloudSync', e)}">Retry Sync</button></span>` : ''}
         ${e.depthFlagged ? '<span class="pb-arch-alert depth">Trench ≥5 ft — protective system required (OSHA)</span>' : ''}
         <div class="pb-arch-actions">
-        <button class="pb-btn ghost small" onclick="pbToggleArchiveView(${i})">View</button>
+        <button class="pb-btn ghost small pb-arch-view" onclick="${pbArchiveTapAttr('pbToggleArchiveView', e)}">View</button>
         ${e.kind === 'report' && e.via === 'app' ? pbReportArchiveActions(e) : `${e.kind === 'report' && e.anonymous ? `<button class="pb-btn ghost small" onclick="pbReportAdoptLegacy(${e.id})">Send Through the App</button>` : ((typeof window.pbRrArchiveBtns === 'function' && window.pbRrArchiveBtns(e)) || `<button class="pb-btn ghost small" onclick="${pbArchiveTapAttr('pbSendArchiveEntry', e)}">Send Email</button>`)}
-        ${(typeof window.pbRrArchiveBtns === 'function' && window.pbRrArchiveBtns(e)) ? '' : `<button class="pb-btn ghost small" onclick="${pbArchiveTapAttr('pbToggleArchiveSent', e)}">${e.sent ? 'Mark Not Sent' : 'Mark Sent'}</button>`}`}
+        ${(typeof window.pbRrArchiveBtns === 'function' && window.pbRrArchiveBtns(e)) ? '' : `<button class="pb-btn ghost small" onclick="${pbArchiveTapAttr('pbToggleArchiveSent', e)}">${e.kind === 'confined' ? (e.sent ? 'Mark Not Emailed' : 'Mark Emailed') : e.sent ? 'Mark Not Sent' : 'Mark Sent'}</button>`}`}
         </div>
         <details class="pb-more pb-arch-moreacts"><summary><span>More actions</span></summary><div class="pb-arch-actions">
         <button class="pb-btn ghost small" onclick="${pbArchiveTapAttr('pbDownloadArchivePDF', e)}">Download PDF</button>
@@ -37445,18 +37499,236 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }).join('');
   };
   window.pbToggleArchiveView = function(i) {
-    const el = document.getElementById('archiveView' + i); if (!el) return;
-    // feat_pdfview (owner, Oct 22): View shows the report as its PDF; the text version is a tap away
-    const e = runArchive[i], box0 = document.getElementById('archivePdf' + i);
-    if (box0) { const open = box0.style.display === 'none'; box0.style.display = open ? '' : 'none'; const tb = document.getElementById('archiveTxtBtn' + i); if (tb) tb.style.display = open ? '' : 'none'; if (!open) el.style.display = 'none'; return; }
-    if (!e || typeof window.pbRrPdfDraw !== 'function' || typeof pdfLibReady !== 'function' || !pdfLibReady()) { el.style.display = el.style.display === 'none' ? '' : 'none'; return; }
-    el.insertAdjacentHTML('beforebegin', '<div id="archivePdf' + i + '" style="overflow:auto; -webkit-overflow-scrolling:touch; max-height:75vh; background:#5b6068; border-radius:10px; padding:6px; margin-top:8px;"><p class="pbx-none" style="color:#fff">Opening the report…</p></div>'
-      + '<button type="button" class="pb-btn ghost small" id="archiveTxtBtn' + i + '" style="margin-top:6px" onclick="pbArchiveTextToggle(' + i + ')">Text Version</button>');
-    const box = document.getElementById('archivePdf' + i), key = 'arch|' + String(e.id) + '|' + Date.now(); box.dataset.pdfKey = key;
-    window.pbRrPdfDraw(e, box, key).then(ok => { if (!ok && box.dataset.pdfKey === key) el.style.display = ''; })
-      .catch(err => { console.error('PDF view failed', err); if (box.dataset.pdfKey === key) { box.innerHTML = '<p class="pbx-none" style="color:#fff">The report couldn’t be drawn here. Download PDF, or read the text version.</p>'; el.style.display = ''; } });
+    // feat_pdfview (owner, Oct 24): View opens the PDF viewer screen (the file Download PDF makes); its text is a tap away there
+    const e = runArchive[i];
+    if (e && typeof window.pbPdfViewEntry === 'function') { window.pbPdfViewEntry(e, 'RECORDS'); return; }
+    const el = document.getElementById('archiveView' + i); if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
   };
-  window.pbArchiveTextToggle = function(i) { const el = document.getElementById('archiveView' + i); if (el) el.style.display = el.style.display === 'none' ? '' : 'none'; };
+  // ================= feat_pdfview (owner, Oct 24): ONE in-app PDF viewer screen =================
+  // "Humans can't easily process the json files like that." Every View of a record (Records, crew / company permit
+  // records, the run report a foreman or the office opens, the report receipt) opens #screen-pdfView: the PDF the
+  // Download button makes (same function, same bytes, made once per opening), drawn by the bundled pdf.js. Only the pages
+  // near the screen hold a drawing (the page in the middle of the screen and two either side); farther pages give their
+  // memory back and are drawn again on the way back. Each page is drawn at the phone's pixel ratio, lowered so a page
+  // stays within PB_PV_MAXPX device pixels (big pages, landscape, zoom), so zoom draws sharper text, not a blown-up
+  // bitmap. A page that can't be drawn says so and is redrawn on a tap. Zoom cycles 100 / 150 / 200 %. The text version
+  // is one button away; when the PDF tool or the viewer can't run on this phone the text shows, with one line saying so.
+  // Leaving the screen by any route drops the file and the drawings, and takes the screen out of Back's history.
+  let pbPvS = null, pbPvGen = 0; // the open viewer: { key, title, sub, eyebrow, entry, make, name, docP, doc, pdf, n, zoom, text, textOnly, gen, from, fromY, backId, tasks }
+  const PB_PV_ZOOMS = [1, 1.5, 2];
+  const PB_PV_MAXPX = 4e6; // device pixels per drawn page (about 16 MB): five pages fit in an iPhone's canvas memory
+  const PB_PV_KEEP = 2;    // drawn pages kept either side of the page in the middle of the screen
+  const PB_PV_PDFJS = { isEvalSupported: false, cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.5.141/cmaps/', cMapPacked: true, standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.5.141/standard_fonts/' };
+  function pbPvEl(id) { return document.getElementById(id); }
+  function pbPvSay(m) { const s = pbPvEl('pdfvStatus'); if (s) { s.textContent = m || ''; s.style.display = m ? '' : 'none'; } return new Promise(r => setTimeout(r, 30)); }
+  const pbPvSayFor = (S) => (m) => (pbPvS === S ? pbPvSay(m) : Promise.resolve()); // a build's progress shows only in its own viewer
+  function pbPvFree(c) { try { c.width = 0; c.height = 0; } catch (e) {} } // a canvas's memory goes at once, not at garbage collection
+  function pbPvClear(S, box) {
+    if (S && S.tasks) { S.tasks.forEach(t => { try { t.cancel(); } catch (e) {} }); S.tasks.clear(); }
+    if (box) { box.querySelectorAll('canvas').forEach(pbPvFree); box.innerHTML = ''; }
+  }
+  function pbPvDrop() {
+    const S = pbPvS; if (!S) return;
+    pbPvS = null; pbPvGen++;
+    pbPvWatch(false);
+    pbPvClear(S, pbPvEl('pdfvPages'));
+    try { if (S.pdf) S.pdf.destroy(); } catch (e) {}
+    const t = pbPvEl('pdfvText'); if (t) t.textContent = '';
+    pbHistory = pbHistory.filter(s => s !== 'pdfView'); // a viewer that was left is gone: Back never lands on an empty one
+  }
+  function pbPvCanShareFiles() { try { return typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && !!navigator.canShare({ files: [new File([''], 'x.pdf', { type: 'application/pdf' })] }); } catch (e) { return false; } }
+  // Share opens the share sheet inside the tap (iPhone allows it only there), so it waits, off, until the file is made
+  function pbPvBtns(S) { const sh = pbPvEl('pdfvShare'); if (sh) { sh.disabled = !S.doc; sh.title = S.doc ? '' : 'Making the PDF…'; } }
+  // o: { key, eyebrow, title, sub, entry (its reportText is the text version), make: async (say) => jsPDF doc, name: file name, backId: the Records row Back returns to }
+  window.pbPdfViewOpen = function(o) {
+    if (!o || !o.entry) return false;
+    const from = pbCurrentScreen, prev = pbPvS;
+    if (from === 'pdfView' && prev && prev.key === o.key) return true; // a second tap on the same View: the file being made is kept
+    pbPvDrop();
+    const S = pbPvS = { gen: ++pbPvGen, zoom: 1, text: false, textOnly: false, docP: null, doc: null, pdf: null, n: 0, tasks: new Set(), started: false,
+      key: o.key, eyebrow: o.eyebrow || 'RECORDS', title: o.title || 'Report', sub: o.sub || '', entry: o.entry, make: o.make, name: o.name || 'report.pdf', backId: o.backId,
+      from: from === 'pdfView' ? (prev && prev.from) : from, fromY: from === 'pdfView' ? (prev && prev.fromY) || 0 : (window.scrollY || 0) };
+    try { PB_SCREEN_TABS.pdfView = window.pbScreenTab(S.from) || null; } catch (e) {}
+    const ey = pbPvEl('pdfvEyebrow'), ti = pbPvEl('pdfvTitle'), su = pbPvEl('pdfvSub'), sh = pbPvEl('pdfvShare');
+    if (ey) ey.textContent = S.eyebrow; if (ti) ti.textContent = S.title; if (su) su.textContent = S.sub;
+    if (sh) sh.style.display = pbPvCanShareFiles() ? '' : 'none';
+    pbPvBtns(S); pbPvMode(S); pbPvSay(null);
+    if (pbCurrentScreen !== 'pdfView') pbGoto('pdfView'); else pbPvArrive(S); // arriving starts it (the screen hook), also after an unsaved-work question
+    return true;
+  };
+  function pbPvArrive(S) {
+    if (!S.started) { S.started = true; pbPvStart(S); }
+    const ti = pbPvEl('pdfvTitle'); try { if (ti) ti.focus({ preventScroll: true }); } catch (e) {} // a screen reader starts on the title
+  }
+  // a Records-style entry (run / confined / report / stats snapshot): the file Download PDF makes
+  window.pbPdfViewEntry = function(e, eyebrow) {
+    if (!e) return false;
+    const lt = e.lockTime instanceof Date ? e.lockTime : new Date(e.lockTime), when = isFinite(lt.getTime()) ? lt.toLocaleString() : '';
+    const title = e.kind === 'confined' ? 'Confined Space — ' + (e.space || '') : e.kind === 'report' ? 'Report — ' + (e.category || '') + (e.anonymous ? ' (anonymous)' : '') : e.kind === 'stats-snapshot' ? 'Stats Snapshot' : (e.startLabel || '') + ' → ' + (e.endLabel || '');
+    const sub = when ? (e.kind === 'run' ? 'Locked ' : e.kind === 'confined' ? 'Closed ' : '') + when : '';
+    return window.pbPdfViewOpen({ key: 'arch|' + String(e.kind) + '|' + String(e.id) + '|' + String(e.rev || 0) + '|' + (e.sent ? 1 : 0), eyebrow: eyebrow || 'RECORDS', title, sub, entry: e, make: (say) => pbArchivePdfDoc(e, say), name: pbArchivePdfName(e), backId: e.id });
+  };
+  // the session's one build of the file: the viewer, Download and Share all wait for this same promise
+  function pbPvDoc(S) {
+    if (!S.docP) S.docP = Promise.resolve().then(() => S.make(pbPvSayFor(S))).then((doc) => { if (pbPvS === S) { S.doc = doc; pbPvBtns(S); } return doc; }, (err) => { S.docP = null; throw err; });
+    return S.docP;
+  }
+  async function pbPvStart(S) {
+    if (typeof pdfLibReady !== 'function' || !pdfLibReady()) { pbPvTextOnly(S, 'The PDF tool didn’t load (no signal when the app opened?), so this is the text version.'); return; }
+    try {
+      if (!S.doc) { await pbPvSay('Making the PDF…'); await pbPvDoc(S); if (pbPvS !== S) return; }
+      if (!(await pbEnsurePdfjs())) { if (pbPvS === S) pbPvTextOnly(S, 'The PDF viewer couldn’t start on this phone, so this is the text version. Download still gives you the PDF.', true); return; }
+      const data = S.doc.output('arraybuffer');
+      const pdf = await pdfjsLib.getDocument(Object.assign({ data }, PB_PV_PDFJS)).promise;
+      if (pbPvS !== S) { try { pdf.destroy(); } catch (e) {} return; }
+      S.pdf = pdf; S.n = pdf.numPages;
+      const p1 = await pdf.getPage(1);
+      if (pbPvS !== S) return;
+      S.p1 = p1; S.v1 = p1.getViewport({ scale: 1 });
+      await pbPvSay(null);
+      const su = pbPvEl('pdfvSub'); if (su) su.textContent = [S.sub, S.n + (S.n === 1 ? ' page' : ' pages')].filter(Boolean).join(' · ');
+      pbPvLayout(S);
+    } catch (err) {
+      console.error('PDF view failed', err);
+      if (pbPvS === S) pbPvTextOnly(S, 'The report couldn’t be drawn on this phone, so this is the text version.' + (S.doc ? ' Download still gives you the PDF.' : ''), !!S.doc);
+    }
+  }
+  function pbPvTextOnly(S, why, keepFile) {
+    S.textOnly = true; S.text = true; pbPvMode(S);
+    const has = !!String((S.entry && S.entry.reportText) || '').trim();
+    pbPvSay(has ? why : why.replace(/, so this is the text version\./, '.') + ' This record has no text to show.');
+    const t = pbPvEl('pdfvText'); if (t && !has) t.style.display = 'none';
+    const d = pbPvEl('pdfvDownload'), sh = pbPvEl('pdfvShare'); if (d) d.style.display = keepFile ? '' : 'none'; if (sh && !keepFile) sh.style.display = 'none';
+  }
+  function pbPvMode(S) {
+    const pg = pbPvEl('pdfvPages'), t = pbPvEl('pdfvText'), b = pbPvEl('pdfvTextBtn'), z = pbPvEl('pdfvZoom'), d = pbPvEl('pdfvDownload');
+    const text = S.text || S.textOnly;
+    if (pg) pg.style.display = text ? 'none' : '';
+    if (t) { t.style.display = text ? '' : 'none'; t.textContent = text ? String((S.entry && S.entry.reportText) || '') : ''; }
+    if (b) { b.textContent = S.text ? 'PDF' : 'Text version'; b.style.display = S.textOnly ? 'none' : ''; }
+    if (z) z.style.display = text ? 'none' : '';
+    if (d) d.style.display = '';
+    if (!text && S.pdf) pbPvUpdate(S);
+  }
+  function pbPvWidth(box) { const host = box.parentElement; return Math.max(240, (box.clientWidth || (host ? host.clientWidth - 32 : 0)) - 16); }
+  // the pages: a white placeholder per page the size the page will be; the pages near the screen are drawn
+  function pbPvLayout(S) {
+    const box = pbPvEl('pdfvPages'); if (!box || !S.v1) return;
+    pbPvClear(S, box);
+    const w = pbPvWidth(box), cssW = Math.floor(w * S.zoom), sc = cssW / S.v1.width, cssH = Math.floor(S.v1.height * sc);
+    S.w = w; S.cssW = cssW; S.cssH = cssH; S.sc = sc;
+    for (let n = 1; n <= S.n; n++) {
+      const d = document.createElement('div'); d.className = 'pb-pdfv-page'; d.dataset.n = String(n);
+      d.style.width = cssW + 'px'; d.style.height = cssH + 'px'; d.setAttribute('role', 'img'); d.setAttribute('aria-label', 'Page ' + n + ' of ' + S.n);
+      box.appendChild(d);
+    }
+    const z = pbPvEl('pdfvZoom'), pct = Math.round(S.zoom * 100) + '%'; if (z) { z.textContent = pct; z.setAttribute('aria-label', 'Zoom, ' + pct); }
+    pbPvDraw(S, box.firstElementChild); // the first page at once
+    pbPvWatch(true); pbPvUpdate(S);
+  }
+  // which pages hold a drawing: the one in the middle of the screen, one either side and any page on screen are drawn;
+  // a drawn page more than PB_PV_KEEP away (and off screen) is released
+  function pbPvUpdate(S) {
+    const box = pbPvEl('pdfvPages'); if (!box || pbPvS !== S || !S.pdf || S.text || S.textOnly || pbCurrentScreen !== 'pdfView') return;
+    const ps = box.children, vh = window.innerHeight || document.documentElement.clientHeight || 800, mid = vh / 2, on = [];
+    let c = 0, best = Infinity;
+    for (let k = 0; k < ps.length; k++) {
+      const r = ps[k].getBoundingClientRect(); on[k] = r.bottom > 0 && r.top < vh;
+      const dd = r.bottom < mid ? mid - r.bottom : r.top > mid ? r.top - mid : 0; if (dd < best) { best = dd; c = k; }
+    }
+    for (let k = 0; k < ps.length; k++) {
+      const d = ps[k], far = Math.abs(k - c);
+      if (far <= 1 || on[k]) { if (!d.dataset.drawn && !d.dataset.failed) pbPvDraw(S, d); }
+      else if (far > PB_PV_KEEP && (d.dataset.drawn || d.dataset.failed)) pbPvRelease(S, d);
+    }
+  }
+  function pbPvRelease(S, d) {
+    d._pbTok = null; if (d._pbTask) { try { d._pbTask.cancel(); } catch (e) {} }
+    d.querySelectorAll('canvas').forEach(pbPvFree); d.innerHTML = ''; d.classList.remove('drawn', 'failed'); delete d.dataset.drawn; delete d.dataset.failed;
+    S.freed = (S.freed || 0) + 1;
+  }
+  let pbPvRaf = 0, pbPvResizeT = 0;
+  function pbPvOnScroll() {
+    if (pbPvRaf) return;
+    const go = () => { pbPvRaf = 0; if (pbPvS) pbPvUpdate(pbPvS); };
+    pbPvRaf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame(go) : setTimeout(go, 50);
+  }
+  function pbPvOnResize() { // a turned phone: the pages are laid out again for the new width
+    clearTimeout(pbPvResizeT);
+    pbPvResizeT = setTimeout(() => { const S = pbPvS, box = pbPvEl('pdfvPages'); if (!S || !S.pdf || !box || pbCurrentScreen !== 'pdfView') return; if (!S.text && pbPvWidth(box) !== S.w) pbPvLayout(S); else pbPvUpdate(S); }, 250);
+  }
+  function pbPvWatch(on) {
+    document.removeEventListener('scroll', pbPvOnScroll, true); window.removeEventListener('resize', pbPvOnResize);
+    if (on) { document.addEventListener('scroll', pbPvOnScroll, { capture: true, passive: true }); window.addEventListener('resize', pbPvOnResize); }
+  }
+  // the phone's pixel ratio, lowered so the page stays within PB_PV_MAXPX; a page that failed once is drawn at 1
+  function pbPvRatio(S, lo) {
+    const want = lo ? 1 : Math.min(window.devicePixelRatio || 1, 3);
+    return Math.max(0.5, Math.min(want, Math.sqrt(PB_PV_MAXPX / Math.max(1, S.cssW * S.cssH))));
+  }
+  async function pbPvDraw(S, d) {
+    if (!d || d.dataset.drawn || pbPvS !== S || !S.pdf) return;
+    d.dataset.drawn = '1'; delete d.dataset.failed; d.classList.remove('failed');
+    const tok = d._pbTok = {}, n = Number(d.dataset.n), zoom = S.zoom, live = () => pbPvS === S && zoom === S.zoom && d._pbTok === tok && d.isConnected;
+    let c = null;
+    try {
+      const page = n === 1 && S.p1 ? S.p1 : await S.pdf.getPage(n);
+      if (!live()) return;
+      const r = pbPvRatio(S, d.dataset.lo === '1'), vp = page.getViewport({ scale: S.sc * r });
+      c = document.createElement('canvas'); c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+      const ctx = c.getContext('2d'); if (!ctx) throw new Error('No canvas memory left');
+      c.style.width = S.cssW + 'px'; c.style.height = Math.floor(vp.height / r) + 'px';
+      const task = d._pbTask = page.render({ canvasContext: ctx, viewport: vp }); S.tasks.add(task);
+      try { await task.promise; } finally { S.tasks.delete(task); if (d._pbTask === task) d._pbTask = null; }
+      if (!live()) { pbPvFree(c); return; }
+      d.style.height = c.style.height; d.innerHTML = ''; d.appendChild(c); d.classList.add('drawn');
+    } catch (err) {
+      if (c) pbPvFree(c);
+      if (!live()) return; // released, zoomed or left meanwhile: nothing to say
+      console.error('PDF page ' + n + ' failed', err);
+      delete d.dataset.drawn; d.dataset.failed = '1'; d.dataset.lo = '1'; d.classList.add('failed');
+      d.innerHTML = '<button type="button" class="pb-pdfv-retry">Couldn’t draw page ' + n + ' — Tap to retry</button>';
+      d.firstChild.onclick = () => pbPvDraw(S, d);
+    }
+  }
+  window.pbPdfViewZoom = function() { const S = pbPvS; if (!S || !S.pdf) return; S.zoom = PB_PV_ZOOMS[(PB_PV_ZOOMS.indexOf(S.zoom) + 1) % PB_PV_ZOOMS.length]; pbPvLayout(S); };
+  window.pbPdfViewText = function() { const S = pbPvS; if (!S) return; S.text = !S.text; pbPvMode(S); };
+  async function pbPvFile(S) {
+    if (S.doc) return S.doc;
+    if (typeof pdfLibReady !== 'function' || !pdfLibReady()) { pbAlert('PDF library didn\'t load \u2014 check your connection and try again.'); return null; }
+    try { if (!S.docP) await pbPvSayFor(S)('Making the PDF…'); return await pbPvDoc(S); }
+    catch (err) { console.error('PDF failed', err); if (pbPvS === S) pbPvSay('The PDF couldn’t be made on this phone.'); return null; }
+  }
+  window.pbPdfViewDownload = async function() { const S = pbPvS; if (!S) return; const doc = await pbPvFile(S); if (doc) doc.save(S.name); };
+  window.pbPdfViewShare = function() { // no await before the share sheet: it must open inside the tap
+    const S = pbPvS; if (!S) return;
+    if (!S.doc) { pbPvBtns(S); return; }
+    let blob = null; try { blob = S.doc.output('blob'); } catch (e) { blob = null; }
+    if (blob) pbHandFileToPhone(blob, S.name); else S.doc.save(S.name);
+  };
+  window.pbPdfViewBack = function() { const S = pbPvS, from = S && S.from; if (pbHistory.length) pbGoBack(); else pbGoto(from && from !== 'pdfView' ? from : 'home', true); };
+  // Back on the screen the viewer was opened from: Records lands on the record's row (highlighted, its View focused); other screens where they were
+  function pbPvReturn(S) {
+    if (pbCurrentScreen !== S.from) return;
+    let row = null;
+    if (S.from === 'archive' && S.backId != null) { const i = runArchive.findIndex(x => x && x.id === S.backId), pre = i === -1 ? null : document.getElementById('archiveView' + i); row = pre && pre.closest('.pb-arch-row'); }
+    if (row) {
+      document.querySelectorAll('#archiveList .pb-fx-focus').forEach(x => x.classList.remove('pb-fx-focus'));
+      row.classList.add('pb-fx-focus');
+      try { row.scrollIntoView({ block: 'center' }); } catch (e) {}
+      const b = row.querySelector('.pb-arch-view'); try { if (b) b.focus({ preventScroll: true }); } catch (e) {}
+    } else if (S.fromY) window.scrollTo({ top: S.fromY, behavior: 'instant' });
+  }
+  window.pbScreenHooks.push((name, back) => {
+    if (name === 'pdfView') { if (pbPvS) pbPvArrive(pbPvS); else setTimeout(() => window.pbPdfViewBack(), 0); return; } // nothing to show: back to the screen before
+    const S = pbPvS; if (!S) return;
+    pbPvDrop(); // left by any route (Back, a tab, the active bar): the file and the drawings go
+    if (back && name === S.from) setTimeout(() => pbPvReturn(S), 0);
+  });
+  window.pbAccountLoadHooks.push(() => { const on = pbCurrentScreen === 'pdfView'; pbPvDrop(); if (on) { pbGoto('home', false, true); pbHistory = []; } }); // the screens behind belonged to the other account
+  window.pbPdfViewShowsReport = () => !!(pbPvS && pbCurrentScreen === 'pdfView' && pbPvS.entry && pbPvS.entry.kind === 'report'); // the crash reporter stays quiet (as on the report screens)
+  window.__pbPdfView = { session: () => pbPvS, history: () => pbHistory.slice(), receipt: (e, info) => pbShowReportReceipt(e, info) }; // for tests
+  // ================= end feat_pdfview =================
   // ---- feat_curjob: the current job, chosen on Home (per account, on this phone) ----
   { let pbCj = { uid: null, v: null, jobs: null, at: 0 };
     const PB_CJ_KEY = 'pbCurrentJob', PB_CJ_JOBS = 'pbCurrentJobList';
@@ -40323,22 +40595,30 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     return PB_RPT.BOTTOM;
   }
-  window.pbDownloadArchivePDF = async function(i) {
-    if (!pdfLibReady()) { pbAlert('PDF library didn\'t load \u2014 check your connection and try again.'); return; }
-    const entry = runArchive[i];
-    if (!entry) return;
+  // feat_pdfview: a record's PDF, made once for Download PDF and for the viewer screen (the viewer shows the downloaded file).
+  // say(text | null): where progress is shown (the busy note for a download, the viewer's status line on screen).
+  async function pbArchivePdfDoc(entry, say) {
+    say = say || pbRptBusy;
     const n = pbRptPhotoTotal([entry]);
-    if (n > 6) await pbRptBusy('Making the PDF: preparing ' + n + ' photos\u2026');
+    if (n > 6) await say('Making the PDF: preparing ' + n + ' photos\u2026');
     let doc;
     try {
-      const unreadable = await pbPreflightPdfImages([entry], (d, t) => { if (t > 6) pbRptBusy('Making the PDF: photo ' + d + ' of ' + t + '\u2026'); });
-      if (n > 6 || (entry.intervalRows || []).length > 300) await pbRptBusy('Making the PDF: laying out the pages\u2026');
+      const unreadable = await pbPreflightPdfImages([entry], (d, t) => { if (t > 6) say('Making the PDF: photo ' + d + ' of ' + t + '\u2026'); });
+      if (n > 6 || (entry.intervalRows || []).length > 300) await say('Making the PDF: laying out the pages\u2026');
       doc = pbRptMakeSafe(entry, { unreadable });
-    } finally { pbRptBusy(null); }
+    } finally { say(null); }
     pbFxIosSave(doc); // fix_endsheet: an iPhone Home Screen app hands the PDF to the share sheet
     const anon = entry.kind === 'report' && entry.anonymous;
     if (anon) pbPdfWithoutTime(doc, 'report-anonymous.pdf');
     else { try { doc.setProperties({ title: pbPdfSafe(pbRptKindName(entry) + ': ' + pbRptEntryLabel(entry)), creator: pbRptBuild() }); } catch (x) {} }
+    return doc;
+  }
+  function pbArchivePdfName(entry) { return entry.kind === 'report' && entry.anonymous ? 'report-anonymous.pdf' : 'archive-' + entry.kind + '-' + entry.id + '.pdf'; }
+  window.pbDownloadArchivePDF = async function(i) {
+    if (!pdfLibReady()) { pbAlert('PDF library didn\'t load \u2014 check your connection and try again.'); return; }
+    const entry = runArchive[i];
+    if (!entry) return;
+    const doc = await pbArchivePdfDoc(entry);
     doc.save('archive-' + entry.kind + '-' + entry.id + '.pdf');
   };
   function pbRptPhotoTotal(list) { let n = 0; const walk = (v) => { if (typeof v === 'string') { if (/^data:image\//.test(v)) n++; } else if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v === 'object' && !(v instanceof Date)) Object.values(v).forEach(walk); }; list.forEach(walk); return n; }
@@ -49012,22 +49292,18 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // Approve Report; the report's PDF is there to open when he needs it (rarely). The office sees the PDF first.
     const approve = canProd ? '<section id="cxRunApprove" style="margin-top:4px"><h3 class="pbx-h2">Production for this run</h3><style>#cxRunProdBox .pbp-btns2{display:none}</style><div id="cxRunProdBox">' + window.pbRrProdBox(x) + '</div>'
         + (x.reviewed_at ? '<p class="pbx-note" id="cxRunApproved">' + pbCxCheck() + pbCxE(' Approved ' + pbRoWhen({ locked_at: x.reviewed_at })) + '</p>' : '<p class="pb-warn pbp-manmsg" id="cxRunApproveErr" role="alert" style="display:none"></p><button type="button" class="pb-btn" id="cxRunApproveBtn" onclick="pbRrApprove()">Approve Report</button>') + '</section>' : '';
-    const pdf = '<div class="pb-save-offer-btns" style="margin:4px 0" role="group" aria-label="Zoom"><button type="button" class="pb-btn ghost small" id="cxPdfZoomOut" onclick="pbRrPdfZoom(-1)" aria-label="Smaller">−</button><span class="pbx-note" id="cxPdfZoom" style="align-self:center">' + Math.round(pbRrPdfZ * 100) + '%</span><button type="button" class="pb-btn ghost small" id="cxPdfZoomIn" onclick="pbRrPdfZoom(1)" aria-label="Bigger">+</button></div>'
-      + '<div id="cxRunPdfView" style="overflow:auto; -webkit-overflow-scrolling:touch; max-height:75vh; background:#5b6068; border-radius:10px; padding:6px;"><p class="pbx-none" style="color:#fff">Opening the report…</p></div>'
-      + '<button type="button" class="pb-btn ghost small" id="cxRunPdf" onclick="pbRrPdf()" style="margin-top:6px">Save or Share PDF</button>'
-      + (Number(x.photo_count) ? '<p class="pbx-note" id="cxRunPhotos">' + pbCxE(x.photo_count + ' photo' + (x.photo_count === 1 ? '' : 's') + ' left out: they stay on the crew member’s phone.') + '</p>' : '')
-      + '<details class="pb-more" style="margin-top:8px"><summary><span>Text version</span></summary><pre id="cxRunText" style="white-space:pre-wrap; font-family:\'IBM Plex Mono\'; font-size:12px; background:#fff; color:#1A1D21; padding:8px; border:1px solid #C9CED6; border-radius:10px; max-height:60vh; overflow-y:auto;">' + escapeHtml(e.reportText || '') + '</pre></details>';
+    // feat_pdfview (owner, Oct 24): the report is read on the PDF viewer screen (View Run Report); Download / Share / the text are there
+    const pdf = '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn small" id="cxRunView" onclick="pbRrView()">View Run Report</button></div>'
+      + (Number(x.photo_count) ? '<p class="pbx-note" id="cxRunPhotos">' + pbCxE(x.photo_count + ' photo' + (x.photo_count === 1 ? '' : 's') + ' left out: they stay on the crew member’s phone.') + '</p>' : '');
     if (canProd) {
-      h += approve + pbRrSetupHtml(O, x) + '<details class="pb-more" id="cxRunPdfFold" style="margin-top:14px"' + (O.pdfOpen ? ' open' : '') + ' ontoggle="pbRrPdfFold(this.open)"><summary><span>View the run report (PDF)</span></summary>' + pdf + '</details>'
+      h += approve + pbRrSetupHtml(O, x) + '<section id="cxRunReport" style="margin-top:14px">' + pdf + '</section>'
         + '<details class="pb-more" id="cxRunMore" style="margin-top:14px"><summary><span>More</span></summary><p class="pbx-note">Delete this run if it shouldn’t be in the company’s records (a test, a duplicate, the wrong job). It leaves every list and its production stops counting. The office sees that you deleted it, and the server keeps a copy.</p><button type="button" class="pb-btn ghost small" id="cxRunDelete" style="color:var(--rod-red)" onclick="pbRrDelete()">Delete Run</button></details>';
-      if (O.pdfOpen) setTimeout(() => window.pbRrPdfShow(), 0);
     } else {
-      h += pbRrSetupHtml(O, x) + pbRrOffHtml(O, x) + (x.can_review && !x.reviewed_at ? '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn small" id="cxRunReviewed" onclick="pbRrReviewed()">Approve Report</button></div>' : '')
+      h += pdf + pbRrSetupHtml(O, x) + pbRrOffHtml(O, x) + (x.can_review && !x.reviewed_at ? '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn small" id="cxRunReviewed" onclick="pbRrReviewed()">Approve Report</button></div>' : '')
         + (x.can_send_back && !O.fromCrew && !O.fromList ? (O.sendBack ? '<div class="pb-field" id="cxSendBackForm" style="margin-top:14px"><label for="cxSendBackNote">What does the foreman need to add or fix?</label><textarea id="cxSendBackNote" rows="3" maxlength="500" placeholder="e.g. Add the crew hours" style="width:100%;box-sizing:border-box" oninput="pbRrSendBackType(this.value)">' + escapeHtml(O.sendBackText || '') + '</textarea>' + (O.sendBackErr ? '<p class="pb-warn pbp-manmsg" role="alert">' + pbCxE(O.sendBackErr) + '</p>' : '') + '<div class="pb-save-offer-btns"><button type="button" class="pb-btn small" id="cxSendBackGo" onclick="pbRrSendBack()">Send Back</button><button type="button" class="pb-btn ghost small" onclick="pbRrSendBackCancel()">Cancel</button></div></div>'
-          : '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn ghost small" id="cxSendBackBtn" onclick="pbRrSendBackOpen()">Send Back to Foreman</button></div>') : '') + pdf;
-      setTimeout(() => window.pbRrPdfShow(), 0);
+          : '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn ghost small" id="cxSendBackBtn" onclick="pbRrSendBackOpen()">Send Back to Foreman</button></div>') : '');
     }
-    const keep = 'd|' + [x.id || x.sref, e.id, x.reviewed_at || '', x.sent_at || '', O.pdfOpen ? 1 : 0, O.sendBack ? 'sb:' + (O.sendBackErr || '') : '', x.sent_back_at || '', x.removed_at || '', pbRrOffKey(O, x), pbRrSetupKey(O, x), canProd ? ((pbLv.data ? 1 : 0) + ':' + (pbLv.form ? pbLv.form.cid + ':' + (pbLv.form.err || '') + ':' + pbLv.form.rows.length + ':' + (pbLv.form.eq ? pbLv.form.eq.rows.map(r => r.key).join(',') : '') : '') + ':' + JSON.stringify(pbLvRuns())) : ''].join('|');
+    const keep = 'd|' + [x.id || x.sref, e.id, x.reviewed_at || '', x.sent_at || '', O.sendBack ? 'sb:' + (O.sendBackErr || '') : '', x.sent_back_at || '', x.removed_at || '', pbRrOffKey(O, x), pbRrSetupKey(O, x), canProd ? ((pbLv.data ? 1 : 0) + ':' + (pbLv.form ? pbLv.form.cid + ':' + (pbLv.form.err || '') + ':' + pbLv.form.rows.length + ':' + (pbLv.form.eq ? pbLv.form.eq.rows.map(r => r.key).join(',') : '') : '') + ':' + JSON.stringify(pbLvRuns())) : ''].join('|');
     return { h, s: '', keep };
   }
   // ---- feat_runsetup: a sent run's setup, changed by the office (intended) or its foreman (field; his win) ----
@@ -49254,42 +49530,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!p || !p.id || !run || !run.session_ref) return '';
     return pbCrewBtn(id, 'View Run Report', 'pbRrCrewOpen(' + escapeHtml(JSON.stringify(String(p.id))) + ', ' + escapeHtml(JSON.stringify(String(run.session_ref))) + ', ' + escapeHtml(JSON.stringify(String(p.name || ''))) + ')', 'ghost');
   };
-  // ---- r15.2a: the report's PDF drawn on screen (the bundled pdf.js draws the same file Save PDF makes) ----
-  let pbRrPdfZ = 1;
-  async function pbRrMakeDoc(e) {
-    const unreadable = await pbPreflightPdfImages([e], () => {});
-    return pbRptMakeSafe(e, { unreadable });
-  }
-  window.pbRrPdfDraw = async function(e, box, key) {
-    if (!box) return false;
-    if (!pdfLibReady()) { box.innerHTML = '<p class="pbx-none" style="color:#fff">The PDF tool didn’t load (no signal when the app opened?). The text version is below.</p>'; return false; }
-    const doc = await pbRrMakeDoc(e);
-    const data = doc.output('arraybuffer');
-    if (!(await pbEnsurePdfjs())) { box.innerHTML = '<p class="pbx-none" style="color:#fff">The PDF viewer couldn’t start on this phone. Use Save or Share PDF, or the text version below.</p>'; return false; }
-    const pdf = await pdfjsLib.getDocument({ data, isEvalSupported: false, cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.5.141/cmaps/', cMapPacked: true, standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.5.141/standard_fonts/' }).promise;
-    if (box.dataset.pdfKey !== key) return false;
-    box.innerHTML = '';
-    const w = Math.max(280, box.clientWidth - 12), dpr = Math.min(3, window.devicePixelRatio || 1);
-    for (let n = 1; n <= pdf.numPages; n++) {
-      if (box.dataset.pdfKey !== key) return false;
-      const page = await pdf.getPage(n), v1 = page.getViewport({ scale: 1 }), cssW = w * pbRrPdfZ, sc = cssW / v1.width, vp = page.getViewport({ scale: sc * dpr });
-      const c = document.createElement('canvas'); c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
-      c.style.width = Math.floor(cssW) + 'px'; c.style.height = Math.floor(vp.height / dpr) + 'px'; c.style.display = 'block'; c.style.margin = '0 auto 6px auto'; c.style.background = '#fff';
-      c.setAttribute('role', 'img'); c.setAttribute('aria-label', 'Report page ' + n + ' of ' + pdf.numPages); c.className = 'pb-rr-pdfpage';
-      box.appendChild(c);
-      await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
-    }
-    box.dataset.pages = String(pdf.numPages);
-    return true;
-  };
-  window.pbRrPdfShow = async function() {
-    const O = pbRoFor(pbArchiveOwnerUid), e = O.rec, box = document.getElementById('cxRunPdfView');
-    if (!e || !box) return;
-    const key = String(e.id) + '|' + pbRrPdfZ;
-    if (box.dataset.pdfKey === key) return; // already drawn, or being drawn, in this box
-    box.dataset.pdfKey = key;
-    try { await window.pbRrPdfDraw(e, box, key); } catch (err) { console.error('PDF view failed', err); if (box.dataset.pdfKey === key) box.innerHTML = '<p class="pbx-none" style="color:#fff">The report couldn’t be drawn here. Use Save or Share PDF, or the text version below.</p>'; }
-  };
+  // ---- r15.2a's inline drawer went in feat_pdfview (Oct 24): the report is read on the PDF viewer screen (pbRrView) ----
   // ---- r15.3: the office sends a report back; the foreman deletes a crew run ----
   window.pbRrSendBackOpen = function() { const O = pbRoFor(pbArchiveOwnerUid); O.sendBack = true; O.sendBackErr = ''; pbCxListRender(); setTimeout(() => { const t = document.getElementById('cxSendBackNote'); if (t) t.focus(); }, 50); };
   window.pbRrSendBackType = function(v) { pbRo.sendBackText = String(v || ''); };
@@ -49348,13 +49589,6 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return h + '</section>';
   };
   window.pbRrOpenFromJob = function(i) { pbCxOpenList('runs'); setTimeout(() => window.pbRrOpen(i), 0); };
-  window.pbRrPdfFold = function(open) { const O = pbRoFor(pbArchiveOwnerUid); O.pdfOpen = !!open; if (open) window.pbRrPdfShow(); };
-  window.pbRrPdfZoom = function(d) {
-    const steps = [0.75, 1, 1.5, 2, 3], i = Math.max(0, steps.indexOf(pbRrPdfZ));
-    pbRrPdfZ = steps[Math.max(0, Math.min(steps.length - 1, i + d))];
-    const z = document.getElementById('cxPdfZoom'); if (z) z.textContent = Math.round(pbRrPdfZ * 100) + '%';
-    window.pbRrPdfShow();
-  };
   // ---- r15.2a: Enter Production for the crew run being reviewed (the crew view's own form, on My production) ----
   // r15.2.1: the run's production form inside the report (the crew view's own form and save, on this screen)
   function pbRrLocate(x) {
@@ -49419,19 +49653,33 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     window.pbLvFormOpen(at[0], at[1]);
     setTimeout(() => { const f = document.getElementById('pmLiveForm'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'start' }); }, 150);
   };
+  // feat_pdfview: the office copy's PDF, made once for Save or Share and for the viewer screen (say: where progress shows)
+  async function pbRrPdfDoc(e, say) {
+    say = say || pbRptBusy;
+    let doc;
+    try {
+      await say('Making the PDF…');
+      const unreadable = await pbPreflightPdfImages([e], () => {});
+      doc = pbRptMakeSafe(e, { unreadable });
+    } finally { say(null); }
+    if (typeof window.pbFxIosSave === 'function') window.pbFxIosSave(doc);
+    try { doc.setProperties({ title: pbPdfSafe(pbRptKindName(e) + ': ' + pbRptEntryLabel(e) + ' (office copy)'), creator: pbRptBuild() }); } catch (x) {}
+    return doc;
+  }
+  function pbRrPdfName(e) { return 'crew-run-' + String(e.jobNumber || 'job').replace(/[^A-Za-z0-9_-]+/g, '-') + '-' + e.id + '.pdf'; }
   window.pbRrPdf = async function() {
     const O = pbRoFor(pbArchiveOwnerUid), e = O.rec;
     if (!e) return;
     if (!pdfLibReady()) { pbAlert('PDF library didn\'t load — check your connection and try again.'); return; }
-    let doc;
-    try {
-      await pbRptBusy('Making the PDF…');
-      const unreadable = await pbPreflightPdfImages([e], () => {});
-      doc = pbRptMakeSafe(e, { unreadable });
-    } finally { pbRptBusy(null); }
-    if (typeof window.pbFxIosSave === 'function') window.pbFxIosSave(doc);
-    try { doc.setProperties({ title: pbPdfSafe(pbRptKindName(e) + ': ' + pbRptEntryLabel(e) + ' (office copy)'), creator: pbRptBuild() }); } catch (x) {}
-    doc.save('crew-run-' + String(e.jobNumber || 'job').replace(/[^A-Za-z0-9_-]+/g, '-') + '-' + e.id + '.pdf');
+    const doc = await pbRrPdfDoc(e);
+    doc.save(pbRrPdfName(e));
+  };
+  // View Run Report: the open run's report on the PDF viewer screen (Back returns to this run)
+  window.pbRrView = function() {
+    const O = pbRoFor(pbArchiveOwnerUid), e = O.rec, x = O.open;
+    if (!e || !x || typeof window.pbPdfViewOpen !== 'function') return;
+    window.pbPdfViewOpen({ key: 'rr|' + String(x.id || x.sref || '') + '|' + String(e.id), eyebrow: 'RUN REPORT', title: (e.startLabel || '') + ' → ' + (e.endLabel || ''),
+      sub: [x.who, pbProdJobLabel(x.job_number || ''), x.locked_at ? 'Locked ' + pbRoWhen(x) : ''].filter(Boolean).join(' · '), entry: e, make: (say) => pbRrPdfDoc(e, say), name: pbRrPdfName(e) });
   };
   window.pbScreenHooks.push((name) => { try { if (name === 'home' && pbCx.on) window.pbRrLoad(pbArchiveOwnerUid, false); } catch (e) {} });
   // ================= end r15.1 PM RUNS =================
