@@ -106,7 +106,7 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
     check('reopened: not dirty', await page.evaluate(() => !window.pbExtraUnsavedChecks.some(f => f('prodJob', 'home'))));
     await page.click('#ppCancelBtn'); await page.waitForTimeout(500);
     // ---- a material ----
-    check('Concrete 9/10: material alert under Restoration', /80% of ordered used/.test((await page.evaluate(() => document.getElementById('pjCxHero').innerText))));
+    check('Concrete 9/10: material alert under Restoration', /90% of ordered used/.test((await page.evaluate(() => document.getElementById('pjCxHero').innerText))));
     await page.tap('#pjCxTab_materials'); await page.waitForTimeout(800);
     await page.evaluate(() => window.pbMatToggle('c1')); await page.waitForTimeout(400);
     check('details: Silence Alerts button', (await txt(page, '#pjMatMute_c1')) === 'Silence Alerts');
@@ -114,11 +114,11 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
     const mu = await page.evaluate(() => (window.__rpcLog.filter(x => x.fn === 'pb_mat_mute').pop() || {}).args);
     check('calls pb_mat_mute(c1, true)', mu && mu.p_material_id === 'c1' && mu.p_muted === true && mu.p_expect_uid === 'acctA');
     const card = await txt(page, '#pjMat_c1');
-    check('card: Alerts silenced, no "% of ordered used" chip (' + card.slice(0, 160) + ')', /Alerts silenced/.test(card) && !/80% of ordered used/.test(card.split('Alert at')[0]));
+    check('card: Alerts silenced, no "% of ordered used" chip (' + card.slice(0, 160) + ')', /Alerts silenced/.test(card) && !/% of ordered used/.test(card.split('Alert at')[0]));
     check('button now: Turn Alerts Back On', (await txt(page, '#pjMatMute_c1')) === 'Turn Alerts Back On');
     await page.screenshot({ path: SHOTS + 'alerts_material.png', fullPage: false });
     await page.tap('#pjCxTab_overview'); await page.waitForTimeout(600);
-    check('overview: no material alert now', !/80% of ordered used|material alert/.test(await page.evaluate(() => document.getElementById('pjCxHero').innerText)));
+    check('overview: no material alert now', !/% of ordered used|material alert/.test(await page.evaluate(() => document.getElementById('pjCxHero').innerText)));
     // ---- a notification link opens the job ----
     await page.evaluate(() => pbGotoTab('home')); await page.waitForTimeout(800);
     await page.evaluate(() => window.pbPushOpen('#/job/24-101')); await page.waitForTimeout(2500);

@@ -39,7 +39,7 @@ require('/home/claude/batch27/CONSOLE/tests/cx_shim.js')(M); // batch 27 CONSOLE
     await T.openJob(page, '24-101');
     let t = await T.matText(page);
     check('job page: Materials section with the Used / Ordered / Expected key', /^Materials Used \/ Ordered \/ Expected/.test(t), t.slice(0, 200));
-    check('job page: pipe row says it is from reported footage (not an estimate)', /8in PVC SDR 35 80% of ordered used 360 \/ 400 \/ 1,000 LF \+40 waiting Counts Pipe Installed footage/.test(t));
+    check('job page: pipe row says it is from reported footage (not an estimate)', /8in PVC SDR 35 All of what’s ordered used 360 \/ 400 \/ 1,000 LF \+40 waiting Counts Pipe Installed footage/.test(t));
     const sandRow = await page.evaluate(() => document.getElementById('pjMat_ms1').innerText.replace(/\s+/g, ' '));
     check('job page: bedding row has the Estimate chip and the plain-words note', /Fine sand \(mason sand\) Over expected Estimate ≈ 23 \/ — \/ 10 yd³ (\+[\d.]+ waiting )?Bedding estimate from Pipe Installed footage\./.test(sandRow) /* r15.5.1: short row text (owner) */, sandRow);
     check('job page: a bedding (sand) + a shading (rock) pair is normal: no split warning (review S7)', !/Split unknown/.test(t) && !/Each one counts the whole job/.test(t));

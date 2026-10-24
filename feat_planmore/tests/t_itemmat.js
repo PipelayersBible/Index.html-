@@ -77,7 +77,7 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
     let U = await under('Pipe Installed');
     check('under Pipe Installed: C900 8in and Bedding rock (' + U.join(' | ') + ')', U.length === 2 && /^C900 8in/.test(U[0]) && /360 \/ 400 \/ 400 LF/.test(U[0]) && /^Bedding rock/.test(U[1]));
     U = await under('Restoration');
-    check('under Restoration: Concrete with "80% of ordered used" (' + U.join(' | ') + ')', U.length === 1 && /Concrete/.test(U[0]) && /80% of ordered used/.test(U[0]));
+    check('under Restoration: Concrete with "90% of ordered used" (' + U.join(' | ') + ')', U.length === 1 && /Concrete/.test(U[0]) && /90% of ordered used/.test(U[0])); /* r15.32 C4: the real share */
     U = await under('Not under an item');
     check('Fittings under "Not under an item" (' + U.join(' | ') + ')', U.length === 1 && /Fittings/.test(U[0]));
     check('key line: Materials: used / ordered / expected', /Materials: used \/ ordered \/ expected/.test(await txt(page, '.pbx-itemhead') || ''));

@@ -1,0 +1,30 @@
+const R = require('/home/claude/batch29/ROLES/tests/roles_lib.js'); const { M } = R;
+const E = require('/home/claude/batch17/END/tests/ea_lib.js');
+(async () => {
+  const browser = await M.chromium.launch();
+  const { ctx, page } = await R.setup(browser, { uid: 'acctP', role: 'pipelayer', extra: { __psrv: { entries: {}, plans: {}, links: [{ foreman: 'acctF', pipelayer: 'acctP', by: 'acctP', started: '2026-10-01T00:00:00Z' }] } } });
+  await page.clock.install({ time: new Date('2026-10-20T18:22:00') }); await page.reload(); await page.waitForTimeout(2500); await M.dismiss(page);
+  const id = await M.lockRun(page, { dist: 510 }); await M.dismiss(page);
+  await page.clock.fastForward((3 * 60 + 25) * 60000);
+  await page.evaluate(() => pbLaidMark(14)); await page.waitForTimeout(800);
+  await page.evaluate(() => pbGoto('home')); await page.waitForTimeout(300);
+  await page.clock.fastForward((6 * 60 + 39) * 60000);
+  await E.openRun(page); await page.waitForTimeout(1200);
+  console.log('title', await E.title(page)); console.log('msg', await E.message(page)); console.log('fields', JSON.stringify(await E.fields(page)).slice(0, 400)); console.log('buttons', JSON.stringify(await E.buttons(page)));
+  await E.fill(page, { day: '2026-10-20', time: '21:50' }); await E.tap(page, 'Save Where It Ended'); await page.waitForTimeout(2000);
+  for (let k = 0; k < 4; k++) { const md = await R.modal(page); console.log('modal', JSON.stringify(md)); if (!md) break; await page.evaluate(() => { const b = document.querySelectorAll('#pbModalButtons button'); b[b.length-1].click(); }); await page.waitForTimeout(1200); }
+  console.log('run', JSON.stringify(await E.runOf(page, id)).slice(0, 300));
+  console.log('screen', await E.screen(page));
+  await page.evaluate(() => pbOpenArchive()); await page.waitForTimeout(1200);
+  console.log('archive ids', await page.evaluate(() => [...document.querySelectorAll('#archiveList .pb-arch-row')].map(r => r.querySelector('.k').textContent + ' | ' + [...r.querySelectorAll('button')].map(b => b.textContent.trim()).join(',')).join('\n')));
+  await page.evaluate(() => { window.__pdfData = null; window.__debugPdfSink = (d) => { window.__pdfData = d; }; });
+  await page.evaluate((id) => pbArchiveTap('pbDownloadArchivePDF', id), id); await page.waitForTimeout(3000);
+  console.log('pdf', await page.evaluate(() => window.__pdfData ? window.__pdfData.length : null), JSON.stringify(await R.modal(page)));
+  await page.evaluate(() => pbGoto('home')); await page.waitForTimeout(800);
+  console.log('HOME', await page.evaluate(() => { const s=document.querySelector('.pb-screen.active'); return s.innerText.slice(0,1500) + '\n' + [...s.querySelectorAll('[onclick]')].filter(b=>b.offsetParent).map(b => (b.textContent.trim().slice(0,40)) + ' => ' + b.getAttribute('onclick')).join('\n'); }));
+  await page.evaluate(() => pbResumeLastRunResults()); await page.waitForTimeout(1200);
+  console.log('RES', await E.screen(page), JSON.stringify(await R.modal(page)));
+  console.log('RESBTNS', await page.evaluate(() => { const s=document.getElementById('screen-results'); return [...s.querySelectorAll('button')].filter(b=>b.offsetParent).map(b => b.textContent.trim().slice(0,40)).join(' | '); }));
+  console.log('errors', JSON.stringify(page._errors));
+  await browser.close();
+})();

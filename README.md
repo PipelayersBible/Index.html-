@@ -14,7 +14,7 @@ bash setup.sh          # checks node, playwright/chromium, pdftoppm, pdftotext, 
 - `test/` — `lib.js` (Playwright helpers), `run.sh` (serves a site dir, runs one test), `instrument.py` (adds the `__debug*` hooks to make `app.html`, the copy the tests drive; the deliverable `index.html` never gets them).
 - `hunt/build_live.py LIVE.html SITE_DIR` — makes `SITE_DIR/index.html` (deliverable), `app.html` (instrumented) and syntax-checks every inline script.
 - `batch29/ROLES/tests/run_t.sh SITE_DIR TEST.js PORT` — one test, waiting for free memory.
-- `suite.txt` — the release suite (80 tests, relative paths). `run_suite.sh SITE_DIR` runs it in 3 lanes (~20 min) and writes `suite_result.txt`.
+- `suite.txt` — the release suite (85 tests, relative paths). `run_suite.sh SITE_DIR` runs it in 3 lanes (~20 min) and writes `suite_result.txt`.
 - `feat_*/tests`, `batch*/…/tests`, `test/hunt*`, `gpt/…` — the tests and their helper libraries (`pd_lib.js`, `lf_lib.js`, `cs_lib.js`, `nr_lib*.js`, `daily_lib.js`, `h.js`…). Helper libs mock the Supabase RPCs; no test touches the real server.
 - `feat_pdf/tests/t_pdf_capture.js` — `KEEP=1` writes every PDF the app makes to `feat_pdf/out` for a visual pass (`pdftoppm -r 70 -png`).
 

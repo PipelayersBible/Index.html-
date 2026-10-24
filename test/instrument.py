@@ -60,5 +60,8 @@ r("  window.pbRptFingerprintOf = (e) => pbRptFingerprint(e);", "  window.__debug
 r("  async function processOnePendingEntry(pending, targetEntry, passStale) {\n", "  async function processOnePendingEntry(pending, targetEntry, passStale) {\n    (window.__debugPendingProcessed = window.__debugPendingProcessed || []).push(pending.entryId); // TEST-ONLY\n    if (window.__debugPendingHold) { const h = window.__debugPendingHold; window.__debugPendingHold = null; await h.promise; } // TEST-ONLY\n")
 r("xtabHb = setInterval(() => pbReconLeaseWrite(passUid), 5000);", "xtabHb = setInterval(() => { if (!window.__debugLeaseFreeze) pbReconLeaseWrite(passUid); }, 5000); // TEST-ONLY freeze")
 
+# feat_phonechk (r15.30): let a test stand in for the real push origin (pbPushHostOk) so the re-login restore can be exercised
+r("  function pbPushHostOk() {\n    try { return", "  function pbPushHostOk() {\n    if (window.__debugPushHost === true) return true; // TEST-ONLY\n    try { return")
+
 open(sys.argv[2],'w',encoding='utf-8').write(t)
 print('instrumented ->', sys.argv[2])
