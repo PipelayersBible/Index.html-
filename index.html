@@ -8937,7 +8937,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.30 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.31 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -11635,7 +11635,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       try {
         if (vv && pbShellOskLikely() && !pbShellKb && Math.abs((vv.scale || 1) - 1) < 0.01) {
           shift = Math.round((vv.offsetTop + vv.height) - root.clientHeight);
-          if (Math.abs(shift) < 2 || Math.abs(shift) > root.clientHeight / 2) shift = 0; // noise, or not a stale offset
+          if (Math.abs(shift) < 2 || (shift < 0 && -shift > root.clientHeight / 2) || shift > root.clientHeight) shift = 0; // feat_tabbar: noise, or a shift that would hide the bar; a stale SHORT layout viewport (bar mid-screen after a tab restore) is a positive shift and is applied
         }
       } catch (e) { shift = 0; }
       const v = shift + 'px';
@@ -11664,6 +11664,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     document.addEventListener('cancel', (e) => { const t = e.target; if (t && t.matches && t.matches('input[type="file"]')) pbVvSettle(); }, true);
     window.addEventListener('focus', pbVvSettle);
     window.addEventListener('pageshow', pbVvSettle);
+    setInterval(() => { if (document.visibilityState === 'visible' && !pbShellKb) pbVvSeat(); }, 1500); // feat_tabbar: a restore with no event still gets seated
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pbVvSettle(); });
   })();
   if (typeof ResizeObserver === 'function') {
