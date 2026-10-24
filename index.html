@@ -3738,16 +3738,23 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp #homeEmptyLine:not([style*="none"]) ~ #homeStartHead { margin-top: 12px; }
 
 /* ---- Home: Needs Attention, a compact warning surface per item with its own route ---- */
-#pbApp#pbApp #homeAttentionList .pb-home-att {
+#pbApp#pbApp :is(#homeAttentionList, #homePushCard) .pb-home-att {
   position: relative; margin: 10px 16px 0 16px; padding: 14px 14px 14px 48px;
   background: var(--pb-danger-soft); border: 1px solid var(--pb-danger-line); border-radius: 14px;
   color: var(--pb-text-2); font-size: 14px; line-height: 1.45; overflow-wrap: break-word;
 }
-#pbApp #homeAttentionList .pb-home-att::before { content: ""; position: absolute; left: 14px; top: 15px; width: 22px; height: 22px; background: var(--pb-danger-text); -webkit-mask: var(--pb-icon-warn) center / contain no-repeat; mask: var(--pb-icon-warn) center / contain no-repeat; }
-#pbApp#pbApp #homeAttentionList .pb-home-att.info { background: var(--pb-warn-soft); border-color: rgba(255,170,77,0.45); }
-#pbApp #homeAttentionList .pb-home-att.info::before { background: var(--pb-warn-text); -webkit-mask-image: var(--pb-icon-cloud-off); mask-image: var(--pb-icon-cloud-off); }
-#pbApp #homeAttentionList .pb-home-att .t { display: block; margin-bottom: 2px; font-size: 15px; font-weight: 700; line-height: 1.35; color: var(--pb-text); }
-#pbApp#pbApp #homeAttentionList .pb-home-att .pb-btn { display: flex; width: auto; min-height: 48px; margin-top: 10px; }
+#pbApp :is(#homeAttentionList, #homePushCard) .pb-home-att::before { content: ""; position: absolute; left: 14px; top: 15px; width: 22px; height: 22px; background: var(--pb-danger-text); -webkit-mask: var(--pb-icon-warn) center / contain no-repeat; mask: var(--pb-icon-warn) center / contain no-repeat; }
+#pbApp#pbApp :is(#homeAttentionList, #homePushCard) .pb-home-att.info { background: var(--pb-warn-soft); border-color: rgba(255,170,77,0.45); }
+#pbApp :is(#homeAttentionList, #homePushCard) .pb-home-att.info::before { background: var(--pb-warn-text); -webkit-mask-image: var(--pb-icon-cloud-off); mask-image: var(--pb-icon-cloud-off); }
+#pbApp :is(#homeAttentionList, #homePushCard) .pb-home-att .t { display: block; margin-bottom: 2px; font-size: 15px; font-weight: 700; line-height: 1.35; color: var(--pb-text); }
+#pbApp#pbApp :is(#homeAttentionList, #homePushCard) .pb-home-att .pb-btn { display: flex; width: auto; min-height: 48px; margin-top: 10px; }
+/* feat_pushcard: the Turn on notifications card — an offer, not a warning */
+#pbApp#pbApp #homePushCard .pb-home-att.push { background: var(--pb-brand-soft); border-color: var(--pb-brand-line); }
+#pbApp #homePushCard .pb-home-att.push::before { background: var(--pb-brand); -webkit-mask-image: var(--pb-icon-bell); mask-image: var(--pb-icon-bell); }
+#pbApp#pbApp #homePushCard .pb-pc-act { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 10px; }
+#pbApp#pbApp #homePushCard .pb-pc-act .pb-btn { margin-top: 0; }
+#pbApp#pbApp #homePushCard .pb-btn.tertiary { min-height: 44px; padding: 10px 8px; font-size: 15px; font-weight: 600; }
+#pbApp #homePushCard .pb-pc-note { display: block; margin-top: 6px; color: var(--pb-warn-text); }
 
 /* ---- Home: Save to Phone line (individual plan, after End Run) ---- */
 #pbApp#pbApp #homeSaveOffer.pb-save-offer {
@@ -4249,6 +4256,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div class="pb-warn" id="pbSessionUnreadableBannerHome" style="display:none; margin:10px 16px;"><strong>Saved confined-space permit couldn&rsquo;t be read</strong><span class="pbSessionUnreadableText"></span><div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"><button class="pb-btn" onclick="pbRetryActiveSessionLoad()">Retry</button><button class="pb-btn ghost pbSessionCopyBtn" onclick="pbCopyUnreadableSessionAndRelease()">Save a copy and start fresh</button></div></div>
     <div id="homeAttentionList"></div>
     </div>
+    <div id="homePushCard"></div><!-- feat_pushcard: the Turn on notifications offer; not counted in Needs Attention -->
     <!-- B27CX:company (batch 27 CONSOLE): the Company Home, for the company account, its managers and PMs only (pbIsCompanyHome). Hidden for everyone else.
          What a PM must know first (right now, inbox, material alerts, waiting), then every job's progress; a job opens its own screen. -->
     <section id="homeCompany" class="pb-coh pbx-home" aria-labelledby="homeCoHead" hidden>
@@ -8958,7 +8966,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.35 · 2026-10-24'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.36 · 2026-10-24'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -10055,6 +10063,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const out = items.map(x => '<div class="pb-home-att' + (x.info ? ' info' : '') + '" id="homeAttention_' + x.id + '">' + x.html + '</div>').join('');
         pbSetHtml(list, out);
       }
+      { const pc = document.getElementById('homePushCard'); /* feat_pushcard: not in items, so neither the heading nor the empty line counts it */
+        if (pc) { let h = ''; try { h = typeof window.pbPushCardHtml === 'function' ? window.pbPushCardHtml() : ''; } catch (e) {} pbSetHtml(pc, h); } }
       const ah = document.getElementById('homeAttentionHead');
       if (ah) { const on = items.length > 0 || pbHomeShown(document.getElementById('pbSessionUnreadableBannerHome')); if (on !== (ah.style.display !== 'none')) ah.style.display = on ? '' : 'none'; }
       // Current Work heading, and quieter start buttons while work is active.
@@ -10135,7 +10145,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       await pbForgetLinkSignIn();
       // A saved Supabase session would sign the account back in on the next start-up with signal.
       try { Object.keys(localStorage).filter(k => /^sb-.*-auth-token/.test(k)).forEach(k => localStorage.removeItem(k)); } catch (e) {}
-      if (!planOk && !idOk) { pbAlert('The phone could not be locked \u2014 storage is unavailable. Try again.', 'Lock Failed'); return; }
+      if (!planOk && !idOk) { if (typeof window.pbPushAfterSignOutFailed === 'function') window.pbPushAfterSignOutFailed(); /* feat_pushcard: not locked, release the card hold */ pbAlert('The phone could not be locked \u2014 storage is unavailable. Try again.', 'Lock Failed'); return; }
       pbLeaveAnswered = leaveSig; // no browser "Leave site?" on top of answered questions (only if nothing new since)
       window.location.reload(); // a clean start, as Log Out does
     }, 'Lock This Phone'));
@@ -30882,7 +30892,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   async function pbPushRender() {
     const st = await pbPushState();
     const sub = document.getElementById('settingsNotifSub'); if (sub) sub.textContent = st.lost ? 'Off on this phone. Turn on again' : (PB_PUSH_SHORT[st.code] || '');
-    const box = document.getElementById('notifState'); if (!box) return st;
+    pbPushCardApply(st); /* feat_pushcard */ const box = document.getElementById('notifState'); if (!box) return st;
     const who = sbUser && sbUser.email && st.uid === sbUser.id ? ' (' + sbUser.email + ')' : '';
     const W = {
       unavailable: ['info', 'Not available in this copy of the app', 'Notifications work in the app opened from its web address, pipelayersbible.github.io. Everything else here works as usual.'],
@@ -30916,6 +30926,80 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return st;
   }
   window.pbPushRender = pbPushRender;
+
+  // ---------- feat_pushcard: the Home card ("on by default": the browser needs a tap, so Home offers the tap) ----------
+  // One card in #homePushCard, just below Needs Attention and not counted in it, for the signed-in account with a plan
+  // while this phone is off (Turn On) or an iPhone is still in Safari (the Home Screen step, no button). Not now hides
+  // it for this account on this phone (7 days; 30 for the Safari line). Nothing while it is on or turning on, blocked
+  // (Settings explains), signed out, Log Out / Lock This Phone running, an emergency open, not the Pages copy, not ready.
+  const PB_PUSH_CARD_BUSY_MS = 20000, PB_PUSH_CARD_NOTE_MS = 120000;
+  let pbPushCard, pbPushCardHold = false; // hold: set by pbPushBeforeSignOut, cleared by pbPushAfterSignOutFailed
+  function pbPushCardReset() { pbPushCard = { show: null, uid: null, at: 0, busy: 0, note: '', noteAt: 0 }; } // busy: when Turn On was tapped
+  pbPushCardReset();
+  function pbPushCardBusy() { return !!pbPushCard.busy && Date.now() - pbPushCard.busy < PB_PUSH_CARD_BUSY_MS; } // a prompt with no answer can pend forever
+  function pbPushCardHome() { if (pbCurrentScreen === 'home' && typeof window.pbRenderHome === 'function') window.pbRenderHome(); }
+  function pbPushCardSnoozed(uid, want) { // read directly (sync) so the Home render can ask; <uid>:pushCardSnooze = ISO date of the tap
+    try { const v = localStorage.getItem(uid + ':pushCardSnooze'), t = v ? new Date(v).getTime() : NaN, d = Date.now() - t;
+      return isFinite(t) && d >= 0 && d < (want === 'ios' ? 30 : 7) * 86400000; } catch (e) { return false; } // d < 0: the clock was wrong at the tap
+  }
+  function pbPushCardWant(st) {
+    if (pbPushCardHold || !st || !st.uid || !sbUser || sbUser.id !== st.uid) return null;
+    if (typeof window.pbCanOpen === 'function' && !window.pbCanOpen('input')) return null; // no plan: Home has no runs or permits to tell about
+    const want = st.code === 'off' ? 'on' : st.code === 'ios_homescreen' ? 'ios' : null;
+    return want && !pbPushCardSnoozed(st.uid, want) ? want : null;
+  }
+  function pbPushCardApply(st) {
+    try {
+      const want = pbPushCardWant(st), uid = want ? st.uid : null; pbPushCard.at = Date.now();
+      if (want === pbPushCard.show && uid === pbPushCard.uid) return;
+      pbPushCard.show = want; pbPushCard.uid = uid; if (!want) pbPushCard.note = '';
+      pbPushCardHome();
+    } catch (e) {}
+  }
+  function pbPushCardRefresh() { // from the Home render, at most every 2.5 s; also while a Turn On waits, so on / pending hides it
+    if (Date.now() - pbPushCard.at < 2500) return;
+    pbPushCard.at = Date.now();
+    pbPushState().then(pbPushCardApply).catch(() => {});
+  }
+  function pbPushCardQuiet() { try { return !!pbClosedEmergencyShown || pbEmergencyOpen(); } catch (e) { return false; } } // Home stays on the emergency
+  window.pbPushCardHtml = function() {
+    pbPushCardRefresh();
+    const s = pbPushCard.show, uid = pbPushCard.uid;
+    if (!s || pbPushCardHold || !sbUser || sbUser.id !== uid || pbPushCardQuiet()) return '';
+    const busy = pbPushCardBusy(), note = pbPushCard.note && Date.now() - pbPushCard.noteAt < PB_PUSH_CARD_NOTE_MS ? pbPushCard.note : '';
+    const line = s === 'ios' ? 'On an iPhone, add the app to your Home Screen first (Share → Add to Home Screen), then turn notifications on there. You’ll log in again there.'
+      : 'Get alerts for runs, permit reminders and crew messages, even with the screen locked.';
+    const on = s === 'on' ? '<button type="button" class="pb-btn small" id="homePushOn" data-uid="' + escapeHtml(uid) + '" onclick="pbPushCardTurnOn(this.dataset.uid)"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Turning on…' : 'Turn On') + '</button>' : '';
+    return '<div class="pb-home-att info push" id="homeAttention_pushCard"><span class="t">Turn on notifications</span>' + line
+      + (note ? '<span class="pb-pc-note">' + escapeHtml(note) + '</span>' : '')
+      + '<div class="pb-pc-act">' + on + '<button type="button" class="pb-btn tertiary small" id="homePushLater" onclick="pbPushCardSnooze()">Not now</button></div></div>';
+  };
+  window.pbPushCardTurnOn = function(uid) {
+    if (pbPushCardBusy()) return null;
+    // Built for another account, or Log Out / Lock is running: never subscribe for it; look again instead.
+    if (pbPushCardHold || !sbUser || sbUser.id !== uid || pbPushCard.uid !== uid) { pbPushCard.at = 0; pbPushCardHome(); return null; }
+    pbPushSay(''); // only this tap's answer goes on the card
+    const ob = document.getElementById('notifOnBtn'); if (ob && ob.disabled && pbPushCard.busy) ob.disabled = false; // left disabled by a tap that never got an answer
+    const p = window.pbPushTurnOn(); // inside the tap, before anything waits: the permission prompt must start there (pbPushStartInTap)
+    const t0 = pbPushCard.busy = Date.now(); pbPushCard.note = '';
+    pbPushCardHome();
+    return Promise.resolve(p).catch(() => {}).then(async () => {
+      if (pbPushCard.busy !== t0) return; // an account change or a later tap took over
+      pbPushCard.busy = 0;
+      const st = await pbPushState();
+      // still off: say why on the card (the Notifications screen's own words, with this card's button name)
+      pbPushCard.note = pbPushCardWant(st) === 'on' && pbPushMsg.text && pbPushMsg.at >= t0 ? pbPushMsg.text.replace('Turn On Notifications', 'Turn On') : '';
+      pbPushCard.noteAt = Date.now();
+      pbPushCardApply(st);
+      pbPushCardHome();
+    });
+  };
+  window.pbPushCardSnooze = function() {
+    const uid = sbUser && sbUser.id; if (!uid) return;
+    try { localStorage.setItem(uid + ':pushCardSnooze', new Date().toISOString()); } catch (e) {}
+    pbPushCard.show = null; pbPushCard.note = '';
+    if (typeof window.pbRenderHome === 'function') window.pbRenderHome();
+  };
 
   // ---------- turning on and off ----------
   function pbPushAskPermission() {
@@ -31061,6 +31145,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   let pbPushUndo = null;
   window.pbPushBeforeSignOut = async function(server) {
     pbPushUndo = null;
+    pbPushCardHold = true; pbPushCardHome(); // feat_pushcard: the device turns off next; no Turn On card for the account that is leaving
     try {
       await Promise.race([(async () => {
         const dev = await pbPushLoadDevice();
@@ -31080,6 +31165,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // Review 1: Log Out failed after notifications were turned off for it: still signed in, so turn them back on.
   window.pbPushAfterSignOutFailed = async function() {
     const u = pbPushUndo; pbPushUndo = null;
+    pbPushCardHold = false; // feat_pushcard: still signed in, the card may offer again
     try {
       if (!u || !sbUser || sbUser.id !== u.uid) return;
       await pbPushSaveDevice({ uid: u.uid, want: 'on', synced: false, why: '', endpoint: null });
@@ -31132,7 +31218,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
   }
   window.pbAccountLoadHooks = Array.isArray(window.pbAccountLoadHooks) ? window.pbAccountLoadHooks : [];
-  window.pbAccountLoadHooks.push((uid) => { pbPushOnAccount(uid).catch(() => {}); if (!pbPushNoticeQueued) { pbPushNoticeQueued = true; setTimeout(() => pbPushStandaloneNotice(0), 2000); } });
+  window.pbAccountLoadHooks.push((uid) => { pbPushCardReset(); /* feat_pushcard */ pbPushOnAccount(uid).catch(() => {}); if (!pbPushNoticeQueued) { pbPushNoticeQueued = true; setTimeout(() => pbPushStandaloneNotice(0), 2000); } });
   window.addEventListener('online', () => { setTimeout(() => pbPushSync({ background: true }), 3000); });
 
   // ---------- per-type switches (kept per account; changes made with no signal wait and are sent later) ----------
