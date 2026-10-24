@@ -1850,6 +1850,7 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 #pbApp #archiveOfficeWrap:not(:has(.pb-tool-row:not([style*="display: none"]):not([style*="display:none"]))) { display: none; }
 #pbApp #archiveOfficeHead { margin-top: 16px; }
 #pbApp #archiveCrewBtn[hidden] { display: none !important; }
+#pbApp #toolsAllList .pb-tools-solo { margin-top: 20px; } /* feat_core33 K7 */
 #pbApp .pb-calc-cats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 16px 4px 16px; }
 #pbApp .pb-calc-cats .pb-btn { margin: 0; min-height: 52px; font-size: 15px; padding: 8px 10px; }
 #pbApp #homeCurrentJob { padding-right: 92px; }
@@ -3586,7 +3587,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp #screen-cutsheetImport .pb-b3-pick[aria-pressed="true"] { background: var(--pb-brand-soft) !important; border: 2px solid var(--pb-brand) !important; padding: 11px 13px !important; }
 #pbApp#pbApp #screen-cutsheetImport .pb-b3-pick .pb-chip { margin: 0 6px 4px 0; vertical-align: middle; }
 /* the row table sits inside its card without a second frame */
-#pbApp#pbApp #screen-cutsheetImport #cutsheetRowTable .pb-table-wrap { margin: 0; border-radius: 10px; }
+#pbApp#pbApp #screen-cutsheetImport #cutsheetRowTable .pb-table-wrap { margin: 0; border-radius: 10px; max-height: none; overflow-y: visible; } /* feat_core33 K3: the rows grow with the page, no box inside the page */
+#pbApp#pbApp #screen-cutsheetImport .pb-cs-inv small { white-space: nowrap; } /* feat_core33 K3: two-line rows (the table scrolls sideways anyway) */
 #pbApp#pbApp #screen-cutsheetImport #cutsheetRowTable .pb-section > .pb-body { padding-left: 12px; padding-right: 12px; }
 #pbApp #screen-cutsheetImport #cutsheetRowTable td:first-child { width: 44px; padding: 4px 6px; }
 #pbApp #screen-cutsheetImport #cutsheetRowTable input[type="checkbox"] { width: 24px; height: 24px; margin: 10px; accent-color: var(--pb-brand); }
@@ -3668,6 +3670,19 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp.pb-text-big :is(#screen-results, #screen-review) .pb-summary-grid { grid-template-columns: minmax(0, 1fr); }
 #pbApp#pbApp.pb-text-big #screen-results #resultsTable:not(.pb-zoom) td:first-child > .pb-notebtn { display: flex; margin: 0 0 4px 0; }
 #pbApp#pbApp.pb-text-big #screen-results #resultsTable:not(.pb-zoom) td:first-child > .pb-notebtn + .pb-notebtn { margin-left: 0; }
+/* feat_run33 (4): on a phone the two note buttons stack, so Sta · BOP · INV · TOP fit without a sideways scroll */
+@media (max-width: 430px) {
+  #pbApp#pbApp #screen-results #resultsTable:not(.pb-zoom) td:first-child > .pb-notebtn { display: flex; margin: 0 0 4px 0; }
+  #pbApp#pbApp #screen-results #resultsTable:not(.pb-zoom) td:first-child > .pb-notebtn + .pb-notebtn { margin-left: 0; }
+  #pbApp#pbApp #screen-results #resultsTable:not(.pb-zoom) td:first-child { padding-top: 4px; padding-bottom: 4px; }
+  #pbApp#pbApp #screen-results #resultsTable:not(.pb-zoom) td:first-child > .pb-notebtn { height: 40px; font-size: 18px; } /* lead: 4+40+4+40+4 = 92 px rows, not 112 */
+}
+/* feat_run33 (5): a long point name never grows the Home card past two lines */
+#pbApp #homeWork .pb-home-tile .name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* feat_run33 (18): the hub's title line repeats its two fields while the card is open; it is for the collapsed card */
+#pbApp#pbApp #screen-input .pb-hub-card:not(:has(> .pb-body[style*="none"])) .pb-hub-ident { display: none; }
+/* feat_run33 (18): the AI privacy line once per form (the Start card), not under every point */
+#pbApp#pbApp #screen-input :is(.pb-section.end, .pb-hub-card) .pb-ai-stake .pb-ai-privacy { display: none; }
 /* a folded cutsheet question always keeps its question in view; the dialog scrolls if the screen is short */
 #pbApp#pbApp #pbModalMessage:has(.pb-modal-why) { min-height: 6em !important; }
 #pbApp#pbApp.pb-text-big #pbModalMessage:has(.pb-modal-why) { min-height: 4.6em !important; }
@@ -4355,7 +4370,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div class="pb-body">
         <button type="button" class="pb-btn ghost" id="settingsHelpEdu" onclick="pbSettingsOpenEducation()">Education &amp; Reference</button>
         <details class="pb-more" id="settingsHelpEduMore"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>About Education &amp; Reference</span></summary><p class="pb-help" id="settingsHelpEduNote">Explanations of the app&rsquo;s terms, formulas and field steps. Kept in the app, so it works without signal.</p></details>
-        <details class="pb-more" id="settingsHelpPasswordMore"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>Forgot your password?</span></summary><p class="pb-help" id="settingsHelpPassword">Forgot your password? On the Log In screen, tap Forgot password? (it needs signal).</p></details>
+        <details class="pb-more" id="settingsHelpPasswordMore"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>Forgot your password?</span></summary><p class="pb-help" id="settingsHelpPassword">On the Log In screen, tap Forgot password? (it needs signal).</p></details>
       </div>
     </div>
     <!-- Batch 10 (W, F19): the app version, and a way to tell the app's owner (not the company) about a problem -->
@@ -4461,7 +4476,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <p class="pb-eyebrow"><span>App problems</span><button type="button" class="pb-back" title="Back" aria-label="Back" onclick="pbAppProblemsBack()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
       <h1 class="pb-title">App problems</h1>
     </div>
-    <p class="pb-w10-lead">Problems people reported from the app. Read only: you can mark each one read or closed.</p>
+    <p class="pb-w10-lead">Problems people reported from the app. Mark each one read or closed; nothing else can be changed here.</p>
     <p id="apInboxStatus" class="pb-rpt-status" role="status"></p>
     <div id="apInboxList"></div>
     <div class="pb-btn-wrap" id="apInboxMoreWrap" style="display:none;"><button type="button" class="pb-btn secondary" id="apInboxMoreBtn" onclick="pbSupInboxLoad(true)">Load Older</button></div>
@@ -4478,10 +4493,11 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <!-- UX batch 3 (T1): this is the Calculators tab again; its list and search hold the calculators only. -->
     <!-- feat_navfix (owner, Oct 22): the category buttons replace the search bar, at the top -->
     <section class="pb-calc-cats" id="toolsBrowseCats" aria-label="Calculator categories">
-      <button type="button" class="pb-btn secondary" id="calcCatBtnGrade" onclick="pbGoto('calcCatGrade')">Grade &amp; Elevation</button>
-      <button type="button" class="pb-btn secondary" id="calcCatBtnSafety" onclick="pbGoto('calcCatTrench')">Safety</button>
-      <button type="button" class="pb-btn secondary" id="calcCatBtnPipe" onclick="pbGoto('calcCatPipe')">Pipe &amp; Flow</button>
-      <button type="button" class="pb-btn secondary" id="calcCatBtnStruct" onclick="pbGoto('calcCatStructures')">Structures</button>
+      <!-- feat_core33 K6: each jumps to its heading on this tab (the calcCat* screens stay for direct routes) -->
+      <button type="button" class="pb-btn secondary" id="calcCatBtnGrade" onclick="pbCalcCatJump('Grade &amp; Elevation')">Grade &amp; Elevation</button>
+      <button type="button" class="pb-btn secondary" id="calcCatBtnSafety" onclick="pbCalcCatJump('Safety')">Safety</button>
+      <button type="button" class="pb-btn secondary" id="calcCatBtnPipe" onclick="pbCalcCatJump('Pipe &amp; Flow')">Pipe &amp; Flow</button>
+      <button type="button" class="pb-btn secondary" id="calcCatBtnStruct" onclick="pbCalcCatJump('Structures')">Structures</button>
     </section>
     <div id="toolsSearchResults" style="display:none;" aria-live="polite"></div>
     <div id="toolsList"></div>
@@ -6939,7 +6955,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
           <button data-val="engineer" class="active">Engineer's Rod</button>
           <button data-val="architect">Architect's Rod</button>
         </div>
-        <details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>Using a Lenker rod?</span></summary><p class="pb-help" style="margin:8px 0 0 0;">Using a Lenker rod? You don't need this — the number on the rod is already the elevation (a direct reading).</p></details>
+        <details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>Using a Lenker rod?</span></summary><p class="pb-help" style="margin:8px 0 0 0;">You don't need this: the number on a Lenker rod is already the elevation (a direct reading).</p></details>
       </div>
     </div>
     <div class="pb-section">
@@ -7552,7 +7568,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div class="pb-body">
         <div class="pb-row">
           <div class="pb-field"><label>Total distance (ft)</label><input type="number" enterkeyhint="next" step="0.1" id="totalDist" inputmode="decimal" placeholder="e.g. 150"><input type="hidden" id="runTurnAt" value=""></div>
-          <div class="pb-field"><label>Interval (ft)</label><input type="number" enterkeyhint="next" step="1" id="interval" value="10" inputmode="numeric"></div>
+          <div class="pb-field"><label>Interval (ft)</label><input type="number" enterkeyhint="next" step="0.5" id="interval" value="10" inputmode="decimal"></div>
         </div>
       </div>
     </div>
@@ -7595,7 +7611,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-body">
           <div class="pb-row">
             <div class="pb-field"><label>Distance for Run 2 (ft)</label><input type="number" enterkeyhint="next" step="0.1" id="seg2TotalDist" inputmode="decimal" placeholder="e.g. 80"></div>
-            <div class="pb-field"><label>Interval (ft)</label><input type="number" enterkeyhint="next" step="1" id="seg2Interval" value="10" inputmode="numeric"></div>
+            <div class="pb-field"><label>Interval (ft)</label><input type="number" enterkeyhint="next" step="0.5" id="seg2Interval" value="10" inputmode="decimal"></div>
           </div>
           <div class="pb-row pb-pipepair">
             <div class="pb-field"><label for="seg2WT">Wall thickness<span class="pb-sr"> (ft)</span><span class="pb-req"> (required)</span></label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.001" id="seg2WT" inputmode="decimal" placeholder="e.g. 0.08" aria-required="true"><span class="pb-unit" aria-hidden="true">ft</span></div></div>
@@ -7642,7 +7658,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-body">
           <div class="pb-row">
             <div class="pb-field"><label>Distance for Run 3 (ft)</label><input type="number" enterkeyhint="next" step="0.1" id="seg3TotalDist" inputmode="decimal" placeholder="e.g. 80"></div>
-            <div class="pb-field"><label>Interval (ft)</label><input type="number" enterkeyhint="next" step="1" id="seg3Interval" value="10" inputmode="numeric"></div>
+            <div class="pb-field"><label>Interval (ft)</label><input type="number" enterkeyhint="next" step="0.5" id="seg3Interval" value="10" inputmode="decimal"></div>
           </div>
           <div class="pb-row pb-pipepair">
             <div class="pb-field"><label for="seg3WT">Wall thickness<span class="pb-sr"> (ft)</span><span class="pb-req"> (required)</span></label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.001" id="seg3WT" inputmode="decimal" placeholder="e.g. 0.08" aria-required="true"><span class="pb-unit" aria-hidden="true">ft</span></div></div>
@@ -7689,7 +7705,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-body">
           <div class="pb-row">
             <div class="pb-field"><label>Distance for Run 4 (ft)</label><input type="number" enterkeyhint="next" step="0.1" id="seg4TotalDist" inputmode="decimal" placeholder="e.g. 80"></div>
-            <div class="pb-field"><label>Interval (ft)</label><input type="number" enterkeyhint="next" step="1" id="seg4Interval" value="10" inputmode="numeric"></div>
+            <div class="pb-field"><label>Interval (ft)</label><input type="number" enterkeyhint="next" step="0.5" id="seg4Interval" value="10" inputmode="decimal"></div>
           </div>
           <div class="pb-row pb-pipepair">
             <div class="pb-field"><label for="seg4WT">Wall thickness<span class="pb-sr"> (ft)</span><span class="pb-req"> (required)</span></label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.001" id="seg4WT" inputmode="decimal" placeholder="e.g. 0.08" aria-required="true"><span class="pb-unit" aria-hidden="true">ft</span></div></div>
@@ -7736,7 +7752,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-body">
           <div class="pb-row">
             <div class="pb-field"><label>Distance for Run 5 (ft)</label><input type="number" enterkeyhint="next" step="0.1" id="seg5TotalDist" inputmode="decimal" placeholder="e.g. 80"></div>
-            <div class="pb-field"><label>Interval (ft)</label><input type="number" enterkeyhint="next" step="1" id="seg5Interval" value="10" inputmode="numeric"></div>
+            <div class="pb-field"><label>Interval (ft)</label><input type="number" enterkeyhint="next" step="0.5" id="seg5Interval" value="10" inputmode="decimal"></div>
           </div>
           <div class="pb-row pb-pipepair">
             <div class="pb-field"><label for="seg5WT">Wall thickness<span class="pb-sr"> (ft)</span><span class="pb-req"> (required)</span></label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.001" id="seg5WT" inputmode="decimal" placeholder="e.g. 0.08" aria-required="true"><span class="pb-unit" aria-hidden="true">ft</span></div></div>
@@ -7888,7 +7904,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
           </div>
         </div>
         <p class="pb-help pb-qr-hint" id="quickRunHint" style="margin:2px 0 0 0;">Enter three of the four values; the fourth is calculated.</p>
-        <div class="pb-field pb-qr-spacing"><label for="qrInterval">Row spacing (ft)</label><input type="number" enterkeyhint="next" step="1" id="qrInterval" value="10" inputmode="numeric" oninput="quickRunSolve()"><p class="pb-help">How far apart the rows in the table are (the interval). Blank uses 10 ft.</p></div>
+        <div class="pb-field pb-qr-spacing"><label for="qrInterval">Row spacing (ft)</label><input type="number" enterkeyhint="next" step="0.5" id="qrInterval" value="10" inputmode="decimal" oninput="quickRunSolve()"><p class="pb-help">How far apart the rows in the table are (the interval). Blank uses 10 ft.</p></div>
         <div class="pb-btn-wrap pb-qr-clear"><button class="pb-btn ghost" onclick="pbResetQuickRun()">Clear Calculation</button></div>
       </div>
     </div>
@@ -8062,7 +8078,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div>A change was undone on screen, but that undo has NOT been confirmed written to storage. Until a save succeeds, what is stored may still include the change you see undone.</div>
       <button class="pb-btn small" style="margin-top:8px;" onclick="pbRetryRepairSaves()">Retry Save</button>
     </div>
-    <div class="pb-btn-wrap" style="padding-top:12px;"><button class="pb-btn ghost small" style="width:100%;" onclick="pbGoto('input')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-pencil"/></svg>Edit Run Data</button></div>
+    <div class="pb-btn-wrap" style="padding-top:12px;"><button class="pb-btn ghost small" style="width:100%;" onclick="pbEditRunData()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-pencil"/></svg>Edit Run Data</button></div>
     <div id="cutsheetSourceWrap" style="display:none;">
       <div class="pb-btn-wrap"><button class="pb-btn ghost small" style="width:100%;" onclick="pbDownloadOriginalCutsheetPdf()">Download Original Cutsheet PDF</button></div>
       <p class="pb-help" style="margin:0 16px 10px 16px;">Only available this session — save it now if you want to keep it with this run's records.</p>
@@ -8140,7 +8156,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div class="pb-btn-wrap"><button class="pb-btn ghost danger" onclick="pbToggleEndIncomplete()">End Run Without Completing</button></div>
       <div class="pb-btn-wrap" id="adjustEndTimeWrap" style="display:none;"><button class="pb-btn ghost" onclick="pbAdjustEndTime()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-clock"/></svg>Adjust End Time</button></div>
       <div id="endIncompletePanel" style="display:none;">
-        <div class="pb-field"><label>Stopped at which interval?</label><select id="endIncompleteStation"></select></div>
+        <div class="pb-field"><label>Stopped at which interval?</label><select id="endIncompleteStation"></select><p class="pb-help" id="endIncompleteLaid" style="margin:4px 0 0 0;" hidden></p></div>
         <div class="pb-btn-row">
           <button class="pb-btn ghost" onclick="pbToggleEndIncomplete()">Cancel</button>
           <button class="pb-btn pb-b3-dangersolid" onclick="pbEndRunIncomplete()">Confirm — End Here</button>
@@ -8785,6 +8801,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
 #pbApp .pbx-namerow-a { flex: 0 0 auto; font-size: 15px; font-weight: 650; color: var(--pb-brand); }
 #pbApp .pbx-name-edit { padding: 12px 0 4px 0; border-top: 1px solid var(--pb-divider); border-bottom: 1px solid var(--pb-divider); }
 #pbApp .pbx-cotime { margin-top: 8px; }
+#pbApp .pbx-cotime .pbx-namerow-v { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.3; padding: 6px 0; } /* feat_core33 K4: the whole value, on two lines if needed */
 #pbApp .pbx-cotime .pbx-namerow[disabled] { opacity: 1; cursor: default; }
 #pbApp .pbx-cotime .pb-help.pb-err { color: var(--pb-danger-text, var(--pb-text)); }
 #pbApp .pbx-name-edit[hidden] { display: none; }
@@ -8941,7 +8958,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.32 · 2026-10-24'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.33 · 2026-10-24'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -9716,6 +9733,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const el = document.getElementById('loggedInAs');
     if (el) {
       if (!sbUser && pbLateCheckPending && pbSessionUnverified && cachedStorageUserId && pbAccountEmails[cachedStorageUserId]) { el.textContent = 'Records of ' + pbAccountEmails[cachedStorageUserId] + ' open \u2014 sign-in not confirmed (account switch waiting)'; }
+      else if (!sbUser && pbCachedAccountUnverified()) { el.textContent = 'Not signed in (no signal to confirm it) \u2014 the last account\u2019s records are open'; } /* feat_core33 K1: agrees with the Lock This Phone button under it */
       else if (!sbUser) { el.textContent = 'Not signed in \u2014 log in to use the app'; }
       else if (sbCachedSubscription.companyName) { el.textContent = 'Signed in as ' + sbUser.email + ' \u2014 ' + sbCachedSubscription.companyRole + ' at ' + sbCachedSubscription.companyName + (sbCachedSubscription.tier === 'contractor' ? '' : ' (company not currently active)'); }
       else if (sbCachedSubscription.tier === 'none' || sbCachedSubscription.status !== 'active') { el.textContent = 'Signed in as ' + sbUser.email + ' \u2014 no active subscription'; }
@@ -9772,6 +9790,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbHomeWorkProviders = Array.isArray(window.pbHomeWorkProviders) ? window.pbHomeWorkProviders : [];
   const pbHomeEsc = (s) => String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const pbHomeShown = (el) => !!el && el.style.display !== 'none' && getComputedStyle(el).display !== 'none';
+  // feat_run33 (16): the job the Current job card above the run card already names (the chosen job, else the run's own
+  // when no open permit names another): the run card does not repeat it.
+  function pbHomeJobIsCurrent(job) {
+    try {
+      if (!job || document.documentElement.classList.contains('pb-cx')) return false; /* the company Home has no Current job card */
+      const pick = typeof window.pbCurJobGet === 'function' ? window.pbCurJobGet() : null;
+      if (pick) { const pj = pbHomeJobOf({ jobNumber: pick.job_number, jobsite: pick.name || '' }); return !!pj && pj.key === job.key; }
+      const permitJob = confinedPermit ? pbHomeJobOf(confinedPermit) : null;
+      return !permitJob || permitJob.key === job.key;
+    } catch (e) { return false; }
+  }
   function pbHomeJobOf(o) {
     if (!o) return null;
     const n = String(o.jobNumber || '').trim(), s = String(o.jobsite || '').trim();
@@ -9782,6 +9811,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // that one has its own card) and not an empty form.
   function pbHomeRunDraft() {
     try {
+      if (window._pbResumingFromEntryId && window._pbResumeFormKey && pbFormStateKey() === window._pbResumeFormKey) return false; /* feat_run33 (9): a resume nothing was typed on is the Finish Run card, not a draft */
       if (!hasUnsavedRunData() || pbFormIsSavedLockedRun()) return false;
       if (pbLastLockedEntryId !== null && pbFormMatchesLock()) return false;
       return true;
@@ -9900,7 +9930,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const runSub = (entry) => {
       if (!entry) return null;
       const job = pbHomeJobOf(entry), saved = pbLastPersistedEntryIds.has(entry.id);
-      return (job ? '<span class="pb-home-line">' + pbHomeEsc(job.text) + '</span>' : '<span class="pb-home-line">Run in progress</span>')
+      let laid = ''; try { const S = pbLaidSummary(entry); if (S.n) laid = '<span class="pb-home-line">' + pbHomeEsc(pbLaidProgressText(S)) + '</span>'; } catch (e) {} /* feat_run33 (16): how far the pipe is marked laid */
+      return (job && !pbHomeJobIsCurrent(job) ? '<span class="pb-home-line">' + pbHomeEsc(job.text) + '</span>' : (job || laid) ? '' : '<span class="pb-home-line">Run in progress</span>') + laid
         + (saved ? '<span class="pb-chip saved">Saved on this phone</span>'
           : '<span class="pb-home-bad">NOT saved on this phone</span><button type="button" class="pb-btn small" onclick="event.stopPropagation(); pbRetryLockSave().then(() => pbRenderHome())">Retry</button>');
     };
@@ -9923,7 +9954,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
             return '<div class="pb-home-tile" role="button" tabindex="0" data-pb-a11y-btn="1" id="homeFinishRun_' + pbHomeEsc(String(x.id)) + '" onclick="' + pbHomeEsc('pbHomeFinishRun(' + JSON.stringify(x.id) + ')') + '">'
               + '<div><div class="name">Finish Run</div><div class="sub">'
               + '<span class="pb-home-line">' + pbHomeEsc(x.startLabel) + ' → ' + pbHomeEsc(x.endLabel) + '</span>'
-              + '<span class="pb-home-line">Ended early' + (x.stoppedAtStation ? ' at ' + pbHomeEsc(String(x.stoppedAtStation)) : '') + ', started ' + pbHomeEsc(x.lockTime && x.lockTime.toLocaleDateString ? x.lockTime.toLocaleDateString() : '') + '</span>'
+              + '<span class="pb-home-line">Ended early' + (x.stoppedAtStation ? ' at ' + pbHomeEsc(String(x.stoppedAtStation)) + (/^[\d.]+$/.test(String(x.stoppedAtStation)) ? ' ft' : '') : '') + ', started ' + pbHomeEsc(x.lockTime && x.lockTime.toLocaleDateString ? x.lockTime.toLocaleDateString() : '') + '</span>'
               + (job ? '<span class="pb-home-line">' + pbHomeEsc(job.text) + '</span>' : '')
               + '</div></div><div>&rsaquo;</div></div>';
           }).join('');
@@ -10135,6 +10166,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return true; // any screen not listed above is a sub-screen inside an already-gated area
   }
   function pbShowSubscriptionRequiredMessage(name) {
+    if (!sbUser && pbCachedAccountUnverified()) { pbAlert('This requires an active subscription. Kept on this phone from the last sign-in: ' + (sbCachedSubscription.tier === 'none' ? 'no active subscription' : sbCachedSubscription.tier + ' (' + sbCachedSubscription.status + ')') + '. Logging in to check it needs signal.', 'Subscription Required'); return; } /* feat_core33 K1: no Log In control exists in this state */
     if (!sbUser) { pbAlert('This requires an active subscription. Log in first, then check your subscription status.', 'Subscription Required'); return; }
     const tierNeeded = PB_CONTRACTOR_SCREENS.includes(name) ? 'Contractor' : 'Individual';
     const current = sbCachedSubscription.tier === 'none' ? 'no active subscription' : (sbCachedSubscription.tier + ' (' + sbCachedSubscription.status + ')');
@@ -10861,7 +10893,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const btn = document.getElementById('settingsLoginBtn');
     if (btn) { if (btn.textContent !== label) btn.textContent = label; btn.classList.toggle('ghost', /Log Out/.test(label)); }
     const help = document.getElementById('settingsLoginHelp');
-    if (help) help.textContent = /Lock This Phone/.test(label) ? 'No connection, so no one can be confirmed signed in, but the last account\u2019s records are open. Lock This Phone hides them until that person logs in again. Nothing is deleted.'
+    if (help) help.textContent = /Lock This Phone/.test(label) ? 'Lock This Phone hides those records until that person logs in again. Nothing is deleted.' /* feat_core33 K1: the status line above says whose records are open */
       : /Log Out/.test(label) ? 'Log Out asks first about any work that hasn\u2019t saved. Everything already saved on this phone stays as it is.'
       : 'Log in to use your plan on this phone. Logging in needs signal.';
     const edu = document.getElementById('settingsHelpEdu');
@@ -11203,6 +11235,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return;
     }
     const leavingRunBuilder = pbCurrentScreen === 'input' || pbCurrentScreen === 'review' || pbCurrentScreen === 'cutsheetImport';
+    if (!skipUnsavedCheck && leavingRunBuilder && name !== 'input' && name !== 'review' && name !== 'cutsheetImport' && window._pbResumingFromEntryId && window._pbResumeFormKey && pbFormStateKey() === window._pbResumeFormKey && hasUnsavedRunData() && !pbFormIsSavedLockedRun()) {
+      // feat_run33 (9): a resume with nothing new typed: the earlier session is saved, nothing here is lost
+      pbConfirm('Nothing new has been typed for this resume \u2014 the earlier session is saved in Records, and Finish Run on Home brings this form back. Leave it?', () => { pbFormEditsLeft(); pbGoto(name, isBack, true); }, 'Leave the Resume?', { no: 'Keep Editing', yes: 'Leave' });
+      return;
+    }
     if (!skipUnsavedCheck && leavingRunBuilder && name !== 'input' && name !== 'review' && name !== 'cutsheetImport' && hasUnsavedRunData() && !pbFormIsSavedLockedRun()) {
       pbConfirm((pbRdLeaveFlush(), pbRdLeaveText()), () => { pbFormEditsLeft(); pbGoto(name, isBack, true); }, 'Unsaved Run Data', { no: 'Keep Editing', yes: pbRdLeaveLabel() }); pbDraftLeaveSync('run'); // batch 14 R2: "Leave, Save Draft" only once the draft is saved
       return;
@@ -12119,7 +12156,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (fracEl) fracEl.addEventListener('blur', callback);
   }
 
-  const PIPE_SIZES = [4,6,8,10,12,18,24,30,36,42,48];
+  const PIPE_SIZES = [3,4,6,8,10,12,15,18,21,24,27,30,36,42,48]; /* feat_run33 (14) */
 
   // ---------- Batch 4 (R1): AI features — cutsheet reading, stake photo, Ask ----------
   // Every AI request goes to the app's own server function `ai` (Supabase), with the person's login token.
@@ -12326,6 +12363,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbCutsheetAiPhotoPick = function() {
     const statusEl = document.getElementById('cutsheetAiPhotoStatus');
     if (!pbAiPlanOk()) { pbAiShow(statusEl, 'warn', 'AI not on your plan.', PB_AI_MSG.plan); return; }
+    if (navigator.onLine === false) { pbAiShow(statusEl, 'warn', 'No signal.', PB_AI_MSG.offline); return; } /* feat_core33 K11: said before the camera opens */
     pbAiEnsurePrivacy(() => { const inp = document.getElementById('cutsheetAiPhotoInput'); if (inp) inp.click(); });
   };
   window.pbCutsheetAiPhoto = function(input) {
@@ -12826,7 +12864,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         ${activeVal('rodToggle') !== 'lenker' ? `<div style="margin-top:6px; border-top:1px solid var(--paper-2); padding-top:10px;">${elevFieldHTML(prefix+'StakeReading', 'Rod reading at this stake', arch, 'e.g. 4.80')}</div>` : ''}
         <div class="pb-derived" id="${prefix}StakeDerived"></div>
       </div>
-      <div class="pb-field"><label>Point label (optional)</label><input type="text" enterkeyhint="next" id="${prefix}Label" placeholder="e.g. MH-4 or stake 12"></div>
+      <div class="pb-field"><label>Point label (optional)</label><input type="text" enterkeyhint="next" id="${prefix}Label" maxlength="80" placeholder="e.g. MH-4 or stake 12"></div>
       <div class="pb-field">
         <label>Photos (optional)<span id="${prefix}PhotoCount" class="pb-photo-count"></span></label>
         <div id="${prefix}PhotoList"></div>
@@ -15020,7 +15058,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       }
       return pbErrAt(where + ': ' + pbArchInchMsg(p.inches), p.id + '_in');
     });
-    return Object.assign({}, res, { errors: (res && res.errors ? res.errors : []).concat(msgs) });
+    // feat_run33 (17): the point's "data is incomplete" message says the same thing less exactly; the inches message stands alone
+    const probFields = probs.map(p => prefixes.find(x => p.id.startsWith(x) && document.getElementById(x + 'Label'))).filter(Boolean).map(x => pbPointFieldFor(x, 'pi'));
+    const kept = (res && res.errors ? res.errors : []).filter(e => !(/invert\/stake data/.test(e) && pbErrTags.some(t => t.msg === e && probFields.includes(t.field))));
+    return Object.assign({}, res, { errors: kept.concat(msgs) });
   }
   // Batch 14 R (F13): an invert elevation OR a rod reading (with HI) is one choice, said as one message.
   function pbPointMissingWords(prefix, needsReading) {
@@ -15134,6 +15175,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (layHere.on) pbLayValidate(layRunNum, layHere, cfg.runLabel, totalDist, segErrors);
       else if (interval === null || interval <= 0) segErrors.push(pbErrAt(cfg.runLabel + ': enter a valid interval greater than zero.', cfg.intervalId));
       else if (interval < 0.1) segErrors.push(pbErrAt(cfg.runLabel + ': interval of ' + interval + ' ft is far finer than any real measurement \u2014 check for a typo (0.1 ft minimum).', cfg.intervalId));
+      else if (totalDist !== null && totalDist > 0 && interval > totalDist) segCapabilityNotes.push(cfg.notePrefix + 'Interval (' + interval + ' ft) is longer than the run (' + totalDist + ' ft): the sheet will have no interval rows between its points.'); /* feat_run33 (12) */
       else if (totalDist !== null && totalDist > 0 && (totalDist / interval) > 2000) segErrors.push(cfg.runLabel + ': ' + totalDist.toLocaleString() + ' ft at a ' + interval + ' ft interval would build over ' + Math.round(totalDist/interval).toLocaleString() + ' rows \u2014 too many for a phone to handle reliably. Use a longer interval, or a shorter distance if that value was a typo.');
 
       // the two longest messages above, tagged with their field after the fact
@@ -15152,7 +15194,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const untouched = station === null && pi === null && !hubTyped && !hubPhotos && !getPointLabel(id, '');
         if (untouched) return; // hub card left completely blank — treat as never added
         const hubName = 'The hub' + (station !== null ? ' at station ' + station + ' ft' : '') + (getPointLabel(id, '') ? ' (' + getPointLabel(id, '') + ')' : '');
-        if (station === null) { segErrors.push(pbErrAt('A hub' + (getPointLabel(id, '') ? ' (' + getPointLabel(id, '') + ')' : '') + ' is missing its station distance.', id + 'Station')); return; }
+        if (station === null) { const stEl = document.getElementById(id + 'Station'), typed = !!(stEl && stEl.validity && stEl.validity.badInput);
+          segErrors.push(pbErrAt('A hub' + (getPointLabel(id, '') ? ' (' + getPointLabel(id, '') + ')' : '') + (typed ? '\u2019s Station box holds something that isn\u2019t a plain number \u2014 a station like 12+50 goes in as feet from this run\u2019s start (1250).' : ' is missing its station distance.'), id + 'Station')); return; } /* feat_run33 (13) */
         if (negativeCutFill(id) !== null) { segErrors.push(pbErrAt(negativeCutFillMsg(getPointLabel(id, 'A hub'), negativeCutFill(id)), id + 'CutFillVal')); return; }
         if (totalDist !== null && (station < 0 || station > totalDist)) { segErrors.push(pbErrAt(hubName + ': hub station must be 0 or greater, and no more than the total distance (' + totalDist + ' ft).', id + 'Station')); return; }
         if (pi === null && !blockedByMissingHi(id)) { segErrors.push(pbErrAt(hubName + ' is missing invert/stake data.', pbPointFieldFor(id, 'pi'))); return; }
@@ -15309,7 +15352,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     };
     const backflowingSegments = realSegments.filter(s => { const k = sideOf(s); return k === 2 ? s.to.pi > s.from.pi : k === 3 ? false : s.to.pi < s.from.pi; });
     if (!turn && realSegments.length > 0 && backflowingSegments.length === realSegments.length) {
-      warnings.push({ type: 'backflow-all', text: `All ${realSegments.length} section${realSegments.length === 1 ? '' : 's'} of pipe in this run are backflowing — invert falls the whole way from Start to End, when it should rise if the crew is starting at the low point. Would you like to flip the run?` });
+      warnings.push({ type: 'backflow-all', text: realSegments.length === 1 ? 'This run\u2019s one section of pipe is backflowing \u2014 invert falls from Start to End, when it should rise if the crew is starting at the low point. Would you like to flip the run?' : `All ${realSegments.length} sections of pipe in this run are backflowing — invert falls the whole way from Start to End, when it should rise if the crew is starting at the low point. Would you like to flip the run?` }); /* feat_run33 (11) */
     } else {
       // Individual per-section warnings only make sense when it's NOT already the
       // all-backflowing case above — no need to list every section separately when
@@ -15566,8 +15609,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (anyBedding) beddingVolumeYd3 = totalBeddingCf / 27;
     }
     const anyBeddingData = runStarts.some(r => (r.point.bedding !== null && r.point.bedding !== undefined) || (r.point.trenchWidth !== null && r.point.trenchWidth !== undefined));
+    const anyBeddingThickness = runStarts.some(r => r.point.bedding !== null && r.point.bedding !== undefined); /* feat_run33 (18): no thickness anywhere = no bedding tiles, only the trench width */
     const beddingTiles = runStarts.map(r =>
-      `<div class="pb-summary-item"><div class="k">${multiRun ? r.label + ' \u2014 ' : ''}Bedding Thickness</div><div class="v">${(r.point.bedding !== null && r.point.bedding !== undefined) ? fmt(r.point.bedding,2)+' ft' : '\u2014'}</div></div><div class="pb-summary-item"><div class="k">${multiRun ? r.label + ' \u2014 ' : ''}Trench Width</div><div class="v">${(r.point.trenchWidth !== null && r.point.trenchWidth !== undefined) ? fmt(r.point.trenchWidth,1)+' ft' : '\u2014'}</div></div>`
+      `${anyBeddingThickness ? `<div class="pb-summary-item"><div class="k">${multiRun ? r.label + ' \u2014 ' : ''}Bedding Thickness</div><div class="v">${(r.point.bedding !== null && r.point.bedding !== undefined) ? fmt(r.point.bedding,2)+' ft' : '\u2014'}</div></div>` : ''}<div class="pb-summary-item"><div class="k">${multiRun ? r.label + ' \u2014 ' : ''}Trench Width</div><div class="v">${(r.point.trenchWidth !== null && r.point.trenchWidth !== undefined) ? fmt(r.point.trenchWidth,1)+' ft' : '\u2014'}</div></div>`
     ).join('');
     return `
       <div class="pb-summary-subhead first">Run</div>
@@ -15584,9 +15628,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       <div class="pb-summary-subhead">Pipe</div>
       ${pipeTiles}
       ${anyBeddingData ? `
-      <div class="pb-summary-subhead">Bedding</div>
+      <div class="pb-summary-subhead">${anyBeddingThickness ? 'Bedding' : 'Trench'}</div>
       ${beddingTiles}
-      <div class="pb-summary-item"><div class="k">Total Bedding Volume</div><div class="v">${beddingVolumeYd3 !== null ? fmt(beddingVolumeYd3,1)+' yd³' + (beddingVolumeIncomplete ? ' (partial — some sections missing data)' : '') : (beddingVolumeIncomplete ? 'unavailable — missing data' : 'not recorded')}</div></div>` : ''}
+      ${anyBeddingThickness ? `<div class="pb-summary-item"><div class="k">Total Bedding Volume</div><div class="v">${beddingVolumeYd3 !== null ? fmt(beddingVolumeYd3,1)+' yd³' + (beddingVolumeIncomplete ? ' (partial — some sections missing data)' : '') : (beddingVolumeIncomplete ? 'unavailable — missing data' : 'not recorded')}</div></div>` : ''}` : ''}
     `;
   }
 
@@ -15854,8 +15898,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const hubCount = calc.points.filter(p => !isRealPointId(p.id)).length;
     if (hubCount > 0) {
       html += `<div class="pb-btn-row" style="margin:2px 16px 8px 16px;">
-        <button class="pb-btn ${showAllHubs ? '' : 'ghost'} small" onclick="pbSetReviewHubsVisible(true)">Show All Hubs (${hubCount})</button>
-        <button class="pb-btn ${showAllHubs ? 'ghost' : ''} small" onclick="pbSetReviewHubsVisible(false)">Show None</button>
+        <button class="pb-btn ${showAllHubs ? 'ghost' : ''} small" aria-pressed="${showAllHubs ? 'true' : 'false'}" onclick="pbSetReviewHubsVisible(true)">Show All Hubs (${hubCount})</button>
+        <button class="pb-btn ${showAllHubs ? '' : 'ghost'} small" aria-pressed="${showAllHubs ? 'false' : 'true'}" onclick="pbSetReviewHubsVisible(false)">Hide Hubs</button>
       </div>`;
     }
     calc.points.forEach((p, i) => {
@@ -15863,7 +15907,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (isHub && !showAllHubs) return;
       const segM = p.id.match(/^seg(\d+)(start|end)$/);
       const roleLabel = p.id === 'start' ? 'Start' : p.id === 'end' ? 'End' : segM ? 'Run ' + segM[1] + ' ' + (segM[2] === 'start' ? 'Start' : 'End') : 'Hub';
-      html += `<div class="pb-review-item"><span class="k">${roleLabel} — ${escapeHtml(p.label)}</span><br>Station ${fmt(p.station,1)} · ${calc.rodUnit === 'lenker' ? 'Elevations (ft)' : calc.rodUnit === 'architect' ? 'Rod readings (ft-in)' : 'Rod readings (ft)'}: BOP ${dispPoint(p,'bop',calc)} · INV ${dispPoint(p,'inv',calc)} · TOP ${dispPoint(p,'top',calc)}${calc.rodUnit !== 'lenker' ? ' · Invert elevation ' + fmt(p.pi,3) + ' ft' : ''}</div>`;
+      html += `<div class="pb-review-item"><span class="k">${roleLabel}${p.label && p.label !== roleLabel ? ' — ' + escapeHtml(p.label) : ''}</span><br>Station ${fmt(p.station,1)} · ${calc.rodUnit === 'lenker' ? 'Elevations (ft)' : calc.rodUnit === 'architect' ? 'Rod readings (ft-in)' : 'Rod readings (ft)'}: BOP ${dispPoint(p,'bop',calc)} · INV ${dispPoint(p,'inv',calc)} · TOP ${dispPoint(p,'top',calc)}${calc.rodUnit !== 'lenker' ? ' · Invert elevation ' + fmt(p.pi,3) + ' ft' : ''}</div>`;
     });
     return html;
   }
@@ -16262,20 +16306,19 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbClearFieldErrors(document.getElementById('screen-input'));
     document.getElementById('inputCapabilityNotes').innerHTML = calc.capabilityNotes.map(n => `<div class="pb-warn photo">${escapeHtml(n)}</div>`).join('');
     lastCalc = calc;
-    reviewShowAllHubs = false;
+    reviewShowAllHubs = calc.points.filter(p => !(p.id === 'start' || p.id === 'end' || /^seg\d+(start|end)$/.test(p.id))).length <= 8; // feat_run33 (7): hubs shown unless there are many
     document.getElementById('reviewSummaryGrid').innerHTML = summaryGridHTML(calc);
     const content = document.getElementById('reviewContent');
     let html = '';
-    html += `<div class="pb-review-item"><span class="k">Rod Unit</span><br>${calc.rodUnit.charAt(0).toUpperCase()+calc.rodUnit.slice(1)}${calc.hi!==null ? ' — HI ' + fmt(calc.hi,3) + ' ft' : ''}</div>`;
+    html += `<div class="pb-review-item"><span class="k">Rod Unit</span><br>${calc.rodUnit.charAt(0).toUpperCase()+calc.rodUnit.slice(1)}</div>`; /* feat_run33 (8): the HI is in the grid */
     const realHubCount = calc.points.filter(p => !(p.id === 'start' || p.id === 'end' || /^seg\d+(start|end)$/.test(p.id))).length;
-    html += `<div class="pb-review-item"><span class="k">Run</span><br>${escapeHtml(calc.points[0].label)} → ${escapeHtml(calc.points[calc.points.length-1].label)}, ${fmt(calc.totalDist,1)} ft, ${escapeHtml(pbLayIntervalWords(calc))}, ${realHubCount} hub(s)</div>`;
+    html += `<div class="pb-review-item"><span class="k">Run</span><br>${escapeHtml(calc.points[0].label)} → ${escapeHtml(calc.points[calc.points.length-1].label)} · ${escapeHtml(pbLayIntervalWords(calc))} · ${realHubCount === 0 ? 'no hubs' : realHubCount === 1 ? '1 hub' : realHubCount + ' hubs'}</div>`; /* feat_run33 (8): the distance is in the grid */
     const reviewRunStarts = [{ label: 'Run 1', point: calc.points[0] }];
     for (let n = 2; n <= MAX_SEG; n++) {
       const p = calc.points.find(pt => pt.id === 'seg' + n + 'start');
       if (p) reviewRunStarts.push({ label: 'Run ' + n, point: p });
     }
     const reviewMultiRun = reviewRunStarts.length > 1;
-    html += `<div class="pb-review-item"><span class="k">Pipe</span><br>${reviewRunStarts.map(r => (reviewMultiRun ? r.label + ': ' : '') + 'WT ' + fmt(r.point.wt,3) + ' ft \u00b7 ID ' + (r.point.idFt !== null ? fmt(r.point.idFt*12,2) : '\u2014') + '"').join('<br>')}</div>`;
     html += `<div id="reviewPointsWrap">${renderReviewPointsHTML(calc, reviewShowAllHubs)}</div>`;
     const { maxDepth, maxPrefix, maxCut, maxExtra } = getMaxStakeCutDepth();
     if (maxDepth >= 5) {
@@ -16325,6 +16368,36 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   let pbFormFresh = true; // the run form has made no locked run since it was last emptied (New Run, Resume, import, account change)
   let pbFormFromBoot = true; // the empty form start-up left (no New Run since): a reload forgot which run it last locked and when it began
   let pbLastLockedFormGen = null, pbLastLockedFields = null; // the form a Lock came from — recalculating that same, unchanged form is not a new run // which calculation the most recent Lock turned into which entry — a second Lock of the SAME calculation is a retry of that entry, never a second record
+  // feat_run33 (1): the earlier record of the run this form locked can be replaced by a corrected Lock when nothing has
+  // been built on it: not ended, no notes, laid marks, crew, corrections or production, not part of a resume chain, saved.
+  function pbReplaceablePriorRun(prior) {
+    try {
+      if (!prior || prior.kind !== 'run' || !runArchive.includes(prior) || !pbLastPersistedEntryIds.has(prior.id)) return false;
+      if (prior.runEndTime || prior.completed || prior.incomplete || statsLoadFailed) return false;
+      if ((prior.fieldNotes || []).length || Object.keys(pbLaidMarks(prior)).length || (prior.crewLog || []).length || (prior.correctionHistory || []).length || (prior.unplacedEvidence || []).length) return false;
+      if (prior.resumedFromId !== undefined && prior.resumedFromId !== null) return false;
+      if (prior.resumedIntoId !== undefined && prior.resumedIntoId !== null) return false;
+      if (runArchive.some(o => o !== prior && o.kind === 'run' && o.resumedFromId === prior.id)) return false;
+      if (pbUnsavedResumeOf(prior.id) || pbResumeFormOpenFor(prior.id) || pbDeletingEntryIds.has(prior.id)) return false;
+      if (typeof pbProd !== 'undefined' && pbProd && pbProd.st && pbProd.st.ids) { const cid = pbProd.st.ids[String(prior.id)], it = cid && pbProd.st.items && pbProd.st.items[cid]; if (it && it.h && !it.voided) return false; } /* its production was already sent to the company (same test as pbProdAfterRunDeleted) */
+      return true;
+    } catch (e) { return false; }
+  }
+  // Replace: the earlier record's Stats entry goes with it (one save under the Stats lock; a pass that has not recorded
+  // it yet never will). False when Stats did not save.
+  async function pbReplacedRunStatsOut(prior) {
+    const ownerAtTap = statsLogOwnerUid;
+    return withStatsLogLock(async () => {
+      if (statsLogOwnerUid !== ownerAtTap) return false;
+      pendingLockRetries.forEach(p => { if (p.entryId === prior.id) p.statsStatus = 'done'; });
+      const removed = statsLog.filter(s => s.entryId === prior.id);
+      if (!removed.length) return true;
+      statsLog = statsLog.filter(s => !removed.includes(s));
+      const ok = await saveStatsLog();
+      if (ok === false) statsLog = statsLog.concat(removed.filter(x => !statsLog.includes(x)));
+      return ok !== false;
+    });
+  }
   window.pbLock = async function(opts) {
     if (!lastCalc) return;
     if (pbLockInFlight) return;
@@ -16335,6 +16408,20 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const prior = runArchive.find(e => e.id === pbLastLockedEntryId && e.kind === 'run');
       if (prior && pbCalcDescribesEntry(lastCalc, prior)) {
         pbConfirm('Nothing has changed since this run was locked (' + archiveEntryLabel(prior) + ', ' + prior.lockTime.toLocaleString() + '). Locking again makes a SECOND record of the same run, and its footage counts twice in Stats. Continue only if this really is another run.', () => pbLock({ sameFormOk: true }), 'Already Locked');
+        return;
+      }
+    }
+    // feat_run33 (1): Edit Run Data, a typo fixed, Lock again: the earlier record of the same run would stay in Records
+    // and Stats (counted twice). While nothing has been built on it, ask: Replace it, or Keep Both (another run).
+    if (!(opts && opts.sameFormOk) && !(opts && opts.replaceAnswered) && pbLastLockedEntryId !== null && pbFormGen === pbLastLockedFormGen && pbFormFingerprint('screen-input') !== pbLastLockedFields) {
+      const prior = runArchive.find(e => e.id === pbLastLockedEntryId && e.kind === 'run');
+      if (prior && pbReplaceablePriorRun(prior)) {
+        const again = (x) => pbLock(Object.assign({}, opts || {}, { replaceAnswered: true }, x));
+        pbShowModal('This form already locked ' + prior.startLabel + ' → ' + prior.endLabel + ' at ' + prior.lockTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '. Replace that record with these corrected numbers (it leaves Records and Stats' + (prior.sent === true ? '; its report was already sent' : '') + '), or keep both if this is another run?', [
+          { label: 'Cancel' },
+          { label: 'Keep Both', onClick: () => again({}) },
+          { label: 'Replace', primary: true, onClick: () => again({ replacePriorId: prior.id }) }
+        ], 'Locked Once Already');
         return;
       }
     }
@@ -16420,6 +16507,20 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // runArchive in the meantime, silently redirecting a re-read runArchive[0]
     // to an entirely unrelated record.
     const lockedEntry = runArchive[0];
+    // feat_run33 (1): Replace — the earlier record leaves Records in the same save that adds this one; the corrected run
+    // keeps its cloud row (same client id) and its start time. Re-checked now: the record may have changed meanwhile.
+    let replaced = null, replacedAt = -1, replacedOwnIds = null;
+    if (opts && opts.replacePriorId) {
+      const prior = runArchive.find(e => e.id === opts.replacePriorId && e.kind === 'run');
+      if (prior && prior !== lockedEntry && pbReplaceablePriorRun(prior)) {
+        replaced = prior; replacedAt = runArchive.indexOf(prior);
+        runArchive.splice(replacedAt, 1); pbDeletingEntryIds.add(prior.id);
+        replacedOwnIds = { clientRunId: lockedEntry.clientRunId, runStartTime: lockedEntry.runStartTime };
+        if (prior.clientRunId) lockedEntry.clientRunId = prior.clientRunId;
+        if (prior.supabaseId) lockedEntry.supabaseId = prior.supabaseId;
+        if (prior.runStartTime) lockedEntry.runStartTime = prior.runStartTime;
+      }
+    }
     if (opts && opts.shorterOk) pbShorterAnswered.add(lockedEntry.id + '|' + Math.round(calc.totalDist * 1000)); // End Run doesn't ask again
     pbLastLockedCalc = calc; pbLastLockedEntryId = lockedEntry.id;
     pbLaySetOwner(lockedEntry.id); // the form's layout state now belongs to this record
@@ -16456,6 +16557,23 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // the whole resumed chain's time), so a run still in progress is never rated.
     const capturedDurationMin = null;
     const lockSaveOk = await saveRunArchive();
+    if (replaced) {
+      pbDeletingEntryIds.delete(replaced.id);
+      if (lockSaveOk) {
+        pendingLockRetries.forEach(p => { if (p.entryId === replaced.id) p.everCommitted = true; }); /* gone on purpose: the next pass drops its follow-through */
+        const statsOk = await pbReplacedRunStatsOut(replaced);
+        if (!statsOk) { const ft = statsLog.filter(s => s.entryId === replaced.id).reduce((a, s) => a + (s.footage || 0), 0);
+          pbShowModal('The earlier record was replaced, but Stats didn\u2019t save, so its ' + ft.toFixed(0) + ' ft is still counted there. Storage may be full \u2014 free up space if you can, then try again.', [
+            { label: 'Leave It' },
+            { label: 'Try Again', primary: true, onClick: async function pbReplacedStatsRetry() { if (!(await pbReplacedRunStatsOut(replaced))) pbShowModal('Stats still didn\u2019t save; the earlier record\u2019s footage is still counted.', [{ label: 'Leave It' }, { label: 'Try Again', primary: true, onClick: pbReplacedStatsRetry }], 'Stats Save Failed'); } }
+          ], 'Stats Save Failed'); }
+      } else {
+        // Nothing saved: the earlier record stays exactly as it was (its own cloud id back on this one).
+        if (!runArchive.includes(replaced)) runArchive.splice(Math.min(replacedAt, runArchive.length), 0, replaced);
+        if (replacedOwnIds) { lockedEntry.clientRunId = replacedOwnIds.clientRunId; delete lockedEntry.supabaseId; lockedEntry.runStartTime = replacedOwnIds.runStartTime; }
+        replaced = null;
+      }
+    }
     // Another account signed in while this saved (its Records may not have loaded
     // yet): nothing more for this run may go to that account's storage.
     const lockAccountChanged = () => lockOwnerUid !== null && (pbArchiveOwnerUid !== lockOwnerUid || pbSignedInStorageUid() !== lockOwnerUid);
@@ -17122,6 +17240,18 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + (items ? '<h4 class="pbp-h4">Latest entries</h4><ul class="pbp-entries" id="pjSiteLogList">' + items + '</ul>' : '') + '</section>';
   }
   // ================= end batch 22 NOTES =================
+  // feat_run33 (3): what the strip over a row says. A Start/End row (r.label is its role) names the point as typed —
+  // "Start — MH-12 IE OUT" — and a reducer's rows say which run they belong to: "End — Reducer", "Run 2 Start".
+  function pbRowStripName(entry, r) {
+    if (!r || (r.label !== 'start' && r.label !== 'end')) return r ? r.label : '';
+    const id = r.pointId || '', m = /^seg(\d+)(start|end)$/.exec(id);
+    const role = (m ? 'Run ' + m[1] + ' ' : '') + (r.label === 'start' ? 'Start' : 'End');
+    let name = '';
+    if (m) { const pi = entry && entry.pointInputs ? entry.pointInputs[id] : null; name = pi && pi.label ? pi.label : ''; }
+    else name = r.label === 'start' ? (entry && entry.startLabel) || '' : (entry && entry.endLabel) || '';
+    name = String(name).trim();
+    return !name || /^(Run \d+ )?(Start|End)$/i.test(name) ? role : role + ' \u2014 ' + name;
+  }
   function renderResultsTable(entry) {
     { const w = document.getElementById('adjustEndTimeWrap'); if (w) w.style.display = entry && entry.kind === 'run' && (entry.completed || entry.incomplete) && typeof entry.runEndTime === 'number' ? '' : 'none'; }
     if (pbResultsPanelsFor !== entry.id) { pbCloseResultsPanels(); pbResultsPanelsFor = entry.id; }
@@ -17133,11 +17263,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     { const fw = document.getElementById('lockFlagsWrap'); // the flags raised at Lock stay on the screen the crew works from
       if (fw) { const ws = (entry.warnings || []).filter(w => w && w.text);
         fw.innerHTML = (entry.depthFlagged ? '<div class="pb-warn" style="margin:0 16px 10px 16px;"><strong>Trench 5 ft or Deeper</strong>' + escapeHtml(PB_DEPTH_FLAG_TEXT) + '</div>' : '')
-          + (ws.length ? '<details class="pb-more pb-b3-gutter" id="lockFlagsMore"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-warn"/></svg><span>Flagged at Lock (' + ws.length + ')</span></summary>' + ws.map(w => '<div class="pb-info">' + escapeHtml(String(w.text).replace(/\s*Would you like to flip the run\?\s*$/, '')) + '</div>').join('') + '</details>' : ''); } }
+          + (ws.length ? '<details class="pb-more pb-b3-gutter" id="lockFlagsMore"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-warn"/></svg><span>' + ((entry.correctionHistory || []).length ? 'Flags after correction (' : 'Flagged at Lock (') + ws.length + ')</span></summary>' + ws.map(w => '<div class="pb-info">' + escapeHtml(String(w.text).replace(/\s*Would you like to flip the run\?\s*$/, '')) + '</div>').join('') + '</details>' : ''); } }
     const head = document.getElementById('resultsHead');
     const showElevCol = entry.rodUnit !== 'lenker';
     const showSgCol = entry.intervalRows.some(r => r.sgDisp !== undefined && r.sgDisp !== null && r.sgDisp !== '\u2014' && r.sgDisp !== '');
-    head.innerHTML = `<th>Note</th><th>Sta.</th><th>BOP</th>` + (showSgCol ? `<th>Subgrade</th>` : '') + `<th>INV</th><th>TOP</th>` + (showElevCol ? `<th>Elevation</th>` : '');
+    head.innerHTML = `<th>Note</th><th>Sta.</th><th>BOP</th><th>INV</th><th>TOP</th>` + (showSgCol ? `<th>Subgrade</th>` : '') + (showElevCol ? `<th>Elevation</th>` : ''); /* feat_run33 (4): the optional column after the three the crew reads */
     const colCount = 5 + (showElevCol ? 1 : 0) + (showSgCol ? 1 : 0);
     const body = document.getElementById('resultsBody');
     // Draft (unsaved) note photos follow THEIR point across a rebuild, instead
@@ -17166,7 +17296,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const labelTr = document.createElement('tr');
         labelTr.className = rowClass;
         labelTr.innerHTML = `<td colspan="${colCount}" style="text-align:left; white-space:normal; padding:7px 8px 3px 8px; border-top:2px solid var(--ink);">
-          ${r.label ? `<span class="pb-sta-sub ${staSubClass}" style="display:inline; margin:0;">${escapeHtml(r.label)}</span>` : ''}
+          ${r.label ? `<span class="pb-sta-sub ${staSubClass}" style="display:inline; margin:0;">${escapeHtml(pbRowStripName(entry, r))}</span>` : ''}
           ${r.layoutNote ? `<span class="pb-lay-note">${escapeHtml(r.layoutNote)}</span>` : ''}
           ${r.addedTime ? `<span style="margin-left:8px; font-size:11px; font-weight:400; text-transform:none; letter-spacing:0; opacity:.7;">added ${new Date(r.addedTime).toLocaleTimeString()}</span>` : ''}
           ${r.addedTime && !pbIsStopRow(entry, r) ? `<button class="pb-remove" style="margin-left:8px;" onclick="pbRemoveManualInterval(${idx})">Remove</button>` : ''}
@@ -17186,9 +17316,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         </td>
         <td>${escapeHtml(r.station)}${r.layoutShort ? `<span class="pb-lay-sta">${escapeHtml(r.layoutShort)}${r.layoutExact ? ' \u00b7 ' + escapeHtml(r.layoutExact) : ''}</span>` : ''}</td>
         ${pbCopyCell(r.bop, 'bop', idx)}
-        ${showSgCol ? pbCopyCell(r.sgDisp || '', 'sg', idx) : ''}
         ${pbCopyCell(r.inv, 'inv', idx)}
         ${pbCopyCell(r.top, 'top', idx)}
+        ${showSgCol ? pbCopyCell(r.sgDisp || '', 'sg', idx) : ''}
         ${showElevCol ? pbCopyCell(r.elevation !== null && r.elevation !== undefined ? r.elevation : '', 'elevation', idx) : ''}
       `;
       tr.dataset.laidIdx = String(idx); // batch 14 F
@@ -18014,6 +18144,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!opening) return;
     document.getElementById('correctDistanceReason').value = '';
     const entry = getCurrentArchiveEntry();
+    if (entry && !pbFormHoldsLockedRun(entry)) pbLoadRunForCorrection(entry); /* feat_run33 (2): after a restart, the record comes back onto the form */
     if (!entry || !pbFormHoldsLockedRun(entry)) {
       document.getElementById('correctDistanceRunSel').innerHTML = '';
       document.getElementById('correctDistanceRunFields').style.display = 'none';
@@ -18847,8 +18978,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     errEl.style.display = 'none';
     const entry = getCurrentArchiveEntry();
     if (entry && (!lastCalc || !lastCalc.segments) && pbLayOldRule(entry)) { errEl.textContent = 'An interval can’t be added to this run. ' + PB_LAY_OLD_RULE_NOTE + ' Nothing was added.'; errEl.style.display = ''; return; } // bughunt Oct 19 (4)
+    if (entry && (!lastCalc || !lastCalc.segments || !pbCalcDescribesEntry(lastCalc, entry))) pbLoadRunForCorrection(entry); /* feat_run33 (2): the grade line comes back from the record */
     if (!entry || !lastCalc || !lastCalc.segments) {
-      errEl.textContent = 'Can\'t add an interval right now \u2014 reopen this run from a fresh Lock to enable it.';
+      errEl.textContent = 'Can\'t add an interval right now \u2014 this run\u2019s grade line isn\u2019t loaded (the run form holds another run). Lock or clear that run, then open this one again.';
       errEl.style.display = '';
       return;
     }
@@ -19621,8 +19753,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbBuildEndIncompleteOptions(entry) {
     const sel = document.getElementById('endIncompleteStation');
     if (!sel) return;
-    sel.innerHTML = entry ? entry.intervalRows.map(r => `<option value="${escapeHtml(pbRowKey(r))}" data-station-ft="${escapeHtml(String(r.stationFt))}">${escapeHtml(r.station)}${r.label ? ' (' + escapeHtml(r.label) + ')' : ''}${r.layoutShort ? ' \u00b7 ' + escapeHtml(r.layoutShort) : ''}</option>`).join('') : '';
-    sel.selectedIndex = -1; // nothing chosen until the person picks: a tap on End Here never records the Start by default
+    sel.innerHTML = '<option value="" disabled>Tap to choose the last station laid</option>' + (entry ? entry.intervalRows.map(r => `<option value="${escapeHtml(pbRowKey(r))}" data-station-ft="${escapeHtml(String(r.stationFt))}">${escapeHtml(r.station)}${r.label ? ' (' + escapeHtml(r.label) + ')' : ''}${r.layoutShort ? ' \u00b7 ' + escapeHtml(r.layoutShort) : ''}</option>`).join('') : '');
+    sel.selectedIndex = 0; /* feat_run33 (15): the hint shows; nothing chosen until the person picks (a tap on End Here never records the Start by default) */
+    { const el = document.getElementById('endIncompleteLaid'); if (el) { let S = null; try { S = entry ? pbLaidSummary(entry) : null; } catch (e) { S = null; } el.hidden = !(S && S.n); el.textContent = S && S.n ? 'Pipe is marked laid to ' + S.laidTo + ' ft.' : ''; } }
   }
   // The earlier session of a resumed run, when it stopped past ft (footage already reported laid).
   function pbResumedStopPast(fromId, ft) {
@@ -19636,7 +19769,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbEndRunIncomplete = async function(earlierOk, endAt, crewAt) { // earlierOk: the stop already confirmed as before the last session's stop
     const entry = getCurrentArchiveEntry();
     const sel = document.getElementById('endIncompleteStation');
-    const opt = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
+    const opt = sel && sel.selectedIndex >= 0 && sel.options[sel.selectedIndex].value ? sel.options[sel.selectedIndex] : null; /* feat_run33 (15): the hint is not a choice */
     if (!entry) { pbRunGoneAlert(); return; }
     if (!opt) { pbAlert('Select where the run stopped first.', 'Select a Stop Point'); return; }
     // What the person actually reviewed and chose: the point's identity, the
@@ -19780,6 +19913,22 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     if (pbKeptLaterAnswered.has(entry)) pbKeptLaterAnswered.delete(entry);
     else if (!pbNewRunGuardPassed && pbAskKeptLaterStats(entry)) return; // after the crew question this was already asked
+    if (!pbNewRunGuardPassed && pbNewRunNeedsAnswer({}, () => pbNewRunAfterAnswer(() => { const j = runArchive.indexOf(entry); if (j !== -1) pbResumeIncompleteRun(j); }))) return; // crew-sweep2: ask first
+    const additionalRunNums = pbLoadRunIntoForm(entry, { open: true }).additionalRunNums; /* feat_run33 (2) */
+    window._pbResumingFromEntryId = entry.id;
+    window._pbResumingFromLabel = pbResumedFromLabel(entry);
+    window._pbResumeFormKey = pbFormStateKey(); /* feat_run33 (9): the form as Resume left it (nothing new typed yet) */
+    pbAlert((entry.rodUnit === 'lenker'
+      ? 'Elevations are pre-filled from the earlier run' + (entry.stoppedAtStation ? ' \u2014 ' + entry.stoppedAtStation + ' is where you left off' : '') + '. Check them, then Lock to continue it.'
+      : 'Elevations are pre-filled from the earlier run \u2014 shoot ONE fresh rod reading at any point below' + (entry.stoppedAtStation ? ' (' + entry.stoppedAtStation + ' is where you left off)' : '') + ' to reestablish today\u2019s HI. The rest will fill in automatically once that\u2019s in.')
+      + (additionalRunNums.length ? ' This run\u2019s additional run(s) have been carried over too.' : ''), 'Resuming This Run'); /* feat_run33 (9): a Lenker run has no rod readings or HI */
+    pbGoto('input');
+  };
+  // feat_run33 (2): the run form rebuilt from a locked record: rod, distances, intervals, pipe, points and hubs (stake
+  // data, labels, photos), job info and pipe layout. Resume calls it with { open: true } (New Run first, as before).
+  // Without it the form is emptied in place and then holds the record as if it had just locked it: a correction can read
+  // it, Edit Run Data shows it, and an unchanged Lock is asked "Already Locked" instead of making a second record.
+  function pbLoadRunIntoForm(entry, opts) {
     // Added points are carried whether or not they were given a label;
     // plain interval rows (no label, not added) are rebuilt from the interval.
     const realRows = entry.intervalRows.filter(r => r.label || r.addedTime);
@@ -19817,9 +19966,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const r3 = (x) => Math.round(x * 1000) / 1000; // stations and lengths to 1/1000 ft: entry.distance is a float sum (170.39999999999998)
     const seg1Dist = r3(additionalRunNums.length ? runStartDist[additionalRunNums[0]] : entry.distance);
 
-    if (!pbNewRunGuardPassed && pbNewRunNeedsAnswer({}, () => pbNewRunAfterAnswer(() => { const j = runArchive.indexOf(entry); if (j !== -1) pbResumeIncompleteRun(j); }))) return; // crew-sweep2: ask first
     pbFormGen++;
-    pbOpenNewRun();
+    if (opts && opts.open) pbOpenNewRun(); else pbResetRunForm();
     if (entry.rodUnit) {
       const btn = document.querySelector('#rodToggle button[data-val="' + entry.rodUnit + '"]');
       if (btn) btn.click();
@@ -19855,7 +20003,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const rec = entry.pointInputs && r.pointId ? entry.pointInputs[r.pointId] : null;
       if (!rec) return;
       const labelEl = document.getElementById(prefix + 'Label');
-      if (labelEl && rec.label) labelEl.value = rec.label;
+      if (labelEl && rec.label) labelEl.value = rec.label; else if (labelEl && !(opts && opts.open)) labelEl.value = ''; /* feat_run33 (2): the record's own form: a blank label stays blank (Resume keeps its "Hub" default) */
       // A hub corrected out of Survey Stake mode stays at its corrected
       // elevation, but its stake ground carries over so the resumed run's depth
       // check and volume still see it. Its old shot does not: the instrument moved.
@@ -19987,10 +20135,49 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       named.forEach(([p, t]) => { const el = document.getElementById(p + 'Label'); if (el && !el.value && t && !isDefault(t)) el.value = t; });
     }
     pbLayRestoreFromEntry(entry); // Batch 9: same pipe laying length and adjustments
-    window._pbResumingFromEntryId = entry.id;
-    window._pbResumingFromLabel = pbResumedFromLabel(entry);
-    pbAlert('Elevations are pre-filled from the earlier run \u2014 shoot ONE fresh rod reading at any point below' + (entry.stoppedAtStation ? ' (' + entry.stoppedAtStation + ' is where you left off)' : '') + ' to reestablish today\u2019s HI. The rest will fill in automatically once that\u2019s in.' + (additionalRunNums.length ? ' This run\u2019s additional run(s) have been carried over too.' : ''), 'Resuming This Run');
-    pbGoto('input');
+    if (!(opts && opts.open)) {
+      // The record's own form, not a resume: its retained check points and HI come back too, and the form is marked as
+      // the one that locked this record (same checks as right after Lock).
+      const L = entry.pipeLayout; if (L && Array.isArray(L.retained)) window._pbLayout.retained = pbLayClone(L.retained); window._pbLayout.keep = pbLayKeepOf(entry);
+      if (entry.hi !== null && entry.hi !== undefined && entry.rodUnit !== 'lenker') { const hb = document.querySelector('#hiToggle button[data-val="direct"]'); if (hb) hb.click(); setElevFieldValue('hiDirect', entry.hi, arch); }
+      pbFormFresh = false; pbFormEdited = null;
+      pbLaySetOwner(entry.id);
+      pbLastLockedEntryId = entry.id; pbLastLockedFormGen = pbFormGen; pbLastLockedFields = pbFormFingerprint('screen-input'); pbLastLockedPhotos = pbRunFormPhotos();
+      window._pbLayIgnoreDetach = true;
+      try { const c = buildCalc(); if (c && !(c.errors && c.errors.length)) { lastCalc = c; pbLastLockedCalc = c; } } catch (e) { console.error(e); } finally { window._pbLayIgnoreDetach = false; }
+    }
+    return { additionalRunNums };
+  }
+  // The form does not hold ENTRY (the app restarted, another run was started or resumed since): rebuilt from the record
+  // when that loses nothing. Not over this run's own form edited after Lock (today's refusal names that), nor over a run
+  // typed on the form that is not kept as a draft. True when the form was rebuilt.
+  function pbLoadRunForCorrection(entry) {
+    try {
+      if (!entry || entry.kind !== 'run' || !runArchive.includes(entry) || pbLayOldRule(entry)) return false;
+      if (pbLastLockedEntryId === entry.id && pbLastLockedFormGen === pbFormGen) return false;
+      if (window._pbResumingFromEntryId || pbCorrectionsSaving) return false;
+      if (hasUnsavedRunData() && !pbFormIsSavedLockedRun() && !pbRdFormWork()) return false;
+      pbLoadRunIntoForm(entry);
+      return true;
+    } catch (e) { console.error(e); return false; }
+  }
+  // Edit Run Data: the form with THIS run on it. After a restart (or once another run was started) it is rebuilt from
+  // the record first; a run typed on the form but not locked is asked about.
+  window.pbEditRunData = function() {
+    if (pbRefuseWhileCorrectionSaving()) return;
+    const entry = getCurrentArchiveEntry();
+    const holds = !!entry && pbLastLockedEntryId === entry.id && pbLastLockedFormGen === pbFormGen;
+    if (!entry || entry.kind !== 'run' || holds || window._pbResumingFromEntryId || pbLayOldRule(entry)) { pbGoto('input'); return; }
+    const go = () => { try { pbLoadRunIntoForm(entry); } catch (e) { console.error(e); } pbGoto('input'); };
+    if (hasUnsavedRunData() && !pbFormIsSavedLockedRun() && !pbRdFormSaved()) {
+      const rdMine = pbRd.formUid !== null && pbRd.formUid === pbRd.account();
+      pbShowModal(rdMine && pbRd.state === 'saved' ? 'The run form has a run that is not locked. Its draft is saved on this phone (' + pbDraftWhen(pbRd.savedAt) + '). Opening this run\u2019s data replaces it on the form.' : 'The run form has a run that was typed in but not locked, so it is not saved anywhere. Opening this run\u2019s data empties the form, and that run would be lost.', [
+        { label: 'Cancel' },
+        { label: 'Open This Run', primary: true, danger: !(rdMine && pbRd.state === 'saved'), onClick: go }
+      ], 'Run Not Saved');
+      return;
+    }
+    go();
   };
   window._pbCalcOriginRowIdx = null;
   window.pbCalcBack = function() {
@@ -20212,7 +20399,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (unit === 'yd3') { primaryVal = cubicYd; primaryUnit = 'yd³'; }
     else if (unit === 'ft3') { primaryVal = cubicFt; primaryUnit = 'ft³'; }
     else { primaryVal = gal; primaryUnit = 'gal'; }
-    document.getElementById('volumeResult').innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">${volLastLabel}</div><div class="pb-answer-val">${primaryVal.toFixed(2)} ${primaryUnit}</div><div class="pb-answer-sub">${volLastQty > 1 ? volLastQty + ' × ' + (cubicYd / volLastQty).toFixed(2) + ' yd³ each · ' : ''}${cubicYd.toFixed(2)} yd³ · ${cubicFt.toFixed(2)} ft³ · ${gal.toFixed(1)} gal${volLastArcLen !== null ? ' · ' + volLastArcLabel + ': ' + volLastArcLen.toFixed(2) + ' ft' : ''}</div></div>` + (typeof window.pbCiBtnHtml === 'function' ? window.pbCiBtnHtml('vol', cubicYd, 'Material Volume: ' + ((document.querySelector('#volShapeToggle button.active') || {}).textContent || 'Volume').trim() + (volLastQty > 1 ? ' × ' + volLastQty : '')) : '') + pbWtHtml('volume', cubicYd);
+    document.getElementById('volumeResult').innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">${volLastLabel}</div><div class="pb-answer-val">${primaryVal.toFixed(2)} ${primaryUnit}</div><div class="pb-answer-sub">${volLastQty > 1 ? volLastQty + ' × ' + (cubicYd / volLastQty).toFixed(2) + ' yd³ each · ' : ''}${[unit !== 'yd3' ? cubicYd.toFixed(2) + ' yd³' : '', unit !== 'ft3' ? cubicFt.toFixed(2) + ' ft³' : '', unit !== 'gal' ? gal.toFixed(1) + ' gal' : ''].filter(Boolean).join(' · ')}${volLastArcLen !== null ? ' · ' + volLastArcLabel + ': ' + volLastArcLen.toFixed(2) + ' ft' : ''}</div></div>` + (typeof window.pbCiBtnHtml === 'function' ? window.pbCiBtnHtml('vol', cubicYd, 'Material Volume: ' + ((document.querySelector('#volShapeToggle button.active') || {}).textContent || 'Volume').trim() + (volLastQty > 1 ? ' × ' + volLastQty : '')) : '') + pbWtHtml('volume', cubicYd);
   }
   window.pbCalcVolume = function() {
     volLastCubicFt = null;
@@ -27603,7 +27790,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     ['structures', 'Structures'], ['permits', 'Confined Space'], ['reference', 'Education & Reference'], ['records', 'Reports & Records']
   ];
   const PB_CALC_CATS = ['grade', 'safety', 'pipe', 'structures'];
-  const PB_TOOLS_TAB_CATS = [['reference', 'Education & Reference'], ['records', 'Production']]; // feat_navfix: Quick Run and permits are on Home > Start work
+  const PB_TOOLS_TAB_CATS = [['reference', 'Learn'], ['records', 'Production']]; /* feat_core33 K7: the first row is named Education & Reference */ // feat_navfix: Quick Run and permits are on Home > Start work
   const PB_DESTINATIONS = [
     { id: 'quickRun', label: 'Quick Run', sub: 'Basic grade calculations', cat: 'run', gate: 'quickrun', screen: 'quickrun', words: 'quick run grade fall slope rod readings elevations stations cut fill', open: () => pbOpenQuickRun() },
     { id: 'rodElev', label: 'Rod Reading → Elevation', sub: 'Set HI from a known point, then convert any reading to an elevation', cat: 'grade', gate: 'calcHub', screen: 'rodElevCalc', words: 'rod shot rod reading hi height of instrument elevation benchmark backsight level laser', open: () => pbOpenRodElevCalc() },
@@ -27690,14 +27877,20 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbToolsDests = () => PB_DESTINATIONS.filter(d => pbDestTab(d) === 'calculators');
   const pbToolsAllDests = () => PB_DESTINATIONS.filter(d => pbDestTab(d) !== null || window.pbCanOpen(d.gate)); // batch 10 (W, F21): Reports items too, when the plan opens them
   const pbGroupHTML = (name, ds) => ds.length ? '<section class="pb-edu-block" aria-label="' + escapeHtml(name) + '"><h2 class="pb-edu-h">' + escapeHtml(name) + '</h2><div class="pb-tools-group">' + ds.map(d => pbDestRowHTML(d)).join('') + '</div></section>' : '';
+  // feat_core33 K6: a category button scrolls to that heading on the Calculators tab (under the sticky header).
+  window.pbCalcCatJump = function(name) {
+    const s = document.querySelector('#toolsList section[aria-label="' + String(name).replace(/"/g, '') + '"]'); if (!s) return;
+    const h = document.querySelector('#screen-calcHub .pb-header'), hh = h ? h.getBoundingClientRect().height : 0;
+    window.scrollTo({ top: Math.max(0, s.getBoundingClientRect().top + window.scrollY - hh - 8), behavior: 'smooth' });
+  };
   function pbRenderToolsList() {
     const box = document.getElementById('toolsList'); if (!box) return;
     box.innerHTML = PB_DEST_CATS.filter(c => PB_CALC_CATS.includes(c[0])).map(([cat, name]) => pbGroupHTML(name, pbToolsDests().filter(d => d.cat === cat))).join('');
   }
   function pbRenderToolsTab() {
     const box = document.getElementById('toolsAllList'); if (!box) return;
-    box.innerHTML = PB_TOOLS_TAB_CATS.map(([cat, name]) => pbGroupHTML(name, PB_DESTINATIONS.filter(d => pbDestTab(d) === 'tools' && d.cat === cat))).join('')
-      + '<section class="pb-edu-block" aria-label="Home shortcuts"><h2 class="pb-edu-h">Home shortcuts</h2><div class="pb-tools-group">'
+    box.innerHTML = PB_TOOLS_TAB_CATS.map(([cat, name]) => pbGroupHTML(name, PB_DESTINATIONS.filter(d => pbDestTab(d) === 'tools' && d.cat === cat && d.id !== 'aiAsk'))).join('') /* feat_core33 K7: Ask is the tab below (search still finds it) */
+      + '<section class="pb-edu-block pb-tools-solo" aria-label="Home shortcuts"><div class="pb-tools-group">' /* feat_core33 K7: no heading over one row */
       + '<button type="button" class="pb-edu-row pb-tool-row" id="toolsEditShortcuts" data-ic="star" onclick="pbOpenShortcutsEdit()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Edit Home shortcuts</span><span class="sub">Pick the tools shown on Home</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>'
       + '</div></section>';
   }
@@ -30311,7 +30504,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbSupScreenLabel(id) {
     const scr = document.getElementById('screen-' + id), t = scr && scr.querySelector('.pb-title');
     const title = t ? t.textContent.trim().replace(/\s+/g, ' ').slice(0, 60) : '';
-    return title ? title + ' (' + id + ')' : String(id || 'home');
+    if (!id || id === 'home') return 'Home'; /* feat_core33 K10: Home's h1 is the app's name */
+    return title ? title + ' (' + id + ')' : String(id);
   }
   async function pbSupLoad(uid) {
     if (!uid || uid === 'shared') return [];
@@ -30406,7 +30600,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const say = (t) => { err.textContent = t; err.style.display = ''; };
     if (!what) { say('Say what happened first.'); return; }
     const uid = await pbResolveStorageUserId();
-    if (!uid || uid === 'shared') { say('Log in first. App problem reports are sent from your account, so the app owner can reply. Nothing was sent.'); return; }
+    if (!uid || uid === 'shared') { await pbSupRender(); return; } /* feat_core33 K13: the same line, with Log In */
     const body = 'What happened:\n' + what + (exp ? '\n\nWhat I expected:\n' + exp : '') + (where ? '\n\nScreen (as typed): ' + where : '');
     if (body.length > PB_SUP_MAX_BODY) { say('That’s too long to send (' + body.length.toLocaleString() + ' of 4,000 characters). Shorten it and try again.'); return; }
     if (btn.disabled) return;
@@ -30432,6 +30626,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const q = (await pbSupLoad(uid)).slice().reverse();
     const ver = document.getElementById('apAutoVersion'); if (ver) ver.textContent = PB_APP_BUILD;
     const scr = document.getElementById('apAutoScreen'); if (scr) scr.textContent = pbSupScreenLabel(pbSupFromScreen);
+    { /* feat_core33 K13: no account on this phone — said before anything is typed, with the way to log in */
+      const err = document.getElementById('apError');
+      if (err && (!uid || uid === 'shared')) { err.innerHTML = 'Log in first. App problem reports are sent from your account, so the app owner can reply. <button type="button" class="pb-btn ghost small" onclick="pbOpenLogin()">Log In</button>'; err.style.display = ''; }
+      else if (err && /App problem reports are sent from your account/.test(err.textContent)) { err.textContent = ''; err.style.display = 'none'; }
+    }
     const em = document.getElementById('apEmailLine'); if (em) em.textContent = sbUser && sbUser.email ? 'Your account email (' + sbUser.email + ') is shown to the app owner so they can follow up.' : 'Your account email is shown to the app owner so they can follow up.';
     document.getElementById('apListHead').hidden = !q.length;
     const waiting = q.some(x => x.st === 'queued');
@@ -30521,9 +30720,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const d = x.created_at ? new Date(x.created_at) : null, s = lab[x.status] ? x.status : 'new';
       const acts = (s === 'new' ? '<button type="button" class="pb-btn ghost small" onclick="pbSupSetStatus(\'' + escapeHtml(String(x.id)) + '\', \'read\')">Mark Read</button>' : '')
         + (s !== 'closed' ? '<button type="button" class="pb-btn ghost small" onclick="pbSupSetStatus(\'' + escapeHtml(String(x.id)) + '\', \'closed\')">Mark Closed</button>' : '<button type="button" class="pb-btn ghost small" onclick="pbSupSetStatus(\'' + escapeHtml(String(x.id)) + '\', \'read\')">Reopen</button>');
-      return '<div class="pb-w10-ap-item pb-w10-ap-in" data-id="' + escapeHtml(String(x.id)) + '"><div class="pb-w10-ap-top"><span class="pb-chip ' + (s === 'new' ? 'pb-rpt-new' : 'ok') + '">' + lab[s] + '</span><span class="pb-w10-ap-when">' + escapeHtml(d && !isNaN(d) ? d.toLocaleString() : '') + '</span></div>'
+      return '<div class="pb-w10-ap-item pb-w10-ap-in" data-id="' + escapeHtml(String(x.id)) + '"><div class="pb-w10-ap-top"><span class="pb-chip ' + (s === 'new' ? 'pb-rpt-new' : 'ok') + '">' + lab[s] + '</span><span class="pb-w10-ap-when">' + escapeHtml(d && !isNaN(d) ? d.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '') + '</span></div>' /* feat_core33 K9: as the sender's list */
         + '<p class="pb-w10-ap-meta"><span class="k">From</span> ' + escapeHtml(String(x.sender_email || 'Unknown')) + '</p>'
-        + '<p class="pb-w10-ap-meta"><span class="k">Version</span> ' + escapeHtml(String(x.app_build || '—')) + ' · <span class="k">Screen</span> ' + escapeHtml(String(x.screen || '—')) + '</p>'
+        + '<p class="pb-w10-ap-meta"><span class="k">Version</span> ' + escapeHtml(String(x.app_build || '—')) + ' · <span class="k">Screen</span> ' + escapeHtml(x.screen ? pbSupScreenLabel(String(x.screen)) : '—') + '</p>' /* feat_core33 K9: the screen's name, id kept */
         + '<p class="pb-w10-ap-body">' + escapeHtml(String(x.body || '')) + '</p><div class="pb-w10-ap-acts">' + acts + '</div></div>';
     }).join('');
   }
@@ -36011,17 +36210,21 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (p.sent === want) return;
       if (!sbClient || typeof sbClient.rpc !== 'function' || !sbUser || sbUser.id !== uid || navigator.onLine === false || !(await pbLiveSessionIs(uid))) return;
       const r = await pbPermitRpc('pb_prod_push_prefs_set', { p_crew_production: p.on !== false, p_tz: tz || null, p_expect_uid: uid }, 20000);
-      if (!r.error && r.data && r.data.ok === true && sbUser && sbUser.id === uid) { const cur = await pbCrewPushLocal(uid); if (cur.on === p.on) { cur.sent = want; await pbSetFor(uid, 'crewPushPref', JSON.stringify(cur)); } pbCrewPushRender(); }
+      if (!r.error && r.data && r.data.ok === true && sbUser && sbUser.id === uid) { const cur = await pbCrewPushLocal(uid); if (cur.on === p.on) { cur.sent = want; delete cur.failedAt; await pbSetFor(uid, 'crewPushPref', JSON.stringify(cur)); } pbCrewPushRender(); }
+      else { /* feat_core33 K2: a server answer that is not "no signal" is remembered, so the note can say so */
+        const msg = String((r.error && r.error.message) || ''), noSignal = navigator.onLine === false || /failed to fetch|networkerror|load failed|no client|timeout/i.test(msg);
+        const cur = await pbCrewPushLocal(uid); if (cur.changedAt && !noSignal) { cur.failedAt = Date.now(); await pbSetFor(uid, 'crewPushPref', JSON.stringify(cur)); pbCrewPushRender(); }
+      }
     } catch (e) {}
   }
   async function pbCrewPushRender() {
     const uid = pbArchiveOwnerUid, el = pbProdEl('notifTypeCrew'), m = pbProdEl('notifCrewMsg'); if (!el || !uid || uid === 'shared') return;
     const p = await pbCrewPushLocal(uid); el.checked = p.on !== false;
-    if (m) { const pend = p.sent !== JSON.stringify([p.on !== false, pbCrewPushTz()]); m.hidden = !pend; m.textContent = pend ? 'Saved on this phone. The change is sent when there’s signal.' : ''; }
+    if (m) { const pend = !!p.changedAt && p.sent !== JSON.stringify([p.on !== false, pbCrewPushTz()]); m.hidden = !pend; m.textContent = !pend ? '' : p.failedAt && navigator.onLine !== false ? 'Couldn’t be saved to the server. It is tried again later.' : 'Saved on this phone. The change is sent when there’s signal.'; } /* feat_core33 K2: only after a change made on this phone */
   }
   window.pbCrewPushSet = async function(on) {
     const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared') return;
-    const p = await pbCrewPushLocal(uid); p.on = !!on; await pbSetFor(uid, 'crewPushPref', JSON.stringify(p));
+    const p = await pbCrewPushLocal(uid); p.on = !!on; p.changedAt = Date.now(); delete p.failedAt; await pbSetFor(uid, 'crewPushPref', JSON.stringify(p)); /* feat_core33 K2 */
     pbCrewPushRender(); pbCrewPushFlush(uid);
   };
   window.pbAccountLoadHooks.push((uid) => { if (uid && uid !== 'shared') setTimeout(() => pbCrewPushFlush(uid), 6000); });
@@ -44256,6 +44459,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     } else if (full) {
       bad = true;
       html = '<span class="pb-chip draft">Not saved as a draft</span><span class="pb-rd-line" id="runDraftFull">' + pbDraftEsc(pbRdFullWords()) + '</span>';
+    } else if (window._pbResumingFromEntryId) {
+      // feat_run33 (9): the form holds a resume: say which run, and that Lock continues it
+      const re = runArchive.find(x => x && x.kind === 'run' && x.id === window._pbResumingFromEntryId);
+      if (re) html = '<span class="pb-chip draft">Resuming</span><span class="pb-rd-line">' + pbDraftEsc('Resuming ' + re.startLabel + ' \u2192 ' + re.endLabel + (re.stoppedAtStation ? ' (stopped at ' + re.stoppedAtStation + ')' : '') + ' \u2014 Lock to continue it.') + '</span>';
     }
     if (others.length) {
       html += '<span class="pb-rd-line pb-draft-head">' + pbDraftEsc((others.length === 1 ? '1 other run draft' : others.length + ' other run drafts') + ' kept on this phone' + (pbRd.mine(a).length >= PB_DRAFT_CAP ? ' (the most: ' + PB_DRAFT_CAP + ')' : '') + '. ' + PB_DRAFT_PHOTO_NOTE) + '</span>'
@@ -45426,7 +45633,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const o = document.getElementById('pbWtOut-' + c); if (o) o.innerHTML = pbWtOutHtml(c);
   };
   // Depth / thickness inputs say what they are in inches as you type (0.5 ft = 6 in), so feet and inches can't be mixed up.
-  const PB_WT_FTIN = ['volRectD', 'volTrapD', 'volSectorD', 'volEncD', 'beddingThk'];
+  const PB_WT_FTIN = ['volRectD', 'volTrapD', 'volSectorD', 'volEncD']; /* feat_core33 K5: beddingThk has the F09 helper (type inches) */
   function pbWtFtIn(el) {
     if (!el || !el.id || PB_WT_FTIN.indexOf(el.id) < 0 || !el.parentNode) return;
     let e = el.parentNode.querySelector('.pb-wt-ftin');
