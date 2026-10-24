@@ -8923,7 +8923,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.26 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.27 · 2026-10-23'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -32954,7 +32954,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const p = plan && Array.isArray(plan.categories) ? plan.categories.find(c => c && c.key === key) : null;
     if (p && p.name) return p.name;
     const d = PB_PROD_DEFAULT_CATS.find(c => c.key === key);
-    return d ? d.name : key;
+    if (d) return d.name;
+    const k = String(key || '').replace(/^_+/, '').replace(/_+/g, ' ').trim(); return k ? k.charAt(0).toUpperCase() + k.slice(1) : String(key); // feat_pdf: never a raw key
   }
   function pbProdJobLabel(num) { const n = String(num || '').trim(); return n ? 'Job ' + n : 'No job number'; }
   // ---- production access: the company answer this phone holds (verified with the server, kept per account) ----
@@ -38234,7 +38235,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const size = op.size || 9.5, lh = op.lh || pbRptLh(size), x = G.ML + (op.indent || 0), w = op.width || (G.CW - (op.indent || 0));
       R.font(size, op.style, op.color);
       const lines = R.split(text, w);
-      if (op.keep) R.ensure(Math.min(lines.length * lh, G.BOTTOM - G.TOP));
+      if (op.keep) { const p0 = pageNo(); R.ensure(Math.min(lines.length * lh, G.BOTTOM - G.TOP)); if (op.lead && pageNo() !== p0) { R.font(size, 'bold', op.color); doc.text(op.lead, x, R.y + lh * 0.75); R.y += lh; R.font(size, op.style, op.color); } } // feat_pdf: no orphaned legend
       lines.forEach(l => { if (R.y + lh > G.BOTTOM) { R.newPage(); R.font(size, op.style, op.color); } doc.text(l, x, R.y + lh * 0.75); R.y += lh; });
       R.y += op.after === undefined ? 1.6 : op.after;
       return lines.length;
@@ -38572,11 +38573,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         if (doc.__pbReplaced && doc.__pbReplaced.has(p)) { R.font(7.8, 'bold', G.ACCENT); doc.text('Some characters on this page could not be printed in this PDF\u2019s font and were replaced with "?". The record itself keeps them.', G.ML, G.H - 17.5); }
         R.font(9, 'bold'); doc.text('Page ' + p + ' of ' + N, G.ML + G.CW, G.H - 11.6, { align: 'right' });
         R.font(7.8, 'normal', G.MUTED);
-        const l1 = m.anon ? 'Anonymous report \u00b7 no record ID, submission time, phone or account is printed (by design)' : 'Record ' + (m.recordId || '\u2014') + ' \u00b7 ' + (m.version || 'version not recorded') + ' \u00b7 Generated ' + (m.generated || '');
+        const l1 = m.anon ? 'Anonymous report \u00b7 no record ID, submission time, phone or account is printed (by design)' : 'Record ' + String(m.recordId || '\u2014').replace(/([0-9a-f]{8})-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '$1\u2026') + ' \u00b7 ' + (m.version || 'version not recorded') + ' \u00b7 Generated ' + (m.generated || '');
         // Every page says it was made with The Pipelayer's Bible (first, so it is never cut off).
         const l2 = (m.anon ? 'Made with The Pipelayer\u2019s Bible \u00b7 Content ' : 'Made with ' + (m.build || pbRptBuild()) + ' \u00b7 ') + 'SHA-256 ' + (m.fpShort || '\u2014') + (m.anon ? '' : (m.account ? ' \u00b7 Exported by: ' + m.account : ''));
         doc.text(R.fit(l1, G.CW - 30), G.ML, G.H - 11.6);
-        doc.text(R.fit(l2, G.CW - 30), G.ML, G.H - 7.8);
+        const l2s = !m.anon && m.account && doc.getTextWidth(l2) > G.CW - 30 ? l2.replace(/ \u00b7 Exported by: .*$/, ' \u00b7 Exported by: ' + String(m.account).replace(/\s*\([^)]*\)\s*$/, '')) : l2; // feat_pdf: keep the address, drop the role
+        doc.text(R.fit(l2s, G.CW - 30), G.ML, G.H - 7.8);
       }
       try {
         if (doc.outline && typeof doc.outline.add === 'function') R.outline.forEach(o => { const n = doc.outline.add(null, pbPdfSafe(o.title), { pageNumber: o.page }); o.children.forEach(c => doc.outline.add(n, pbPdfSafe(c.title), { pageNumber: c.page })); });
@@ -39027,7 +39029,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (fixedW > room) Object.keys(numCols).forEach(k => { if (numCols[k].cellWidth) numCols[k].cellWidth = Math.floor(numCols[k].cellWidth * room / fixedW * 10) / 10; }); }
     R.table({ head, body, columnStyles: numCols, fontSize: 8.5, rowNotes: bandsOut });
     if (foot.length) foot.forEach((t, i) => R.para('[' + (i + 1) + '] ' + t, { size: 9, after: 0.6 }));
-    R.para(PB_RPT_SRC_LEGEND + (e.cutsheetAiText ? ' This run was built with an AI-read cutsheet (see the AI-recreated cutsheet section); which points came from it is not recorded.' : '') + (laid ? ' Laid = when the row was marked laid on the phone (phone time; the year and time zone are in the column heading when all marks share them). One swipe marks several rows at once: they share one time; the first row of the swipe says "N-row swipe" and the stations it marked, and the others say "(swipe)"; "not marked" = never marked laid.' : ''), { size: 9, color: G.MUTED, keep: true });
+    R.para(PB_RPT_SRC_LEGEND + (e.cutsheetAiText ? ' This run was built with an AI-read cutsheet (see the AI-recreated cutsheet section); which points came from it is not recorded.' : '') + (laid ? ' Laid = when the row was marked laid on the phone (phone time; the year and time zone are in the column heading when all marks share them). One swipe marks several rows at once: they share one time; the first row of the swipe says "N-row swipe" and the stations it marked, and the others say "(swipe)"; "not marked" = never marked laid.' : ''), { size: 9, color: G.MUTED, keep: true, lead: 'Grade sheet legend (the table is on the previous page)' });
     if (laid) {
       R.section('laid', 'Laid progress', { keep: 30, intro: 'Rows marked laid on the grade sheet, as recorded on the phone (device time). Rows marked together share one time. An undo removes the marks from that row on; it is kept here.' });
       const rowsLaid = rows.filter(r => typeof laid.marks[pbRptLaidKey(r)] === 'number');
@@ -39393,7 +39395,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     R.section('closeout', 'Closeout', { keep: 30 });
     const ch = p.closeoutReasonChangedFrom;
     R.kv([
-      ['Closeout reason', 'Closeout reason: ' + (p.closeoutReason || 'not recorded') + (p.closeoutReasonDetail ? ' \u2014 ' + p.closeoutReasonDetail : '') + (ch ? '. Changed ' + (ch.elsewhere ? '' : 'on retry ') + 'from: ' + ch.label + (ch.detail ? ' \u2014 ' + ch.detail : '') + ' (first submitted ' + pbRptDt(ch.at) + (ch.elsewhere ? '; this permit was also closed out in another tab or window' : '') + ')' : '') + (p.closeoutReasonElsewhere ? '. Also given in another closeout of this permit: ' + p.closeoutReasonElsewhere.label + (p.closeoutReasonElsewhere.detail ? ' \u2014 ' + p.closeoutReasonElsewhere.detail : '') + ' (submitted ' + pbRptDt(p.closeoutReasonElsewhere.at) + ')' : '')],
+      ['Reason', (p.closeoutReason || 'not recorded') + (p.closeoutReasonDetail ? ' \u2014 ' + p.closeoutReasonDetail : '') + (ch ? '. Changed ' + (ch.elsewhere ? '' : 'on retry ') + 'from: ' + ch.label + (ch.detail ? ' \u2014 ' + ch.detail : '') + ' (first submitted ' + pbRptDt(ch.at) + (ch.elsewhere ? '; this permit was also closed out in another tab or window' : '') + ')' : '') + (p.closeoutReasonElsewhere ? '. Also given in another closeout of this permit: ' + p.closeoutReasonElsewhere.label + (p.closeoutReasonElsewhere.detail ? ' \u2014 ' + p.closeoutReasonElsewhere.detail : '') + ' (submitted ' + pbRptDt(p.closeoutReasonElsewhere.at) + ')' : '')],
       ['Submitted', pbRptDt(e.lockTime, { sec: true })], ['Record completed', p.closeoutCompletedAt ? pbRptDt(p.closeoutCompletedAt, { sec: true }) + ' (events while it saved are included)' : 'same as submitted'],
       ['Permit retention', 'OSHA requires each cancelled permit to be kept at least 1 year (29 CFR 1926.1205(f)). The app keeps closed permits indefinitely.']
     ], { cols: 1, labelW: 40 });
@@ -39735,7 +39737,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbPdfSafe(s) {
     if (Array.isArray(s)) return s.map(pbPdfSafe);
     if (typeof s !== 'string') return s;
-    return s.replace(/\u2192/g, 'to').replace(/\u2190/g, 'from').replace(/\u2032/g, "'").replace(/\u2033/g, '"').replace(/\u2260/g, '!=').replace(/\u2264/g, '<=').replace(/\u2265/g, '>=').replace(/\u2212/g, '-').replace(/\u26a0\ufe0f?/g, '!').replace(/\u2713|\u2714/g, 'yes').replace(/\u2717|\u2718/g, 'no').replace(/[\u2500-\u257f]/g, '-').replace(/[^\x00-\xff\u20ac\u201a\u0192\u201e\u2026\u2020\u2021\u02c6\u2030\u0160\u2039\u0152\u017d\u2018\u2019\u201c\u201d\u2022\u2013\u2014\u02dc\u2122\u0161\u203a\u0153\u017e\u0178]/g, '?'); // everything in WinAnsi (incl. em dash, curly quotes, ellipsis, bullet) is kept as-is
+    return s.replace(/\u2192/g, 'to').replace(/\u2190/g, 'from').replace(/\u2032/g, "'").replace(/\u2033/g, '"').replace(/\u2260/g, '!=').replace(/\u2264/g, '<=').replace(/\u2265/g, '>=').replace(/\u2212/g, '-').replace(/\u2248\s?/g, 'approx. ').replace(/\u26a0\ufe0f?/g, '!').replace(/\u2713|\u2714/g, 'yes').replace(/\u2717|\u2718/g, 'no').replace(/[\u2500-\u257f]/g, '-').replace(/[^\x00-\xff\u20ac\u201a\u0192\u201e\u2026\u2020\u2021\u02c6\u2030\u0160\u2039\u0152\u017d\u2018\u2019\u201c\u201d\u2022\u2013\u2014\u02dc\u2122\u0161\u203a\u0153\u017e\u0178]/g, '?'); // everything in WinAnsi (incl. em dash, curly quotes, ellipsis, bullet) is kept as-is
   }
   // Deep-normalises every string inside autoTable options (head/body/foot cells,
   // plain or {content}) so the table lays out the text it will actually draw.
@@ -39757,7 +39759,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (typeof s !== 'string') return s;
     if (!doc.__pbFont) return pbPdfSafe(s);
     if (/^[\x20-\x7e\n\r\t]*$/.test(s)) return s; // plain ASCII: nothing to map or replace (the common, fast case)
-    s = s.replace(/\u2192/g, 'to').replace(/\u2190/g, 'from').replace(/\u2032/g, "'").replace(/\u2033/g, '"').replace(/\u2260/g, '!=').replace(/\u2264/g, '<=').replace(/\u2265/g, '>=').replace(/\u26a0\ufe0f?/g, '!').replace(/\u2713|\u2714/g, 'yes').replace(/\u2717|\u2718/g, 'no').replace(/[\u2500-\u257f]/g, '-');
+    s = s.replace(/\u2192/g, 'to').replace(/\u2190/g, 'from').replace(/\u2032/g, "'").replace(/\u2033/g, '"').replace(/\u2260/g, '!=').replace(/\u2264/g, '<=').replace(/\u2265/g, '>=').replace(/\u2248\s?/g, 'approx. ').replace(/\u26a0\ufe0f?/g, '!').replace(/\u2713|\u2714/g, 'yes').replace(/\u2717|\u2718/g, 'no').replace(/[\u2500-\u257f]/g, '-');
     let out = '', bad = false;
     for (const ch of s) { const cp = ch.codePointAt(0); if (pbPdfFontCovers(cp)) out += ch; else if (cp === 0xfe0f || cp === 0x200d) { bad = true; } else { out += '?'; bad = true; } }
     if (bad && track) { try { (doc.__pbReplaced = doc.__pbReplaced || new Set()).add(doc.internal.getCurrentPageInfo().pageNumber); } catch (e) {} }
@@ -47841,7 +47843,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (am) R.banner('AMENDMENT ' + am.version + ': REPLACES THE EARLIER VERSION', 'warn', 'Reason given: ' + am.reason + '. The earlier version is kept unchanged on the company server.');
     R.banner(signed.name ? 'SIGNED BY ' + String(signed.name).toUpperCase() : 'NOT SIGNED', signed.name ? 'ok' : 'danger', signed.name ? 'Signed ' + pbRptDt(Date.parse(signed.at), { sec: true, tz: signed.tz }) + ' (' + signed.tz + ', phone clock)' + (signed.drawn ? ' · drawn signature included' : ' · typed name only') : 'This PDF is a draft.');
     const ins = S.inspections.items, fails = ins.filter(x => x.result !== 'pass');
-    const prodT = Object.keys(S.runs.totals || {}).map(k => pbProdCatName(k, null) + ' ' + S.runs.totals[k].qty + ' ' + S.runs.totals[k].unit);
+    const prodT = Object.keys(S.runs.totals || {}).map(k => (S.runs.totals[k].name || pbProdCatName(k, null)) + ' ' + S.runs.totals[k].qty + ' ' + S.runs.totals[k].unit);
     R.kv([['Job', S.job.number], ['Jobsite', S.job.site], ['Work date', pbDlyDayText(S.work_date)], ['Foreman', signed.name ? signed.name + (S.foreman.account ? ' (' + S.foreman.account + ')' : '') : S.foreman.account],
       ['Weather', S.weather && S.weather.available ? pbDlyWeatherText({ data: S.weather.data, complete: S.weather.complete }) : 'not available'], ['Runs', String(S.runs.items.length)],
       ['Production', prodT.join(' · ') || 'none entered'], ['Crew hours', 'Laborer ' + S.crew.totals.laborer_h + ' h, Operator ' + S.crew.totals.operator_h + ' h, Equipment ' + S.crew.totals.equipment_h + ' h'],
@@ -47907,7 +47909,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     R.section('insp', 'Inspections and tests (' + ins.length + ')', { keep: 26 });
     if (ins.length) R.table({ head: ['Item', 'Result', 'When (entered zone)', 'Inspector / agency', 'Notes, photos, status'], columns: [{ cellWidth: 38 }, { cellWidth: 18 }, { cellWidth: 36 }, { cellWidth: 36 }, {}], fontSize: 8.3,
       body: ins.map(x => [x.item + (x.where ? '\n' + x.where : '') + (x.tested_version ? '\n(tested item v' + x.tested_version + (x.server_version && x.server_version !== x.tested_version ? '; v' + x.server_version + ' on the server' : '') + ')' : ''), { content: pbDlyResName(x.result) + (x.result !== 'pass' ? (x.closes ? '\nclosed' : '\nretest') : ''), _accent: x.result !== 'pass' }, t(x.at, x.tz) + '\n(' + x.tz + ')', x.inspector + '\n' + x.agency,
-        [x.notes, x.photos ? x.photos + ' photo(s), SHA-256 ' + (x.photo_sha256 || []).map(h => h ? String(h).slice(0, 12) : '?').join(', ') + ' (kept with the item on the company server)' : 'no photos', 'Checked off by ' + (x.by || '—') + '; ' + x.state].filter(Boolean).join('\n')]) });
+        [x.notes, x.photos ? x.photos + ' photo(s), SHA-256 ' + (x.photo_sha256 || []).map(h => h ? String(h).slice(0, 12) : '?').join(', ') + ' (kept with the item on the company server)' : 'no photos', 'Checked off by ' + (x.by || '—') + '; ' + String(x.state || '').replace(/^received (\d{4}-\d\d-\d\dT[^\s]+)$/, (m0, iso) => isNaN(Date.parse(iso)) ? m0 : 'received ' + pbRptDt(Date.parse(iso), { sec: true }) + ' (server time)')].filter(Boolean).join('\n')]) });
     else R.para('None checked off on this day.', { size: 9.5 });
     src(S.inspections.source);
     R.section('permits', 'Permits (' + S.permits.items.length + ')', { keep: 26 });
@@ -50113,14 +50115,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbNrCanonical(e) { return { kind: 'norun', record: pbNrRecordOf(e), items: pbNrItemsOf(e), history: (e.history || []).map(x => ({ v: x.v, savedAt: x.savedAt, tz: x.tz, by: x.by, record: x.record, items: x.items })), photos: (e.photos || []).map(p => p.url), removed: e.removed || null, by: e.by, byEmail: e.byEmail, savedAt: e.savedAt, tz: e.tz, createdAt: e.createdAt, createdTz: e.createdTz }; }
   function pbNrPdfInto(R, e) {
     const G = PB_RPT, C = pbNrCanonical(e), fp = pbRptFingerprint(C), L = pbNrMatList(e.jobNumber), E = pbNrEstimate(e, L && L.settings), st = pbNrStateOf(e);
-    R.beginRecord({ company: pbRptCompany(), type: 'Work Entered Without a Run', outline: 'Work without a run ' + e.workDate + ' · Job ' + e.jobNumber, title: pbProdJobLabel(e.jobNumber) + (e.jobsite ? ' · ' + e.jobsite : ''), job: pbProdDayText(e.workDate),
+    R.beginRecord({ company: pbRptCompany(), type: 'Work Entered Without a Run', outline: 'Work without a run ' + e.workDate + ' · Job ' + e.jobNumber, title: pbProdJobLabel(e.jobNumber) + (e.jobsite ? ' · ' + e.jobsite : ''), job: pbDlyDayText(e.workDate), // feat_pdf: a date, never "Today"
       recordId: e.cid, version: 'v' + e.v + ' · ' + pbRptRev(fp), fp, fpShort: pbRptShort(fp), generated: pbRptDt(Date.now()), account: pbRptAccount(), build: pbRptBuild() });
-    pbRptTitle(R, 'Work Entered Without a Run', pbProdJobLabel(e.jobNumber) + (e.jobsite ? ' · ' + e.jobsite : '') + ' · ' + e.workDate);
+    pbRptTitle(R, 'Work Entered Without a Run', pbProdJobLabel(e.jobNumber) + (e.jobsite ? ' · ' + e.jobsite : '') + ' · ' + pbDlyDayText(e.workDate));
     R.banner('ENTERED WITHOUT A RUN (MANUAL)', 'warn', PB_NR_NO_GRADE + ' Quantities are what the foreman entered for that day.');
     if (e.removed) R.banner('REMOVED', 'danger', 'Removed on this phone ' + pbRptDt(e.removed.at, { sec: true, tz: e.removed.tz }) + ' (' + e.removed.tz + '). Taken off the company totals when it had reached them; the company keeps its history.');
     R.kv([['Job', e.jobNumber], ['Jobsite', e.jobsite || 'not entered'], ['Work date', e.workDate], ['Stations', e.staFrom !== null ? pbNrStaText(e.staFrom) + ' to ' + pbNrStaText(e.staTo) : 'not entered'],
       ['Footage installed', e.footage !== null ? pbNrR(e.footage, 2) + ' LF (' + ({ both: 'stations and footage agree', stations: 'from the stations', stations_confirmed: 'from the stations; the typed footage disagreed and the foreman picked the stations', footage: 'typed', footage_confirmed: 'typed; the stations disagreed and the foreman picked the footage' }[e.basis] || 'typed') + ')' : 'none'],
-      ['Pipe', [e.size ? e.size + '"' : '', e.pipe ? e.pipe.name + (e.pipe.id ? ' (job list)' : ' (typed: not on the job list)') : ''].filter(Boolean).join(' ') || 'not entered'], ['Pipe OD', e.odIn !== null ? e.odIn + '"' : 'the job’s' + (E.od !== null ? ' (' + E.od + '")' : ' (not set)')],
+      ['Pipe', [e.size && !(e.pipe && String(e.pipe.name).trim().startsWith(e.size + '"')) ? e.size + '"' : '', e.pipe ? e.pipe.name + (e.pipe.id ? ' (job list)' : ' (typed: not on the job list)') : ''].filter(Boolean).join(' ') || 'not entered'], ['Pipe OD', e.odIn !== null ? e.odIn + '"' : 'the job’s' + (E.od !== null ? ' (' + E.od + '")' : ' (not set)')],
       ['Bedding', (e.bed ? e.bed.name + (e.bed.id ? ' (job list)' : ' (typed: not on the job list)') : 'not entered') + ', ' + (e.bedThk !== null ? e.bedThk + ' ft' : 'job’s thickness' + (E.bt !== null ? ' (' + E.bt + ' ft)' : ' (not set)'))],
       ['Shading', (e.shade ? e.shade.name + (e.shade.id ? ' (job list)' : ' (typed: not on the job list)') : 'not entered') + ', ' + (e.shadeThk !== null ? e.shadeThk + ' ft over the pipe' : 'job’s thickness' + (E.st !== null ? ' (' + E.st + ' ft)' : ' (not set)'))],
       ['Trench width', e.width !== null ? e.width + ' ft' : 'the job’s' + (E.w !== null ? ' (' + E.w + ' ft)' : ' (not set)')],
@@ -50174,7 +50176,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         stations: e.staFrom !== null ? pbNrStaText(e.staFrom) + ' to ' + pbNrStaText(e.staTo) : null, pipe: pbNrPipeText(e) || null,
         man_h: pbNrR(e.manHours, 2), equip_h: pbNrR(e.equipHours, 2), note: e.note || null, photos: (e.photos || []).length, photo_sha256: (e.photos || []).map(p => p.sha || null), no_grade: PB_NR_NO_GRADE,
         est: pbNrEstimate(e, L && L.settings).rows.filter(r => r.k !== 'pipe').map(r => ({ what: r.what, qty: r.qty, unit: r.unit, basis: r.basis })) });
-      Object.keys(prod).forEach(key => { runSec.totals = runSec.totals || {}; const t = runSec.totals[key] || (runSec.totals[key] = { qty: 0, unit: prod[key].unit }); t.qty = pbNrR(t.qty + prod[key].qty, 2); });
+      Object.keys(prod).forEach(key => { runSec.totals = runSec.totals || {}; const t = runSec.totals[key] || (runSec.totals[key] = { qty: 0, unit: prod[key].unit, name: prod[key].name }); t.qty = pbNrR(t.qty + prod[key].qty, 2); });
     });
     if (list.length) runSec.source += ' Also ' + list.length + ' entr' + (list.length === 1 ? 'y' : 'ies') + ' of work entered without a run (manual) on this phone for this job and day, labelled as such: no grade or cut/fill (no elevations).';
   };
