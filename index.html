@@ -3477,8 +3477,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 /* feat_text911: the Text block on the emergency panel */
 #pbApp#pbApp #screen-confinedActive #cpTextWrap { margin: 14px 16px 0 16px; }
 #pbApp#pbApp #screen-confinedActive #cpText911Btn { display: block; width: 100%; min-height: 60px; margin: 0; font-size: 20px; font-weight: 800; letter-spacing: 0.01em; background: var(--pb-danger, #c62828); border: 2px solid var(--pb-danger, #c62828); color: #fff; border-radius: 12px; }
-#pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-tx-row { padding: 10px 0 0 0; }
-#pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-tx-row .pb-btn { min-height: 48px; margin-left: 0; }
+#pbApp#pbApp #screen-confinedActive #cpTextContactsBtn { display: block; width: 100%; min-height: 48px; margin: 10px 0 0 0; }
 #pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-tx-noloc { margin: 10px 0 0 0; padding: 10px 12px; background: #5a3a10; border-left: 4px solid var(--hazard); color: #fff; font-weight: 700; font-size: 15px; border-radius: 12px; }
 #pbApp#pbApp #screen-confinedActive #cpTextWrap .pb-help { margin: 8px 0 0 0; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
 #pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-tx-last { color: var(--pb-text, #fff); font-weight: 650; }
@@ -7389,10 +7388,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div id="cpTextWrap" style="display:none;">
         <button type="button" class="pb-btn" id="cpText911Btn" onclick="pbEmText('main')">Text 911</button>
         <p class="cp-tx-noloc" id="cpTextNoLoc" style="display:none;">Add your location before sending &mdash; this text has no address or GPS position.</p>
-        <div class="pb-btn-row cp-tx-row">
-          <button type="button" class="pb-btn ghost small" id="cpTextDetailsBtn" onclick="pbEmText('details')">Text Details</button>
-          <button type="button" class="pb-btn ghost small" id="cpTextContactsBtn" style="display:none;" onclick="pbEmText('contacts')">Text Contacts</button>
-        </div>
+        <button type="button" class="pb-btn ghost" id="cpTextContactsBtn" style="display:none;" onclick="pbEmText('contacts')">Text Contacts</button>
         <p class="pb-help cp-tx-last" id="cpTextLast" style="display:none;" aria-live="polite"></p>
         <p class="pb-help" id="cpTextWarn"></p>
         <p class="pb-help" id="cpTextLoc" aria-live="polite"></p>
@@ -9154,7 +9150,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.43 · 2026-10-25'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.44 · 2026-10-25'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -24828,14 +24824,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   // ---------- feat_text911 (r15.43): Text 911 from the EMERGENCY panel ----------
   // Calling stays first: EMERGENCY dials before any of this runs, and nothing here is awaited by the call.
-  // A text opens the phone's OWN Messages app (an sms: link) addressed to the permit's emergency number with
-  // the message filled in; the person presses Send. Nothing is ever sent from a server, and the app cannot
+  // ONE text (owner, Oct 25: only the immediately necessary facts, no second text) opens the phone's OWN Messages
+  // app (an sms: link) addressed to the permit's emergency number with the message filled in; the person presses Send. Nothing is ever sent from a server, and the app cannot
   // know whether a text was sent, so the record says "opened", never "sent".
   // Position: asked for only because EMERGENCY was tapped, kept only on that permit's record: the one exception
   // to "the app never tracks location". Never in the same moment as the call hand-off (a location prompt must not
   // race the phone's call prompt): right away only when permission is already granted, otherwise when the person
   // comes back to the app after the call, or after 3 s if the app never left the screen.
-  const PB_TX_MAX1 = 160, PB_TX_MAX2 = 300, PB_TX_GPS_MAX_M = 100, PB_TX_WAIT_MS = 20000;
+  const PB_TX_MAX1 = 160, PB_TX_GPS_MAX_M = 100, PB_TX_WAIT_MS = 20000;
   const PB_TX_REP_TEXTS = 'TEXTS OPENED ON THE EMERGENCY PANEL', PB_TX_REP_FIX = 'POSITION READ WHEN EMERGENCY WAS TAPPED';
   // The position request for the emergency on screen (memory only). state: 'waiting' (not asked yet) | 'asking' | 'got' | 'none'
   let pbTxFix = { sid: null, uid: null, state: null, fix: null, asked: 0 };
@@ -24875,6 +24871,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const used = () => { let n = 0; keep.forEach(v => { n += v.length; }); return n + Math.max(0, keep.size - 1); };
     list.map((p, i) => ({ p, i })).sort((a, b) => a.p.pri - b.p.pri || a.i - b.i).forEach(({ p }) => {
       const room = max - used() - (keep.size ? 1 : 0);
+      if (p.raw) { if (p.t.length <= room) keep.set(p, p.t); return; } // a link: whole or nothing, exactly as given
       const t = p.t.replace(/\.$/, '');
       if (t.length + 1 <= room) keep.set(p, t + '.');
       else if (p.cut && room - 1 >= p.cut) { const c = pbTxCut(t, room - 1); if (c.length >= p.cut) keep.set(p, c + '.'); }
@@ -24904,7 +24901,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbTxFixGood = (f) => pbTxFixOk(f) && typeof f.acc === 'number' && isFinite(f.acc) && f.acc <= PB_TX_GPS_MAX_M; // close enough to send to 911 in message 1
   function pbTxRecOk(x) { return !!x && typeof x === 'object' && typeof x.number === 'string' && x.number && isFinite(new Date(x.time).getTime()); }
   const pbTxTime = (t) => { try { return new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/[  ]/g, ' '); } catch (e) { return new Date(t).toLocaleTimeString(); } };
-  // "Text to 911 opened at 2:14 PM": what the record says about a text (never "sent").
+  // "Text to 911 opened at 2:14 PM": what the record says about a text (never "sent"). 'details' is only in records
+  // saved by r15.43, which had a second text.
   function pbTxWords(x, withDate) {
     const what = x.kind === 'details' ? 'Details text to ' + x.number : x.kind === 'contacts' ? 'Text to contacts ' + x.number : 'Text to ' + x.number;
     return what + ' opened at ' + pbTxTime(x.time) + (withDate ? ' on ' + new Date(x.time).toLocaleDateString() : '');
@@ -24959,12 +24957,6 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (typeof lel === 'number' && lel > pbMaxLEL(p)) bad.push('LEL ' + lel + '%');
     return bad.length ? 'Bad air: ' + bad.join(', ') : '';
   }
-  // Long, for Text Details: the time of that test first, so a shortened line still says when it was.
-  function pbTxAirLong() {
-    const a = confinedPermit ? pbTxLastAir() : null, line = pbLatestAirLine(false);
-    if (!a || !line) return '';
-    return 'at ' + pbTxTime(a.r.time) + ': ' + pbTxAscii(line.replace(/\s*\(at [^)]*\)\s*$/, ''));
-  }
   function pbTxHazardShort(p) {
     const c = (p.hazardChecklist || []).filter(h => h && h.checked).map(h => h.key === 'Other' && h.explain ? h.explain : h.label);
     return c.length ? c.slice(0, 2).join(', ') : pbTxCut(pbTxAscii(p.hazards), 40);
@@ -24979,10 +24971,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!fix && pbTxFix.sid === p.sessionId && pbTxFixOk(pbTxFix.fix)) fix = pbTxFix.fix;
     return {
       num: pbDialNumberNow(), address: A(p.address), site: A([p.jobsite, p.jobNumber ? 'job #' + p.jobNumber : ''].filter(Boolean).join(', ')),
-      space: A(p.space), inside: confinedRoster.filter(x => x.status === 'in').length, air: pbTxAirShort(), hazard: A(pbTxHazardShort(p)), company: A(pbRptCompany()),
-      fix, since, contacts: pbTxContactNums(p.emergContactNum, pbDialNumberNow()),
-      d: { permit: String(p.sessionId || ''), job: A(p.jobNumber), airLong: pbTxAirLong(), hazards: A([p.hazards].concat((p.hazardChecklist || []).filter(h => h && h.checked).map(h => h.label + (h.explain ? ' (' + h.explain + ')' : ''))).filter(Boolean).join('; ')),
-        supervisor: A(p.supervisor), attendant: A(p.attendant), callback: p.emergContactNum ? A((p.emergContactName || 'Contact') + ' ' + p.emergContactNum) : '', landmarks: A(p.landmarks) }
+      space: A(p.space), inside: confinedRoster.filter(x => x.status === 'in').length, air: pbTxAirShort(), hazard: A(pbTxHazardShort(p)),
+      fix, since, contacts: pbTxContactNums(p.emergContactNum, pbDialNumberNow())
     };
   }
   function pbTxFactsSnap() { try { const f = pbTxFactsLive(); if (f) delete f.fix; return f; } catch (e) { return null; } }
@@ -24991,7 +24981,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const k = pbClosedEmergencyShown; if (!k) return null;
     const snap = pbTxKeptSnap && pbTxKeptSnap.sid === k.sid ? pbTxKeptSnap : null; if (!snap) return null;
     const S = (v) => pbTxAscii(typeof v === 'string' || typeof v === 'number' ? v : '');
-    const t = snap.txt && typeof snap.txt === 'object' ? snap.txt : null, d = t && t.d && typeof t.d === 'object' ? t.d : {};
+    const t = snap.txt && typeof snap.txt === 'object' ? snap.txt : null;
     const row = (re) => { const r = (Array.isArray(snap.rows) ? snap.rows : []).find(x => Array.isArray(x) && re.test(String(x[0]))); return r ? String(r[1]) : ''; };
     const since = Number(snap.start) || 0;
     const entry = k.uid === pbArchiveOwnerUid ? runArchive.find(e => e.kind === 'confined' && e.permitSessionId === k.sid && e.permit) : null;
@@ -25001,43 +24991,28 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const addr = t ? S(t.address) : S(row(/^Site Address/i).replace(/^— not entered —$/, ''));
     return {
       num, address: addr, site: t ? S(t.site) : S(row(/^Jobsite/i).replace(/^—$/, '')), space: t ? S(t.space) : S(snap.space || ''),
-      inside: t && typeof t.inside === 'number' ? t.inside : (parseInt(row(/^Personnel/i), 10) || 0), air: t ? S(t.air) : '', hazard: t ? S(t.hazard) : '', company: t ? S(t.company) : S(pbRptCompany()),
-      fix, since, contacts: pbTxContactNums(t && Array.isArray(t.contacts) ? t.contacts.join(', ') : '', num),
-      d: { permit: S(d.permit || snap.sid), job: S(d.job), airLong: S(d.airLong), hazards: S(d.hazards), supervisor: S(d.supervisor), attendant: S(d.attendant), callback: S(d.callback), landmarks: S(d.landmarks) }
+      inside: t && typeof t.inside === 'number' ? t.inside : (parseInt(row(/^Personnel/i), 10) || 0), air: t ? S(t.air) : '', hazard: t ? S(t.hazard) : '',
+      fix, since, contacts: pbTxContactNums(t && Array.isArray(t.contacts) ? t.contacts.join(', ') : '', num)
     };
   }
-  // Message 1 (one SMS, 160 plain characters): CONFINED SPACE RESCUE, where (address, phone GPS when it is within
-  // 100 m), then what is wrong: headcount, bad air (before the space), space, hazard, company.
+  // THE hook for a link appended to the text later (e.g. a page for responders). Returns '' until then. The link is
+  // placed whole or not at all (never shortened), at the END of the text.
+  function pbTxLink(f) { return ''; }
+  // The one text (one SMS, 160 plain characters), in this order: CONFINED SPACE RESCUE, where (address; phone GPS
+  // only within 100 m), headcount, bad air (else the hazard), space, link. When it must be shorter, the space goes
+  // first, then the link, then the bad air / hazard; the rescue line, the location and the headcount stay.
   function pbTxMain(f) {
-    const gps = pbTxFixGood(f.fix) ? f.fix : null, loc = !!(f.address || gps);
+    const gps = pbTxFixGood(f.fix) ? f.fix : null, loc = !!(f.address || gps), link = String(pbTxLink(f) || '').trim();
     return pbTxFit([
       { t: 'CONFINED SPACE RESCUE', pri: 0 },
       f.address ? { t: f.address, pri: 3, cut: 8 } : null,
       gps ? { t: 'Phone GPS ' + pbTxFixText(gps), pri: 2 } : null,
       !loc && f.site ? { t: 'Site: ' + f.site, pri: 2, cut: 10 } : null,
       f.inside > 0 ? { t: f.inside === 1 ? '1 worker inside' : f.inside + ' workers inside', pri: 1 } : { t: 'Number inside not logged', pri: 1 },
-      f.air ? { t: f.air, pri: 4 } : null,
-      f.space ? { t: 'Space: ' + pbTxCut(f.space, 25), pri: 5, cut: 12 } : null,
-      !f.air && f.hazard ? { t: 'Hazard: ' + f.hazard, pri: 6, cut: 14 } : null,
-      f.company ? { t: f.company, pri: 7, cut: 6 } : null
+      f.air ? { t: f.air, pri: 4 } : f.hazard ? { t: 'Hazard: ' + f.hazard, pri: 4, cut: 14 } : null,
+      f.space ? { t: 'Space: ' + pbTxCut(f.space, 25), pri: 6, cut: 12 } : null,
+      link ? { t: link, pri: 5, raw: true } : null
     ], PB_TX_MAX1);
-  }
-  // Message 2 (optional, under 300): callback first, when it was declared, GPS with accuracy, the last air test with
-  // its time, hazards, supervisor, permit and job, attendant, entrance.
-  function pbTxDetails(f) {
-    const d = f.d || {}, fx = pbTxFixOk(f.fix) ? f.fix : null;
-    return pbTxFit([
-      { t: 'CONFINED SPACE DETAILS', pri: 0 },
-      d.callback ? { t: 'Callback: ' + d.callback, pri: 1 } : null,
-      f.since ? { t: 'Emergency declared ' + pbTxAscii(pbTxTime(f.since)), pri: 2 } : null,
-      fx ? { t: 'Phone GPS ' + pbTxFixText(fx) + ', accuracy ' + (typeof fx.acc === 'number' && isFinite(fx.acc) ? 'about ' + Math.round(fx.acc) + ' m' : 'unknown'), pri: 3 } : null,
-      d.airLong ? { t: 'Last air test ' + d.airLong, pri: 4, cut: 24 } : null,
-      d.hazards ? { t: 'Hazards: ' + d.hazards, pri: 5, cut: 20 } : null,
-      d.supervisor ? { t: 'Entry supervisor: ' + d.supervisor, pri: 6, cut: 24 } : null,
-      d.permit ? { t: 'Permit ' + d.permit + (d.job ? ', job #' + d.job : ''), pri: 7 } : null,
-      d.attendant ? { t: 'Attendant: ' + d.attendant, pri: 8, cut: 16 } : null,
-      d.landmarks ? { t: 'Entrance: ' + d.landmarks, pri: 9, cut: 16 } : null
-    ], PB_TX_MAX2);
   }
   function pbTxIsIos() { try { const ua = navigator.userAgent || ''; return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1); } catch (e) { return false; } }
   // THE one place the sms: link is built (adjust here only). Body: encodeURIComponent.
@@ -25132,6 +25107,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   // A Text button: only from the emergency panel on screen. Messages opens first; the record follows.
   window.pbEmText = function(kind) {
+    if (kind !== 'main' && kind !== 'contacts') return; // one text: Text 911 (or the rescue number) and Text Contacts
     const panel = document.getElementById('cpEmergencyPanel');
     if (!panel || panel.style.display === 'none') return;
     const live = !!confinedPermit, k = !live ? pbClosedEmergencyShown : null;
@@ -25143,9 +25119,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const to = kind === 'contacts' ? f.contacts : [f.num];
     if (!to.length) return;
     pbTxLastTap = { kind, at: now };
-    const body = kind === 'details' ? pbTxDetails(f) : pbTxMain(f);
+    const body = pbTxMain(f); // contacts get exactly the same text
     pbNavigateExternal(pbSmsUrl(to, body));
-    const rec = { kind: kind === 'details' || kind === 'contacts' ? kind : 'main', number: to.join(', '), time: now };
+    const rec = { kind, number: to.join(', '), time: now };
     if (live) {
       confinedPermit.emergencyTexts = (Array.isArray(confinedPermit.emergencyTexts) ? confinedPermit.emergencyTexts : []).concat([rec]);
       pbTxSaveLive(confinedPermit.sessionId);
@@ -25170,7 +25146,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbTxSet(el('cpTextWarn'), is911 ? 'Not every 911 center takes texts. If you get a reply that texting isn’t available, call.' : 'A text is not a call: if no one replies right away, call ' + f.num + '.');
     const st = pbTxFix.sid === sid ? pbTxFix.state : null;
     const fx = f.fix ? pbTxFixText(f.fix).replace(',', ', ') + (typeof f.fix.acc === 'number' ? ' (about ' + f.fix.acc + ' m)' : '') : '';
-    pbTxSet(el('cpTextLoc'), f.fix ? (good ? 'Phone GPS ' + fx + ' is in the text.' : 'Phone GPS ' + fx + ' is too rough for the first text; it is in Text Details.') + ' Read only because EMERGENCY was tapped; saved with this permit’s record.'
+    pbTxSet(el('cpTextLoc'), f.fix ? (good ? 'Phone GPS ' + fx + ' is in the text.' : 'Phone GPS ' + fx + ' is too rough to put in the text.') + ' Read only because EMERGENCY was tapped; saved with this permit’s record.'
       : st === 'waiting' || st === 'asking' ? 'Getting this phone’s position once, for this emergency only.' + (f.address ? ' Until it comes, the text uses the site address.' : '')
       : 'No position from this phone' + (f.address ? ', so the text uses the site address.' : '.'));
     let last = null;
