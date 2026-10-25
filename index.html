@@ -3474,6 +3474,14 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp #screen-confinedActive #cpEmergencyPanel .pb-btn-row .pb-btn { flex: 1 1 140px; min-height: 52px; white-space: normal; }
 #pbApp#pbApp #screen-confinedActive #cpEmergencyHiddenBar { border-radius: 12px; }
 #pbApp#pbApp #screen-confinedActive #cpEmergencyHideBtn { min-height: 48px; }
+/* feat_text911: the Text block on the emergency panel */
+#pbApp#pbApp #screen-confinedActive #cpTextWrap { margin: 14px 16px 0 16px; }
+#pbApp#pbApp #screen-confinedActive #cpText911Btn { display: block; width: 100%; min-height: 60px; margin: 0; font-size: 20px; font-weight: 800; letter-spacing: 0.01em; background: var(--pb-danger, #c62828); border: 2px solid var(--pb-danger, #c62828); color: #fff; border-radius: 12px; }
+#pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-tx-row { padding: 10px 0 0 0; }
+#pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-tx-row .pb-btn { min-height: 48px; margin-left: 0; }
+#pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-tx-noloc { margin: 10px 0 0 0; padding: 10px 12px; background: #5a3a10; border-left: 4px solid var(--hazard); color: #fff; font-weight: 700; font-size: 15px; border-radius: 12px; }
+#pbApp#pbApp #screen-confinedActive #cpTextWrap .pb-help { margin: 8px 0 0 0; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+#pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-tx-last { color: var(--pb-text, #fff); font-weight: 650; }
 /* ---- fixes after the first screenshots ---- */
 #pbApp#pbApp :is(#screen-confinedPermit, #screen-confinedActive) textarea { width: 100%; box-sizing: border-box; }
 #pbApp#pbApp #screen-confinedPermit .pb-field:has(> label[style*="display:flex"]) { margin-bottom: 0; }
@@ -7378,6 +7386,17 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div><button type="button" class="pb-btn small" style="margin-top:8px;" onclick="pbHideEmergencyDetails(false)">Show Details</button></div>
       </div>
       <div id="cpEmergencyDetails">
+      <div id="cpTextWrap" style="display:none;">
+        <button type="button" class="pb-btn" id="cpText911Btn" onclick="pbEmText('main')">Text 911</button>
+        <p class="cp-tx-noloc" id="cpTextNoLoc" style="display:none;">Add your location before sending &mdash; this text has no address or GPS position.</p>
+        <div class="pb-btn-row cp-tx-row">
+          <button type="button" class="pb-btn ghost small" id="cpTextDetailsBtn" onclick="pbEmText('details')">Text Details</button>
+          <button type="button" class="pb-btn ghost small" id="cpTextContactsBtn" style="display:none;" onclick="pbEmText('contacts')">Text Contacts</button>
+        </div>
+        <p class="pb-help cp-tx-last" id="cpTextLast" style="display:none;" aria-live="polite"></p>
+        <p class="pb-help" id="cpTextWarn"></p>
+        <p class="pb-help" id="cpTextLoc" aria-live="polite"></p>
+      </div>
       <p class="cp-disp-head" style="margin:18px 16px 4px 16px; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--hazard);">Read this to the dispatcher</p>
       <div class="pb-emergency-script" id="cpEmergencyScript"></div>
       <div class="pb-emergency-key" id="cpEmergencyKeyInfo"></div>
@@ -9135,7 +9154,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.42 · 2026-10-24'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.43 · 2026-10-25'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -21139,6 +21158,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     };
     const atmoAdded = addTimed(confinedAtmoLog, d.atmoLog, pbCleanStoredGases);
     const commAdded = addTimed(confinedCommLog, d.commLog);
+    try { pbTxAbsorb(d.permit); } catch (e) {} /* feat_text911: another tab's texts and positions are kept */
     if (d.lastObservation && pbObsSupersedes(d.lastObservation, confinedLastObservation)) confinedLastObservation = { ...pbCleanStoredGases(d.lastObservation), time: new Date(d.lastObservation.time) };
     if (pbRefreshLatchGases(d.lastObservation ? [d.lastObservation] : [])) pbPersistObservation(); // a gas measured in the merged records may not be cleared by a blank
     const startedNow = !!d.commStarted && !confinedCommStarted;
@@ -23810,7 +23830,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const banner = document.getElementById('cpEmergencySaveStatusBanner');
     const text = document.getElementById('cpEmergencySaveStatusText');
     const when = lastInc && lastInc.start ? ' (incident declared ' + new Date(lastInc.start).toLocaleTimeString() + ')' : '';
-    if (text) text.textContent = kind === 'reached'
+    if (text) text.textContent = kind === 'text'
+      ? 'PENDING \u2014 a text record or the position for this emergency' + when + ' has NOT been saved to this device yet (storage may be full or unavailable). It is kept here, but it will not survive a reload until it saves. Tap Retry Save.'
+      : kind === 'reached'
       ? 'PENDING \u2014 the number reached' + when + ' has NOT been saved to this device yet (storage may be full or unavailable). It is still shown here, but it will not survive a reload until it saves. Tap Retry Save.'
       : kind === 'declare'
       ? 'PENDING \u2014 this emergency declaration' + when + ' has NOT been saved to this device yet (storage may be full or unavailable). The call and timer are still correct right now, but this record will not survive a reload until it saves. Tap Retry Save.'
@@ -23871,6 +23893,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (pbClosedEmergencyShown) { // the kept panel: this call is part of that still-open emergency
         const rec = document.getElementById('cpEmergencyNum'); if (rec && (rec.dataset.auto === '1' || !rec.value.trim())) { rec.value = num; rec.dataset.auto = '1'; }
         pbKeptCallRecord({ dial: { number: num, time: Date.now() } });
+        try { pbTxAskPosition(); } catch (e) {} /* feat_text911: after the call hand-off; never awaited */
       }
       return;
     }
@@ -23882,6 +23905,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     confinedPermit.emergencyDials = (Array.isArray(confinedPermit.emergencyDials) ? confinedPermit.emergencyDials : []).concat([{ number: num, time: Date.now() }]); // saved below with the declaration
     { const rec = document.getElementById('cpEmergencyNum'); if (rec && (rec.dataset.auto === '1' || !rec.value.trim())) { rec.value = num; rec.dataset.auto = '1'; } }
     pbShowEmergencyPanel(false);
+    try { pbTxAskPosition(); } catch (e) {} /* feat_text911: one position request, after the call hand-off above; never awaited */
     pbGet('lastEmergencyEmail').then(savedEmail => {
       const emEl = document.getElementById('cpEmergencyEmail'); // an address typed for this permit (not sent yet) is kept on a redial
       if (savedEmail && !emEl.value.trim()) emEl.value = savedEmail;
@@ -24049,6 +24073,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     { const xn = document.getElementById('cpEmergencyClosedNote'); if (xn) xn.style.display = 'none'; } // a live permit's panel, not a closed one's
     if (rn) rn.style.display = restored ? '' : 'none';
     pbEmergencyEndControls(false);
+    try { pbTxRender(); } catch (e) {} /* feat_text911 */
     document.getElementById('cpEmergencyPanel').style.display = '';
   }
   // While the panel is open, what is read to the dispatcher follows the live
@@ -24058,6 +24083,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!panel || panel.style.display === 'none' || !confinedPermit) return;
     document.getElementById('cpEmergencyScript').textContent = buildEmergencyScript();
     renderEmergencyKeyInfo();
+    try { pbTxRender(); } catch (e) {} /* feat_text911 */
   }
   // "Emergency number called" is the RECORD of the number actually reached (the
   // button dials the permit's number). Kept with the permit, so the reports
@@ -24406,6 +24432,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     lines.push('RESCUE / EMERGENCY SERVICES ON FILE: ' + p.rescue);
     lines.push('EMERGENCY NUMBER (dialed by the EMERGENCY button): ' + (p.emergencyDialNumber ? p.emergencyDialNumber : pbDialNumberNow() + ' (not set on this permit)'));
     if (pbNumbersReachedText(p)) lines.push('NUMBER RECORDED ON THE EMERGENCY PANEL (filled in with the number dialed unless changed by hand; the app cannot know whether a call connected): ' + pbNumbersReachedText(p));
+    pbTxReportLines(p).forEach(l => lines.push(l)); /* feat_text911: texts opened, position */
     { const air = pbLatestAirLine(false); lines.push('LATEST AIR TEST: ' + (air || 'none logged')); }
     if (confinedEmergencyIncidents.length) {
       const openN = confinedEmergencyIncidents.filter(i => !i.end).length;
@@ -24643,6 +24670,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     };
     mergeList('emergencyDials', x => x.number + '@' + ms(x.time));
     mergeList('numbersReached', x => x.number + '@' + ms(x.time));
+    mergeList('emergencyTexts', x => (x.kind || '') + ':' + x.number + '@' + ms(x.time)); mergeList('emergencyFixes', x => x.lat + ',' + x.lon + '@' + ms(x.time)); /* feat_text911 */
     mergeList('dialNumberLog', x => x.from + '>' + x.to + '@' + ms(x.time));
     // A permit field changed there (e.g. the attendant after a relief) and never changed here is taken.
     if (bp) {
@@ -24703,7 +24731,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     renderEmergencyKeyInfo();
     // Plain text only: the marker is shown again after a reload and is never read as HTML.
     const rows = [...document.querySelectorAll('#cpEmergencyKeyInfo .row')].map(r => [(r.querySelector('.k') || {}).textContent || '', [...r.querySelectorAll('.v')].map(v => v.textContent.trim()).join(' \u2014 ')]);
-    return { uid: confinedSessionOwnerUid, sid: confinedPermit.sessionId, start: new Date(open.start).getTime(), num: pbDialNumberNow(), script: buildEmergencyScript(), rows };
+    return { uid: confinedSessionOwnerUid, sid: confinedPermit.sessionId, start: new Date(open.start).getTime(), num: pbDialNumberNow(), script: buildEmergencyScript(), rows, txt: pbTxFactsSnap() }; /* feat_text911: txt = what the kept panel's texts are made of */
   }
   function pbClosedEmergencyOk(m) {
     return !!m && typeof m === 'object' && typeof m.sid === 'number' && typeof m.start === 'number' && isFinite(m.start) && typeof m.num === 'string' && !pbDialNumberError(m.num)
@@ -24798,6 +24826,364 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (lastConfinedArchiveEntry === entry) { const pv = document.getElementById('cpCloseoutReportPreview'); if (pv) pv.textContent = entry.reportText; }
     }).catch(() => {});
   }
+  // ---------- feat_text911 (r15.43): Text 911 from the EMERGENCY panel ----------
+  // Calling stays first: EMERGENCY dials before any of this runs, and nothing here is awaited by the call.
+  // A text opens the phone's OWN Messages app (an sms: link) addressed to the permit's emergency number with
+  // the message filled in; the person presses Send. Nothing is ever sent from a server, and the app cannot
+  // know whether a text was sent, so the record says "opened", never "sent".
+  // Position: asked for only because EMERGENCY was tapped, kept only on that permit's record: the one exception
+  // to "the app never tracks location". Never in the same moment as the call hand-off (a location prompt must not
+  // race the phone's call prompt): right away only when permission is already granted, otherwise when the person
+  // comes back to the app after the call, or after 3 s if the app never left the screen.
+  const PB_TX_MAX1 = 160, PB_TX_MAX2 = 300, PB_TX_GPS_MAX_M = 100, PB_TX_WAIT_MS = 20000;
+  const PB_TX_REP_TEXTS = 'TEXTS OPENED ON THE EMERGENCY PANEL', PB_TX_REP_FIX = 'POSITION READ WHEN EMERGENCY WAS TAPPED';
+  // The position request for the emergency on screen (memory only). state: 'waiting' (not asked yet) | 'asking' | 'got' | 'none'
+  let pbTxFix = { sid: null, uid: null, state: null, fix: null, asked: 0 };
+  let pbTxKeptSnap = null; // the kept (closed-permit) panel's snapshot, for its texts
+  let pbTxKeptLast = null; // a kept panel's newest text while its record saves
+  let pbTxLastTap = null;  // { kind, at }: a second tap of the same Text button within 1.5 s is ignored
+  // Plain GSM-7 / ASCII only: one SMS segment is 160 of these. Dashes, curly quotes, degree signs, accents
+  // and the GSM "extension" characters (which count double) are replaced; whitespace is collapsed.
+  function pbTxAscii(s) {
+    const map = { '—': '-', '–': '-', '‒': '-', '‑': '-', '‐': '-', '−': '-', '‘': "'", '’': "'", '‚': "'", '‛': "'", '′': "'", '´': "'",
+      '“': '"', '”': '"', '„': '"', '″': '"', '«': '"', '»': '"', '≈': ' approx ', '°': ' deg ', '±': '+/-', '×': 'x', '…': '...', '½': ' 1/2', '¼': ' 1/4', '¾': ' 3/4',
+      '•': '-', '·': '-', '≥': '>=', '≤': '<=', '→': '-', 'ß': 'ss', 'æ': 'ae', 'Æ': 'AE', 'ø': 'o', 'Ø': 'O', 'œ': 'oe', 'Œ': 'OE', 'ł': 'l', 'Ł': 'L', 'đ': 'd', 'Đ': 'D', '²': '2', '³': '3', '№': 'No. ', '§': 'Sec. ', '€': 'EUR ' };
+    let t = String(s === null || s === undefined ? '' : s).replace(/[^\x00-\x7f]/g, c => map[c] !== undefined ? map[c] : c);
+    try { t = t.normalize('NFD').replace(/[̀-ͯ]/g, ''); } catch (e) {} // accents off: Jose
+    t = t.replace(/[\[{]/g, '(').replace(/[\]}]/g, ')').replace(/\\/g, '/').replace(/[\^~|`]/g, ' ');
+    return t.replace(/[^\x20-\x7e]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  // At most n characters, cut only between words: never inside a number or a word. A word that labels the number
+  // cut off after it ("Exit" before "221", "Unit" before "4410") goes too, so no label is left dangling.
+  function pbTxCut(s, n) {
+    s = String(s || '');
+    if (s.length <= n) return s;
+    if (n <= 0) return '';
+    const i = s.slice(0, n + 1).lastIndexOf(' ');
+    if (i <= 0) return '';
+    let keep = s.slice(0, i).split(' ');
+    const next = s.slice(i + 1).split(' ')[0] || '';
+    if (/\d/.test(next) && keep.length && !/\d/.test(keep[keep.length - 1])) keep.pop();
+    return keep.join(' ').replace(/[\s,;:.\-\/(#]+$/, '');
+  }
+  // parts in reading order: { t: 'Sentence', pri: 0 = most important, cut: minimum length when it may be shortened }.
+  // The most important parts are placed first; one that doesn't fit is shortened between words (when allowed)
+  // or left out. The result is never longer than max.
+  function pbTxFit(parts, max) {
+    const list = parts.filter(p => p && p.t);
+    const keep = new Map();
+    const used = () => { let n = 0; keep.forEach(v => { n += v.length; }); return n + Math.max(0, keep.size - 1); };
+    list.map((p, i) => ({ p, i })).sort((a, b) => a.p.pri - b.p.pri || a.i - b.i).forEach(({ p }) => {
+      const room = max - used() - (keep.size ? 1 : 0);
+      const t = p.t.replace(/\.$/, '');
+      if (t.length + 1 <= room) keep.set(p, t + '.');
+      else if (p.cut && room - 1 >= p.cut) { const c = pbTxCut(t, room - 1); if (c.length >= p.cut) keep.set(p, c + '.'); }
+    });
+    return list.filter(p => keep.has(p)).map(p => keep.get(p)).join(' ').slice(0, max);
+  }
+  const pbTxDigits = (n) => String(n || '').replace(/[^0-9+]/g, '');
+  const pbTxKey10 = (n) => String(n || '').replace(/\D/g, '').slice(-10); // "+1 555 867 5309" and "555-867-5309" are one number
+  // The permit's additional emergency contact number(s): whole phone numbers only (a North American number, or +
+  // and 8 to 15 digits), so "Station 12", "Team 2" or a short code (911, 112, 999) is never read as a number and
+  // never put in a group text. The permit's own emergency number is texted on its own, so it is left out here.
+  function pbTxContactNums(raw, emNum) {
+    const emD = String(emNum || '').replace(/\D/g, ''), em = emD.length >= 7 ? pbTxKey10(emD) : null, out = [], seen = new Set();
+    const re = /(?<![\d+])(?:\+?1[ .-]?)?\(?\d{3}\)?[ .-]?\d{3}[ .-]?\d{4}(?!\d)|(?<![\d+])\+\d[\d .-]{6,20}\d(?!\d)/g;
+    let m;
+    while ((m = re.exec(String(raw || ''))) !== null) {
+      const n = pbTxDigits(m[0]), d = n.replace(/\D/g, '');
+      if (n.startsWith('+') && (d.length < 8 || d.length > 15)) continue;
+      if (!n.startsWith('+') && d.length !== 10 && !(d.length === 11 && d[0] === '1')) continue;
+      const k = pbTxKey10(d);
+      if (k === em || seen.has(k)) continue;
+      seen.add(k); out.push(n);
+    }
+    return out.slice(0, 5);
+  }
+  function pbTxFixOk(f) { return !!f && typeof f === 'object' && typeof f.lat === 'number' && typeof f.lon === 'number' && isFinite(f.lat) && isFinite(f.lon) && Math.abs(f.lat) <= 90 && Math.abs(f.lon) <= 180; }
+  const pbTxFixGood = (f) => pbTxFixOk(f) && typeof f.acc === 'number' && isFinite(f.acc) && f.acc <= PB_TX_GPS_MAX_M; // close enough to send to 911 in message 1
+  function pbTxRecOk(x) { return !!x && typeof x === 'object' && typeof x.number === 'string' && x.number && isFinite(new Date(x.time).getTime()); }
+  const pbTxTime = (t) => { try { return new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/[  ]/g, ' '); } catch (e) { return new Date(t).toLocaleTimeString(); } };
+  // "Text to 911 opened at 2:14 PM": what the record says about a text (never "sent").
+  function pbTxWords(x, withDate) {
+    const what = x.kind === 'details' ? 'Details text to ' + x.number : x.kind === 'contacts' ? 'Text to contacts ' + x.number : 'Text to ' + x.number;
+    return what + ' opened at ' + pbTxTime(x.time) + (withDate ? ' on ' + new Date(x.time).toLocaleDateString() : '');
+  }
+  function pbTxFixText(f) { return f.lat.toFixed(5) + ',' + f.lon.toFixed(5); }
+  function pbTxFixWords(f) { return pbTxFixText(f) + (typeof f.acc === 'number' && isFinite(f.acc) ? ' (accuracy about ' + Math.round(f.acc) + ' m)' : '') + ' at ' + pbTxTime(f.time); }
+  function pbTxJoin(a, b) {
+    a = Array.isArray(a) ? a : []; const id = (x) => JSON.stringify([x.kind || '', x.number || '', x.lat, x.lon, new Date(x.time).getTime()]);
+    return a.concat((Array.isArray(b) ? b : []).filter(x => x && typeof x === 'object' && !a.some(y => y && id(y) === id(x))));
+  }
+  const pbTxLen = (a) => Array.isArray(a) ? a.length : 0;
+  // Another tab's saved texts and positions for this permit are kept, never dropped by this tab's next save.
+  function pbTxAbsorb(dp) {
+    if (!dp || !confinedPermit) return;
+    ['emergencyTexts', 'emergencyFixes'].forEach(k => {
+      const j = pbTxJoin(confinedPermit[k], dp[k]);
+      if (j.length !== pbTxLen(confinedPermit[k])) confinedPermit[k] = j.sort((x, y) => new Date(x.time).getTime() - new Date(y.time).getTime());
+    });
+  }
+  // The lines the text and email reports carry (after the emergency number lines).
+  function pbTxReportLines(p) {
+    const out = [];
+    const tx = (p && Array.isArray(p.emergencyTexts) ? p.emergencyTexts : []).filter(pbTxRecOk);
+    if (tx.length) out.push(PB_TX_REP_TEXTS + ' (the app opened the phone’s Messages with the text filled in; it cannot know whether a text was sent): ' + tx.map(x => pbTxWords(x, true)).join('; '));
+    const fx = (p && Array.isArray(p.emergencyFixes) ? p.emergencyFixes : []).filter(pbTxFixOk);
+    if (fx.length) out.push(PB_TX_REP_FIX + ' (read only because EMERGENCY was tapped, saved with this permit’s record): ' + fx.map(pbTxFixWords).join('; '));
+    return out;
+  }
+  // A record's saved report text brought up to its texts and positions (closed permit's kept panel, closeout merge).
+  function pbTxPatchReport(text, p) {
+    const lines = pbTxReportLines(p);
+    const t = String(text).split('\n').filter(l => !l.startsWith(PB_TX_REP_TEXTS) && !l.startsWith(PB_TX_REP_FIX)).join('\n');
+    if (!lines.length) return t;
+    const re = /(EMERGENCY NUMBER \(dialed by the EMERGENCY button\): [^\n]*)(\nNUMBER RECORDED ON THE EMERGENCY PANEL[^\n]*)?/;
+    return re.test(t) ? t.replace(re, (m) => m + '\n' + lines.join('\n')) : t + '\n' + lines.join('\n');
+  }
+  // The newest air test (saved or only seen) and each gas's last measured value, as the dispatcher script reads them.
+  function pbTxLastAir() {
+    const rows = (confinedAtmoLog || []).slice().sort((a, b) => pbObsOrder(a) - pbObsOrder(b));
+    const lastRow = rows[rows.length - 1] || null, obs = confinedLastObservation;
+    const r = (obs && (!lastRow || pbObsOrder(obs) > pbObsOrder(lastRow))) ? obs : lastRow;
+    return r ? { r, g: pbLatestMeasuredGases(rows, obs) || {} } : null;
+  }
+  // Short: only what is OUTSIDE the permit's limits ("Bad air: H2S 25ppm, O2 17% low").
+  function pbTxAirShort() {
+    const p = confinedPermit, a = p ? pbTxLastAir() : null; if (!a) return '';
+    const o2 = pbStoredGasValue(a.r.o2), lel = pbStoredGasValue(a.r.lel), h2s = pbStoredToxicValue(a.g.h2s), co = pbStoredToxicValue(a.g.co), bad = [];
+    if (typeof h2s === 'number' && h2s > pbMaxH2S(p)) bad.push('H2S ' + h2s + 'ppm');
+    if (typeof co === 'number' && co > pbMaxCO(p)) bad.push('CO ' + co + 'ppm');
+    if (typeof o2 === 'number' && o2 < pbMinO2(p)) bad.push('O2 ' + o2 + '% low');
+    if (typeof o2 === 'number' && o2 > pbMaxO2(p)) bad.push('O2 ' + o2 + '% high');
+    if (typeof lel === 'number' && lel > pbMaxLEL(p)) bad.push('LEL ' + lel + '%');
+    return bad.length ? 'Bad air: ' + bad.join(', ') : '';
+  }
+  // Long, for Text Details: the time of that test first, so a shortened line still says when it was.
+  function pbTxAirLong() {
+    const a = confinedPermit ? pbTxLastAir() : null, line = pbLatestAirLine(false);
+    if (!a || !line) return '';
+    return 'at ' + pbTxTime(a.r.time) + ': ' + pbTxAscii(line.replace(/\s*\(at [^)]*\)\s*$/, ''));
+  }
+  function pbTxHazardShort(p) {
+    const c = (p.hazardChecklist || []).filter(h => h && h.checked).map(h => h.key === 'Other' && h.explain ? h.explain : h.label);
+    return c.length ? c.slice(0, 2).join(', ') : pbTxCut(pbTxAscii(p.hazards), 40);
+  }
+  function pbTxIncStart() { const open = confinedEmergencyIncidents.filter(i => i && i.start && !i.end).pop() || pbActiveIncident(); return open && open.start ? new Date(open.start).getTime() : 0; }
+  function pbTxLatestFix(list, since) { const f = (Array.isArray(list) ? list : []).filter(x => pbTxFixOk(x) && (Number(x.asked) || new Date(x.time).getTime()) >= since - 1000); return f.length ? f[f.length - 1] : null; }
+  // Everything the texts are made of, from the live permit (plain text only; the snapshot of a kept panel is this too).
+  function pbTxFactsLive() {
+    const p = confinedPermit; if (!p) return null;
+    const A = pbTxAscii, since = pbTxIncStart();
+    let fix = pbTxLatestFix(p.emergencyFixes, since);
+    if (!fix && pbTxFix.sid === p.sessionId && pbTxFixOk(pbTxFix.fix)) fix = pbTxFix.fix;
+    return {
+      num: pbDialNumberNow(), address: A(p.address), site: A([p.jobsite, p.jobNumber ? 'job #' + p.jobNumber : ''].filter(Boolean).join(', ')),
+      space: A(p.space), inside: confinedRoster.filter(x => x.status === 'in').length, air: pbTxAirShort(), hazard: A(pbTxHazardShort(p)), company: A(pbRptCompany()),
+      fix, since, contacts: pbTxContactNums(p.emergContactNum, pbDialNumberNow()),
+      d: { permit: String(p.sessionId || ''), job: A(p.jobNumber), airLong: pbTxAirLong(), hazards: A([p.hazards].concat((p.hazardChecklist || []).filter(h => h && h.checked).map(h => h.label + (h.explain ? ' (' + h.explain + ')' : ''))).filter(Boolean).join('; ')),
+        supervisor: A(p.supervisor), attendant: A(p.attendant), callback: p.emergContactNum ? A((p.emergContactName || 'Contact') + ' ' + p.emergContactNum) : '', landmarks: A(p.landmarks) }
+    };
+  }
+  function pbTxFactsSnap() { try { const f = pbTxFactsLive(); if (f) delete f.fix; return f; } catch (e) { return null; } }
+  // The kept (closed-permit) panel: the snapshot taken at closeout, with its record's position if one came in.
+  function pbTxFactsKept() {
+    const k = pbClosedEmergencyShown; if (!k) return null;
+    const snap = pbTxKeptSnap && pbTxKeptSnap.sid === k.sid ? pbTxKeptSnap : null; if (!snap) return null;
+    const S = (v) => pbTxAscii(typeof v === 'string' || typeof v === 'number' ? v : '');
+    const t = snap.txt && typeof snap.txt === 'object' ? snap.txt : null, d = t && t.d && typeof t.d === 'object' ? t.d : {};
+    const row = (re) => { const r = (Array.isArray(snap.rows) ? snap.rows : []).find(x => Array.isArray(x) && re.test(String(x[0]))); return r ? String(r[1]) : ''; };
+    const since = Number(snap.start) || 0;
+    const entry = k.uid === pbArchiveOwnerUid ? runArchive.find(e => e.kind === 'confined' && e.permitSessionId === k.sid && e.permit) : null;
+    let fix = pbTxLatestFix(entry && entry.permit.emergencyFixes, since);
+    if (!fix && pbTxFix.sid === k.sid && pbTxFixOk(pbTxFix.fix)) fix = pbTxFix.fix;
+    const num = !pbDialNumberError(snap.num) ? String(snap.num).trim() : pbDialNumberNow();
+    const addr = t ? S(t.address) : S(row(/^Site Address/i).replace(/^— not entered —$/, ''));
+    return {
+      num, address: addr, site: t ? S(t.site) : S(row(/^Jobsite/i).replace(/^—$/, '')), space: t ? S(t.space) : S(snap.space || ''),
+      inside: t && typeof t.inside === 'number' ? t.inside : (parseInt(row(/^Personnel/i), 10) || 0), air: t ? S(t.air) : '', hazard: t ? S(t.hazard) : '', company: t ? S(t.company) : S(pbRptCompany()),
+      fix, since, contacts: pbTxContactNums(t && Array.isArray(t.contacts) ? t.contacts.join(', ') : '', num),
+      d: { permit: S(d.permit || snap.sid), job: S(d.job), airLong: S(d.airLong), hazards: S(d.hazards), supervisor: S(d.supervisor), attendant: S(d.attendant), callback: S(d.callback), landmarks: S(d.landmarks) }
+    };
+  }
+  // Message 1 (one SMS, 160 plain characters): CONFINED SPACE RESCUE, where (address, phone GPS when it is within
+  // 100 m), then what is wrong: headcount, bad air (before the space), space, hazard, company.
+  function pbTxMain(f) {
+    const gps = pbTxFixGood(f.fix) ? f.fix : null, loc = !!(f.address || gps);
+    return pbTxFit([
+      { t: 'CONFINED SPACE RESCUE', pri: 0 },
+      f.address ? { t: f.address, pri: 3, cut: 8 } : null,
+      gps ? { t: 'Phone GPS ' + pbTxFixText(gps), pri: 2 } : null,
+      !loc && f.site ? { t: 'Site: ' + f.site, pri: 2, cut: 10 } : null,
+      f.inside > 0 ? { t: f.inside === 1 ? '1 worker inside' : f.inside + ' workers inside', pri: 1 } : { t: 'Number inside not logged', pri: 1 },
+      f.air ? { t: f.air, pri: 4 } : null,
+      f.space ? { t: 'Space: ' + pbTxCut(f.space, 25), pri: 5, cut: 12 } : null,
+      !f.air && f.hazard ? { t: 'Hazard: ' + f.hazard, pri: 6, cut: 14 } : null,
+      f.company ? { t: f.company, pri: 7, cut: 6 } : null
+    ], PB_TX_MAX1);
+  }
+  // Message 2 (optional, under 300): callback first, when it was declared, GPS with accuracy, the last air test with
+  // its time, hazards, supervisor, permit and job, attendant, entrance.
+  function pbTxDetails(f) {
+    const d = f.d || {}, fx = pbTxFixOk(f.fix) ? f.fix : null;
+    return pbTxFit([
+      { t: 'CONFINED SPACE DETAILS', pri: 0 },
+      d.callback ? { t: 'Callback: ' + d.callback, pri: 1 } : null,
+      f.since ? { t: 'Emergency declared ' + pbTxAscii(pbTxTime(f.since)), pri: 2 } : null,
+      fx ? { t: 'Phone GPS ' + pbTxFixText(fx) + ', accuracy ' + (typeof fx.acc === 'number' && isFinite(fx.acc) ? 'about ' + Math.round(fx.acc) + ' m' : 'unknown'), pri: 3 } : null,
+      d.airLong ? { t: 'Last air test ' + d.airLong, pri: 4, cut: 24 } : null,
+      d.hazards ? { t: 'Hazards: ' + d.hazards, pri: 5, cut: 20 } : null,
+      d.supervisor ? { t: 'Entry supervisor: ' + d.supervisor, pri: 6, cut: 24 } : null,
+      d.permit ? { t: 'Permit ' + d.permit + (d.job ? ', job #' + d.job : ''), pri: 7 } : null,
+      d.attendant ? { t: 'Attendant: ' + d.attendant, pri: 8, cut: 16 } : null,
+      d.landmarks ? { t: 'Entrance: ' + d.landmarks, pri: 9, cut: 16 } : null
+    ], PB_TX_MAX2);
+  }
+  function pbTxIsIos() { try { const ua = navigator.userAgent || ''; return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1); } catch (e) { return false; } }
+  // THE one place the sms: link is built (adjust here only). Body: encodeURIComponent.
+  //  One number (911, a rescue team, one contact): sms:<number>?&body=<text>. Android reads the query (?..&body=),
+  //    iOS reads &body= after the number: the same link pre-fills on both.
+  //  Several numbers (Text Contacts only; 911 is never in a group): iOS needs sms://open?addresses=a,b&body=<text>
+  //    (it does not read a comma list); Android takes sms:a,b?&body=<text>. If the owner's phone test shows a Samsung
+  //    Messages app filling in only the first number, use ';' between the numbers for Android instead of ','.
+  function pbSmsUrl(numbers, body) {
+    const list = (Array.isArray(numbers) ? numbers : [numbers]).map(pbTxDigits).filter(Boolean);
+    const b = encodeURIComponent(String(body || ''));
+    if (list.length > 1 && pbTxIsIos()) return 'sms://open?addresses=' + list.join(',') + '&body=' + b;
+    return 'sms:' + list.join(',') + '?&body=' + b;
+  }
+  // Called by EMERGENCY after its call hand-off. Never awaited; never asks the phone in that same moment.
+  function pbTxAskPosition() {
+    const live = !!confinedPermit, k = !live ? pbClosedEmergencyShown : null;
+    if (!live && !k) return;
+    const mine = { sid: live ? confinedPermit.sessionId : k.sid, uid: live ? confinedSessionOwnerUid : k.uid, state: 'waiting', fix: null, asked: Date.now(), reasked: false };
+    pbTxFix = mine;
+    let started = false, wentHidden = document.visibilityState === 'hidden', timer = null;
+    const stop = () => { document.removeEventListener('visibilitychange', onVis); clearTimeout(timer); };
+    const go = () => { if (started) return; started = true; stop(); if (pbTxFix === mine) pbTxRequest(mine); };
+    const onVis = () => { if (document.visibilityState === 'hidden') wentHidden = true; else go(); }; // back from the call
+    document.addEventListener('visibilitychange', onVis);
+    timer = setTimeout(() => { if (!wentHidden && document.visibilityState === 'visible') go(); }, 3000); // never left the screen
+    try {
+      const q = navigator.permissions && navigator.permissions.query ? navigator.permissions.query({ name: 'geolocation' }) : null;
+      if (q && typeof q.then === 'function') q.then(r => { if (r && r.state === 'granted') go(); }, () => {}); // no prompt to race: ask now
+    } catch (e) { /* no permissions API (older Safari): treated as not granted */ }
+    pbTxRender();
+  }
+  // One getCurrentPosition (and, after a timeout or no fix, ONE more on the next return to the app).
+  function pbTxRequest(mine) {
+    let g = null; try { g = navigator.geolocation; } catch (e) { g = null; }
+    if (!g || typeof g.getCurrentPosition !== 'function') { mine.state = 'none'; pbTxRender(); return; }
+    let done = false;
+    mine.state = 'asking'; pbTxRender();
+    const wait = setTimeout(() => { if (!done && pbTxFix === mine && mine.state === 'asking') { mine.state = 'none'; pbTxRender(); } }, PB_TX_WAIT_MS); // a prompt left unanswered: stop saying "getting"
+    const fail = (err) => {
+      if (done) return; done = true; clearTimeout(wait);
+      if (pbTxFix !== mine) return;
+      mine.state = 'none'; pbTxRender();
+      const code = err && err.code;
+      if ((code === 2 || code === 3) && !mine.reasked) { // no fix in time / unavailable (never after a refusal): once more when the person is back
+        const again = () => { if (document.visibilityState !== 'visible') return; document.removeEventListener('visibilitychange', again); if (pbTxFix === mine && !mine.fix && !mine.reasked) { mine.reasked = true; pbTxRequest(mine); } };
+        document.addEventListener('visibilitychange', again);
+      }
+    };
+    const ok = (pos) => {
+      if (done && mine.state !== 'none') return;
+      const c = pos && pos.coords;
+      if (!c || typeof c.latitude !== 'number' || typeof c.longitude !== 'number') { fail(null); return; }
+      const fix = { lat: Math.round(c.latitude * 1e5) / 1e5, lon: Math.round(c.longitude * 1e5) / 1e5, acc: typeof c.accuracy === 'number' && isFinite(c.accuracy) ? Math.round(c.accuracy) : null, time: typeof pos.timestamp === 'number' && isFinite(pos.timestamp) ? pos.timestamp : Date.now(), asked: mine.asked };
+      if (!pbTxFixOk(fix)) { fail(null); return; }
+      done = true; clearTimeout(wait);
+      if (pbTxFix === mine) { mine.state = 'got'; mine.fix = fix; }
+      pbTxKeepFix(mine.sid, mine.uid, fix);
+      pbTxRender();
+    };
+    try { g.getCurrentPosition(ok, fail, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }); } catch (e) { fail(null); }
+  }
+  // Saved on THAT permit's record only: the live permit (with its next save), or the closed permit's record.
+  function pbTxKeepFix(sid, uid, fix) {
+    if (pbSessionIs(sid)) {
+      confinedPermit.emergencyFixes = (Array.isArray(confinedPermit.emergencyFixes) ? confinedPermit.emergencyFixes : []).concat([fix]);
+      pbTxSaveLive(sid);
+      return;
+    }
+    pbKeptTxRecord({ fix }, { uid, sid }); // closed out while the position came in: its record
+  }
+  function pbTxSaveLive(sid) {
+    pbRunOnSession(async () => {
+      if (!pbSessionIs(sid) || await saveActiveConfinedSession()) return;
+      if (pbSessionIs(sid) && !(confinedEmergencySavePending && confinedEmergencySavePending.sessionId === sid)) showConfinedEmergencySaveFailure('text', sid);
+    });
+  }
+  // A text record or a position for a CLOSED permit (its kept panel): added to that record, one at a time,
+  // in the same queue as the kept panel's calls; the person is told when it can't be.
+  function pbKeptTxRecord(add, target) {
+    const shown = target || pbClosedEmergencyShown; if (!shown) return;
+    const what = add.text ? pbTxWords(add.text) : 'position read when EMERGENCY was tapped (' + pbTxFixText(add.fix) + ')';
+    pbKeptCallChain = pbKeptCallChain.then(async () => {
+      const sid = shown.sid, uid = shown.uid;
+      const entry = (uid === pbArchiveOwnerUid && uid === (await pbResolveStorageUserId())) ? runArchive.find(e => e.kind === 'confined' && e.permitSessionId === sid && e.permit) : null;
+      if (!entry) { pbAlertAfterOpen('The ' + what + ' could NOT be added to the closed permit’s record — that record isn’t open on this phone right now. Write it down for the incident report.', 'Not Recorded'); return; }
+      const ok = await pbSaveCallRecords(entry, sid, add.text ? { emergencyTexts: [add.text] } : { emergencyFixes: [add.fix] });
+      if (!ok) { pbAlertAfterOpen('The ' + what + ' did NOT save to the closed permit’s record (storage may be full or unavailable). Write it down for the incident report.', 'Not Recorded'); return; }
+      if (lastConfinedArchiveEntry === entry) { const pv = document.getElementById('cpCloseoutReportPreview'); if (pv) pv.textContent = entry.reportText; }
+      pbTxRender();
+    }).catch(() => {});
+  }
+  // A Text button: only from the emergency panel on screen. Messages opens first; the record follows.
+  window.pbEmText = function(kind) {
+    const panel = document.getElementById('cpEmergencyPanel');
+    if (!panel || panel.style.display === 'none') return;
+    const live = !!confinedPermit, k = !live ? pbClosedEmergencyShown : null;
+    if (!live && !k) return;
+    if (live && !confinedEmergencyIncidents.some(i => i && i.start && !i.end)) return; // no open emergency: nothing to text about
+    const now = Date.now();
+    if (pbTxLastTap && pbTxLastTap.kind === kind && now - pbTxLastTap.at < 1500 && now >= pbTxLastTap.at) return; // a double tap opens Messages once
+    const f = live ? pbTxFactsLive() : pbTxFactsKept(); if (!f) return;
+    const to = kind === 'contacts' ? f.contacts : [f.num];
+    if (!to.length) return;
+    pbTxLastTap = { kind, at: now };
+    const body = kind === 'details' ? pbTxDetails(f) : pbTxMain(f);
+    pbNavigateExternal(pbSmsUrl(to, body));
+    const rec = { kind: kind === 'details' || kind === 'contacts' ? kind : 'main', number: to.join(', '), time: now };
+    if (live) {
+      confinedPermit.emergencyTexts = (Array.isArray(confinedPermit.emergencyTexts) ? confinedPermit.emergencyTexts : []).concat([rec]);
+      pbTxSaveLive(confinedPermit.sessionId);
+    } else { pbTxKeptLast = { sid: k.sid, rec }; pbKeptTxRecord({ text: rec }); }
+    pbTxRender();
+  };
+  function pbTxSet(el, text) { if (el && el.textContent !== text) el.textContent = text; } // unchanged text is not rewritten (nor announced again)
+  // The Text block on the emergency panel (live permit and kept panel).
+  function pbTxRender() {
+    const wrap = document.getElementById('cpTextWrap'); if (!wrap) return;
+    let f = null; try { f = confinedPermit ? pbTxFactsLive() : pbClosedEmergencyShown ? pbTxFactsKept() : null; } catch (e) { f = null; }
+    if (!f) { wrap.style.display = 'none'; return; }
+    wrap.style.display = '';
+    const sid = confinedPermit ? confinedPermit.sessionId : pbClosedEmergencyShown.sid;
+    const is911 = f.num.replace(/\D/g, '') === '911';
+    const el = (id) => document.getElementById(id);
+    pbTxSet(el('cpText911Btn'), 'Text ' + f.num);
+    el('cpText911Btn').setAttribute('aria-label', 'Text ' + f.num + ': opens Messages with the emergency text filled in');
+    el('cpTextContactsBtn').style.display = f.contacts.length ? '' : 'none';
+    const good = pbTxFixGood(f.fix);
+    el('cpTextNoLoc').style.display = f.address || good ? 'none' : '';
+    pbTxSet(el('cpTextWarn'), is911 ? 'Not every 911 center takes texts. If you get a reply that texting isn’t available, call.' : 'A text is not a call: if no one replies right away, call ' + f.num + '.');
+    const st = pbTxFix.sid === sid ? pbTxFix.state : null;
+    const fx = f.fix ? pbTxFixText(f.fix).replace(',', ', ') + (typeof f.fix.acc === 'number' ? ' (about ' + f.fix.acc + ' m)' : '') : '';
+    pbTxSet(el('cpTextLoc'), f.fix ? (good ? 'Phone GPS ' + fx + ' is in the text.' : 'Phone GPS ' + fx + ' is too rough for the first text; it is in Text Details.') + ' Read only because EMERGENCY was tapped; saved with this permit’s record.'
+      : st === 'waiting' || st === 'asking' ? 'Getting this phone’s position once, for this emergency only.' + (f.address ? ' Until it comes, the text uses the site address.' : '')
+      : 'No position from this phone' + (f.address ? ', so the text uses the site address.' : '.'));
+    let last = null;
+    if (confinedPermit) last = (Array.isArray(confinedPermit.emergencyTexts) ? confinedPermit.emergencyTexts : []).filter(x => pbTxRecOk(x) && new Date(x.time).getTime() >= f.since - 1000).pop() || null;
+    else {
+      const k = pbClosedEmergencyShown, entry = k.uid === pbArchiveOwnerUid ? runArchive.find(e => e.kind === 'confined' && e.permitSessionId === k.sid && e.permit) : null;
+      last = (entry && Array.isArray(entry.permit.emergencyTexts) ? entry.permit.emergencyTexts : []).filter(x => pbTxRecOk(x) && new Date(x.time).getTime() >= f.since - 1000).pop() || null;
+      if (pbTxKeptLast && pbTxKeptLast.sid === k.sid && (!last || pbTxKeptLast.rec.time > new Date(last.time).getTime())) last = pbTxKeptLast.rec;
+    }
+    pbTxSet(el('cpTextLast'), last ? pbTxWords(last) + ' — press Send there if you haven’t.' : '');
+    el('cpTextLast').style.display = last ? '' : 'none';
+  }
+  window.pbTxRender = pbTxRender;
   // snap: from pbSnapOpenEmergency (closeout) or the stored marker (load). store: write the marker.
   function pbKeepClosedEmergencyPanel(snap, store) {
     if (!snap || confinedPermit !== null) return;
@@ -24814,6 +25200,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbEmergencyEndControls(true);
     panel.style.display = '';
     pbClosedEmergencyShown = { uid: snap.uid, sid: snap.sid, space: snap.space || '' };
+    try { pbTxKeptSnap = snap; pbTxRender(); } catch (e) {} /* feat_text911 */
     pbRenderClosedEmergencyTiles();
     if (pbClosedEmergencyTicker) clearInterval(pbClosedEmergencyTicker);
     const tick = () => {
@@ -24851,16 +25238,19 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     for (let tries = 0; tries < 3; tries++) {
       if ((!src && !pbSessionIs(sid)) || !entry.permit) return true;
       const from = src || confinedPermit;
-      const p = entry.permit, prior = { d: p.emergencyDials, n: p.numbersReached, rt: entry.reportText, sent: entry.sent };
+      const p = entry.permit, prior = { d: p.emergencyDials, n: p.numbersReached, rt: entry.reportText, sent: entry.sent, tx: p.emergencyTexts, fx: p.emergencyFixes };
       const d = pbJoinCallRecords(p.emergencyDials, from.emergencyDials), n = pbJoinCallRecords(p.numbersReached, from.numbersReached);
-      if (d.length === (Array.isArray(p.emergencyDials) ? p.emergencyDials.length : 0) && n.length === (Array.isArray(p.numbersReached) ? p.numbersReached.length : 0)) return true;
+      const tx = pbTxJoin(p.emergencyTexts, from.emergencyTexts), fx = pbTxJoin(p.emergencyFixes, from.emergencyFixes); /* feat_text911: texts opened and positions, once each */
+      const txNew = tx.length !== pbTxLen(p.emergencyTexts) || fx.length !== pbTxLen(p.emergencyFixes);
+      if (!txNew && d.length === (Array.isArray(p.emergencyDials) ? p.emergencyDials.length : 0) && n.length === (Array.isArray(p.numbersReached) ? p.numbersReached.length : 0)) return true;
       p.emergencyDials = d; p.numbersReached = n;
+      if (txNew) { if (tx.length !== pbTxLen(p.emergencyTexts)) p.emergencyTexts = tx; if (fx.length !== pbTxLen(p.emergencyFixes)) p.emergencyFixes = fx; if (typeof entry.reportText === 'string') { entry.reportText = pbTxPatchReport(entry.reportText, p); pbBumpEntryRev(entry); if (entry.sent === true) entry.sent = false; } }
       const lab = 'NUMBER RECORDED ON THE EMERGENCY PANEL (filled in with the number dialed unless changed by hand; the app cannot know whether a call connected): ', was = pbNumbersReachedText({ numbersReached: prior.n }), now = pbNumbersReachedText(p);
       if (now !== was && typeof entry.reportText === 'string') {
         entry.reportText = was && entry.reportText.includes(lab + was) ? entry.reportText.replace(lab + was, lab + now) : entry.reportText.replace(/(EMERGENCY NUMBER \(dialed by the EMERGENCY button\): [^\n]*)/, '$1\n' + lab + now);
         pbBumpEntryRev(entry); if (entry.sent === true) entry.sent = false; // its report changed after any hand-off
       }
-      if (!(await saveRunArchive())) { p.emergencyDials = prior.d; p.numbersReached = prior.n; entry.reportText = prior.rt; entry.sent = prior.sent; return false; }
+      if (!(await saveRunArchive())) { p.emergencyDials = prior.d; p.numbersReached = prior.n; entry.reportText = prior.rt; entry.sent = prior.sent; if (prior.tx === undefined) delete p.emergencyTexts; else p.emergencyTexts = prior.tx; if (prior.fx === undefined) delete p.emergencyFixes; else p.emergencyFixes = prior.fx; return false; }
     }
     return src ? false : !pbSessionIs(sid);
   }
@@ -25091,7 +25481,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         hazards: confinedPermit.hazards, hazardChecklist: confinedPermit.hazardChecklist || [],
         controls: confinedPermit.controls, ventFail: confinedPermit.ventFail, conditions: confinedPermit.conditions,
         minO2: pbMinO2(confinedPermit), maxO2: pbMaxO2(confinedPermit), maxLEL: pbMaxLEL(confinedPermit), maxH2S: pbMaxH2S(confinedPermit), maxCO: pbMaxCO(confinedPermit),
-        emergencyDialNumber: confinedPermit.emergencyDialNumber || pbDialNumberNow(), dialNumberLog: confinedPermit.dialNumberLog || [], numbersReached: confinedPermit.numbersReached || [], emergencyDials: confinedPermit.emergencyDials || [],
+        emergencyDialNumber: confinedPermit.emergencyDialNumber || pbDialNumberNow(), dialNumberLog: confinedPermit.dialNumberLog || [], numbersReached: confinedPermit.numbersReached || [], emergencyDials: confinedPermit.emergencyDials || [], ...(pbTxLen(confinedPermit.emergencyTexts) ? { emergencyTexts: confinedPermit.emergencyTexts } : {}), ...(pbTxLen(confinedPermit.emergencyFixes) ? { emergencyFixes: confinedPermit.emergencyFixes } : {}),
         rescue: confinedPermit.rescue, emergContactNum: confinedPermit.emergContactNum, emergContactName: confinedPermit.emergContactName,
         comms: confinedPermit.comms, supervisor: confinedPermit.supervisor, supervisorInitials: confinedPermit.supervisorInitials, attendant: confinedPermit.attendant,
         landmarks: confinedPermit.landmarks,
@@ -40058,6 +40448,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return pbRptNumberLabel(n, p) + (n.auto ? '; recorded when Send Report Email was tapped' + t + '. Whether an email was opened or sent is not recorded.' : t);
   }
   function pbRptDialWords(d, noTime) { return 'EMERGENCY button tapped' + (noTime ? '' : ': ' + pbRptDt(d.time, { sec: true })) + '. The app opened the phone\u2019s dialer with ' + d.number + '. ' + PB_RPT_CALL_UNKNOWN; }
+  // feat_text911: a text is recorded as OPENED (the app hands it to the phone's Messages); never as sent.
+  const PB_RPT_TEXT_UNKNOWN = 'The app opened the phone\u2019s Messages with the text filled in; it cannot know whether the text was sent.';
+  function pbRptTexts(p) { return (p && Array.isArray(p.emergencyTexts) ? p.emergencyTexts : []).filter(pbTxRecOk).slice().sort((a, b) => pbRptMs(a.time) - pbRptMs(b.time)); }
+  function pbRptFixes(p) { return (p && Array.isArray(p.emergencyFixes) ? p.emergencyFixes : []).filter(pbTxFixOk).slice().sort((a, b) => pbRptMs(a.time) - pbRptMs(b.time)); }
+  function pbRptTextWords(x, noTime) { return (x.kind === 'details' ? 'Details text to ' + x.number : x.kind === 'contacts' ? 'Text to contacts ' + x.number : 'Text to ' + x.number) + ' opened' + (noTime ? '' : ' at ' + pbRptDt(x.time, { sec: true })) + '. ' + PB_RPT_TEXT_UNKNOWN; }
+  function pbRptFixWords(f, noTime) { return 'Position read once when EMERGENCY was tapped: ' + pbTxFixText(f) + (typeof f.acc === 'number' ? ' (accuracy about ' + f.acc + ' m)' : '') + (noTime ? '' : ', ' + pbRptDt(f.time, { sec: true })) + '. Kept only on this permit\u2019s record.'; }
   function pbRptIncNote(inc) {
     let t = inc && inc.end && typeof inc.outcomeNote === 'string' && inc.outcomeNote ? ' Note: "' + inc.outcomeNote + '"' : '';
     if (inc && inc.end) { try { pbAlsoList(inc).forEach(a => { t += ' Also marked ended on another screen at ' + pbRptDt(a.at, { sec: true }) + (a.outcome === 'mistake' ? ' (activated by mistake)' : a.outcome === 'resolved' ? ' (incident resolved)' : '') + (a.note ? ', note: "' + a.note + '"' : '') + '.'; }); } catch (x) {} }
@@ -40140,6 +40536,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (inc.end) (Array.isArray(pbAlsoList(inc)) ? pbAlsoList(inc) : []).forEach(a => ev.push([a.at, 'Also marked ended on another screen' + (a.outcome ? ' (' + (a.outcome === 'mistake' ? 'activated by mistake' : 'incident resolved') + ')' : '') + (a.note ? ', note: "' + a.note + '"' : ''), 'not recorded', true]));
     });
     (p.emergencyDials || []).forEach(d => ev.push([d.time, pbRptDialWords(d, true), 'not recorded', true]));
+    pbRptTexts(p).forEach(x => ev.push([x.time, pbRptTextWords(x, true), 'not recorded', true])); pbRptFixes(p).forEach(f => ev.push([f.time, pbRptFixWords(f, true), 'not recorded'])); /* feat_text911 */
     (p.numbersReached || []).forEach(n => ev.push([n.time, pbRptNumberWords(n, true, p), 'not recorded', true]));
     (p.dialNumberLog || []).forEach(c => ev.push([c.time, 'The number the EMERGENCY button opens the dialer with was changed from ' + c.from + ' to ' + c.to, 'not recorded']));
     if (p.closeoutReasonChangedFrom && p.closeoutReasonChangedFrom.at) ev.push([p.closeoutReasonChangedFrom.at, 'Closeout first submitted: ' + p.closeoutReasonChangedFrom.label + (p.closeoutReasonChangedFrom.detail ? ' \u2014 ' + p.closeoutReasonChangedFrom.detail : '') + ' (changed later)', 'not recorded']);
@@ -40203,7 +40600,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       ['(i)', 'Isolation and hazard control measures', p.controls || 'not recorded'],
       ['(j)', 'Acceptable entry conditions', (p.conditions || 'none typed') + '\nApp air limits (every logged test is checked against these): min O2 ' + pbMinO2(p) + '%, max O2 ' + pbMaxO2(p) + '%, max LEL ' + pbMaxLEL(p) + '%, max H2S ' + pbMaxH2S(p) + ' ppm, max CO ' + pbMaxCO(p) + ' ppm' + (p.limitOrigin ? ' (' + Object.keys(p.limitOrigin).map(k => k + ' ' + p.limitOrigin[k]).join(', ') + ')' : '')],
       ['(k)', 'Test results, testers, times', air.length + ' test(s) logged with tester and time; see the Atmospheric test log.' + (p.atmoInterval ? ' Re-test reminder every ' + p.atmoInterval + ' min (a reminder, not a limit).' : '')],
-      ['(l)', 'Rescue and emergency services, how to summon', (p.rescue || 'not recorded') + '\nThe number the EMERGENCY button opens the dialer with: ' + (p.emergencyDialNumber || 'not recorded') + (p.dialNumberLog || []).map(c => '; changed from ' + c.from + ' to ' + c.to + ' at ' + pbRptDt(c.time, { sec: true })).join('') + ((p.emergencyDials || []).length ? '\n' + p.emergencyDials.map(d => pbRptDialWords(d)).join('\n') : '') + ((p.numbersReached || []).length ? '\n' + p.numbersReached.map(n => pbRptNumberWords(n, false, p)).join('\n') : '') + '\n' + PB_RPT_NOTIFY_UNKNOWN + (p.emergContactNum ? '\nAdditional contact: ' + (p.emergContactName || 'Contact') + ' ' + p.emergContactNum : '')],
+      ['(l)', 'Rescue and emergency services, how to summon', (p.rescue || 'not recorded') + '\nThe number the EMERGENCY button opens the dialer with: ' + (p.emergencyDialNumber || 'not recorded') + (p.dialNumberLog || []).map(c => '; changed from ' + c.from + ' to ' + c.to + ' at ' + pbRptDt(c.time, { sec: true })).join('') + ((p.emergencyDials || []).length ? '\n' + p.emergencyDials.map(d => pbRptDialWords(d)).join('\n') : '') + ((p.numbersReached || []).length ? '\n' + p.numbersReached.map(n => pbRptNumberWords(n, false, p)).join('\n') : '') + pbRptTexts(p).map(x => '\n' + pbRptTextWords(x)).join('') + pbRptFixes(p).map(f => '\n' + pbRptFixWords(f)).join('') + '\n' + PB_RPT_NOTIFY_UNKNOWN + (p.emergContactNum ? '\nAdditional contact: ' + (p.emergContactName || 'Contact') + ' ' + p.emergContactNum : '')],
       ['(m)', 'Communication procedures', (p.comms || 'not recorded') + (p.commInterval ? '\nComm-check reminder every ' + p.commInterval + ' min.' : '')],
       ['(n)', 'Equipment provided', ['PPE', 'Testing equipment', 'Communications equipment', 'Alarm systems', 'Rescue equipment'].map((l, i) => '[' + (p[['eqPPE', 'eqTest', 'eqComm', 'eqAlarm', 'eqRescue'][i]] ? 'X' : ' ') + '] ' + l).join('   ') + (p.eqNotes ? '\n' + p.eqNotes : '')],
       ['(o)', 'Other information for safety', [p.landmarks ? 'Entrance / landmarks: ' + p.landmarks : '', p.miscNotes ? 'Notes: ' + p.miscNotes : ''].filter(Boolean).join('\n') || 'none recorded'],
@@ -40288,7 +40685,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     R.kv([
       ['Space', e.space], ['Site address', e.address], ['Jobsite / job', (e.jobsite || '') + (e.jobNumber ? ' \u00b7 #' + e.jobNumber : '') || null], ['Entrance / landmarks', p.landmarks || null],
       ['Declared', legacy ? 'time not kept' : pbRptDt(first.start, { sec: true })], ['Declared by', 'not recorded (the app records the phone that tapped EMERGENCY, not the person)'],
-      ['EMERGENCY button number', (p.emergencyDialNumber || 'not recorded') + ' (the number the EMERGENCY button opens the dialer with)'], ['Call button', dials.length ? dials.map(d => pbRptDialWords(d)).join(' ') : 'No tap of the EMERGENCY button is recorded.'],
+      ['EMERGENCY button number', (p.emergencyDialNumber || 'not recorded') + ' (the number the EMERGENCY button opens the dialer with)'], ['Call button', dials.length ? dials.map(d => pbRptDialWords(d)).join(' ') : 'No tap of the EMERGENCY button is recorded.'], pbRptTexts(p).length ? ['Texts', pbRptTexts(p).map(x => pbRptTextWords(x)).join(' ')] : null, pbRptFixes(p).length ? ['Position at EMERGENCY', pbRptFixes(p).map(f => pbRptFixWords(f)).join(' ')] : null,
       ['Numbers recorded', reached.length ? reached.map(n => pbRptNumberWords(n, false, p)).join(' ') : 'none recorded'], ['Delivery', PB_RPT_NOTIFY_UNKNOWN], ['Entry supervisor / attendant', (p.supervisor || '\u2014') + ' / ' + (p.attendant || '\u2014')]
     ], { cols: 2 });
     R.callout('How to read this report', ['Declaration and actions are what the phone recorded, with the phone\u2019s clock (device time, to the second).', 'Notifications are listed separately. A notification is only shown as received when that is recorded; the app does not know whether a call connected or an email was sent.', 'Who was inside and the air readings come from the permit\u2019s roster and air log as they stood at closeout.'], 'ok');
@@ -40301,6 +40698,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       R.kv([['Declared', pbRptDt(inc.start, { sec: true })], ['How it ended', pbRptIncOutcome(inc) + (inc.end ? ' at ' + pbRptDt(inc.end, { sec: true }) : '')], ['Duration', pbRptDur((t1 - t0) / 1000) + (inc.end ? '' : ' (measured to closeout)')], ['Outcome note (typed)', inc.outcomeNote || null]], { cols: 2 });
       const acts = [[inc.start, 'EMERGENCY declared on this phone (timer started; routine reminders paused)']];
       dials.filter(d => incOf(d.time) === i).forEach(d => acts.push([d.time, pbRptDialWords(d, true)]));
+      pbRptTexts(p).filter(x => incOf(x.time) === i).forEach(x => acts.push([x.time, pbRptTextWords(x, true)])); pbRptFixes(p).filter(f => incOf(f.time) === i).forEach(f => acts.push([f.time, pbRptFixWords(f, true)])); /* feat_text911 */
       reached.filter(n => incOf(n.time) === i).forEach(n => acts.push([n.time, pbRptNumberWords(n, true, p)]));
       (p.dialNumberLog || []).filter(c => c.time >= t0 && incOf(c.time) === i).forEach(c => acts.push([c.time, 'The number the EMERGENCY button opens the dialer with was changed from ' + c.from + ' to ' + c.to]));
       (e.roster || []).forEach(person => (person.log || []).forEach(l => { const t = pbRptMs(l.time); if (t >= t0 && t <= t1) acts.push([t, person.name + ' (' + person.role + '): ' + String(l.action || '').toLowerCase() + pbAgainstBlockText(l)]); }));
