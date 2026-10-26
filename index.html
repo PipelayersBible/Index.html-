@@ -9150,7 +9150,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.44 · 2026-10-25'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.45 · 2026-10-26'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -31304,7 +31304,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const PB_PUSH_KEY_KEY = 'pbPushVapidPub';
   let pbPushVapid = null, pbPushKeyAsked = false;
   try { pbRawGet(PB_PUSH_KEY_KEY).then(v => { if (!pbPushVapid && typeof v === 'string' && /^[A-Za-z0-9_-]{80,100}$/.test(v)) pbPushVapid = v; }).catch(() => {}); } catch (e) {}
-  const PB_PUSH_ORIGIN = 'https://pipelayersbible.github.io', PB_PUSH_PATH = '/Index.html-/';
+  const PB_PUSH_HOSTS = [['https://app.pipelayersbible.com', '/'], ['https://pipelayersbible.github.io', '/Index.html-/']]; // feat_appmove: the new address and the old one
   const PB_PUSH_DEVICE_KEY = 'pbPushDevice'; // per phone, not per account: { uid, want: 'on'|'off', synced, endpoint, why, at }
   const PB_PUSH_TYPES = ['runs_waiting', 'mgmt_report', 'crew_production', 'run_end_ask', 'material_alert', 'crew_nudge', 'permit_closed', 'permit_due', 'locates', 'schedule', 'delays']; /* feat_dailyplus: delays */ // feat_schedule // feat_locates // feat_permitdue // r14 integration: a row shows only when the server reports the kind
   const PB_PUSH_ROWS = { run_end_ask: 'notifTypeRunEndRow', material_alert: 'notifTypeMatRow', crew_nudge: 'notifTypeNudgeRow', permit_closed: 'notifTypePermitRow', permit_due: 'notifTypePermitDueRow', locates: 'notifTypeLocRow', schedule: 'notifTypeScheduleRow' /* feat_schedule */, delays: 'notifTypeDelaysRow' /* feat_dailyplus */ }; // feat_locates // feat_permitdue // crew_production: batch 14 F's own row
@@ -31312,7 +31312,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   let pbPushReg = null, pbPushSwFailed = false, pbPushRegP = null, pbPushBusy = null, pbPushTimer = null;
   let pbPushMsg = { text: '', at: 0 };
   function pbPushHostOk() {
-    try { return window.location.protocol === 'https:' && window.location.origin === PB_PUSH_ORIGIN && window.location.pathname.indexOf(PB_PUSH_PATH) === 0 && window.isSecureContext !== false; } catch (e) { return false; }
+    try { return window.location.protocol === 'https:' && PB_PUSH_HOSTS.some(h => window.location.origin === h[0] && window.location.pathname.indexOf(h[1]) === 0) && window.isSecureContext !== false; } catch (e) { return false; }
   }
   function pbPushEnv() {
     const ua = String(navigator.userAgent || ''), plat = String(navigator.platform || '');
@@ -31429,8 +31429,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const steps = env.ios
       ? ['Open the iPhone <strong>Settings</strong> app.', 'Tap <strong>Notifications</strong>, then <strong>The Pipelayer’s Bible</strong>.', 'Turn on <strong>Allow Notifications</strong>.', 'Come back here and tap <strong>Turn On Notifications</strong>.']
       : env.android
-        ? ['Tap the <strong>&#8942;</strong> menu (or the icon left of the web address), then <strong>Settings</strong> or <strong>Site settings</strong>.', 'Tap <strong>Notifications</strong> and set <strong>pipelayersbible.github.io</strong> to <strong>Allow</strong>.', 'If you installed the app: press and hold its icon, tap <strong>App info</strong>, then <strong>Notifications</strong>, and allow them.', 'Come back here and tap <strong>Turn On Notifications</strong>.']
-        : ['Open your browser’s <strong>site settings</strong> for <strong>pipelayersbible.github.io</strong>.', 'Set <strong>Notifications</strong> to <strong>Allow</strong>.', 'Come back here and tap <strong>Turn On Notifications</strong>.'];
+        ? ['Tap the <strong>&#8942;</strong> menu (or the icon left of the web address), then <strong>Settings</strong> or <strong>Site settings</strong>.', 'Tap <strong>Notifications</strong> and set <strong>' + escapeHtml(String(window.location.host || 'app.pipelayersbible.com')) + '</strong> to <strong>Allow</strong>.', 'If you installed the app: press and hold its icon, tap <strong>App info</strong>, then <strong>Notifications</strong>, and allow them.', 'Come back here and tap <strong>Turn On Notifications</strong>.']
+        : ['Open your browser’s <strong>site settings</strong> for <strong>' + escapeHtml(String(window.location.host || 'app.pipelayersbible.com')) + '</strong>.', 'Set <strong>Notifications</strong> to <strong>Allow</strong>.', 'Come back here and tap <strong>Turn On Notifications</strong>.'];
     return '<p>To allow them again:</p><ol class="pb-pn-steps" id="notifDeniedList">' + steps.map(s => '<li>' + s + '</li>').join('') + '</ol>';
   }
   const PB_PUSH_SHORT = { unavailable: 'Not available in this copy of the app', unsupported_ios: 'Needs iOS 16.4 or newer', ios_homescreen: 'Add to Home Screen first', unsupported: 'Not available on this phone', sw_failed: 'Couldn’t start on this phone', not_ready: 'Not ready yet', signedout: 'Log in to turn on', denied: 'Blocked on this phone', off: 'Off on this phone', pending: 'Turning on: waiting for signal', on: 'On for this phone' };
@@ -31441,7 +31441,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbPushCardApply(st); /* feat_pushcard */ const box = document.getElementById('notifState'); if (!box) return st;
     const who = sbUser && sbUser.email && st.uid === sbUser.id ? ' (' + sbUser.email + ')' : '';
     const W = {
-      unavailable: ['info', 'Not available in this copy of the app', 'Notifications work in the app opened from its web address, pipelayersbible.github.io. Everything else here works as usual.'],
+      unavailable: ['info', 'Not available in this copy of the app', 'Notifications work in the app opened from its web address, app.pipelayersbible.com. Everything else here works as usual.'],
       unsupported_ios: ['warn', 'This iPhone needs an update', 'Notifications need iOS 16.4 or newer. Update iOS in the Settings app (General › Software Update), then come back here.'],
       ios_homescreen: ['info', 'On iPhone, add the app to your Home Screen first', 'iPhones only allow notifications for apps opened from the Home Screen:'],
       unsupported: ['warn', 'This phone can’t show notifications from the app', 'Its browser doesn’t support them. Everything else works as usual. On Android, use Chrome.'],
