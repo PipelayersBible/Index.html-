@@ -3480,6 +3480,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp #screen-confinedActive #cpTextContactsBtn { display: block; width: 100%; min-height: 48px; margin: 10px 0 0 0; }
 #pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-tx-noloc { margin: 10px 0 0 0; padding: 10px 12px; background: #5a3a10; border-left: 4px solid var(--hazard); color: #fff; font-weight: 700; font-size: 15px; border-radius: 12px; }
 #pbApp#pbApp #screen-confinedActive #cpTextWrap .pb-help { margin: 8px 0 0 0; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+#pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-em-link strong { font-family: 'IBM Plex Mono', monospace; font-weight: 600; letter-spacing: 0.02em; white-space: nowrap; }
+#pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-em-link .pb-btn { min-height: 44px; min-width: 64px; margin: 4px 0 0 6px; vertical-align: middle; }
 #pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-tx-last { color: var(--pb-text, #fff); font-weight: 650; }
 /* ---- fixes after the first screenshots ---- */
 #pbApp#pbApp :is(#screen-confinedPermit, #screen-confinedActive) textarea { width: 100%; box-sizing: border-box; }
@@ -7392,6 +7394,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <p class="pb-help cp-tx-last" id="cpTextLast" style="display:none;" aria-live="polite"></p>
         <p class="pb-help" id="cpTextWarn"></p>
         <p class="pb-help" id="cpTextLoc" aria-live="polite"></p>
+        <p class="pb-help cp-em-link" id="cpEmLink" style="display:none;">Responders can open <strong id="cpEmLinkAddr"></strong> <button type="button" class="pb-btn ghost small" id="cpEmLinkCopy" aria-label="Copy the responder info link" onclick="pbEmCopyLink()">Copy</button></p>
       </div>
       <p class="cp-disp-head" style="margin:18px 16px 4px 16px; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--hazard);">Read this to the dispatcher</p>
       <div class="pb-emergency-script" id="cpEmergencyScript"></div>
@@ -9150,7 +9153,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.45 · 2026-10-26'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.46 · 2026-10-26'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -20927,6 +20930,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const released = marked && still === u.raw && await pbSetFor(u.uid, 'activeConfinedSession', '');
       if (!released) { pbAlert('An exact copy was saved, but the damaged permit data couldn\u2019t be cleared from this device just now, so a new permit still can\u2019t be started. Nothing was lost \u2014 try again in a moment.', 'Not Released Yet'); return; }
       if (confinedSessionUnreadable === u) confinedSessionUnreadable = null;
+      try { pbEmEndReleased(u.uid, u.raw); } catch (e) {} /* feat_emlink: the released permit's responder link ends */
       pbRenderSessionUnreadable();
       pbAlert('An exact copy was saved on this device. You can now start a new permit.', 'Copy Saved');
     }, 'Save a Copy and Start Fresh');
@@ -21181,8 +21185,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const bp = base && (base.roster || []).find((p, j) => p && pbRosterRowId(p, j) === m.id);
       if (bp && m.role === bp.role && sp.role !== bp.role) m.role = sp.role;
     });
+    { const pk = pbEmPick(confinedPermit.emLink, d.permit && d.permit.emLink); if (pk !== confinedPermit.emLink) confinedPermit.emLink = pk; } /* feat_emlink: never through the field merge below */
     if (base && base.permit) Object.keys(d.permit).forEach(k => {
-      if (k === 'lockTime') return;
+      if (k === 'lockTime' || k === 'emLink') return;
       if (!same(d.permit[k], base.permit[k]) && same(confinedPermit[k], base.permit[k])) confinedPermit[k] = d.permit[k];
     });
     (Array.isArray(d.permit && d.permit.unloggedHazards) ? d.permit.unloggedHazards : []).forEach(pbKeepUnloggedHazard); // both tabs' unlogged hazards are kept
@@ -21314,6 +21319,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (savedOkFlag && pendingWritten.length && confinedPermit && confinedPermit.sessionId === mySession) pbPendingAtmoSaved(pendingWritten);
     if (savedOkFlag && confinedPermit && confinedPermit.sessionId === mySession) { const pb = document.getElementById('permitSaveStatusBanner'); if (pb) pb.style.display = 'none'; }
     if (savedOkFlag && confinedEmergencySavePending && confinedEmergencySavePending.sessionId === mySession && mySeq > confinedEmergencySavePending.failedSeq) pbClearEmergencySavePending();
+    if (savedOkFlag) { try { pbEmPushSoon(); } catch (e) {} } /* feat_emlink: an open emergency reaches the responder page within seconds */
     return savedOkFlag;
   }
   // Before any load (another account logging in, a retry): the live reminders,
@@ -21485,6 +21491,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     confinedPermit = data.permit;
     pbNoteSessionLoaded(raw, data);
     confinedPermit.lockTime = new Date(confinedPermit.lockTime);
+    if (!pbEmLinkOk(confinedPermit.emLink)) { const nl = pbEmNewLink(); if (nl) confinedPermit.emLink = nl; } /* feat_emlink: a permit locked before r15.46 (saved with its next save) */
     { const pc = Number(confinedPermit.miscPhotoCount); confinedPermit.miscPhotoCount = Number.isFinite(pc) && pc > 0 ? Math.floor(pc) : 0; }
     confinedAtmoLog = (data.atmoLog || []).map(r => ({ ...pbCleanStoredGases(r), time: new Date(r.time) }));
     if (pbAdoptStoredPendingAtmo(pendRaw, data.permit.sessionId, uid)) pbPersistPendingAtmo(data.permit.sessionId, uid);
@@ -21883,6 +21890,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbClearClosedEmergency(confinedSessionOwnerUid); // this account's own kept panel only: another account's stays for its next login
     confinedPermit = {
       sessionId: Date.now(), // stable identity carried onto the closeout archive entry too — lets boot-time restoration recognize "this was already closed out" even if clearing the active session failed
+      emLink: pbEmNewLink(), /* feat_emlink: the responder info link's code, made on this phone at lock (null without crypto) */
       jobsite: document.getElementById('cpJobsite').value.trim(),
       jobNumber: document.getElementById('cpJobNumber').value.trim(),
       address: document.getElementById('cpAddress').value.trim(),
@@ -23914,6 +23922,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const declSession = confinedPermit ? confinedPermit.sessionId : null;
     saveActiveConfinedSession().then(savedOk => {
       if (!savedOk) showConfinedEmergencySaveFailure('declare', declSession);
+      else { try { pbEmPushNow(); } catch (e) {} } /* feat_emlink S6: the declaration goes up at once, after the dial and the save */
     });
   };
   window.pbDismissEmergencyPanel = function(outcome) {
@@ -24429,6 +24438,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     lines.push('EMERGENCY NUMBER (dialed by the EMERGENCY button): ' + (p.emergencyDialNumber ? p.emergencyDialNumber : pbDialNumberNow() + ' (not set on this permit)'));
     if (pbNumbersReachedText(p)) lines.push('NUMBER RECORDED ON THE EMERGENCY PANEL (filled in with the number dialed unless changed by hand; the app cannot know whether a call connected): ' + pbNumbersReachedText(p));
     pbTxReportLines(p).forEach(l => lines.push(l)); /* feat_text911: texts opened, position */
+    if (pbEmLinkOk(p.emLink)) lines.push('RESPONDER INFO LINK (read-only, no sign-in; stops working 3 days after closeout, or after the last emergency ends if later): ' + pbEmUrl(p.emLink.k)); /* feat_emlink */
     { const air = pbLatestAirLine(false); lines.push('LATEST AIR TEST: ' + (air || 'none logged')); }
     if (confinedEmergencyIncidents.length) {
       const openN = confinedEmergencyIncidents.filter(i => !i.end).length;
@@ -24971,7 +24981,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!fix && pbTxFix.sid === p.sessionId && pbTxFixOk(pbTxFix.fix)) fix = pbTxFix.fix;
     return {
       num: pbDialNumberNow(), address: A(p.address), site: A([p.jobsite, p.jobNumber ? 'job #' + p.jobNumber : ''].filter(Boolean).join(', ')),
-      space: A(p.space), inside: confinedRoster.filter(x => x.status === 'in').length, air: pbTxAirShort(), hazard: A(pbTxHazardShort(p)),
+      space: A(p.space), inside: confinedRoster.filter(x => x.status === 'in').length, air: pbTxAirShort(), hazard: A(pbTxHazardShort(p)), em: pbEmLinkOk(p.emLink) && pbEmUsable(p.emLink.k, confinedSessionOwnerUid, null) ? p.emLink.k : '',
       fix, since, contacts: pbTxContactNums(p.emergContactNum, pbDialNumberNow())
     };
   }
@@ -24992,27 +25002,96 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return {
       num, address: addr, site: t ? S(t.site) : S(row(/^Jobsite/i).replace(/^—$/, '')), space: t ? S(t.space) : S(snap.space || ''),
       inside: t && typeof t.inside === 'number' ? t.inside : (parseInt(row(/^Personnel/i), 10) || 0), air: t ? S(t.air) : '', hazard: t ? S(t.hazard) : '',
-      fix, since, contacts: pbTxContactNums(t && Array.isArray(t.contacts) ? t.contacts.join(', ') : '', num)
+      fix, since, contacts: pbTxContactNums(t && Array.isArray(t.contacts) ? t.contacts.join(', ') : '', num), em: t && typeof t.em === 'string' && pbEmUsable(t.em, k.uid, entry) ? t.em : ''
     };
   }
   // THE hook for a link appended to the text later (e.g. a page for responders). Returns '' until then. The link is
   // placed whole or not at all (never shortened), at the END of the text.
-  function pbTxLink(f) { return ''; }
+  // ---------- feat_emlink (r15.46): the responder info link ----------
+  // At lock the phone makes a random 12-character code and keeps it on the permit (permit.emLink = { k, at }). It rides in
+  // the copies the app already uploads (the open-permit snapshot, the closed record); the server files a hash of it and the
+  // page e.pipelayersbible.com/?<code> shows only the responder fields. Crockford base-32, lower case (no i, l, o, u):
+  // 12 x 5 = 60 random bits, unbiased (256 % 32 == 0). No crypto on the phone: no link (the text simply has none).
+  const PB_EM_HOST = 'e.pipelayersbible.com/';
+  const PB_EM_LINK = PB_EM_HOST + '?'; // the query form: GitHub Pages serves it from index.html with HTTP 200 (a path /<code> is a 404 page)
+  const PB_EM_ALPHA = '0123456789abcdefghjkmnpqrstvwxyz';
+  const PB_EM_RE = /^[0-9a-hjkmnp-tv-z]{12}$/;
+  const PB_EM_LIFE_MS = 3 * 86400000; // the server's rule: 3 days after the later of closeout and the last emergency's end
+  function pbEmLinkOk(x) { return !!x && typeof x === 'object' && typeof x.k === 'string' && PB_EM_RE.test(x.k); }
+  function pbEmNewLink() {
+    try {
+      const b = new Uint8Array(12); window.crypto.getRandomValues(b);
+      const k = Array.from(b, x => PB_EM_ALPHA[x & 31]).join('');
+      return PB_EM_RE.test(k) ? { k, at: Date.now() } : null;
+    } catch (e) { return null; } // never Math.random
+  }
+  // Two tabs that each gave an older permit a code: both keep the earlier one, so they agree.
+  function pbEmPick(a, b) {
+    if (!pbEmLinkOk(b)) return a;
+    if (!pbEmLinkOk(a)) return b;
+    if (a.k === b.k) return a;
+    const ta = Number(a.at) || Infinity, tb = Number(b.at) || Infinity;
+    return ta < tb || (ta === tb && a.k < b.k) ? a : b;
+  }
+  const pbEmShown = (k) => PB_EM_LINK + String(k).toUpperCase().match(/.{1,4}/g).join('-'); // for reading aloud: ?7K3M-9Q2X-HW4P
+  const pbEmUrl = (k) => 'https://' + PB_EM_LINK + k;
+  // THE link in the text: 35 characters, no https:// (Messages on iPhone and Android make a bare .com address a link, the
+  // ?query included; Android adds http:// itself).
+  function pbTxLink(f) { return f && typeof f.em === 'string' && PB_EM_RE.test(f.em) ? PB_EM_LINK + f.em : ''; }
+  // N5: a code is left out of the panel and the text once sharing was stopped (or a stop is waiting to be sent), the link
+  // expired, or the server said it is in conflict / expired. The server is asked in the background (pb_em_view, at most
+  // every 5 min per code); nothing here waits for it. Any error here keeps the link (it is information, never a block).
+  const pbEmSrv = {};
+  function pbEmSrvCheck(k) {
+    try {
+      const now = Date.now(), c = pbEmSrv[k];
+      if (c && (c.busy || now - c.at < 5 * 60000)) return;
+      if (!sbUser || !sbClient || typeof sbClient.rpc !== 'function' || navigator.onLine === false || !pbAuthBackgroundOk()) return;
+      pbEmSrv[k] = { status: c ? c.status : null, at: now, busy: true };
+      pbPermitRpc('pb_em_view', { p_token: k }, 15000).then(r => {
+        const before = c ? c.status : null, st = !r.error && r.data && typeof r.data.status === 'string' ? r.data.status : before;
+        pbEmSrv[k] = { status: st, at: Date.now(), busy: false };
+        if (st !== before) { try { pbTxRender(); } catch (e) {} }
+      }, () => { pbEmSrv[k] = { status: c ? c.status : null, at: Date.now(), busy: false }; });
+    } catch (e) {}
+  }
+  function pbEmUsable(k, uid, entry) {
+    if (typeof k !== 'string' || !PB_EM_RE.test(k)) return false;
+    try {
+      const end = pbEmEndOf(uid, k);
+      if (end && (!end.refused || end.refused === 'pb:not_yours')) return false; // stop requested / done; or the code is another permit's
+      const sv = pbEmSrv[k]; if (sv && (sv.status === 'conflict' || sv.status === 'expired')) return false;
+      if (entry) { const st = pbEmRecordState(entry); if (st && st.expired) return false; }
+      pbEmSrvCheck(k);
+    } catch (e) {}
+    return true;
+  }
+  window.pbEmCopyLink = function() {
+    const el = document.getElementById('cpEmLink'), k = el && el.dataset.k;
+    if (k && PB_EM_RE.test(k)) window.pbCopyText(pbEmUrl(k));
+  };
   // The one text (one SMS, 160 plain characters), in this order: CONFINED SPACE RESCUE, where (address; phone GPS
-  // only within 100 m), headcount, bad air (else the hazard), space, link. When it must be shorter, the space goes
-  // first, then the link, then the bad air / hazard; the rescue line, the location and the headcount stay.
+  // only within 100 m), headcount, bad air (else the hazard), space, link. When it doesn't all fit (owner, Oct 26): first
+  // the GPS part is shortened ("GPS" and 4 decimals, about 11 m, instead of "Phone GPS" and 5), then the space goes, then
+  // the link, then the bad air / hazard; the rescue line, the location and the headcount stay. The link is whole or absent.
+  // The GPS is shortened only when that keeps more of the text (if the same parts go either way, the full GPS stays).
+  function pbTxGpsShort(f) { return f.lat.toFixed(4) + ',' + f.lon.toFixed(4); }
   function pbTxMain(f) {
     const gps = pbTxFixGood(f.fix) ? f.fix : null, loc = !!(f.address || gps), link = String(pbTxLink(f) || '').trim();
-    return pbTxFit([
+    const parts = (g) => [
       { t: 'CONFINED SPACE RESCUE', pri: 0 },
       f.address ? { t: f.address, pri: 3, cut: 8 } : null,
-      gps ? { t: 'Phone GPS ' + pbTxFixText(gps), pri: 2 } : null,
+      g ? { t: g, pri: 2 } : null,
       !loc && f.site ? { t: 'Site: ' + f.site, pri: 2, cut: 10 } : null,
       f.inside > 0 ? { t: f.inside === 1 ? '1 worker inside' : f.inside + ' workers inside', pri: 1 } : { t: 'Number inside not logged', pri: 1 },
       f.air ? { t: f.air, pri: 4 } : f.hazard ? { t: 'Hazard: ' + f.hazard, pri: 4, cut: 14 } : null,
       f.space ? { t: 'Space: ' + pbTxCut(f.space, 25), pri: 6, cut: 12 } : null,
       link ? { t: link, pri: 5, raw: true } : null
-    ], PB_TX_MAX1);
+    ];
+    if (!gps) return pbTxFit(parts(''), PB_TX_MAX1);
+    const g1 = 'Phone GPS ' + pbTxFixText(gps), g2 = 'GPS ' + pbTxGpsShort(gps);
+    const t1 = pbTxFit(parts(g1), PB_TX_MAX1), t2 = pbTxFit(parts(g2), PB_TX_MAX1);
+    return t1.replace(' ' + g1 + '.', '') === t2.replace(' ' + g2 + '.', '') ? t1 : t2; /* the short GPS only when it keeps more */
   }
   function pbTxIsIos() { try { const ua = navigator.userAgent || ''; return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1); } catch (e) { return false; } }
   // THE one place the sms: link is built (adjust here only). Body: encodeURIComponent.
@@ -25158,6 +25237,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     pbTxSet(el('cpTextLast'), last ? pbTxWords(last) + ' — press Send there if you haven’t.' : '');
     el('cpTextLast').style.display = last ? '' : 'none';
+    { const lk = el('cpEmLink'), em = typeof f.em === 'string' && PB_EM_RE.test(f.em) ? f.em : ''; /* feat_emlink: the responder link, once */
+      if (lk) { lk.style.display = em ? '' : 'none'; lk.dataset.k = em; pbTxSet(el('cpEmLinkAddr'), em ? pbEmShown(em) : ''); } }
   }
   window.pbTxRender = pbTxRender;
   // snap: from pbSnapOpenEmergency (closeout) or the stored marker (load). store: write the marker.
@@ -25461,6 +25542,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         rescue: confinedPermit.rescue, emergContactNum: confinedPermit.emergContactNum, emergContactName: confinedPermit.emergContactName,
         comms: confinedPermit.comms, supervisor: confinedPermit.supervisor, supervisorInitials: confinedPermit.supervisorInitials, attendant: confinedPermit.attendant,
         landmarks: confinedPermit.landmarks,
+        ...(pbEmLinkOk(confinedPermit.emLink) ? { emLink: { k: confinedPermit.emLink.k, at: confinedPermit.emLink.at } } : {}), /* feat_emlink: pb_permit_backup carries it */
         eqPPE: confinedPermit.eqPPE, eqTest: confinedPermit.eqTest, eqComm: confinedPermit.eqComm,
         eqAlarm: confinedPermit.eqAlarm, eqRescue: confinedPermit.eqRescue, eqNotes: confinedPermit.eqNotes,
         addlPermits: confinedPermit.addlPermits,
@@ -32529,13 +32611,140 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const r = await pbPermitRpc('pb_permit_open_put', { p_client_permit_id: 'cps-' + String(sid).slice(0, 90), p_snapshot: snap, p_expect_uid: uid }, 30000);
       if (!r.error && r.data && r.data.ok === true) { pbOpenBk.uid = uid; pbOpenBk.sid = sid; pbOpenBk.hash = h; return; }
       const msg = String((r.error && r.error.message) || ''), code = (msg.match(/pb:\w+/) || [''])[0];
-      if (code || /update_app|does not exist|Could not find/i.test(msg)) pbOpenBk.until = Date.now() + 10 * 60000; // refused or not installed on the server yet: try again later
+      if (code || /update_app|does not exist|Could not find/i.test(msg)) pbOpenBk.until = Date.now() + (pbEmergencyOpen() ? 60000 : 10 * 60000); /* feat_emlink: 1 min while an emergency is open */ // refused or not installed on the server yet: try again later
     } catch (e) {} finally { pbOpenBk.busy = false; }
   }
   setInterval(() => { if (confinedPermit) pbOpenBackupTick(); }, 30 * 1000);
   window.addEventListener('online', () => setTimeout(() => { if (confinedPermit) pbOpenBackupTick(); }, 4000));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && confinedPermit) setTimeout(pbOpenBackupTick, 3000); });
   window.__pbOpenBackupTick = pbOpenBackupTick;
+  // ==== feat_emlink: ending a responder link (pb_em_link_end) and the faster upload during an emergency ====
+  // Ends are kept per account (<uid>:emLinkEnds = [{ k, cid, why, at, tries?, nextAt?, done?, refused?, err? }]) and sent
+  // when that account is signed in with signal. done = the server confirmed it; refused = the server said no (the code is
+  // another permit's, or a bad request): NOT stopped, the Records button comes back; pb:not_filed = the server has not
+  // received this code yet (the permit's upload files it): tried again at 1, 2, 4 ... 30 min, given up after 31 days (a
+  // link can't live that long). Network / sign-in / account trouble: kept, tried again on the next pass.
+  const PB_EM_ENDS_KEY = 'emLinkEnds';
+  function pbEmEndsRead(uid) {
+    try { const a = JSON.parse(localStorage.getItem(uid + ':' + PB_EM_ENDS_KEY) || '[]'); return Array.isArray(a) ? a.filter(x => x && typeof x === 'object' && typeof x.k === 'string' && PB_EM_RE.test(x.k) && typeof x.cid === 'string') : []; } catch (e) { return []; }
+  }
+  function pbEmEndsWrite(uid, list) {
+    const old = Date.now() - 35 * 86400000;
+    try { localStorage.setItem(uid + ':' + PB_EM_ENDS_KEY, JSON.stringify(list.filter(x => !x.done || x.done > old).slice(-300))); return true; } catch (e) { return false; }
+  }
+  function pbEmEndOf(uid, k) { return uid && uid !== 'shared' ? pbEmEndsRead(uid).find(x => x.k === k) || null : null; }
+  function pbEmEndQueue(uid, k, cid, why) {
+    if (!uid || uid === 'shared' || !PB_EM_RE.test(String(k || '')) || !cid) return false; // a permit kept without an account was never uploaded
+    const list = pbEmEndsRead(uid), had = list.find(x => x.k === k);
+    if (!had) list.push({ k, cid: String(cid).slice(0, 100), why: String(why || 'ended').slice(0, 40), at: Date.now() });
+    else if (had.refused) { delete had.refused; had.tries = 0; had.nextAt = 0; had.at = Date.now(); had.why = String(why || had.why || 'ended').slice(0, 40); } // asked again after a refusal
+    const ok = pbEmEndsWrite(uid, list);
+    try { pbTxRender(); } catch (e) {} // N5: a kept panel of this permit drops the link at once
+    setTimeout(() => { pbEmEndFlush(true); }, 300);
+    return ok;
+  }
+  const pbEmEndPending = (x) => !!x && !x.done && !x.refused;
+  function pbEmAfterEnds() { try { renderArchiveList(); } catch (e) {} try { pbTxRender(); } catch (e) {} }
+  let pbEmEndBusy = false;
+  async function pbEmEndFlush(now0) {
+    if (pbEmEndBusy) return;
+    const uid = sbUser && sbUser.id;
+    if (!uid || !sbClient || typeof sbClient.rpc !== 'function' || navigator.onLine === false || !pbAuthBackgroundOk()) return;
+    const due = (x) => pbEmEndPending(x) && (now0 === true || !(x.nextAt > Date.now()));
+    if (!pbEmEndsRead(uid).some(due)) return;
+    pbEmEndBusy = true; let changed = false;
+    try {
+      for (const x of pbEmEndsRead(uid).filter(due)) {
+        if (!sbUser || sbUser.id !== uid || !(await pbLiveSessionIs(uid)) || !sbUser || sbUser.id !== uid) break;
+        const r = await pbPermitRpc('pb_em_link_end', { p_token: x.k, p_client_permit_id: x.cid, p_why: x.why || 'ended', p_expect_uid: uid }, 20000);
+        const msg = String((r.error && r.error.message) || ''), code = (msg.match(/pb:\w+/) || [''])[0], now = Date.now();
+        let mark = null, stop = false;
+        if (!r.error && r.data && r.data.ok === true) mark = { done: now };
+        else if (code === 'pb:not_filed') { const n = (Number(x.tries) || 0) + 1; mark = now - (Number(x.at) || now) > 31 * 86400000 ? { done: now, err: 'never_filed' } : { tries: n, nextAt: now + Math.min(30 * 60000, 60000 * Math.pow(2, n - 1)) }; }
+        else if (code === 'pb:not_yours' || code === 'pb:bad_token' || code === 'pb:bad_id') { mark = { refused: code }; console.warn('Responder link end refused: ' + code); }
+        else if (code === 'pb:quota') { mark = { nextAt: now + 3 * 3600000 }; stop = true; }
+        else if (/does not exist|Could not find|update_app/i.test(msg)) { mark = { nextAt: now + 10 * 60000 }; stop = true; } // not on the server yet
+        else break; // no signal, signed out, another account: kept for the next pass
+        const list = pbEmEndsRead(uid), it = list.find(y => y.k === x.k); // read again: another tab may have added one
+        if (it) { Object.assign(it, mark); pbEmEndsWrite(uid, list); changed = true; }
+        if (stop) break;
+      }
+    } catch (e) {} finally { pbEmEndBusy = false; if (changed) pbEmAfterEnds(); }
+  }
+  setInterval(() => { pbEmEndFlush(); }, 60000);
+  window.addEventListener('online', () => setTimeout(() => { pbEmEndFlush(true); }, 3000));
+  window.__pbEmEndFlush = pbEmEndFlush;
+  // An unreadable active permit released by "Save a Copy and Start Fresh": its link ends too (read from the damaged bytes).
+  function pbEmEndReleased(uid, raw) {
+    let k = null, sid = null;
+    try { const d = JSON.parse(raw); if (d && d.permit && pbEmLinkOk(d.permit.emLink) && d.permit.sessionId) { k = d.permit.emLink.k; sid = d.permit.sessionId; } } catch (e) {}
+    if (!k) {
+      const s = String(raw || ''), m = /"emLink"\s*:\s*\{\s*"k"\s*:\s*"([0-9a-hjkmnp-tv-z]{12})"/.exec(s), n = /"permit"\s*:\s*\{\s*"sessionId"\s*:\s*(\d{6,16})/.exec(s);
+      if (m && n) { k = m[1]; sid = n[1]; }
+    }
+    if (k && sid) pbEmEndQueue(uid, k, 'cps-' + String(sid).slice(0, 90), 'released');
+  }
+  // A closed record's link as this phone can tell (the server decides): until = 3 days after the LATER of closeout and the
+  // last emergency's end; no end while an emergency on the record is unresolved; never past 30 days after the code was made.
+  function pbEmRecordState(e) {
+    const p = e && e.kind === 'confined' ? e.permit : null;
+    if (!p || !pbEmLinkOk(p.emLink)) return null;
+    const closed = pbRptMs(pbRptPermitClosed(e)), made = Number(p.emLink.at), cap = isFinite(made) && made > 0 ? made + 30 * 86400000 : NaN;
+    let lastEnd = -Infinity, unresolved = false;
+    (Array.isArray(p.emergencyIncidents) ? p.emergencyIncidents : []).forEach(i => { if (!i || !i.start) return; const en = pbRptMs(i.end); if (isFinite(en)) lastEnd = Math.max(lastEnd, en); else unresolved = true; });
+    let until = unresolved || !isFinite(closed) ? NaN : Math.max(closed, lastEnd) + PB_EM_LIFE_MS;
+    if (isFinite(cap)) until = isFinite(until) ? Math.min(until, cap) : cap;
+    const end = pbEmEndOf(pbArchiveOwnerUid, p.emLink.k);
+    return { k: p.emLink.k, until, unresolved, expired: isFinite(until) && Date.now() > until, end,
+      stopped: !!(end && end.done && !end.err && !end.refused), pending: pbEmEndPending(end), refused: end && end.refused ? end.refused : null };
+  }
+  const PB_EM_REFUSED_WORDS = { 'pb:not_yours': 'the server has this code on another permit', 'pb:bad_token': 'the server did not accept the code', 'pb:bad_id': 'the server did not accept the permit id' };
+  function pbEmPdfRow(e) {
+    const st = pbEmRecordState(e); if (!st) return null;
+    const when = isFinite(st.until) ? pbRptDt(st.until) : '';
+    const tail = st.stopped ? 'sharing stopped ' + pbRptDt(st.end.done)
+      : st.expired ? 'expired ' + when
+      : st.refused ? 'NOT stopped: ' + (PB_EM_REFUSED_WORDS[st.refused] || 'refused') + '; still shared' + (when ? ' until ' + when : '')
+      : st.pending ? 'stop requested ' + pbRptDt(st.end.at) + ', waiting for signal; shared until the server gets it'
+      : st.unresolved ? 'read-only page for responders, no sign-in; an emergency on this permit is not marked over, so it works' + (when ? ' until ' + when + ' at the latest' : '')
+      : 'read-only page for responders, no sign-in; works until ' + when;
+    return ['Responder info link', pbEmUrl(st.k) + ' (' + tail + ')'];
+  }
+  function pbEmCanStop(e) { const st = pbEmRecordState(e); return !!st && !st.expired && !st.stopped && !st.pending && !!pbArchiveOwnerUid && pbArchiveOwnerUid !== 'shared'; }
+  // Records > More actions: the Stop Sharing button (or what became of the request), never more than one line.
+  function pbEmRecordActions(e) {
+    const st = pbEmRecordState(e); if (!st || st.expired || st.stopped) return '';
+    if (st.pending) return '<p class="pb-help pb-em-note">Stop sharing requested — waiting for signal. The responder link keeps working until the server gets it.</p>';
+    const note = st.refused ? '<p class="pb-help pb-em-note">The responder link was NOT stopped (' + escapeHtml(PB_EM_REFUSED_WORDS[st.refused] || 'refused') + '). It is still shared.</p>' : '';
+    return note + (pbEmCanStop(e) ? '<button class="pb-btn ghost small pb-em-stop" onclick="' + pbArchiveTapAttr('pbEmStopSharing', e) + '">Stop Sharing Responder Link</button>' : '');
+  }
+  window.pbEmStopSharing = function(i) {
+    const e = runArchive[i];
+    if (!pbEmCanStop(e)) { renderArchiveList(); return; }
+    const id = e.id, k = e.permit.emLink.k, uid = pbArchiveOwnerUid;
+    pbConfirm('Stop sharing the responder info link for this permit? Responders with this link will no longer see the permit. This can’t be undone.', () => {
+      const now = runArchive.find(x => x && x.id === id);
+      if (!now || pbArchiveOwnerUid !== uid || !now.permit || !pbEmLinkOk(now.permit.emLink) || now.permit.emLink.k !== k) { renderArchiveList(); pbAlert('This record is no longer in Records on this account, so nothing was changed.', 'Nothing Changed'); return; }
+      if (!pbEmEndQueue(uid, k, pbPermitClientId(now), 'stopped')) { pbAlert('This did NOT save on this phone (storage may be full or unavailable). Try again.', 'Not Saved'); return; }
+      renderArchiveList();
+      pbAlert('Stop requested. The link stops working once the server gets it' + (navigator.onLine === false ? ' — this phone has no signal now; the app keeps trying.' : '. Records says when it has.'), 'Stop Sharing');
+    }, 'Stop Sharing Link');
+  };
+  // While an emergency is open (and on the save that ENDS one), the responder page should not wait for the 30 s timer:
+  // an upload starts at once, with 2.5 s and 12 s as backups (one may be busy). Also at once when the app comes back.
+  let pbEmPushT = [], pbEmWasOpen = { sid: null, open: false };
+  function pbEmPushNow() { if (!confinedPermit) return; if (pbOpenBk.until > Date.now()) pbOpenBk.until = 0; pbOpenBackupTick(); }
+  function pbEmPushSoon() {
+    if (!confinedPermit) return;
+    const sid = confinedPermit.sessionId, open = pbEmergencyOpen(), was = pbEmWasOpen.sid === sid && pbEmWasOpen.open;
+    pbEmWasOpen = { sid, open };
+    if (!open && !was) return;
+    pbEmPushNow();
+    pbEmPushT.forEach(t => clearTimeout(t));
+    pbEmPushT = [2500, 12000].map(ms => setTimeout(() => { pbEmPushNow(); }, ms));
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && confinedPermit && pbEmergencyOpen()) { try { pbEmPushNow(); } catch (e) {} } });
+  // ==== end feat_emlink ====
   // ==== feat_permitdue: the active permit's next due times go to the server (pb_permit_due_set) for a push when the phone is locked ====
   let pbDueSync = { key: null, ref: null, busy: false, until: 0 };
   async function pbPermitDueTick(force) {
@@ -32575,6 +32784,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (lim) head.push('Air limits: ' + lim);
     if (p.atmoInterval || p.commInterval) head.push('Reminders: ' + (p.atmoInterval ? 'air test every ' + p.atmoInterval + ' min' : 'air test Off') + '; ' + (p.commInterval ? 'communication check every ' + p.commInterval + ' min' : 'communication check Off'));
     if (p.lockTime) head.push('Locked: ' + fmt(p.lockTime));
+    if (pbEmLinkOk(p.emLink)) head.push('Responder info link: ' + pbEmUrl(p.emLink.k)); /* feat_emlink */
     const L = ['UNFINISHED PERMIT (last copy sent from the phone: ' + fmt(savedAt) + ')', ''].concat(head.length ? head : [flat(p)], ['', 'AIR TESTS']);
     (sn.atmoLog || []).forEach(r => L.push('  ' + flat(r)));
     L.push('', 'ROSTER');
@@ -37924,7 +38134,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // The list on screen can be older than the archive (a recovered Lock, or a
   // record another tab saved, inserted since it was drawn), and a position
   // would then point at a different record.
-  const pbArchiveTapActions = ['pbSendArchiveEntry', 'pbDownloadArchivePDF', 'pbToggleArchiveSent', 'pbDeleteArchiveEntry', 'pbResumeIncompleteRun', 'pbRetryCloudSync', 'pbAdjustEndTime', 'pbDownloadEmergencyPDF', 'pbExportRecordJSON', 'pbToggleArchiveView']; // batch 15 PDF: emergency incident report, record data; feat_pdfview: View
+  const pbArchiveTapActions = ['pbSendArchiveEntry', 'pbDownloadArchivePDF', 'pbToggleArchiveSent', 'pbDeleteArchiveEntry', 'pbResumeIncompleteRun', 'pbRetryCloudSync', 'pbAdjustEndTime', 'pbDownloadEmergencyPDF', 'pbExportRecordJSON', 'pbToggleArchiveView', 'pbEmStopSharing']; // batch 15 PDF: emergency incident report, record data; feat_pdfview: View
   window.pbArchiveTap = function(action, id) {
     if (!pbArchiveTapActions.includes(action)) return;
     const i = runArchive.findIndex(e => e.id === id);
@@ -38005,7 +38215,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         <details class="pb-more pb-arch-moreacts"><summary><span>More actions</span></summary><div class="pb-arch-actions">
         <button class="pb-btn ghost small" onclick="${pbArchiveTapAttr('pbDownloadArchivePDF', e)}">Download PDF</button>
         ${pbRptHasEmergency(e) ? `<button class="pb-btn ghost small" onclick="${pbArchiveTapAttr('pbDownloadEmergencyPDF', e)}">Emergency Report PDF</button>` : ''}
-        <button class="pb-btn ghost small" onclick="${pbArchiveTapAttr('pbExportRecordJSON', e)}">Export Record Data (JSON)</button><!-- batch 15 PDF -->
+        <button class="pb-btn ghost small" onclick="${pbArchiveTapAttr('pbExportRecordJSON', e)}">Export Record Data (JSON)</button>${pbEmRecordActions(e)}<!-- batch 15 PDF -->
         ${e.kind === 'run' && (e.completed || e.incomplete) && typeof e.runEndTime === 'number' ? `<button class="pb-btn ghost small" onclick="${pbArchiveTapAttr('pbAdjustEndTime', e)}">Adjust End Time</button>` : ''}
         <button class="pb-btn ghost small" style="color:var(--rod-red);" onclick="${pbArchiveTapAttr('pbDeleteArchiveEntry', e)}">Delete</button>
         </div></details>
@@ -38643,6 +38853,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           const lt = document.getElementById('resumeLastRunTile'); if (lt) { lt.style.display = 'none'; delete lt.dataset.offered; }
         }
         if (deleteSaveOk) { try { pbProdAfterRunDeleted(e); } catch (x) { console.error(x); } } // batch 11 D
+        if (deleteSaveOk && e.kind === 'confined' && e.permit && pbEmLinkOk(e.permit.emLink)) { try { pbEmEndQueue(delOwnerUid, e.permit.emLink.k, pbPermitClientId(e), 'removed'); } catch (x) { console.error(x); } } /* feat_emlink: its responder link ends (the account's backup is kept) */
         renderArchiveList();
         // Stats are a separate log, so deleting a run leaves its footage counted
         // there. Which is right depends on WHY it was deleted (freeing space vs.
@@ -40547,6 +40758,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       ['Communication checks', String((e.commLog || []).length)], ['Closed out', pbRptDt(closedAt) + ' \u00b7 ' + (p.closeoutReason || '')],
       ['Backup', bk.text], ['Photos', photos.length ? String(photos.length) : 'none']
     ], { cols: 2 });
+    { const er = pbEmPdfRow(e); if (er) R.kv([er], { cols: 1, labelW: 44 }); } /* feat_emlink */
     const alerts = [];
     incs.forEach((inc, i) => alerts.push('EMERGENCY incident ' + (i + 1) + ': declared ' + pbRptDt(inc.start, { sec: true }) + '; ' + pbRptIncOutcome(inc) + (inc.end ? ' at ' + pbRptDt(inc.end, { sec: true }) : '') + '.'));
     if (!incs.length && p.emergencyDurationSec !== null && p.emergencyDurationSec !== undefined) alerts.push('EMERGENCY WAS DECLARED \u2014 duration ' + pbRptDur(p.emergencyDurationSec) + ' (older record: only the total time was kept).');
@@ -40664,6 +40876,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       ['EMERGENCY button number', (p.emergencyDialNumber || 'not recorded') + ' (the number the EMERGENCY button opens the dialer with)'], ['Call button', dials.length ? dials.map(d => pbRptDialWords(d)).join(' ') : 'No tap of the EMERGENCY button is recorded.'], pbRptTexts(p).length ? ['Texts', pbRptTexts(p).map(x => pbRptTextWords(x)).join(' ')] : null, pbRptFixes(p).length ? ['Position at EMERGENCY', pbRptFixes(p).map(f => pbRptFixWords(f)).join(' ')] : null,
       ['Numbers recorded', reached.length ? reached.map(n => pbRptNumberWords(n, false, p)).join(' ') : 'none recorded'], ['Delivery', PB_RPT_NOTIFY_UNKNOWN], ['Entry supervisor / attendant', (p.supervisor || '\u2014') + ' / ' + (p.attendant || '\u2014')]
     ], { cols: 2 });
+    { const er = pbEmPdfRow(e); if (er) R.kv([er], { cols: 1, labelW: 44 }); } /* feat_emlink */
     R.callout('How to read this report', ['Declaration and actions are what the phone recorded, with the phone\u2019s clock (device time, to the second).', 'Notifications are listed separately. A notification is only shown as received when that is recorded; the app does not know whether a call connected or an email was sent.', 'Who was inside and the air readings come from the permit\u2019s roster and air log as they stood at closeout.'], 'ok');
     R.contents();
     // Each dial, number and number change belongs to the incident that was declared most recently before it.
