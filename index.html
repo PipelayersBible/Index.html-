@@ -3569,6 +3569,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp #screen-input .pb-hub-card .pb-hub-name { font-weight: 650; }
 #pbApp#pbApp #screen-input .pb-hub-card .pb-hub-ident { order: 3; flex: 1 1 100%; padding: 0 0 4px 22px; font-size: 14px; font-weight: 500; color: var(--pb-text-2); overflow-wrap: anywhere; }
 #pbApp#pbApp #screen-input .pb-hub-card .pb-hub-ident:empty { display: none; }
+#pbApp#pbApp #screen-input .pb-hub-card .pb-hub-ident { cursor: pointer; display: flex; align-items: center; min-height: 44px; padding-top: 0; padding-bottom: 0; box-sizing: border-box; } /* r15.49: the collapsed card's title line opens it (44 px, keyboard) */
 #pbApp#pbApp #screen-input .pb-hub-card > .pb-tag button[onclick^="pbToggleHubCollapse"] { margin-left: auto; margin-right: 0 !important; color: var(--pb-text-2); padding: 0 6px; min-width: 44px; }
 #pbApp#pbApp #screen-input .pb-hub-card > .pb-tag button[onclick^="pbRemoveHub"] { margin-left: 12px; padding: 0 6px; min-width: 44px; }
 #pbApp#pbApp #screen-input .pb-hub-card > .pb-body { padding: 8px 14px 14px 14px; }
@@ -3646,6 +3647,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp #screen-results #lockband { display: flex; align-items: center; gap: 6px; margin: 4px 16px 0 16px; font-size: 14px; color: var(--pb-text-2); }
 #pbApp#pbApp #screen-results #lockband:not(:empty)::before { content: ""; width: 16px; height: 16px; flex: 0 0 auto; background: currentColor; -webkit-mask: var(--pb-icon-lock) center / contain no-repeat; mask: var(--pb-icon-lock) center / contain no-repeat; }
 #pbApp #screen-results .pb-b3-tablebar { display: flex; justify-content: flex-end; margin: 20px 16px 8px 16px; }
+#pbApp#pbApp #screen-results #laidHideBtn[hidden] { display: none !important; } /* r15.49: .pb-btn's display beat the hidden attribute */
 #pbApp#pbApp #screen-results .pb-b3-tablebar .pb-btn { width: auto; margin: 0; }
 #pbApp#pbApp #screen-results #zoomToggleBtn[aria-pressed="true"] { background: var(--pb-brand-soft); border-color: var(--pb-brand-line); color: var(--pb-text); }
 /* the table: dark, muted headers, quiet dividers, tabular numbers; the row being worked on stands out */
@@ -5906,8 +5908,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
           <label for="archiveFilterStatus">Status</label>
           <select id="archiveFilterStatus" onchange="renderArchiveList()">
             <option value="all">Sent or not</option>
-            <option value="sent">Sent</option>
-            <option value="notsent">Not sent</option>
+            <option value="sent">Sent / emailed</option>
+            <option value="notsent">Not sent / not emailed</option>
           </select>
         </div>
         <div class="pb-field">
@@ -6349,8 +6351,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <ol class="pbx-steps" id="cxNewSteps" aria-label="New job steps"></ol>
       <form class="pbx-newform" id="cxNewForm" novalidate onsubmit="event.preventDefault(); pbCxNewSave();">
         <div class="pb-field"><label for="cxnJob">Job number <span class="pbx-req">(required)</span></label><input type="text" id="cxnJob" maxlength="60" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="cxnJobHelp" required><p class="pb-field-help" id="cxnJobHelp">The number crews put on their runs. Each job number is used once in your company.</p></div>
-        <div class="pb-field"><label for="cxnName">Project name</label><input type="text" id="cxnName" maxlength="120" autocomplete="off" placeholder="Birch Rd water main"></div>
-        <div class="pb-field"><label for="cxnAddr">Jobsite address</label><input type="text" id="cxnAddr" maxlength="300" autocomplete="street-address" placeholder="100 Birch Rd, Springfield, IL" aria-describedby="cxnAddrHelp"><p class="pb-field-help" id="cxnAddrHelp">Street, city and state. The daily report's weather uses it.</p></div>
+        <div class="pb-field"><label for="cxnName">Project name</label><input type="text" id="cxnName" maxlength="120" autocomplete="off" placeholder="e.g. Main St sewer replacement"></div>
+        <div class="pb-field"><label for="cxnAddr">Jobsite address</label><input type="text" id="cxnAddr" maxlength="300" autocomplete="street-address" placeholder="e.g. 123 Main St, Springfield, IL" aria-describedby="cxnAddrHelp"><p class="pb-field-help" id="cxnAddrHelp">Street, city and state. The daily report's weather uses it.</p></div>
         <div class="pb-field"><label for="cxnStart">Start date <span class="pbx-opt">(optional)</span></label><input type="date" id="cxnStart"></div>
         <p class="pbx-formerr" id="cxnErr" role="alert" hidden></p>
         <div class="pb-btn-wrap"><button type="submit" class="pb-btn" id="cxnSave">Create project</button></div>
@@ -9179,7 +9181,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.48 · 2026-10-27'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.49 · 2026-10-27'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -13909,7 +13911,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     card.dataset.hubId = id;
     const arch = isArch();
     card.innerHTML = `
-      <div class="pb-tag"><span class="pb-hub-name">Hub</span><span class="pb-hub-ident"></span><button class="pb-remove" style="margin-right:8px;" onclick="pbToggleHubCollapse('${id}')">Collapse</button><button class="pb-remove" onclick="pbRemoveHub('${id}')">Remove</button></div>
+      <div class="pb-tag"><span class="pb-hub-name">Hub</span><span class="pb-hub-ident" role="button" tabindex="0" onclick="pbToggleHubCollapse('${id}')" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); pbToggleHubCollapse('${id}'); }"></span><button class="pb-remove" style="margin-right:8px;" onclick="pbToggleHubCollapse('${id}')">Collapse</button><button class="pb-remove" onclick="pbRemoveHub('${id}')">Remove</button></div>
       <div class="pb-hub-summary" style="display:none; padding:10px 16px; font-size:13px; cursor:pointer;" onclick="pbToggleHubCollapse('${id}')"><span style="opacity:.6;">▸</span> <span class="pb-hub-summary-text"></span></div>
       <div class="pb-body">
         <div class="pb-field"><label>Station (distance from start, ft)</label><input type="number" enterkeyhint="next" step="0.1" id="${id}Station" inputmode="decimal" placeholder="e.g. 50"></div>
@@ -13928,12 +13930,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const btn = card.querySelector('.pb-tag button.pb-remove');
     const collapsed = body.style.display !== 'none';
     if (collapsed) {
-      const station = numVal(id + 'Station');
-      const labelEl = document.getElementById(id + 'Label');
-      const label = labelEl && labelEl.value.trim() ? labelEl.value.trim() : 'Hub';
-      summary.querySelector('.pb-hub-summary-text').textContent = (station !== null ? 'Sta ' + station.toFixed(2) + ' — ' : '') + label;
       body.style.display = 'none';
-      summary.style.display = '';
+      summary.style.display = 'none'; /* r15.49 cleanup 1: the title line (pbHubIdents, "Sta 50 · MH-2") is the collapsed card's one summary */
+      try { pbHubIdents(); } catch (e) {}
       if (btn) btn.textContent = 'Expand';
     } else {
       body.style.display = '';
@@ -14025,7 +14024,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     card.dataset.hubId = id;
     const arch = isArch();
     card.innerHTML = `
-      <div class="pb-tag"><span class="pb-hub-name">Hub</span><span class="pb-hub-ident"></span><button class="pb-remove" style="margin-right:8px;" onclick="pbToggleHubCollapse('${id}')">Collapse</button><button class="pb-remove" onclick="pbRemoveHub('${id}')">Remove</button></div>
+      <div class="pb-tag"><span class="pb-hub-name">Hub</span><span class="pb-hub-ident" role="button" tabindex="0" onclick="pbToggleHubCollapse('${id}')" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); pbToggleHubCollapse('${id}'); }"></span><button class="pb-remove" style="margin-right:8px;" onclick="pbToggleHubCollapse('${id}')">Collapse</button><button class="pb-remove" onclick="pbRemoveHub('${id}')">Remove</button></div>
       <div class="pb-hub-summary" style="display:none; padding:10px 16px; font-size:13px; cursor:pointer;" onclick="pbToggleHubCollapse('${id}')"><span style="opacity:.6;">▸</span> <span class="pb-hub-summary-text"></span></div>
       <div class="pb-body">
         <div class="pb-field"><label>Station (distance from this second run's start, ft)</label><input type="number" enterkeyhint="next" step="0.1" id="${id}Station" inputmode="decimal" placeholder="e.g. 50"></div>
@@ -14060,7 +14059,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     card.dataset.hubId = id;
     const arch = isArch();
     card.innerHTML = `
-      <div class="pb-tag"><span class="pb-hub-name">Hub</span><span class="pb-hub-ident"></span><button class="pb-remove" style="margin-right:8px;" onclick="pbToggleHubCollapse('${id}')">Collapse</button><button class="pb-remove" onclick="pbRemoveHub('${id}')">Remove</button></div>
+      <div class="pb-tag"><span class="pb-hub-name">Hub</span><span class="pb-hub-ident" role="button" tabindex="0" onclick="pbToggleHubCollapse('${id}')" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); pbToggleHubCollapse('${id}'); }"></span><button class="pb-remove" style="margin-right:8px;" onclick="pbToggleHubCollapse('${id}')">Collapse</button><button class="pb-remove" onclick="pbRemoveHub('${id}')">Remove</button></div>
       <div class="pb-hub-summary" style="display:none; padding:10px 16px; font-size:13px; cursor:pointer;" onclick="pbToggleHubCollapse('${id}')"><span style="opacity:.6;">▸</span> <span class="pb-hub-summary-text"></span></div>
       <div class="pb-body">
         <div class="pb-field"><label>Station (distance from Run ${n}'s start, ft)</label><input type="number" enterkeyhint="next" step="0.1" id="${id}Station" inputmode="decimal" placeholder="e.g. 50"></div>
@@ -36396,7 +36395,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbGsCur = Object.assign(cur0, { at: Date.now() });
   };
   function pbLaidDecorate(entry) {
-    const body = pbProdEl('resultsBody'); if (!body || !entry) return;
+    const body = pbProdEl('resultsBody'); if (!body || !entry) { const hb0 = pbProdEl('laidHideBtn'), pg0 = pbProdEl('laidProgress'); if (hb0) { hb0.hidden = true; hb0.setAttribute('aria-pressed', 'false'); } if (pg0) { pg0.hidden = true; pg0.textContent = ''; } return; } /* r15.49: no run, no switch */
     if (pbLaidHide === null) { pbLaidHide = false; pbLaidLoadHide(pbArchiveOwnerUid).then(() => { if (pbLaidHideOn() && getCurrentArchiveEntry() === entry) pbLaidDecorate(entry); }); }
     if (pbLaidExpanded.id !== entry.id) pbLaidExpanded = { id: entry.id, open: new Set() };
     const S = pbLaidSummary(entry), hide = pbLaidHideOn();
@@ -38227,8 +38226,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const search = document.getElementById('archiveSearchBox').value.trim().toLowerCase();
     const now = new Date();
     return runArchive.map((e, i) => ({ e, i })).filter(({ e }) => {
-      if (status === 'sent' && !e.sent) return false;
-      if (status === 'notsent' && e.sent) return false;
+      /* r15.49 cleanup 1: exactly the chip's rule. A company crew member's run: Sent = sent in the app (pbRrArchiveSent, the
+         rule of pbRrArchiveChip); emailed only is still Not sent there. Anything else: its own flag (a permit's = emailed). */
+      const rrSent = typeof window.pbRrArchiveSent === 'function' ? window.pbRrArchiveSent(e) : null;
+      const handedOff = rrSent !== null ? rrSent : !!e.sent;
+      if (status === 'sent' && !handedOff) return false;
+      if (status === 'notsent' && handedOff) return false;
       if (kindFilter !== 'all' && e.kind !== kindFilter) return false;
       if (jobsiteFilter !== 'all' && (!e.jobsite || e.jobsite.toLowerCase() !== jobsiteFilter.toLowerCase())) return false;
       if (search) {
@@ -49318,6 +49321,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (V.amend) h += '<div class="pb-field"><label for="drAmendReason">Reason for the amendment (required, printed on it)</label><input type="text" id="drAmendReason" maxlength="1000" oninput="pbDlyDraftSoon()"></div>'
       + (V.amend.server ? '<p class="pbd-dim" id="drAmendSrv">This amends version ' + (V.amend.version - 1) + ', the one on the company server.</p>' : '');
     if (V.changed) h += '<div class="pb-warn photo" id="drChanged"><strong>The day’s records changed since you opened this report</strong>' + escapeHtml(V.changed) + ' What is shown now is what you sign. Check it, then tap Sign Report again.</div>';
+    try { if (typeof window.pbLc811Html === 'function') h += window.pbLc811Html(V.job, V.date); } catch (e) { console.error(e); } /* r15.49 cleanup 1: 811 */
     const S = V.snap;
     if (!S) { body.innerHTML = h + (V.building ? '' : '<p class="pbd-dim">No records pulled in yet.</p>'); return; }
     // weather
@@ -49394,6 +49398,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       snap.weather = V.weather && V.weather.data ? { available: true, label: pbDlyWeatherLabel(V.weather), station: V.weather.station || V.weather.data.station, retrieved_at: V.weather.retrieved_at, complete: !!V.weather.complete, partial_confirmed: !V.weather.complete && !!V.wxConfirmed, data: V.weather.data, location_source: (V.location && V.location.source) || V.weather.data.location_source || null }
         : { available: false, label: 'Weather was not available when this report was signed' + (V.wMsg ? ': ' + V.wMsg : '.') };
       snap.narrative = narrative.slice(0, 20000);
+      try { const lc = typeof window.pbLc811Shown === 'function' ? window.pbLc811Shown(V.job, V.date) : null; if (lc && !lc.none) snap.locate_check = { text: lc.pdf, list_at: lc.at ? new Date(lc.at).toISOString() : null }; } catch (e) { console.error(e); } /* r15.49 cleanup 1: 811 */
       if (!pbDpIntoSnap(snap)) { say('The crew, equipment and delays couldn’t be read. Nothing was signed; try again.'); return; } // feat_dailyplus
       snap.signed = { name: name.slice(0, 120), at: new Date(signedAt).toISOString(), tz, drawn: !!sig, drawn_sha256: sig ? pbSha256Text(sig) : null };
       if (V.amend) snap.amendment = { version: V.amend.version, reason: reason.slice(0, 1000), replaces_cid: V.amend.prevCid };
@@ -49998,6 +50003,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbDlyPermitAlerts(S.permits.items).forEach(a => alerts.push(a));
     if (!(S.weather && S.weather.available)) alerts.push(S.weather ? S.weather.label : 'Weather was not available.');
     if (S.weather && S.weather.available && !S.weather.complete) alerts.push('Weather covers the day only up to ' + pbRptDt(Date.parse(S.weather.data.last_obs), { tz: S.weather.data.tz }) + ' (the report was signed before the day ended).');
+    if (S.locate_check && S.locate_check.text) alerts.push(String(S.locate_check.text)); /* r15.49 cleanup 1: 811 */
     if (!S.delays.available) alerts.push(S.delays.source);
     if (S.weather && S.weather.available && S.weather.partial_confirmed) alerts.push('The foreman confirmed the work day was over and signed with the weather observed so far.');
     if (rep.clockAheadS !== null && rep.clockAheadS !== undefined && Math.abs(rep.clockAheadS) > 120) alerts.push('The phone’s clock was about ' + pbDlyMin(rep.clockAheadS) + ' min ' + (rep.clockAheadS > 0 ? 'ahead of' : 'behind') + ' the company server when this was sent. The times on this report are the phone’s; the server’s received time is the reliable one.');
@@ -51177,6 +51183,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return (e.reportSentAt ? '<span class="pb-chip ok">' + (e.reportSentHow === 'auto' ? 'Sent automatically' : 'Sent') + '</span>' : '<span class="pb-chip notsent">' + (e.reportSendWanted ? 'Sending…' : 'Not sent') + '</span>')
       + (e.sent ? '<span class="pb-chip">Emailed</span>' : '');
   };
+  window.pbRrArchiveSent = function(e) { return (e && e.kind === 'run' && pbRrMember(pbArchiveOwnerUid)) ? !!e.reportSentAt : null; }; /* r15.49: the Records Status filter uses the chip's rule */
   window.pbRrArchiveBtns = function(e) {
     if (!(e && e.kind === 'run' && pbRrMember(pbArchiveOwnerUid))) return null;
     return (!e.reportSentAt && !e.reportSendWanted && pbRrEnded(e) ? '<button class="pb-btn small" onclick="pbRrSendAsk(' + escapeHtml(JSON.stringify(e.id)) + ')">Send Report</button>' : '')
@@ -51974,8 +51981,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const cur = Object.assign({}, v);
     pbShowModal((err ? err + ' ' : '') + 'Shown on the Home card, the job page and report headers.', [{ label: 'Cancel' }, { label: 'Save', primary: true, onClick: () => pbCxInfoSave(cur) }], 'Project details · ' + pbProdJobLabel(job.job_number));
     const wrap = document.createElement('div'); wrap.className = 'pb-modal-extra'; wrap.style.margin = '0 0 14px 0';
-    wrap.innerHTML = '<div class="pb-field"><label for="cxiName">Project name</label><input type="text" id="cxiName" maxlength="120" autocomplete="off" placeholder="Birch Rd water main"></div>'
-      + '<div class="pb-field"><label for="cxiAddr">Jobsite address</label><input type="text" id="cxiAddr" maxlength="300" autocomplete="street-address" placeholder="100 Birch Rd, Springfield, IL"></div>'
+    wrap.innerHTML = '<div class="pb-field"><label for="cxiName">Project name</label><input type="text" id="cxiName" maxlength="120" autocomplete="off" placeholder="e.g. Main St sewer replacement"></div>'
+      + '<div class="pb-field"><label for="cxiAddr">Jobsite address</label><input type="text" id="cxiAddr" maxlength="300" autocomplete="street-address" placeholder="e.g. 123 Main St, Springfield, IL"></div>'
       + '<div class="pb-field"><label for="cxiStart">Start date <span class="pbx-opt">(optional)</span></label><input type="date" id="cxiStart"></div>';
     const f = { cxiName: 'name', cxiAddr: 'addr', cxiStart: 'start' };
     Object.keys(f).forEach(id => { const el = wrap.querySelector('#' + id); el.value = cur[f[id]] || ''; el.addEventListener('input', () => { cur[f[id]] = el.value; }); el.addEventListener('change', () => { cur[f[id]] = el.value; }); });
@@ -53837,6 +53844,70 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbAccountLoadHooks.push(() => { setTimeout(() => { pbLocBoot().catch(e => console.error(e)); }, 2500); });
   window.addEventListener('online', () => { pbLocSyncSoon(3000); setTimeout(() => { const uid = pbArchiveOwnerUid; if (uid && pbLoc.uid === uid && pbLoc.st && !(pbLoc.st.mine && Date.now() - pbLoc.st.mine.at < 600000)) pbLocMineLoad(uid).catch(() => {}); }, 4000); });
   setInterval(() => { pbLocSync().catch(() => {}); const uid = pbArchiveOwnerUid; if (uid && pbLoc.uid === uid && pbLoc.st && pbCurrentScreen === 'home' && !document.hidden && !(pbLoc.st.mine && Date.now() - pbLoc.st.mine.at < 1800000)) pbLocMineLoad(uid).catch(() => {}); }, 120000);
+  // ---- r15.49 cleanup 1 (owner): 811 on the foreman's daily report ----
+  // Red: "No 811 ticket on file that covers Oct 27 for this job — check before digging." when the job has tickets on file and
+  // none covers the day; grey: "No 811 ticket entered for this job." when the job's list is known and empty (no PDF line);
+  // nothing when this phone never had the job's list (never a false "no ticket"). Only from what the phone already holds:
+  // the job's full list (My production's job cards or the job page, <uid>:pbLocates) with this phone's UNSENT changes on top
+  // (a refused change is not on file), and the foreman's own open-ticket list only when it is newer than the job's list and
+  // only for tickets neither of those knows. A ticket covers day D when it was called in on or before D, expires on or after
+  // D and was not closed before D (the close's local day in this phone's zone; a close still on this phone counts from
+  // today). The report signs what its form showed (pbLc811Shown).
+  function pbLc811Day(v, tz) { const s = String(v || ''); if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s; const t = Date.parse(s); return s && isFinite(t) ? pbDlyDayOf(t, tz) : ''; }
+  function pbLc811State(l, d, today, tz) { // on day d: ok | closed | expired | after | bad
+    const exp = String((l && l.expires_at) || '').slice(0, 10), called = String((l && l.called_at) || '').slice(0, 10);
+    if (!l || !pbLocIsDay(exp)) return 'bad';
+    if (l.closed) { const cd = pbLc811Day(l.closed_at, tz); if (pbLocIsDay(cd) ? cd < d : d >= today) return 'closed'; }
+    if (exp < d) return 'expired';
+    if (pbLocIsDay(called) && called > d) return 'after';
+    return 'ok';
+  }
+  window.pbLc811 = function(job, date) {
+    const uid = pbArchiveOwnerUid; date = String(date || '').slice(0, 10);
+    if (!job || !pbLocIsDay(date) || !uid || uid === 'shared' || pbLoc.uid !== uid || !pbLoc.st) return null;
+    try { pbLocSeed(uid); } catch (e) {}
+    const key = pbDlyKey(job), J = pbLoc.st.jobs[key], today = pbTkToday(), tz = pbDlyTz();
+    if (!J || !Array.isArray(J.locates)) return null; // this phone has never had this job's tickets
+    const srv = J.locates.filter(l => l && l.id);
+    if (date < today && srv.length >= 60) return null; // the list keeps 60 tickets: an older closed one may be missing
+    const pend = (pbLoc.st.queue || []).filter(q => q && q.id && q.key === key && pbLocPend(q));
+    const rows = srv.map(l => Object.assign({}, l));
+    pend.filter(q => q.state === 'waiting').forEach(q => { // unsent changes on this phone (a refused one is not on file)
+      const i = rows.findIndex(l => l.id === q.id), was = i >= 0 ? rows[i] : {};
+      const closed = q.closed === null || q.closed === undefined ? !!was.closed : !!q.closed;
+      const v = Object.assign({}, was, { id: q.id, job_number: q.job_number, ticket_no: q.ticket_no, called_at: q.called_at, expires_at: q.expires_at, closed, closed_at: closed && was.closed ? was.closed_at : null });
+      if (i >= 0) rows[i] = v; else rows.push(v);
+    });
+    const M = pbLoc.st.mine, known = new Set(rows.map(l => l.id).concat(pend.map(q => q.id)));
+    const mine = M && Array.isArray(M.locates) && (Number(M.at) || 0) > (Number(J.at) || 0) ? M.locates.filter(l => l && l.id && pbDlyKey(l.job_number) === key && !known.has(l.id)) : [];
+    const all = rows.concat(mine).map(l => ({ l, st: pbLc811State(l, date, today, tz) }));
+    if (!all.length) return { none: true };
+    if (all.some(x => x.st === 'ok')) return null;
+    const day = pbLocDay(date), live = all.filter(x => x.st === 'expired' || x.st === 'after').sort((a, b) => pbLocByExp(a.l, b.l));
+    let why;
+    if (live.length) { const x = live[live.length - 1], l = x.l; why = x.st === 'expired' ? 'Ticket ' + l.ticket_no + ' expired ' + pbLocDay(l.expires_at) + '.' : 'Ticket ' + l.ticket_no + ' was called in ' + pbLocDay(l.called_at) + ', after that day.'; }
+    else why = all.some(x => x.st === 'closed') ? 'Every ticket on file for this job was closed by then.' : 'No ticket on file has usable dates.';
+    const at = Number(J.at) || 0, old = at && Date.now() - at > 12 * 3600000;
+    return { warn: 'No 811 ticket on file that covers ' + day + ' for this job — check before digging.', why, at, asOf: old ? 'This phone’s list is from ' + pbRptDt(at) + '.' : '',
+      pdf: '811 locates: no ticket on file covered ' + day + ' for this job (' + why.replace(/\.$/, '').replace(/^./, c => c.toLowerCase()) + '), as the foreman’s phone had it when signing.' };
+  };
+  let pbLc811Last = null; // what the daily report form shows now: the report signs exactly that
+  window.pbLc811Shown = function(job, date) { const L = pbLc811Last; return L && L.uid === pbArchiveOwnerUid && L.job === String(job) && L.date === String(date || '') ? L.x : null; };
+  function pbLc811Inner(x, job) {
+    const btn = '<button type="button" class="pb-btn ghost small" id="drLocOpen" data-job="' + escapeHtml(job) + '" onclick="pbOpenLocates(this.dataset.job)">Open Locates</button>';
+    if (x.none) return '<div id="drLocNone" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 0;"><span class="pbd-dim">No 811 ticket entered for this job.</span>' + btn.replace('pb-btn ghost small"', 'pb-btn ghost small" style="width:auto;margin:0;flex:none;"') + '</div>';
+    return '<div class="pb-warn" id="drLocWarn"><strong>' + escapeHtml(x.warn) + '</strong>' + escapeHtml(x.why + (x.asOf ? ' ' + x.asOf : ''))
+      + '<div class="pb-btn-row">' + btn + '</div></div>';
+  }
+  window.pbLc811Html = function(job, date) {
+    const uid = pbArchiveOwnerUid; pbLc811Last = null; if (!job || !uid || uid === 'shared') return '';
+    if (pbLoc.uid !== uid || !pbLoc.st) { // not read yet on this page: fill the slot once it is
+      pbLocLoadSt(uid).then(() => { const s = document.getElementById('drLocSlot'); if (!s || s.dataset.job !== String(job) || s.dataset.date !== String(date) || pbArchiveOwnerUid !== uid) return; const x = window.pbLc811(job, date); pbLc811Last = { uid, job: String(job), date: String(date || ''), x }; s.innerHTML = x ? pbLc811Inner(x, job) : ''; }).catch(() => {});
+    }
+    const x = window.pbLc811(job, date);
+    pbLc811Last = { uid, job: String(job), date: String(date || ''), x };
+    return '<div id="drLocSlot" data-job="' + escapeHtml(String(job)) + '" data-date="' + escapeHtml(String(date || '')) + '">' + (x ? pbLc811Inner(x, job) : '') + '</div>';
+  };
   PB_CONTRACTOR_SCREENS.push('locates'); PB_SCREEN_TABS.locates = 'reports';
   window.__debugLocates = () => ({ uid: pbLoc.uid, st: pbLoc.st ? JSON.parse(JSON.stringify(pbLoc.st)) : null, job: pbLoc.job });
 
