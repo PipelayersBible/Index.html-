@@ -989,7 +989,6 @@ table.pb-table tr.pb-hubrow td { border-top: 2px solid var(--hub-c); font-weight
 table.pb-table tr.pb-startrow td { border-top: 2px solid var(--start-c); font-weight: 600; background: rgba(79,107,63,0.12); }
 table.pb-table tr.pb-endrow td { border-top: 2px solid var(--end-c); font-weight: 600; background: rgba(163,58,52,0.12); }
 .pb-notebtn { border: 1px solid var(--ink-soft); background: #fff; width: 22px; height: 22px; font-size: 12px; cursor: pointer; line-height: 1; }
-.pb-notebtn + .pb-notebtn { margin-left: 5px; }
 .pb-notebtn.has-note { background: var(--hazard); border-color: var(--hazard-ink); }
 .pb-notebtn.has-warn::after { content: '!'; }
 tr.pb-noterow td { background: #fff; padding: 8px; border-top: none; white-space: normal; }
@@ -3651,7 +3650,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp #screen-results #resultsTable th { background: var(--pb-raised); color: var(--pb-text-3); font-size: 13px; font-weight: 600; letter-spacing: 0.01em; position: sticky; top: 0; z-index: 1; }
 #pbApp#pbApp #screen-results #resultsTable td { border-top: 1px solid rgba(255,255,255,0.06); font-variant-numeric: tabular-nums; }
 #pbApp#pbApp #screen-results #resultsTable:not(.pb-zoom) :is(td, th) { padding-left: 6px; padding-right: 6px; }
-#pbApp#pbApp #screen-results #resultsTable td > .pb-notebtn + .pb-notebtn { margin-left: 4px; }
 #pbApp#pbApp #screen-results #resultsTable tr.pb-shade td { background: transparent; }
 #pbApp#pbApp #screen-results #resultsTable tr.pb-hubrow td { background: rgba(208,142,42,0.10); }
 #pbApp#pbApp #screen-results #resultsTable tr.pb-startrow td { background: rgba(63,174,110,0.10); }
@@ -3693,17 +3691,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp #screen-input .pb-toggle:not(#rodToggle) { flex-wrap: wrap; }
 #pbApp#pbApp #screen-input .pb-toggle:not(#rodToggle) > button { flex: 1 1 0; min-width: min-content; }
 #pbApp#pbApp #screen-input .pb-hub-card > .pb-tag { justify-content: flex-start; }
-/* large text: the run summary is one column; the note buttons stack so the readings keep the width */
+/* large text: the run summary is one column (r15.47: the grade sheet has one ⋯ per row, no stacked buttons) */
 #pbApp#pbApp.pb-text-big :is(#screen-results, #screen-review) .pb-summary-grid { grid-template-columns: minmax(0, 1fr); }
-#pbApp#pbApp.pb-text-big #screen-results #resultsTable:not(.pb-zoom) td:first-child > .pb-notebtn { display: flex; margin: 0 0 4px 0; }
-#pbApp#pbApp.pb-text-big #screen-results #resultsTable:not(.pb-zoom) td:first-child > .pb-notebtn + .pb-notebtn { margin-left: 0; }
-/* feat_run33 (4): on a phone the two note buttons stack, so Sta · BOP · INV · TOP fit without a sideways scroll */
-@media (max-width: 430px) {
-  #pbApp#pbApp #screen-results #resultsTable:not(.pb-zoom) td:first-child > .pb-notebtn { display: flex; margin: 0 0 4px 0; }
-  #pbApp#pbApp #screen-results #resultsTable:not(.pb-zoom) td:first-child > .pb-notebtn + .pb-notebtn { margin-left: 0; }
-  #pbApp#pbApp #screen-results #resultsTable:not(.pb-zoom) td:first-child { padding-top: 4px; padding-bottom: 4px; }
-  #pbApp#pbApp #screen-results #resultsTable:not(.pb-zoom) td:first-child > .pb-notebtn { height: 40px; font-size: 18px; } /* lead: 4+40+4+40+4 = 92 px rows, not 112 */
-}
 /* feat_run33 (5): a long point name never grows the Home card past two lines */
 #pbApp #homeWork .pb-home-tile .name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 /* feat_run33 (18): the hub's title line repeats its two fields while the card is open; it is for the collapsed card */
@@ -3718,6 +3707,32 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp.pb-text-big #screen-input #hiToggle { flex-direction: column; }
 #pbApp#pbApp.pb-text-big #screen-input #hiToggle > button { flex: none; }
 #pbApp#pbApp.pb-text-big #screen-input [id^="hubsContainer"] { padding-left: 8px; padding-right: 8px; }
+
+/* r15.47 gsdots (1): the grade sheet: one 44 px "⋯" per row (rows about 48 px); a saved note shows as a yellow dot on it */
+#pbApp#pbApp#pbApp #screen-results #resultsTable td:first-child > .pb-gsdots { display: inline-flex; align-items: center; justify-content: center; position: relative; width: 44px; height: 44px; margin: 0; padding: 0; font-size: 24px; font-weight: 700; line-height: 1; letter-spacing: 0; background: transparent; color: var(--pb-text); border: 1px solid var(--pb-control); border-radius: 10px; }
+#pbApp#pbApp#pbApp #screen-results #resultsTable td:first-child > .pb-gsdots > span { transform: translateY(-3px); }
+#pbApp#pbApp#pbApp #screen-results #resultsTable td:first-child > .pb-gsdots.has-note { background: transparent; color: var(--pb-text); border-color: var(--pb-brand-line); }
+#pbApp#pbApp#pbApp #screen-results #resultsTable td:first-child > .pb-gsdots.has-note::after { content: ""; position: absolute; top: 5px; right: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--pb-brand); box-shadow: 0 0 0 2px var(--pb-surface); }
+#pbApp#pbApp#pbApp #screen-results #resultsTable td:first-child > .pb-gsdots:active { background: var(--pb-raised-2); }
+#pbApp#pbApp#pbApp #screen-results #resultsTable:not(.pb-zoom) td:first-child:has(> .pb-gsdots) { padding-top: 2px; padding-bottom: 2px; }
+/* the table box fills the room between the sticky header and the bottom bars (it was 62vh: 8 rows; now 11 at 390 x 844) */
+#pbApp#pbApp #screen-results #resultsMainContent > .pb-table-wrap { max-height: max(62vh, calc(100vh / var(--pb-zoom, 1) - var(--pb-shell-h, 0px) / var(--pb-text-zoom, 1) - 80px)); }
+@supports (height: 100svh) { #pbApp#pbApp #screen-results #resultsMainContent > .pb-table-wrap { max-height: max(62svh, calc(100svh / var(--pb-zoom, 1) - var(--pb-shell-h, 0px) / var(--pb-text-zoom, 1) - 80px)); } }
+#pbApp#pbApp #pbModalDialog.pb-gs-sheet #pbModalButtons > .pb-btn.pb-gs-act { justify-content: flex-start; text-align: left; gap: 10px; min-height: 52px; }
+#pbApp#pbApp #pbModalDialog.pb-gs-sheet #pbModalButtons > .pb-btn[data-gs-act="close"] { justify-content: center; background: transparent; border: 1px solid var(--pb-control); }
+#pbApp#pbApp #pbModalDialog.pb-gs-sheet #pbModalMessage { font-variant-numeric: tabular-nums; color: var(--pb-text-2); }
+/* r15.47 gsdots (2): Run Setup: hubs are their own block between Start and End, yellow like the hub cards */
+#pbApp#pbApp #screen-input { --hub-c: var(--pb-brand); }
+#pbApp#pbApp #screen-input .pb-hubgrp { border-top: 1px solid var(--pb-divider); padding: 0 0 4px 0; }
+#pbApp#pbApp #screen-input .pb-hubgrp-head { margin: 0; display: flex; align-items: center; gap: 0; line-height: 1.3; padding: 16px 16px 10px 16px; font-size: 17px; font-weight: 650; color: var(--pb-text); }
+#pbApp#pbApp #screen-input .pb-hubgrp-head::before { content: ""; width: 10px; height: 10px; margin: 0 12px 0 2px; border-radius: 2px; transform: rotate(45deg); flex: 0 0 auto; background: var(--hub-c); box-shadow: 0 0 0 3px rgba(244,197,66,0.22); }
+#pbApp#pbApp #screen-input .pb-hubgrp-opt { margin-left: 6px; font-size: 15px; font-weight: 500; color: var(--pb-text-2); }
+#pbApp#pbApp #screen-input .pb-hubgrp > .pb-section.pb-add-hub-section { margin: 0 16px 12px 16px; background: transparent; border: 1px dashed var(--pb-control); border-left: 4px solid var(--hub-c); border-radius: 12px; box-shadow: none; cursor: pointer; min-height: 48px; }
+#pbApp#pbApp #screen-input .pb-hubgrp > .pb-section.pb-add-hub-section > .pb-tag { font-size: 16px; font-weight: 650; color: var(--pb-text); padding: 12px 14px 0 14px; min-height: 0; }
+#pbApp#pbApp #screen-input .pb-hubgrp > .pb-section.pb-add-hub-section:active { background: var(--pb-raised); }
+#pbApp#pbApp #screen-input .pb-hubgrp > .pb-section.pb-add-hub-section:focus-visible { outline: none; box-shadow: var(--pb-ring); }
+#pbApp#pbApp #screen-input .pb-hubgrp > [id^="hubsContainer"] { padding-top: 0; }
+#pbApp#pbApp #screen-input .pb-hubgrp > [id^="hubBulkToggleWrap"] { margin: 0 16px 10px 16px !important; }
 /* large text: Hub N and its station on top, Collapse and Remove together on their own row below */
 #pbApp#pbApp.pb-text-big #screen-input .pb-hub-card > .pb-tag .pb-hub-name { flex: 1 1 auto; }
 #pbApp#pbApp.pb-text-big #screen-input .pb-hub-card > .pb-tag button { order: 4; }
@@ -7723,15 +7738,17 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div class="pb-body" id="pointBody-start"></div>
     </div>
 
+    <div class="pb-hubgrp" role="group" aria-labelledby="hubsGrpHead"><h3 class="pb-hubgrp-head" id="hubsGrpHead">Hubs <span class="pb-hubgrp-opt">(optional)</span></h3>
     <div class="pb-btn-row" id="hubBulkToggleWrap" style="display:none; margin:0 16px 8px 16px;">
       <button class="pb-btn ghost small" onclick="pbCollapseAllHubs()">Collapse All</button>
       <button class="pb-btn ghost small" onclick="pbExpandAllHubs()">Expand All</button>
     </div>
     <div id="hubsContainer"></div>
-    <div class="pb-section hub pb-add-hub-section" onclick="pbAddHub()">
+    <div class="pb-section hub pb-add-hub-section" onclick="pbAddHub()" role="button" tabindex="0" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }">
       <div class="pb-tag">+ Add Hub</div>
       <div class="pb-body"><p class="pb-help" style="margin:0;">Manhole, cleanout, lateral, slope break, or any other real point along the run.</p></div>
     </div>
+    </div><!-- r15.47 gsdots: .pb-hubgrp -->
 
     <div class="pb-section end pb-pt">
       <div class="pb-tag">End Point</div>
@@ -7766,15 +7783,17 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-body" id="pointBody-seg2start"></div>
       </div>
 
+      <div class="pb-hubgrp" role="group" aria-labelledby="hubsGrpHead2"><h3 class="pb-hubgrp-head" id="hubsGrpHead2">Hubs <span class="pb-hubgrp-opt">(optional)</span></h3>
       <div class="pb-btn-row" id="hubBulkToggleWrap2" style="display:none; margin:0 16px 8px 16px;">
         <button class="pb-btn ghost small" onclick="pbCollapseAllHubs2()">Collapse All</button>
         <button class="pb-btn ghost small" onclick="pbExpandAllHubs2()">Expand All</button>
       </div>
       <div id="hubsContainer2"></div>
-      <div class="pb-section hub pb-add-hub-section" onclick="pbAddHub2()">
+      <div class="pb-section hub pb-add-hub-section" onclick="pbAddHub2()" role="button" tabindex="0" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }">
         <div class="pb-tag">+ Add Hub</div>
         <div class="pb-body"><p class="pb-help" style="margin:0;">Manhole, cleanout, lateral, slope break, or any other real point along Run 2.</p></div>
       </div>
+      </div><!-- r15.47 gsdots: .pb-hubgrp -->
 
       <div class="pb-section end pb-pt">
         <div class="pb-tag">Run 2 — End Point</div>
@@ -7815,15 +7834,17 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-tag">Run 3 — Start Point</div>
         <div class="pb-body" id="pointBody-seg3start"></div>
       </div>
+      <div class="pb-hubgrp" role="group" aria-labelledby="hubsGrpHead3"><h3 class="pb-hubgrp-head" id="hubsGrpHead3">Hubs <span class="pb-hubgrp-opt">(optional)</span></h3>
       <div class="pb-btn-row" id="hubBulkToggleWrap3" style="display:none; margin:0 16px 8px 16px;">
         <button class="pb-btn ghost small" onclick="pbCollapseAllHubsN(3)">Collapse All</button>
         <button class="pb-btn ghost small" onclick="pbExpandAllHubsN(3)">Expand All</button>
       </div>
       <div id="hubsContainer3"></div>
-      <div class="pb-section hub pb-add-hub-section" onclick="pbAddHubN(3)">
+      <div class="pb-section hub pb-add-hub-section" onclick="pbAddHubN(3)" role="button" tabindex="0" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }">
         <div class="pb-tag">+ Add Hub</div>
         <div class="pb-body"><p class="pb-help" style="margin:0;">Manhole, cleanout, lateral, slope break, or any other real point along Run 3.</p></div>
       </div>
+      </div><!-- r15.47 gsdots: .pb-hubgrp -->
       <div class="pb-section end pb-pt">
         <div class="pb-tag">Run 3 — End Point</div>
         <div class="pb-body" id="pointBody-seg3end"></div>
@@ -7862,15 +7883,17 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-tag">Run 4 — Start Point</div>
         <div class="pb-body" id="pointBody-seg4start"></div>
       </div>
+      <div class="pb-hubgrp" role="group" aria-labelledby="hubsGrpHead4"><h3 class="pb-hubgrp-head" id="hubsGrpHead4">Hubs <span class="pb-hubgrp-opt">(optional)</span></h3>
       <div class="pb-btn-row" id="hubBulkToggleWrap4" style="display:none; margin:0 16px 8px 16px;">
         <button class="pb-btn ghost small" onclick="pbCollapseAllHubsN(4)">Collapse All</button>
         <button class="pb-btn ghost small" onclick="pbExpandAllHubsN(4)">Expand All</button>
       </div>
       <div id="hubsContainer4"></div>
-      <div class="pb-section hub pb-add-hub-section" onclick="pbAddHubN(4)">
+      <div class="pb-section hub pb-add-hub-section" onclick="pbAddHubN(4)" role="button" tabindex="0" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }">
         <div class="pb-tag">+ Add Hub</div>
         <div class="pb-body"><p class="pb-help" style="margin:0;">Manhole, cleanout, lateral, slope break, or any other real point along Run 4.</p></div>
       </div>
+      </div><!-- r15.47 gsdots: .pb-hubgrp -->
       <div class="pb-section end pb-pt">
         <div class="pb-tag">Run 4 — End Point</div>
         <div class="pb-body" id="pointBody-seg4end"></div>
@@ -7909,15 +7932,17 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-tag">Run 5 — Start Point</div>
         <div class="pb-body" id="pointBody-seg5start"></div>
       </div>
+      <div class="pb-hubgrp" role="group" aria-labelledby="hubsGrpHead5"><h3 class="pb-hubgrp-head" id="hubsGrpHead5">Hubs <span class="pb-hubgrp-opt">(optional)</span></h3>
       <div class="pb-btn-row" id="hubBulkToggleWrap5" style="display:none; margin:0 16px 8px 16px;">
         <button class="pb-btn ghost small" onclick="pbCollapseAllHubsN(5)">Collapse All</button>
         <button class="pb-btn ghost small" onclick="pbExpandAllHubsN(5)">Expand All</button>
       </div>
       <div id="hubsContainer5"></div>
-      <div class="pb-section hub pb-add-hub-section" onclick="pbAddHubN(5)">
+      <div class="pb-section hub pb-add-hub-section" onclick="pbAddHubN(5)" role="button" tabindex="0" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }">
         <div class="pb-tag">+ Add Hub</div>
         <div class="pb-body"><p class="pb-help" style="margin:0;">Manhole, cleanout, lateral, slope break, or any other real point along Run 5.</p></div>
       </div>
+      </div><!-- r15.47 gsdots: .pb-hubgrp -->
       <div class="pb-section end pb-pt">
         <div class="pb-tag">Run 5 — End Point</div>
         <div class="pb-body" id="pointBody-seg5end"></div>
@@ -8266,8 +8291,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div class="pb-b3-tablebar"><button type="button" class="pb-btn ghost small" id="laidHideBtn" aria-pressed="false" hidden onclick="pbLaidToggleHide()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-eye"/></svg>Hide laid rows</button><button class="pb-btn ghost small" id="zoomToggleBtn" aria-pressed="false" onclick="pbToggleZoom()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-search"/></svg>Zoom In: Sta / BOP</button></div><p class="pb-laid-progress" id="laidProgress" hidden></p><p class="pb-sr" id="laidLive" role="status" aria-live="polite"></p><!-- batch 14 F -->
       <div id="unplacedEvidencePanel" style="display:none;"></div>
       <div class="pb-table-wrap"><table class="pb-table" id="resultsTable"><thead><tr id="resultsHead"></tr></thead><tbody id="resultsBody"></tbody></table></div>
-      <p class="pb-note-general">Tap + on a row to add a timestamped field note, with optional photos.</p>
-      <p class="pb-note-general" id="laidHelp">Swipe a row right to mark pipe laid to there; swipe it back to undo. The row’s calculator button has Mark laid too.</p><!-- batch 14 F -->
+      <p class="pb-note-general" id="laidHelp">Tap ⋯ on a row for a note or photos, the calculators, or Mark laid. Swipe a row right to mark laid; swipe it back to undo.</p><!-- batch 14 F; r15.47 gsdots -->
       <!-- batch 22 NOTES: delays, utility conflicts, rework and equipment, added to the run's notes during the run -->
       <section class="pb-section pb-sl-sec" id="pbSlSec" aria-labelledby="pbSlTitle">
         <div class="pb-tag" id="pbSlTitle">Run Notes: Delays, Conflicts, Rework, Equipment</div>
@@ -9153,7 +9177,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.46 · 2026-10-26'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.47 · 2026-10-27'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -10613,6 +10637,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       handler();
     }
     document.getElementById('pbModalTitle').textContent = title || 'Notice';
+    { const d = document.getElementById('pbModalDialog'); if (d) d.classList.remove('pb-gs-sheet'); } /* r15.47 gsdots */
     document.getElementById('pbModalMessage').textContent = message;
     // A CSV shown for manual copying belongs to its own dialog only: never under a
     // later one, and never in front of whoever signs in next.
@@ -17453,6 +17478,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return !name || /^(Run \d+ )?(Start|End)$/i.test(name) ? role : role + ' \u2014 ' + name;
   }
   function renderResultsTable(entry) {
+    try { pbGsClose(); } catch (e) {} /* r15.47 gsdots */
     { const w = document.getElementById('adjustEndTimeWrap'); if (w) w.style.display = entry && entry.kind === 'run' && (entry.completed || entry.incomplete) && typeof entry.runEndTime === 'number' ? '' : 'none'; }
     if (pbResultsPanelsFor !== entry.id) { pbCloseResultsPanels(); pbResultsPanelsFor = entry.id; }
     pbRefreshFormPhotoChips(); // the run is locked now: its point photos lose their remove button on the form
@@ -17467,7 +17493,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const head = document.getElementById('resultsHead');
     const showElevCol = entry.rodUnit !== 'lenker';
     const showSgCol = entry.intervalRows.some(r => r.sgDisp !== undefined && r.sgDisp !== null && r.sgDisp !== '\u2014' && r.sgDisp !== '');
-    head.innerHTML = `<th>Note</th><th>Sta.</th><th>BOP</th><th>INV</th><th>TOP</th>` + (showSgCol ? `<th>Subgrade</th>` : '') + (showElevCol ? `<th>Elevation</th>` : ''); /* feat_run33 (4): the optional column after the three the crew reads */
+    head.innerHTML = `<th><span class="pb-sr">Row actions</span></th><th>Sta.</th><th>BOP</th><th>INV</th><th>TOP</th>` + (showSgCol ? `<th>Subgrade</th>` : '') + (showElevCol ? `<th>Elevation</th>` : ''); /* feat_run33 (4): the optional column after the three the crew reads */
     const colCount = 5 + (showElevCol ? 1 : 0) + (showSgCol ? 1 : 0);
     const body = document.getElementById('resultsBody');
     // Draft (unsaved) note photos follow THEIR point across a rebuild, instead
@@ -17511,8 +17537,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       tr.className = rowClass;
       tr.innerHTML = `
         <td>
-          <button aria-label="Note and photos" class="pb-notebtn ${(existingNote && (existingNote.text || existingNote.photoCount)) || (entry.fieldNotes || []).some(n => !n.pointId && !n.displaced && n.station === r.station && !shownNotes.has(n)) ? 'has-note' : ''}" onclick="pbToggleNote(this, ${idx})">+</button>
-          <button class="pb-notebtn" title="Calculators" aria-label="Calculators" onclick="pbToggleTools(this, ${idx})"><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-calc"/></svg></button>
+          <button type="button" aria-label="Station ${escapeHtml(r.station)}${r.label ? ' (' + escapeHtml(pbRowStripName(entry, r)) + ')' : ''} actions" aria-haspopup="dialog" data-gs-key="${escapeHtml(pbLaidKey(r))}" class="pb-notebtn pb-gsdots ${(existingNote && (existingNote.text || existingNote.photoCount)) || (entry.fieldNotes || []).some(n => !n.pointId && !n.displaced && n.station === r.station && !shownNotes.has(n)) ? 'has-note' : ''}" onclick="pbGsRowMenu(this, ${idx})"><span aria-hidden="true">⋯</span></button>
         </td>
         <td>${escapeHtml(r.station)}${r.layoutShort ? `<span class="pb-lay-sta">${escapeHtml(r.layoutShort)}${r.layoutExact ? ' \u00b7 ' + escapeHtml(r.layoutExact) : ''}</span>` : ''}</td>
         ${pbCopyCell(r.bop, 'bop', idx)}
@@ -17555,7 +17580,6 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       toolsTr.className = 'pb-noterow';
       toolsTr.style.display = 'none';
       toolsTr.innerHTML = `<td colspan="${colCount}">
-        ${pbLaidRowButton(entry, r, idx)}
         ${pbLayRowButton(entry, r, idx)}
         <p class="pb-help" style="margin:0 0 8px 0;">Launch a calculator using this point's real data:</p>
         <button class="pb-btn ghost small" style="width:100%; margin-bottom:6px;" onclick="pbLaunchBendFromRow(${idx})">Bend Offset Calculator</button>
@@ -19376,7 +19400,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     ts.textContent = lateFailed ? ('Saved ' + new Date().toLocaleString() + ' \u2014 but ' + lateFailed + ' photo(s) NOT saved (see Retry Photos above)') : ('Saved ' + new Date().toLocaleString());
     const row = noteRow.previousElementSibling;
     const noteBtn = row.querySelector('.pb-notebtn');
-    if (noteText) noteBtn.classList.add('has-note');
+    if (noteText || photoUrls.length) noteBtn.classList.add('has-note'); /* r15.47 gsdots: a photo-only note counts */
     else noteBtn.classList.remove('has-note');
     textarea.disabled = true;
     btn.disabled = true;
@@ -36278,7 +36302,93 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const b = document.querySelector('#resultsBody tr.pb-laid-sum[data-start="' + start + '"] button'); if (b) b.focus();
   };
   // A row's own button in its calculator menu (rendered by renderResultsTable; the label is set here).
-  function pbLaidRowButton(entry, r, idx) { return '<button type="button" class="pb-btn secondary small pb-laid-rowbtn" data-laid-btn="' + idx + '" onclick="pbLaidToggleRow(' + idx + ')">Mark laid to here</button>'; }
+  // r15.47 (gsdots): the row's ⋯ sheet: note / Mark laid or Undo laid / calculators, in the app's dialog.
+  // The sheet remembers its run and its row's key (pbLaidKey), not a row number or a DOM node: on a tap the row is found
+  // again, and each button does exactly what its label said (never a toggle). Taps in its first 350 ms are ignored (the
+  // second tap of a double-tap on ⋯ lands on the sheet's buttons on a phone), and it closes on a re-render, any screen
+  // change and an account load.
+  let pbGsCur = null; // the open sheet: { entryId, key, station, at }
+  const PB_GS_GUARD_MS = 350;
+  function pbGsIsOpen() { const d = document.getElementById('pbModalDialog'); return !!d && d.classList.contains('pb-gs-sheet') && pbModalIsOpen(); }
+  function pbGsClose() { const was = pbGsIsOpen(); pbGsCur = null; if (was) pbHideModal(); }
+  window.pbScreenHooks.push(() => { pbGsClose(); });
+  window.pbAccountLoadHooks.push(() => { pbGsClose(); });
+  document.addEventListener('click', (e) => { // capture, before the dialog button's own handler
+    const b = e.target && e.target.closest ? e.target.closest('#pbModalButtons button') : null;
+    if (!b || !pbGsCur || !pbGsIsOpen() || Date.now() - pbGsCur.at >= PB_GS_GUARD_MS) return;
+    e.stopPropagation(); e.preventDefault();
+  }, true);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pbGsIsOpen()) { e.preventDefault(); pbGsClose(); } });
+  function pbGsLaidLabel(S, i) {
+    const t = S.laid[i], isLaid = t !== null && t !== undefined;
+    if (S.early && S.early[i]) return null;
+    return isLaid ? 'Undo laid from here' : (i > 0 && S.laid[i - 1] === null ? 'Mark laid to here (and the rows before)' : 'Mark laid to here');
+  }
+  // the row goes to the top of the table box (its opened note / calculators under it), the box between the header and the bars
+  function pbGsReveal(tr) {
+    const wrap = tr && tr.closest ? tr.closest('.pb-table-wrap') : null; if (!wrap) return;
+    const head = wrap.querySelector('thead'), hh = head ? head.getBoundingClientRect().height : 0;
+    const first = tr.previousElementSibling && tr.previousElementSibling.dataset.laidStrip ? tr.previousElementSibling : tr;
+    wrap.scrollTop = Math.max(0, Math.round(first.getBoundingClientRect().top - wrap.getBoundingClientRect().top + wrap.scrollTop - hh));
+    const hdr = document.querySelector('#screen-results > .pb-header'), top = hdr ? Math.max(0, hdr.getBoundingClientRect().bottom) : 0;
+    const shell = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pb-shell-h')) || 0, w = wrap.getBoundingClientRect();
+    if (w.top < top || w.top > top + 40 && w.bottom > window.innerHeight - shell) window.scrollBy(0, Math.round(w.top - top - 8));
+  }
+  // the sheet's row now: in the run on screen, by its key; its ⋯ and table rows when they are drawn. Null: gone / another run.
+  function pbGsLive(cur) {
+    const entry = getCurrentArchiveEntry();
+    if (!cur || !entry || entry.id !== cur.entryId || pbCurrentScreen !== 'results') return null;
+    const rows = Array.isArray(entry.intervalRows) ? entry.intervalRows : [], idx = rows.findIndex(r => pbLaidKey(r) === cur.key);
+    if (idx < 0) return null;
+    const btn = [...document.querySelectorAll('#resultsBody .pb-gsdots')].find(b => b.dataset.gsKey === cur.key) || null;
+    const tr = btn ? btn.closest('tr') : null, noteTr = tr ? tr.nextElementSibling : null, toolsTr = noteTr ? noteTr.nextElementSibling : null;
+    return { entry, idx, row: rows[idx], btn, tr: tr && noteTr && toolsTr ? tr : null, noteTr, toolsTr };
+  }
+  window.pbGsRowMenu = function(btn, idxShown) {
+    const entry = getCurrentArchiveEntry(); if (!entry || !btn) return;
+    const cur0 = { entryId: entry.id, key: btn.dataset.gsKey || '', station: '', at: 0 };
+    const L = pbGsLive(cur0); if (!L || !L.tr) return;
+    const r = L.row, idx = L.idx; cur0.station = String(r.station);
+    const noteOpen = L.noteTr.style.display !== 'none', toolsOpen = L.toolsTr.style.display !== 'none', hasNote = L.btn.classList.contains('has-note');
+    let S = null; try { S = pbLaidSummary(entry); } catch (e) { S = null; }
+    const laidLabel = S ? pbGsLaidLabel(S, idx) : null, early = !!(S && S.early && S.early[idx]), lt = S ? S.laid[idx] : null;
+    const note = pbConfirmedNoteFor(entry, r), lines = [];
+    lines.push('BOP ' + r.bop + ' \u00b7 INV ' + r.inv + ' \u00b7 TOP ' + r.top);
+    if (note) lines.push('Note saved ' + new Date(note.time).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + (Number(note.photoCount) ? ' \u00b7 ' + Number(note.photoCount) + (Number(note.photoCount) === 1 ? ' photo' : ' photos') : ''));
+    else if (hasNote) lines.push('A note is saved at this station.');
+    if (early) lines.push('Laid in an earlier session (' + pbLaidTime(lt) + ').');
+    else if (lt !== null && lt !== undefined) lines.push('Laid ' + pbLaidTime(lt) + '.');
+    const hasLay = !!L.toolsTr.querySelector('button[onclick^="pbLayAdjustFromRow"]');
+    // each action: the sheet's row found again; refused if it is gone
+    const go = (needRow, fn) => () => {
+      const cur = pbGsCur; pbGsCur = null;
+      const now = pbGsLive(cur);
+      if (!now || (needRow && !now.tr)) { pbAlert('Station ' + (cur ? cur.station : '') + ' is no longer on this grade sheet (it changed while the menu was open). Nothing was done.', 'Row Changed'); return; }
+      fn(now);
+    };
+    const acts = [];
+    const noteWant = !noteOpen;
+    acts.push({ k: 'note', ic: 'pencil', label: noteOpen ? 'Hide note' : hasNote || note ? 'Open note' : 'Add note', onClick: go(true, (n) => {
+      if ((n.noteTr.style.display !== 'none') !== noteWant) pbToggleNote(n.btn, n.idx);
+      if (!noteWant) return;
+      pbGsReveal(n.tr);
+      const ta = n.noteTr.querySelector('textarea'), alt = n.noteTr.querySelector('button.pb-btn.ghost.small');
+      try { (ta && !ta.disabled ? ta : alt || n.btn).focus({ preventScroll: true }); } catch (e) {}
+    }) });
+    if (laidLabel) { const undo = /^Undo/.test(laidLabel); acts.push({ k: 'laid', ic: 'ok', label: laidLabel, onClick: go(false, (n) => { if (undo) window.pbLaidUndo(n.idx); else window.pbLaidMark(n.idx); }) }); }
+    const calcWant = !toolsOpen;
+    acts.push({ k: 'calc', ic: 'calc', label: toolsOpen ? 'Hide calculators' : hasLay ? 'Calculators & pipe layout' : 'Calculators', onClick: go(true, (n) => {
+      if ((n.toolsTr.style.display !== 'none') !== calcWant) pbToggleTools(n.btn, n.idx);
+      if (calcWant) pbGsReveal(n.tr);
+    }) });
+    acts.push({ k: 'close', label: 'Close', onClick: () => { pbGsCur = null; } });
+    pbShowModal(lines.join('\n'), acts.map(a => ({ label: a.label, onClick: a.onClick })), 'Station ' + r.station + (r.label ? ' \u00b7 ' + pbRowStripName(entry, r) : ''));
+    const bs = document.querySelectorAll('#pbModalButtons button');
+    acts.forEach((a, i) => { const b = bs[i]; if (!b) return; b.dataset.gsAct = a.k; b.classList.add('pb-gs-act');
+      if (a.ic) b.insertAdjacentHTML('afterbegin', '<svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-' + a.ic + '"/></svg>'); });
+    const dlg = document.getElementById('pbModalDialog'); if (dlg) dlg.classList.add('pb-gs-sheet');
+    pbGsCur = Object.assign(cur0, { at: Date.now() });
+  };
   function pbLaidDecorate(entry) {
     const body = pbProdEl('resultsBody'); if (!body || !entry) return;
     if (pbLaidHide === null) { pbLaidHide = false; pbLaidLoadHide(pbArchiveOwnerUid).then(() => { if (pbLaidHideOn() && getCurrentArchiveEntry() === entry) pbLaidDecorate(entry); }); }
@@ -36307,9 +36417,6 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           tr.setAttribute('aria-label', 'Station ' + (S.rows[i] ? S.rows[i].station : '') + (isLaid ? (isEarly ? ', laid in an earlier session (' + pbLaidTime(t) + ')' : ', laid ' + pbLaidTime(t)) : isNext ? ', next to lay' : ''));
         }
       });
-      const btn = body.querySelector('button[data-laid-btn="' + i + '"]');
-      if (btn) btn.disabled = isEarly;
-      if (btn) btn.textContent = isEarly ? 'Laid in an earlier session' : isLaid ? 'Undo laid from here' : (i > 0 && S.laid[i - 1] === null ? 'Mark laid to here (and the rows before)' : 'Mark laid to here');
     });
     // one line per folded block (or per opened block, to fold it again)
     if (hide) blocks.forEach(b => {
