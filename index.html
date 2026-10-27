@@ -6713,6 +6713,23 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   #pbApp .pbp-manual .pb-field :is(input, select) { width: 100%; min-width: 0; }
   #pbApp .pbp-manual-nums { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 10px; }
   #pbApp .pbp-manual-nums .pb-field:last-child { grid-column: 1 / -1; }
+  /* r15.52 prodgrid: production number boxes two per row; one per row when the form is under 300 px wide (a phone under
+     ~340 px, or large text). A cell = label (may wrap), box, its help. Subgrid lines up a row's boxes even when one label
+     wraps; without it, labels get two lines of room and sit on the box. */
+  #pbApp .pb-pg { container-type: inline-size; }
+  #pbApp .pb-pg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; row-gap: 0; }
+  #pbApp .pb-pg-grid > .pb-field { min-width: 0; margin: 0 0 12px 0; padding: 0; display: flex; flex-direction: column; }
+  #pbApp .pb-pg-grid > .pb-field > label { margin-bottom: 6px; overflow-wrap: anywhere; }
+  #pbApp .pb-pg-grid > .pb-field > input { width: 100%; min-width: 0; min-height: 44px; box-sizing: border-box; }
+  #pbApp .pb-pg-help .pb-help { margin: 4px 0 0 0; font-size: 12.5px; line-height: 1.3; }
+  @supports (grid-template-rows: subgrid) {
+    #pbApp .pb-pg-grid > .pb-field { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: 0; }
+    #pbApp .pb-pg-grid > .pb-field > label { align-self: end; }
+  }
+  @supports not (grid-template-rows: subgrid) {
+    #pbApp .pb-pg-grid > .pb-field > label { min-height: 2.7em; display: flex; align-items: flex-end; }
+  }
+  @container (max-width: 299px) { #pbApp .pb-pg-grid { grid-template-columns: minmax(0, 1fr); } }
   #pbApp .pbp-manmsg { margin: 10px 0 0 0; }
   #pbApp .pbp-wnote { margin: 12px 0 0 0; }
   #pbApp .pbp-noplan { margin: 10px 0 4px 0; font-size: 14px; color: var(--pb-text-2); }
@@ -8418,12 +8435,14 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
           <p class="pb-help" style="margin-top:0;">For the foreman — production quantities for this run, separate from grade data above. Optional, editable anytime.</p>
           <details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>Who can see this</span></summary><span class="pb-devnote">Foremen, PMs, managers, the company account and accounts not in a company. A company pipelayer doesn’t see it: their foreman enters it.</span><!-- batch 29 ROLES --></details>
           <div class="pb-field"><label>Entered by (foreman name)</label><input type="text" enterkeyhint="next" id="fpForeman" maxlength="200"></div>
+          <div class="pb-pg"><div class="pb-pg-grid"><!-- r15.52 prodgrid: two boxes per row -->
           <div class="pb-field"><label>Feet excavated</label><input type="number" enterkeyhint="next" step="0.1" id="fpExcavated" inputmode="decimal"></div>
           <div class="pb-field"><label>Feet of pipe installed</label><input type="number" enterkeyhint="next" step="0.1" id="fpPipeInstalled" inputmode="decimal"></div>
           <div class="pb-field"><label>Feet of backfill completed</label><input type="number" enterkeyhint="next" step="0.1" id="fpBackfill" inputmode="decimal"></div>
           <div class="pb-field"><label>Feet of restoration completed</label><input type="number" enterkeyhint="next" step="0.1" id="fpRestoration" inputmode="decimal"></div>
           <div class="pb-field"><label>Feet of demo completed</label><input type="number" enterkeyhint="next" step="0.1" id="fpDemo" inputmode="decimal"></div><!-- batch 12 D2: Demo -->
           <div class="pb-field"><label>Number of appurtenances</label><input type="number" enterkeyhint="next" step="1" id="fpAppurtenances" inputmode="numeric"></div>
+          </div></div>
           <div class="pb-btn-wrap" style="padding-top:6px;"><button class="pb-btn" onclick="pbSaveForemanData()">Save Production</button></div>
           <div class="pb-derived" id="fpSavedNote"></div>
         </div>
@@ -9184,7 +9203,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.52 · 2026-10-27'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.53 · 2026-10-27'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -35758,7 +35777,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           const ap = x.approval === 'changed' ? 'The pipelayer\u2019s run changed since this claim, so the company can\u2019t approve it. Claim it again under Counted runs you can still claim (the pipelayer\u2019s numbers count until then)' : x.approval === 'waiting' ? 'Claimed after it counted: waiting for the company\u2019s approval (the pipelayer\u2019s numbers count until then)' : x.approval === 'rejected' ? 'The company rejected this claim: the pipelayer\u2019s numbers count' : Array.isArray(x.pending_items) ? 'Your change waits for the company\u2019s approval: ' + pbCrewQty(x.pending_items) : '';
           return '<li id="pmClaimed' + i + '"><span class="pbp-ehead">' + escapeHtml('From ' + (x.pipelayer || 'a pipelayer') + ' · ' + pbProdJobLabel(x.job_number) + ' · ' + pbProdDayText(x.work_date)) + (Number(x.version) > 1 ? ' <span class="pb-chip notsent">Edited</span>' : '') + '</span>'
             + (ap ? '<span class="pb-chip ' + (x.approval === 'rejected' || x.approval === 'changed' ? 'saved' : 'notsent') + ' pbp-state">' + escapeHtml(ap) + '</span>' : '')
-            + (E ? '<div class="pbp-manual">' + E.rows.map((r, k) => '<div class="pb-field"><label for="pmEdit' + k + '">' + escapeHtml(r.label || (pbProdCatName(r.key) + (r.unit ? ' (' + r.unit + ')' : ''))) /* batch 29 ROLES */ + '</label><input id="pmEdit' + k + '" type="text" inputmode="decimal" autocomplete="off" value="' + escapeHtml(r.qty) + '"></div>').join('')
+            + (E ? '<div class="pbp-manual"><div class="pb-pg"><div class="pb-pg-grid">' /* r15.52 prodgrid */ + E.rows.map((r, k) => '<div class="pb-field"><label for="pmEdit' + k + '">' + escapeHtml(r.label || (pbProdCatName(r.key) + (r.unit ? ' (' + r.unit + ')' : ''))) /* batch 29 ROLES */ + '</label><input id="pmEdit' + k + '" type="text" inputmode="decimal" autocomplete="off" value="' + escapeHtml(r.qty) + '"></div>').join('') + '</div></div>'
                 + (E.err ? '<p class="pb-warn pbp-manmsg" role="alert"><strong>Not saved</strong>' + escapeHtml(E.err) + '</p>' : '')
                 + '<div class="pb-btn-wrap pbp-btns2">' + pbCrewBtn('pmEditCancel', 'Cancel', 'pbCrewEditCancel()', 'ghost') + pbCrewBtn('pmEditSave', 'Save', 'pbCrewEditSave()', '') + '</div></div>'
               : '<span class="pbp-eq">' + escapeHtml(pbCrewQty(x.items)) + '</span>' + pbRolesHoursHtml(x.items) /* batch 29 ROLES */ + (p ? '<span class="pb-chip notsent pbp-state">' + escapeHtml('Your change: ' + pbCrewSavedTxt(p) + ', goes as soon as there\u2019s signal') + '</span>' : x.approval === 'rejected' || x.approval === 'changed' ? '' : '<span class="pbp-eact">' + pbCrewBtn('pmEdit' + i, 'Edit', 'pbCrewEditOpen(' + i + ')', 'ghost') + '</span>')) + '</li>';
@@ -36863,8 +36882,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbLvEqDel = function(k) { window.pbPfEq.pmLive.Del(k); };
   // the boxes (one per row, data-key = the row), the equipment pieces and the refusal; o: { pre, typed(k) → oninput, eq, errId }
   function pbProdFormHtml(F, o) {
-    return F.rows.map((r, k) => '<div class="pb-field"><label for="' + o.pre + 'Q' + k + '">' + escapeHtml(r.label || (pbProdCatName(r.key) + ' (' + r.unit + ')')) + '</label><input id="' + o.pre + 'Q' + k + '" data-key="' + escapeHtml(r.key) + '" type="text" inputmode="decimal" autocomplete="off" value="' + escapeHtml(r.qty) + '" oninput="' + o.typed(k) + '">'
-        + (r.pre && r.qty === r.pre ? '<p class="pb-help pbp-livepre">' + escapeHtml((r.preText || 'Filled in from the rows marked laid.') + ' Change it if it isn’t right.') + '</p>' : '') + (r.help ? '<p class="pb-help">' + escapeHtml(r.help) + '</p>' : '') + '</div>').join('')
+    return '<div class="pb-pg"><div class="pb-pg-grid">' /* r15.52 prodgrid: two boxes per row */ + F.rows.map((r, k) => { const help = (r.pre && r.qty === r.pre ? '<p class="pb-help pbp-livepre">' + escapeHtml((r.preText || 'Filled in from the rows marked laid.') + ' Change it if it isn’t right.') + '</p>' : '') + (r.help ? '<p class="pb-help">' + escapeHtml(r.help) + '</p>' : '');
+        return '<div class="pb-field"><label for="' + o.pre + 'Q' + k + '">' + escapeHtml(r.label || (pbProdCatName(r.key) + ' (' + r.unit + ')')) + '</label><input id="' + o.pre + 'Q' + k + '" data-key="' + escapeHtml(r.key) + '" type="text" inputmode="decimal" autocomplete="off" value="' + escapeHtml(r.qty) + '" oninput="' + o.typed(k) + '">'
+        + (help ? '<div class="pb-pg-help">' + help + '</div>' : '') + '</div>'; }).join('') + '</div></div>'
       + pbEqFormHtml(F.eq, o.pre, o.eq) // feat_equip
       + (F.err ? '<p class="pb-warn pbp-manmsg"' + (o.errId ? ' id="' + o.errId + '"' : '') + ' role="alert"><strong>Not saved</strong>' + escapeHtml(F.err) + '</p>' : '');
   }
