@@ -9181,7 +9181,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.49 · 2026-10-27'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.50 · 2026-10-27'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -36824,9 +36824,51 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbEqApplyRows(F) { if (!F || !F.eq) return; const t = F.rows.find(r => r.key === PB_ROLES_EQ_KEY); if (t && String(t.qty || '').trim() && !F.eq.rows.length) F.eq.rows.push({ key: 'eq_other', qty: String(t.qty).trim(), idle: '', down: '' }); /* feat_crew34 1: a total typed before the plan landed stays, as Other equipment */ F.rows = F.rows.filter(r => r.key !== PB_ROLES_EQ_KEY); } // the total is the pieces' sum
   const pbLvPlanObj = (job) => { const P = pbLvPlans[String(job || '').trim().toLowerCase().slice(0, 60)]; return P ? { categories: P.cats || [], equipment: P.equip || [] } : null; };
   function pbLvEqRepaint() { pbLvRender(); try { if (pbCurrentScreen === 'cxList') pbCxListRender(); } catch (e) {} }
-  window.pbLvEqTyped = function(k, v) { const F = pbLv.form; if (F && F.eq && F.eq.rows[k]) F.eq.rows[k].qty = String(v); };
-  window.pbLvEqAdd = function(key) { const F = pbLv.form; if (!F || !F.eq || !key || F.eq.rows.some(r => r.key === key)) return; F.eq.rows.push({ key, qty: '' }); pbLvEqRepaint(); };
-  window.pbLvEqDel = function(k) { const F = pbLv.form; if (!F || !F.eq || !F.eq.rows[k]) return; F.eq.rows.splice(k, 1); pbLvEqRepaint(); };
+  // ---- r15.50 clean2 L: ONE production form. The foreman's (here) draws, fills and checks the boxes for his crew's runs
+  // AND for the office's correction of a sent run (pbRrOffHtml). A host says where the form's state lives and how it redraws:
+  // pmLive = the foreman's (pbLv.form), cxRunOff = the office's (added by the office code). keep: read the boxes into the
+  // rows before an equipment add / remove redraws them (the office's; the foreman's rows are always current: pbLvTyped).
+  const PB_PF_HOSTS = {};
+  const pbPfForm = (pre) => { const H = PB_PF_HOSTS[pre]; return H ? H.form() : null; };
+  function pbPfKeep(pre, F) { const H = PB_PF_HOSTS[pre]; if (!H || !H.keep || !F) return; F.rows.forEach((r, k) => { const el = document.getElementById(pre + 'Q' + k); if (el) r.qty = el.value; }); }
+  window.pbPfTyped = function(pre, k, v) { const F = pbPfForm(pre); if (!F || !F.rows[k]) return; F.rows[k].qty = String(v); F.rows[k].typed = true; };
+  // a host and its equipment pieces' handlers: pbEqFormHtml(E, pre, 'pbPfEq.<pre>.') calls pbPfEq.<pre>.Typed / Add / Del
+  window.pbPfEq = {};
+  window.pbPfHost = function(pre, h) {
+    PB_PF_HOSTS[pre] = h;
+    window.pbPfEq[pre] = {
+      Typed: (k, v) => { const F = pbPfForm(pre); if (F && F.eq && F.eq.rows[k]) F.eq.rows[k].qty = String(v); },
+      Add: (key) => { const F = pbPfForm(pre); if (!F || !F.eq || !key || F.eq.rows.some(r => r.key === key)) return; pbPfKeep(pre, F); F.eq.rows.push({ key, qty: '' }); h.paint(); },
+      Del: (k) => { const F = pbPfForm(pre); if (!F || !F.eq || !F.eq.rows[k]) return; pbPfKeep(pre, F); F.eq.rows.splice(k, 1); h.paint(); } };
+  };
+  window.pbPfHost('pmLive', { form: () => pbLv.form, paint: () => pbLvEqRepaint(), keep: false });
+  window.pbLvEqTyped = function(k, v) { window.pbPfEq.pmLive.Typed(k, v); };
+  window.pbLvEqAdd = function(key) { window.pbPfEq.pmLive.Add(key); };
+  window.pbLvEqDel = function(k) { window.pbPfEq.pmLive.Del(k); };
+  // the boxes (one per row, data-key = the row), the equipment pieces and the refusal; o: { pre, typed(k) → oninput, eq, errId }
+  function pbProdFormHtml(F, o) {
+    return F.rows.map((r, k) => '<div class="pb-field"><label for="' + o.pre + 'Q' + k + '">' + escapeHtml(r.label || (pbProdCatName(r.key) + ' (' + r.unit + ')')) + '</label><input id="' + o.pre + 'Q' + k + '" data-key="' + escapeHtml(r.key) + '" type="text" inputmode="decimal" autocomplete="off" value="' + escapeHtml(r.qty) + '" oninput="' + o.typed(k) + '">'
+        + (r.pre && r.qty === r.pre ? '<p class="pb-help pbp-livepre">' + escapeHtml((r.preText || 'Filled in from the rows marked laid.') + ' Change it if it isn’t right.') + '</p>' : '') + (r.help ? '<p class="pb-help">' + escapeHtml(r.help) + '</p>' : '') + '</div>').join('')
+      + pbEqFormHtml(F.eq, o.pre, o.eq) // feat_equip
+      + (F.err ? '<p class="pb-warn pbp-manmsg"' + (o.errId ? ' id="' + o.errId + '"' : '') + ' role="alert"><strong>Not saved</strong>' + escapeHtml(F.err) + '</p>' : '');
+  }
+  // a row's name in a refusal
+  const pbProdRowName = (r) => r.nm || (r.custom ? String(r.label || r.key).replace(/ \([^)]*\)$/, '') : pbProdCatName(r.key));
+  // the boxes → { items } or { err, blur } (valOf(k): what box k says); both forms check with these rules and words
+  function pbProdFormItems(F, valOf) {
+    const items = [];
+    for (let k = 0; k < F.rows.length; k++) {
+      const t = String(valOf(k)).trim().replace(/,/g, ''); F.rows[k].qty = t;
+      if (t === '') continue;
+      if (!/^\d+(\.\d+)?$|^\.\d+$/.test(t) || Number(t) > 50000) return { err: pbProdRowName(F.rows[k]) + ': enter a plain number of ' + (F.rows[k].unit || 'it') + ' (or leave it empty).', blur: true };
+      items.push({ key: F.rows[k].key, qty: +Number(t).toFixed(3), unit: F.rows[k].unit });
+    }
+    if (F.eq) { const q = pbEqItems(F.eq); if (q.err) return { err: q.err, blur: true }; items.push(...q.items); } // feat_equip
+    if (items.length > 20) return { err: 'Too many lines for one run (20 at most). Leave out the empty ones.', blur: false };
+    if (!items.length) return { err: 'Enter at least one quantity.', blur: true };
+    return { items };
+  }
+  window.pbProdFormHtml = pbProdFormHtml; window.pbProdFormItems = pbProdFormItems;
   function pbLvProdHtml(p, run, pi, ri) {
     const s = run.status || {}, cid = pbLvCid(p.id, run.session_ref), x = pbLvRuns()[cid], mine = run.mine && typeof run.mine === 'object' ? run.mine : null;
     const F = pbLv.form && pbLv.form.cid === cid ? pbLv.form : null;
@@ -36834,10 +36876,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return '<div class="pbp-manual pbp-liveform" id="pmLiveForm"><h4 class="pbp-h4">Production for ' + escapeHtml(p.name || 'this run') + '’s run</h4>'
         + '<p class="pbp-dim">This session’s work only. When ' + escapeHtml(p.name || 'the pipelayer') + '’s own numbers for this run arrive, they’re marked as covered by yours, so nothing counts twice.</p>'
         + (F.job ? '' : '<div class="pb-field"><label for="pmLiveJob">Job number</label><input id="pmLiveJob" type="text" list="pmLiveJobList" maxlength="60" autocomplete="off" value="' + escapeHtml(F.jobTyped || '') + '" oninput="pbLvJobTyped(this.value)"><datalist id="pmLiveJobList">' + (typeof pbNrJobs === 'function' ? pbNrJobs(pbArchiveOwnerUid) : []).map(j => '<option value="' + escapeHtml(j.n) + '">' + escapeHtml(j.site || '') + '</option>').join('') + '</datalist><p class="pb-help">This run has no job number, so its production would count toward no job.</p></div>') /* feat_crew34 3 */
-        + F.rows.map((r, k) => '<div class="pb-field"><label for="pmLiveQ' + k + '">' + escapeHtml(r.label || (pbProdCatName(r.key) + ' (' + r.unit + ')')) /* batch 29 ROLES */ + '</label><input id="pmLiveQ' + k + '" data-key="' + escapeHtml(r.key) + '" type="text" inputmode="decimal" autocomplete="off" value="' + escapeHtml(r.qty) + '" oninput="pbLvTyped(' + k + ', this.value)">'
-          + (r.pre && r.qty === r.pre ? '<p class="pb-help pbp-livepre">' + escapeHtml((r.preText || 'Filled in from the rows marked laid.') + ' Change it if it isn’t right.') + '</p>' : '') + (r.help /* batch 29 ROLES */ ? '<p class="pb-help">' + escapeHtml(r.help) + '</p>' : '') + '</div>').join('')
-        + pbEqFormHtml(F.eq, 'pmLive', 'pbLvEq') // feat_equip
-        + (F.err ? '<p class="pb-warn pbp-manmsg" role="alert"><strong>Not saved</strong>' + escapeHtml(F.err) + '</p>' : '')
+        + pbProdFormHtml(F, { pre: 'pmLive', typed: (k) => 'pbLvTyped(' + k + ', this.value)', eq: 'pbLvEq' }) // r15.50 L: the one form (the same markup as before)
         + '<div class="pb-btn-wrap pbp-btns2">' + pbCrewBtn('pmLiveCancel', 'Cancel', 'pbLvFormCancel()', 'ghost') + pbCrewBtn('pmLiveSave', 'Save Production', 'pbLvFormSave()', '') + '</div></div>';
     }
     const items = x ? x.items : mine ? mine.items : null;
@@ -36902,7 +36941,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const have = new Map((x ? x.items : mine || []).filter(i => i && i.key !== PB_PROD_HOURS_KEY).map(i => [i.key, i]));
     const laid = Number(run.status && run.status.laidFt) || 0;
     const rlEnd = pbRolesEndPre(run.status); // batch 29 ROLES: batch 17 END's end first, then the laid marks
-    const rows = PB_PROD_FIELD_MAP.map(m => { const i = have.get(m.key); const q = i && i.qty != null ? String(i.qty) : ''; const pv = rlEnd ? rlEnd.ft : laid; const pre = !x && !mine && m.key === 'pipe' && pv > 0 ? String(+pv.toFixed(1)) : null; return { key: m.key, unit: m.unit, qty: pre !== null ? pre : q, pre, typed: false, preText: pre !== null && rlEnd ? rlEnd.text : null }; }).concat(pbRolesHourRows(x ? x.items : mine || [])); // batch 29 ROLES: hours
+    const P0 = pbLvPlans[String(run.job_number || (run.status && run.status.jobNumber) || '').trim().toLowerCase().slice(0, 60)], pc0 = P0 && Array.isArray(P0.cats) ? P0.cats.find(c => c && c.key === 'pipe') : null, lfPipe = !(pc0 && pc0.unit) || String(pc0.unit).trim().toUpperCase() === 'LF'; /* r15.50 review S2: laid feet only into an LF field */
+    const rows = PB_PROD_FIELD_MAP.map(m => { const i = have.get(m.key); const q = i && i.qty != null ? String(i.qty) : ''; const pv = rlEnd ? rlEnd.ft : laid; const pre = !x && !mine && m.key === 'pipe' && pv > 0 && lfPipe ? String(+pv.toFixed(1)) : null; return { key: m.key, unit: (i && i.unit) || m.unit, itemUnit: (i && i.unit) || null /* r15.50 review S1 */, qty: pre !== null ? pre : q, pre, typed: false, preText: pre !== null && rlEnd ? rlEnd.text : null }; }).concat(pbRolesHourRows(x ? x.items : mine || [])); // batch 29 ROLES: hours
     // the laid rows can only fill the pipe field before anything was entered: a value already entered stays
     pbLv.form = { cid, pid: p.id, name: p.name || '', sref: run.session_ref, rref: run.run_ref || (run.status && run.status.runRef) || run.session_ref, job: run.job_number || (run.status && run.status.jobNumber) || '', jobsite: (run.status && run.status.jobsite) || '', workDate: run.work_date || (run.status && run.status.workDate) || pbTkToday(), rows, err: '' };
     { const F = pbLv.form; pbLvAddExtra(F, have); pbLvPlanLoad(F, have).catch(() => {}); } // r15.4
@@ -36911,20 +36951,45 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // r15.4: the job's own plan items (Laterals, ...) on the foreman's production form
   const pbLvPlans = {};
   function pbLvExtraRows(job, have, rows) {
-    const P = pbLvPlans[String(job || '').trim().toLowerCase().slice(0, 60)], out = [], seen = new Set(rows.map(r => r.key));
-    const add = (key, unit, name, code) => { if (!key || seen.has(key) || String(key).startsWith('_')) return; seen.add(key); const i = have.get(key); out.push({ key, unit: unit || '', qty: i && i.qty != null ? String(i.qty) : '', pre: null, typed: false, preText: null, label: (name || key) + (unit ? ' (' + unit + ')' : '') + (code ? ' · ' + code : ''), custom: true }); };
-    (P && Array.isArray(P.cats) ? P.cats : []).forEach(c => c && add(c.key, c.unit, c.name, c.cost_code));
-    have.forEach((i, key) => add(key, i.unit, key)); // something entered before stays editable
+    const P = pbLvPlans[String(job || '').trim().toLowerCase().slice(0, 60)];
+    return pbProdPlanExtraRows(P && Array.isArray(P.cats) ? P.cats : [], have, rows);
+  }
+  // r15.50 L: the plan's items that aren't rows yet, then anything entered before (stays editable); o (the office's run):
+  // { name(key): the name when the plan has none }; an amount entered before keeps its own unit
+  function pbProdPlanExtraRows(cats, have, rows, o) {
+    const out = [], seen = new Set(rows.map(r => r.key)), nm = (o && o.name) || ((k) => k);
+    const add = (key, unit, name, code) => { if (!key || seen.has(key) || String(key).startsWith('_')) return; seen.add(key); const i = have.get(key), u = (i && i.unit) || unit || ''; /* review S1: an amount entered before keeps its own unit */ out.push({ key, unit: u, qty: i && i.qty != null ? String(i.qty) : '', pre: null, typed: false, preText: null, label: (name || nm(key)) + (u ? ' (' + u + ')' : '') + (code ? ' · ' + code : ''), custom: true }); };
+    (Array.isArray(cats) ? cats : []).forEach(c => c && add(c.key, c.unit, c.name, c.cost_code));
+    have.forEach((i, key) => add(key, i.unit, null)); // something entered before stays editable
     return out;
   }
+  // r15.50 owner B + review S1/S2/N1: the unit of one of the six fields. An amount stored or queued before keeps its own unit
+  // (never relabelled: 12 LF stays 12 LF); a row with something in it (typed, or the laid-feet prefill) keeps the unit it has,
+  // so a late plan never changes the unit under a number; only an EMPTY row takes the plan's unit for that item (e.g. Trench
+  // in CY), or the field's own when the plan gives none. The office's form and the foreman's use this same rule.
+  function pbProdFieldUnit(r, c) {
+    const m = PB_PROD_FIELD_MAP.find(x => x.key === r.key); if (!m) return r.unit;
+    if (r.itemUnit) return r.itemUnit;
+    if (r.typed || String(r.qty == null ? '' : r.qty).trim() !== '') return r.unit;
+    return (c && c.unit) || m.unit;
+  }
+  // the plan's own names, units (pbProdFieldUnit) and cost codes on the rows (true when a row changed)
+  function pbProdPlanLabels(cats, rows, o) {
+    let ch = false; const nm = (o && o.name) || ((k) => k), C = (Array.isArray(cats) ? cats : []).filter(c => c && typeof c === 'object');
+    rows.forEach(r => { if (!PB_PROD_RUN_KEYS.has(r.key)) return; const c = C.find(x => x.key === r.key), u = pbProdFieldUnit(r, c); if (u !== r.unit) { r.unit = u; if (!c) delete r.label; ch = true; } });
+    C.forEach(c => { const r = rows.find(x => x.key === c.key); if (!r) return; const lab = (c.name || nm(r.key)) + (r.unit ? ' (' + r.unit + ')' : '') + (c.cost_code ? ' · ' + c.cost_code : ''); if (r.label !== lab) { r.label = lab; ch = true; } });
+    return ch;
+  }
+  // extra rows go before the hour rows (keys starting with _)
+  function pbProdRowsSplice(rows, extra) { let at = rows.findIndex(r => String(r.key).startsWith('_')); if (at < 0) at = rows.length; rows.splice(at, 0, ...extra); }
+  window.pbProdPlanExtraRows = pbProdPlanExtraRows; window.pbProdPlanLabels = pbProdPlanLabels; window.pbProdRowsSplice = pbProdRowsSplice;
   function pbLvAddExtra(F, have) {
     if (!F.eq) { const P = pbLvPlans[String(F.job || '').trim().toLowerCase().slice(0, 60)], e = pbEqInit(P && P.equip, [...have.values()]); if (e) { F.eq = e; pbEqApplyRows(F); F.labelsFromPlan = true; } } // feat_equip
-    { const P = pbLvPlans[String(F.job || '').trim().toLowerCase().slice(0, 60)]; let ch = false; // r15.5: the plan's own names and cost codes on every row
-      (P && Array.isArray(P.cats) ? P.cats : []).forEach(c => { const r = c && F.rows.find(x => x.key === c.key); if (!r) return; const lab = (c.name || r.key) + (r.unit ? ' (' + r.unit + ')' : '') + (c.cost_code ? ' · ' + c.cost_code : ''); if (r.label !== lab) { r.label = lab; ch = true; } });
+    { const P = pbLvPlans[String(F.job || '').trim().toLowerCase().slice(0, 60)]; // r15.5: the plan's own names and cost codes on every row
+      const ch = pbProdPlanLabels(P && Array.isArray(P.cats) ? P.cats : [], F.rows);
       F.labelsFromPlan = ch || F.labelsFromPlan; }
     const extra = pbLvExtraRows(F.job, have, F.rows); if (!extra.length) return !!F.labelsFromPlan;
-    let at = F.rows.findIndex(r => String(r.key).startsWith('_')); if (at < 0) at = F.rows.length;
-    F.rows.splice(at, 0, ...extra); return true;
+    pbProdRowsSplice(F.rows, extra); return true;
   }
   async function pbLvPlanLoad(F, have) {
     const k = String(F.job || '').trim().toLowerCase().slice(0, 60); if (!k) return;
@@ -36935,7 +37000,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbLv.form !== F) return;
     if (pbLvAddExtra(F, have)) { pbLvRender(); try { if (pbCurrentScreen === 'cxList') pbCxListRender(); } catch (e) {} } // typed values are already in F.rows (pbLvTyped)
   }
-  window.pbLvTyped = function(k, v) { const F = pbLv.form; if (!F || !F.rows[k]) return; F.rows[k].qty = String(v); F.rows[k].typed = true; };
+  window.pbLvTyped = function(k, v) { window.pbPfTyped('pmLive', k, v); };
   window.pbLvJobTyped = function(v) { if (pbLv.form) pbLv.form.jobTyped = String(v); }; // feat_crew34 3
   window.pbLvFormCancel = function() { pbLv.form = null; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); pbLvRender(); };
   window.pbLvFormSave = async function() {
@@ -36943,16 +37008,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const uid = pbArchiveOwnerUid, st = pbProd.st;
     if (!uid || uid === 'shared' || pbProd.uid !== uid || !st || pbProd.failed) { F.err = 'Production sync is paused on this phone, so this can’t be saved right now. Nothing was changed.'; pbLv.form = F; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); pbLvRender(); return; }
     if (!F.job) { const j = String(F.jobTyped || '').trim(); if (!j) { F.err = 'Enter the job number: this run has none, so its production would count toward no job.'; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); pbLvRender(); return; } F.job = j; } // feat_crew34 3
-    const items = [];
-    for (let k = 0; k < F.rows.length; k++) {
-      const el = pbProdEl('pmLiveQ' + k), t = String(el ? el.value : F.rows[k].qty).trim().replace(/,/g, ''); F.rows[k].qty = t;
-      if (t === '') continue;
-      if (!/^\d+(\.\d+)?$|^\.\d+$/.test(t) || Number(t) > 50000) { F.err = (F.rows[k].custom ? String(F.rows[k].label || F.rows[k].key).replace(/ \([^)]*\)$/, '') : pbProdCatName(F.rows[k].key)) + ': enter a plain number of ' + (F.rows[k].unit || 'it') + ' (or leave it empty).'; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); pbLvRender(); return; }
-      items.push({ key: F.rows[k].key, qty: +Number(t).toFixed(3), unit: F.rows[k].unit });
-    }
-    if (F.eq) { const q = pbEqItems(F.eq); if (q.err) { F.err = q.err; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); pbLvRender(); return; } items.push(...q.items); } // feat_equip
-    if (items.length > 20) { F.err = 'Too many lines for one run (20 at most). Leave out the empty ones.'; pbLvRender(); return; }
-    if (!items.length) { F.err = 'Enter at least one quantity.'; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); pbLvRender(); return; }
+    const V = pbProdFormItems(F, (k) => { const el = pbProdEl('pmLiveQ' + k); return el ? el.value : F.rows[k].qty; }); // r15.50 L: the one form's checks
+    if (V.err) { F.err = V.err; if (V.blur && document.activeElement && document.activeElement.blur) document.activeElement.blur(); pbLvRender(); return; }
+    const items = V.items;
     const held = pbProdAccMem.get(uid) || null; // the company answer HELD now decides where it is filed (review 3)
     if (!st.crewRuns || typeof st.crewRuns !== 'object') st.crewRuns = {};
     const prev = st.crewRuns[F.cid] || {};
@@ -50241,11 +50299,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // the categories in words under the bar (rows: the job screen's table, with done / planned)
   // ==== feat_itemmat: the overview rows ====
   function pbItemAtAlert(c) { return !!pbItemAlertHit(c); }
-  // feat_pace: what is left at last week's pace (the last 7 days of production over 5 work days)
+  // feat_pace: what is left at last week's pace. r15.50: the schedule's rule (window.pbPaceEta, feat_schedule): the 7 days
+  // before today over their work days (Mon–Fri minus company holidays), from what was left before today
   function pbItemEta(c) {
-    if (!c || c.planned === null || !(c.planned > 0) || !(c.week > 0) || c.pct === null || c.pct >= 1) return '';
-    const pace = c.week / 5, left = c.planned - c.done; if (!(pace > 0) || !(left > 0)) return '';
-    const d = Math.ceil(left / pace);
+    if (!c || c.planned === null || !(c.planned > 0) || c.pct === null || c.pct >= 1) return '';
+    const d = typeof window.pbPaceEta === 'function' ? window.pbPaceEta(c) : null; if (!(d > 0)) return '';
     return '≈ ' + (d === 1 ? '1 work day' : d.toLocaleString() + ' work days') + ' left';
   }
   // feat_itemalerts: the highest alert an item has reached: its "Alert at" % (until it is done) or a labeled one
@@ -50277,7 +50335,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     { const SP = typeof window.pbItemSpoils === 'function' ? window.pbItemSpoils() : null; // r15.16: spoils last
       if (SP) h += '<span class="pbx-legrow pbx-spoils" id="pjItemSpoils"><span class="pbx-leg-n">Spoils to haul<span class="pbx-spoils-k">Estimate</span></span><span class="pbx-leg-a">' + pbCxE(SP.a) + '</span><span class="pbx-leg-v">' + pbCxE(SP.v) + '</span></span>'; }
     try { if (typeof window.pbInspRowsHtml === 'function' && pbCxDashOn()) h += window.pbInspRowsHtml(); } catch (e) { console.error(e); } // feat_insp: inspections last
-    if (items.some(c => pbItemEta(c))) h += '<span class="pbx-etanote">Days left: at the last 7 days’ pace, 5 work days a week.</span>'; // feat_pace
+    if (items.some(c => pbItemEta(c))) h += '<span class="pbx-etanote">Days left: at last week’s pace; work days are Mon–Fri minus company holidays.</span>'; // feat_pace (r15.50: the schedule's rule)
     return h + '</span>';
   };
   // ==== end feat_itemmat (overview) ====
@@ -50742,7 +50800,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       h += pdf + pbRrSetupHtml(O, x) + pbRrOffHtml(O, x) + (x.can_review && !x.reviewed_at ? '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn small" id="cxRunReviewed" onclick="pbRrReviewed()">Approve Report</button></div>' : '')
         + pbRrSendBackHtml(O, x);
     }
-    const keep = 'd|' + [x.id || x.sref, e.id, x.reviewed_at || '', x.sent_at || '', O.sendBack ? 'sb:' + (O.sendBackErr || '') : '', x.sent_back_at || '', x.removed_at || '', pbRrOffKey(O, x), pbRrSetupKey(O, x), canProd ? ((pbLv.data ? 1 : 0) + ':' + (pbLv.form ? pbLv.form.cid + ':' + (pbLv.form.err || '') + ':' + pbLv.form.rows.length + ':' + (pbLv.form.eq ? pbLv.form.eq.rows.map(r => r.key).join(',') : '') : '') + ':' + JSON.stringify(pbLvRuns())) : ''].join('|');
+    const keep = 'd|' + [x.id || x.sref, e.id, x.reviewed_at || '', x.sent_at || '', O.sendBack ? 'sb:' + (O.sendBackErr || '') : '', x.sent_back_at || '', x.removed_at || '', pbRrOffKey(O, x), pbRrSetupKey(O, x), canProd ? ((pbLv.data ? 1 : 0) + ':' + (pbLv.form ? pbLv.form.cid + ':' + (pbLv.form.err || '') + ':' + pbLv.form.rows.map(r => r.key + '=' + r.unit + '=' + (r.label || '')).join(',') /* r15.50 X1: not just the count */ + ':' + (pbLv.form.eq ? pbLv.form.eq.rows.map(r => r.key).join(',') : '') : '') + ':' + JSON.stringify(pbLvRuns())) : ''].join('|');
     return { h, s: '', keep };
   }
   // ---- feat_runsetup: a sent run's setup, changed by the office (intended) or its foreman (field; his win) ----
@@ -50849,25 +50907,27 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // ---- feat_pmedit: the office's production on a run report ----
   const pbRrOffOn = (O, x) => !!(x && x.can_edit && x.id && !x.removed_at && !O.fromCrew && !O.fromList);
   function pbRrOffKey(O, x) { return pbRrOffOn(O, x) ? 'off:' + JSON.stringify([x.prod, O.pe ? [O.pe.err, O.pe.saving, O.pe.rows.length, O.pe.eq ? O.pe.eq.rows.map(r => r.key) : null] : null]) : ''; }
-  function pbRrOffRows(x) {
-    const items = x.prod && Array.isArray(x.prod.items) ? x.prod.items : [], plan = Array.isArray(x.plan) ? x.plan : [];
-    const have = new Map(items.filter(i => i && typeof i.key === 'string').map(i => [i.key, i])), rows = [], seen = new Set();
-    const add = (key, unit, name, code) => { if (!key || seen.has(key) || key.charAt(0) === '_') return; seen.add(key); const i = have.get(key), u = unit || (i && i.unit) || '';
-      rows.push({ key, unit: u, qty: i && i.qty != null ? String(i.qty) : '', label: (name || pbProdCatName(key)) + (u ? ' (' + u + ')' : '') + (code ? ' · ' + code : '') }); };
-    PB_PROD_FIELD_MAP.forEach(m => { const c = plan.find(p => p.key === m.key); add(m.key, (c && c.unit) || m.unit, c && c.name, c && c.cost_code); });
-    plan.forEach(c => add(c.key, c.unit, c.name, c.cost_code));
-    have.forEach((i, k) => add(k, i.unit, null, null)); // something entered before stays editable
-    return rows.concat(pbRolesHourRows(items));
+  // r15.50 L: the office's form is the foreman's (pbProdFormHtml, pbProdFormItems, the equipment pieces): its rows are built
+  // the foreman's way (the six fields, the hours, then the plan's items and anything entered before) from the run's own plan.
+  // What stays the office's: a field's unit is the plan's when it has one (it was), a row without a plan name is named by
+  // pbProdCatName (it was), the refusal names a row without its unit and cost code, and the save (online, below).
+  window.pbPfHost('cxRunOff', { form: () => { const O = pbRoFor(pbArchiveOwnerUid); return O ? O.pe : null; }, paint: () => pbCxListRender(), keep: true });
+  function pbRrOffForm(x) {
+    const items = x.prod && Array.isArray(x.prod.items) ? x.prod.items : [], plan = Array.isArray(x.plan) ? x.plan : [], o = { name: (k) => pbProdCatName(k) };
+    const have = new Map(items.filter(i => i && typeof i.key === 'string').map(i => [i.key, i]));
+    const rows = PB_PROD_FIELD_MAP.map(m => { const c = plan.find(p => p.key === m.key), i = have.get(m.key); return { key: m.key, unit: (i && i.unit) || (c && c.unit) || m.unit, itemUnit: (i && i.unit) || null, qty: i && i.qty != null ? String(i.qty) : '', pre: null, typed: false, preText: null }; }).concat(pbRolesHourRows(items)); /* review S1: a stored amount keeps its unit */
+    window.pbProdPlanLabels(plan, rows, o);
+    window.pbProdRowsSplice(rows, window.pbProdPlanExtraRows(plan, have, rows, o));
+    rows.forEach(r => { r.nm = String(r.label || pbProdCatName(r.key)).replace(/ \([^)]*\).*$/, ''); });
+    const F = { rows, err: '', saving: false, eq: pbEqInit(x.equipment, items) }; pbEqApplyRows(F); return F;
   }
   function pbRrOffHtml(O, x) {
     if (!pbRrOffOn(O, x)) return '';
     const P = x.prod, items = P && Array.isArray(P.items) ? P.items : [], plan = { categories: x.plan || [], equipment: x.equipment || [] }, F = O.pe; let F_more = '';
     let h = '<section id="cxRunOffProd" style="margin:8px 0 12px"><h3 class="pbx-h2">Production for this run</h3>';
     if (F) {
-      h += '<form id="cxRunOffForm" onsubmit="event.preventDefault(); pbRrOffSave();">' + F.rows.map((r, k) => '<div class="pb-field"><label for="cxRunOffQ' + k + '">' + escapeHtml(r.label || (pbProdCatName(r.key, plan) + ' (' + r.unit + ')')) + '</label><input id="cxRunOffQ' + k + '" type="text" inputmode="decimal" autocomplete="off" value="' + escapeHtml(r.qty) + '" oninput="pbRrOffTyped(' + k + ', this.value)">'
-          + (r.help ? '<p class="pb-help">' + escapeHtml(r.help) + '</p>' : '') + '</div>').join('')
-        + pbEqFormHtml(F.eq, 'cxRunOff', 'pbRrOffEq') // feat_equip
-        + (F.err ? '<p class="pb-warn pbp-manmsg" id="cxRunOffErr" role="alert"><strong>Not saved</strong>' + escapeHtml(F.err) + '</p>' : '')
+      h += '<form id="cxRunOffForm" onsubmit="event.preventDefault(); pbRrOffSave();">'
+        + window.pbProdFormHtml(F, { pre: 'cxRunOff', typed: (k) => "pbPfTyped('cxRunOff', " + k + ", this.value)", eq: 'pbPfEq.cxRunOff.', errId: 'cxRunOffErr' }) // r15.50 L: the one form
         + '<div class="pb-save-offer-btns"><button type="button" class="pb-btn ghost small" id="cxRunOffCancel" onclick="pbRrOffCancel()">Cancel</button><button type="submit" class="pb-btn small" id="cxRunOffSave"' + (F.saving ? ' disabled' : '') + '>' + (F.saving ? 'Saving…' : 'Save Production') + '</button></div></form>';
     } else {
       const B = window.pbRfOffBody(O, x, P, items, plan); h += B.h; F_more = B.more; // feat_runflow P4: production by the office is a correction
@@ -50875,27 +50935,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     h += '<details class="pb-more" id="cxRunOffMore" style="margin-top:8px"><summary><span>More</span></summary>' + (F_more || '') + '<p class="pbx-note">Delete this run if it shouldn’t be in the company’s records (a test, a duplicate, the wrong job). Its production stops counting. The server keeps a copy.</p><button type="button" class="pb-btn ghost small" id="cxRunOffDelete" style="color:var(--rod-red)" onclick="pbRrDelete()">Delete Run</button></details>';
     return h + '</section>';
   }
-  window.pbRrOffOpen = function() { const O = pbRoFor(pbArchiveOwnerUid), x = O.open; if (!pbRrOffOn(O, x)) return; O.pe = { rows: pbRrOffRows(x), err: '', saving: false, eq: pbEqInit(x.equipment, x.prod && x.prod.items) }; pbEqApplyRows(O.pe); pbCxListRender(); setTimeout(() => { const f = document.getElementById('cxRunOffQ0'); if (f) f.focus({ preventScroll: true }); }, 30); };
-  window.pbRrOffTyped = function(k, v) { const O = pbRoFor(pbArchiveOwnerUid), F = O.pe; if (F && F.rows[k]) F.rows[k].qty = String(v); };
-  window.pbRrOffEqTyped = function(k, v) { const F = pbRoFor(pbArchiveOwnerUid).pe; if (F && F.eq && F.eq.rows[k]) F.eq.rows[k].qty = String(v); };
-  function pbRrOffKeepTyped() { const F = pbRoFor(pbArchiveOwnerUid).pe; if (!F) return; F.rows.forEach((r, k) => { const el = document.getElementById('cxRunOffQ' + k); if (el) r.qty = el.value; }); }
-  window.pbRrOffEqAdd = function(key) { const F = pbRoFor(pbArchiveOwnerUid).pe; if (!F || !F.eq || !key || F.eq.rows.some(r => r.key === key)) return; pbRrOffKeepTyped(); F.eq.rows.push({ key, qty: '' }); pbCxListRender(); };
-  window.pbRrOffEqDel = function(k) { const F = pbRoFor(pbArchiveOwnerUid).pe; if (!F || !F.eq || !F.eq.rows[k]) return; pbRrOffKeepTyped(); F.eq.rows.splice(k, 1); pbCxListRender(); };
+  window.pbRrOffOpen = function() { const O = pbRoFor(pbArchiveOwnerUid), x = O.open; if (!pbRrOffOn(O, x)) return; O.pe = pbRrOffForm(x); pbCxListRender(); setTimeout(() => { const f = document.getElementById('cxRunOffQ0'); if (f) f.focus({ preventScroll: true }); }, 30); };
   window.pbRrOffCancel = function() { const O = pbRoFor(pbArchiveOwnerUid); O.pe = null; pbCxListRender(); };
   const PB_RR_OFF_ERR = { 'pb:changed': 'Someone changed this run’s production since you opened it. Go back and open the run again to see it.', 'pb:removed': 'This run was deleted.', 'pb:not_company_account': 'Only the company account or a listed PM can change it.',
     'pb:bad_items': 'Check the numbers.', 'pb:quota': 'Too many changes today. Try again tomorrow.', 'pb:too_many_versions': 'This run’s production has been changed too many times.', 'pb:not_found': 'This run wasn’t found.' };
   window.pbRrOffSave = async function() {
     const uid = pbArchiveOwnerUid, O = pbRoFor(uid), x = O.open, F = O.pe; if (!F || !x || F.saving) return;
-    const items = [];
-    for (let k = 0; k < F.rows.length; k++) {
-      const el = document.getElementById('cxRunOffQ' + k), t = String(el ? el.value : F.rows[k].qty).trim().replace(/,/g, ''); F.rows[k].qty = t;
-      if (t === '') continue;
-      if (!/^\d+(\.\d+)?$|^\.\d+$/.test(t) || Number(t) > 50000) { F.err = String(F.rows[k].label || F.rows[k].key).replace(/ \([^)]*\).*$/, '') + ': enter a plain number (or leave it empty).'; pbCxListRender(); return; }
-      items.push({ key: F.rows[k].key, qty: +Number(t).toFixed(3), unit: F.rows[k].unit });
-    }
-    if (F.eq) { const q = pbEqItems(F.eq); if (q.err) { F.err = q.err; pbCxListRender(); return; } items.push(...q.items); } // feat_equip
-    if (items.length > 20) { F.err = 'Too many lines for one run (20 at most). Leave out the empty ones.'; pbCxListRender(); return; }
-    if (!items.length) { F.err = 'Enter at least one amount.'; pbCxListRender(); return; }
+    const V = window.pbProdFormItems(F, (k) => { const el = document.getElementById('cxRunOffQ' + k); return el ? el.value : F.rows[k].qty; }); // r15.50 L: the one form's checks
+    if (V.err) { F.err = V.err; pbCxListRender(); return; }
+    const items = V.items;
     F.saving = true; F.err = ''; pbCxListRender();
     const r = await pbPermitRpc('pb_prod_company_run_prod_save', { p_id: x.id, p_items: items, p_expect_uid: uid, p_expect_version: x.prod ? x.prod.version : null }, 30000);
     if (pbRo !== O || O.open !== x) return;
@@ -52052,16 +52100,35 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       holidays: (Array.isArray(hol) ? hol : []).map(ds).filter(Boolean), checkpoints: String(co('checkpoints') || '25'),
       ver: pbSchedNum(pick('schedule_ver')) || 0, hver: pbSchedNum(co('holidays_ver')) || 0, canCo: co('can_set_company') !== false, state: st, paceWeek: pw };
   }
+  // r15.50 clean2: THE pace rule, for the schedule and the job page's "≈ N work days left" rows (feat_pace) alike (the server's
+  // pb_prod.schedule_state does the same): an item's production over the 7 days before today (rows = the server's pace_week)
+  // ÷ the work days in them (wd); what is left = planned − what was done before today (leftB); eta = work days from today.
+  function pbPaceItem(c, rows, wd) {
+    const U = pbProdUnitKey;
+    const week = (Array.isArray(rows) ? rows : []).filter(r => r && r.key === c.key && U(r.unit) === U(c.unit)).reduce((s, r) => s + (pbProdNumOrNull(r.qty) || 0), 0);
+    const left = c.planned - c.done, leftB = Math.max(c.planned - (c.done - (c.today || 0)), 0), pace = wd > 0 && week > 0 ? week / wd : null;
+    return { left: Math.max(left, 0), leftB, week, pace, eta: left > 0 && pace ? Math.min(Math.ceil(leftB * wd / week - 1e-9), 7300) : null };
+  }
+  // an item's work days left on a job page answer (D: plan, cats, schedule): with an end date, the very number the Schedule
+  // panel uses (pbSchedR: the server's projection, or the same math while a change waits); without one, the same rule on the
+  // answer's pace window and the company holidays. null when there is no pace (or no pace window in the answer).
+  function pbPaceEtaOn(info, D, key, today) {
+    if (!info || !D || !key) return null;
+    if (info.end) { const R = pbSchedR(info, D.plan || null, D.cats, today), it = R && R.items.find(i => i.key === key); return it && it.eta !== null && it.eta !== undefined ? it.eta : null; }
+    if (!Array.isArray(info.paceWeek)) return null;
+    const c = pbProdJobView(D.plan || null, D.cats).categories.find(x => x.key === key && x.planned !== null); if (!c) return null;
+    const T = pbSchedDN(today); return pbPaceItem(c, info.paceWeek, pbSchedWork(T - 7, T - 1, new Set(info.holidays))).eta;
+  }
+  window.pbPaceEta = function(c) { // the job page on screen
+    const info0 = c && c.key ? pbSchedHere() : null; if (!info0) return null;
+    return pbPaceEtaOn(pbSchedOverlay(info0, pbPj.job.job_key), pbPj.data, c.key, pbTkToday());
+  };
   // the numbers, by the server's rules (only while a change waits, or with no projection in the answer); null without an end date
   function pbSchedCalc(info, v, pw, today) {
     if (!info || !info.end) return null;
     const hol = new Set(info.holidays), T = pbSchedDN(today), E = pbSchedDN(info.end), S0 = info.start ? pbSchedDN(info.start) : null, U = pbProdUnitKey;
     const wd = pbSchedWork(T - 7, T - 1, hol), rows = Array.isArray(pw) ? pw : [];
-    const items = (v && Array.isArray(v.categories) ? v.categories : []).filter(c => c.planned !== null).map(c => {
-      const week = rows.filter(r => r && r.key === c.key && U(r.unit) === U(c.unit)).reduce((s, r) => s + (pbProdNumOrNull(r.qty) || 0), 0);
-      const left = c.planned - c.done, leftB = Math.max(c.planned - (c.done - (c.today || 0)), 0), pace = wd > 0 && week > 0 ? week / wd : null;
-      return { key: c.key, name: c.name, unit: c.unit, planned: c.planned, done: c.done, left: Math.max(left, 0), leftB, week, pace, share: c.share, eta: left > 0 && pace ? Math.min(Math.ceil(leftB * wd / week - 1e-9), 7300) : null };
-    });
+    const items = (v && Array.isArray(v.categories) ? v.categories : []).filter(c => c.planned !== null).map(c => Object.assign({ key: c.key, name: c.name, unit: c.unit, planned: c.planned, done: c.done, share: c.share }, pbPaceItem(c, rows, wd))); // r15.50: the one pace rule
     const overall = v && v.overall !== null && v.overall !== undefined ? v.overall : null, complete = overall !== null && overall >= 0.999999999;
     const overallB = items.reduce((s, i) => s + i.share * Math.min(Math.max(1 - i.leftB / i.planned, 0), 1), 0);
     const going = items.filter(i => i.left > 0), noPace = going.filter(i => i.pace === null).map(i => i.name);
