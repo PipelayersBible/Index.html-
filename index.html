@@ -4306,6 +4306,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <!-- B27CX:company (batch 27 CONSOLE): the Company Home, for the company account, its managers and PMs only (pbIsCompanyHome). Hidden for everyone else.
          What a PM must know first (right now, inbox, material alerts, waiting), then every job's progress; a job opens its own screen. -->
     <section id="homeCompany" class="pb-coh pbx-home" aria-labelledby="homeCoHead" hidden>
+      <div id="homePlanAlerts" class="pbx-pas" role="region" aria-labelledby="homePaHead" hidden></div><!-- feat_super: plan changes on the jobs this account is assigned to -->
       <div id="homeCxPulse" class="pbx-pulse" role="group" aria-label="Needs your attention"></div>
       <div class="pbx-sechead">
         <h2 class="pbx-h" id="homeCoHead">Jobs</h2>
@@ -4383,7 +4384,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div class="pb-section" id="settingsCompanySection" hidden><!-- feat_navfix: company settings (company account / PMs) -->
       <div class="pb-tag" id="settingsCompanyLabel">Company</div>
       <div class="pb-tools-group">
-        <button type="button" class="pb-edu-row pb-tool-row" id="settingsCrewBtn" data-ic="people" onclick="pbOpenCrewMembers()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Crew members</span><span class="sub">Add, change role, remove, project managers</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
+        <button type="button" class="pb-edu-row pb-tool-row" id="settingsCrewBtn" data-ic="people" onclick="pbOpenCrewMembers()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Crew members</span><span class="sub">Add, change role, remove; PMs and supers</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
         <button type="button" class="pb-edu-row pb-tool-row" id="settingsLogoBtn" data-ic="flag" onclick="window.pbBrBackTo = 'settings'; pbOpenCompanyLogo()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Company logo</span><span class="sub">The logo at the top of every report</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
       </div>
       <div id="settingsCoTime" class="pbx-name pbx-cotime" hidden></div><!-- feat_cotz: the company's time zone and morning email -->
@@ -4478,6 +4479,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <label class="pb-set-switch" for="notifTypeLoc" id="notifTypeLocRow" hidden><span class="tx"><span class="name">Locate tickets expiring</span><span class="sub">An open 811 ticket on your jobs: 7 days before it expires, 2 days before, and on the day</span></span><input type="checkbox" role="switch" id="notifTypeLoc" class="pb-pn-switch" checked onchange="pbPushSetPref('locates', this.checked)"></label><!-- feat_locates --><!-- feat_permitdue -->
         <label class="pb-set-switch" for="notifTypeSafety" id="notifTypeSafetyRow" hidden><span class="tx"><span class="name">Safety events</span><span class="sub">When a foreman adds a near miss, first aid, incident, property damage or stop work on your jobs</span></span><input type="checkbox" role="switch" id="notifTypeSafety" class="pb-pn-switch" checked onchange="pbPushSetPref('safety', this.checked)"></label><!-- feat_jobbook -->
         <label class="pb-set-switch" for="notifTypeSchedule" id="notifTypeScheduleRow" hidden><span class="tx"><span class="name">Schedule</span><span class="sub">When a job falls behind its end date or hits a checkpoint</span></span><input type="checkbox" role="switch" id="notifTypeSchedule" class="pb-pn-switch" checked onchange="pbPushSetPref('schedule', this.checked)"></label><!-- feat_schedule -->
+        <label class="pb-set-switch" for="notifTypePlan" id="notifTypePlanRow" hidden><span class="tx"><span class="name">Plan changes</span><span class="sub">When someone else changes the plan of a job you’re on (its PMs and supers; the company account when it gets copies). Saves within 10 minutes come as one.</span></span><input type="checkbox" role="switch" id="notifTypePlan" class="pb-pn-switch" checked onchange="pbPushSetPref('plan_change', this.checked)"></label><!-- feat_super -->
         <label class="pb-set-switch" for="notifTypeDelays" id="notifTypeDelaysRow" hidden><span class="tx"><span class="name">Delays &amp; extra work</span><span class="sub">Company account and PMs: a delay, standby or extra work on a foreman’s daily report</span></span><input type="checkbox" role="switch" id="notifTypeDelays" class="pb-pn-switch" checked onchange="pbPushSetPref('delays', this.checked)"></label><!-- feat_dailyplus -->
         <label class="pb-set-switch" for="notifTypeCrew"><span class="tx"><span class="name">Crew production reminders</span><span class="sub">When your crew starts or finishes a run and its production isn’t entered</span></span><input type="checkbox" role="switch" id="notifTypeCrew" class="pb-pn-switch" checked onchange="pbCrewPushSet(this.checked); pbPushCrewKind(this.checked)"></label><!-- batch 14 F -->
         <p class="pb-help pb-pn-msg" id="notifCrewMsg" role="status" hidden></p><!-- batch 14 F -->
@@ -5665,12 +5667,13 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
           <button type="button" data-val="foreman" aria-pressed="false" onclick="pbCmPickRole('foreman')">Foreman</button>
           <button type="button" data-val="pipelayer" class="active" aria-pressed="true" onclick="pbCmPickRole('pipelayer')">Pipelayer</button>
           <button type="button" data-val="pm" id="crRolePm" aria-pressed="false" hidden onclick="pbCmPickRole('pm')">Project manager</button><!-- batch 19 PM: owner only -->
+          <button type="button" data-val="superintendent" id="crRoleSuper" aria-pressed="false" hidden onclick="pbCmPickRole('superintendent')">Superintendent</button><!-- feat_super: owner only; a PM with that title -->
         </div>
         <p class="pbc-err" id="crAddErr" role="alert" hidden></p>
         <div class="pb-btn-wrap"><button type="button" class="pb-btn" id="crAddBtn" onclick="pbCmAdd()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Crew Member</button></div>
         <p class="pbc-dim" id="crInvites"></p>
         <details class="pb-more pbc-more" id="crAddMore"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>How adding works</span></summary>
-          <p class="pb-help" id="crAddHelp">Someone with no account gets an invite email. The link opens the app and asks them to set a password. Someone who already has an account and isn&rsquo;t in a company gets an invitation in the app instead; they join, and count as a member, only when they accept it. Invitations expire after 7 days, and you can withdraw one before it is answered. Until they accept, you see only their email. Someone already in another company can&rsquo;t be added yet. A company can send up to 30 invites a day, and the sign-in email service also has an hourly limit. Only the owner can add a project manager.</p>
+          <p class="pb-help" id="crAddHelp">Someone with no account gets an invite email. The link opens the app and asks them to set a password. Someone who already has an account and isn&rsquo;t in a company gets an invitation in the app instead; they join, and count as a member, only when they accept it. Invitations expire after 7 days, and you can withdraw one before it is answered. Until they accept, you see only their email. Someone already in another company can&rsquo;t be added yet. A company can send up to 30 invites a day, and the sign-in email service also has an hourly limit. Only the owner can add a project manager or superintendent.</p>
         </details>
       </section>
 
@@ -5680,8 +5683,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <h2 class="pb-h2 pbc-h2" id="crPendingHead" hidden>Waiting to accept</h2>
       <div id="crPending" class="pbc-list" role="list" aria-labelledby="crPendingHead"></div>
       <div class="pb-btn-wrap"><button type="button" class="pb-btn secondary" id="crRefreshBtn" onclick="pbCmLoad()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Refresh</button></div>
-      <details class="pb-more pbc-more" id="crRolesMore"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>What project managers, managers and removal mean</span></summary>
-        <p class="pb-help" id="crRolesHelp">A project manager (PM) has their own login to the company account: they see and do what the company account does on every job, and get the alerts of the jobs they are assigned to. Each PM is a paid seat. A PM can&rsquo;t change billing or ownership, and can&rsquo;t change or remove the owner or another PM. Managers can read reports and dashboards and edit plans. Only the owner can make or remove project managers and managers. Removing someone takes away their access to company screens. Everything they already filed (production, tickets, permits) stays the company&rsquo;s, and their own records on their phone stay on their phone.</p>
+      <details class="pb-more pbc-more" id="crRolesMore"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>What PMs, superintendents, managers and removal mean</span></summary>
+        <p class="pb-help" id="crRolesHelp">A project manager (PM) has their own login to the company account: they see and do what the company account does on every job, and get the alerts of the jobs they are assigned to. A superintendent is a PM with that title: exactly the same access. Each PM or superintendent is a paid seat. A PM can&rsquo;t change billing or ownership, and can&rsquo;t change or remove the owner or another PM. Managers can read reports and dashboards and edit plans. Only the owner can make or remove PMs, superintendents and managers. Removing someone takes away their access to company screens. Everything they already filed (production, tickets, permits) stays the company&rsquo;s, and their own records on their phone stay on their phone.</p>
       </details>
       <section class="pbc-add pbc-alerts" id="crAlerts" aria-labelledby="crAlertsHead" hidden><!-- batch 19 PM -->
         <h2 class="pb-h2 pbc-h2" id="crAlertsHead">Job alerts</h2>
@@ -5845,7 +5848,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <p class="pb-eyebrow"><span>Records</span><button class="pb-back" title="Home" onclick="pbGoto('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11L12 3l9 8"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></button></p>
       <h1 class="pb-title">Records</h1>
     </div>
-    <div id="archiveTopActions"><button type="button" class="pb-edu-row pb-tool-row" id="archiveCrewBtn" aria-hidden="true" data-ic="people" style="display:none;" hidden onclick="pbOpenCrewMembers()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Crew members</span><span class="sub">Add, change role, remove, project managers</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button><!-- batch 13 C -->
+    <div id="archiveTopActions"><button type="button" class="pb-edu-row pb-tool-row" id="archiveCrewBtn" aria-hidden="true" data-ic="people" style="display:none;" hidden onclick="pbOpenCrewMembers()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Crew members</span><span class="sub">Add, change role, remove; PMs and supers</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button><!-- batch 13 C -->
       <!-- feat_nav159: the office's lists first (company account / PMs); hidden when none is shown -->
       <div id="archiveOfficeWrap"><h2 class="pb-reports-heading" id="archiveOfficeHead">Office</h2>
       <div class="pb-tools-group" id="archiveOfficeGroup" role="group" aria-label="Office">
@@ -6356,7 +6359,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-field"><label for="cxnStart">Start date <span class="pbx-opt">(optional)</span></label><input type="date" id="cxnStart"></div>
         <p class="pbx-formerr" id="cxnErr" role="alert" hidden></p>
         <div class="pb-btn-wrap"><button type="submit" class="pb-btn" id="cxnSave">Create project</button></div>
-        <p class="pbx-note" id="cxnNext">Next: the plan (planned amounts per category). Then, if you like, materials, trench settings and PMs.</p>
+        <p class="pbx-note" id="cxnNext">Next: the plan (planned amounts per category). Then, if you like, materials, trench settings and PMs &amp; supers.</p>
       </form>
     </div>
   </div>
@@ -9181,7 +9184,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.50 · 2026-10-27'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.52 · 2026-10-27'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -9958,7 +9961,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!sbUser && pbLateCheckPending && pbSessionUnverified && cachedStorageUserId && pbAccountEmails[cachedStorageUserId]) { el.textContent = 'Records of ' + pbAccountEmails[cachedStorageUserId] + ' open \u2014 sign-in not confirmed (account switch waiting)'; }
       else if (!sbUser && pbCachedAccountUnverified()) { el.textContent = 'Not signed in (no signal to confirm it) \u2014 the last account\u2019s records are open'; } /* feat_core33 K1: agrees with the Lock This Phone button under it */
       else if (!sbUser) { el.textContent = 'Not signed in \u2014 log in to use the app'; }
-      else if (sbCachedSubscription.companyName) { el.textContent = 'Signed in as ' + sbUser.email + ' \u2014 ' + sbCachedSubscription.companyRole + ' at ' + sbCachedSubscription.companyName + (sbCachedSubscription.tier === 'contractor' ? '' : ' (company not currently active)'); }
+      else if (sbCachedSubscription.companyName) { el.textContent = 'Signed in as ' + sbUser.email + ' \u2014 ' + pbRoleShown(sbCachedSubscription) + ' at ' + sbCachedSubscription.companyName + (sbCachedSubscription.tier === 'contractor' ? '' : ' (company not currently active)'); }
       else if (sbCachedSubscription.tier === 'none' || sbCachedSubscription.status !== 'active') { el.textContent = 'Signed in as ' + sbUser.email + ' \u2014 no active subscription'; }
       else { el.textContent = 'Signed in as ' + sbUser.email + ' \u2014 ' + sbCachedSubscription.tier + ' plan (active)'; }
     }
@@ -10443,6 +10446,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // boot and right after login. Only ever falls back to the last verified
   // value when genuinely offline, same principle already proven for login
   // itself: never let a network hiccup silently grant or revoke access.
+  // feat_super: a PM's own title, read on its own (a server without the column, or no answer, keeps the last one)
+  async function pbSuperOwnTitle(uid) {
+    let prev = null; try { const p = JSON.parse((await pbGetFor(uid, 'cachedSubscription')) || 'null'); prev = p && typeof p.companyTitle === 'string' ? p.companyTitle : null; } catch (e) { prev = null; }
+    try { const { data, error } = await sbClient.from('company_members').select('title').eq('user_id', uid).maybeSingle();
+      if (error || !data || typeof data.title !== 'string') return prev;
+      return data.title === 'superintendent' ? 'Superintendent' : 'Project manager'; } catch (e) { return prev; }
+  }
+  // the role words shown for this account: a PM with the title Superintendent reads "Superintendent"
+  function pbRoleShown(s) { return s && s.companyRole === 'Project manager' && s.companyTitle === 'Superintendent' ? 'Superintendent' : (s ? s.companyRole : ''); }
   async function pbRefreshSubscriptionCache() {
     if (!sbClient) return; // can't check at all (offline, CDN failed) — leave whatever's cached alone, don't assume logged out
     if (!sbUser && pbSessionUnverified) return; // the session check failed rather than saying "logged out" — keep the last verified value
@@ -10468,6 +10480,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!memberError && memberData) {
         result.companyId = memberData.company_id;
         result.companyRole = memberData.role === 'pm' ? 'Project manager' : memberData.role; // batch 19 PM
+        if (memberData.role === 'pm') result.companyTitle = await pbSuperOwnTitle(user.id); /* feat_super: Superintendent or Project manager (companyRole stays 'Project manager' for every check) */
         result.companyName = memberData.companies ? memberData.companies.name : null;
         if (memberData.companies && memberData.companies.status === 'active') {
           result.tier = 'contractor';
@@ -11098,7 +11111,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const tierName = s.tier === 'contractor' ? 'Contractor' : s.tier === 'individual' ? 'Individual' : '';
     const active = s.status === 'active' && !!tierName;
     let t = active ? 'Plan: ' + tierName + ' (active)' : tierName ? 'Plan: ' + tierName + ' \u2014 ' + (s.status || 'not active') + ', so plan features are locked' : 'Plan: none active on this phone';
-    if (s.companyName) t += ' \u2014 ' + (s.companyRole ? s.companyRole + ' at ' : '') + s.companyName;
+    if (s.companyName) t += ' \u2014 ' + (s.companyRole ? pbRoleShown(s) + ' at ' : '') + s.companyName;
     if (active && !sbUser) t += '. Kept on this phone from the last sign-in; not confirmed right now.';
     return t;
   }
@@ -31416,6 +31429,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const PB_PUSH_DEVICE_KEY = 'pbPushDevice'; // per phone, not per account: { uid, want: 'on'|'off', synced, endpoint, why, at }
   const PB_PUSH_TYPES = ['runs_waiting', 'mgmt_report', 'crew_production', 'run_end_ask', 'material_alert', 'crew_nudge', 'permit_closed', 'permit_due', 'locates', 'schedule', 'delays']; /* feat_dailyplus: delays */ // feat_schedule // feat_locates // feat_permitdue // r14 integration: a row shows only when the server reports the kind
   const PB_PUSH_ROWS = { run_end_ask: 'notifTypeRunEndRow', material_alert: 'notifTypeMatRow', crew_nudge: 'notifTypeNudgeRow', permit_closed: 'notifTypePermitRow', permit_due: 'notifTypePermitDueRow', locates: 'notifTypeLocRow', schedule: 'notifTypeScheduleRow' /* feat_schedule */, delays: 'notifTypeDelaysRow' /* feat_dailyplus */ }; // feat_locates // feat_permitdue // crew_production: batch 14 F's own row
+  PB_PUSH_TYPES.push('plan_change'); PB_PUSH_ROWS.plan_change = 'notifTypePlanRow'; /* feat_super: shown when the server lists the kind (sql/OWNER_PASTE.sql), office only */
   PB_PUSH_TYPES.push('safety'); PB_PUSH_ROWS.safety = 'notifTypeSafetyRow'; // feat_jobbook: a row shows only when the server reports the kind (sql/OWNER_PASTE.sql)
   let pbPushReg = null, pbPushSwFailed = false, pbPushRegP = null, pbPushBusy = null, pbPushTimer = null;
   let pbPushMsg = { text: '', at: 0 };
@@ -34567,7 +34581,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbOpenProdDashboard = async function() {
     if (!pbCanOpen('prodDashboard', { explain: true })) return;
     const uid = pbArchiveOwnerUid;
-    if (!(await pbProdIsManager(uid))) { pbAlert('Only your company account (the owner, a PM or a manager) can see company production. Your own is under My Production.', 'Company Production'); return; }
+    if (!(await pbProdIsManager(uid))) { pbAlert('Only your company account (the owner, a PM, a superintendent or a manager) can see company production. Your own is under My Production.', 'Company Production'); return; }
     if (pbPd.uid !== uid) pbPd = pbPdNew(uid);
     pbGoto('prodDashboard');
     if (!pbPd.data) { const c = await pbProdCacheGet(uid, 'dash'); if (c && c.data && pbPd.uid === uid && !pbPd.data) { pbPd.data = c.data; pbPd.at = c.at || 0; pbPd.cached = true; } }
@@ -34747,7 +34761,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // one morning email on days a material needs a look); with no PM they go to the company account. The list comes from
   // pb_job_pms_get and is changed by pb_job_pms_set (the server checks each person is a current PM of this company).
   // Not kept on the phone (it holds other people's email addresses); it loads with signal.
-  const pbPmName = (x) => (x && (x.name || x.email)) || 'A project manager';
+  const pbPmName = (x) => (x && (x.name || x.email)) || (x && x.title === 'superintendent' ? 'A superintendent' : 'A project manager');
+  const pbPmTitleTxt = (x) => x && x.title === 'superintendent' ? 'Superintendent' : 'Project manager'; /* feat_super */
+  const pbPmCountTxt = (L) => { const s = L.filter(x => x && x.title === 'superintendent').length, p = L.length - s; return [p ? p + ' PM' + (p === 1 ? '' : 's') : '', s ? s + ' superintendent' + (s === 1 ? '' : 's') : ''].filter(Boolean).join(' and '); };
   window.pbPmJobLoad = async function() {
     const uid = pbArchiveOwnerUid, job = pbPj.job;
     if (!job || pbPj.uid !== uid || !job.job_number) return;
@@ -34757,38 +34773,38 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbPj.job !== job || pbPj.pmGen !== gen || pbPj.uid !== uid || !sbUser || sbUser.id !== uid) return;
     const m = String((r && r.error && r.error.message) || '');
     if (!r || r.error || !r.data || r.data.ok !== true || !Array.isArray(r.data.assigned)) {
-      pbPj.pmMsg = /Could not find the function|does not exist/i.test(m) ? 'Assigning PMs isn’t ready on the company server yet.' : pbProdErrText(r); pbPmJobPaint(); return;
+      pbPj.pmMsg = /Could not find the function|does not exist/i.test(m) ? 'Assigning PMs and supers isn’t ready on the company server yet.' : pbProdErrText(r); pbPmJobPaint(); return;
     }
     pbPj.pms = r.data; pbPj.pmMsg = ''; pbPmJobPaint();
   };
   function pbPmJobHtml() {
     const job = pbPj.job, P = pbPj.pms;
-    let h = '<section class="pbp-block" id="pjPmSec"><h3 class="pb-h2 pbp-h3">Assigned PMs</h3>'
-      + '<p class="pbp-dim">This job’s alerts go to its PMs: a push right away, and one email in the morning on days a material needs a look. With no PM, they go to the company account.</p>';
-    if (!job || !job.job_number) return h + '<p class="pbp-dim pbp-none">PMs are assigned by job number.</p></section>';
+    let h = '<section class="pbp-block" id="pjPmSec"><h3 class="pb-h2 pbp-h3">PMs &amp; supers on this job</h3>'
+      + '<p class="pbp-dim">This job’s alerts go to its PMs and superintendents: a push right away, and one email in the morning on days a material needs a look. With none, they go to the company account.</p>';
+    if (!job || !job.job_number) return h + '<p class="pbp-dim pbp-none">PMs and supers are assigned by job number.</p></section>';
     if (!P) return h + '<p class="pbp-dim pbp-none" id="pjPmNone">' + escapeHtml(pbPj.pmMsg || 'Loading…') + '</p></section>';
     const assigned = P.assigned.filter(x => x && x.user_id), cands = Array.isArray(P.candidates) ? P.candidates.filter(x => x && x.user_id) : [];
     if (pbPj.pmEdit) {
-      if (!cands.length) h += '<p class="pbp-dim pbp-none" id="pjPmNoCands">No project managers in the company yet. The owner adds them in Crew members.</p>';
+      if (!cands.length) h += '<p class="pbp-dim pbp-none" id="pjPmNoCands">No PMs or superintendents in the company yet. The owner adds them in Crew members.</p>';
       // only the owner takes someone else off a job; a PM can take only themselves off (the server checks it too)
       const me = sbUser && sbUser.id, locked = (c) => !P.is_owner && c.user_id !== me && assigned.some(a => a.user_id === c.user_id);
-      if (cands.length && !P.is_owner && assigned.some(a => a.user_id !== me)) h += '<p class="pbp-dim" id="pjPmOwnerNote">Only the owner can take another PM off this job. You can add PMs, or take yourself off.</p>';
-      if (cands.length) h += '<div class="pbp-pmpick" role="group" aria-label="Project managers for this job">' + cands.map((c, i) => '<label class="pb-checkrow pbp-pmrow"><input type="checkbox" id="pjPmC' + i + '" data-uid="' + escapeHtml(c.user_id) + '"' + (pbPj.pmEdit.has(c.user_id) ? ' checked' : '') + (locked(c) ? ' disabled' : '') + ' onchange="pbPmJobTick(' + i + ', this.checked)">'
-        + '<span><span class="pbp-whoname">' + escapeHtml(pbPmName(c)) + '</span>' + (c.name && c.email ? '<span class="pbp-dim"> ' + escapeHtml(c.email) + '</span>' : '') + '</span></label>').join('') + '</div>';
+      if (cands.length && !P.is_owner && assigned.some(a => a.user_id !== me)) h += '<p class="pbp-dim" id="pjPmOwnerNote">Only the owner can take another PM or super off this job. You can add PMs and supers, or take yourself off.</p>';
+      if (cands.length) h += '<div class="pbp-pmpick" role="group" aria-label="PMs and superintendents for this job">' + cands.map((c, i) => '<label class="pb-checkrow pbp-pmrow"><input type="checkbox" id="pjPmC' + i + '" data-uid="' + escapeHtml(c.user_id) + '"' + (pbPj.pmEdit.has(c.user_id) ? ' checked' : '') + (locked(c) ? ' disabled' : '') + ' onchange="pbPmJobTick(' + i + ', this.checked)">'
+        + '<span><span class="pbp-whoname">' + escapeHtml(pbPmName(c)) + '</span><span class="pbp-dim"> ' + escapeHtml([pbPmTitleTxt(c), c.name && c.email ? c.email : ''].filter(Boolean).join(' · ')) + '</span></span></label>').join('') + '</div>';
       return h + (pbPj.pmMsg ? '<p class="pbp-dim pbp-err" id="pjPmMsg" role="alert">' + escapeHtml(pbPj.pmMsg) + '</p>' : '')
-        + '<div class="pb-btn-wrap pbp-btns pbp-eact2"><button type="button" class="pb-btn small" id="pjPmSave" onclick="pbPmJobSave()"' + (pbPj.pmBusy ? ' disabled' : '') + '>' + (pbPj.pmBusy ? 'Saving…' : 'Save PMs') + '</button>'
+        + '<div class="pb-btn-wrap pbp-btns pbp-eact2"><button type="button" class="pb-btn small" id="pjPmSave" onclick="pbPmJobSave()"' + (pbPj.pmBusy ? ' disabled' : '') + '>' + (pbPj.pmBusy ? 'Saving…' : 'Save') + '</button>'
         + '<button type="button" class="pb-btn ghost small" id="pjPmCancel" onclick="pbPmJobCancel()">Cancel</button></div></section>';
     }
-    h += assigned.length ? '<ul class="pbp-who" id="pjPmList">' + assigned.map(x => '<li><span class="pbp-whoname">' + escapeHtml(pbPmName(x)) + (x.current === false ? ' <span class="pb-chip notsent">No longer a PM</span>' : '') + '</span>'
-        + '<span class="pbp-dim">' + escapeHtml([x.name ? x.email : '', x.since ? 'since ' + pbProdDayText(String(x.since).slice(0, 10)) : ''].filter(Boolean).join(' · ')) + '</span></li>').join('') + '</ul>'
-      : '<p class="pbp-dim pbp-none" id="pjPmNone">No PM assigned. Alerts go to the company account.</p>';
+    h += assigned.length ? '<ul class="pbp-who" id="pjPmList">' + assigned.map(x => '<li><span class="pbp-whoname">' + escapeHtml(pbPmName(x)) + (x.current === false ? ' <span class="pb-chip notsent">No longer a PM or super</span>' : '') + '</span>'
+        + '<span class="pbp-dim">' + escapeHtml([x.current === false ? '' : pbPmTitleTxt(x), x.name ? x.email : '', x.since ? 'since ' + pbProdDayText(String(x.since).slice(0, 10)) : ''].filter(Boolean).join(' · ')) + '</span></li>').join('') + '</ul>'
+      : '<p class="pbp-dim pbp-none" id="pjPmNone">No PM or super assigned. Alerts go to the company account.</p>';
     if (pbPj.pmMsg) h += '<p class="pbp-dim" id="pjPmMsg" role="status">' + escapeHtml(pbPj.pmMsg) + '</p>';
-    return h + '<div class="pb-btn-wrap pbp-btns"><button type="button" class="pb-btn secondary" id="pjPmEdit" onclick="pbPmJobEdit()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-pencil"/></svg>' + (assigned.length ? 'Change PMs' : 'Assign PMs') + '</button></div></section>';
+    return h + '<div class="pb-btn-wrap pbp-btns"><button type="button" class="pb-btn secondary" id="pjPmEdit" onclick="pbPmJobEdit()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-pencil"/></svg>' + (assigned.length ? 'Change PMs & Supers' : 'Assign PMs & Supers') + '</button></div></section>';
   }
   function pbPmJobPaint() { const el = pbProdEl('pjPmSec'); if (el) el.outerHTML = pbPmJobHtml(); }
   window.pbPmJobEdit = function() {
     if (!pbPj.pms) return;
-    if (navigator.onLine === false) { pbAlert('No signal. Assigning PMs needs signal.', 'Assigned PMs'); return; }
+    if (navigator.onLine === false) { pbAlert('No signal. Assigning PMs and supers needs signal.', 'PMs & Supers'); return; }
     pbPj.pmEdit = new Set(pbPj.pms.assigned.filter(x => x && x.user_id && x.current !== false).map(x => x.user_id)); pbPj.pmMsg = ''; pbPmJobPaint();
   };
   window.pbPmJobTick = function(i, on) {
@@ -34800,7 +34816,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbPmJobSave = async function() {
     const uid = pbArchiveOwnerUid, job = pbPj.job, ids = pbPj.pmEdit ? Array.from(pbPj.pmEdit) : null;
     if (!ids || !job || pbPj.pmBusy) return;
-    if (ids.length > 10) { pbPj.pmMsg = 'Up to 10 PMs per job.'; pbPmJobPaint(); return; }
+    if (ids.length > 10) { pbPj.pmMsg = 'Up to 10 PMs and supers per job.'; pbPmJobPaint(); return; }
     if (!(sbClient && sbUser && sbUser.id === uid && (await pbLiveSessionIs(uid))) || navigator.onLine === false) { pbPj.pmMsg = 'No signal. Nothing was changed; try again when you have signal.'; pbPmJobPaint(); return; }
     pbPj.pmBusy = true; pbPmJobPaint();
     let r; try { r = await pbPermitRpc('pb_job_pms_set', { p_job_number: job.job_number, p_user_ids: ids, p_expect_uid: uid }, 30000); } finally { if (pbPj.job === job) pbPj.pmBusy = false; }
@@ -34808,12 +34824,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const d = r && r.data, m = String((r && r.error && r.error.message) || '');
     if (d && d.ok === true && Array.isArray(d.assigned)) {
       pbPj.pms = Object.assign({}, pbPj.pms, d); pbPj.pmEdit = null;
-      pbPj.pmMsg = d.assigned.length ? 'Saved. ' + d.assigned.length + ' PM' + (d.assigned.length === 1 ? '' : 's') + ' on this job.' : 'Saved. No PM on this job: alerts go to the company account.';
+      pbPj.pmMsg = d.assigned.length ? 'Saved. ' + pbPmCountTxt(d.assigned) + ' on this job.' : 'Saved. No PM or super on this job: alerts go to the company account.';
       pbPmJobPaint(); return;
     }
-    pbPj.pmMsg = (d && d.code === 'pb:owner_only') ? 'Only the owner can take another PM off this job. Nothing was changed.'
-      : (d && d.code === 'pb:not_pm') ? 'Someone you picked isn’t a project manager of the company any more. Nothing was changed. Refresh and try again.'
-      : /pb:too_many_pms/.test(m) ? 'Up to 10 PMs per job.' : /Could not find the function|does not exist/i.test(m) ? 'Assigning PMs isn’t ready on the company server yet. Nothing was changed.' : pbProdErrText(r) + ' Nothing was changed; try again.';
+    pbPj.pmMsg = (d && d.code === 'pb:owner_only') ? 'Only the owner can take another PM or super off this job. Nothing was changed.'
+      : (d && d.code === 'pb:not_pm') ? 'Someone you picked isn’t a PM or superintendent of the company any more. Nothing was changed. Refresh and try again.'
+      : /pb:too_many_pms/.test(m) ? 'Up to 10 PMs and supers per job.' : /Could not find the function|does not exist/i.test(m) ? 'Assigning PMs and supers isn’t ready on the company server yet. Nothing was changed.' : pbProdErrText(r) + ' Nothing was changed; try again.';
     pbPmJobPaint();
   };
   // ================= end batch 19 PM (job) =================
@@ -35289,7 +35305,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     E.saving = false;
     if (r.error || !r.data || r.data.ok !== true) {
       const m = String((r.error && r.error.message) || '');
-      E.err = /pb:plan_changed/.test(m) ? 'Someone else saved this job’s plan meanwhile. Cancel, let the job reload, and make your change again.' : /pb:bad_plan/.test(m) ? 'The server couldn’t accept this plan. Check the names and numbers.' : /pb:not_company_account/.test(m) ? 'Only your company account can change plans.' : pbProdErrText(r) + ' Your changes are still here; try again.';
+      E.err = /pb:plan_changed/.test(m) ? 'Someone else saved this job’s plan meanwhile. Cancel, let the job reload, and make your change again.' : /pb:bad_plan/.test(m) ? 'The server couldn’t accept this plan. Check the names and numbers.' : /pb:not_company_account/.test(m) ? 'Only the company account, a PM or a superintendent can change plans.' : pbProdErrText(r) + ' Your changes are still here; try again.';
       pbProdJobRender(); return;
     }
     pbPj.edit = null;
@@ -36056,7 +36072,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     try { if (pbCohFn('pbCompanyBranding')) { const b = window.pbCompanyBranding() || {}; name = b.companyName || null; logo = b.logo && b.logo.dataUrl ? b.logo.dataUrl : null; } } catch (e) {}
     const s = sbCachedSubscription || {};
     if (!name && typeof s.companyName === 'string' && s.companyName.trim()) name = s.companyName.trim();
-    const role = typeof s.companyRole === 'string' && s.companyRole ? s.companyRole : 'Company account';
+    const role = typeof s.companyRole === 'string' && s.companyRole ? pbRoleShown(s) : 'Company account';
     return (logo && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(logo) ? '<img class="pb-coh-logo" id="homeCoLogoImg" src="' + logo + '" alt="' + pbCohEsc((name || 'Company') + ' logo') + '">' : '<span class="pb-coh-mark" aria-hidden="true"></span>')
       + '<span class="pb-coh-bt"><span class="pb-coh-co" id="homeCoName">' + pbCohEsc(name || 'Your company') + '</span><span class="pb-coh-role" id="homeCoRole">' + pbCohEsc(role) + '</span></span>';
   }
@@ -40289,7 +40305,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     try {
       if (typeof sbUser !== 'undefined' && sbUser && sbUser.email) {
         const s = sbCachedSubscription || {};
-        return sbUser.email + (s.companyRole ? ' (' + s.companyRole + (s.companyName ? ' at ' + s.companyName : '') + ')' : '');
+        return sbUser.email + (s.companyRole ? ' (' + pbRoleShown(s) + (s.companyName ? ' at ' + s.companyName : '') + ')' : '');
       }
     } catch (e) {}
     return '(not signed in)';
@@ -44848,16 +44864,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // Pairing is NOT managed here (owner decision): foremen and pipelayers pair up themselves in My production.
   PB_CONTRACTOR_SCREENS.push('crewMembers'); // every way in calls pbCanOpen
   PB_SCREEN_TABS.crewMembers = 'reports';
-  const PB_CM_ROLES = { foreman: 'Foreman', pipelayer: 'Pipelayer', pm: 'Project manager' }; // batch 19 PM: pm
+  const PB_CM_ROLES = { foreman: 'Foreman', pipelayer: 'Pipelayer', pm: 'Project manager', superintendent: 'Superintendent' }; // batch 19 PM: pm; feat_super: superintendent = role pm + that title
+  const pbCmRoleKey = (m) => m && m.role === 'pm' && m.title === 'superintendent' ? 'superintendent' : (m && m.role); /* feat_super: what to call a member or an invitation */
   // The same words as functions/crew-admin/logic.ts MESSAGES (kept here for when the function can't be reached).
   const PB_CM_MSG = {
     'pb:signed_out': 'Sign in again, then try again.',
     'pb:wrong_account': 'Another account is signed in on this phone now. Open Crew members again.',
-    'pb:not_company_account': 'Only your company account (the owner, a project manager, or a manager the owner added) can manage crew members.',
+    'pb:not_company_account': 'Only your company account (the owner, a PM or superintendent, or a manager the owner added) can manage crew members.',
     'pb:company_changed': 'Your company access changed since this screen loaded. Refresh and try again.',
     'pb:bad_email': 'That doesn’t look like an email address. Check it and try again.',
-    'pb:bad_role': 'Pick Foreman, Pipelayer or Project manager.',
-    'pb:is_pm': 'They’re a project manager, so company access comes with the role. To take it away, change their role or remove them.',
+    'pb:bad_role': 'Pick Foreman, Pipelayer, Project manager or Superintendent.',
+    'pb:is_pm': 'They’re a PM or superintendent, so company access comes with the role. To take it away, change their role or remove them.',
     'pb:bad_time': 'Pick a time on the quarter hour.',
     'pb:bad_tz': 'Pick a time zone from the list.',
     'pb:bad_request': 'The app sent something the server couldn’t read. Refresh and try again.',
@@ -44919,7 +44936,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbOpenCrewMembers = async function() {
     if (!pbCanOpen('crewMembers', { explain: true })) return;
     const uid = pbArchiveOwnerUid;
-    if (!(await pbProdIsManager(uid))) { pbAlert('Only your company account (the owner, a PM or a manager) can manage crew members.', 'Crew Members'); return; }
+    if (!(await pbProdIsManager(uid))) { pbAlert('Only your company account (the owner, a PM, a superintendent or a manager) can manage crew members.', 'Crew Members'); return; }
     if (pbCmSt.uid !== uid) pbCmSt = pbCmNew(uid);
     pbGoto('crewMembers');
     pbCmRender();
@@ -44984,7 +45001,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // batch 19 PM: only the owner sees (and can use) the Project manager role button
     const pmBtn = pbCmEl('crRolePm'), canPm = !!(D && D.can_manage_pms);
     if (pmBtn) pmBtn.hidden = !canPm;
-    if (!canPm && pbCmSt.role === 'pm') pbCmPickRole('pipelayer');
+    { const sb = pbCmEl('crRoleSuper'), tg = pbCmEl('crRoleToggle'); if (sb) sb.hidden = !canPm; if (tg) tg.classList.toggle('pb-sup4', canPm); } /* feat_super */
+    if (!canPm && (pbCmSt.role === 'pm' || pbCmSt.role === 'superintendent')) pbCmPickRole('pipelayer');
     pbPmAlertsRender();
     const list = pbCmEl('crList');
     const rows = D ? D.members.filter(m => m && typeof m === 'object') : [];
@@ -44995,7 +45013,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (rows.length) list.innerHTML = rows.map((m, i) => {
       const nm = pbCmName(m), tags = [];
       if (m.owner) tags.push('<span class="pbc-tag">Owner</span>');
-      if (m.role && PB_CM_ROLES[m.role]) tags.push('<span class="pbc-tag' + (m.role === 'pm' ? ' pm' : '') + '">' + PB_CM_ROLES[m.role] + '</span>');
+      if (m.role && PB_CM_ROLES[m.role]) tags.push('<span class="pbc-tag' + (m.role === 'pm' ? ' pm' : '') + '">' + PB_CM_ROLES[pbCmRoleKey(m)] + '</span>'); /* feat_super: Superintendent */
       if (m.manager && !m.owner && m.role !== 'pm') tags.push('<span class="pbc-tag mgr">Manager</span>'); // batch 19 PM: a PM shows as Project manager only
       const stc = PB_CM_STATUS[m.status] ? m.status : 'not_signed_in';
       tags.push('<span class="pbc-tag st-' + stc + '">' + PB_CM_STATUS[stc] + '</span>');
@@ -45006,7 +45024,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (m.owner) acts = '<p class="pbc-note">Company owner. Can’t be changed or removed here.</p>';
       else if (m.me) acts = '<p class="pbc-note">This is you.</p>';
       else if (!m.member) acts = '';
-      else if (m.role === 'pm' && !isOwner) acts = '<p class="pbc-note">Only the owner can change or remove a project manager.</p>'; // batch 19 PM
+      else if (m.role === 'pm' && !isOwner) acts = '<p class="pbc-note">Only the owner can change or remove a ' + (pbCmRoleKey(m) === 'superintendent' ? 'superintendent' : 'project manager') + '.</p>'; // batch 19 PM
       else if (m.manager && !isOwner) acts = '<p class="pbc-note">Only the owner can change or remove a manager.</p>';
       else {
         const other = m.role === 'foreman' ? 'pipelayer' : 'foreman';
@@ -45016,7 +45034,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           + '<button type="button" class="pb-btn secondary small" data-crew-act="role" data-i="' + i + '" onclick="pbCmAct(\'role\',' + i + ')">Make ' + PB_CM_ROLES[other] + '</button>'
           // batch 19 PM: a PM can go back to Pipelayer too; the owner can make anyone else a PM
           + (m.role === 'pm' ? '<button type="button" class="pb-btn secondary small" data-crew-act="role-pipelayer" data-i="' + i + '" onclick="pbCmAct(\'role\',' + i + ',\'pipelayer\')">Make Pipelayer</button>' : '')
-          + (isOwner && m.role !== 'pm' ? '<button type="button" class="pb-btn secondary small" data-crew-act="pm" data-i="' + i + '" onclick="pbCmAct(\'role\',' + i + ',\'pm\')">Make Project Manager</button>' : '')
+          + (isOwner && pbCmRoleKey(m) !== 'pm' ? '<button type="button" class="pb-btn secondary small" data-crew-act="pm" data-i="' + i + '" onclick="pbCmAct(\'role\',' + i + ',\'pm\')">Make Project Manager</button>' : '')
+          + (isOwner && pbCmRoleKey(m) !== 'superintendent' ? '<button type="button" class="pb-btn secondary small" data-crew-act="super" data-i="' + i + '" onclick="pbCmAct(\'role\',' + i + ',\'superintendent\')">Make Superintendent</button>' : '') /* feat_super */
           + (isOwner && m.role !== 'pm' ? '<button type="button" class="pb-btn secondary small" data-crew-act="manager" data-i="' + i + '" onclick="pbCmAct(\'manager\',' + i + ')">' + (m.manager ? 'Remove Manager' : 'Make Manager') + '</button>' : '')
           + '<button type="button" class="pb-btn danger small" data-crew-act="remove" data-i="' + i + '" onclick="pbCmAct(\'remove\',' + i + ')">Remove from Company</button>'
           + '</div>';
@@ -45038,7 +45057,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // email only until they accept (R2-S1): the invitee's name is never shown here
     if (pl) pl.innerHTML = pend.map((x, k) => '<div class="pbc-row" role="listitem" data-inv="' + escapeHtml(x.id || '') + '">'
       + '<div class="pbc-name">' + escapeHtml(x.label || x.email || 'Invited account') + '</div>' + (x.label && x.email ? '<div class="pbc-email">' + escapeHtml(x.email) + '</div>' : '') // batch 19 PM: the name the company typed
-      + '<div class="pbc-tags">' + (PB_CM_ROLES[x.role] ? '<span class="pbc-tag">' + PB_CM_ROLES[x.role] + '</span>' : '')
+      + '<div class="pbc-tags">' + (PB_CM_ROLES[x.role] ? '<span class="pbc-tag">' + PB_CM_ROLES[pbCmRoleKey(x)] + '</span>' : '')
       + (x.expired ? '<span class="pbc-tag st-expired">Expired, invite again</span>' : '<span class="pbc-tag st-invited">Invitation sent — waiting for them to accept in the app</span>') + '</div>'
       + '<div class="pbc-meta">' + escapeHtml((x.created_at ? 'Invited ' + pbCmDate(x.created_at) : '') + (!x.expired && x.expires_at ? ' · Expires ' + pbCmDate(x.expires_at) : '')) + '</div>'
       + (x.expired ? '' : '<div class="pbc-acts"><button type="button" class="pb-btn ghost small" data-crew-act="withdraw" data-k="' + k + '" onclick="pbCmWithdraw(' + k + ')">Withdraw Invitation</button></div>')
@@ -45108,6 +45127,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       'Withdraw Invitation', { no: 'Keep It', yes: 'Withdraw' });
   };
 
+  function pbCmSuperAsk(m, role, nm) { // feat_super: a Superintendent is a PM with that title (the same access)
+    const from = pbCmRoleKey(m);
+    if ((role === 'superintendent' && from === 'pm') || (role === 'pm' && from === 'superintendent'))
+      return 'Make ' + nm + ' a ' + PB_CM_ROLES[role] + '?\n\nOnly the title changes: a ' + (role === 'pm' ? 'project manager' : 'superintendent') + ' has exactly the same access, and stays on the same jobs.';
+    if (role === 'superintendent') return 'Make ' + nm + ' a Superintendent?\n\nA superintendent has exactly a project manager\u2019s access: their own login to the company account, they see and do what the company account does on every job, and get the alerts of the jobs they are assigned to. They take a paid seat. They can\u2019t change billing or ownership, or change or remove you or another PM or superintendent. Only you, the owner, can make or remove PMs and superintendents.';
+    if (from === 'superintendent') return nm + ' will no longer be a superintendent: no more company screens or job alerts, and they come off every job they were assigned to. They stay in the company as ' + PB_CM_ROLES[role] + '.';
+    return null;
+  }
   window.pbCmAct = function(kind, i, toRole) { // batch 19 PM: toRole (pm, or pipelayer for a PM)
     const m = pbCmSt.rows[i];
     if (!m || !m.user_id || pbCmSt.busy) return;
@@ -45115,10 +45142,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const nm = pbCmName(m), co = (pbCmSt.data && pbCmSt.data.company_name) || 'the company';
     if (kind === 'role') {
       const role = toRole && PB_CM_ROLES[toRole] ? toRole : m.role === 'foreman' ? 'pipelayer' : 'foreman';
-      const ask = role === 'pm' ? 'Make ' + nm + ' a Project manager?\n\nThey get their own login to the company account: they see and do what the company account does on every job, and get the alerts of the jobs they are assigned to. They take a paid seat. They can\u2019t change billing or ownership, or change or remove you or another PM. Only you, the owner, can make or remove project managers.'
+      const ask = pbCmSuperAsk(m, role, nm) || (role === 'pm' ? 'Make ' + nm + ' a Project manager?\n\nThey get their own login to the company account: they see and do what the company account does on every job, and get the alerts of the jobs they are assigned to. They take a paid seat. They can\u2019t change billing or ownership, or change or remove you or another PM. Only you, the owner, can make or remove project managers.'
         : m.role === 'pm' ? nm + ' will no longer be a project manager: no more company screens or job alerts, and they come off every job they were assigned to. They stay in the company as ' + PB_CM_ROLES[role] + '.'
-        : 'Make ' + nm + ' a ' + PB_CM_ROLES[role] + '?';
-      pbConfirm(ask, () => pbCmRun({ action: 'set_role', user_id: m.user_id, role }, (x) => nm + ' is now a ' + PB_CM_ROLES[x.role || role] + '.'),
+        : 'Make ' + nm + ' a ' + PB_CM_ROLES[role] + '?');
+      pbConfirm(ask, () => pbCmRun({ action: 'set_role', user_id: m.user_id, role }, (x) => nm + ' is now a ' + PB_CM_ROLES[role === 'superintendent' || role === 'pm' ? role : (x.role || role)] + '.'),
         'Change Role', { no: 'Cancel', yes: 'Make ' + PB_CM_ROLES[role] });
       return;
     }
@@ -45172,7 +45199,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!list.length) { box.hidden = true; box.innerHTML = ''; return; }
       box.hidden = false;
       box.innerHTML = list.map((x, i) => '<div class="pbc-invite" role="group" aria-label="Company invitation">'
-        + '<p class="pbc-invite-t"><strong>' + escapeHtml(x.company_name || 'A company') + '</strong> invited you to join as ' + (PB_CM_ROLES[x.role] || 'crew') + '.</p>'
+        + '<p class="pbc-invite-t"><strong>' + escapeHtml(x.company_name || 'A company') + '</strong> invited you to join as ' + (PB_CM_ROLES[pbCmRoleKey(x)] || 'crew') + '.</p>'
         + '<p class="pbc-invite-s">If you accept, the company can see your name, email and when you last signed in, and the work you file goes to them.</p>'
         + '<div class="pbc-acts"><button type="button" class="pb-btn small" data-inv-act="accept" onclick="pbCmInvAnswer(' + i + ',true)">Accept</button>'
         + '<button type="button" class="pb-btn ghost small" data-inv-act="decline" onclick="pbCmInvAnswer(' + i + ',false)">Decline</button></div></div>').join('');
@@ -45182,7 +45209,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const x = pbCmInv.list[i], uid = sbUser && sbUser.id;
     if (!x || !uid || pbCmInv.busy || pbCmInv.uid !== uid) return;
     if (!pbCmOnline()) { pbAlert(PB_CM_MSG['pb:no_signal'], 'Needs Signal'); return; }
-    const co = x.company_name || 'the company', role = PB_CM_ROLES[x.role] || 'crew';
+    const co = x.company_name || 'the company', role = PB_CM_ROLES[pbCmRoleKey(x)] || 'crew';
     const go = async () => {
       pbCmInv.busy = true;
       let d; try { d = await pbCmInvoke({ action: 'answer_invitation', invitation_id: x.id, accept: !!accept }, uid); } finally { pbCmInv.busy = false; }
@@ -45316,7 +45343,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<div class="pb-field"><label for="settingsCoTz">Company time zone</label><select id="settingsCoTz">' + zones.map(x => '<option value="' + escapeHtml(x[0]) + '"' + (x[0] === z ? ' selected' : '') + '>' + escapeHtml(x[1]) + '</option>').join('') + '</select></div>'
       + '<div class="pb-field"><label for="settingsCoTime2">Morning email time</label><select id="settingsCoTime2">' + times.map(x => '<option value="' + x + '"' + (x === t ? ' selected' : '') + '>' + pbPmTimeText(x) + '</option>').join('') + '</select></div>'
       + '<label class="pb-checkrow pbp-auto-row" for="settingsCoCopies"><input type="checkbox" id="settingsCoCopies"' + (on ? ' checked' : '') + '> <span>Send my own copies to this account</span></label>'
-      + '<p class="pb-help">Each job’s alerts go to its assigned PMs: a push right away, and one email in the morning on days something needs a look. A job with no PM sends them to this account. Quiet hours (8:55 PM to 6 AM) and the morning email follow the time zone.</p>'
+      + '<p class="pb-help">Each job’s alerts go to its assigned PMs and supers: a push right away, and one email in the morning on days something needs a look. A job with none sends them to this account; a plan change on a job with none goes to no one. Quiet hours (8:55 PM to 6 AM) and the morning email follow the time zone.</p>'
       + '<div class="pbx-btnrow"><button type="button" class="pb-btn secondary small" id="settingsCoTimeSave" onclick="pbCoTzSave()"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? 'Saving…' : 'Save') + '</button><button type="button" class="pb-btn ghost small" id="settingsCoTimeCancel" onclick="pbCoTzEdit(false)">Cancel</button></div>'
       + (S.msg ? '<p class="pb-help' + (S.msgKind === 'err' ? ' pb-err' : '') + '" id="settingsCoTimeMsg" role="status">' + escapeHtml(S.msg) + '</p>' : '') + '</div>';
   };
@@ -46273,7 +46300,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const PB_BR_MSG = {
     'pb:signed_out': 'Sign in again, then try again.',
     'pb:wrong_account': 'Another account is signed in on this phone now. Open Company logo again.',
-    'pb:not_company_account': 'Only your company account (the owner, a PM or a manager) can change the company logo.',
+    'pb:not_company_account': 'Only your company account (the owner, a PM, a superintendent or a manager) can change the company logo.',
     'pb:bad_png': 'The company server couldn’t read that picture. Nothing was changed. Try another file.',
     'pb:bad_size': 'The company server couldn’t accept the picture’s size. Nothing was changed. Try another file.',
     'pb:png_too_big': 'The picture is over 300 KB, the most the company server keeps. Nothing was changed. Try a simpler logo file.',
@@ -46511,7 +46538,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbOpenCompanyLogo = async function() {
     if (!pbCanOpen('companyLogo', { explain: true })) return;
     const uid = pbArchiveOwnerUid;
-    if (!uid || uid === 'shared' || !(await pbProdIsManager(uid))) { pbAlert('Only your company account (the owner, a PM or a manager) can change the company logo. Your reports show it by themselves.', 'Company Logo'); return; }
+    if (!uid || uid === 'shared' || !(await pbProdIsManager(uid))) { pbAlert('Only your company account (the owner, a PM, a superintendent or a manager) can change the company logo. Your reports show it by themselves.', 'Company Logo'); return; }
     if (pbBrSt.uid !== uid) pbBrSt = pbBrNew(uid);
     pbGoto('companyLogo');
     pbBrRender();
@@ -48806,7 +48833,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbOpenInspCompany = async function() {
     if (!pbCanOpen('inspCompany', { explain: true })) return;
     const uid = pbArchiveOwnerUid, a = await pbDlyAccFresh(uid);
-    if (!a.manager) { pbAlert('Only your company account (the owner, a manager or a PM) adds inspections and tests. Foremen see theirs under Inspections & tests in Records.', 'Inspections & Tests'); return; }
+    if (!a.manager) { pbAlert('Only your company account (the owner, a manager, a PM or a superintendent) adds inspections and tests. Foremen see theirs under Inspections & tests in Records.', 'Inspections & Tests'); return; }
     if (pbInsCo.uid !== uid) pbInsCo = { uid, data: null, at: 0, busy: false, msg: '' };
     pbGoto('inspCompany'); pbInsCoRender(); pbInsCoLoad();
   };
@@ -49385,7 +49412,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // weather
     let wh = '';
     if (V.weather && V.weather.data) wh = '<p id="drWeatherText">' + escapeHtml(pbDlyWeatherText(V.weather)) + '</p><p class="pbd-src" id="drWeatherLabel">' + escapeHtml(pbDlyWeatherLabel(V.weather)) + (V.location && V.location.source ? ' Job location: ' + escapeHtml({ geocoded: 'from the job address (US Census geocoder)', pin: 'pinned by the office', device_once: 'a phone’s position taken once at the jobsite' }[V.location.source] || V.location.source) + '.' : '') + '</p>';
-    else if (V.needLoc) wh = '<p id="drNeedLoc">This job has no location yet, so there’s no weather. The company account, a manager or a PM sets it on the job’s Inspections & tests page.</p>'
+    else if (V.needLoc) wh = '<p id="drNeedLoc">This job has no location yet, so there’s no weather. The company account, a manager, a PM or a superintendent sets it on the job’s Inspections & tests page.</p>'
       + (pbDlyAcc(pbArchiveOwnerUid).manager ? '<div class="pb-btn-row"><button type="button" class="pb-btn secondary small" id="drSetLocBtn" onclick="pbOpenInspJob(' + escapeHtml(JSON.stringify(V.job)) + ')">Set the Job Location</button></div>' : '');
     else wh = '<p class="pbd-dim" id="drWeatherNone">' + escapeHtml(V.wMsg || 'Not looked up yet.') + '</p>';
     wh += '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" id="drWeatherBtn" onclick="pbDlyWeather({})"' + (V.wBusy || (V.weather && V.weather.complete) ? ' disabled' : '') + '>' + (V.weather ? 'Update Weather' : V.needLoc ? 'Check Again' : 'Get Weather') + '</button></div>'
@@ -50372,7 +50399,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const ma = A ? A.list.filter(x => x.job_key === j.job_key).length : 0;
     if (ma) f.push(pbCxFlag('mat', 'cube', pbCxN(ma, 'material alert')));
     try { const sf = window.pbSchedFlag ? window.pbSchedFlag(j) : ''; if (sf) f.push(sf); } catch (e) {} // feat_schedule
-    if (j.pms === 0 && pbCxDashOn()) f.push(pbCxFlag('nopm', 'user', 'No PM assigned')); // feat_pace: its alerts go to the company account only
+    if (j.pms === 0 && pbCxDashOn()) f.push(pbCxFlag('nopm', 'user', 'No PM or super')); // feat_pace: its alerts go to the company account only
     return f.length ? '<span class="pbx-flags">' + f.join('') + '</span>' : '';
   }
   function pbCxJobCard(j, i, L, A, vr) {
@@ -50397,7 +50424,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     try { const b = window.pbCompanyBranding() || {}; name = b.companyName || null; logo = b.logo && b.logo.dataUrl ? b.logo.dataUrl : null; } catch (e) {}
     const s = sbCachedSubscription || {};
     if (!name && typeof s.companyName === 'string' && s.companyName.trim()) name = s.companyName.trim();
-    const role = typeof s.companyRole === 'string' && s.companyRole ? s.companyRole : 'Company account';
+    const role = typeof s.companyRole === 'string' && s.companyRole ? pbRoleShown(s) : 'Company account';
     const day = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
     return (logo && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(logo) ? '<img class="pb-coh-logo" id="homeCoLogoImg" src="' + logo + '" alt="' + pbCxE((name || 'Company') + ' logo') + '">' : '<span class="pb-coh-mark" aria-hidden="true"></span>')
       + '<span class="pb-coh-bt"><span class="pb-coh-co" id="homeCoName">' + pbCxE(name || 'Your company') + '</span><span class="pb-coh-role" id="homeCoRole">' + pbCxE(role + ' · ' + day) + '</span></span>';
@@ -50937,7 +50964,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   window.pbRrOffOpen = function() { const O = pbRoFor(pbArchiveOwnerUid), x = O.open; if (!pbRrOffOn(O, x)) return; O.pe = pbRrOffForm(x); pbCxListRender(); setTimeout(() => { const f = document.getElementById('cxRunOffQ0'); if (f) f.focus({ preventScroll: true }); }, 30); };
   window.pbRrOffCancel = function() { const O = pbRoFor(pbArchiveOwnerUid); O.pe = null; pbCxListRender(); };
-  const PB_RR_OFF_ERR = { 'pb:changed': 'Someone changed this run’s production since you opened it. Go back and open the run again to see it.', 'pb:removed': 'This run was deleted.', 'pb:not_company_account': 'Only the company account or a listed PM can change it.',
+  const PB_RR_OFF_ERR = { 'pb:changed': 'Someone changed this run’s production since you opened it. Go back and open the run again to see it.', 'pb:removed': 'This run was deleted.', 'pb:not_company_account': 'Only the company account, a PM or a superintendent can change it.',
     'pb:bad_items': 'Check the numbers.', 'pb:quota': 'Too many changes today. Try again tomorrow.', 'pb:too_many_versions': 'This run’s production has been changed too many times.', 'pb:not_found': 'This run wasn’t found.' };
   window.pbRrOffSave = async function() {
     const uid = pbArchiveOwnerUid, O = pbRoFor(uid), x = O.open, F = O.pe; if (!F || !x || F.saving) return;
@@ -51868,7 +51895,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (C.mats) st.push(pbCxFlag('mat', 'cube', pbCxN(C.mats, 'material alert')));
     { const n = v.categories.filter(c => pbItemAtAlert(c)).length; if (n) st.push(pbCxFlag('mat', 'warn', pbCxN(n, 'item') + ' at alert')); } // feat_itemmat
     const menu = pbCx.menu ? '<div class="pbx-menu" id="pjCxMenu" role="group" aria-label="Edit project">'
-      + [['plan', 'Job plan', 'Categories, planned amounts, budget hours, alerts, cost codes and equipment'], ['mat', 'Materials', 'The material list, orders, amounts used and delivery tickets'], ['trench', 'Trench settings', 'Trench width, bedding and shading thickness, pipe size'], ['pms', 'Assigned PMs', 'Who gets this job’s alerts'], ['info', 'Project details', 'Name, address and start date'], ['sched', 'Schedule', 'End date, milestones, checkpoints and holidays']] /* feat_schedule */
+      + [['plan', 'Job plan', 'Categories, planned amounts, budget hours, alerts, cost codes and equipment'], ['mat', 'Materials', 'The material list, orders, amounts used and delivery tickets'], ['trench', 'Trench settings', 'Trench width, bedding and shading thickness, pipe size'], ['pms', 'PMs & supers', 'Who gets this job’s alerts and plan changes'], ['info', 'Project details', 'Name, address and start date'], ['sched', 'Schedule', 'End date, milestones, checkpoints and holidays']] /* feat_schedule */
         .map(x => '<button type="button" class="pbx-menu-btn" id="pjCxEdit_' + x[0] + '" onclick="pbCxEdit(\'' + x[0] + '\')"><span class="pbx-menu-h">' + pbCxE(x[1]) + '</span><span class="pbx-menu-s">' + pbCxE(x[2]) + '</span></button>').join('') + '</div>' : '';
     const dj = pbPd.data && Array.isArray(pbPd.data.jobs) ? pbPd.data.jobs.find(x => x && x.job_key === job.job_key) || {} : {};
     return '<div class="pbx-hero-top"><div class="pbx-hero-id"><p class="pbx-hero-site">' + pbCxE(dj.project_name || (D && D.jobsite) || job.jobsite || dj.address || 'No project name') + '</p><p class="pbx-hero-num">' + pbCxE(pbProdJobLabel(job.job_number) + (dj.address ? ' · ' + dj.address : '') + (dj.start_date && !dj.last_at ? ' · starts ' + pbProdDayText(String(dj.start_date).slice(0, 10)) : '')) + '</p></div>'
@@ -52016,7 +52043,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!(pbMat.set && key && pbMat.set[key])) { pbAlert(pbMat.set && key && pbMat.set[key] === null ? 'Trench settings aren’t on the company server yet.' : 'Trench settings load with signal. Open the job again with signal to change them.', 'Trench Settings'); return; }
       window.pbMatSettingsForm(); at('pjMatSec'); return;
     }
-    if (what === 'pms') { window.pbCxTab('overview'); if (pbPj.pms) window.pbPmJobEdit(); else pbAlert(pbPj.pmMsg || 'Assigned PMs load with signal.', 'Assigned PMs'); at('pjPmSec'); return; }
+    if (what === 'pms') { window.pbCxTab('overview'); if (pbPj.pms) window.pbPmJobEdit(); else pbAlert(pbPj.pmMsg || 'PMs and supers load with signal.', 'PMs & Supers'); at('pjPmSec'); return; }
     if (what === 'info') { window.pbCxJobPaint(); window.pbCxInfoForm(null, ''); }
     if (what === 'sched') { window.pbCxJobPaint(); window.pbSchedForm(null, ''); } // feat_schedule
   };
@@ -52466,7 +52493,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + (N.step === 1 ? '<p class="pbx-wiz-t" id="pjCxWizT">' + pbCxE('Set the planned amount for each category, then Save Plan. Categories can be renamed, added or removed.') + '</p>'
           + '<div class="pbx-btnrow"><button type="button" class="pbx-link" id="pjCxWizSkipPlan" onclick="pbCxWizSkip()">Skip the plan for now</button></div>'
         : '<p class="pbx-wiz-t" id="pjCxWizT">' + pbCxE('Project created. Optional: add these now, or later under Edit project.') + '</p>'
-          + '<div class="pbx-btnrow"><button type="button" class="pbx-link" id="pjCxWizMat" onclick="pbCxEdit(\'mat\')">' + pbCxIc('cube') + 'Materials list</button><button type="button" class="pbx-link" id="pjCxWizTrench" onclick="pbCxEdit(\'trench\')">' + pbCxIc('ruler') + 'Trench settings</button><button type="button" class="pbx-link" id="pjCxWizPms" onclick="pbCxEdit(\'pms\')">' + pbCxIc('people') + 'Assigned PMs</button></div>'
+          + '<div class="pbx-btnrow"><button type="button" class="pbx-link" id="pjCxWizMat" onclick="pbCxEdit(\'mat\')">' + pbCxIc('cube') + 'Materials list</button><button type="button" class="pbx-link" id="pjCxWizTrench" onclick="pbCxEdit(\'trench\')">' + pbCxIc('ruler') + 'Trench settings</button><button type="button" class="pbx-link" id="pjCxWizPms" onclick="pbCxEdit(\'pms\')">' + pbCxIc('people') + 'PMs &amp; supers</button></div>'
           + '<div class="pbx-btnrow"><button type="button" class="pbx-newbtn" id="pjCxWizDone" onclick="pbCxWizDone()">Done</button><button type="button" class="pbx-link" id="pjCxWizSkip" onclick="pbCxWizDone()">Skip for now</button></div>')
       + note;
     pbSetHtml(el, h);
@@ -54889,6 +54916,163 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.__pbAfCrewLoad = () => pbCrewLoad(pbArchiveOwnerUid, { force: true }); // tests
   window.__pbAcRptBy = (objs, uids) => pbRptPrepNames(objs).then(() => uids.map(u => pbRptBy(u))); // tests: how a PDF names people
   // ================= end r15.48 access =================
+  // ================= feat_super: Superintendent title + plan-change alerts on Home (sql/52_super.sql) =================
+  // Owner (Oct 27): a superintendent has exactly a PM's account (role 'pm' + the title 'superintendent'); the app only
+  // shows the title. When a job's plan is changed (any plan save by the office), each PM / super assigned to the job, and
+  // the company account when owner copies is on, gets a push (kind plan_change) and the alert below on Home, never the
+  // person who saved. Saves by one person on one job less than 10 minutes apart are one alert. It stays until they open
+  // the plan (the alert, or the job's Production tab / Edit Plan) or dismiss it. The list is kept per account on this
+  // phone (shown offline); an open or a dismissal without signal is kept and sent with signal, with the newest save the
+  // phone had seen (the server never hides a save made after it).
+  const PB_PA_KEY = 'pbPlanAlerts', PB_PA_Q = 'pbPlanAlertsDone';
+  let pbPa = { uid: null, list: [], more: 0, at: 0, q: [], gen: 0, all: false, flushing: false, asked: 0 };
+  const pbPaJk = (n) => String(n || '').trim().toLowerCase().slice(0, 60);
+  // a mark covers a card it names (by id, or its job) unless the card has a save newer than the mark's upto (the newest
+  // save the phone had seen): a later change is never hidden by an earlier open / dismissal
+  const pbPaCovers = (x, a) => !!(x && a && ((Array.isArray(x.ids) && x.ids.includes(a.id)) || (x.job && pbPaJk(x.job) === a.job_key)) && !(Date.parse(a.at) > Date.parse(x.upto || x.at)));
+  const pbPaVis = () => pbPa.list.filter(a => a && a.id && !pbPa.q.some(x => pbPaCovers(x, a)));
+  const pbPaOn = (uid) => { try { return !!(uid && sbUser && sbUser.id === uid && typeof window.pbIsCompanyHome === 'function' && window.pbIsCompanyHome(uid)); } catch (e) { return false; } };
+  async function pbPaReadQ(uid) { try { const q = JSON.parse((await pbGetFor(uid, PB_PA_Q)) || '[]'); return Array.isArray(q) ? q.filter(x => x && typeof x === 'object' && x.how) : []; } catch (e) { return []; } }
+  async function pbPaLocal(uid) {
+    if (pbPa.uid === uid) return;
+    let c = null; try { c = JSON.parse((await pbGetFor(uid, PB_PA_KEY)) || 'null'); } catch (e) { c = null; }
+    const q = await pbPaReadQ(uid);
+    if (pbPa.uid === uid) return;
+    pbPa = { uid, list: c && Array.isArray(c.list) ? c.list.filter(x => x && x.id) : [], more: (c && +c.more) || 0, at: (c && +c.at) || 0, q, gen: pbPa.gen + 1, all: false, flushing: false, asked: 0 };
+  }
+  async function pbPaSave(uid) { if (pbPa.uid !== uid) return; try { await pbSetFor(uid, PB_PA_KEY, JSON.stringify({ list: pbPa.list, more: pbPa.more, at: pbPa.at })); } catch (e) {} }
+  // keep an open / a dismissal on the phone, hide it at once, send it when there's signal
+  function pbPaMark(uid, item) { // hidden at once (in memory), then kept on the phone, then sent
+    if (pbPa.uid !== uid) return;
+    const x = Object.assign({ at: new Date().toISOString(), n: Math.random().toString(36).slice(2, 8) }, item);
+    pbPa.q = pbPa.q.concat([x]).slice(-50);
+    window.pbPaRender();
+    (async () => {
+      const q = (await pbPaReadQ(uid)).filter(y => !(y.n === x.n && y.at === x.at)).concat([x]).slice(-50);
+      try { await pbSetFor(uid, PB_PA_Q, JSON.stringify(q)); } catch (e) {}
+      pbPaFlush(uid);
+    })();
+  }
+  async function pbPaFlush(uid) {
+    if (pbPa.uid !== uid || pbPa.flushing || !sbUser || sbUser.id !== uid || navigator.onLine === false || !sbClient || typeof sbClient.rpc !== 'function') return;
+    pbPa.flushing = true;
+    try {
+      for (const x of await pbPaReadQ(uid)) {
+        const r = await pbPermitRpc('pb_plan_alerts_done', { p_job_number: x.job || null, p_ids: Array.isArray(x.ids) ? x.ids : null, p_how: x.how, p_expect_uid: uid, p_upto: x.upto || x.at }, 20000);
+        if (!sbUser || sbUser.id !== uid || pbPa.uid !== uid) return;
+        const ok = !!(r && !r.error && r.data && r.data.ok === true), refused = !!(r && !r.error && r.data && r.data.ok === false); // refused: it can never go through
+        if (!ok && !refused) break; // no signal / no answer / not on the server yet: kept for later
+        const q = (await pbPaReadQ(uid)).filter(y => !(y.n === x.n && y.at === x.at));
+        try { await pbSetFor(uid, PB_PA_Q, JSON.stringify(q)); } catch (e) {}
+        pbPa.q = pbPa.q.filter(y => !(y.n === x.n && y.at === x.at));
+        if (ok) { pbPa.list = pbPa.list.filter(a => !pbPaCovers(x, a)); await pbPaSave(uid); }
+      }
+    } finally { if (pbPa.uid === uid) pbPa.flushing = false; }
+    window.pbPaRender();
+  }
+  window.pbPaFetch = async function(uid) {
+    uid = uid || pbArchiveOwnerUid;
+    if (!uid || !sbUser || sbUser.id !== uid) return;
+    await pbPaLocal(uid);
+    if (!pbPaOn(uid) || navigator.onLine === false || !sbClient || typeof sbClient.rpc !== 'function') { window.pbPaRender(); return; }
+    await pbPaFlush(uid);
+    const gen = ++pbPa.gen; pbPa.asked = Date.now();
+    const r = await pbPermitRpc('pb_plan_alerts_get', {}, 20000);
+    if (pbPa.uid !== uid || pbPa.gen !== gen || !sbUser || sbUser.id !== uid) return;
+    const d = r && r.data;
+    if (!r || r.error || !d || d.ok !== true || !Array.isArray(d.alerts)) { window.pbPaRender(); return; } // no answer: what's shown stays
+    pbPa.list = d.alerts.filter(x => x && typeof x === 'object' && x.id && x.job_key); pbPa.more = Number(d.more) || 0; pbPa.at = Date.now();
+    await pbPaSave(uid);
+    window.pbPaRender();
+  };
+  function pbPaSoon(uid, force) { // automatic checks keep the anonymous-report quiet rule (pbAuthBackgroundOk)
+    if (!uid || (!force && Date.now() - pbPa.asked < 60000 && pbPa.uid === uid)) { window.pbPaRender(); return; }
+    if (pbAuthBackgroundOk()) { window.pbPaFetch(uid); return; }
+    setTimeout(() => { if (sbUser && sbUser.id === uid) pbPaSoon(uid, true); }, 30000);
+  }
+  const pbPaWhen = (a) => { const t = pbProdTimeText(a.at); return t ? (/^\d/.test(t) ? 'at ' : 'on ') + t : ''; };
+  window.pbPaRender = function() {
+    const box = document.getElementById('homePlanAlerts'); if (!box) return;
+    const uid = pbArchiveOwnerUid, L = pbPa.uid === uid && pbPaOn(uid) ? pbPaVis() : [];
+    if (!L.length) { if (!box.hidden) box.hidden = true; if (box.innerHTML) box.innerHTML = ''; return; }
+    const show = pbPa.all ? L : L.slice(0, 2), more = L.length - show.length; // two at most, so Live now stays near the top at 390 px
+    const h = '<h2 class="pbx-h pbx-pa-head" id="homePaHead">Plan changes</h2>'
+      + show.map(a => {
+        const job = pbProdJobLabel(a.job_number || a.job_key), who = [a.by || 'Someone', pbPaWhen(a)].filter(Boolean).join(' ');
+        return '<div class="pbx-pa" role="group" aria-label="' + pbCxE((a.new_plan ? 'New plan on ' : 'Plan changed on ') + job) + '" id="homePa' + pbCxE(a.id) + '">'
+          + '<button type="button" class="pbx-pa-main" id="homePaOpen' + pbCxE(a.id) + '" onclick="pbPaOpen(' + Number(a.id) + ')">'
+          + '<span class="pbx-pa-ic" aria-hidden="true">' + pbCxIc('pencil') + '</span>'
+          + '<span class="pbx-pa-tx"><span class="pbx-pa-h">' + pbCxE(a.new_plan ? 'New plan · ' : 'Plan changed · ') + '<span class="pbx-pa-nw">' + pbCxE(job) + '</span></span>'
+          + '<span class="pbx-pa-who">' + pbCxE(who + (Number(a.saves) > 1 ? ' · ' + Number(a.saves) + ' saves' : '')) + '</span>'
+          + (a.summary ? '<span class="pbx-pa-sum">' + pbCxE(a.summary) + '</span>' : '') + '</span>'
+          + '<span class="pbx-chev" aria-hidden="true">' + pbCxIc('chevron-right') + '</span></button>'
+          + '<button type="button" class="pb-btn ghost small pbx-pa-x" id="homePaX' + pbCxE(a.id) + '" aria-label="' + pbCxE('Dismiss the plan change on ' + job) + '" onclick="pbPaDismiss(' + Number(a.id) + ')">Dismiss</button></div>';
+      }).join('')
+      + (more > 0 ? '<button type="button" class="pbx-link pbx-more" id="homePaAll" onclick="pbPaAll()">Show ' + more + ' more</button>' : '')
+      + (pbPa.more > 0 && (pbPa.all || L.length <= 2) ? '<p class="pbx-pa-more" id="homePaMore">' + pbCxE('+' + pbPa.more + ' older ones; open those jobs to see their plans.') + '</p>' : '');
+    pbSetHtml(box, h);
+    if (box.hidden) box.hidden = false;
+  };
+  window.pbPaAll = function() { pbPa.all = true; window.pbPaRender(); };
+  window.pbPaOpenPlan = async function(key) {
+    if (typeof window.pbCxOpenJob !== 'function' || !(pbCx && pbCx.on)) { pbGotoTab('home'); return; }
+    await window.pbCxOpenJob(key, 'production');
+    setTimeout(() => { const el = document.getElementById('pjTableSec') || document.getElementById('pjProgress'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start' }); }, 80);
+  };
+  // the person opened this job's plan: its alerts are done (only when one is shown, so no extra call otherwise)
+  window.pbPaSeen = function(jobNumOrKey) {
+    const uid = pbArchiveOwnerUid, k = pbPaJk(jobNumOrKey);
+    if (!uid || pbPa.uid !== uid || !k) return;
+    const L = pbPaVis().filter(a => a.job_key === k); if (!L.length) return;
+    const upto = L.map(a => a.at).filter(Boolean).sort().pop() || null;
+    pbPaMark(uid, { job: L[0].job_number || k, how: 'opened', upto });
+  };
+  window.pbPaOpen = function(id) {
+    const a = pbPa.list.find(x => x && x.id === id); if (!a) return;
+    window.pbPaSeen(a.job_key);
+    window.pbPaOpenPlan(a.job_key);
+  };
+  window.pbPaDismiss = function(id) {
+    const uid = pbArchiveOwnerUid, a = pbPa.list.find(x => x && x.id === id); if (!a || pbPa.uid !== uid) return;
+    pbPaMark(uid, { ids: [a.id], how: 'dismissed', upto: a.at || null });
+    setTimeout(() => { const n = document.querySelector('#homePlanAlerts .pbx-pa-main') || document.getElementById('homeCxPulse'); if (n && n.focus) n.focus({ preventScroll: true }); }, 0);
+  };
+  // the ways a plan is opened on the job page
+  { const t0 = window.pbCxTab; if (typeof t0 === 'function') window.pbCxTab = function(k) { const r = t0.apply(this, arguments); try { if (k === 'production' && pbPj.job) window.pbPaSeen(pbPj.job.job_key || pbPj.job.job_number); } catch (e) {} return r; }; }
+  { const o0 = window.pbCxOpenJob; if (typeof o0 === 'function') window.pbCxOpenJob = async function(key, tab) { const r = await o0.apply(this, arguments); try { if (tab === 'production') window.pbPaSeen(key); } catch (e) {} return r; }; }
+  { const e0 = window.pbProdPlanEdit; if (typeof e0 === 'function') window.pbProdPlanEdit = function() { const r = e0.apply(this, arguments); try { if (pbPj.job) window.pbPaSeen(pbPj.job.job_key || pbPj.job.job_number); } catch (e) {} return r; }; }
+  // a plan-change notification opens the job's plan ('#/plan/<job key>', pb_pm.plan_change_note)
+  { const p0 = window.pbPushOpen;
+    if (typeof p0 === 'function') window.pbPushOpen = function(hash) {
+      const m = /^#\/plan\/([a-z0-9_-]{1,40})$/.exec(String(hash || ''));
+      if (!m) return p0(hash);
+      if (pbLinkBusyWhy()) return false;
+      try { window.pbPaSeen(m[1]); window.pbPaOpenPlan(m[1]); return true; } catch (e) { return false; }
+    }; }
+  // Settings › Notifications: the Plan changes row is for the office only (the server sends it to no one else)
+  { const a0 = window.pbAcPushRows; if (typeof a0 === 'function') window.pbAcPushRows = function(uid) { const r = a0.apply(this, arguments); try { const el = document.getElementById('notifTypePlanRow'); if (el && !el.hidden && !(typeof window.pbAcOffice === 'function' && window.pbAcOffice(uid))) el.hidden = true; } catch (e) {} return r; }; }
+  window.pbAccountLoadHooks.push((uid) => { if (pbPa.uid && pbPa.uid !== uid) { pbPa = { uid: null, list: [], more: 0, at: 0, q: [], gen: pbPa.gen + 1, all: false, flushing: false, asked: 0 }; window.pbPaRender(); } setTimeout(() => { if (sbUser && sbUser.id === uid) pbPaSoon(uid, true); }, 0); });
+  window.pbScreenHooks.push((name) => { if (name === 'home' && sbUser) { window.pbPaRender(); pbPaSoon(sbUser.id, false); } });
+  window.addEventListener('online', () => { if (sbUser) pbPaSoon(sbUser.id, true); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && sbUser && pbCurrentScreen === 'home') pbPaSoon(sbUser.id, false); });
+  try {
+    const st = document.createElement('style'); st.id = 'pbPaCss';
+    st.textContent = '#pbApp #homePlanAlerts{margin:16px var(--pb-gutter) 0 var(--pb-gutter)}'
+      + '#pbApp #homePlanAlerts .pbx-pa-head{font-size:18px;margin:0 0 8px}'
+      + '#pbApp .pbx-pa{display:flex;flex-direction:column;align-items:stretch;margin:0 0 8px;background:var(--pb-surface);border:1px solid var(--pbx-line);border-left:4px solid var(--pb-warn);border-radius:var(--pb-r-card,14px);box-shadow:var(--pb-elev-1)}'
+      + '#pbApp .pbx-pa-main{-webkit-appearance:none;appearance:none;flex:1 1 auto;min-width:0;min-height:44px;display:flex;align-items:flex-start;gap:10px;margin:0;padding:12px 12px 4px 12px;border:0;background:none;color:var(--pb-text);font:inherit;text-align:left;cursor:pointer}'
+      + '#pbApp .pbx-pa-ic .pb-ic{width:20px;height:20px;color:var(--pb-warn)}'
+      + '#pbApp .pbx-pa-tx{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1 1 auto}'
+      + '#pbApp .pbx-pa-h{font-weight:700;overflow-wrap:anywhere}'
+      + '#pbApp .pbx-pa-who,#pbApp .pbx-pa-sum{font-size:14px;line-height:1.35;color:var(--pb-text-2);overflow-wrap:anywhere}'
+      + '#pbApp .pbx-pa .pbx-chev{align-self:center;color:var(--pb-text-3)}'
+      + '#pbApp .pbx-pa-x{align-self:flex-end;min-height:44px;margin:0 8px 8px 0}#pbApp .pbx-pa-nw{white-space:nowrap}'
+      + '#pbApp .pbx-pa-more{margin:0 0 4px;font-size:14px;color:var(--pb-text-2)}'
+      + '#pbApp #crRoleToggle.pb-sup4{display:grid;grid-template-columns:1fr 1fr;gap:6px}#pbApp #crRoleToggle.pb-sup4 button{min-height:44px;margin:0}';
+    document.head.appendChild(st);
+  } catch (e) {}
+  window.__debugPa = () => pbPa;
+  // ================= end feat_super =================
 
   pbRunScreenHooks(pbCurrentScreen, false); // UX batch 2: Home is shown by the markup at start-up, not by pbGoto
   const pbBootGuard = setTimeout(() => {
