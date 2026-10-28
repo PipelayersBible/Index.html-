@@ -6,6 +6,48 @@
 <title>The Pipelayer's Bible</title>
 </head>
 <body>
+<div id="pbOldPhone" role="alert" style="display:none; position:fixed; left:0; top:0; right:0; bottom:0; z-index:2147483000; background:#08090B; color:#fff; padding:24px 20px; overflow:auto; font:18px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; text-align:center;"><p style="max-width:340px; margin:72px auto 20px;">This phone&rsquo;s browser is too old, or the app didn&rsquo;t load. Update the phone&rsquo;s software (Settings &rsaquo; General &rsaquo; Software Update on iPhone), then try again. For an emergency:</p><a id="pbOldPhoneCall" href="tel:911" style="display:block; max-width:300px; margin:0 auto 14px; min-height:56px; line-height:56px; border-radius:12px; background:#C62828; color:#fff; font-weight:700; font-size:20px; text-decoration:none;">Call 911</a><button type="button" id="pbOldPhoneClose" style="display:block; width:100%; max-width:300px; margin:0 auto; min-height:44px; border:1px solid #666; border-radius:12px; background:transparent; color:#fff; font:inherit; font-size:16px;">Close</button></div>
+<script>
+/* r15.56 boot watchdog: shows the message above when the main script never started (an old browser refused it, or it
+   didn't load). Checked once the page has been read (every inline script has run by then, so a slow download never
+   counts): at once if a syntax error came first, else 8 s later. Never shown once the main script has started.
+   The call button dials the number EMERGENCY would dial at start-up (the open permit's; else a closed permit whose
+   emergency is still open; else this account's default; else 911), read straight from the phone's storage. Old-browser safe on purpose: ES5 only (var, function). */
+(function () {
+  var shown = false, syntax = false;
+  function started() { return !!window.__pbMainInit; }
+  function okNum(v) { v = String(v == null ? '' : v).replace(/^\s+|\s+$/g, ''); return /^\+?[0-9][0-9 \-]*$/.test(v) && v.replace(/\D/g, '').length >= 3 ? v : ''; }
+  function dialNum() {
+    var n = '';
+    try {
+      // the same order as EMERGENCY (pbDialNumberNow) at start-up: the open permit's number; with no open permit, the
+      // closed permit whose emergency is still open (its kept panel sets pbLastDialNumber); then the account's default
+      var u = localStorage.getItem('lastKnownUserId') || 'shared', raw = localStorage.getItem(u + ':activeConfinedSession'), d = null, m = null;
+      try { d = raw ? JSON.parse(raw) : null; } catch (e1) { d = null; }
+      if (d && d.permit) n = okNum(d.permit.emergencyDialNumber);
+      else { try { m = JSON.parse(localStorage.getItem(u + ':confinedClosedEmergency') || 'null'); } catch (e2) { m = null; } if (m) n = okNum(m.num); }
+      if (!n) n = okNum(localStorage.getItem(u + ':confinedDialDefault'));
+    } catch (e) { n = ''; }
+    return n || '911';
+  }
+  function show() {
+    if (shown || started()) return;
+    var el = document.getElementById('pbOldPhone'); if (!el) return;
+    shown = true;
+    var n = dialNum(), a = document.getElementById('pbOldPhoneCall'), c = document.getElementById('pbOldPhoneClose');
+    if (a) { a.setAttribute('href', 'tel:' + n.replace(/[^0-9+]/g, '')); a.textContent = 'Call ' + n; }
+    if (c) c.onclick = function () { el.style.display = 'none'; };
+    el.style.display = 'block';
+  }
+  window.addEventListener('error', function (e) {
+    if (started()) return;
+    var er = e && e.error, m = String((e && e.message) || '');
+    if ((er && er.name === 'SyntaxError') || /SyntaxError|Invalid regular expression/i.test(m)) { syntax = true; if (document.readyState !== 'loading') show(); }
+  });
+  function arm() { if (syntax) show(); setTimeout(show, 8000); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arm); else arm();
+})();
+</script>
 <script>
 /* r15.3.1: write innerHTML only when it really changes (see fix_churn) */
 window.pbSetHtml = function(el, h) {
@@ -790,9 +832,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   } catch (e) { /* the reporter must never affect the app */ }
 })();
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" media="print" onload="this.media='all'">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+/* r15.56: the fonts come from the <link> above, which never holds up the page (an @import here made the app script wait for them) */
 
 .pb-app {
   overflow-wrap: anywhere;
@@ -9338,7 +9381,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.55 · 2026-10-28'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.56 · 2026-10-28'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -17912,11 +17955,32 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     Promise.resolve(done).finally(() => { if (pbForemanSubmitted.get(entry) === mark) pbForemanSubmitted.delete(entry); });
     return done;
   };
+  // r15.56: structuredClone is missing before iOS 15.4 (it threw there). The same deep copy without it: Dates stay Dates
+  // (lockTime must stay a real Date, which JSON would turn into a string), arrays, plain objects, Map and Set are copied;
+  // shared and circular references are kept as they were. Anything else (a Blob, a File) is kept as it is.
+  // (Review r15.56: deliberately not a JSON round trip; it only backs the four run-entry snapshots, which hold plain data.)
+  function pbClone(v) {
+    if (typeof structuredClone === 'function') return structuredClone(v);
+    const seen = new Map();
+    const c = (x) => {
+      if (x === null || typeof x !== 'object') return x;
+      if (seen.has(x)) return seen.get(x);
+      let o;
+      if (x instanceof Date) o = new Date(x.getTime());
+      else if (Array.isArray(x)) { o = []; seen.set(x, o); for (let i = 0; i < x.length; i++) o[i] = c(x[i]); return o; }
+      else if (x instanceof Map) { o = new Map(); seen.set(x, o); x.forEach((val, key) => o.set(c(key), c(val))); return o; }
+      else if (x instanceof Set) { o = new Set(); seen.set(x, o); x.forEach(val => o.add(c(val))); return o; }
+      else if (Object.getPrototypeOf(x) === Object.prototype || Object.getPrototypeOf(x) === null) { o = {}; seen.set(x, o); Object.keys(x).forEach(k => { o[k] = c(x[k]); }); return o; }
+      else o = x;
+      seen.set(x, o); return o;
+    };
+    return c(v);
+  }
   async function pbApplyForemanData(entry, submitted) {
     if (!runArchive.includes(entry)) return;
     const isCur = () => getCurrentArchiveEntry() === entry; // UI is only touched while this run is still the one on screen
     const noteText = (f) => f ? 'Saved ' + new Date(f.enteredAt).toLocaleString() + (f.enteredBy ? ' by ' + f.enteredBy : '') : '';
-    const priorForeman = entry.foreman ? structuredClone(entry.foreman) : null;
+    const priorForeman = entry.foreman ? pbClone(entry.foreman) : null;
     const myForeman = entry.foreman = { ...submitted, enteredAt: Date.now() };
     const modToken = markEntryModified(entry);
     const savedOk = await saveRunArchive();
@@ -18847,7 +18911,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const layKeep = pbLayKeepEvidence(entry, calc); // Batch 9
     calc = layKeep.calc;
     pbAdoptOldAddedRows(entry); // an older record not reloaded since: its added points' notes must move with them
-    const preSnapshot = structuredClone(entry); // full state before any mutation below — restored on save failure so a retry isn't blocked by stale, never-actually-saved changes. structuredClone (not JSON round-tripping) is required here specifically to keep lockTime a real Date, not a string.
+    const preSnapshot = pbClone(entry); // full state before any mutation below — restored on save failure so a retry isn't blocked by stale, never-actually-saved changes. structuredClone (not JSON round-tripping) is required here specifically to keep lockTime a real Date, not a string.
     const notesWaiting = pbNotesWaitingFor(entry);
     const preRefs = { ...entry }; // shallow references to the original top-level values — the restore on failure reuses these (when unmodified) so anything queued against those objects keeps working
     const priorLastCalc = lastCalc; // restored alongside entry on failure — otherwise a later Add Interval would interpolate against a calculation that was never actually committed
@@ -18968,7 +19032,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const pendingPrior = pendingLockRetries.filter(p => p.entryId === entry.id && p.statsStatus !== 'done').map(p => ({ p, calc: p.calc, cfv: p.cfv, depthFlagged: p.depthFlagged }));
     pendingPrior.forEach(x => { x.p.calc = calc; x.p.cfv = cfv; x.p.depthFlagged = depthFlagged; });
     const corrToken = markEntryModified(entry);
-    const mineSnapshot = structuredClone(entry); // this operation's own post-mutation state — the middle leg of the three-way restore below
+    const mineSnapshot = pbClone(entry); // this operation's own post-mutation state — the middle leg of the three-way restore below
     const saveSucceeded = await saveRunArchive();
     if (!saveSucceeded) {
       // Restore the entry to exactly its pre-correction state — otherwise
@@ -24630,7 +24694,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     lines.push('EMERGENCY NUMBER (dialed by the EMERGENCY button): ' + (p.emergencyDialNumber ? p.emergencyDialNumber : pbDialNumberNow() + ' (not set on this permit)'));
     if (pbNumbersReachedText(p)) lines.push('NUMBER RECORDED ON THE EMERGENCY PANEL (filled in with the number dialed unless changed by hand; the app cannot know whether a call connected): ' + pbNumbersReachedText(p));
     pbTxReportLines(p).forEach(l => lines.push(l)); /* feat_text911: texts opened, position */
-    if (pbEmLinkOk(p.emLink)) lines.push('RESPONDER INFO LINK (read-only, no sign-in; stops working 3 days after closeout, or after the last emergency ends if later): ' + pbEmUrl(p.emLink.k)); /* feat_emlink */
+    if (pbEmLinkOk(p.emLink)) lines.push(pbEmReportLine(p.emLink.k, confinedSessionOwnerUid)); /* feat_emlink; r15.56: only a link that works says so */
     { const air = pbLatestAirLine(false); lines.push('LATEST AIR TEST: ' + (air || 'none logged')); }
     if (confinedEmergencyIncidents.length) {
       const openN = confinedEmergencyIncidents.filter(i => !i.end).length;
@@ -25087,10 +25151,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // never put in a group text. The permit's own emergency number is texted on its own, so it is left out here.
   function pbTxContactNums(raw, emNum) {
     const emD = String(emNum || '').replace(/\D/g, ''), em = emD.length >= 7 ? pbTxKey10(emD) : null, out = [], seen = new Set();
-    const re = /(?<![\d+])(?:\+?1[ .-]?)?\(?\d{3}\)?[ .-]?\d{3}[ .-]?\d{4}(?!\d)|(?<![\d+])\+\d[\d .-]{6,20}\d(?!\d)/g;
+    const re = /(^|[^\d+])((?:\+?1[ .-]?)?\(?\d{3}\)?[ .-]?\d{3}[ .-]?\d{4}(?!\d)|\+\d[\d .-]{6,20}\d(?!\d))/g; /* r15.56: no lookbehind (iOS before 16.4 refuses the whole script): group 1 is the character before, group 2 the number */
     let m;
     while ((m = re.exec(String(raw || ''))) !== null) {
-      const n = pbTxDigits(m[0]), d = n.replace(/\D/g, '');
+      const n = pbTxDigits(m[2]), d = n.replace(/\D/g, '');
       if (n.startsWith('+') && (d.length < 8 || d.length > 15)) continue;
       if (!n.startsWith('+') && d.length !== 10 && !(d.length === 11 && d[0] === '1')) continue;
       const k = pbTxKey10(d);
@@ -25249,6 +25313,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbEmUsable(k, uid, entry) {
     if (typeof k !== 'string' || !PB_EM_RE.test(k)) return false;
+    /* r15.56: a permit kept with no account is never uploaded, so its link could never work: the text goes without it.
+       An account's permit keeps the link even before the upload: the responder page keeps checking until it arrives. */
+    if (!uid || uid === 'shared') return false;
     try {
       const end = pbEmEndOf(uid, k);
       if (end && (!end.refused || end.refused === 'pb:not_yours')) return false; // stop requested / done; or the code is another permit's
@@ -25392,6 +25459,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbTxLastTap = { kind, at: now };
     const body = pbTxMain(f); // contacts get exactly the same text
     pbNavigateExternal(pbSmsUrl(to, body));
+    try { if (f.em && !pbEmFiled(live ? confinedSessionOwnerUid : k.uid, f.em, null)) setTimeout(() => { try { if (live) pbEmPushNow(); else if (window.pbPermitBackupNow) window.pbPermitBackupNow(); } catch (e) {} }, 0); } catch (e) {} /* r15.56: the link isn't confirmed on the server: send the permit now (after the hand-off; nothing waits on it) */
     const rec = { kind, number: to.join(', '), time: now };
     if (live) {
       confinedPermit.emergencyTexts = (Array.isArray(confinedPermit.emergencyTexts) ? confinedPermit.emergencyTexts : []).concat([rec]);
@@ -27940,7 +28008,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (k in base) {
         // Restored from the ORIGINAL object when it is still intact, so those
         // same captured references keep working; a clone only as a fallback.
-        entry[k] = (refs && k in refs && JSON.stringify(refs[k]) === bs) ? refs[k] : structuredClone(base[k]);
+        entry[k] = (refs && k in refs && JSON.stringify(refs[k]) === bs) ? refs[k] : pbClone(base[k]);
       } else delete entry[k];
     });
   }
@@ -29015,7 +29083,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // A concise snippet: the whole text when short, else the sentence(s) holding the match.
   function pbEduSnippet(body, terms) {
     if (body.length <= 240) return { text: body, partial: false };
-    const sents = body.split(/(?<=[.!?])\s+/);
+    const sents = []; { const sre = /[.!?]\s+/g; let sm, from = 0; while ((sm = sre.exec(body)) !== null) { sents.push(body.slice(from, sm.index + 1)); from = sm.index + sm[0].length; } sents.push(body.slice(from)); } /* r15.56: the split at whitespace after . ! ?, without lookbehind */
     let start = sents.findIndex(s => terms.some(t => pbEduTermRx(t).test(s)));
     if (start < 0) start = 0;
     let end = start, text = sents[start];
@@ -32763,6 +32831,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         timeouts = 0;
         const prev = st[x.cid] || {};
         st[x.cid] = { h: x.h, at: Date.now(), v: r.data && typeof r.data.version === 'number' ? r.data.version : (prev.v || null) };
+        try { const xp = x.rec && x.rec.permit; if (xp && xp.emLink) pbEmFiledMark(uid, xp.emLink.k); } catch (e) {} /* r15.56 */
         changed = true;
       }
       if (changed && same()) await pbPermitBkSave(uid, st);
@@ -32804,7 +32873,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (pbOpenBk.uid === uid && pbOpenBk.sid === sid && pbOpenBk.hash === h) return;
       if (!(await pbLiveSessionIs(uid)) || !sbUser || sbUser.id !== uid || !confinedPermit || confinedPermit.sessionId !== sid) return;
       const r = await pbPermitRpc('pb_permit_open_put', { p_client_permit_id: 'cps-' + String(sid).slice(0, 90), p_snapshot: snap, p_expect_uid: uid }, 30000);
-      if (!r.error && r.data && r.data.ok === true) { pbOpenBk.uid = uid; pbOpenBk.sid = sid; pbOpenBk.hash = h; return; }
+      if (!r.error && r.data && r.data.ok === true) { pbOpenBk.uid = uid; pbOpenBk.sid = sid; pbOpenBk.hash = h; if (d.permit.emLink) pbEmFiledMark(uid, d.permit.emLink.k); /* r15.56 */ return; }
       const msg = String((r.error && r.error.message) || ''), code = (msg.match(/pb:\w+/) || [''])[0];
       if (code || /update_app|does not exist|Could not find/i.test(msg)) pbOpenBk.until = Date.now() + (pbEmergencyOpen() ? 60000 : 10 * 60000); /* feat_emlink: 1 min while an emergency is open */ // refused or not installed on the server yet: try again later
     } catch (e) {} finally { pbOpenBk.busy = false; }
@@ -32828,6 +32897,31 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     try { localStorage.setItem(uid + ':' + PB_EM_ENDS_KEY, JSON.stringify(list.filter(x => !x.done || x.done > old).slice(-300))); return true; } catch (e) { return false; }
   }
   function pbEmEndOf(uid, k) { return uid && uid !== 'shared' ? pbEmEndsRead(uid).find(x => x.k === k) || null : null; }
+  // r15.56: the codes the server has filed for this account (<uid>:emFiled = [{ k, at }]): marked when an upload that
+  // carries the code succeeds (pb_permit_open_put, or the closed record's pb_permit_backup). Display only: the report and
+  // the PDF say the link "works once this permit reaches the server" until then; Text 911 then also asks for an upload.
+  const PB_EM_FILED_KEY = 'emFiled';
+  function pbEmFiledRead(uid) {
+    try { const a = JSON.parse(localStorage.getItem(uid + ':' + PB_EM_FILED_KEY) || '[]'); return Array.isArray(a) ? a.filter(x => x && typeof x.k === 'string' && PB_EM_RE.test(x.k)) : []; } catch (e) { return []; }
+  }
+  function pbEmFiledMark(uid, k) {
+    try {
+      if (!uid || uid === 'shared' || typeof k !== 'string' || !PB_EM_RE.test(k)) return false;
+      const list = pbEmFiledRead(uid); if (list.some(x => x.k === k)) return true;
+      list.push({ k, at: Date.now() });
+      const old = Date.now() - 35 * 86400000; // a link can't live longer than 30 days
+      localStorage.setItem(uid + ':' + PB_EM_FILED_KEY, JSON.stringify(list.filter(x => !(x.at < old)).slice(-300)));
+      try { pbTxRender(); } catch (e) {}
+      return true;
+    } catch (e) { return false; }
+  }
+  function pbEmFiled(uid, k, entry) {
+    if (!uid || uid === 'shared') return false;
+    if (pbEmFiledRead(uid).some(x => x.k === k)) return true;
+    const sv = pbEmSrv[k]; if (sv && (sv.status === 'open' || sv.status === 'closed')) return true; // the server answered for it
+    try { if (entry && sbUser && sbUser.id === uid) { const st = pbPermitBkStateOf(entry); if (st && (st.k === 'ok' || st.had)) { pbEmFiledMark(uid, k); return true; } } } catch (e) {} // a record backed up before r15.56 (kept from now on)
+    return false;
+  }
   function pbEmEndQueue(uid, k, cid, why) {
     if (!uid || uid === 'shared' || !PB_EM_RE.test(String(k || '')) || !cid) return false; // a permit kept without an account was never uploaded
     const list = pbEmEndsRead(uid), had = list.find(x => x.k === k);
@@ -32893,10 +32987,19 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return { k: p.emLink.k, until, unresolved, expired: isFinite(until) && Date.now() > until, end,
       stopped: !!(end && end.done && !end.err && !end.refused), pending: pbEmEndPending(end), refused: end && end.refused ? end.refused : null };
   }
+  // r15.56: the report's responder-link line. Kept with no account: no link at all (it never reaches the server). An account
+  // but not confirmed on the server from this phone: the link "works once this permit reaches the server". Else as before.
+  function pbEmReportLine(k, uid) {
+    if (!uid || uid === 'shared') return 'RESPONDER INFO LINK: none: kept on this phone without an account';
+    if (!pbEmFiled(uid, k, null)) return 'RESPONDER INFO LINK (works once this permit reaches the server): ' + pbEmUrl(k);
+    return 'RESPONDER INFO LINK (read-only, no sign-in; stops working 3 days after closeout, or after the last emergency ends if later): ' + pbEmUrl(k);
+  }
   const PB_EM_REFUSED_WORDS = { 'pb:not_yours': 'the server has this code on another permit', 'pb:bad_token': 'the server did not accept the code', 'pb:bad_id': 'the server did not accept the permit id' };
   function pbEmPdfRow(e) {
     const st = pbEmRecordState(e); if (!st) return null;
+    if (!pbArchiveOwnerUid || pbArchiveOwnerUid === 'shared') return ['Responder info link', 'none: kept on this phone without an account']; /* r15.56 */
     const when = isFinite(st.until) ? pbRptDt(st.until) : '';
+    if (!st.stopped && !st.expired && !pbEmFiled(pbArchiveOwnerUid, st.k, e)) return ['Responder info link (works once this permit reaches the server)', pbEmUrl(st.k)]; /* r15.56 */
     const tail = st.stopped ? 'sharing stopped ' + pbRptDt(st.end.done)
       : st.expired ? 'expired ' + when
       : st.refused ? 'NOT stopped: ' + (PB_EM_REFUSED_WORDS[st.refused] || 'refused') + '; still shared' + (when ? ' until ' + when : '')
@@ -56294,6 +56397,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       document.getElementById('pbBootCover').style.display = 'none';
     }
   }, 20000);
+  window.__pbMainInit = Date.now(); /* r15.56 boot watchdog: the main script ran to its end */
   pbBootSequence().catch(e => {
     console.error('Start-up failed:', e);
     try { if (window.pbCrash) window.pbCrash.capture(e, { source: 'startup', handled: true, label: 'Start-up failed' }); } catch (x) {} // Batch 4 (R2): fixed label only

@@ -1,8 +1,14 @@
-/* The Pipelayer's Bible: push-only service worker (batch 13, P).
+/* The Pipelayer's Bible: service worker (batch 13, P; r15.56 feat_safety56: the app page for a reload with no signal).
  *
- * It ONLY shows push notifications and opens the app when one is tapped.
- * It has NO fetch handler and keeps NO cache: the page and everything else load exactly as without it,
- * so crews can never be served a stale build by this file. (Offline use already works: the app is one file.)
+ * 1. Push notifications: it shows them and opens the app when one is tapped (unchanged since batch 13).
+ * 2. r15.56: a reload with no signal (or a signal that hangs) used to show a blank page, so an open permit, its timers,
+ *    the roster and the EMERGENCY button were out of reach. Now, for the app page and the pinned supabase-js file only:
+ *    the network first, exactly as before; the last good copy this phone got is shown when the network fails, answers
+ *    404 / 5xx, or hasn't answered in 4 s (the network answer still refreshes the copy when it comes). Every good load
+ *    replaces the copy, so with signal the phone gets the newest app. Nothing else is ever touched (other scripts,
+ *    images, the server, the responder page).
+ *    The copies live in one cache named after the build (filled in by mksw.py); a new build's worker carries the page
+ *    forward and only then throws the older caches away.
  *
  * The app writes the account that turned notifications on for this phone into IndexedDB ('pb-push' / 'kv' /
  * 'owner'). A message for any other account is never shown with its own words.
@@ -10,8 +16,107 @@
  */
 'use strict';
 
-self.addEventListener('install', () => { self.skipWaiting(); });
-self.addEventListener('activate', (event) => { event.waitUntil(self.clients.claim()); });
+const PB_SW_BUILD = 'r15.56 · 2026-10-28';
+const PB_SB_URL = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'; // the page's supabase-js <script src> (crossorigin), read from the page by mksw.py
+const PB_SHELL_PREFIX = 'pb-shell-';
+const PB_SHELL = PB_SHELL_PREFIX + PB_SW_BUILD.replace(/[^A-Za-z0-9.]+/g, '-');
+const PB_NET_WAIT_MS = 4000;
+let pbSlowUntil = 0; // after the page itself came from the copy (no or hung signal): supabase-js too, at once
+
+// The cache key: no query, no #, and ".../index.html" is the same page as ".../".
+function pbShellKey(url) {
+  const u = new URL(url, self.registration.scope);
+  u.search = ''; u.hash = '';
+  if (/\/index\.html$/i.test(u.pathname)) u.pathname = u.pathname.replace(/index\.html$/i, '');
+  return u.href;
+}
+// Only a whole, real copy is kept: a page from this site, or the supabase-js file (a CORS answer).
+function pbPageOk(res) {
+  return !!res && res.status === 200 && res.type === 'basic' && !res.redirected && /text\/html/i.test(res.headers.get('content-type') || '');
+}
+function pbLibOk(res) {
+  return !!res && res.status === 200 && (res.type === 'cors' || res.type === 'basic') && !res.redirected;
+}
+async function pbShellPut(url, res) {
+  try { const c = await caches.open(PB_SHELL); await c.put(pbShellKey(url), res); } catch (e) {}
+}
+// The kept copy for this address; for the app's own address (the scope, or a page under it) the app page.
+async function pbShellFind(url, page) {
+  try {
+    const c = await caches.open(PB_SHELL);
+    const hit = await c.match(pbShellKey(url));
+    if (hit || !page) return hit || null;
+    const scope = self.registration.scope, u = new URL(url);
+    if (u.href.indexOf(scope) === 0 && /(\/|\.html)$/i.test(u.pathname)) return (await c.match(pbShellKey(scope))) || null;
+  } catch (e) {}
+  return null;
+}
+const pbIsLib = (url) => PB_SB_URL.indexOf('https://') === 0 && url === PB_SB_URL;
+
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+  // The app page and supabase-js are kept at once (fresh from the server). Never blocks the worker for long: after
+  // 20 s it goes on without them (the next load fills them in).
+  event.waitUntil(Promise.race([
+    Promise.all([
+      (async () => { try { const res = await fetch(self.registration.scope, { cache: 'no-cache', credentials: 'same-origin' }); if (pbPageOk(res)) await pbShellPut(self.registration.scope, res); } catch (e) {} })(),
+      (async () => { try { if (!pbIsLib(PB_SB_URL)) return; const res = await fetch(PB_SB_URL, { mode: 'cors', credentials: 'omit', cache: 'no-cache' }); if (pbLibOk(res)) await pbShellPut(PB_SB_URL, res); } catch (e) {} })(),
+    ]),
+    new Promise((r) => setTimeout(r, 20000)),
+  ]));
+});
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    try {
+      const names = (await caches.keys()).filter((n) => n.indexOf(PB_SHELL_PREFIX) === 0 && n !== PB_SHELL);
+      const c = await caches.open(PB_SHELL), keys = [pbShellKey(self.registration.scope)].concat(pbIsLib(PB_SB_URL) ? [pbShellKey(PB_SB_URL)] : []);
+      // a copy the new cache doesn't have yet comes forward from the newest older cache that has it
+      for (const k of keys) {
+        if (await c.match(k)) continue;
+        for (const n of names.slice().reverse()) { const r = await (await caches.open(n)).match(k); if (r) { await c.put(k, r); break; } }
+      }
+      // the older caches go only once this one holds the app page
+      if (await c.match(keys[0])) await Promise.all(names.map((n) => caches.delete(n)));
+    } catch (e) {}
+    await self.clients.claim();
+  })());
+});
+
+// Network first; the kept copy on a failure, a 404 / 5xx (supabase-js: any answer that isn't good), or no answer in
+// 4 s (at once for 60 s after the page itself had to come from the copy).
+function pbNetFirst(event, req, page) {
+  const ok = page ? pbPageOk : pbLibOk;
+  const net = fetch(req);
+  event.waitUntil(net.then((res) => (ok(res) ? pbShellPut(req.url, res.clone()) : null)).catch(() => {}));
+  event.respondWith((async () => {
+    const wait = Date.now() < pbSlowUntil ? 0 : PB_NET_WAIT_MS;
+    let timer = null;
+    const first = await Promise.race([
+      net.then((res) => ({ res }), (err) => ({ err })),
+      new Promise((r) => { timer = setTimeout(() => r({ late: true }), wait); }),
+    ]);
+    if (timer) clearTimeout(timer);
+    // the page: a 404 / 5xx gets the copy; supabase-js: any answer that isn't a good one (403, 429, opaque ...)
+    if (first.res && !(page ? (first.res.status === 404 || first.res.status >= 500) : !ok(first.res))) return first.res;
+    const kept = await pbShellFind(req.url, page);
+    // the 60 s window starts only when the wait really ran out or the network really failed (never renewed by itself)
+    if (kept) { if (page && !first.res && (wait > 0 || first.err)) pbSlowUntil = Date.now() + 60000; return kept; }
+    if (first.res) return first.res;
+    if (first.err) throw first.err;
+    return net; // nothing kept yet: wait for the network, as without a worker
+  })());
+}
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  if (req.mode === 'navigate') {
+    let same = false; try { same = new URL(req.url).origin === self.location.origin; } catch (e) {}
+    if (same) pbNetFirst(event, req, true);
+    return;
+  }
+  if (pbIsLib(req.url)) pbNetFirst(event, req, false);
+  // everything else: left to the browser, exactly as with no service worker
+});
 
 const SAFE_URL = /^#\/[a-z0-9/_-]{1,60}$/;
 const APP_NAME = 'The Pipelayer’s Bible';
