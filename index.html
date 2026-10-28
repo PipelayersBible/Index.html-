@@ -5848,6 +5848,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <p class="pb-eyebrow"><span>Records</span><button class="pb-back" title="Home" onclick="pbGoto('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11L12 3l9 8"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></button></p>
       <h1 class="pb-title">Records</h1>
     </div>
+    <button type="button" class="pb-edu-row pb-tool-row rpf-door" id="archiveReportsAllBtn" data-ic="reports" onclick="pbOpenReportsAll()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">All reports</span><span class="sub" id="archiveReportsAllSub">Newest first · filter by date, type, job, people</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button><!-- feat_reports -->
     <div id="archiveTopActions"><button type="button" class="pb-edu-row pb-tool-row" id="archiveCrewBtn" aria-hidden="true" data-ic="people" style="display:none;" hidden onclick="pbOpenCrewMembers()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Crew members</span><span class="sub">Add, change role, remove; PMs and supers</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button><!-- batch 13 C -->
       <!-- feat_nav159: the office's lists first (company account / PMs); hidden when none is shown -->
       <div id="archiveOfficeWrap"><h2 class="pb-reports-heading" id="archiveOfficeHead">Office</h2>
@@ -5942,6 +5943,27 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div id="archivePermitBk" class="pb-arch-bkbox" hidden></div>
     <div id="archiveResumeSection" style="display:none;"></div>
     <div id="archiveList" style="margin-top:4px;"></div>
+  </div>
+
+  <!-- feat_reports (owner, Oct 27): ONE Reports page, newest first, with filters -->
+  <div class="pb-screen" id="screen-reportsAll">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>RECORDS</span><button type="button" class="pb-back" id="rpfBack" title="Back" aria-label="Back" onclick="pbBackOr(pbOpenArchive)"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
+      <h1 class="pb-title">Reports</h1>
+    </div>
+    <div class="rpf-chips" id="rpfChips" role="group" aria-label="Filters"></div>
+    <p class="rpf-status" id="rpfStatus" role="status" hidden></p>
+    <div id="rpfList" aria-live="polite"></div>
+    <div class="rpf-foot" id="rpfMoreWrap" hidden><button type="button" class="pb-btn ghost" id="rpfMore" onclick="pbRpfMore()">Load more</button></div>
+    <div class="rpf-foot"><button type="button" class="pb-btn ghost" id="rpfRefresh" onclick="pbRpfRefresh()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Refresh</button></div>
+    <div class="rpf-sheet" id="rpfSheet" hidden inert aria-labelledby="rpfSheetTitle"><!-- inert, and no role="dialog" / aria-modal, until it is opened -->
+      <button type="button" class="rpf-sheet-bg" tabindex="-1" aria-label="Close" onclick="pbRpfSheetClose()"></button>
+      <div class="rpf-sheet-card">
+        <div class="rpf-sheet-head"><h2 id="rpfSheetTitle" tabindex="-1">Filter</h2><button type="button" class="rpf-sheet-x" id="rpfSheetX" aria-label="Close" onclick="pbRpfSheetClose()">&times;</button></div>
+        <div class="rpf-sheet-body" id="rpfSheetBody"></div>
+        <div class="rpf-sheet-foot"><button type="button" class="pb-btn ghost" id="rpfSheetReset" onclick="pbRpfSheetReset()">Clear</button><button type="button" class="pb-btn" id="rpfSheetDone" onclick="pbRpfSheetDone()">Show reports</button></div>
+      </div>
+    </div>
   </div>
 
   <!-- REPORT TO MANAGEMENT -->
@@ -6440,6 +6462,75 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   #pbApp details.da-src[open] > summary { color: var(--pb-text); }
   #pbApp details.da-src > .da-src-tx { display: block; margin: 0 0 4px; font-size: 13px; color: var(--pb-text-2); }
   #pbApp .da-add .pb-btn { white-space: nowrap; flex: 1 1 0; min-width: 0; padding-left: 10px; padding-right: 10px; }
+  /* feat_reports: ONE Reports page (B1 tokens; 44 px targets; one status chip a row; day headers carry the date) */
+  #pbApp .rpf-door { border: 1px solid var(--pb-brand-line); background: var(--pb-brand-soft); margin: 4px 16px 12px; width: calc(100% - 32px); border-radius: var(--pb-r-card); }
+  #pbApp .rpf-door .name { color: var(--pb-text); font-weight: 700; }
+  #pbApp #screen-reportsAll .rpf-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 16px 8px; }
+  #pbApp .rpf-chip { display: inline-flex; align-items: stretch; min-height: 44px; border-radius: var(--pb-r-pill); border: 1px solid var(--pb-control); background: var(--pb-surface); max-width: 100%; }
+  #pbApp .rpf-chip.on { border-color: var(--pb-brand-line); background: var(--pb-brand-soft); }
+  #pbApp .rpf-chip-b { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; min-width: 44px; padding: 0 12px 0 14px; background: none; border: 0; color: var(--pb-text); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; border-radius: var(--pb-r-pill); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #pbApp .rpf-chip-b .pb-ic { flex: 0 0 auto; width: 16px; height: 16px; color: var(--pb-text-2); }
+  #pbApp .rpf-chip.on .rpf-chip-b { padding-right: 4px; }
+  #pbApp .rpf-chip-x { min-width: 44px; min-height: 44px; background: none; border: 0; border-left: 1px solid var(--pb-brand-line); color: var(--pb-text); font-size: 22px; line-height: 1; cursor: pointer; border-radius: 0 var(--pb-r-pill) var(--pb-r-pill) 0; }
+  #pbApp .rpf-clearall { min-height: 44px; padding: 0 12px; background: none; border: 0; color: var(--pb-brand); font: inherit; font-size: 15px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  #pbApp #screen-reportsAll .rpf-status { margin: 0 16px 4px; font-size: 13px; color: var(--pb-text-2); }
+  #pbApp #screen-reportsAll .rpf-status[hidden] { display: none; }
+  #pbApp .rpf-day { margin: 18px 16px 6px; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--pb-text-2); }
+  #pbApp .rpf-rows { list-style: none; margin: 0 16px; padding: 0; border-radius: var(--pb-r-card); background: var(--pb-surface); border: 1px solid var(--pb-divider); overflow: hidden; }
+  #pbApp .rpf-rows > li + li { border-top: 1px solid var(--pb-divider); }
+  #pbApp .rpf-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; padding: 10px 12px; background: none; border: 0; color: var(--pb-text); text-align: left; font: inherit; cursor: pointer; }
+  #pbApp .rpf-row:active { background: var(--pb-highlight); }
+  #pbApp .rpf-ic { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: var(--pb-raised-2); color: var(--pb-text-2); }
+  #pbApp .rpf-ic .pb-ic { width: 20px; height: 20px; }
+  #pbApp .rpf-ic-permit { color: var(--pb-warn-text); }
+  #pbApp .rpf-ic-run { color: var(--pb-info); }
+  #pbApp .rpf-ic-daily, #pbApp .rpf-ic-insp { color: var(--pb-ok); }
+  #pbApp .rpf-tx { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  /* the status chip sits top-right on the title line; the title wraps to two lines beside it; the second line (job · who · time) wraps, never cut */
+  #pbApp .rpf-h { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+  #pbApp .rpf-t { flex: 1 1 auto; min-width: 0; font-size: 16px; font-weight: 600; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+  #pbApp .rpf-s { font-size: 13px; color: var(--pb-text-2); line-height: 1.35; overflow-wrap: anywhere; }
+  #pbApp .rpf-st { flex: 0 0 auto; max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; margin: 0; }
+  @media (max-width: 359px) { /* narrow phones: the chip gets its own line under the title, so neither is cut */
+    #pbApp .rpf-h { flex-wrap: wrap; row-gap: 4px; }
+    #pbApp .rpf-t { flex-basis: 100%; }
+    #pbApp .rpf-st { max-width: 100%; }
+  }
+  #pbApp .rpf-chev { flex: 0 0 auto; width: 18px; height: 18px; color: var(--pb-text-3); }
+  #pbApp .rpf-empty { margin: 24px 16px; padding: 20px 16px; text-align: center; color: var(--pb-text-2); border: 1px dashed var(--pb-divider); border-radius: var(--pb-r-card); }
+  #pbApp .rpf-empty p { margin: 0 0 12px; font-size: 15px; line-height: 1.4; }
+  #pbApp .rpf-empty p:last-child { margin-bottom: 0; }
+  #pbApp .rpf-empty .pb-btn { min-height: 44px; width: auto; display: inline-flex; padding: 0 20px; }
+  #pbApp #rpfMoreWrap[hidden] { display: none; }
+  #pbApp .rpf-foot { display: flex; gap: 8px; padding: 16px; }
+  #pbApp .rpf-foot .pb-btn { flex: 1 1 0; min-height: 48px; }
+  /* the sheet */
+  #pbApp .rpf-sheet { position: fixed; inset: 0; z-index: 45; display: flex; align-items: flex-end; justify-content: center; }
+  #pbApp .rpf-sheet[hidden] { display: none; }
+  #pbApp .rpf-sheet-bg { position: absolute; inset: 0; background: rgba(4,5,6,0.72); border: 0; padding: 0; margin: 0; cursor: pointer; }
+  #pbApp .rpf-sheet-card { position: relative; width: 100%; max-width: 560px; max-height: 86vh; display: flex; flex-direction: column; background: var(--pb-raised); border-top: 1px solid var(--pb-divider); border-radius: 18px 18px 0 0; box-shadow: 0 -12px 32px rgba(0,0,0,.45); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  #pbApp .rpf-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 8px 4px 20px; }
+  #pbApp .rpf-sheet-head h2 { margin: 0; font-size: 18px; font-weight: 700; color: var(--pb-text); outline: none; }
+  #pbApp .rpf-sheet-x { min-width: 44px; min-height: 44px; background: none; border: 0; color: var(--pb-text-2); font-size: 26px; line-height: 1; cursor: pointer; border-radius: 22px; }
+  #pbApp .rpf-sheet-body { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 20px 8px; }
+  #pbApp .rpf-sheet-foot { display: flex; gap: 10px; padding: 10px 20px 16px; border-top: 1px solid var(--pb-divider); }
+  #pbApp .rpf-sheet-foot .pb-btn { flex: 1 1 0; min-height: 48px; }
+  #pbApp .rpf-opts { display: flex; flex-direction: column; }
+  #pbApp .rpf-opt { display: flex; align-items: center; gap: 14px; min-height: 48px; padding: 4px 0; border-bottom: 1px solid var(--pb-divider); cursor: pointer; color: var(--pb-text); font-size: 16px; }
+  #pbApp .rpf-opt[hidden] { display: none; }
+  #pbApp .rpf-opt:last-child { border-bottom: 0; }
+  #pbApp .rpf-opt input { flex: 0 0 auto; width: 24px; height: 24px; margin: 0; accent-color: var(--pb-brand); }
+  #pbApp .rpf-opt-t { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+  #pbApp .rpf-opt-s { font-size: 13px; color: var(--pb-text-2); }
+  #pbApp .rpf-sh { margin: 14px 0 2px; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--pb-text-2); }
+  #pbApp .rpf-dates { display: flex; gap: 12px; margin-top: 12px; }
+  #pbApp .rpf-dates[hidden] { display: none; }
+  #pbApp .rpf-dates .pb-field { flex: 1 1 0; min-width: 0; margin: 0; }
+  #pbApp .rpf-dates input { width: 100%; min-height: 48px; box-sizing: border-box; }
+  #pbApp .rpf-find { margin: 4px 0 6px; }
+  #pbApp .rpf-find input { width: 100%; min-height: 48px; box-sizing: border-box; }
+  #pbApp .rpf-none { margin: 12px 0; color: var(--pb-text-2); font-size: 15px; }
+  body.rpf-sheet-open { overflow: hidden; }
   .pbd-pvbox figcaption { font-size: 13px; margin: 4px 0 12px; overflow-wrap: anywhere; }
   /* feat_dailyplus: crew / equipment on site, delays / standby / extra work (B1 tokens; 44 px targets; a status is a word) */
   #pbApp .dp-wrap[hidden] { display: none; }
@@ -9247,7 +9338,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.54 · 2026-10-27'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.55 · 2026-10-28'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -50833,12 +50924,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbRptIntegrity(R, { kind: 'daily' }, fp, [['Company server fingerprint', rep.serverSha ? rep.serverSha + (rep.serverSha === fp ? ' (matches)' : ' (DIFFERS)') : 'not received yet']],
       'How the fingerprint is made: SHA-256 of the report exactly as signed and sent to the company (every section, the narrative and the signature details; the drawn signature is included by its own SHA-256), written in PostgreSQL’s jsonb text form. The company server works out the same value from the copy it received and keeps both, so a changed copy shows.');
   }
-  async function pbDlyMakePdf(rep, fromServer) {
+  async function pbDlyMakePdf(rep, fromServer, wantDoc) { /* feat_reports: wantDoc = give the file back (the PDF viewer), not save it */
     try { await pbRptPrepLogo(); } catch (e) {}
     let doc; /* feat_dailyattach: the day's reports after the daily's own pages, the delay photos inside it; progress shown */
     try { await pbRptBusy('Making the PDF…'); const unreadable = await pbDaPdfPrep(rep, !!fromServer, pbRptBusy);
       doc = pbDaMake(rep, unreadable, { title: pbPdfSafe('Daily report ' + rep.snapshot.work_date + ' Job ' + rep.snapshot.job.number), creator: pbRptBuild() }); } finally { pbRptBusy(null); }
     setTimeout(() => { try { pbDaAfterPdf(rep, () => pbDlyMakePdf(rep, fromServer)); } catch (e) { console.error(e); } }, 600);
+    if (wantDoc) return doc; /* feat_reports */
     doc.save('daily-report-' + String(rep.snapshot.job.number).replace(/[^a-z0-9-]/gi, '_') + '-' + rep.snapshot.work_date + (rep.snapshot.amendment ? '-amendment-' + rep.snapshot.amendment.version : '') + '.pdf');
   }
   window.pbDlyLocalPdf = async function(cid) { const r = pbDly.st && pbDly.st.reports.find(x => x.cid === cid); if (!r) return; if (!r.snapshot && r.serverId) { await pbDlyServerPdf(r.serverId); return; } if (r.snapshot) await pbDlyMakePdf(r); };
@@ -50852,6 +50944,459 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.__debugDaily = () => ({ st: pbDly.st, view: pbDlyView, mine: pbInsMine, job: pbInsJob });
   setTimeout(() => { try { pbDlyShowRows(); } catch (e) {} }, 0);
   // ==== end batch 23 DAILY ====
+
+  // ================= feat_reports (owner, Oct 27): ONE Reports page, newest first =================
+  // "an easy way to filter for all the different types of reports instead of having them all on different pages".
+  // One list of every report this account can already open: the server's pb_reports_feed (the r15.48 access rules, 50 a
+  // page, newest first) merged with this phone's own records (runs, permits, tickets, daily reports and management reports
+  // kept here, sent or not), so it works with no signal too. Filters: time period, type, job, the people below you on the
+  // ladder (company > PM / superintendent > foreman > pipelayer; names only), status. They are kept per account on this
+  // phone; Clear filters goes back to newest first. A row opens the screen that already shows that report.
+  const PB_RPF_KEY = 'pbRpfFilters', PB_RPF_META = 'pbRpfMeta', PB_RPF_PAGE = 50;
+  const PB_RPF_TYPES = [['run', 'Run reports'], ['daily', 'Daily reports'], ['permit', 'Confined space permits'], ['insp', 'Inspections & tests'], ['event', 'Delays & extra work'], ['ticket', 'Field tickets'], ['mgmt', 'Management reports'], ['stats', 'Stats snapshots']];
+  const PB_RPF_SERVER_TYPES = ['run', 'daily', 'permit', 'insp', 'event', 'ticket'];
+  const PB_RPF_STATUS = [['review', 'Needs review'], ['waiting', 'Waiting to send'], ['sentback', 'Sent back'], ['done', 'Signed / sent'], ['open', 'Open tests']];
+  const PB_RPF_PERIODS = [['all', 'Any time'], ['today', 'Today'], ['week', 'This week'], ['month', 'This month'], ['range', 'Pick dates']];
+  const PB_RPF_ROLE_HEAD = { pm: 'Project managers & superintendents', foreman: 'Foremen', pipelayer: 'Pipelayers' };
+  const PB_RPF_ROLE_ONE = { pm: 'Project manager', foreman: 'Foreman', pipelayer: 'Pipelayer' };
+  const pbRpfDefault = () => ({ period: 'all', from: '', to: '', types: [], job: '', people: [], status: [] });
+  const pbRpfNew = (uid) => ({ uid, f: null, rows: [], next: null, partial: false, auto: 0, busy: false, gen: 0, msg: '', server: 'idle', meta: null, metaBusy: false, metaAt: 0, at: 0, localN: PB_RPF_PAGE, shown: [], sheet: null });
+  let pbRpf = pbRpfNew(null);
+  const pbRpfEl = (id) => document.getElementById(id);
+  const pbRpfIsDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
+  const pbRpfJk = (n) => String(n || '').trim().toLowerCase().slice(0, 60);
+  function pbRpfDayShort(iso, withYear) { const x = new Date(String(iso || '').slice(0, 10) + 'T12:00:00'); if (isNaN(x)) return String(iso || ''); return x.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: withYear || x.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined }); }
+  function pbRpfDayOf(ms) { const d = new Date(ms); return isNaN(d) ? '' : d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function pbRpfUid() { const u = pbArchiveOwnerUid; return u && u !== 'shared' ? u : null; }
+  function pbRpfFor(uid) {
+    if (pbRpf.uid !== uid) { pbRpf = pbRpfNew(uid); pbRpf.f = pbRpfReadFilters(uid); const m = pbRpfReadMeta(uid); pbRpf.meta = m && m.tier === pbRpfTier(pbRpf) && pbRpfHasPeople(m.tier) ? m : (m ? Object.assign({}, m, { people: [] }) : null); } /* names kept on the phone only for the same role as now */
+    if (!pbRpf.f) pbRpf.f = pbRpfReadFilters(uid); return pbRpf;
+  }
+  // the server says who is looking: a role other than the one the phone kept drops the kept names (and a people filter the role
+  // can't use), and asks for the new choices; the list is asked again when the filter changed
+  function pbRpfTierSeen(R, tier) {
+    if (typeof tier !== 'string') return false;
+    const was = R.tierSrv; R.tierSrv = tier; let reload = false;
+    if (R.meta && R.meta.tier !== tier) { R.meta = { tier, people: [], jobs: R.meta.jobs || [] }; pbRpfSaveMeta(R); R.metaAt = 0; setTimeout(() => pbRpfMetaLoad(R, true), 0); }
+    if (!pbRpfHasPeople(tier) && R.f.people.length) { R.f.people = []; pbRpfSaveFilters(R); reload = true; }
+    if (!pbRpfHasPeople(tier) && R.meta && R.meta.people && R.meta.people.length) { R.meta.people = []; pbRpfSaveMeta(R); }
+    return reload || (was !== undefined && was !== tier);
+  }
+  // ---- the filters, kept per account (localStorage <uid>:pbRpfFilters) ----
+  function pbRpfClean(o) {
+    const f = pbRpfDefault(); if (!o || typeof o !== 'object') return f;
+    if (PB_RPF_PERIODS.some(p => p[0] === o.period)) f.period = o.period;
+    if (pbRpfIsDate(o.from)) f.from = o.from; if (pbRpfIsDate(o.to)) f.to = o.to;
+    if (f.period === 'range' && !(f.from || f.to)) f.period = 'all';
+    if (f.from && f.to && f.from > f.to) { const t = f.from; f.from = f.to; f.to = t; }
+    if (Array.isArray(o.types)) f.types = o.types.filter(t => PB_RPF_TYPES.some(x => x[0] === t));
+    if (typeof o.job === 'string') f.job = o.job.trim().slice(0, 60);
+    if (Array.isArray(o.people)) f.people = o.people.filter(p => typeof p === 'string' && /^[0-9a-zA-Z-]{1,64}$/.test(p)).slice(0, 50);
+    if (Array.isArray(o.status)) f.status = o.status.filter(s => PB_RPF_STATUS.some(x => x[0] === s));
+    return f;
+  }
+  function pbRpfReadFilters(uid) { if (!uid) return pbRpfDefault(); try { return pbRpfClean(JSON.parse(localStorage.getItem(uid + ':' + PB_RPF_KEY) || 'null')); } catch (e) { return pbRpfDefault(); } }
+  function pbRpfSaveFilters(R) { if (!R.uid) return; try { localStorage.setItem(R.uid + ':' + PB_RPF_KEY, JSON.stringify(R.f)); } catch (e) {} }
+  function pbRpfReadMeta(uid) { if (!uid) return null; try { const m = JSON.parse(localStorage.getItem(uid + ':' + PB_RPF_META) || 'null'); return m && typeof m === 'object' && Array.isArray(m.people) ? m : null; } catch (e) { return null; } }
+  function pbRpfSaveMeta(R) { if (!R.uid || !R.meta) return; try { localStorage.setItem(R.uid + ':' + PB_RPF_META, JSON.stringify(R.meta)); } catch (e) {} }
+  // ---- who is looking: the server's answer when there is one, else this phone's account check ----
+  function pbRpfTier(R) {
+    if (typeof R.tierSrv === 'string') return R.tierSrv; // the server's answer in this session (never a tier kept on the phone)
+    const a = R.uid ? pbProdAccMem.get(R.uid) : null;
+    if (a && a.manager) return a.role === 'pm' ? 'pm' : 'company';
+    if (a && a.member && a.role === 'foreman') return 'foreman';
+    if (a && a.member) return 'pipelayer';
+    return 'own';
+  }
+  const pbRpfOffice = (t) => t === 'company' || t === 'pm';
+  const pbRpfHasPeople = (t) => t === 'company' || t === 'pm' || t === 'foreman';
+  function pbRpfTypesFor(t) { return PB_RPF_TYPES.filter(([k]) => pbRpfOffice(t) || (t === 'foreman' ? true : !['daily', 'insp', 'event'].includes(k))); }
+  const pbRpfStatusOk = (b, s) => s.includes(b) || (b === 'review' && s.includes('done')); // "Signed / sent" holds what still needs review: it was sent
+  function pbRpfActive(f) { return f.period !== 'all' || f.types.length > 0 || !!f.job || f.people.length > 0 || f.status.length > 0; }
+  // the period as calendar days on this phone (the server is told the phone's zone, so both agree)
+  function pbRpfRange(f) {
+    const today = pbRpfDayOf(Date.now()), d = new Date(); d.setHours(12, 0, 0, 0);
+    if (f.period === 'today') return { from: today, to: today };
+    if (f.period === 'week') { const w = new Date(d); w.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return { from: pbRpfDayOf(w.getTime()), to: today }; }
+    if (f.period === 'month') { const m = new Date(d); m.setDate(1); return { from: pbRpfDayOf(m.getTime()), to: today }; }
+    if (f.period === 'range') return { from: f.from || '', to: f.to || '' };
+    return { from: '', to: '' };
+  }
+  function pbRpfTz() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { return ''; } }
+  // what the server is asked for; null = nothing the server holds can match (only this phone's own records)
+  function pbRpfServerFilters(R) {
+    const f = R.f, g = pbRpfRange(f), o = { tz: pbRpfTz() };
+    if (g.from) o.from = g.from; if (g.to) o.to = g.to;
+    if (f.types.length) { o.types = f.types.filter(t => PB_RPF_SERVER_TYPES.includes(t)); if (!o.types.length) return null; }
+    if (f.status.length) { o.status = f.status.filter(s => s !== 'waiting'); if (!o.status.length) return null; }
+    if (f.job) o.job = f.job;
+    if (f.people.length && pbRpfHasPeople(pbRpfTier(R))) o.people = f.people.slice();
+    return o;
+  }
+  // ---- the server's rows ----
+  window.pbRpfLoad = async function(more) {
+    const uid = pbRpfUid(); if (!uid) return;
+    const R = pbRpfFor(uid); if (more && (R.busy || !R.next)) return;
+    const gen = ++R.gen, sf = pbRpfServerFilters(R);
+    if (!more) { R.rows = []; R.next = null; R.partial = false; R.auto = 0; R.localN = PB_RPF_PAGE; }
+    if (!sf) { R.server = 'skip'; R.busy = false; R.msg = ''; pbRpfRender(); return; }
+    if (!(await pbDlyCanAsk(uid))) { if (pbRpf !== R || R.gen !== gen) return; R.server = 'offline'; R.busy = false; R.msg = navigator.onLine === false ? 'No signal. These are the reports on this phone; the crew’s and the office’s load with signal.' : 'Sign in with signal to see the crew’s and the office’s reports. These are the ones on this phone.'; pbRpfRender(); return; }
+    R.busy = true; R.msg = ''; if (!more) R.server = 'loading'; pbRpfRender();
+    const last = more ? R.next : null;
+    const r = await pbPermitRpc('pb_reports_feed', { p_filters: sf, p_before_at: last ? last.at : null, p_before_key: last ? last.key : null, p_limit: PB_RPF_PAGE, p_expect_uid: uid }, 30000);
+    if (pbRpf !== R || R.gen !== gen || pbRpfUid() !== uid) return;
+    R.busy = false;
+    if (r && !r.error && r.data && r.data.ok && Array.isArray(r.data.items)) {
+      const have = new Set(R.rows.map(x => x.key));
+      r.data.items.forEach(x => { if (x && typeof x === 'object' && typeof x.key === 'string' && !have.has(x.key)) { have.add(x.key); R.rows.push(x); } });
+      R.next = r.data.next && typeof r.data.next === 'object' && r.data.next.key ? { at: r.data.next.at, key: r.data.next.key } : null;
+      R.server = 'ok'; R.at = Date.now();
+      // a partial page: the server searched as far as one ask may and gives where to go on. Go on by itself twice
+      // ("Searching older reports…"), then Load more does it; nothing is skipped (the next ask starts where this one stopped)
+      R.partial = !!(r.data.partial && R.next);
+      if (pbRpfTierSeen(R, r.data.tier)) { setTimeout(() => window.pbRpfLoad(false), 0); }
+      else if (R.partial && R.auto < 2) { R.auto++; R.busy = true; setTimeout(() => { if (pbRpf === R && R.gen === gen) { R.busy = false; window.pbRpfLoad(true); } }, 0); }
+    } else {
+      const m = String((r && r.error && r.error.message) || '');
+      R.server = 'error';
+      R.msg = /Could not find the function|does not exist|schema cache/i.test(m) ? 'The crew’s and the office’s reports aren’t switched on for your account yet. These are the reports on this phone.'
+        : /pb:wrong_account|pb:signed_out/.test(m) ? 'Sign in again to see the crew’s and the office’s reports. These are the reports on this phone.'
+        : 'Couldn’t load the crew’s and the office’s reports. These are the ones on this phone. Tap Refresh to try again.';
+    }
+    pbRpfRender();
+  };
+  // the filter's choices: the people below you (names only) and the jobs with reports; kept for no signal
+  async function pbRpfMetaLoad(R, force) {
+    if (R.metaBusy || (!force && R.metaAt && Date.now() - R.metaAt < 300000)) return;
+    if (!(await pbDlyCanAsk(R.uid))) return;
+    R.metaBusy = true;
+    const r = await pbPermitRpc('pb_reports_people', { p_expect_uid: R.uid }, 30000);
+    R.metaBusy = false; if (pbRpf !== R) return;
+    if (r && !r.error && r.data && r.data.ok) {
+      const reload = pbRpfTierSeen(R, r.data.tier);
+      R.meta = { tier: pbRpfTier(R), people: pbRpfHasPeople(pbRpfTier(R)) && Array.isArray(r.data.people) ? r.data.people.filter(p => p && p.id) : [], jobs: Array.isArray(r.data.jobs) ? r.data.jobs.map(j => j && j.job_number).filter(Boolean) : [], at: Date.now() };
+      R.metaAt = Date.now(); pbRpfSaveMeta(R);
+      if (reload) window.pbRpfLoad(false); else pbRpfRender(); /* a people filter the role can't use was cleared: the list follows */
+    }
+  }
+  // ---- this phone's own records (shown with no signal too; sent ones the server also has are shown once) ----
+  function pbRpfLocal(R) {
+    const uid = R.uid, out = [];
+    if (pbArchiveOwnerUid === uid && Array.isArray(runArchive)) runArchive.forEach(e => {
+      if (!e || !e.id) return;
+      const at = e.lockTime instanceof Date ? e.lockTime.getTime() : Date.parse(e.lockTime); if (!isFinite(at)) return;
+      if (e.kind === 'run') {
+        const s = typeof window.pbRrArchiveSent === 'function' ? window.pbRrArchiveSent(e) : null;
+        const notDone = e.incomplete && !e.resumedIntoId;
+        const sent = s === null ? !!e.sent : s;
+        const st = notDone && !sent ? 'Not finished' : s === null ? (e.sent ? 'Emailed' : 'Not emailed') : s ? (e.reportSentHow === 'auto' ? 'Sent automatically' : 'Sent') : e.reportSendWanted ? 'Sending…' : 'Not sent';
+        out.push({ key: 'local:run:' + e.id, type: 'run', at: Number(e.reportSentAt) || at, job_number: e.jobNumber || '', title: (e.startLabel || 'Start') + ' → ' + (e.endLabel || 'End'), bucket: sent ? 'done' : 'waiting', stText: st, local: true, mine: true, dedupe: 'run|' + String(e.id), open: () => window.pbPdfViewEntry(e, 'REPORTS') });
+      } else if (e.kind === 'confined') {
+        let bk = { k: 'unknown' }; try { bk = pbPermitBkStateOf(e); } catch (x) {}
+        out.push({ key: 'local:permit:' + e.id, type: 'permit', at, job_number: e.jobNumber || '', title: 'Confined space — ' + (e.space || 'permit'), bucket: bk.k === 'ok' ? 'done' : 'waiting', stText: bk.k === 'ok' ? 'Backed up' : bk.k === 'unknown' ? 'Closed' : 'Not backed up yet', local: true, mine: true, em: e.permit && e.permit.emergencyDurationSec != null, dedupe: 'permit|' + pbPermitClientId(e), open: () => window.pbPdfViewEntry(e, 'REPORTS') });
+      } else if (e.kind === 'report') {
+        const sent = !!(e.sent || e.managementReportSupabaseId);
+        out.push({ key: 'local:mgmt:' + e.id, type: 'mgmt', at, job_number: e.jobNumber || '', title: 'Management report — ' + (e.category || 'report') + (e.anonymous ? ' (anonymous)' : ''), bucket: sent ? 'done' : 'waiting', stText: sent ? 'Sent' : 'Not sent', local: true, mine: true, open: () => window.pbPdfViewEntry(e, 'REPORTS') });
+      } else if (e.kind === 'stats-snapshot') {
+        out.push({ key: 'local:stats:' + e.id, type: 'stats', at, job_number: e.jobNumber || '', title: 'Stats snapshot', bucket: 'done', stText: '', local: true, mine: true, open: () => window.pbPdfViewEntry(e, 'REPORTS') });
+      }
+    });
+    if (pbTk && pbTk.uid === uid && Array.isArray(pbTk.list)) pbTk.list.forEach(t => {
+      const at = Number(t.createdAt) || Date.parse(t.createdAt); if (!isFinite(at)) return;
+      let k = 'pending'; try { k = pbTkState(t).k; } catch (x) {}
+      const f = t.fields || {}, sup = pbTkSupplierOf(t);
+      out.push({ key: 'local:ticket:' + t.cid, type: 'ticket', at, job_number: t.jobNumber || '', title: ((pbTkIsType(t.type) ? PB_TK_TYPES[t.type] : '') + ' ticket').trim() + (f.ticketNo ? ' #' + f.ticketNo : '') + (sup ? ' · ' + sup : ''), bucket: k === 'ok' ? 'done' : 'waiting', stText: k === 'ok' ? 'Sent' : k === 'refused' ? 'Not accepted' : 'Waiting to send', local: true, mine: true, dedupe: 'ticket|' + t.cid, open: () => window.pbOpenTicket(t.cid) });
+    });
+    if (pbDly && pbDly.uid === uid && pbDly.st && Array.isArray(pbDly.st.reports)) pbDly.st.reports.forEach(r => {
+      const at = Number(r.signedAt) || Date.parse(r.signedAt); if (!isFinite(at) || !r.jobNumber) return;
+      const sent = r.state === 'sent';
+      out.push({ key: 'local:daily:' + r.cid, type: 'daily', at, job_number: r.jobNumber, title: 'Daily report — ' + pbRpfDayShort(r.workDate), bucket: sent ? 'done' : 'waiting', stText: sent ? (r.version > 1 ? 'Amended' : 'Signed') : r.state === 'refused' ? 'Not accepted' : 'Waiting to send', local: true, mine: true, series: 'daily|' + pbRpfJk(r.jobNumber) + '|' + String(r.workDate || ''), sent,
+        open: () => pbRpfOpenLocalDaily(r) });
+    });
+    return out;
+  }
+  function pbRpfLocalMatch(R, x) {
+    const f = R.f, g = pbRpfRange(f), day = pbRpfDayOf(x.at);
+    if (g.from && day < g.from) return false; if (g.to && day > g.to) return false;
+    if (f.types.length && !f.types.includes(x.type)) return false;
+    if (f.job && pbRpfJk(x.job_number) !== pbRpfJk(f.job)) return false;
+    if (f.status.length && !pbRpfStatusOk(x.bucket, f.status)) return false;
+    if (f.people.length && pbRpfHasPeople(pbRpfTier(R))) return false; // the people filter lists the people below you: your own records aren't theirs
+    return true;
+  }
+  // ---- one list: the server's rows and the phone's, newest first ----
+  function pbRpfAuthorText(a, me) { if (!a || !a.id || a.id === me) return ''; return (a.name || 'A crew member') + (a.left ? ' (left)' : ''); }
+  function pbRpfServerRow(R, x, tier) {
+    const me = R.uid, at = Date.parse(x.at), who = pbRpfAuthorText(x.author, me), office = pbRpfOffice(tier);
+    const row = { key: x.key, type: x.type, at, job_number: x.job_number || '', who, mine: !!(x.author && x.author.id === me), x };
+    if (x.type === 'run') {
+      row.title = String(x.label || 'Run report').replace(/ to /, ' → ');
+      row.stText = x.st === 'approved' ? 'Approved' : x.st === 'sent_back' ? 'Sent back' : x.st === 'with_foreman' ? 'With foreman' : 'Needs review';
+      row.dedupe = row.mine ? 'run|' + String(x.entry_id) : null;
+      row.open = () => pbRpfOpenRun(x, tier);
+    } else if (x.type === 'daily') {
+      row.title = 'Daily report — ' + pbRpfDayShort(x.work_date); row.stText = x.st === 'amended' ? 'Amended' : 'Signed';
+      if (!who && !row.mine && x.signed_name) row.who = String(x.signed_name) + ' (left)';
+      row.dedupe = row.mine ? 'daily|' + pbRpfJk(x.job_number) + '|' + String(x.work_date || '') : null; row.open = () => pbRpfOpenDaily(x.id);
+    } else if (x.type === 'permit') {
+      row.title = 'Confined space — ' + (x.space || 'permit'); row.stText = x.st === 'updated' ? 'Closed · updated' : 'Closed'; row.em = !!x.emergency;
+      row.dedupe = row.mine ? 'permit|' + String(x.client_permit_id) : null; row.open = () => pbRpfOpenPermit(x);
+    } else if (x.type === 'insp') {
+      const k = (PB_INS_KINDS.find(p => p[0] === x.kind) || [null, 'Inspection'])[1];
+      let where = ''; try { where = pbDlyWhere(x); } catch (e) {}
+      row.title = k + (x.kind_detail ? ' (' + x.kind_detail + ')' : '') + (where ? ' · ' + where : '');
+      row.stText = x.st === 'done' ? (x.last_result === 'pass' ? 'Passed' : x.last_result === 'fail' ? 'Failed' : x.last_result === 'partial' ? 'Partly passed' : 'Done') : (x.last_result === 'fail' || x.last_result === 'partial') ? 'Failed · open' : 'Open';
+      row.open = () => window.pbOpenInspJob(x.job_number, x.jobsite || ''); // the job's inspections & tests list every item (a foreman's too, done or open)
+    } else if (x.type === 'event') {
+      const k = (PB_DP_KINDS.find(p => p[0] === x.kind) || [null, 'Delay'])[1], why = (PB_DP_REASONS.find(p => p[0] === x.reason) || [null, ''])[1], h = Number(x.hours);
+      row.title = k + (why ? ' · ' + why : '') + (isFinite(h) && h > 0 ? ' · ' + (Math.round(h * 100) / 100) + ' h' : '');
+      row.stText = x.st === 'tm_sent' ? 'T&M ticket sent' : x.st === 'reviewed' ? 'Reviewed' : office ? 'Needs review' : 'Sent';
+      row.open = () => (office ? window.pbDpoOpen(x.job_key || pbRpfJk(x.job_number)) : pbRpfOpenDaily(x.report_id));
+    } else if (x.type === 'ticket') {
+      row.title = ((PB_TK_TYPES[x.ticket_type] || '') + ' ticket').trim() + (x.ticket_no ? ' #' + x.ticket_no : '') + (x.supplier ? ' · ' + x.supplier : '');
+      row.stText = 'Sent'; row.dedupe = row.mine ? 'ticket|' + String(x.client_ticket_id) : null; row.open = () => pbRpfOpenCoTickets(x.job_number);
+    } else return null;
+    row.bucket = x.bucket;
+    return row;
+  }
+  function pbRpfList(R) {
+    const tier = pbRpfTier(R), srv = R.server === 'ok' ? R.rows.map(x => pbRpfServerRow(R, x, tier)).filter(Boolean) : [];
+    let local = pbRpfLocal(R).filter(x => pbRpfLocalMatch(R, x));
+    // a daily report series (one job, one day) shows once: an unsent one on this phone wins (it is the newer); once sent, the
+    // server's latest version (an amendment signed on another phone included); only this phone's when the server has none
+    const srvSeries = new Set(srv.filter(x => x.type === 'daily' && x.dedupe).map(x => x.dedupe));
+    const localWaiting = new Set(local.filter(x => x.type === 'daily' && !x.sent).map(x => x.series));
+    { const one = new Map(); local = local.filter(x => { if (x.type !== 'daily') return true; if (x.sent && srvSeries.has(x.series)) return false; const k = x.series + (x.sent ? '' : ':w'); if (one.has(k)) return false; one.set(k, 1); return true; }); }
+    local = local.filter(x => !(x.type === 'daily' && x.sent && localWaiting.has(x.series)));
+    const seen = new Set(local.map(x => x.dedupe).filter(Boolean).concat([...localWaiting]));
+    let all = srv.filter(x => !(x.dedupe && seen.has(x.dedupe))).concat(local);
+    all.sort((a, b) => (b.at - a.at) || (a.key < b.key ? 1 : a.key > b.key ? -1 : 0));
+    let more = false;
+    if (R.server === 'ok' && R.next) { const cut = Date.parse(R.next.at); all = all.filter(x => !x.local || x.at >= cut); more = true; } // the phone's older ones come with the server's page that reaches them
+    else if (R.server !== 'ok' && all.length > R.localN) { all = all.slice(0, R.localN); more = true; } // only this phone's: 50 at a time too
+    return { rows: all, more };
+  }
+  // ---- drawing ----
+  const PB_RPF_IC = { run: 'pipe', daily: 'clipboard', permit: 'lock', insp: 'ok', event: 'clock', ticket: 'layers', mgmt: 'reports', stats: 'chart' };
+  function pbRpfChipCls(x) { return x.bucket === 'sentback' ? 'overdue' : (x.bucket === 'review' || x.bucket === 'waiting' || x.bucket === 'open') ? 'notsent' : x.bucket === 'done' ? 'ok' : ''; }
+  function pbRpfGroupHead(ms) {
+    const d = pbRpfDayOf(ms), today = pbRpfDayOf(Date.now()), y = new Date(); y.setDate(y.getDate() - 1);
+    if (d === today) return 'Today'; if (d === pbRpfDayOf(y.getTime())) return 'Yesterday';
+    const x = new Date(ms); return x.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: x.getFullYear() === new Date().getFullYear() ? undefined : 'numeric' });
+  }
+  function pbRpfPersonName(R, id) {
+    const P = (R.meta && R.meta.people) || [], p = P.find(x => x.id === id); if (!p) return 'Someone';
+    if (p.name) return p.name + (p.left ? ' (left)' : '');
+    const same = P.filter(x => !x.name && x.role === p.role), n = same.indexOf(p) + 1;
+    return (PB_RPF_ROLE_ONE[p.role] || 'Crew member') + ' (no name set)' + (same.length > 1 ? ' ' + n : '') + (p.left ? ' (left)' : '');
+  }
+  function pbRpfChipText(R, k) {
+    const f = R.f;
+    if (k === 'date') { if (f.period === 'range') { const y = (s) => String(s || '').slice(0, 4), cur = String(new Date().getFullYear()), one = f.from && f.to && y(f.from) === y(f.to); const fmt = (s, last) => s ? pbRpfDayShort(s, last && y(s) !== cur) : '…'; if (f.from === f.to) return fmt(f.from, true); return (one && y(f.from) !== cur ? pbRpfDayShort(f.from, false).replace(/,? \d{4}$/, '') : fmt(f.from, false)) + ' – ' + fmt(f.to, true); } return f.period === 'all' ? '' : (PB_RPF_PERIODS.find(p => p[0] === f.period) || [])[1]; }
+    if (k === 'type') return !f.types.length ? '' : f.types.length === 1 ? (PB_RPF_TYPES.find(t => t[0] === f.types[0]) || [])[1] : f.types.length + ' types';
+    if (k === 'job') return f.job ? pbProdJobLabel(f.job) : '';
+    if (k === 'people') return !f.people.length ? '' : f.people.length === 1 ? pbRpfPersonName(R, f.people[0]) : f.people.length + ' people';
+    if (k === 'status') return !f.status.length ? '' : f.status.length === 1 ? (PB_RPF_STATUS.find(s => s[0] === f.status[0]) || [])[1] : f.status.length + ' statuses';
+    return '';
+  }
+  function pbRpfChipsHtml(R) {
+    const tier = pbRpfTier(R), keys = [['date', 'Date'], ['type', 'Type'], ['job', 'Job']].concat(pbRpfHasPeople(tier) ? [['people', 'People']] : [], [['status', 'Status']]);
+    let h = keys.map(([k, label]) => { const v = pbRpfChipText(R, k);
+      return '<span class="rpf-chip' + (v ? ' on' : '') + '" data-k="' + k + '"><button type="button" class="rpf-chip-b" id="rpfChip_' + k + '" aria-haspopup="dialog" onclick="pbRpfSheetOpen(\'' + k + '\')">' + escapeHtml(v || label) + '<svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-chevron-down"/></svg></button>'
+        + (v ? '<button type="button" class="rpf-chip-x" id="rpfChipX_' + k + '" aria-label="' + escapeHtml('Clear ' + label.toLowerCase()) + '" onclick="pbRpfClear(\'' + k + '\')">×</button>' : '') + '</span>'; }).join('');
+    if (pbRpfActive(R.f)) h += '<button type="button" class="rpf-clearall" id="rpfClearAll" onclick="pbRpfClearAll()">Clear filters</button>';
+    return h;
+  }
+  function pbRpfRowHtml(x, i) {
+    const t = new Date(x.at), time = isNaN(t) ? '' : t.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    const sub = [x.kindWord, x.job_number ? pbProdJobLabel(x.job_number) : '', x.who, time].filter(Boolean).join(' · ');
+    return '<li><button type="button" class="rpf-row" id="rpfRow' + i + '" data-key="' + escapeHtml(x.key) + '" onclick="pbRpfOpen(' + i + ')">'
+      + '<span class="rpf-ic rpf-ic-' + x.type + '" aria-hidden="true"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-' + (PB_RPF_IC[x.type] || 'reports') + '"/></svg></span>'
+      + '<span class="rpf-tx"><span class="rpf-h"><span class="rpf-t">' + escapeHtml(x.title || '') + '</span>'
+      + (x.em ? '<span class="pb-chip overdue rpf-st">EMERGENCY</span>' : x.stText ? '<span class="pb-chip ' + pbRpfChipCls(x) + ' rpf-st">' + escapeHtml(x.stText) + '</span>' : '') + '</span>'
+      + '<span class="rpf-s">' + escapeHtml(sub) + '</span></span>'
+      + '<svg class="pb-ic rpf-chev" aria-hidden="true" focusable="false"><use href="#pb-i-chevron-right"/></svg></button></li>';
+  }
+  window.pbRpfRender = function() {
+    const uid = pbRpfUid(), list = pbRpfEl('rpfList'); if (!list) return;
+    if (!uid) { list.innerHTML = '<p class="rpf-empty" id="rpfEmpty">Sign in to see your reports.</p>'; return; }
+    const R = pbRpfFor(uid), L = pbRpfList(R);
+    const ch = pbRpfEl('rpfChips'); if (ch) ch.innerHTML = pbRpfChipsHtml(R);
+    const st = pbRpfEl('rpfStatus');
+    if (st) { const s = R.server === 'loading' ? 'Loading…' : R.msg || (R.server === 'ok' && R.at ? 'Updated ' + pbProdTimeText(R.at) : ''); st.textContent = s; st.hidden = !s; }
+    R.shown = L.rows;
+    if (!L.rows.length && L.more && R.server === 'ok') {
+      list.innerHTML = R.busy ? '' : '<div class="rpf-empty" id="rpfEmpty"><p>None of the reports searched so far match. Tap Load more to search older ones.</p></div>';
+    } else if (!L.rows.length) {
+      const f = R.f;
+      list.innerHTML = R.server === 'loading' ? '' : pbRpfActive(f)
+        ? '<div class="rpf-empty" id="rpfEmpty"><p>No reports match these filters.' + (f.period !== 'all' ? ' Try a longer time period' + (f.types.length || f.job || f.people.length || f.status.length ? ', or clear a filter.' : '.') : ' Clear a filter to see more.') + '</p><button type="button" class="pb-btn ghost" id="rpfEmptyClear" onclick="pbRpfClearAll()">Clear filters</button></div>'
+        : '<div class="rpf-empty" id="rpfEmpty"><p>No reports yet. Runs, permits, tickets and daily reports show up here once they’re saved or sent.</p></div>';
+    } else {
+      let h = '', g = null;
+      L.rows.forEach((x, i) => { const gh = pbRpfGroupHead(x.at); if (gh !== g) { if (g !== null) h += '</ul>'; h += '<h2 class="rpf-day">' + escapeHtml(gh) + '</h2><ul class="rpf-rows">'; g = gh; } h += pbRpfRowHtml(x, i); });
+      list.innerHTML = h + '</ul>';
+    }
+    const mw = pbRpfEl('rpfMoreWrap'); if (mw) mw.hidden = !L.more;
+    const mb = pbRpfEl('rpfMore'); if (mb) { mb.disabled = !!R.busy; mb.textContent = R.busy && R.partial ? 'Searching older reports…' : R.busy && R.rows.length ? 'Loading…' : 'Load more'; }
+    const rb = pbRpfEl('rpfRefresh'); if (rb) rb.disabled = !!R.busy;
+  };
+  window.pbRpfMore = function() {
+    const uid = pbRpfUid(); if (!uid) return; const R = pbRpfFor(uid);
+    if (R.server === 'ok' && R.next) { R.auto = 0; window.pbRpfLoad(true); return; }
+    R.localN += PB_RPF_PAGE; pbRpfRender();
+  };
+  window.pbRpfRefresh = function() { const uid = pbRpfUid(); if (!uid) return; pbRpfMetaLoad(pbRpfFor(uid), true); window.pbRpfLoad(false); };
+  // ---- opening a row: the screen that already shows that report ----
+  window.pbRpfOpen = function(i) { const uid = pbRpfUid(); if (!uid) return; const x = pbRpfFor(uid).shown[i]; if (!x || typeof x.open !== 'function') return; try { x.open(); } catch (e) { console.error(e); pbAlert('This report couldn’t be opened. Try again.', 'Reports'); } };
+  function pbRpfOpenRun(x, tier) {
+    const uid = pbRpfUid(); if (!uid || !x.pipelayer_id || !x.entry_id) return;
+    window.pbRrCrewOpen(x.pipelayer_id, x.entry_id, (x.author && x.author.name) || '', tier === 'foreman' ? 'crewreports' : 'runs');
+    const O = pbRoFor(uid); O.rpfBack = O.open; // its "All run reports" (Close) comes back here
+  }
+  async function pbRpfDailyDoc(id) {
+    const uid = pbRpfUid();
+    const r = await pbPermitRpc('pb_daily_get', { p_report_id: id, p_expect_uid: uid }, 30000);
+    if (!r.data || !r.data.ok || !r.data.snapshot) throw new Error(pbDlyWhy(r.data && r.data.code, r));
+    const d = r.data;
+    return pbDlyMakePdf({ cid: d.client_report_id || d.id, serverId: d.id, snapshot: d.snapshot, sha: d.snapshot_sha256, serverSha: d.server_sha256, receivedAt: d.received_at, signature: d.signature_png_b64, version: d.version, clockAheadS: d.phone_clock_ahead_s }, true, true);
+  }
+  async function pbRpfOpenDaily(id) {
+    const uid = pbRpfUid(); if (!uid || !id) return;
+    if (!(await pbDlyCanAsk(uid))) { pbAlert('Daily reports open from the company server. Try again with signal.', 'Daily Report'); return; }
+    const row = (pbRpfFor(uid).rows || []).find(y => y.type === 'daily' && y.id === id) || {};
+    window.pbPdfViewOpen({ key: 'rpfdaily|' + id, eyebrow: 'DAILY REPORT', title: 'Daily report' + (row.job_number ? ' — ' + pbProdJobLabel(row.job_number) : ''), sub: row.work_date ? pbDlyDayText(row.work_date) : '',
+      entry: { kind: 'daily', reportText: 'Daily report' + (row.job_number ? ', ' + pbProdJobLabel(row.job_number) : '') + (row.work_date ? ', ' + pbDlyDayText(row.work_date) : '') + '. The PDF has the whole report.' },
+      make: () => pbRpfDailyDoc(id), name: 'daily-report' + (row.job_number ? '-' + String(row.job_number).replace(/[^a-z0-9-]/gi, '_') : '') + (row.work_date ? '-' + row.work_date : '') + '.pdf' });
+  }
+  async function pbRpfOpenLocalDaily(r) {
+    if (r.state === 'sent' && r.serverId && !r.snapshot) return pbRpfOpenDaily(r.serverId);
+    if (r.state === 'sent' && r.snapshot) {
+      window.pbPdfViewOpen({ key: 'rpfldaily|' + r.cid, eyebrow: 'DAILY REPORT', title: 'Daily report — ' + pbProdJobLabel(r.jobNumber), sub: pbDlyDayText(r.workDate), entry: { kind: 'daily', reportText: 'Daily report, ' + pbProdJobLabel(r.jobNumber) + ', ' + pbDlyDayText(r.workDate) + '.' },
+        make: () => pbDlyMakePdf(r, false, true), name: 'daily-report-' + String(r.jobNumber).replace(/[^a-z0-9-]/gi, '_') + '-' + r.workDate + '.pdf' });
+      return;
+    }
+    await window.pbOpenDailyReport(); // waiting to send: the day's report on the daily report screen
+    if (pbCurrentScreen !== 'dailyReport') return;
+    const j = pbDlyEl('drJob'), d = pbDlyEl('drDate'); if (j) j.value = r.jobNumber; if (d) d.value = r.workDate;
+    await window.pbDlyPick();
+  }
+  async function pbRpfOpenPermit(x) {
+    const uid = pbRpfUid(); if (!uid) return;
+    if (!(await pbDlyCanAsk(uid))) { pbAlert('This permit opens from your account. Try again with signal.', 'Permit'); return; }
+    const r = await pbPermitRpc('pb_reports_permit', { p_id: x.id, p_expect_uid: uid }, 30000);
+    if (!r || r.error || !r.data || !r.data.ok || !r.data.record) { pbAlert(r && r.data && r.data.code === 'pb:not_found' ? 'This permit isn’t one you can open.' : 'Couldn’t load this permit. Check your signal and try again.', 'Permit'); return; }
+    const p = r.data, e = pbCprEntry(p), d = new Date(p.closed_at || e.lockTime);
+    window.pbPdfViewOpen({ key: 'rpfpermit|' + String(p.row_id) + '|' + String(p.version || ''), eyebrow: 'REPORTS', title: 'Confined Space — ' + (e.space || p.space || ''),
+      sub: 'Closed ' + (isNaN(d) ? '' : d.toLocaleString()), entry: e, make: async () => pbCprPdfDoc(p).doc, name: pbCprPdfName(e) });
+  }
+  function pbRpfOpenCoTickets(job) {
+    const uid = pbArchiveOwnerUid, n = String(job || '');
+    if (pbTkDash.uid !== uid) { pbTkDashDropPhotos(); pbTkDash = pbTkDashNew(uid); }
+    if ((pbTkDash.job || '') !== n) { pbTkDashDropPhotos(); pbTkDash.job = n; pbTkDash.totals = null; pbTkDash.rows = []; pbTkDash.done = false; pbTkDash.open = {}; pbTkDash.gen++; pbTkDash.busy = false; }
+    return window.pbOpenTicketsDashboard();
+  }
+  // ---- the sheet: picking dates, types, a job, people, statuses ----
+  function pbRpfOpt(type, name, val, on, label, sub) {
+    return '<label class="rpf-opt"><input type="' + type + '" name="' + name + '" value="' + escapeHtml(val) + '"' + (on ? ' checked' : '') + '><span class="rpf-opt-t">' + escapeHtml(label) + (sub ? '<span class="rpf-opt-s">' + escapeHtml(sub) + '</span>' : '') + '</span></label>';
+  }
+  function pbRpfSheetBody(R, k) {
+    const f = R.f, tier = pbRpfTier(R);
+    if (k === 'date') {
+      const g = pbRpfRange(f);
+      return '<div class="rpf-opts" role="radiogroup" aria-label="Time period">' + PB_RPF_PERIODS.map(([v, l]) => pbRpfOpt('radio', 'rpfPeriod', v, f.period === v, l)).join('') + '</div>'
+        + '<div class="rpf-dates" id="rpfDates"' + (f.period === 'range' ? '' : ' hidden') + '><div class="pb-field"><label for="rpfFrom">From</label><input type="date" id="rpfFrom" value="' + escapeHtml(f.period === 'range' ? f.from : g.from) + '" max="' + pbRpfDayOf(Date.now()) + '"></div>'
+        + '<div class="pb-field"><label for="rpfTo">To</label><input type="date" id="rpfTo" value="' + escapeHtml(f.period === 'range' ? f.to : g.to) + '" max="' + pbRpfDayOf(Date.now()) + '"></div></div>';
+    }
+    if (k === 'type') return '<div class="rpf-opts">' + pbRpfTypesFor(tier).map(([v, l]) => pbRpfOpt('checkbox', 'rpfType', v, f.types.includes(v), l)).join('') + '</div>';
+    if (k === 'status') return '<div class="rpf-opts">' + PB_RPF_STATUS.filter(([v]) => tier !== 'pipelayer' && tier !== 'own' ? true : !['review', 'open', 'sentback'].includes(v)) /* a pipelayer's rows: waiting on this phone, or sent */.map(([v, l]) => pbRpfOpt('checkbox', 'rpfStatus', v, f.status.includes(v), l)).join('') + '</div>';
+    if (k === 'job') {
+      const jobs = new Map(); ((R.meta && R.meta.jobs) || []).concat(pbRpfLocal(R).map(x => x.job_number)).concat(R.rows.map(x => x.job_number)).forEach(n => { const s = String(n || '').trim(); if (s && !jobs.has(pbRpfJk(s))) jobs.set(pbRpfJk(s), s); });
+      if (f.job && !jobs.has(pbRpfJk(f.job))) jobs.set(pbRpfJk(f.job), f.job);
+      const list = [...jobs.values()].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+      if (!list.length) return '<p class="rpf-none">No job numbers on your reports yet.</p>';
+      return '<div class="rpf-opts" role="radiogroup" aria-label="Job">' + pbRpfOpt('radio', 'rpfJob', '', !f.job, 'All jobs') + list.map(n => pbRpfOpt('radio', 'rpfJob', n, pbRpfJk(f.job) === pbRpfJk(n), pbProdJobLabel(n))).join('') + '</div>';
+    }
+    if (k === 'people') {
+      const P = (R.meta && R.meta.people) || [];
+      if (!P.length) return '<p class="rpf-none">' + (R.metaBusy ? 'Loading the names…' : tier === 'foreman' ? 'No one on your crew yet. Your pipelayers show here once they’re on your crew.' : 'The names load with signal.') + '</p>';
+      let h = P.length > 8 ? '<div class="pb-field rpf-find"><label for="rpfFind">Find a name</label><input type="search" id="rpfFind" enterkeyhint="search" autocomplete="off" oninput="pbRpfFind(this.value)"></div>' : '';
+      ['pm', 'foreman', 'pipelayer'].forEach(role => { const L = P.filter(p => p.role === role); if (!L.length) return;
+        h += '<h3 class="rpf-sh">' + escapeHtml(PB_RPF_ROLE_HEAD[role]) + '</h3><div class="rpf-opts">' + L.map(p => pbRpfOpt('checkbox', 'rpfPerson', p.id, f.people.includes(p.id), pbRpfPersonName(R, p.id), role === 'pm' && p.title === 'superintendent' ? 'Superintendent' : '')).join('') + '</div>'; });
+      return h;
+    }
+    return '';
+  }
+  const PB_RPF_SHEET_T = { date: 'Date', type: 'Type of report', job: 'Job', people: 'People', status: 'Status' };
+  window.pbRpfSheetOpen = function(k) {
+    const uid = pbRpfUid(); if (!uid) return; const R = pbRpfFor(uid); if (!PB_RPF_SHEET_T[k]) return;
+    if (k === 'people') pbRpfMetaLoad(R, false).then(() => { if (R.sheet === 'people') { const b = pbRpfEl('rpfSheetBody'); if (b && !b.querySelector('input:checked')) b.innerHTML = pbRpfSheetBody(R, 'people'); } });
+    R.sheet = k; R.sheetFrom = document.activeElement;
+    pbRpfEl('rpfSheetTitle').textContent = PB_RPF_SHEET_T[k];
+    pbRpfEl('rpfSheetBody').innerHTML = pbRpfSheetBody(R, k);
+    const sh = pbRpfEl('rpfSheet'); sh.hidden = false; sh.inert = false; sh.removeAttribute('inert'); sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-modal', 'true'); document.body.classList.add('rpf-sheet-open');
+    if (k === 'date') pbRpfEl('rpfSheetBody').querySelectorAll('input[name=rpfPeriod]').forEach(i => i.addEventListener('change', () => { const d = pbRpfEl('rpfDates'); if (d) d.hidden = i.value !== 'range' || !i.checked; }));
+    setTimeout(() => { const t = pbRpfEl('rpfSheetTitle'); try { t.focus({ preventScroll: true }); } catch (e) {} }, 30);
+  };
+  window.pbRpfFind = function(q) { const s = String(q || '').trim().toLowerCase(); document.querySelectorAll('#rpfSheetBody .rpf-opt').forEach(l => { l.hidden = !!s && !l.textContent.toLowerCase().includes(s); }); };
+  window.pbRpfSheetClose = function() {
+    const sh = pbRpfEl('rpfSheet'); if (sh) { sh.hidden = true; sh.inert = true; sh.setAttribute('inert', ''); sh.removeAttribute('role'); sh.removeAttribute('aria-modal'); } document.body.classList.remove('rpf-sheet-open');
+    const uid = pbRpfUid(), R = uid ? pbRpfFor(uid) : null; if (!R) return;
+    const k = R.sheet; R.sheet = null; const back = pbRpfEl('rpfChip_' + k) || R.sheetFrom; try { if (back) back.focus({ preventScroll: true }); } catch (e) {}
+  };
+  window.pbRpfSheetDone = function() {
+    const uid = pbRpfUid(); if (!uid) return; const R = pbRpfFor(uid), k = R.sheet, B = pbRpfEl('rpfSheetBody'), f = Object.assign({}, R.f);
+    const vals = (n) => [...B.querySelectorAll('input[name=' + n + ']:checked')].map(i => i.value);
+    if (k === 'date') {
+      f.period = vals('rpfPeriod')[0] || 'all'; f.from = ''; f.to = '';
+      if (f.period === 'range') { const a = (pbRpfEl('rpfFrom') || {}).value || '', b = (pbRpfEl('rpfTo') || {}).value || ''; if (!pbRpfIsDate(a) && !pbRpfIsDate(b)) { pbAlert('Pick a first day, a last day, or both.', 'Pick Dates'); return; } f.from = pbRpfIsDate(a) ? a : ''; f.to = pbRpfIsDate(b) ? b : ''; }
+    }
+    if (k === 'type') f.types = vals('rpfType');
+    if (k === 'job') f.job = vals('rpfJob')[0] || '';
+    if (k === 'people') { const shown = [...B.querySelectorAll('input[name=rpfPerson]')].map(i => i.value); f.people = vals('rpfPerson').concat(R.f.people.filter(p => !shown.includes(p))); }
+    if (k === 'status') f.status = vals('rpfStatus');
+    window.pbRpfSheetClose(); pbRpfSet(R, f);
+  };
+  window.pbRpfSheetReset = function() { const uid = pbRpfUid(); if (!uid) return; const R = pbRpfFor(uid), k = R.sheet; window.pbRpfSheetClose(); window.pbRpfClear(k); };
+  function pbRpfSet(R, f) { const before = JSON.stringify(R.f); R.f = pbRpfClean(f); pbRpfSaveFilters(R); if (JSON.stringify(R.f) !== before) window.pbRpfLoad(false); else pbRpfRender(); }
+  window.pbRpfClear = function(k) {
+    const uid = pbRpfUid(); if (!uid) return; const R = pbRpfFor(uid), f = Object.assign({}, R.f);
+    if (k === 'date') { f.period = 'all'; f.from = ''; f.to = ''; } else if (k === 'type') f.types = []; else if (k === 'job') f.job = ''; else if (k === 'people') f.people = []; else if (k === 'status') f.status = [];
+    pbRpfSet(R, f);
+    setTimeout(() => { const b = pbRpfEl('rpfChip_' + k); try { if (b) b.focus({ preventScroll: true }); } catch (e) {} }, 0);
+  };
+  window.pbRpfClearAll = function() { const uid = pbRpfUid(); if (!uid) return; pbRpfSet(pbRpfFor(uid), pbRpfDefault()); };
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { const sh = pbRpfEl('rpfSheet'); if (sh && !sh.hidden) { ev.preventDefault(); window.pbRpfSheetClose(); } } });
+  // ---- the way in: Records' first row (and #/reports) ----
+  window.pbOpenReportsAll = function() {
+    if (!pbCanOpen('reportsAll', { explain: true })) return;
+    const uid = pbRpfUid(); if (!uid) { pbAlert('Sign in to see your reports.', 'Reports'); return; }
+    const R = pbRpfFor(uid);
+    pbGoto('reportsAll');
+    pbRpfMetaLoad(R, false);
+    if (!R.rows.length || Date.now() - R.at > 60000 || R.server !== 'ok') window.pbRpfLoad(false); else pbRpfRender();
+  };
+  function pbRpfDoorSub() { const s = pbRpfEl('archiveReportsAllSub'); const uid = pbRpfUid(); if (!s || !uid) return; s.textContent = pbRpfHasPeople(pbRpfTier(pbRpfFor(uid))) ? 'Newest first · filter by date, type, job, people' : 'Newest first · filter by date, type, job'; }
+  PB_CONTRACTOR_SCREENS.push('reportsAll'); PB_SCREEN_TABS.reportsAll = 'reports';
+  window.pbScreenHooks.push((name) => {
+    if (name === 'archive') { try { pbRpfDoorSub(); } catch (e) {} }
+    if (name !== 'reportsAll') { const sh = pbRpfEl('rpfSheet'); if (sh && !sh.hidden) window.pbRpfSheetClose(); return; }
+    try { pbRpfRender(); } catch (e) { console.error(e); }
+  });
+  // Back on a screen opened from here (its own Back goes to Records) comes back here; a tab still goes where the tab goes
+  { let last = null; const from = {};
+    window.pbScreenHooks.push((name) => { if (name !== last) { if (last) from[name] = last; last = name; } });
+    const PB_RPF_BACK = ['inspMine', 'tickets', 'dailyReport', 'ticketsDashboard', 'companyPermits', 'inspJob'];
+    const pbRpfOrigOpenArchive = window.pbOpenArchive;
+    window.pbOpenArchive = function() {
+      if (!pbTabMovePending && PB_RPF_BACK.includes(pbCurrentScreen) && from[pbCurrentScreen] === 'reportsAll') { pbGoto('reportsAll'); return; }
+      return pbRpfOrigOpenArchive.apply(this, arguments);
+    };
+  }
+  window.pbPushRoutes = window.pbPushRoutes || {};
+  window.pbPushRoutes['/reports'] = function() { try { pbGotoTab('reports'); } catch (e) {} setTimeout(() => window.pbOpenReportsAll(), 300); };
+  window.__debugRpf = () => ({ uid: pbRpf.uid, f: pbRpf.f, rows: pbRpf.rows.length, next: pbRpf.next, partial: pbRpf.partial, auto: pbRpf.auto, server: pbRpf.server, busy: pbRpf.busy, tier: pbRpf.uid ? pbRpfTier(pbRpf) : null, meta: pbRpf.meta, shown: (pbRpf.shown || []).map(x => ({ key: x.key, type: x.type, at: x.at, title: x.title, st: x.stText, bucket: x.bucket, who: x.who, local: !!x.local })) });
+  // ================= end feat_reports =================
 
   // ================= batch 27 CONSOLE: the company / PM experience (owner, Oct 20) =================
   // "Home = company production." For the company account, its managers and PMs (window.pbIsCompanyHome, batch 20's one
@@ -51677,7 +52222,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     } else O.recMsg = navigator.onLine === false ? 'No signal.' : 'Couldn’t load this run.';
     pbCxListRender();
   };
-  window.pbRrClose = function() { const O = pbRoFor(pbArchiveOwnerUid), back = O.fromCrew, list = O.fromList; O.open = null; O.rec = null; O.fromCrew = false; O.fromList = null; if (list) { pbCx.list = list; { const t = document.getElementById('cxListTitle'); if (t) t.textContent = PB_CX_LISTS[list] || 'Run reports'; } /* feat_runflow P8 */ pbCxListRender(); window.pbRfLoad && window.pbRfLoad(pbArchiveOwnerUid, true); } else if (back) window.pbCxListBack(); else pbCxListRender(); };
+  window.pbRrClose = function() { { const O0 = pbRoFor(pbArchiveOwnerUid); if (O0.rpfBack && O0.rpfBack === O0.open) { O0.rpfBack = null; O0.open = null; O0.rec = null; O0.fromCrew = false; O0.fromList = null; pbGoto('reportsAll'); return; } O0.rpfBack = null; } /* feat_reports */ const O = pbRoFor(pbArchiveOwnerUid), back = O.fromCrew, list = O.fromList; O.open = null; O.rec = null; O.fromCrew = false; O.fromList = null; if (list) { pbCx.list = list; { const t = document.getElementById('cxListTitle'); if (t) t.textContent = PB_CX_LISTS[list] || 'Run reports'; } /* feat_runflow P8 */ pbCxListRender(); window.pbRfLoad && window.pbRfLoad(pbArchiveOwnerUid, true); } else if (back) window.pbCxListBack(); else pbCxListRender(); };
   // The foreman (or the office) opens one crew run's report from the crew view: pb_prod_crew_run_record.
   window.pbRrCrewOpen = async function(pid, sref, name, fromList) {
     const uid = pbArchiveOwnerUid, O = pbRoFor(uid);
