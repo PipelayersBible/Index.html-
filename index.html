@@ -50,10 +50,47 @@
 </script>
 <script>
 /* r15.3.1: write innerHTML only when it really changes (see fix_churn) */
+/* feat_planfill: a re-render must never destroy the field being typed in (on iPhone the keyboard drops after every key).
+   When the focused field is inside, the new HTML is merged into the live nodes instead: the same tags in the same places
+   are kept, everything else is updated as innerHTML would, and the focused field keeps its node, value and caret. */
+window.pbFocusIn = function(el) {
+  const a = document.activeElement;
+  return !!(a && el && a !== el && el.contains(a) && a.matches && a.matches('input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=range]),textarea,select,[contenteditable="true"],[contenteditable=""]'));
+};
+window.pbMorphEl = function(x, y) {
+  if (x.nodeType !== y.nodeType || x.nodeName !== y.nodeName || (x.nodeType === 1 && (x.id || '') !== (y.id || ''))) { x.replaceWith(y); return; }
+  if (x.nodeType !== 1) { if (x.nodeValue !== y.nodeValue) x.nodeValue = y.nodeValue; return; }
+  const act = x === document.activeElement, tag = x.nodeName;
+  // attributes as the new HTML has them, in its order (the markup matches a fresh render; a typed-in field's value attribute
+  // no longer changes what it shows)
+  const xa = x.getAttributeNames(), ya = y.getAttributeNames();
+  if (xa.length !== ya.length || ya.some((n, i) => xa[i] !== n || x.getAttribute(n) !== y.getAttribute(n))) {
+    const keep = act && 'value' in x ? x.value : null;
+    xa.forEach(n => x.removeAttribute(n)); ya.forEach(n => x.setAttribute(n, y.getAttribute(n)));
+    if (keep !== null && x.value !== keep) x.value = keep;
+  }
+  if (tag === 'TEXTAREA') { if (!act && x.value !== y.value) x.value = y.value; return; }
+  if (tag === 'INPUT') { if (!act) { if (x.value !== y.value) x.value = y.value; if (x.checked !== y.checked) x.checked = y.checked; } return; }
+  window.pbMorphKids(x, y);
+  if (tag === 'SELECT' && !act) { if (x.multiple) Array.prototype.forEach.call(y.options, (o, i) => { if (x.options[i] && x.options[i].selected !== o.selected) x.options[i].selected = o.selected; }); else if (x.selectedIndex !== y.selectedIndex) x.selectedIndex = y.selectedIndex; }
+};
+window.pbMorphKids = function(a, b) { // an element with an id is matched by id (a line added above it can't replace it); the rest by place
+  const B = Array.from(b.childNodes), ids = new Set(B.filter(n => n.nodeType === 1 && n.id).map(n => n.id)), act = document.activeElement;
+  const same = (x, y) => x.nodeType === y.nodeType && x.nodeName === y.nodeName && (x.nodeType !== 1 || (x.id || '') === (y.id || ''));
+  B.forEach((y, i) => {
+    let x = a.childNodes[i];
+    if (y.nodeType === 1 && y.id && !(x && x.nodeType === 1 && x.id === y.id)) { const m = Array.from(a.childNodes).find((n, k) => k > i && n.nodeType === 1 && n.id === y.id); if (m) { a.insertBefore(m, x || null); x = m; } }
+    if (x && !same(x, y) && x.nodeType === 1 && ((x.id && ids.has(x.id)) || (act && x.contains(act)))) { a.insertBefore(y, x); return; } // new above it: keep it for later
+    if (x) window.pbMorphEl(x, y); else a.appendChild(y);
+  });
+  while (a.childNodes.length > B.length) a.lastChild.remove();
+};
+window.pbMorphHtml = function(el, h) { const t = document.createElement('template'); t.innerHTML = String(h); window.pbMorphKids(el, t.content); };
 window.pbSetHtml = function(el, h) {
   if (!el) return false; h = String(h);
   if (el.__pbH === h && el.innerHTML === el.__pbS) return false;
-  el.innerHTML = h; el.__pbH = h; el.__pbS = el.innerHTML; return true;
+  if (window.pbFocusIn(el)) window.pbMorphHtml(el, h); else el.innerHTML = h;
+  el.__pbH = h; el.__pbS = el.innerHTML; return true;
 };
 </script>
 <script>
@@ -6964,6 +7001,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   #pbApp .pbp-btns2 .pb-btn { flex: 1 1 0; }
   #pbApp #ppErr { margin: 12px 0 0 0; }
   @media (max-width: 360px) { #pbApp .pbp-editor .pbp-prow-nums { grid-template-columns: minmax(0, 1fr); } }
+  #pbApp .pbp-editor .pbp-prow-nums > .pbp-plan-help { grid-column: 1 / -1; margin: 2px 0 12px; } /* feat_planfill */
+  @media (max-width: 360px) { #pbApp .pbp-editor .pbp-prow-nums > .pbp-plan-help { order: 1; } #pbApp .pbp-editor .pbp-prow-nums > .pb-field:nth-child(2) { order: 2; } }
   /* batch 12 D2: crew runs, claims, crew links, the Records tab badge */
   #pbApp .pbp-crew > :first-child { margin-top: 12px; }
   #pbApp :is(#screen-prodMine, #screen-prodJob, #screen-prodDashboard) .pbp-entries .pb-chip, #pbApp .pbp-waitline .pb-chip, #pbApp #pjCrewSec .pb-chip { white-space: normal; overflow-wrap: anywhere; max-width: 100%; height: auto; line-height: 1.35; text-align: left; }
@@ -9381,7 +9420,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.56 · 2026-10-28'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.57 · 2026-10-28'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -11937,6 +11976,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // Tabs: shown on every screen, forms too (D1); hidden while typing and on the sign-in screens.
     const sheet = document.getElementById('eduHelpSheet');
     pbShellSheet = (!!sheet && sheet.classList.contains('open')) || (typeof window.pbAskSheetOpen === 'function' && window.pbAskSheetOpen());
+    if (pbShellKb && typeof window.__pbShellKbLive === 'function' && !window.__pbShellKbLive()) pbShellKb = false; // feat_planfill: the field is gone or hidden (no focusout on iOS)
     tb.hidden = signIn || pbShellKb || pbShellSheet; // under the help sheet the tabs are covered anyway; the active bar sits above it
     pbShellWrapOpeners();
     let current = null; try { current = window.pbScreenTab(screen); } catch (e) {}
@@ -12012,16 +12052,52 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return !['checkbox', 'radio', 'button', 'submit', 'reset', 'file', 'range', 'color', 'image', 'hidden'].includes(String(el.type || 'text').toLowerCase());
   }
   let pbShellPointerDown = false, pbShellKbRecheck = false;
+  // feat_planfill (owner, Oct 28: "My navigation bar disappeared after setting up a job"). iOS shows no keyboard for a field
+  // focused from code outside a tap, and sends no focusout for a focused field that a re-render removes or a screen hides,
+  // so the tabs could stay hidden with no keyboard. "Keyboard up" is now checked again (every 0.5 s while it is set, on every
+  // shell draw): the focused field must still be on screen; and a focus that came from code (no tap or key just before) must
+  // bring a keyboard (the visual viewport shrinks) within 0.8 s, else the tabs come back. Tapping the field, or the
+  // viewport shrinking, hides them again.
+  let pbShellGestureAt = 0, pbShellKbCode = false, pbShellKbAt = 0, pbShellKbTimer = null, pbShellKbIdleEl = null, pbShellVvFull = 0, pbShellVvW = 0, pbShellKbSawUp = false;
+  // the visual viewport's height, unzoomed (0 = can't tell: no API, or pinch-zoomed)
+  const pbShellVvH = () => { const v = window.visualViewport; return v && v.height > 0 && Math.abs((v.scale || 1) - 1) < 0.01 ? v.height : 0; };
+  // true = a keyboard is up, false = none, null = can't tell (no full height known, zoomed, or turned since)
+  const pbShellKbShown = () => { const h = pbShellVvH(); return !h || !pbShellVvFull || Math.abs(window.innerWidth - pbShellVvW) > 2 ? null : h < pbShellVvFull - 120; };
+  const pbShellVvBase = () => { const h = pbShellVvH(); if (h) { pbShellVvFull = h; pbShellVvW = window.innerWidth; } };
+  function pbShellFieldLive(el) { try { return !!el && el.isConnected !== false && pbShellTypingField(el) && !!(el.getClientRects && el.getClientRects().length) && getComputedStyle(el).visibility !== 'hidden'; } catch (e) { return false; } }
+  function pbShellKbSet(v) {
+    pbShellKb = v;
+    if (v) { pbShellKbAt = Date.now(); if (!pbShellKbTimer) pbShellKbTimer = setInterval(() => { if (!pbShellKb) { clearInterval(pbShellKbTimer); pbShellKbTimer = null; return; } pbShellCheckKb(); }, 500); }
+    window.pbRenderShell();
+  }
   function pbShellCheckKb() {
-    const k = pbShellTypingField(document.activeElement);
+    const a = document.activeElement;
+    let k = pbShellFieldLive(a) && a !== pbShellKbIdleEl;
+    if (k && pbShellKb && (pbShellKbCode || pbShellKbSawUp) && Date.now() - pbShellKbAt > 800 && pbShellKbShown() === false) { pbShellKbIdleEl = a; k = false; } // focused from code and no keyboard came, or the keyboard went away with the field still focused
     if (!k && pbShellKb && pbShellPointerDown) { pbShellKbRecheck = true; return; }
     pbShellKbRecheck = false;
-    if (k !== pbShellKb) { pbShellKb = k; window.pbRenderShell(); }
+    if (k !== pbShellKb) pbShellKbSet(k);
   }
-  document.addEventListener('focusin', (e) => { if (pbShellTypingField(e.target) && !pbShellKb) { pbShellKb = true; window.pbRenderShell(); } });
+  window.__pbShellKbLive = () => !pbShellKb || pbShellPointerDown || pbShellFieldLive(document.activeElement); // used by pbRenderShell
+  document.addEventListener('focusin', (e) => {
+    if (!pbShellTypingField(e.target) || pbShellKb) return;
+    pbShellKbCode = !(pbShellPointerDown || Date.now() - pbShellGestureAt < 400); pbShellKbIdleEl = null; pbShellKbSawUp = false; pbShellKbSet(true);
+  });
   document.addEventListener('focusout', () => { setTimeout(pbShellCheckKb, 120); });
-  document.addEventListener('pointerdown', () => { pbShellPointerDown = true; }, true);
-  ['pointerup', 'pointercancel'].forEach(t => document.addEventListener(t, () => { pbShellPointerDown = false; if (pbShellKbRecheck) setTimeout(pbShellCheckKb, 200); }, true));
+  document.addEventListener('pointerdown', (e) => {
+    pbShellPointerDown = true; pbShellGestureAt = Date.now();
+    const t = e.target; if (t && pbShellTypingField(t)) { pbShellKbIdleEl = null; if (t === document.activeElement && !pbShellKb) { pbShellKbCode = false; pbShellKbSawUp = false; pbShellKbSet(true); } } // a tap into the focused field brings the keyboard
+  }, true);
+  document.addEventListener('keydown', () => { pbShellGestureAt = Date.now(); }, true);
+  ['pointerup', 'pointercancel'].forEach(t => document.addEventListener(t, () => { pbShellPointerDown = false; pbShellGestureAt = Date.now(); if (pbShellKbRecheck) setTimeout(pbShellCheckKb, 200); }, true));
+  pbShellVvBase();
+  const pbShellVvRebase = () => { if (!pbShellFieldLive(document.activeElement)) pbShellVvBase(); }; // no field focused: this is the full height
+  window.addEventListener('pageshow', pbShellVvRebase); document.addEventListener('visibilitychange', pbShellVvRebase);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', () => {
+    if (!pbShellFieldLive(document.activeElement)) { pbShellVvBase(); if (pbShellKb) pbShellCheckKb(); return; }
+    if (pbShellKbShown() === true) { pbShellKbIdleEl = null; pbShellKbSawUp = true; if (!pbShellKb) { pbShellKbCode = false; pbShellKbSet(true); } } // a keyboard came up
+    // a keyboard that goes away is picked up by the 0.5 s check (after 0.8 s, so a slow keyboard is not raced)
+  });
   // r14.2 (TABBAR2): screen diagnostics for the floating tab bar. Hidden; tap the app version in Account & Settings
   // 5 times to show or hide it (remembered on this phone). Numbers only: no names, emails or saved work.
   (function () {
@@ -34953,7 +35029,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     let s = pbPj.busy ? (D && !D.partial ? 'Updating…' : 'Loading the job…') : pbPj.msg ? pbPj.msg + (D && pbPj.at ? ' Showing the copy from ' + pbProdTimeText(pbPj.at) + '.' : D ? ' Showing the dashboard totals.' : '') : pbPj.cached ? 'Copy from ' + pbProdTimeText(pbPj.at) + '.' : pbPj.at ? 'Updated ' + pbProdTimeText(pbPj.at) + '.' : '';
     if (st) { st.textContent = s; st.className = 'pb-rpt-status' + (pbPj.msg ? ' pbp-err' : ''); }
     if (!D) { body.innerHTML = ''; return; }
-    if (pbPj.edit) { body.innerHTML = pbProdPlanEditorHtml(); return; }
+    if (pbPj.edit) { const h = pbProdPlanEditorHtml(); if (window.pbFocusIn(body)) window.pbMorphHtml(body, h); else body.innerHTML = h; return; } // feat_planfill: keep the field being typed in
     const v = pbProdJobView(D.plan || null, D.cats);
     const unitOf = (key) => { const c = v.categories.find(x => x.key === key); return c ? c.unit : ''; };
     const rows = v.categories.map(c => [c.name + (c.code ? ' · ' + c.code : ''), pbProdQtyText(c.done, c.unit), c.planned !== null ? pbProdQtyText(c.planned, c.unit) : 'Not planned', c.planned !== null ? pbProdPctText(c.pct) : '', pbProdQtyText(c.today), pbProdQtyText(c.week)]);
@@ -35237,34 +35313,79 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbProdPlanRowsFrom(D) {
     const plan = D && D.plan && Array.isArray(D.plan.categories) ? D.plan.categories : PB_PROD_DEFAULT_CATS;
     const fmt = (n) => (n === null || n === undefined || n === '') ? '' : String(n);
-    return plan.filter(c => c && c.key).map(c => ({ key: c.key, name: String(c.name || ''), unit: String(c.unit || ''), planned: fmt(c.planned), plannedAuto: c.planned_auto === true ? true : c.planned_auto === false ? false : null, plannedFrom: String(c.planned_from || ''), alertPct: String(c.alert_pct != null ? c.alert_pct : 80), // feat_autoplan, feat_itemmat (80 shown = 80 kept: opening the plan is not a change)
+    return plan.filter(c => c && c.key).map(c => ({ key: c.key, name: String(c.name || ''), unit: String(c.unit || ''), planned: c.planned_auto === true && pbPlanIsLF(c.unit) ? '' : fmt(c.planned), srvPlanned: c.planned_auto === true ? (Number(c.planned) || 0) : 0, plannedAuto: c.planned_auto === true ? true : c.planned_auto === false ? false : null, /* feat_planfill */ plannedFrom: String(c.planned_from || ''), alertPct: String(c.alert_pct != null ? c.alert_pct : 80), // feat_autoplan, feat_itemmat (80 shown = 80 kept: opening the plan is not a change)
       alerts: Array.isArray(c.alerts) ? c.alerts.map(a => ({ pct: String(a && a.pct != null ? a.pct : ''), label: String(a && a.label || '') })) : [], muted: c.muted === true, // feat_itemalerts
       weight: fmt(c.weight), hours: fmt(c.hours), costCode: String(c.cost_code || ''), perUnit: (Number(c.hours) > 0 && Number(c.planned) > 0) ? String(Math.round(Number(c.hours) / Number(c.planned) * 10000) / 10000) : '' }));
   }
-  // feat_navfix (owner, Oct 22: "The pipe installed main should show the percentage like everything else"): an item with
-  // no Planned amount gets the Expected of the pipe materials that count its footage (LF items only), shown and editable.
-  function pbPlanFillFromMat(E) {
-    const fill = () => {
-      if (pbPj.edit !== E || typeof pbMatList !== 'function') return;
-      const list = (pbMatList() || []).filter(m => m && !m.archived && m.source === 'pipe_footage' && Number(m.expected) > 0 && !(Number(m.each_ft) > 0));
-      if (!list.length) return;
-      pbProdPlanRead(); let ch = false;
-      E.rows.forEach(r => { if (!r.key || String(r.planned || '').trim() !== '' || !/^\s*(lf|ft|feet)?\s*$/i.test(String(r.unit || ''))) return;
-        const sum = list.filter(m => (m.footage_cat || 'pipe') === r.key).reduce((s, m) => s + Number(m.expected), 0);
-        if (sum > 0) { r.planned = String(Math.round(sum * 100) / 100); r.plannedAuto = true; ch = true; } });
-      if (ch) { const B = pbProdEl('ppBudget'); pbProdJobRender(); }
-    };
-    fill();
-    if (typeof pbMatJobLoad === 'function') Promise.resolve(pbMatJobLoad()).then(fill).catch(() => {});
+  // ==== feat_planfill (owner, Oct 28: "It shouldn't auto fill the numbers from the previous project and I don't think we
+  // should have that check box there") ====
+  // Planned is always typed; nothing writes a number into it. A blank Planned on an LF item follows the job's pipe
+  // materials' Expected on the server (pb_prod.fill_planned / sync_planned, the owner's Oct 22 ask), so the editor sends blank
+  // as "follow" and a typed number as the user's own. The help line and the overview's "Use N LF as Planned" note read only a
+  // material list the server sent after this job page opened: never the phone's saved copy, never an earlier load (a job
+  // number can be reused after the job is deleted on the server).
+  const pbPlanIsLF = (u) => /^\s*(lf|ft|feet)?\s*$/i.test(String(u || ''));
+  let pbPlanFreshSince = 0;
+  { const pbPlanOrigOpenJob = window.pbOpenProdJob; window.pbOpenProdJob = function() { pbPlanFreshSince = Date.now(); return pbPlanOrigOpenJob.apply(this, arguments); }; }
+  function pbPlanFreshMats() { // this job's materials from the server, loaded since the job page opened; else null
+    try {
+      const job = pbPj.job; if (!job || !job.job_key || !pbMat || pbMat.uid !== pbArchiveOwnerUid) return null;
+      const J = pbMat.jobs && pbMat.jobs[job.job_key];
+      return J && J.cached === false && Number(J.at) >= pbPlanFreshSince && J.data && Array.isArray(J.data.materials) ? J.data.materials.filter(m => m && typeof m === 'object') : null;
+    } catch (e) { return null; }
   }
-  // feat_planuse: plan items with no Planned whose pipe materials expect a length -> [{ key, name, sum }]
+  function pbPlanPipeSums() { // footage item -> its pipe materials' Expected (LF), fresh only (as fill_planned counts them)
+    const o = {};
+    (pbPlanFreshMats() || []).forEach(m => { if (!m.archived && m.source === 'pipe_footage' && Number(m.expected) > 0 && !(Number(m.each_ft) > 0)) { const k = m.footage_cat || 'pipe'; o[k] = Math.round(((o[k] || 0) + Number(m.expected)) * 100) / 100; } });
+    return o;
+  }
+  // what a blank Planned follows -> { sum, from } or null. As fill_planned: the item's own pipe materials; an item that
+  // already follows keeps its source (planned_from, else its own, else the main pipe).
+  function pbPlanBlankSrc(r) {
+    if (!r || !r.key || !pbPlanIsLF(r.unit) || pbPpNum(r.planned) !== null && pbPpNum(r.planned) !== 0) return null; // blank (or 0: fill_planned treats it as blank)
+    const S = pbPlanPipeSums(), from = r.plannedAuto === true ? (r.plannedFrom || (S[r.key] ? r.key : 'pipe')) : r.key;
+    return S[from] > 0 ? { sum: S[from], from } : null;
+  }
+  // the number the server will use: typed, else the fresh sum, else (already following) the plan's own number
+  function pbPlanEffPlanned(r) {
+    const t = pbPpNum(r.planned); if (t !== null && t !== 0) return t;
+    const b = pbPlanBlankSrc(r); if (b) return b.sum;
+    return r.plannedAuto === true && pbPlanIsLF(r.unit) && Number(r.srvPlanned) > 0 && !pbPj.cached && pbPj.data && !pbPj.data.partial ? Number(r.srvPlanned) : null; // the plan as the server sent it, not the phone's copy
+  }
+  const pbPlanHasPlanned = (r) => pbWtHas(r.planned) || (String(r.planned == null ? '' : r.planned).trim() === '' && pbPlanEffPlanned(r) > 0);
+  function pbMatFootNameSafe(k) { try { return typeof pbMatFootName === 'function' ? pbMatFootName(k) : k; } catch (e) { return k; } }
+  function pbPlanHelpText(r) {
+    const b = pbPlanBlankSrc(r); if (!b) return '';
+    let nm = ''; if (b.from !== r.key) { const x = ((pbPj.edit && pbPj.edit.rows) || []).find(y => y.key === b.from); nm = (x && String(x.name || '').trim() ? String(x.name).trim() : pbMatFootNameSafe(b.from)) + ' '; }
+    return 'Blank uses the ' + nm + 'pipe materials’ Expected: ' + pbProdQtyText(b.sum, 'LF');
+  }
+  function pbPlanHelpHtml(r, i) { const t = pbPlanHelpText(r); return '<p class="pb-help pbp-auto-help pbp-plan-help" id="ppPlanHelp' + i + '"' + (t ? '' : ' style="display:none"') + '>' + escapeHtml(t) + '</p>'; }
+  // in place (keeps the field being typed in and the keyboard)
+  window.pbPlanHelpPaint = function() {
+    const E = pbPj.edit; if (!E) return;
+    E.rows.forEach((r, i) => { const el = pbProdEl('ppPlanHelp' + i); if (!el) return; const t = pbPlanHelpText(r); if (el.textContent !== t) el.textContent = t; const d = t ? '' : 'none'; if (el.style.display !== d) el.style.display = d; });
+    const now = E.rows.map(r => pbPlanHasPlanned(r) ? 1 : 0).join(''), was = E.__wtKeys; E.__wtKeys = now; if (was !== undefined && was !== now) pbPlanWtPaint(); // feat_weights
+  };
+  // the server's material list arrived (pbMatJobLoad): the editor's help lines, or the overview's note and badges
+  window.pbPlanFreshPaint = function() {
+    if (pbCurrentScreen !== 'prodJob' || !pbPj.job) return;
+    if (pbPj.edit) { pbProdPlanRead(); window.pbPlanHelpPaint(); return; }
+    try { if (typeof window.pbCxJobPaint === 'function' && pbCx && pbCx.tab === 'overview') window.pbCxJobPaint(); } catch (e) {}
+  };
+  // what the save sends for an LF item: a typed number is the user's own (even when it equals the materials' sum); blank
+  // follows the materials (an item that already followed keeps its source; otherwise fill_planned follows the item's own)
+  function pbPlanAutoOut(r, planned) {
+    if (planned !== null && planned > 0) return { planned_auto: false };
+    return r.plannedAuto === true ? Object.assign({ planned_auto: true }, r.plannedFrom ? { planned_from: r.plannedFrom } : {}) : {};
+  }
+  window.pbProdPlanUnitIn = function() { if (!pbPj.edit) return; pbProdPlanRead(); window.pbPlanHelpPaint(); };
+  // feat_planuse: plan items with no Planned whose pipe materials expect a length -> [{ key, name, sum }] (fresh only)
   function pbPlanMatSuggest() {
-    if (typeof pbMatList !== 'function' || !pbPj.data || pbPj.edit) return [];
-    const list = (pbMatList() || []).filter(m => m && !m.archived && m.source === 'pipe_footage' && Number(m.expected) > 0 && !(Number(m.each_ft) > 0));
-    if (!list.length) return [];
+    if (!pbPj.data || pbPj.edit) return [];
+    const S = pbPlanPipeSums(); if (!Object.keys(S).length) return [];
     return pbProdJobView(pbPj.data.plan || null, pbPj.data.cats).categories
-      .filter(c => c.planned === null && /^\s*(lf|ft|feet)?\s*$/i.test(String(c.unit || '')) && !((pbPj.data.plan && Array.isArray(pbPj.data.plan.categories) ? pbPj.data.plan.categories : []).some(x => x && x.key === c.key && x.planned_auto === false)))
-      .map(c => ({ key: c.key, name: c.name, sum: Math.round(list.filter(m => (m.footage_cat || 'pipe') === c.key).reduce((s, m) => s + Number(m.expected), 0) * 100) / 100 }))
+      .filter(c => c.planned === null && pbPlanIsLF(c.unit) && !((pbPj.data.plan && Array.isArray(pbPj.data.plan.categories) ? pbPj.data.plan.categories : []).some(x => x && x.key === c.key && x.planned_auto === false)))
+      .map(c => ({ key: c.key, name: c.name, sum: S[c.key] || 0 }))
       .filter(x => x.sum > 0);
   }
   window.pbPlanMatNote = function() {
@@ -35274,50 +35395,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return '<div class="pbx-plannote" id="pjPlanMat" role="status"><p class="pbx-plannote-t">' + escapeHtml((S.length === 1 ? S[0].name + ' has' : S.length + ' items have') + ' no Planned amount, so ' + (S.length === 1 ? 'it shows' : 'they show') + ' no %. ' + (S.length === 1 ? 'Its pipe materials expect ' + pbProdQtyText(S[0].sum, 'LF') + '.' : 'Their pipe materials expect: ' + what + '.')) + '</p>'
       + '<button type="button" class="pb-btn secondary" id="pjPlanMatUse" onclick="pbPlanUseMat()">' + escapeHtml(S.length === 1 ? 'Use ' + pbProdQtyText(S[0].sum, 'LF') + ' as Planned' : 'Use These as Planned') + '</button></div>';
   };
-  // one tap: the plan editor fills it in from the materials, then saves the normal way (errors show in the editor)
-  window.pbPlanUseMat = function() { if (pbPj.edit) return; window.pbProdPlanEdit(); if (pbPj.edit && pbPj.edit.rows.some(r => r.plannedAuto)) window.pbProdPlanSave(); };
-  // ==== feat_itemmat: "Use the pipe length" ====
-  const pbPlanIsLF = (u) => /^\s*(lf|ft|feet)?\s*$/i.test(String(u || ''));
-  function pbPlanPipeSums() { // footage item -> its pipe materials' Expected (LF)
-    const o = {}; if (typeof pbMatList !== 'function') return o;
-    (pbMatList() || []).forEach(m => { if (m && !m.archived && m.source === 'pipe_footage' && Number(m.expected) > 0 && !(Number(m.each_ft) > 0)) { const k = m.footage_cat || 'pipe'; o[k] = Math.round(((o[k] || 0) + Number(m.expected)) * 100) / 100; } });
-    return o;
-  }
-  const pbPlanFromOf = (r, S) => r.plannedFrom || (S[r.key] ? r.key : 'pipe');
-  // -> true when a row changed. Not set yet + empty + pipe counts this item: checked (as before).
-  function pbPlanAutoApply(E) {
-    if (!E || pbPj.edit !== E) return false;
-    pbProdPlanRead(); const S = pbPlanPipeSums(); let ch = false;
-    E.rows.forEach(r => {
-      if (!pbPlanIsLF(r.unit)) return;
-      if ((r.plannedAuto === null || r.plannedAuto === undefined) && String(r.planned || '').trim() === '' && S[r.key]) { r.plannedAuto = true; ch = true; }
-      if (r.plannedAuto === true) { const s = S[pbPlanFromOf(r, S)], v = s ? String(s) : String(r.planned || ''); if (s && v !== String(r.planned)) { r.planned = v; ch = true; } }
-    });
-    if (ch) pbProdJobRender();
-    return ch;
-  }
-  window.pbProdPlanAutoToggle = function(i) {
-    const E = pbPj.edit; if (!E || !E.rows[i]) return; pbProdPlanRead();
-    const a = pbProdEl('ppAuto' + i); E.rows[i].plannedAuto = !!(a && a.checked);
-    if (E.rows[i].plannedAuto) pbPlanAutoApply(E);
-    pbProdJobRender(); const el = pbProdEl(E.rows[i].plannedAuto ? 'ppAuto' + i : 'ppPlanned' + i); if (el) el.focus({ preventScroll: true });
+  // one tap: those items follow their pipe materials (the server fills the number), saved the normal way (errors show in the editor)
+  window.pbPlanUseMat = function() {
+    if (pbPj.edit) return; let keys = []; try { keys = pbPlanMatSuggest().map(x => x.key); } catch (e) { keys = []; } if (!keys.length) return;
+    window.pbProdPlanEdit(); const E = pbPj.edit; if (!E) return; let n = 0;
+    E.rows.forEach(r => { if (keys.includes(r.key) && pbPlanIsLF(r.unit) && String(r.planned || '').trim() === '') { r.plannedAuto = true; r.plannedFrom = ''; n++; } });
+    if (n) window.pbProdPlanSave();
   };
-  // the box shows only for LF items: when the unit changes that, redraw after the tap lands (keeps what was typed and the focus)
-  window.pbProdPlanUnitIn = function(i) { setTimeout(() => { const E = pbPj.edit; if (!E || !E.rows[i]) return; pbProdPlanRead(); if (!!pbProdEl('ppAuto' + i) === pbPlanIsLF(E.rows[i].unit)) return;
-    const fid = document.activeElement && document.activeElement.id; pbPlanAutoApply(E); pbProdJobRender(); const f = fid ? pbProdEl(fid) : null; if (f) f.focus({ preventScroll: true }); }, 0); };
-  window.pbProdPlanFromIn = function(i) { const E = pbPj.edit; if (!E) return; pbProdPlanRead(); pbPlanAutoApply(E); pbProdJobRender(); };
-  function pbPlanAutoHtml(r, i) {
-    if (!pbPlanIsLF(r.unit)) return '';
-    const S = pbPlanPipeSums(), keys = Object.keys(S), from = pbPlanFromOf(r, S), on = r.plannedAuto === true;
-    const nameOf = (k) => { const x = (pbPj.edit.rows || []).find(y => y.key === k); return x && x.name ? x.name : pbMatFootNameSafe(k); };
-    let h = '<div class="pbp-auto"><label class="pb-checkrow pbp-auto-row" for="ppAuto' + i + '"><input type="checkbox" id="ppAuto' + i + '"' + (on ? ' checked' : '') + ' onchange="pbProdPlanAutoToggle(' + i + ')"> <span>Use the pipe length'
-      + (S[from] ? ' (' + escapeHtml(pbProdQtyText(S[from], 'LF')) + (keys.length > 1 || from !== r.key ? ' from ' + escapeHtml(nameOf(from)) : '') + ')' : ' (no pipe materials with an Expected yet)') + '</span></label>';
-    if (on && keys.length > 1) h += '<div class="pb-field pbp-auto-from"><label for="ppFrom' + i + '">Pipe length from</label><select id="ppFrom' + i + '" onchange="pbProdPlanFromIn(' + i + ')">'
-      + keys.map(k => '<option value="' + escapeHtml(k) + '"' + (k === from ? ' selected' : '') + '>' + escapeHtml(nameOf(k) + ' (' + pbProdQtyText(S[k], 'LF') + ')') + '</option>').join('') + '</select></div>';
-    return h + '<p class="pb-help pbp-auto-help">' + (on ? 'Planned follows the pipe materials’ Expected. Uncheck to type your own (e.g. 2 pipes in one trench).' : 'Planned is your own number.') + '</p></div>';
-  }
-  function pbMatFootNameSafe(k) { try { return typeof pbMatFootName === 'function' ? pbMatFootName(k) : k; } catch (e) { return k; } }
-  // ==== end feat_itemmat (plan) ====
+  // ==== end feat_planfill ====
   // ==== feat_itemalerts: more alerts per item, each with a label; silence ====
   function pbPlanAlertsHtml(r, i) {
     const L = r.alerts || [], nm = escapeHtml(String(r.name || '').trim() || 'this item');
@@ -35348,20 +35433,21 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // ==== end feat_planmore ====
   window.pbProdPlanEdit = function() {
     if (!pbPj.data) return;
+    if (pbPj.edit) { pbProdPlanRead(); pbProdJobRender(); return; } // feat_planfill: already editing (Edit project > Job plan again): keep what is typed
     const rows = pbProdPlanRowsFrom(pbPj.data), bh = pbPj.data.plan && pbPj.data.plan.budget_hours != null ? String(pbPj.data.plan.budget_hours) : '';
     // owner, Oct 21: the whole-job budget fills itself in from the categories' hours, and can still be changed
     const sum = pbProdPlanHoursSum(rows), auto = bh === '' || (sum !== '' && Number(bh) === Number(sum));
     pbPj.edit = { version: Number(pbPj.data.plan_version) || 0, rows, budget: auto ? sum : bh, budgetAuto: auto, err: '', saving: false,
       equip: pbEqOf(pbPj.data.plan && pbPj.data.plan.equipment).map(q => ({ key: q.key, name: String(q.name || ''), unitNo: String(q.unit_no || ''), costCode: String(q.cost_code || '') })) }; // feat_equip
     pbPj.edit.base = JSON.stringify([pbPlanRowsCmp(rows), pbPj.edit.budget, pbPj.edit.equip]);
-    try { const E0 = pbPj.edit; pbPlanAutoApply(E0); if (typeof pbMatJobLoad === 'function') Promise.resolve(pbMatJobLoad()).then(() => { if (pbPj.edit === E0 && pbPlanAutoApply(E0)) pbProdJobRender(); }).catch(() => {}); } catch (e) {} // feat_navfix, feat_itemmat
+    try { if (typeof pbMatJobLoad === 'function') Promise.resolve(pbMatJobLoad()).catch(() => {}); } catch (e) {} // feat_planfill: nothing is filled in; pbPlanFreshPaint repaints the help lines when the list arrives
     pbProdJobRender();
-    const f = pbProdEl('ppName0'); if (f) f.focus({ preventScroll: true });
+    const f = pbProdEl('ppName0'); if (f && !(window.pbShellOskLikely && window.pbShellOskLikely())) f.focus({ preventScroll: true }); /* feat_planfill: a phone shows no keyboard for it */
   };
   function pbProdPlanRead() {
     const E = pbPj.edit; if (!E) return;
     E.rows.forEach((r, i) => { ['name', 'unit', 'planned', 'weight', 'hours', 'perUnit', 'costCode'].forEach(k => { const el = pbProdEl('pp' + k.charAt(0).toUpperCase() + k.slice(1) + i); if (el) r[k] = el.value; });
-      const f = pbProdEl('ppFrom' + i); if (f) r.plannedFrom = f.value; const al = pbProdEl('ppAlert' + i); if (al) r.alertPct = al.value; // feat_itemmat
+      const al = pbProdEl('ppAlert' + i); if (al) r.alertPct = al.value; // feat_itemmat
       (r.alerts || []).forEach((a, k) => { const p = pbProdEl('ppAlP' + i + '_' + k), l = pbProdEl('ppAlL' + i + '_' + k); if (p) a.pct = p.value; if (l) a.label = l.value; }); // feat_itemalerts
       const mu = pbProdEl('ppMute' + i); if (mu) r.muted = !!mu.checked; });
     const b = pbProdEl('ppBudget'); if (b) E.budget = b.value;
@@ -35377,12 +35463,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbPpNum = (x) => { const s = String(x == null ? '' : x).replace(/,/g, '').trim(); if (s === '') return null; const n = Number(s); return Number.isFinite(n) && n >= 0 ? n : NaN; };
   window.pbProdPlanPerIn = function(i) {
     const E = pbPj.edit; if (!E) return; pbProdPlanRead(); const r = E.rows[i]; if (!r) return;
-    const p = pbPpNum(r.planned), u = pbPpNum(r.perUnit);
+    const p = pbPlanEffPlanned(r), u = pbPpNum(r.perUnit); /* feat_planfill */
     if (p > 0 && u !== null && !Number.isNaN(u)) { r.hours = String(Math.round(p * u * 100) / 100); const h = pbProdEl('ppHours' + i); if (h && h.value !== r.hours) h.value = r.hours; window.pbProdPlanHoursIn(); }
   };
   window.pbProdPlanCatHoursIn = function(i) {
     const E = pbPj.edit; if (!E) return; pbProdPlanRead(); const r = E.rows[i];
-    if (r) { const p = pbPpNum(r.planned), h = pbPpNum(r.hours); const v = p > 0 && h !== null && !Number.isNaN(h) ? String(Math.round(h / p * 10000) / 10000) : h === null ? '' : r.perUnit; if (v !== r.perUnit) { r.perUnit = v; const el = pbProdEl('ppPerUnit' + i); if (el) el.value = v; } }
+    if (r) { const p = pbPlanEffPlanned(r), h = pbPpNum(r.hours); /* feat_planfill */ const v = p > 0 && h !== null && !Number.isNaN(h) ? String(Math.round(h / p * 10000) / 10000) : h === null ? '' : r.perUnit; if (v !== r.perUnit) { r.perUnit = v; const el = pbProdEl('ppPerUnit' + i); if (el) el.value = v; } }
     window.pbProdPlanHoursIn();
   };
   window.pbProdPlanHoursIn = function() {
@@ -35409,9 +35495,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const has = '<span class="pbp-dim pbp-rowhas">' + escapeHtml((c && (c.done || c.otherUnits.length) ? pbProdQtyText(c.done, c.unit) + ' reported. ' : '') + (r.key && PB_PROD_RUN_KEYS.has(r.key) ? 'Filled in from crews\u2019 runs.' : 'Foremen enter it with each run.')) + '</span>';
         return '<fieldset class="pbp-prow" id="ppRow' + i + '"><legend class="pb-sr">Category ' + (i + 1) + '</legend>'
           + field('ppName' + i, 'Category', r.name, 'type="text" maxlength="40" autocomplete="off"')
-          + pbPlanAutoHtml(r, i)
-          + '<div class="pbp-prow-nums">' + field('ppPlanned' + i, 'Planned', r.planned, (r.plannedAuto === true && pbPlanIsLF(r.unit) ? 'readonly aria-readonly="true" ' : '') + 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanNote(); pbProdPlanPerIn(' + i + ')"')
-          + field('ppUnit' + i, 'Unit', r.unit, 'type="text" maxlength="12" autocomplete="off" placeholder="LF" onchange="pbProdPlanUnitIn(' + i + ')"') + '</div>' // feat_planmore: the rest behind More settings
+          + '<div class="pbp-prow-nums">' + field('ppPlanned' + i, 'Planned', r.planned, 'aria-describedby="ppPlanHelp' + i + '" type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanNote(); pbProdPlanPerIn(' + i + ')"')
+          + field('ppUnit' + i, 'Unit', r.unit, 'type="text" maxlength="12" autocomplete="off" placeholder="LF" onchange="pbProdPlanUnitIn(' + i + ')"') + pbPlanHelpHtml(r, i) + '</div>' /* feat_planfill: the help line spans the row; under Planned when the boxes stack */ // feat_planmore: the rest behind More settings
           + '<details class="pb-more pbp-rowmore" id="ppMore' + i + '"' + (r.more ? ' open' : '') + ' ontoggle="pbPlanMoreToggle(' + i + ', this.open)"><summary><span class="pbp-more-h">More settings</span><span class="pbp-more-sum" id="ppMoreSum' + i + '">' + escapeHtml(pbPlanMoreSummary(r)) + '</span></summary>'
           + '<div class="pbp-prow-nums">' + field('ppPerUnit' + i, 'Budget hours per unit', r.perUnit || '', 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanPerIn(' + i + ')"')
           + field('ppHours' + i, 'Budget hours (whole category)', r.hours, 'type="text" inputmode="decimal" autocomplete="off" placeholder="Optional" oninput="pbProdPlanCatHoursIn(' + i + ')"')
@@ -35445,7 +35530,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbWtHas = (x) => { const t = String(x == null ? '' : x).trim().replace(/,/g, ''); return t !== '' && Number(t) > 0; };
   function pbPlanWtMode(E) {
     if (E.wmode) return E.wmode;
-    const pl = E.rows.filter(r => pbWtHas(r.planned));
+    const pl = E.rows.filter(r => pbPlanHasPlanned(r)); /* feat_planfill */
     E.wmode = pl.length && pl.every(r => pbWtHas(r.weight)) ? 'custom' : pl.length && pl.every(r => pbWtHas(r.hours)) ? 'hours' : 'equal';
     return E.wmode;
   }
@@ -35457,7 +35542,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return out;
   }
   function pbWtShares(E) { // [{ i, row, pct }]
-    const mode = pbPlanWtMode(E), L = E.rows.map((row, i) => ({ i, row })).filter(x => pbWtHas(x.row.planned));
+    const mode = pbPlanWtMode(E), L = E.rows.map((row, i) => ({ i, row })).filter(x => pbPlanHasPlanned(x.row)); /* feat_planfill */
     const num = (x) => Number(String(x).replace(/,/g, ''));
     const vals = mode === 'custom' ? L.map(x => pbWtHas(x.row.weight) ? num(x.row.weight) : 0) : mode === 'hours' && L.every(x => pbWtHas(x.row.hours)) ? L.map(x => num(x.row.hours)) : L.map(() => 1);
     const p = pbWtPct(vals); return L.map((x, k) => Object.assign(x, { pct: p[k] }));
@@ -35504,7 +35589,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     S.forEach(x => { const pct = Number(x.row.weight) || 0, rg = pbProdEl('ppWr' + x.i), bx = pbProdEl('ppWeight' + x.i), sg = pbProdEl('ppWtSeg' + x.i);
       if (rg && String(rg.value) !== String(pct)) rg.value = pct; if (rg) rg.setAttribute('aria-valuetext', pct + '%'); if (bx && (x.i !== i || document.activeElement !== bx)) bx.value = pct; if (sg) sg.style.flex = Math.max(pct, 0.0001) + ' 1 0'; });
   };
-  window.pbProdPlanNote = function() { if (!pbPj.edit) return; pbProdPlanRead(); const was = pbPj.edit.__wtKeys, now = pbPj.edit.rows.map(r => pbWtHas(r.planned) ? 1 : 0).join(''); pbPj.edit.__wtKeys = now; if (was !== undefined && was !== now) pbPlanWtPaint(); };
+  window.pbProdPlanNote = function() { if (!pbPj.edit) return; pbProdPlanRead(); window.pbPlanHelpPaint(); }; /* feat_planfill: help lines + weights */
   // ==== end feat_weights ====
   window.pbProdPlanAdd = function() {
     const E = pbPj.edit; if (!E || E.rows.length >= 20) return;
@@ -35543,7 +35628,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         alerts.push(lb ? { pct: pn, label: lb.slice(0, 60) } : { pct: pn }); }
       const key = r.key || pbProdNewKey(name, taken); if (!r.key) taken.push(key);
       cats.push({ key, name: name.slice(0, 40), unit: String(r.unit || '').trim().slice(0, 12), planned, weight: weight || null, hours, cost_code: String(r.costCode || '').trim().slice(0, 60) || null, // r15.5
-        alert_pct: alert === null ? 80 : alert, ...(pbPlanIsLF(r.unit) && (r.plannedAuto === true || r.plannedAuto === false) ? { planned_auto: r.plannedAuto, ...(r.plannedAuto && r.plannedFrom ? { planned_from: r.plannedFrom } : {}) } : {}), ...(alerts.length ? { alerts } : {}), ...(r.muted ? { muted: true } : {}) }); // feat_itemmat, feat_itemalerts
+        alert_pct: alert === null ? 80 : alert, ...(pbPlanIsLF(r.unit) ? pbPlanAutoOut(r, planned) : {}), /* feat_planfill */ ...(alerts.length ? { alerts } : {}), ...(r.muted ? { muted: true } : {}) }); // feat_itemmat, feat_itemalerts
     }
     const budget = num(E.budget);
     if (Number.isNaN(budget)) { E.err = 'Budget hours must be a plain number (or left empty).'; pbProdJobRender(); return; }
@@ -47471,6 +47556,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     M.jobs[key] = { data: r.data, at: Date.now(), cached: false }; M.jobMsg = '';
     pbProdCacheSet(uid, 'mat:' + key, { at: M.jobs[key].at, data: r.data });
     pbMatJobPaint();
+    try { if (typeof window.pbPlanFreshPaint === 'function') window.pbPlanFreshPaint(); } catch (e) {} // feat_planfill
   }
   function pbMatList() { const J = pbPj.job && pbMat.jobs[pbPj.job.job_key]; return J && J.data && Array.isArray(J.data.materials) ? J.data.materials.filter(m => m && typeof m === 'object') : null; }
   function pbMatFind(id) { return (pbMatList() || []).find(m => m.id === id) || null; }
@@ -47563,7 +47649,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const body = pbProdEl('pjBody'); if (!body) return;
     let sec = pbProdEl('pjMatSec');
     const tmp = document.createElement('div'); tmp.innerHTML = pbMatSectionHtml(); const nw = tmp.firstChild;
-    if (sec) { sec.replaceWith(nw); return; }
+    if (sec) { if (window.pbFocusIn(sec)) window.pbMorphEl(sec, nw); else sec.replaceWith(nw); return; } // feat_planfill: keep the field being typed in
     const prog = pbProdEl('pjProgress');
     if (prog && prog.parentNode) prog.parentNode.insertBefore(nw, prog.nextSibling); else body.insertBefore(nw, body.firstChild);
   }
@@ -47637,7 +47723,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // ==== end feat_insp ====
   const pbMatOrigJobLoad = window.pbProdJobLoad, pbMatOrigJobRender = window.pbProdJobRender;
   window.pbProdJobLoad = function() { const p = pbMatOrigJobLoad.apply(this, arguments); pbMatJobLoad(); try { pbCxInspLoad(); } catch (e) {} return p; }; // feat_insp
+  let pbMatRenderAfterBlur = null; // feat_planfill
   window.pbProdJobRender = function() {
+    { const sec = pbProdEl('pjMatSec'), a = document.activeElement; // feat_planfill: typing in the Materials section: only it is merged now; the rest once the field is left
+      if (sec && !pbPj.edit && window.pbFocusIn(sec)) { pbMatFormRead(); try { pbMatJobPaint(); } catch (e) {}
+        if (!pbMatRenderAfterBlur) pbMatRenderAfterBlur = setInterval(() => { const s2 = pbProdEl('pjMatSec'); if (s2 && !pbPj.edit && window.pbFocusIn(s2)) return; clearInterval(pbMatRenderAfterBlur); pbMatRenderAfterBlur = null; try { window.pbProdJobRender(); } catch (e) {} }, 400); // the field left (iOS: no blur for a removed field)
+        return; } }
     const keep = pbMatFormRead();
     const r = pbMatOrigJobRender.apply(this, arguments);
     try { if (keep) pbMat.form = keep; pbMatJobPaint(); } catch (e) {}
@@ -49185,7 +49276,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + (F.mode === 'add' && !pbInsJob.job.job_number ? '<div class="pb-field"><label for="ifJob">Job number</label><input type="text" id="ifJob" maxlength="60" autocomplete="off"></div>' : '')
       + '<div class="pb-field"><label for="ifKind">Type</label><select id="ifKind" onchange="pbInsKindChange()">' + PB_INS_KINDS.map(k => '<option value="' + k[0] + '">' + escapeHtml(k[1]) + '</option>').join('') + '</select></div>'
       + '<div class="pb-field"><label for="ifDetail" id="ifDetailLabel">Details (optional)</label><input type="text" id="ifDetail" maxlength="120" placeholder="e.g. Hydrostatic 150 psi, bedding, 95% Proctor"></div>'
-      + '<div class="pbd-two"><div class="pb-field"><label for="ifStaFrom">Station (or start of range)</label><input type="text" inputmode="decimal" id="ifStaFrom" placeholder="1+00 or 100"></div><div class="pb-field"><label for="ifStaTo">To station (optional)</label><input type="text" inputmode="decimal" id="ifStaTo" placeholder="4+50"></div></div>'
+      + '<div class="pbd-two"><div class="pb-field"><label for="ifStaFrom">Station (or start of range)</label><input type="text" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" enterkeyhint="next" id="ifStaFrom" placeholder="1+00 or 100"></div><div class="pb-field"><label for="ifStaTo">To station (optional)</label><input type="text" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" enterkeyhint="next" id="ifStaTo" placeholder="4+50"></div></div>'
       + '<div class="pb-field"><label for="ifPlace">Place (optional if a station is given)</label><input type="text" id="ifPlace" maxlength="200" placeholder="e.g. MH-7 to MH-10"></div>'
       + '<div class="pb-field"><label for="ifDate">Scheduled date (optional)</label><input type="date" id="ifDate"></div>'
       + '<div class="pb-field"><label for="ifForeman">Assigned foreman</label><select id="ifForeman">' + fm.map(f => '<option value="' + escapeHtml(f.uid) + '">' + escapeHtml(f.name) + '</option>').join('') + '</select></div>'
@@ -49201,7 +49292,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   window.pbInsKindChange = function() { const k = pbDlyEl('ifKind').value, l = pbDlyEl('ifDetailLabel'); if (l) l.textContent = k === 'other' ? 'What it is (required)' : 'Details (optional)'; };
   // "1+00", "1+00.50" or "100" -> feet; '' -> null; anything else -> NaN.
-  function pbDlySta(v) { const s = String(v || '').trim(); if (!s) return null; const m = /^(\d+)\+(\d{1,2}(?:\.\d+)?)$/.exec(s); if (m) return Number(m[1]) * 100 + Number(m[2]); return /^\d+(\.\d+)?$/.test(s) ? Number(s) : NaN; }
+  function pbDlySta(v) { const s = String(v || '').replace(/\s+/g, ''); /* feat_planfill: " 4 + 50 " */ if (!s) return null; const m = /^(\d+)\+(\d{1,2}(?:\.\d+)?)$/.exec(s); if (m) return Number(m[1]) * 100 + Number(m[2]); return /^\d+(\.\d+)?$/.test(s) ? Number(s) : NaN; }
   window.pbInsFormSave = async function() {
     const F = pbInsJob.form, uid = pbArchiveOwnerUid; if (!F) return;
     const say = (t) => { pbDlyEl('ifStatus').textContent = t; };
@@ -53735,7 +53826,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbCxNewErr(pbCxNewMsg); pbCxNewMsg = '';
     { const f = document.getElementById('cxNewForm'); if (f && !f.__cxIn) { f.__cxIn = true; f.addEventListener('input', () => pbCxNewErr('')); } } // a message goes once the person types again
     pbGoto('cxNew');
-    setTimeout(() => { const j = document.getElementById('cxnJob'); if (j) j.focus(); }, 60);
+    setTimeout(() => { const j = document.getElementById('cxnJob'); if (j && !(window.pbShellOskLikely && window.pbShellOskLikely())) j.focus(); }, 60); /* feat_planfill: a phone shows no keyboard for it */
   };
   function pbCxNewDup(num) {
     const j = pbCxKnownJob(num);
@@ -53814,8 +53905,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + note;
     pbSetHtml(el, h);
   }
-  window.pbCxWizSkip = function() { if (pbPj.edit) window.pbProdPlanCancel(); else if (pbCx.nf) { pbCx.nf.step = 2; window.pbCxJobPaint(); } };
-  window.pbCxWizDone = function() { const k = pbCx.nf && pbCx.nf.key; pbCx.nf = null; pbGoto('home'); window.pbCxRender(); setTimeout(() => { const b = document.querySelector('.pbx-job[data-job="' + (k || '').replace(/"/g, '') + '"]'); if (b) { b.scrollIntoView({ block: 'center' }); b.focus({ preventScroll: true }); } }, 120); };
+  window.pbCxWizSkip = function() { if (pbPj.edit) { if (pbProdPlanDirty()) pbConfirm('Skip the plan for now? What you typed in the plan is not saved.', () => window.pbProdPlanCancel(), 'Skip the Plan'); else window.pbProdPlanCancel(); } else if (pbCx.nf) { pbCx.nf.step = 2; window.pbCxJobPaint(); } };
+  window.pbCxWizDone = function() { if (pbPj.edit && pbProdPlanDirty()) { const E0 = pbPj.edit; Promise.resolve(window.pbProdPlanSave()).then(() => { if (!pbPj.edit && !E0.saving && !E0.err) window.pbCxWizDone(); else { const e = pbProdEl('ppErr'); if (e) e.scrollIntoView({ block: 'center' }); } }).catch(() => {}); return; } /* feat_planfill: Done saves the open plan first (an error stays in the editor) */ const k = pbCx.nf && pbCx.nf.key; pbCx.nf = null; pbGoto('home'); window.pbCxRender(); setTimeout(() => { const b = document.querySelector('.pbx-job[data-job="' + (k || '').replace(/"/g, '') + '"]'); if (b) { b.scrollIntoView({ block: 'center' }); b.focus({ preventScroll: true }); } }, 120); };
   window.pbExtraUnsavedChecks = Array.isArray(window.pbExtraUnsavedChecks) ? window.pbExtraUnsavedChecks : [];
   window.pbExtraUnsavedChecks.push((from, to) => {
     if (from !== 'cxNew' || to === 'cxNew' || pbCxNewBusy) return null;
