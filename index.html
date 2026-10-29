@@ -6466,7 +6466,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <form class="pbx-newform" id="cxNewForm" novalidate onsubmit="event.preventDefault(); pbCxNewSave();">
         <div class="pb-field"><label for="cxnJob">Job number <span class="pbx-req">(required)</span></label><input type="text" id="cxnJob" maxlength="60" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="cxnJobHelp" required><p class="pb-field-help" id="cxnJobHelp">The number crews put on their runs. Each job number is used once in your company.</p></div>
         <div class="pb-field"><label for="cxnName">Project name</label><input type="text" id="cxnName" maxlength="120" autocomplete="off" placeholder="e.g. Main St sewer replacement"></div>
-        <div class="pb-field"><label for="cxnAddr">Jobsite address</label><input type="text" id="cxnAddr" maxlength="300" autocomplete="street-address" placeholder="e.g. 123 Main St, Springfield, IL" aria-describedby="cxnAddrHelp"><p class="pb-field-help" id="cxnAddrHelp">Street, city and state. The daily report's weather uses it.</p></div>
+        <div class="pb-field"><label for="cxnAddr">City, State</label><input type="text" id="cxnAddr" maxlength="300" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="e.g. Springfield, IL"></div>
         <div class="pb-field"><label for="cxnStart">Start date <span class="pbx-opt">(optional)</span></label><input type="date" id="cxnStart"></div>
         <p class="pbx-formerr" id="cxnErr" role="alert" hidden></p>
         <div class="pb-btn-wrap"><button type="submit" class="pb-btn" id="cxnSave">Create project</button></div>
@@ -9297,6 +9297,21 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp .pbx-wiz .pbx-step { background: var(--pb-raised); }
 #pbApp .pbx-wiz-t { margin: 12px 0 0 0; font-size: 15px; line-height: 1.4; color: var(--pb-text); }
 #pbApp .pbx-wiz-note { margin: 10px 0 0 0; font-size: 13.5px; line-height: 1.4; color: var(--pb-text-2); }
+/* feat_jobcity: Project details' quiet weather line and its tucked exact spot */
+#pbApp .pb-jc { margin: -6px 0 14px 0; }
+#pbApp .pb-jc[hidden], #pbApp .pb-jc-spot[hidden], #pbApp .pb-jc-btns .pb-btn[hidden] { display: none; }
+#pbApp .pb-jc-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px 12px; margin: 0; font-size: 14px; line-height: 1.4; color: var(--pb-text-2); }
+#pbApp .pb-jc-line > span { min-width: 0; overflow-wrap: anywhere; }
+#pbApp .pb-osm { font-size: 11.5px; color: var(--pb-text-2); white-space: nowrap; }
+#pbApp .pb-osm[hidden] { display: none; }
+#pbApp .pb-osm a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+#pbApp .pb-jc-spotbtn { -webkit-appearance: none; appearance: none; min-height: 44px; margin: 0; padding: 0 2px; border: 0; background: transparent; color: var(--pb-brand); font: inherit; font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+#pbApp .pb-jc-spotbtn:focus-visible { outline: none; box-shadow: var(--pb-ring); border-radius: 6px; }
+#pbApp .pb-jc-spot { margin: 6px 0 0 0; padding: 12px; border-radius: 12px; background: var(--pb-raised); }
+#pbApp .pb-jc-spot .pb-field { margin: 0 0 10px 0; padding: 0; }
+#pbApp .pb-jc-btns { display: flex; flex-direction: column; gap: 8px; }
+#pbApp .pb-jc-btns .pb-btn { width: 100%; margin: 0; min-height: 44px; white-space: normal; }
+#pbApp .pb-modal-extra.pb-jc-cxi { overflow-y: auto; min-height: 0; flex: 0 1000 auto; -webkit-overflow-scrolling: touch; } /* it, not the dialog text, gives way on a short phone */
 #pbApp .pbx-wiz .pbx-btnrow { align-items: center; }
 #pbApp.pb-text-big .pbx-steps { flex-direction: column; }
 @media (max-width: 359px) { #pbApp .pbx-steps { flex-direction: column; } }
@@ -9695,7 +9710,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.63 · 2026-10-29'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.64 · 2026-10-29'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -50040,7 +50055,6 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!job.job_number) { pbInsJob.data = { items: [], can_add: pbInsJob.manager }; pbInsJobRender(); return; }
     if (!(await pbDlyCanAsk(uid))) { pbInsJob.msg = navigator.onLine === false ? 'No signal. The latest loads with signal.' : 'Sign in with signal to see the latest.'; pbInsJobRender(); return; }
     pbInsJob.busy = true; pbInsJobRender();
-    pbInsLocLoad(uid, job.job_number);
     const [r, l] = await Promise.all([pbPermitRpc('pb_insp_job', { p_job_number: job.job_number, p_expect_uid: uid }, 30000), pbPermitRpc('pb_daily_list', { p_job_number: job.job_number, p_limit: 60, p_expect_uid: uid }, 30000)]);
     pbInsJob.busy = false; if (pbInsJob.job !== job) return;
     if (r.error || !r.data || !Array.isArray(r.data.items)) pbInsJob.msg = pbDlyMissing(r) ? 'The company server isn’t ready for inspections yet.' : 'Couldn’t load.';
@@ -50058,7 +50072,6 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const canAdd = !!(D ? D.can_add : pbInsJob.manager);
     const open = items.filter(i => i.status === 'open'), done = items.filter(i => i.status === 'done'), canceled = items.filter(i => i.status === 'canceled');
     let h = canAdd ? '<div class="pb-btn-wrap pbd-bw"><button type="button" class="pb-btn" id="ijAddBtn" onclick="pbInsAddOpen()">Add Inspection or Test</button></div>' : '';
-    h += pbInsLocHtml();
     if (!D) h += pbInsJob.busy ? '' : '<p class="pbd-dim" id="ijNoData">Loads with signal.</p>'; /* feat_office34 O7: nothing loaded yet is not "none open" */
     else h += '<h2 class="pb-h2 pbd-h2" id="ijOpenHead">Open (' + open.length + ')</h2>' + (open.length ? open.map(i => pbInsItemCard(i, { foreman: true, edit: canAdd, history: true, photos: true, checkBtn: !canAdd || i.mine, idp: 'ijItem' })).join('') : '<p class="pbd-dim">None open.</p>')
       + '<h2 class="pb-h2 pbd-h2" id="ijDoneHead">Done (' + done.length + ')</h2>' + (done.length ? done.map(i => pbInsItemCard(i, { foreman: true, edit: canAdd, history: true, photos: true, idp: 'ijItem' })).join('') : '<p class="pbd-dim">None done yet.</p>');
@@ -50743,48 +50756,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbDlyView.wNext = d && d.next_at ? d.next_at : null;
     pbDlyRender();
   };
-  // ---- the JOB's location for weather (ruling, review S4/S5): set or replaced only by the company account, managers and
-  // PMs, on the job's Inspections page; a phone position is used once, after a confirm, rounded to about 100 m. ----
-  let pbInsLoc = { job: null, data: null, msg: '', busy: false };
-  async function pbInsLocLoad(uid, job) {
-    pbInsLoc = { job, data: null, msg: '', busy: false };
-    if (!job || !(await pbDlyCanAsk(uid))) return;
-    const r = await pbPermitRpc('pb_daily_weather_get', { p_job_number: job, p_work_date: pbTkToday(), p_expect_uid: uid }, 15000);
-    if (pbInsLoc.job === job && r && r.data && r.data.ok) { pbInsLoc.data = r.data; pbInsJobRender(); }
-  }
-  function pbInsLocHtml() {
-    const D = pbInsLoc.data; if (!pbInsJob.job || !pbInsJob.job.job_number || !D || !D.can_set_location) return '';
-    const L = D.location, src = L ? ({ geocoded: 'from the job address (US Census geocoder)', pin: 'pinned coordinates (about 100 m)', device_once: 'a phone’s position taken once at the jobsite (about 100 m)' }[L.source] || L.source) : '';
-    return '<section class="pbd-card" id="ijLoc"><h3 class="pbd-h3">Job location for weather</h3><p class="pbd-dim" id="ijLocNow">' + (L ? escapeHtml('Set: ' + (L.address ? L.address + ' · ' : '') + src + ', ' + pbDlyTimeIn(L.set_at)) : 'Not set yet. Foremen’s daily reports get the weather once it is.') + '</p>'
-      + '<p class="pbd-dim">Weather uses the JOB’s location only. Only the company account, managers and PMs can set it.</p>'
-      + '<div class="pb-field"><label for="ijLocAddr">Job street address</label><input type="text" id="ijLocAddr" maxlength="300" placeholder="100 Main St, Springfield, IL"></div><div class="pb-btn-row"><button type="button" class="pb-btn secondary small" id="ijLocAddrBtn" onclick="pbInsLocSet(\'address\')">Look Up Address</button></div>'
-      + '<div class="pb-field"><label for="ijLocPin">Or pin it: latitude, longitude</label><input type="text" id="ijLocPin" inputmode="decimal" placeholder="41.8781, -87.6298"></div><div class="pb-btn-row"><button type="button" class="pb-btn secondary small" id="ijLocPinBtn" onclick="pbInsLocSet(\'pin\')">Use These Coordinates</button><button type="button" class="pb-btn ghost small" id="ijLocDevBtn" onclick="pbInsLocSet(\'device\')">Use This Phone’s Location Once</button></div>'
-      + '<p class="pb-rpt-status" id="ijLocStatus" role="status">' + escapeHtml(pbInsLoc.msg || '') + '</p></section>';
-  }
+  // the job's weather location is set in job setup (feat_jobcity: City, State, or an exact spot)
   const pbDlyR3 = (v) => Math.round(v * 1000) / 1000; // about 100 m
-  async function pbInsLocSend(extra) {
-    const uid = pbArchiveOwnerUid, job = pbInsJob.job && pbInsJob.job.job_number; if (!job || pbInsLoc.busy) return;
-    if (!(await pbDlyCanAsk(uid)) || !sbClient.functions) { pbInsLoc.msg = 'Setting the location needs signal.'; pbInsJobRender(); return; }
-    pbInsLoc.busy = true; pbInsLoc.msg = 'Saving the job location…'; pbInsJobRender();
-    let r = null; try { r = await sbClient.functions.invoke('weather', { body: Object.assign({ job_number: job, work_date: pbTkToday() }, extra) }); } catch (e) { r = null; }
-    pbInsLoc.busy = false; const d = r && r.data;
-    pbInsLoc.msg = d && d.ok ? 'Job location saved' + (d.weather ? '; today’s weather: ' + pbDlyWeatherText(d.weather) : '') + '.' : (d && d.message) || 'The location could not be saved (no answer from the weather service).';
-    const msg = pbInsLoc.msg; await pbInsLocLoad(uid, job); pbInsLoc.msg = msg; pbInsJobRender();
-  }
-  window.pbInsLocSet = function(how) {
-    if (how === 'address') { const v = String((pbDlyEl('ijLocAddr') || {}).value || '').trim(); if (v.length < 5) { pbAlert('Type the job’s street address, city and state.', 'Job Address'); return; } pbInsLocSend({ address: v }); return; }
-    if (how === 'pin') {
-      const v = String((pbDlyEl('ijLocPin') || {}).value || '').trim(), m = /^(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/.exec(v);
-      if (!m || Math.abs(+m[1]) > 90 || Math.abs(+m[2]) > 180) { pbAlert('Enter the job’s position as latitude, longitude (for example 41.8781, -87.6298). Most map apps show it when you press and hold the spot.', 'Pin the Job'); return; }
-      pbInsLocSend({ lat: pbDlyR3(+m[1]), lon: pbDlyR3(+m[2]), source: 'pin' }); return;
-    }
-    // This phone's position, ONCE, only after a confirm; saved (rounded to about 100 m) as the JOB's location, never as a person's.
-    pbConfirm('The app asks this phone for its position once, now, and saves it, rounded to about 100 m, as this JOB’s location for weather. It is not saved as your location, and the app never tracks where anyone is. Only do this while you are at the jobsite.', () => {
-      if (!navigator.geolocation) { pbAlert('This phone can’t give its position. Type the address or pin the job instead.', 'Location'); return; }
-      navigator.geolocation.getCurrentPosition((p) => pbInsLocSend({ lat: pbDlyR3(p.coords.latitude), lon: pbDlyR3(p.coords.longitude), source: 'device_once' }),
-        () => pbAlert('The phone didn’t give its position (permission was not given, or no fix). Type the address or pin the job instead.', 'Location'), { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 });
-    }, 'Use This Phone’s Location Once?', { no: 'Cancel', yes: 'Use It Once' });
-  };
 
   // ---- drawn signature (optional, simple) ----
   function pbDlySigInit() {
@@ -50840,9 +50813,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!S) { body.innerHTML = h + (V.building ? '' : '<p class="pbd-dim">No records pulled in yet.</p>'); return; }
     // weather
     let wh = '';
-    if (V.weather && V.weather.data) wh = '<p id="drWeatherText">' + escapeHtml(pbDlyWeatherText(V.weather)) + '</p><p class="pbd-src" id="drWeatherLabel">' + escapeHtml(pbDlyWeatherLabel(V.weather)) + (V.location && V.location.source ? ' Job location: ' + escapeHtml({ geocoded: 'from the job address (US Census geocoder)', pin: 'pinned by the office', device_once: 'a phone’s position taken once at the jobsite' }[V.location.source] || V.location.source) + '.' : '') + '</p>';
-    else if (V.needLoc) wh = '<p id="drNeedLoc">This job has no location yet, so there’s no weather. The company account, a manager, a PM or a superintendent sets it on the job’s Inspections & tests page.</p>'
-      + (pbDlyAcc(pbArchiveOwnerUid).manager ? '<div class="pb-btn-row"><button type="button" class="pb-btn secondary small" id="drSetLocBtn" onclick="pbOpenInspJob(' + escapeHtml(JSON.stringify(V.job)) + ')">Set the Job Location</button></div>' : '');
+    if (V.weather && V.weather.data) wh = '<p id="drWeatherText">' + escapeHtml(pbDlyWeatherText(V.weather)) + '</p><p class="pbd-src" id="drWeatherLabel">' + escapeHtml(pbDlyWeatherLabel(V.weather)) + (V.location && V.location.source ? ' Job location: ' + escapeHtml({ geocoded: V.location.address || 'from the job’s city and state', pin: 'pinned by the office', device_once: 'a phone’s position taken once at the jobsite' }[V.location.source] || V.location.source) + '.' + (pbJcIsOsm(V.location) ? ' ' + PB_JC_OSM : '') : '') + '</p>';
+    else if (V.needLoc) wh = '<p id="drNeedLoc">This job has no city and state yet, so there’s no weather. The company account, a manager, a PM or a superintendent sets it in the job’s Project details.</p>'
+      + (pbDlyAcc(pbArchiveOwnerUid).manager ? '<div class="pb-btn-row"><button type="button" class="pb-btn secondary small" id="drSetLocBtn" onclick="pbJcOpenDetails(' + escapeHtml(JSON.stringify(V.job)) + ')">Set City &amp; State</button></div>' : '');
     else wh = '<p class="pbd-dim" id="drWeatherNone">' + escapeHtml(V.wMsg || 'Not looked up yet.') + '</p>';
     wh += '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" id="drWeatherBtn" onclick="pbDlyWeather({})"' + (V.wBusy || (V.weather && V.weather.complete) ? ' disabled' : '') + '>' + (V.weather ? 'Update Weather' : V.needLoc ? 'Check Again' : 'Get Weather') + '</button></div>'
       + (V.weather && V.weather.complete ? '<p class="pbd-dim" id="drWxDone">The whole day is in; it is not looked up again.</p>' : V.wNext ? '<p class="pbd-dim" id="drWxNext">Weather is looked up at most once an hour per job; next after ' + escapeHtml(pbDlyTimeIn(V.wNext)) + '.</p>' : '');
@@ -52132,7 +52105,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         ['Wind', d.wind_max_mph !== null ? 'to ' + d.wind_max_mph + ' mph' + (d.gust_max_mph !== null ? ', gusts to ' + d.gust_max_mph + ' mph' : '') : 'not reported'], ['Conditions', (d.conditions || []).map(c => c.text + ' (' + c.n + ')').join(', ') || 'not reported'],
         ['Observations', d.obs_count + ' from ' + t(d.first_obs, d.tz) + ' to ' + t(d.last_obs, d.tz)], ['Day covered', S.weather.complete ? 'the whole day (' + d.tz + ')' : 'part of the day (signed before it ended)']], { cols: 1, labelW: 40 });
       if (S.weather.partial_confirmed) R.para('The day was not over when this was retrieved; the foreman confirmed the work day had ended and used the weather observed so far.', { size: 9, style: 'bold' });
-      src(S.weather.label + ' Observed values from the station, not a forecast; the station can be several miles from the job. Job location: ' + ({ geocoded: 'the job address, geocoded by the US Census Bureau', pin: 'coordinates pinned by the office', device_once: 'a phone’s position taken once at the jobsite with permission' }[S.weather.location_source] || 'as recorded') + '.');
+      src(S.weather.label + ' Observed values from the station, not a forecast; the station can be several miles from the job. Job location: ' + ({ geocoded: 'the job’s address (city and state, or street address), geocoded', pin: 'coordinates pinned by the office', device_once: 'a phone’s position taken once at the jobsite with permission' }[S.weather.location_source] || 'as recorded') + '.');
     } else { R.para(S.weather ? S.weather.label : 'Weather was not available.', { size: 9.5, style: 'bold' }); src('National Weather Service (api.weather.gov), not reached for this report.'); }
     R.section('runs', 'Runs and production (' + S.runs.items.length + ')', { keep: 30 });
     if (S.runs.items.length) R.table({ head: ['Run', 'Times', 'Footage', 'Production entered (this session)'], columns: [{ cellWidth: 40 }, { cellWidth: 50 }, { cellWidth: 30 }, {}], fontSize: 8.4,
@@ -54559,13 +54532,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     v = v || { name: dj.project_name || '', addr: dj.address || '', start: dj.start_date ? String(dj.start_date).slice(0, 10) : '' };
     const cur = Object.assign({}, v);
     pbShowModal((err ? err + ' ' : '') + 'Shown on the Home card, the job page and report headers.', [{ label: 'Cancel' }, { label: 'Save', primary: true, onClick: () => pbCxInfoSave(cur) }], 'Project details · ' + pbProdJobLabel(job.job_number));
-    const wrap = document.createElement('div'); wrap.className = 'pb-modal-extra'; wrap.style.margin = '0 0 14px 0';
+    const wrap = document.createElement('div'); wrap.className = 'pb-modal-extra pb-jc-cxi'; wrap.style.margin = '0 0 14px 0';
     wrap.innerHTML = '<div class="pb-field"><label for="cxiName">Project name</label><input type="text" id="cxiName" maxlength="120" autocomplete="off" placeholder="e.g. Main St sewer replacement"></div>'
-      + '<div class="pb-field"><label for="cxiAddr">Jobsite address</label><input type="text" id="cxiAddr" maxlength="300" autocomplete="street-address" placeholder="e.g. 123 Main St, Springfield, IL"></div>'
+      + '<div class="pb-field"><label for="cxiAddr">City, State</label><input type="text" id="cxiAddr" maxlength="300" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="e.g. Springfield, IL"></div>'
+      + pbJcBoxHtml() /* feat_jobcity */
       + '<div class="pb-field"><label for="cxiStart">Start date <span class="pbx-opt">(optional)</span></label><input type="date" id="cxiStart"></div>';
     const f = { cxiName: 'name', cxiAddr: 'addr', cxiStart: 'start' };
     Object.keys(f).forEach(id => { const el = wrap.querySelector('#' + id); el.value = cur[f[id]] || ''; el.addEventListener('input', () => { cur[f[id]] = el.value; }); el.addEventListener('change', () => { cur[f[id]] = el.value; }); });
     document.getElementById('pbModalMessage').insertAdjacentElement('afterend', wrap);
+    try { pbJcMount(wrap, job, cur); } catch (e) { console.error(e); } /* feat_jobcity */
     setTimeout(() => { const el = document.getElementById('cxiName'); if (el) el.focus(); }, 50);
   };
   async function pbCxInfoSave(v) {
@@ -54579,11 +54554,128 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!sbUser || sbUser.id !== uid || !pbPj.job || pbPj.job.job_key !== job.job_key) return;
     const m = String((r && r.error && r.error.message) || '');
     if (!r || r.error || !r.data || r.data.ok !== true) return again(navigator.onLine === false || /failed to fetch|networkerror|load failed|no client|timeout/i.test(m) ? 'No signal.' : /Could not find the function|function .* does not exist/i.test(m) ? 'The company server can’t change project details yet.' : /pb:bad_date/.test(m) ? 'The server didn’t accept that start date.' : /pb:not_found/.test(m) ? 'This job isn’t on the company server any more.' : pbProdErrText(r));
+    const jcK = pbCxKnownJob(job.job_number), jcWas = jcK ? String(jcK.address || '').trim() : null; /* feat_jobcity: what the phone knew before (null: unknown) */
     const dj = pbCxKnownJob(job.job_number); // the phone's copy at once, then the server's
     if (dj) { Object.assign(dj, { project_name: v.name || null, address: v.addr || null, start_date: v.start || null }); try { pbProdCacheSet(uid, 'dash', { at: pbPd.at || Date.now(), data: pbPd.data }); } catch (e) {} }
     try { window.pbCxJobPaint(); } catch (e) {}
     window.pbCxRefresh(true);
+    if (v.addr && jcWas !== null && v.addr !== jcWas) pbJcAfterSave(job, v.addr); /* feat_jobcity: only a changed City, State moves it */
   }
+  // ==== feat_jobcity (owner, Oct 29 2026): the job's City, State is its weather location ====
+  // Set in job setup (New job, Project details) by the company account, managers, PMs and superintendents (the server's
+  // rule: pb_prod.managed_company). Edge function 'weather' v2: { place } is geocoded (US, the named state); { lat, lon,
+  // source } is an exact spot (a pin, or this phone's position once, both rounded to about 100 m). A job with an address and
+  // no location yet is geocoded once on the server, the first time anyone asks for its weather (here: Project details).
+  var pbJc = { key: null, data: null, msg: '', busy: false, spot: false, asked: {} };
+  // a city/state place comes from OpenStreetMap (Nominatim; ODbL): credited, small, where the place is named. A Census
+  // street match (it starts with a house number), a pin and a phone's spot are not OSM data.
+  var PB_JC_OSM = '<span class="pb-osm">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</span>';
+  function pbJcIsOsm(L) { return !!(L && L.source === 'geocoded' && L.address && !/^\d/.test(String(L.address).trim())); }
+  function pbJcCan() { return !!(sbClient && sbClient.functions && typeof sbClient.functions.invoke === 'function'); }
+  async function pbJcInvoke(body) {
+    if (!pbJcCan()) return null;
+    let r = null;
+    try { r = await Promise.race([sbClient.functions.invoke('weather', { body }), new Promise(res => setTimeout(() => res(null), 30000))]); } catch (e) { r = null; }
+    return r && r.data ? r.data : null;
+  }
+  const pbJcSaved = (d) => !!(d && d.location_saved && d.location); // a location was written by this request (a cached answer is not one)
+  const pbJcNotFound = (d) => !!(d && !pbJcSaved(d) && /^pb:(place_nomatch|place_unclear|geocode_nomatch)$/.test(String(d.code || '')));
+  const pbJcLabel = (a) => { const t = String(a || '').trim(); if (!/^\d/.test(t)) return t; const p = t.split(',').map(x => x.trim()).filter(x => x && !/^\d{5}(-\d{4})?$/.test(x)); return p.length >= 3 ? p.slice(-2).join(', ') : t; }; // an older Census label: its city and state
+  function pbJcSavedLine(d, addr) { return pbJcSaved(d) ? 'Weather: ' + pbJcLabel(d.location.address || addr) : pbJcNotFound(d) ? 'Weather: “' + addr + '” wasn’t found. Check the city and state in Project details.' : ''; }
+  function pbJcText() {
+    if (pbJc.msg) return pbJc.msg;
+    const D = pbJc.data; if (!D) return '';
+    const L = D.location; if (!L) return 'Weather: not set';
+    const at = L.lat !== undefined && L.lat !== null && L.lon !== undefined && L.lon !== null ? ' ' + Number(L.lat).toFixed(2) + ', ' + Number(L.lon).toFixed(2) : '';
+    if (L.source === 'pin') return 'Weather: pinned spot' + at;
+    if (L.source === 'device_once') return 'Weather: phone’s spot' + at;
+    return 'Weather: ' + (pbJcLabel(L.address) || 'set');
+  }
+  function pbJcBoxHtml() {
+    return '<div class="pb-jc" id="cxiWx" hidden><p class="pb-jc-line"><span><span id="cxiWxT" role="status"></span> <span id="cxiWxOsm" hidden>' + PB_JC_OSM + '</span></span><button type="button" class="pb-jc-spotbtn" id="cxiSpotBtn" aria-expanded="false" aria-controls="cxiSpot">Exact spot</button></p>'
+      + '<div class="pb-jc-spot" id="cxiSpot" hidden><div class="pb-field"><label for="cxiPin">Latitude, longitude</label><input type="text" id="cxiPin" autocomplete="off" spellcheck="false" placeholder="e.g. 41.8781, -87.6298"></div>'
+      + '<div class="pb-jc-btns"><button type="button" class="pb-btn secondary small" id="cxiPinBtn">Use This Spot</button><button type="button" class="pb-btn ghost small" id="cxiDevBtn">Use Phone’s Location Once</button><button type="button" class="pb-btn ghost small" id="cxiSpotCity" hidden>Use the City Instead</button></div></div></div>';
+  }
+  function pbJcPaint() { // the line and the panel only: the boxes being typed in are never rebuilt
+    const box = document.getElementById('cxiWx'); if (!box) return;
+    const D = pbJc.data;
+    box.hidden = !((D && D.can_set_location) || pbJc.msg);
+    const t = document.getElementById('cxiWxT'); if (t) t.textContent = pbJcText();
+    const o = document.getElementById('cxiWxOsm'); if (o) o.hidden = !!pbJc.msg || !(D && pbJcIsOsm(D.location));
+    const p = document.getElementById('cxiSpot'), b = document.getElementById('cxiSpotBtn');
+    if (p) p.hidden = !pbJc.spot; if (b) b.setAttribute('aria-expanded', pbJc.spot ? 'true' : 'false');
+    const c = document.getElementById('cxiSpotCity'), J = pbJc.key ? (pbCxKnownJob(pbJc.key) || {}) : {}, sq = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (c) c.hidden = !(D && D.location && J.address && (D.location.source !== 'geocoded' || sq(pbJcLabel(D.location.address)) !== sq(J.address))); // an exact spot, or a city that isn't the saved one
+    box.querySelectorAll('.pb-jc-btns button').forEach(x => { x.disabled = pbJc.busy; });
+  }
+  async function pbJcLoad(job, addr) {
+    const uid = pbArchiveOwnerUid, key = job.job_key;
+    if (pbJc.key !== key) pbJc = { key, data: null, msg: '', busy: false, spot: false, asked: pbJc.asked };
+    if (!(await pbDlyCanAsk(uid))) { pbJcPaint(); return; }
+    const r = await pbPermitRpc('pb_daily_weather_get', { p_job_number: job.job_number, p_work_date: pbTkToday(), p_expect_uid: uid }, 15000);
+    if (pbJc.key !== key || pbArchiveOwnerUid !== uid) return;
+    if (r && r.data && r.data.ok) pbJc.data = r.data;
+    pbJcPaint();
+    // an existing job with an address and no location yet: any weather request has the server geocode it, once
+    if (pbJc.data && !pbJc.data.location && pbJc.data.can_set_location && String(addr || '').trim() && !pbJc.asked[key]) {
+      pbJc.asked[key] = true;
+      const d = await pbJcInvoke({ job_number: job.job_number, work_date: pbTkToday() });
+      if (!pbJcSaved(d)) delete pbJc.asked[key]; // not done (no answer, geocoder down…): the next open tries again
+      else if (pbJc.key === key) await pbJcLoad(job, '');
+    }
+  }
+  async function pbJcSet(job, body) {
+    const key = job.job_key; if (pbJc.busy) return null;
+    pbJc.busy = true; pbJc.msg = 'Weather: saving…'; pbJcPaint();
+    const d = await pbJcInvoke(Object.assign({ job_number: job.job_number, work_date: pbTkToday() }, body));
+    if (pbJc.key !== key) return d;
+    pbJc.busy = false;
+    pbJc.msg = pbJcSaved(d) ? '' : 'Weather: ' + ((d && d.message) || 'not saved (no answer). Try again with signal.');
+    if (!pbJc.msg) { pbJc.spot = false; const p = document.getElementById('cxiPin'); if (p) p.value = ''; }
+    pbJcPaint(); await pbJcLoad(job, ''); return d;
+  }
+  function pbJcDevice(job, cur) {
+    // after the question, Project details comes back with what was typed, the panel open
+    const back = (msg) => { window.pbCxInfoForm(Object.assign({}, cur), ''); pbJc.spot = true; pbJc.msg = msg || ''; pbJcPaint(); };
+    pbShowModal('This phone’s position is taken once, now, and saved, rounded to about 100 m, as this JOB’s weather location. It is not saved as your location. Only do this at the jobsite.',
+      [{ label: 'Cancel', onClick: () => back('') }, { label: 'Use It Once', primary: true, onClick: () => {
+        if (!navigator.geolocation) { back('Weather: this phone can’t give its position.'); return; }
+        back('Weather: getting this phone’s position…');
+        navigator.geolocation.getCurrentPosition((p) => { pbJc.msg = ''; pbJcSet(job, { lat: pbDlyR3(p.coords.latitude), lon: pbDlyR3(p.coords.longitude), source: 'device_once' }); },
+          () => { pbJc.msg = 'Weather: no position from this phone (permission not given, or no fix).'; pbJcPaint(); }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 });
+      } }], 'Use This Phone’s Location Once?');
+  }
+  function pbJcMount(wrap, job, cur) {
+    const box = wrap.querySelector('#cxiWx'); if (!box || !job) return;
+    if (pbJc.key !== job.job_key) pbJc = { key: job.job_key, data: null, msg: '', busy: false, spot: false, asked: pbJc.asked };
+    else if (!pbJc.busy) pbJc.msg = '';
+    box.querySelector('#cxiSpotBtn').addEventListener('click', () => { pbJc.spot = !pbJc.spot; pbJcPaint(); });
+    box.querySelector('#cxiPin').addEventListener('input', () => { if (pbJc.msg && !pbJc.busy) { pbJc.msg = ''; pbJcPaint(); } });
+    box.querySelector('#cxiPinBtn').addEventListener('click', () => {
+      const v = String((box.querySelector('#cxiPin') || {}).value || '').replace(/[\u2212\u2013]/g, '-').replace(/[()\[\]]/g, '').trim(), m = /^(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/.exec(v);
+      if (!m || Math.abs(+m[1]) > 90 || Math.abs(+m[2]) > 180) { pbJc.msg = 'Weather: type latitude, longitude, e.g. 41.8781, -87.6298'; pbJcPaint(); return; }
+      pbJcSet(job, { lat: pbDlyR3(+m[1]), lon: pbDlyR3(+m[2]), source: 'pin' });
+    });
+    box.querySelector('#cxiDevBtn').addEventListener('click', () => pbJcDevice(job, cur));
+    box.querySelector('#cxiSpotCity').addEventListener('click', () => { // the city on the server (Save first if it was just changed)
+      const a = String(((pbCxKnownJob(job.job_number) || {}).address) || '').trim();
+      if (!a) { pbJc.msg = 'Weather: save the city and state first.'; pbJcPaint(); return; }
+      pbJcSet(job, { place: a });
+    });
+    pbJcPaint(); pbJcLoad(job, String(((pbCxKnownJob(job.job_number) || {}).address) || cur.addr || ''));
+  }
+  async function pbJcAfterSave(job, addr) {
+    const d = await pbJcInvoke({ job_number: job.job_number, work_date: pbTkToday(), place: addr });
+    if (pbJc.key === job.job_key && pbJcSaved(d)) pbJc.data = null; // the next Project details loads it fresh
+    if (d && !pbJcSaved(d)) pbAlertAfterOpen(pbJcNotFound(d) ? pbJcSavedLine(d, addr) : 'Weather wasn’t moved to “' + addr + '”' + (d.message ? ': ' + d.message : '.') + ' Try again in Project details › Exact spot.', 'Weather'); // no answer at all: quiet (Project details shows where weather is)
+    return d;
+  }
+  window.pbJcOpenDetails = async function(jobNumber) { // the daily report's "no city and state" button
+    const k = pbCxJk(jobNumber); await window.pbCxOpenJob(k);
+    if (pbPj.job && pbPj.job.job_key === k) window.pbCxEdit('info'); else if (pbCurrentScreen !== 'prodJob') pbAlert('That job opens with signal. Try again in a moment.', 'Project Details');
+  };
+  window.__pbJcDebug = () => JSON.parse(JSON.stringify(pbJc));
+  // ==== end feat_jobcity ====
   { // outermost wrapper (after batch 12 D2 and batch 18 M): every job render ends with the job screen's own parts
     const r0 = window.pbProdJobRender;
     window.pbProdJobRender = function() { const out = r0.apply(this, arguments); try { window.pbCxJobPaint(); } catch (e) { console.error(e); } return out; };
@@ -54968,13 +55060,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!pbPd.data) { const D = pbCohDash(uid); pbPd.data = D ? D.data : { jobs: [] }; pbPd.at = D ? D.at : 0; }
     pbPd.data = Object.assign({}, pbPd.data, { jobs: [job].concat((pbPd.data.jobs || []).filter(j => j && j.job_key !== key)) });
     pbProdCacheSet(uid, 'dash', { at: pbPd.at || Date.now(), data: pbPd.data });
-    // batch 23 DAILY (when it is in the app): the address becomes the job's location for the daily report's weather
+    // feat_jobcity: the job's City, State becomes its weather location (weather v2 { place }); if that can't be done now,
+    // the server geocodes it the first time anyone asks for the job's weather
     let locNote = '';
-    if (addr && !partial && typeof window.pbInsLocSet === 'function' && sbClient.functions && typeof sbClient.functions.invoke === 'function') {
-      sbClient.functions.invoke('weather', { body: { job_number: job.job_number, work_date: pbTkToday(), address: addr } }).then((x) => {
-        const d = x && x.data; if (pbCx.nf && pbCx.nf.key === key) { pbCx.nf.loc = d && d.ok ? 'The address is the job’s location for daily-report weather.' : 'The address couldn’t be used for weather' + (d && d.message ? ': ' + d.message : '') + '. Set it later on the job’s inspections page.'; window.pbCxJobPaint(); }
+    if (addr && !partial && pbJcCan()) {
+      pbJcInvoke({ job_number: job.job_number, work_date: pbTkToday(), place: addr }).then((d) => {
+        if (pbCx.nf && pbCx.nf.key === key) { pbCx.nf.loc = pbJcSavedLine(d, addr); pbCx.nf.locOsm = pbJcSaved(d) && pbJcIsOsm(d.location); window.pbCxJobPaint(); }
       }).catch(() => {});
-      locNote = 'Setting the job’s location for weather…';
     }
     pbCx.nf = { key, step: 1, saw: false, partial, loc: locNote };
     const f = document.getElementById('cxNewForm'); if (f) f.reset();
@@ -54992,7 +55084,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (N.step === 1) { if (pbPj.edit) N.saw = true; else if (N.saw) { N.step = 2; pbCx.tab = 'overview'; } } // the plan editor closed (saved, or cancelled)
     if (!el) { el = document.createElement('section'); el.id = 'pjCxWiz'; el.className = 'pbx-wiz'; el.setAttribute('aria-label', 'New job'); wrap.insertBefore(el, wrap.firstChild); }
     const note = (N.partial ? '<p class="pbx-wiz-note" id="pjCxWizPartial">' + pbCxE('The job and its plan are saved. Its name, address and start date aren’t kept yet: that needs a server update that isn’t in.') + '</p>' : '')
-      + (N.loc ? '<p class="pbx-wiz-note" id="pjCxWizLoc">' + pbCxE(N.loc) + '</p>' : '');
+      + (N.loc ? '<p class="pbx-wiz-note" id="pjCxWizLoc">' + pbCxE(N.loc) + (N.locOsm ? ' ' + PB_JC_OSM : '') + '</p>' : '');
     const h = '<ol class="pbx-steps">' + pbCxStepsHtml(N.step, N.step) + '</ol>'
       + (N.step === 1 ? '<p class="pbx-wiz-t" id="pjCxWizT">' + pbCxE('Set the planned amount for each category, then Save Plan. Categories can be renamed, added or removed.') + '</p>'
           + '<div class="pbx-btnrow"><button type="button" class="pbx-link" id="pjCxWizSkipPlan" onclick="pbCxWizSkip()">Skip the plan for now</button></div>'
