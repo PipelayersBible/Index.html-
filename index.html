@@ -9551,7 +9551,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }, true);
   // ---- 3. Interval follows the laying length and Divide (19.5 ft: halves 9.75, quarters 4.875, joints 19.5) ----
   function pbRsIvVal(c) { const D = PB_LAY_DIVS[c.div] || 2; return c && c.on && c.len !== null && c.len > 0 ? Math.round(c.len / D * 10000) / 10000 : null; }
+  var pbRsIvHold = 0; /* feat_ivfix: > 0 while a record's own settings are put back on the form */
+  function pbRsIvLocked() { let k = false; try { k = pbLastLockedEntryId !== null && pbLastLockedFormGen === pbFormGen; } catch (e) { k = false; try { console.warn('pbRsIvLocked', e); } catch (e2) {} } return pbRsIvHold > 0 || k; }
   function pbRsIvAuto(n, c, iv) {
+    if (iv && pbRsIvLocked()) { delete iv.dataset.rsAuto; delete iv.dataset.rsPrev; return; } /* feat_ivfix: a locked run keeps its locked interval */
     const v = pbRsIvVal(c); if (!iv || document.activeElement === iv) return;
     if (v === null) { if (!c.on) { if (iv.dataset.rsAuto !== undefined && iv.value === iv.dataset.rsAuto && iv.dataset.rsPrev !== undefined) iv.value = iv.dataset.rsPrev; delete iv.dataset.rsAuto; delete iv.dataset.rsPrev; } return; } // off again: the interval it had
     if (numVal(iv.id) === v) return;
@@ -9692,7 +9695,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.62 · 2026-10-29'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.63 · 2026-10-29'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -15347,7 +15350,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   // Resume: the run continues with the same pipe and the same adjustments. The
   // earlier session's retained check points stay with that session's evidence.
-  function pbLayRestoreFromEntry(entry) {
+  function pbLayRestoreFromEntry(entry) { pbRsIvHold++; try { return pbLayRestoreFromEntry0(entry); } finally { pbRsIvHold--; } } /* feat_ivfix */
+  function pbLayRestoreFromEntry0(entry) {
     const L = entry && entry.pipeLayout;
     for (let n = 1; n <= MAX_SEG; n++) pbLaySetCfg(n, null); // the run's own settings only: none recorded = no laying length (an interval run)
     if (!L) { window._pbLayout = { adj: [], retained: [], keep: [], owner: 'resume' }; pbLayRefreshSetup(); return; }
@@ -15413,7 +15417,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbLayReviewNote() { return pbLayDetachNote ? '<div class="pb-info"><strong>Pipe layout</strong>' + escapeHtml(pbLayDetachNote) + '</div>' : ''; }
   function pbLaySetOwner(id) {
     const st = pbLayState();
-    if (st.detached) { st.adj = []; st.retained = []; st.keep = []; st.detached = false; pbLayRefreshSetup(); } // the new record was locked without them
+    if (st.detached) { st.adj = []; st.retained = []; st.keep = []; st.detached = false; pbRsIvHold++; try { pbLayRefreshSetup(); } finally { pbRsIvHold--; } } /* feat_ivfix */ // the new record was locked without them
     st.flipped = false; // the locked record is measured from its own start
     st.owner = id;
   }
