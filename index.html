@@ -4560,6 +4560,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <label class="pb-set-switch" for="notifTypeSafety" id="notifTypeSafetyRow" hidden><span class="tx"><span class="name">Safety events</span><span class="sub">When a foreman adds a near miss, first aid, incident, property damage or stop work on your jobs</span></span><input type="checkbox" role="switch" id="notifTypeSafety" class="pb-pn-switch" checked onchange="pbPushSetPref('safety', this.checked)"></label><!-- feat_jobbook -->
         <label class="pb-set-switch" for="notifTypeSchedule" id="notifTypeScheduleRow" hidden><span class="tx"><span class="name">Schedule</span><span class="sub">When a job falls behind its end date or hits a checkpoint</span></span><input type="checkbox" role="switch" id="notifTypeSchedule" class="pb-pn-switch" checked onchange="pbPushSetPref('schedule', this.checked)"></label><!-- feat_schedule -->
         <label class="pb-set-switch" for="notifTypePlan" id="notifTypePlanRow" hidden><span class="tx"><span class="name">Plan changes</span><span class="sub">When someone else changes the plan of a job you’re on (its PMs and supers; the company account when it gets copies). Saves within 10 minutes come as one.</span></span><input type="checkbox" role="switch" id="notifTypePlan" class="pb-pn-switch" checked onchange="pbPushSetPref('plan_change', this.checked)"></label><!-- feat_super -->
+        <label class="pb-set-switch" for="notifTypeRunBack" id="notifTypeRunBackRow" hidden><span class="tx"><span class="name">Run reports sent back</span><span class="sub">When the office sends back one of your run reports, with the reason</span></span><input type="checkbox" role="switch" id="notifTypeRunBack" class="pb-pn-switch" checked onchange="pbPushSetPref('run_back', this.checked)"></label><!-- r15.57 -->
         <label class="pb-set-switch" for="notifTypeDelays" id="notifTypeDelaysRow" hidden><span class="tx"><span class="name">Delays &amp; extra work</span><span class="sub">Company account and PMs: a delay, standby or extra work on a foreman’s daily report</span></span><input type="checkbox" role="switch" id="notifTypeDelays" class="pb-pn-switch" checked onchange="pbPushSetPref('delays', this.checked)"></label><!-- feat_dailyplus -->
         <label class="pb-set-switch" for="notifTypeCrew"><span class="tx"><span class="name">Crew production reminders</span><span class="sub">When your crew starts or finishes a run and its production isn’t entered</span></span><input type="checkbox" role="switch" id="notifTypeCrew" class="pb-pn-switch" checked onchange="pbCrewPushSet(this.checked); pbPushCrewKind(this.checked)"></label><!-- batch 14 F -->
         <p class="pb-help pb-pn-msg" id="notifCrewMsg" role="status" hidden></p><!-- batch 14 F -->
@@ -9420,7 +9421,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.57 · 2026-10-28'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.58 · 2026-10-28'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -16859,6 +16860,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       calc.capabilityNotes.forEach(note => { html += `<div class="pb-warn photo">${escapeHtml(note)}</div>`; });
     }
     html += pbLayReviewNote();
+    if (typeof window.pbR57ReviewHtml === 'function') html += window.pbR57ReviewHtml(); /* r15.57: who the report goes to */
     content.innerHTML = html;
     pbGoto('review');
     if (document.getElementById('runRememberWtId').checked) {
@@ -16928,7 +16930,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const prior = runArchive.find(e => e.id === pbLastLockedEntryId && e.kind === 'run');
       if (prior && pbReplaceablePriorRun(prior)) {
         const again = (x) => pbLock(Object.assign({}, opts || {}, { replaceAnswered: true }, x));
-        pbShowModal('This form already locked ' + prior.startLabel + ' → ' + prior.endLabel + ' at ' + prior.lockTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '. Replace that record with these corrected numbers (it leaves Records and Stats' + (prior.sent === true ? '; its report was already sent' : '') + '), or keep both if this is another run?', [
+        pbShowModal('This form already locked ' + prior.startLabel + ' → ' + prior.endLabel + ' at ' + prior.lockTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '. Replace that record with these corrected numbers (it leaves Records and Stats' + (prior.sent === true ? '; its report was already sent' : '') + '), or keep both if this is another run?' + (typeof window.pbR57LockToLine === 'function' ? window.pbR57LockToLine() : ''), [
           { label: 'Cancel' },
           { label: 'Keep Both', onClick: () => again({}) },
           { label: 'Replace', primary: true, onClick: () => again({ replacePriorId: prior.id }) }
@@ -16968,6 +16970,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       pbAlert('This run is already in Stats from its earlier session, so it needs a pipe type to count today\u2019s footage under the same pipe. Turn on \u201cTrack extra details for this run\u201d, pick the Pipe type' + (resumedStatsRec.type ? ' (it was \u201c' + resumedStatsRec.type + '\u201d before)' : '') + ' and tap Lock again. Nothing was locked.', 'Choose the Pipe Type');
       return;
     }
+    if (!(opts && opts.fmAsked) && typeof window.pbR57AskForeman === 'function' && window.pbR57AskForeman(opts)) return; /* r15.57: no foreman picked: asked once per form */
     if (!(opts && opts.jobAsked) && typeof window.pbRfAskJob === 'function' && window.pbRfAskJob(opts)) return; // feat_runflow P6: a company run needs its job
     pbLockInFlight = true;
     try {
@@ -20677,6 +20680,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       // the one that locked this record (same checks as right after Lock).
       const L = entry.pipeLayout; if (L && Array.isArray(L.retained)) window._pbLayout.retained = pbLayClone(L.retained); window._pbLayout.keep = pbLayKeepOf(entry);
       if (entry.hi !== null && entry.hi !== undefined && entry.rodUnit !== 'lenker') { const hb = document.querySelector('#hiToggle button[data-val="direct"]'); if (hb) hb.click(); setElevFieldValue('hiDirect', entry.hi, arch); }
+      if (typeof window.pbAfRestorePick === 'function') window.pbAfRestorePick(entry, true); /* r15.57: the box shows the run's own foreman */
       pbFormFresh = false; pbFormEdited = null;
       pbLaySetOwner(entry.id);
       pbLastLockedEntryId = entry.id; pbLastLockedFormGen = pbFormGen; pbLastLockedFields = pbFormFingerprint('screen-input'); pbLastLockedPhotos = pbRunFormPhotos();
@@ -31728,7 +31732,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const PB_PUSH_TYPES = ['runs_waiting', 'mgmt_report', 'crew_production', 'run_end_ask', 'material_alert', 'crew_nudge', 'permit_closed', 'permit_due', 'locates', 'schedule', 'delays']; /* feat_dailyplus: delays */ // feat_schedule // feat_locates // feat_permitdue // r14 integration: a row shows only when the server reports the kind
   const PB_PUSH_ROWS = { run_end_ask: 'notifTypeRunEndRow', material_alert: 'notifTypeMatRow', crew_nudge: 'notifTypeNudgeRow', permit_closed: 'notifTypePermitRow', permit_due: 'notifTypePermitDueRow', locates: 'notifTypeLocRow', schedule: 'notifTypeScheduleRow' /* feat_schedule */, delays: 'notifTypeDelaysRow' /* feat_dailyplus */ }; // feat_locates // feat_permitdue // crew_production: batch 14 F's own row
   PB_PUSH_TYPES.push('plan_change'); PB_PUSH_ROWS.plan_change = 'notifTypePlanRow'; /* feat_super: shown when the server lists the kind (sql/OWNER_PASTE.sql), office only */
-  PB_PUSH_TYPES.push('safety'); PB_PUSH_ROWS.safety = 'notifTypeSafetyRow'; // feat_jobbook: a row shows only when the server reports the kind (sql/OWNER_PASTE.sql)
+  PB_PUSH_TYPES.push('safety'); PB_PUSH_ROWS.safety = 'notifTypeSafetyRow';
+  PB_PUSH_TYPES.push('run_back'); PB_PUSH_ROWS.run_back = 'notifTypeRunBackRow'; /* r15.57: shown when the server lists the kind (OWNER_PASTE_push_kind.sql), crew only */ // feat_jobbook: a row shows only when the server reports the kind (sql/OWNER_PASTE.sql)
   let pbPushReg = null, pbPushSwFailed = false, pbPushRegP = null, pbPushBusy = null, pbPushTimer = null;
   let pbPushMsg = { text: '', at: 0 };
   function pbPushHostOk() {
@@ -38678,7 +38683,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // What bulk send covers: every un-sent record, whatever the filters show (the
   // button counts them all and the note says so). Management reports are
   // left out: each one goes to its own recipient, so it is sent on its own.
-  function pbBulkSendable(e) { return !e.sent && e.kind !== 'report'; }
+  function pbBulkSendable(e) { return !e.sent && e.kind !== 'report' && !(typeof window.pbRrArchiveSent === 'function' && window.pbRrArchiveSent(e) !== null); } /* r15.57: a company crew member's run goes to the foreman and the office in the app; bulk email is for what doesn't */
   // Records's record now for each captured one, kept only if its text is still what was emailed.
   function pbBulkStillMatching(captured) {
     return captured.map(c => ({ x: pbArchiveRecordNow(c.entry), text: c.text })).filter(c => c.x && c.x.reportText === c.text);
@@ -38701,6 +38706,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const unsentCount = runArchive.filter(pbBulkSendable).length;
     document.getElementById('archiveBulkSendBtn').textContent = 'Email Reports Not Emailed Yet' + (unsentCount ? ' (' + unsentCount + ')' : ''); /* feat_runflow P8: a run Sent in the app may not be emailed */
     document.getElementById('archiveBulkSendBtn').disabled = unsentCount === 0;
+    { const b = document.getElementById('archiveBulkSendBtn'), row = b && b.closest('.pb-arch-toolrow'), off = unsentCount === 0 && typeof window.pbRrMember === 'function' && window.pbRrMember(pbArchiveOwnerUid); if (row && row.hidden !== off) row.hidden = off; } /* r15.57: company crew with nothing to email: no button */
     // Incomplete runs get their own section up top — the whole point is to be
     // easy to find again days later, not buried in the regular filtered list.
     const resumeSection = document.getElementById('archiveResumeSection');
@@ -38739,6 +38745,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         ${e.kind === 'report' && e.via === 'app' ? pbReportArchiveLine(e) : ''}
         <div class="pb-arch-meta">${meta}</div>
         ${e.cloudSyncFailed ? `<span class="pb-arch-alert cloudfail">This run’s local copy is correct, but it could not be confirmed as synced to the cloud after repeated attempts.${escapeHtml(pbCloudFailText(e))} <button class="pb-btn ghost small" onclick="${pbArchiveTapAttr('pbRetryCloudSync', e)}">Retry Sync</button></span>` : ''}
+        ${typeof window.pbR57ArchAlert === 'function' ? window.pbR57ArchAlert(e) : ''}
         ${e.depthFlagged ? '<span class="pb-arch-alert depth">Trench ≥5 ft — protective system required (OSHA)</span>' : ''}
         <div class="pb-arch-actions">
         <button class="pb-btn ghost small pb-arch-view" onclick="${pbArchiveTapAttr('pbToggleArchiveView', e)}">View</button>
@@ -46035,6 +46042,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (el.type === 'checkbox' || el.type === 'radio') el.checked = !!v; else el.value = v;
     });
     (d.pred || []).forEach(id => { try { setPredictedFillMarker(id, true); } catch (e) {} });
+    if (typeof window.pbAfRestorePick === 'function') window.pbAfRestorePick(d.top ? d.top.saForemanPick : '', false); /* r15.57: the foreman the draft's box showed is the one the report goes to */
     const fs = {}; Object.keys(d.fromStep || {}).forEach(k => { fs[map[k] || k] = d.fromStep[k]; }); window._pbSegStartFromStep = fs;
     // B1: the run's start is NOT the draft's: the fresh form's own start (set by pbResetRunForm) and the usual
     // start-time rule apply, so a draft's age never moves the production day or the End Run time.
@@ -51234,7 +51242,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const gen = ++R.gen, sf = pbRpfServerFilters(R);
     if (!more) { R.rows = []; R.next = null; R.partial = false; R.auto = 0; R.localN = PB_RPF_PAGE; }
     if (!sf) { R.server = 'skip'; R.busy = false; R.msg = ''; pbRpfRender(); return; }
-    if (!(await pbDlyCanAsk(uid))) { if (pbRpf !== R || R.gen !== gen) return; R.server = 'offline'; R.busy = false; R.msg = navigator.onLine === false ? 'No signal. These are the reports on this phone; the crew’s and the office’s load with signal.' : 'Sign in with signal to see the crew’s and the office’s reports. These are the ones on this phone.'; pbRpfRender(); return; }
+    if (!(await pbDlyCanAsk(uid))) { if (pbRpf !== R || R.gen !== gen) return; R.server = 'offline'; R.busy = false; R.msg = pbRpfTier(R) === 'pipelayer' ? (navigator.onLine === false ? 'No signal. These are the reports on this phone; your reports from the company load with signal.' : 'Sign in with signal to see your reports from the company. These are the ones on this phone.') /* r15.57 */ : navigator.onLine === false ? 'No signal. These are the reports on this phone; the crew’s and the office’s load with signal.' : 'Sign in with signal to see the crew’s and the office’s reports. These are the ones on this phone.'; pbRpfRender(); return; }
     R.busy = true; R.msg = ''; if (!more) R.server = 'loading'; pbRpfRender();
     const last = more ? R.next : null;
     const r = await pbPermitRpc('pb_reports_feed', { p_filters: sf, p_before_at: last ? last.at : null, p_before_key: last ? last.key : null, p_limit: PB_RPF_PAGE, p_expect_uid: uid }, 30000);
@@ -51253,9 +51261,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     } else {
       const m = String((r && r.error && r.error.message) || '');
       R.server = 'error';
-      R.msg = /Could not find the function|does not exist|schema cache/i.test(m) ? 'The crew’s and the office’s reports aren’t switched on for your account yet. These are the reports on this phone.'
-        : /pb:wrong_account|pb:signed_out/.test(m) ? 'Sign in again to see the crew’s and the office’s reports. These are the reports on this phone.'
-        : 'Couldn’t load the crew’s and the office’s reports. These are the ones on this phone. Tap Refresh to try again.';
+      const own = pbRpfTier(R) === 'pipelayer'; /* r15.57: a pipelayer sees his own reports from the company */
+      R.msg = /Could not find the function|does not exist|schema cache/i.test(m) ? (own ? 'Your reports from the company aren’t switched on for your account yet. These are the reports on this phone.' : 'The crew’s and the office’s reports aren’t switched on for your account yet. These are the reports on this phone.')
+        : /pb:wrong_account|pb:signed_out/.test(m) ? 'Sign in again to see ' + (own ? 'your reports from the company' : 'the crew’s and the office’s reports') + '. These are the reports on this phone.'
+        : 'Couldn’t load ' + (own ? 'your reports from the company' : 'the crew’s and the office’s reports') + '. These are the ones on this phone. Tap Refresh to try again.';
     }
     pbRpfRender();
   };
@@ -51283,7 +51292,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const s = typeof window.pbRrArchiveSent === 'function' ? window.pbRrArchiveSent(e) : null;
         const notDone = e.incomplete && !e.resumedIntoId;
         const sent = s === null ? !!e.sent : s;
-        const st = notDone && !sent ? 'Not finished' : s === null ? (e.sent ? 'Emailed' : 'Not emailed') : s ? (e.reportSentHow === 'auto' ? 'Sent automatically' : 'Sent') : e.reportSendWanted ? 'Sending…' : 'Not sent';
+        const st = notDone && !sent ? 'Not finished' : s === null ? (e.sent ? 'Emailed' : 'Not emailed') : (typeof window.pbR57ChipText === 'function' ? window.pbR57ChipText(e, true) : s ? (e.reportSentHow === 'auto' ? 'Sent automatically' : 'Sent') : e.reportSendWanted ? 'Sending…' : 'Not sent'); /* r15.57: one rule with Records */
         out.push({ key: 'local:run:' + e.id, type: 'run', at: Number(e.reportSentAt) || at, job_number: e.jobNumber || '', title: (e.startLabel || 'Start') + ' → ' + (e.endLabel || 'End'), bucket: sent ? 'done' : 'waiting', stText: st, local: true, mine: true, dedupe: 'run|' + String(e.id), open: () => window.pbPdfViewEntry(e, 'REPORTS') });
       } else if (e.kind === 'confined') {
         let bk = { k: 'unknown' }; try { bk = pbPermitBkStateOf(e); } catch (x) {}
@@ -52072,7 +52081,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const wd = isFinite(lt.getTime()) ? lt.getFullYear() + '-' + String(lt.getMonth() + 1).padStart(2, '0') + '-' + String(lt.getDate()).padStart(2, '0') : '';
     rec.pbOffice = { laidFt, photosLeftOut: left, workDate: wd, send: !!(e.reportSendWanted && (e.completed || e.incomplete)) }; // r15.2: Send Report
     if (e.rfForeman && typeof e.rfForeman === 'object' && (e.rfForeman.id || e.rfForeman.none)) rec.pbOffice.foremanId = e.rfForeman.none ? 'none' : String(e.rfForeman.id); /* r15.48 access: the server sends the report to him (sql/48); 'none': the office only */
-    delete rec.reportForeman; if (typeof window.pbAcStripSl === 'function') window.pbAcStripSl(rec); /* r15.48 access: no Site Log emails in the company's copy */
+    delete rec.reportForeman; delete rec.reportRefused; /* r15.57: phone-only */ if (typeof window.pbAcStripSl === 'function') window.pbAcStripSl(rec); /* r15.48 access: no Site Log emails in the company's copy */
     if (e.rfWho && typeof e.rfWho === 'object') { ['who', 'whoRole', 'foreman'].forEach(k => { if (e.rfWho[k]) rec.pbOffice[k] = e.rfWho[k]; }); } delete rec.rfWho; // feat_runflow P6 / review S3: names as stamped at End, never the live ones (a name or crew change re-uploads nothing)
     if (typeof window.pbRfEndHeld === 'function' && window.pbRfEndHeld(e)) rec.pbOffice.send = false; // review S1: an end not saved on the phone yet is not sent
     return rec;
@@ -52100,7 +52109,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     for (const e of runs) {
       let rec; try { rec = pbRrOfficeCopy(e); } catch (x) { continue; }
       const h = pbHashText(JSON.stringify([rec, acc.companyId]));
-      const ask = !e.reportSentAt && (e.completed || e.incomplete) && Date.now() - (pbRr.asked[String(e.id)] || 0) > (e.reportSendWanted ? 60000 : 30 * 60000); // r15.2: learn a send / an automatic send
+      const ask = !e.reportSentAt && !(e.reportRefused && e.reportRefused.code !== 'pb:not_company_member') /* r15.57: a refused one waits for a change */ && (e.completed || e.incomplete) && Date.now() - (pbRr.asked[String(e.id)] || 0) > (e.reportSendWanted ? 60000 : 30 * 60000); // r15.2: learn a send / an automatic send
       if (sent[String(e.id)] !== h || ask) { pbRr.asked[String(e.id)] = Date.now(); todo.push({ id: String(e.id), rec, h, e }); }
       if (todo.length >= PB_RR_MAX_PER_PASS) break;
     }
@@ -52113,10 +52122,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const r = await pbPermitRpc('pb_prod_run_record_put', { p_entry_id: t.id, p_record: t.rec, p_expect_uid: uid, p_access_company: acc.companyId }, 30000);
         if (pbRr.uid !== uid) break;
         const msg = String((r.error && r.error.message) || ''), code = (msg.match(/pb:\w+/) || [''])[0];
-        if (!r.error && r.data && r.data.ok === true) { sent[t.id] = t.h; if (typeof window.pbRrNoteSent === 'function' && window.pbRrNoteSent(t.e, r.data)) learned = true; continue; }
+        if (!r.error && r.data && r.data.ok === true) { sent[t.id] = t.h; if (t.e.reportRefused) { delete t.e.reportRefused; learned = true; } if (typeof window.pbR57AfterPut === 'function') window.pbR57AfterPut(t.e); /* r15.57 */ if (typeof window.pbRrNoteSent === 'function' && window.pbRrNoteSent(t.e, r.data)) learned = true; continue; }
         if (navigator.onLine === false || /failed to fetch|networkerror|load failed|no client|timeout/i.test(msg)) break;
-        if (code === 'pb:not_company_member' || code === 'pb:company_changed') { pbRr.pauseUntil = Date.now() + 6 * 3600000; break; }
-        if (code === 'pb:too_big' || code === 'pb:bad_record' || code === 'pb:photo_data') { sent[t.id] = t.h; continue; } // never resent as is
+        if (code === 'pb:not_company_member' || code === 'pb:company_changed') { if (code === 'pb:not_company_member' && typeof window.pbR57Refuse === 'function') todo.forEach(x => { if (window.pbR57Refuse(x.e, code)) learned = true; }); /* r15.57: said on Home and in Records */ pbRr.pauseUntil = Date.now() + 6 * 3600000; break; }
+        if (code === 'pb:too_big' || code === 'pb:bad_record' || code === 'pb:photo_data') { sent[t.id] = t.h; if (typeof window.pbR57Refuse === 'function' && window.pbR57Refuse(t.e, code)) learned = true; /* r15.57: kept on the run and said */ continue; } // never resent as is
         pbRr.pauseUntil = Date.now() + 10 * 60000; break; // anything else (quota, server): try again later
       }
       const keys = Object.keys(sent); if (keys.length > 300) keys.slice(0, keys.length - 300).forEach(k => delete sent[k]);
@@ -52624,7 +52633,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbRrSendAsk = function(id) {
     const e = runArchive.find(x => x && x.id === id); if (!e) return;
     if (e.reportSentAt) { pbAlert('This run’s report was already sent.', 'Already Sent'); return; }
-    pbShowModal('Send this run’s report to your foreman and the office?\n\n' + pbRrLabel(e) + '\n\nYou can still view it, and email a copy, from Records.', [
+    pbShowModal('Send this run’s report to ' + pbRfToWhom(pbArchiveOwnerUid, e) + '?\n\n' /* r15.57: the run's own foreman */ + pbRrLabel(e) + '\n\nYou can still view it, and email a copy, from Records.', [
       { label: 'Send Report', primary: true, onClick: () => { window.pbRrSendNow(id); } },
       { label: 'View Report', onClick: () => { if (typeof window.pbFxViewReport === 'function') window.pbFxViewReport(id); } },
       { label: 'Not Now' }
@@ -52662,6 +52671,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // Records: Sent / Not sent for a company run comes from the app's own send; email is separate
   window.pbRrArchiveChip = function(e) {
     if (!(e && e.kind === 'run' && pbRrMember(pbArchiveOwnerUid))) return null;
+    if (typeof window.pbR57Chip === 'function') return window.pbR57Chip(e); /* r15.57: one chip says the report's state */
     return (e.reportSentAt ? '<span class="pb-chip ok">' + (e.reportSentHow === 'auto' ? 'Sent automatically' : 'Sent') + '</span>' : '<span class="pb-chip notsent">' + (e.reportSendWanted ? 'Sending…' : 'Not sent') + '</span>')
       + (e.sent ? '<span class="pb-chip">Emailed</span>' : '');
   };
@@ -52805,7 +52815,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return !!(s && typeof s === 'object' && s.companyId && (s.companyRole === 'pipelayer' || s.companyRole === 'foreman'));
   }
   window.pbRfCrew = pbRfCrew;
-  function pbRfToWhom(uid, e) { if (pbAcOfficeOnly(uid, e)) return 'the office'; const n = pbAcFmName(uid, e); return n ? n + ' and the office' : pbLvIsForeman(uid) ? 'the office' : 'your foreman and the office'; }
+  function pbRfToWhom(uid, e) { if (pbAcOfficeOnly(uid, e)) return 'the office'; const n = pbAcFmName(uid, e); return n ? n + ' and the office' : pbLvIsForeman(uid) || pbR57NoFm(uid, e) ? 'the office' : 'your foreman and the office'; } /* r15.57: no foreman picked: the office (it waits for a foreman) */
   function pbRfFirst(uid, e) { if (pbAcOfficeOnly(uid, e)) return ''; const n = pbAcFmName(uid, e); return n ? n.split(/\s+/)[0] : ''; }
   function pbRfT(ms) { const d = new Date(ms); return isFinite(d.getTime()) ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : ''; }
   function pbRfFt(n) { const v = Number(n); return Number.isFinite(v) ? (Math.round(v * 10) / 10).toLocaleString() + ' ft' : ''; }
@@ -52845,7 +52855,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const b = document.querySelector('button[onclick="pbEndRun()"]');
     if (b && !b.disabled) { const l = window.pbRfEndLabel(); if (b.textContent !== l) b.textContent = l; }
     const p = document.getElementById('pbRfEndWhat');
-    if (p) { const t = pbRfCrew(pbArchiveOwnerUid) ? 'Ending marks the run finished, stops its clock and sends its report to ' + pbRfToWhom(pbArchiveOwnerUid, (() => { try { return getCurrentArchiveEntry(); } catch (x) { return null; } })()) + ' (as soon as there’s signal). A correction after that goes to them too.' : PB_RF_WHAT0; if (p.textContent !== t) p.textContent = t; }
+    if (p) { const t = pbRfCrew(pbArchiveOwnerUid) ? (() => { const ce = (() => { try { return getCurrentArchiveEntry(); } catch (x) { return null; } })(); return 'Ending marks the run finished, stops its clock and sends its report to ' + pbRfToWhom(pbArchiveOwnerUid, ce) + ' (as soon as there’s signal). ' + (pbR57NoFm(pbArchiveOwnerUid, ce) ? 'No foreman is picked, so it waits until a foreman takes it.' : 'A correction after that goes to them too.'); })() /* r15.57 */ : PB_RF_WHAT0; if (p.textContent !== t) p.textContent = t; }
     try { const e = getCurrentArchiveEntry(), id = e ? e.id : null; if (pbCurrentScreen === 'results' && pbRfLastRes !== id) { if (pbRfLastRes !== null) { const l = document.getElementById('laidLive'); if (l) l.textContent = ''; } pbRfLastRes = id; } } catch (e) {} // runflow §3 low: the last run's screen-reader line
   }
   window.pbScreenHooks.push((name) => { if (name === 'results') pbRfResults(); if (name === 'input') pbRfSetupApply(); if (name === 'prodMine') { try { window.pbRfLoad(pbArchiveOwnerUid, false); } catch (e) {} } });
@@ -52858,7 +52868,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   };
   window.pbRfHomeExtra = function(e) {
     const uid = pbArchiveOwnerUid; if (!e || !pbRfCrew(uid)) return '';
-    const n = e.endNote && e.endNote.text ? String(e.endNote.text) : '', who = pbRfFirst(uid, e) || (pbLvIsForeman(uid) ? 'the office' : 'your foreman');
+    const n = e.endNote && e.endNote.text ? String(e.endNote.text) : '', who = pbRfFirst(uid, e) || (pbLvIsForeman(uid) || pbR57NoFm(uid, e) || pbAcOfficeOnly(uid, e) ? 'the office' : 'your foreman'); /* r15.57: no foreman, or the office only */
     return (n ? '<span class="pb-save-offer-run" id="homeRunReportNote">' + pbRfE('Your note: “' + n + '”') + '</span>' : '')
       + '<button type="button" id="homeRunReportAddNote" onclick="pbRfNoteOpen(' + pbRfE(JSON.stringify(e.id)) + ')">' + pbRfE(n ? 'Change your note' : 'Add a note for ' + who) + '</button>';
   };
@@ -52872,7 +52882,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbHomeWorkProviders.push(() => {
     const uid = pbArchiveOwnerUid; if (!pbRfCrew(uid) || archiveLoadFailed) return null;
     const shown = typeof window.pbFxEndedId === 'function' ? window.pbFxEndedId() : null, since = Date.now() - 3 * 86400000;
-    return runArchive.filter(e => pbRrEnded(e) && e.reportSendWanted && !e.reportSentAt && pbRrEndMs(e) > since && e.id !== shown).slice(0, 5).map(e => ({
+    return runArchive.filter(e => pbRrEnded(e) && e.reportSendWanted && !e.reportSentAt && !(typeof window.pbR57Refused === 'function' && window.pbR57Refused(e)) /* r15.57 */ && pbRrEndMs(e) > since && e.id !== shown).slice(0, 5).map(e => ({
       id: 'rrWait_' + String(e.id), title: 'Run report', text: pbRrLabel(e),
       sub: 'Ended ' + new Date(pbRrEndMs(e)).toLocaleDateString(undefined, { weekday: 'short' }) + ' ' + pbRfT(pbRrEndMs(e)),
       status: navigator.onLine === false ? 'Saved on this phone: it goes to ' + pbRfToWhom(uid, e) + ' as soon as there’s signal.' : 'Sending to ' + pbRfToWhom(uid, e) + '…',
@@ -52881,7 +52891,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // ================= P9: the pipelayer's closing note (optional, one line) =================
   window.pbRfNoteOpen = function(id) {
     const e = runArchive.find(x => x && x.id === id); if (!e) { pbAlert('This run isn’t on this phone any more.', 'Run Not Found'); return; }
-    const who = pbRfFirst(pbArchiveOwnerUid, e) || (pbLvIsForeman(pbArchiveOwnerUid) ? 'the office' : 'your foreman');
+    const who = pbRfFirst(pbArchiveOwnerUid, e) || (pbLvIsForeman(pbArchiveOwnerUid) || pbR57NoFm(pbArchiveOwnerUid, e) || pbAcOfficeOnly(pbArchiveOwnerUid, e) ? 'the office' : 'your foreman'); /* r15.57: no foreman, or the office only */
     let val = e.endNote && e.endNote.text ? String(e.endNote.text) : '';
     pbShowModal('One line for ' + who + (who === 'the office' ? '' : ' and the office') + '. It goes with this run’s report.', [
       { label: 'Cancel' },
@@ -53047,7 +53057,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const resumed = !!window._pbResumingFromEntryId; // review S4: a resumed run with no job is asked (the Current job may be another run's)
     if (cur && cur.job_number && !resumed) { pbRfSetJob(cur); return false; } // the Current job: filled in, nothing asked
     const go = (j) => { pbHideModal(); pbRfSetJob(j); setTimeout(() => window.pbLock(Object.assign({}, opts || {}, { jobAsked: true })), 0); };
-    pbShowModal('This run’s production and its report go under the job you pick.', [{ label: 'Cancel' }], 'Which Job Is This Run On?');
+    pbShowModal('This run’s production and its report go under the job you pick.' + (typeof window.pbR57LockToLine === 'function' ? window.pbR57LockToLine() : ''), [{ label: 'Cancel' }], 'Which Job Is This Run On?');
     let jobs = null;
     const draw = () => {
       const d = document.getElementById('pbModalDialog'); if (!d || !document.getElementById('pbModalTitle') || document.getElementById('pbModalTitle').textContent !== 'Which Job Is This Run On?') return;
@@ -54768,7 +54778,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     let h;
     if (k === 'pipelayer') {
       const name = (entry && entry.rfForeman && entry.rfForeman.name) || pbRolesForemanName(uid); /* r15.48 access: the foreman picked on this run */
-      h = '<p class="pb-roles-who" id="pbRolesWho" style="margin:0; font-weight:700;">' + escapeHtml('Production and crew hours are entered by your foreman' + (name ? ': ' + name : '') + '.') + '</p>'
+      h = ((typeof window.pbR57ResultsWho === 'function' && window.pbR57ResultsWho(entry)) || ('<p class="pb-roles-who" id="pbRolesWho" style="margin:0; font-weight:700;">' + escapeHtml('Production and crew hours are entered by your foreman' + (name ? ': ' + name : '') + '.') + '</p>')) /* r15.57 */
         + (name ? '' : '<p class="pb-help" id="pbRolesNoForeman" style="margin:6px 0 0 0;">You have no linked foreman yet. Pick yours under Reports, My production, so your runs go to them.</p>');
     } else {
       h = '<p class="pb-roles-who" id="pbRolesWho" style="margin:0; font-weight:700;">Checking your account…</p>' /* r15.48 access */
@@ -56241,9 +56251,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return best;
   }
   function pbAfChoice(uid) {
+    if (pbAf.sel && pbAf.sel.gen !== undefined && pbAf.sel.gen !== pbFormGen) pbAf.sel = null; /* r15.57: a choice made on another form (a cancelled Edit Run Data, the run before New Run) is not this form's */
     if (pbAf.uid === uid && pbAf.sel && pbAf.sel.uid === uid) {
       const id = pbAf.sel.id; if (!id) return null;
       const f = ((pbAf.data ? pbAf.data.foremen : [])).find(x => x.id === id);
+      if (id !== PB_AF_NONE && !f && pbAf.data && pbAf.data.foremen.length) return null; /* r15.57: a restored or re-opened run's foreman who left the list: the box shows Pick, nothing is sent to him */
       return { id, name: id === PB_AF_NONE || (f && f.unnamed) ? '' : (f && f.name) || '', src: 'chosen' };
     }
     return pbAfPre(uid);
@@ -56267,8 +56279,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const uid = pbArchiveOwnerUid; if (!window.pbAfOn(uid)) return null;
     const c = pbAfChoice(uid); if (!c || !c.id) return null;
     const none = c.id === PB_AF_NONE, p = none ? { id: null, none: true, name: '', at: Date.now() } : { id: String(c.id), name: String(c.name || ''), at: Date.now() };
-    pbAf.pick = { id: none ? PB_AF_NONE : p.id, name: p.name, t: p.at }; pbAf.sel = null;
-    Promise.resolve(pbSetFor(uid, PB_AF_PICK, JSON.stringify(pbAf.pick))).catch(() => {});
+    if (!(pbAf.sel && pbAf.sel.run)) { /* r15.57: the run's own foreman (Edit Run Data) is not a new pick for the next run */
+      pbAf.pick = { id: none ? PB_AF_NONE : p.id, name: p.name, t: p.at };
+      Promise.resolve(pbSetFor(uid, PB_AF_PICK, JSON.stringify(pbAf.pick))).catch(() => {});
+    }
+    pbAf.sel = null;
     return p;
   };
   // S6: the server answers who the report goes to; the phone keeps it on the run ("Report sent to …")
@@ -56291,7 +56306,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       w = document.createElement('div'); w.id = 'saForemanPickWrap'; w.className = 'pb-field';
       w.innerHTML = '<label for="saForemanPick">Foreman</label><select id="saForemanPick"></select><p class="pb-help" id="saForemanPickNote" style="margin:4px 0 0 0;"></p><p class="pb-help" id="saForemanPickNames" style="margin:2px 0 0 0;" hidden>Ask the office to add names in Crew members.</p>';
       if (tf && tf.parentNode) tf.parentNode.insertBefore(w, tf); else return;
-      w.querySelector('select').addEventListener('change', (ev) => { pbAf.sel = { uid: pbArchiveOwnerUid, id: String(ev.target.value || '') }; try { pbRfSetupApply(); } catch (e) {} });
+      w.querySelector('select').addEventListener('change', (ev) => { pbAf.sel = { uid: pbArchiveOwnerUid, id: String(ev.target.value || ''), gen: pbFormGen }; /* r15.57: the choice belongs to this form */ try { pbRfSetupApply(); } catch (e) {} });
     }
     if (w.hidden) w.hidden = false;
     const d = pbAf.data, list = d ? d.foremen.slice() : [], on = list.length > 0;
@@ -56311,7 +56326,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         sel.innerHTML = (cur ? '' : '<option value="">Pick your foreman</option>') + list.map(f => '<option value="' + pbAcE(f.id) + '">' + pbAcE(f.name) + '</option>').join('') + '<option value="' + PB_AF_NONE + '">No foreman (office only)</option>';
         sel.value = cur ? cur.id : '';
       }
-      const t = cur && cur.id === PB_AF_NONE ? 'Your run report goes to the office only.' : 'Your run report goes to this foreman.';
+      const t = !cur ? 'Pick the foreman this run’s report goes to.' : cur.id === PB_AF_NONE ? 'Your run report goes to the office only.' : 'Your run report goes to this foreman.'; /* r15.57: nothing picked yet */
       if (note.textContent !== t) note.textContent = t;
       const un = list.some(f => f.unnamed); if (names.hidden === un) names.hidden = !un;
     }
@@ -56323,6 +56338,232 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.__pbAfCrewLoad = () => pbCrewLoad(pbArchiveOwnerUid, { force: true }); // tests
   window.__pbAcRptBy = (objs, uids) => pbRptPrepNames(objs).then(() => uids.map(u => pbRptBy(u))); // tests: how a PDF names people
   // ================= end r15.48 access =================
+  // ================= r15.57 route (feat_route57, Oct 28): run reports reach the right foreman; the pipelayer is told =================
+  // F1/F2 The foreman box on Run Setup IS the pick: a restored draft puts its box back as the choice (pbRdApply), and Edit
+  //       Run Data puts the run's own foreman in it (pbLoadRunIntoForm; marked "run" so a correction doesn't become the
+  //       remembered pick for the next run). Whatever the box shows at Lock is what is sent (pbAfLockPick).
+  // F3    A report the server refuses for good (pb:too_big, pb:bad_record, pb:photo_data; pb:not_company_member) is kept on
+  //       the run (e.reportRefused { code, at }, phone-only: never in the company copy) and said on Home, in Records and on
+  //       the Reports page with what to do. A later change that the server takes clears it.
+  // F4    No foreman picked: the note asks for one, Lock asks once per form ("Pick" / "Lock anyway"), and nothing says "your
+  //       foreman" (the report goes to the office and waits until a foreman takes it).
+  // F6    Who the report goes to: Review, the Lock dialogs, Results (the line under the run), Home's run card.
+  // F7    The pipelayer's own runs only (public.pb_prod_my_run_reports, sql/57_route.sql: auth.uid()'s own run_records,
+  //       sent, not removed, last 21 days): approved -> "Frank Ortiz approved your report · 7:41 AM"; sent back -> a Home
+  //       card "Pat sent back your run MH-3 → MH-4: <reason>" (and the push kind run_back from the server). Nobody else's
+  //       runs, and no new access: the server answers only for the caller's own rows. Kept per account on this phone.
+  //       There is no "opened" marker on the server, so the app never says the foreman "got" it: before approval the card
+  //       keeps saying when the server took the report ("Report sent to … · time").
+  // F8    Records: one chip for a company run's report state; the bulk email button only counts what the app doesn't send.
+  function pbR57S() { let s = window.__pbR57S; if (!s) s = window.__pbR57S = { uid: null, map: {}, at: 0, busy: false, off: 0, fmAskGen: null, loaded: false }; return s; }
+  const pbR57E = (t) => escapeHtml(String(t == null ? '' : t));
+  // ---------- F1/F2: put a foreman in the box as the choice ('' = none chosen: the usual pre-fill shows)
+  window.pbAfRestorePick = function(v, fromRun) {
+    const uid = pbArchiveOwnerUid; if (!pbAfWho(uid)) return;
+    if (pbAf.uid !== uid) pbAfReset(uid);
+    let id = '';
+    if (v && typeof v === 'object') {
+      const f = v.rfForeman && typeof v.rfForeman === 'object' && (v.rfForeman.id || v.rfForeman.none) ? v.rfForeman : v.reportForeman && typeof v.reportForeman === 'object' && v.reportForeman.id ? v.reportForeman : null;
+      id = f ? (f.none ? PB_AF_NONE : String(f.id)) : '';
+    } else id = typeof v === 'string' ? v : '';
+    pbAf.sel = id ? { uid, id, run: !!fromRun, gen: pbFormGen } : null; // the form this choice belongs to (a reset or New Run drops it)
+    const s = document.getElementById('saForemanPick'); if (s) s.dataset.k = '';
+    try { if (pbCurrentScreen === 'input') pbRfSetupApply(); } catch (e) {}
+  };
+  // ---------- who the report goes to, said once
+  function pbR57LinkName(uid) { try { const n = pbRolesForemanName(uid); if (n) return n; const L = pbCrew && pbCrew.uid === uid ? pbCrew.links : null; return L && L.my_foreman && L.my_foreman.id ? 'your foreman' : ''; } catch (e) { return ''; } }
+  // a pipelayer's run (or Run Setup) with no foreman at all: no pick, no crew link: the report waits until a foreman takes it
+  function pbR57NoFm(uid, e) {
+    try {
+      if (pbRolesKind(uid) !== 'pipelayer') return false;
+      if (e) {
+        if ((e.reportForeman && e.reportForeman.id) || (e.rfForeman && (e.rfForeman.id || e.rfForeman.none))) return false; // a foreman, or the office only on purpose
+        if (e.reportForeman && e.reportForeman.none) return true; // the server: nobody yet (held until a foreman takes it)
+        return !pbR57LinkName(uid);
+      }
+      if (typeof window.pbAfOn === 'function' && window.pbAfOn(uid)) return !window.pbAfChoiceNow();
+      return !pbR57LinkName(uid);
+    } catch (x) { return false; }
+  }
+  window.pbR57NoFm = pbR57NoFm;
+  // the box's choice as the person reads it (an unnamed foreman as the box labels him)
+  function pbR57BoxText(uid) {
+    if (!(typeof window.pbAfOn === 'function' && window.pbAfOn(uid))) return null;
+    const c = window.pbAfChoiceNow(); if (!c) return { none: true, t: 'No foreman picked: the report waits until a foreman takes it' };
+    if (c.id === PB_AF_NONE) return { office: true, t: 'The office only' };
+    const f = (pbAf.data ? pbAf.data.foremen : []).find(x => x.id === c.id);
+    return { t: (f && f.name) || c.name || 'Your foreman' };
+  }
+  // Run Setup / Review / a lock in progress: from the box; a locked run: from the run
+  function pbR57ToText(uid, e) {
+    if (!e) { const b = pbR57BoxText(uid); if (b) return b; const n = pbR57LinkName(uid); return n ? { t: n === 'your foreman' ? 'Your foreman' : n } : { none: true, t: 'No foreman picked: the report waits until a foreman takes it' }; }
+    if (pbAcOfficeOnly(uid, e)) return { office: true, t: 'The office only' };
+    if (pbR57NoFm(uid, e)) return { none: true, t: 'No foreman picked: the report waits until a foreman takes it' };
+    const n = pbAcFmName(uid, e); return { t: n || 'Your foreman' };
+  }
+  const pbR57Pip = (uid) => { try { return pbRolesKind(uid) === 'pipelayer' && pbRfCrew(uid); } catch (e) { return false; } };
+  window.pbR57PickFocus = function() {
+    pbHideModal(); pbGoto('input');
+    setTimeout(() => { try { pbRfSetupApply(); const s = document.getElementById('saForemanPick'); if (s && !s.hidden) { s.scrollIntoView({ block: 'center' }); s.focus(); } } catch (e) {} }, 250);
+  };
+  window.pbR57ReviewHtml = function() {
+    const uid = pbArchiveOwnerUid; if (!pbR57Pip(uid)) return '';
+    const T = pbR57ToText(uid, null), box = typeof window.pbAfOn === 'function' && window.pbAfOn(uid);
+    return '<div class="pb-review-item" id="reviewReportTo"><span class="k">Report goes to</span><br><span id="reviewReportToName"' + (T.none ? ' class="pb-r57-warn"' : '') + '>' + pbR57E(T.t) + '</span>'
+      + (box ? '<br><button type="button" class="pb-btn ghost small" id="reviewReportToChange" onclick="pbR57PickFocus()">' + (T.none ? 'Pick a Foreman' : 'Change') + '</button>' : '') + '</div>';
+  };
+  window.pbR57LockToLine = function() { const uid = pbArchiveOwnerUid; if (!pbR57Pip(uid)) return ''; const T = pbR57ToText(uid, null); return T.none ? '' : '\n\nReport goes to: ' + T.t + '.'; };
+  // ---------- F4: Lock with no foreman picked: asked once per form
+  window.pbR57AskForeman = function(opts) {
+    const uid = pbArchiveOwnerUid, S = pbR57S();
+    if (!pbR57Pip(uid) || !(typeof window.pbAfOn === 'function' && window.pbAfOn(uid)) || window.pbAfChoiceNow()) return false;
+    if (S.fmAskGen === pbFormGen) return false;
+    S.fmAskGen = pbFormGen;
+    pbShowModal('No foreman picked: the report waits until a foreman takes it. Pick one now?', [
+      { label: 'Pick', primary: true, onClick: () => window.pbR57PickFocus() },
+      { label: 'Lock anyway', onClick: () => { setTimeout(() => window.pbLock(Object.assign({}, opts || {}, { fmAsked: true })), 0); } }
+    ], 'No Foreman Picked');
+    return true;
+  };
+  // ---------- F3: refused for good
+  const PB_R57_REFUSED = {
+    'pb:too_big': ['too large', 'Save a PDF and give it to {who}.'],
+    'pb:photo_data': ['it has photo data the server can’t take', 'Save a PDF and give it to {who}, and tell the office.'],
+    'pb:bad_record': ['the server couldn’t read it', 'Save a PDF and give it to {who}, and tell the office.'],
+    'pb:not_company_member': ['this account isn’t in a company', 'Save a PDF and give it to {who}. Once the office adds you to the company, it sends by itself.']
+  };
+  window.pbR57Refuse = function(e, code) {
+    if (!e || e.kind !== 'run' || e.reportSentAt || !PB_R57_REFUSED[code]) return false;
+    if (code === 'pb:not_company_member' && !pbRrEnded(e)) return false; // a run still in progress has no report to send yet
+    if (e.reportRefused && e.reportRefused.code === code) return false;
+    e.reportRefused = { code, at: Date.now() };
+    setTimeout(() => { try { pbFxRenderHome(); } catch (x) {} try { pbR57Changed(); } catch (x) {} }, 0);
+    return true;
+  };
+  window.pbR57Refused = function(e) {
+    const r = e && e.kind === 'run' && !e.reportSentAt ? e.reportRefused : null, w = r && PB_R57_REFUSED[r.code]; if (!w) return null;
+    const who = pbRfFirst(pbArchiveOwnerUid, e) || 'your foreman';
+    return { code: r.code, why: w[0], todo: w[1].replace('{who}', who), title: 'Couldn’t send this report (' + w[0] + ')' };
+  };
+  // ---------- F7: the server's word on his own runs (approved / sent back), kept per account
+  async function pbR57Load(uid) {
+    const S = pbR57S(); if (S.uid === uid && S.loaded) return;
+    S.uid = uid; S.map = {}; S.at = 0; S.off = 0; S.loaded = true;
+    if (!uid || uid === 'shared') return;
+    try { const m = JSON.parse((await pbGetFor(uid, 'rr57Status')) || 'null'); if (pbR57S().uid === uid && m && typeof m === 'object' && !Object.keys(S.map).length) { S.map = m; pbR57Changed(); } } catch (e) {}
+  }
+  const pbR57Srv = (e) => { const S = pbR57S(); return e && S.uid === pbArchiveOwnerUid && e.reportSentAt ? S.map[String(e.id)] || null : null; };
+  window.pbR57Fetch = async function(force) {
+    const uid = pbArchiveOwnerUid, S = pbR57S();
+    if (!uid || uid === 'shared' || S.busy || !pbRrMember(uid) || archiveLoadFailed) return;
+    if (S.uid !== uid) await pbR57Load(uid);
+    if (!force && (Date.now() - S.at < 120000 || Date.now() < S.off)) return;
+    if (!sbClient || typeof sbClient.rpc !== 'function' || !sbUser || sbUser.id !== uid || navigator.onLine === false) return;
+    const ids = runArchive.filter(e => e && e.kind === 'run' && e.reportSentAt && Date.now() - Number(e.reportSentAt) < 21 * 86400000).sort((a, b) => Number(b.reportSentAt) - Number(a.reportSentAt)).slice(0, 60).map(e => String(e.id));
+    if (!ids.length) { if (Object.keys(S.map).length) { S.map = {}; pbSetFor(uid, 'rr57Status', '{}').catch(() => {}); pbR57Changed(); } return; }
+    S.busy = true; S.at = Date.now();
+    try {
+      const r = await pbPermitRpc('pb_prod_my_run_reports', { p_expect_uid: uid, p_entry_ids: ids }, 20000);
+      if (pbArchiveOwnerUid !== uid || S.uid !== uid) return;
+      if (r && !r.error && r.data && r.data.ok && Array.isArray(r.data.runs)) {
+        const m = {}, s = (v) => typeof v === 'string' ? v.slice(0, 500) : null;
+        r.data.runs.forEach(x => { if (x && x.entry_id != null && ids.includes(String(x.entry_id))) m[String(x.entry_id)] = { reviewed_at: s(x.reviewed_at), reviewed_by: s(x.reviewed_by_name), back_at: s(x.sent_back_at), back_by: s(x.sent_back_by_name), back_note: s(x.sent_back_note), upd: s(x.updated_at) }; });
+        if (JSON.stringify(m) !== JSON.stringify(S.map)) { S.map = m; pbSetFor(uid, 'rr57Status', JSON.stringify(m)).catch(() => {}); pbR57Changed(); }
+      } else if (/Could not find the function|does not exist|schema cache/i.test(String((r && r.error && r.error.message) || ''))) S.off = Date.now() + 3600000; // not on the server yet: ask again in an hour
+    } catch (e) { console.error('Run report status failed:', e); } finally { S.busy = false; }
+  };
+  function pbR57Changed() {
+    try { pbFxRenderHome(); } catch (e) {}
+    try { if (pbCurrentScreen === 'home') window.pbRenderHome(); } catch (e) {}
+    try { if (pbCurrentScreen === 'archive') renderArchiveList(); } catch (e) {}
+    try { if (pbCurrentScreen === 'results') pbRolesApply(); } catch (e) {}
+  }
+  const pbR57Time = (iso) => { const t = Date.parse(iso); return isFinite(t) ? new Date(t).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : ''; };
+  const pbR57Lab = (e) => String(e.startLabel || 'Start') + ' → ' + String(e.endLabel || 'End');
+  // sent back, and a changed copy reached the server after that: his correction is waiting for the foreman
+  const pbR57Fixed = (x) => !!(x && x.back_at && x.upd && Date.parse(x.upd) > Date.parse(x.back_at));
+  window.pbR57AfterPut = function(e) { const x = pbR57Srv(e); if (x && x.back_at && !pbR57Fixed(x)) pbR57S().at = 0; }; // ask again on the next look: the correction may be in
+  function pbR57BackText(e, x) { return (x.back_by || 'The office') + ' sent back your run ' + pbR57Lab(e) + (x.back_note ? ': ' + x.back_note : ''); }
+  function pbR57OkText(x) { return (x.reviewed_by || 'Your foreman') + ' approved your report' + (pbR57Time(x.reviewed_at) ? ' · ' + pbR57Time(x.reviewed_at) : ''); }
+  // ---------- F8: one state per company run (Records chip, Reports row)
+  function pbR57State(e) {
+    const R = window.pbR57Refused(e); if (R) return { chip: 'Couldn’t send', long: 'Couldn’t send (' + R.why + ')', cls: 'notsent', sent: false };
+    const x = pbR57Srv(e);
+    if (pbR57Fixed(x)) return { chip: 'Correction sent · waiting', long: 'Correction sent · waiting', cls: 'notsent', sent: true };
+    if (x && x.back_at) return { chip: 'Sent back', long: 'Sent back' + (x.back_by ? ' by ' + x.back_by : ''), cls: 'notsent', sent: true };
+    if (x && x.reviewed_at) return { chip: 'Approved', long: 'Approved' + (x.reviewed_by ? ' by ' + x.reviewed_by : ''), cls: 'ok', sent: true };
+    if (e.reportSentAt) { const t = e.reportSentHow === 'auto' ? 'Sent automatically' : 'Sent'; return { chip: t, long: t, cls: 'ok', sent: true }; }
+    if (e.reportSendWanted) return { chip: 'Sending…', long: 'Sending…', cls: 'notsent', sent: false };
+    return { chip: 'Not sent', long: 'Not sent', cls: 'notsent', sent: false };
+  }
+  window.pbR57ChipText = function(e, long) { const s = pbR57State(e); return (long ? s.long : s.chip) + (e.sent ? ' · copy emailed' : ''); };
+  window.pbR57Chip = function(e) { const s = pbR57State(e); return '<span class="pb-chip ' + s.cls + ' pb-r57-chip">' + pbR57E(s.chip + (e.sent ? ' · copy emailed' : '')) + '</span>'; };
+  window.pbR57ArchAlert = function(e) {
+    if (!(e && e.kind === 'run' && pbRrMember(pbArchiveOwnerUid))) return '';
+    const R = window.pbR57Refused(e); if (!R) return '';
+    return '<span class="pb-arch-alert cloudfail" id="archRefused_' + pbR57E(String(e.id).replace(/[^\w-]/g, '_')) + '">' + pbR57E('It wasn’t sent: ' + R.why + '. ' + R.todo) + ' <button class="pb-btn ghost small" onclick="' + pbArchiveTapAttr('pbDownloadArchivePDF', e) + '">Save PDF</button></span>';
+  };
+  // ---------- Home: the run card (fix_endsheet) and Current Work cards
+  { const o = window.pbRfHomeTitle; window.pbRfHomeTitle = function(e) {
+      const uid = pbArchiveOwnerUid;
+      if (e && pbRfCrew(uid)) {
+        const R = window.pbR57Refused(e); if (R) return R.title;
+        const x = pbR57Srv(e); if (pbR57Fixed(x)) return 'Correction sent · waiting'; if (x && x.back_at) return pbR57BackText(e, x); if (x && x.reviewed_at) return pbR57OkText(x);
+      }
+      return o.apply(this, arguments);
+    }; }
+  { const o = window.pbRfHomeExtra; window.pbRfHomeExtra = function(e) {
+      const R = e && pbRfCrew(pbArchiveOwnerUid) ? window.pbR57Refused(e) : null;
+      return (R ? '<span class="pb-save-offer-run pb-r57-warn" id="homeRunReportRefused">' + pbR57E(R.todo) + '</span>' : '') + o.apply(this, arguments);
+    }; }
+  window.pbR57RefusedAsk = function(id) {
+    const e = runArchive.find(x => x && x.id === id), R = window.pbR57Refused(e); if (!e || !R) { try { window.pbRenderHome(); } catch (x) {} return; }
+    pbShowModal(R.title + '.\n\n' + pbR57Lab(e) + '\n\n' + R.todo, [
+      { label: 'Save PDF', primary: true, onClick: () => window.pbFxSavePdf(e.id) },
+      { label: 'View Report', onClick: () => window.pbFxViewReport(e.id) },
+      { label: 'Close' }
+    ], 'Report Not Sent');
+  };
+  window.pbHomeWorkProviders.push(() => {
+    const uid = pbArchiveOwnerUid; if (!pbRfCrew(uid) || archiveLoadFailed) return null;
+    const shown = typeof window.pbFxEndedId === 'function' ? window.pbFxEndedId() : null, since = Date.now() - 3 * 86400000, out = [];
+    runArchive.forEach(e => {
+      if (!pbRrEnded(e) || e.id === shown || pbRrEndMs(e) <= since) return;
+      const R = window.pbR57Refused(e);
+      if (R) { out.push({ id: 'rrRefused_' + String(e.id), title: R.title, text: pbRrLabel(e), status: R.todo, urgent: true, locked: !pbScreenAccessAllowed('archive'), onClick: () => window.pbR57RefusedAsk(e.id) }); return; }
+      const x = pbR57Srv(e);
+      if (x && x.back_at && !pbR57Fixed(x)) out.push({ id: 'rrBack_' + String(e.id), title: (x.back_by || 'The office') + ' sent back your run', text: pbR57Lab(e) + (x.back_note ? ': ' + x.back_note : ''), sub: e.jobNumber ? 'Job ' + e.jobNumber : '', locked: !pbScreenAccessAllowed('archive'), onClick: () => window.pbFxViewReport(e.id) }); // the title is cut at two lines: the run and the reason go on the line below
+    });
+    return out.slice(0, 6);
+  });
+  // ---------- Results: the line under the run says where its report goes (or went)
+  window.pbR57ResultsWho = function(e) {
+    const uid = pbArchiveOwnerUid; if (!pbR57Pip(uid) || !e || e.kind !== 'run') return '';
+    let first, warn = false;
+    if (pbRrEnded(e)) { const R = window.pbR57Refused(e); first = R ? R.title + '. ' + R.todo : window.pbRfHomeTitle(e); warn = !!R; }
+    else { const T = pbR57ToText(uid, e); first = T.none ? T.t : 'Report goes to: ' + T.t; warn = !!T.none; }
+    if (!/[.…!?]$/.test(first)) first += '.';
+    const second = 'Production and crew hours are entered by your foreman.'; // unchanged sentence (no name: the line above says who)
+    // the report line is new (#pbR57To); #pbRolesWho stays the "who enters production" sentence (without the name: said once above)
+    return '<p class="pb-roles-who' + (warn ? ' pb-r57-warn' : '') + '" id="pbR57To" style="margin:0; font-weight:700;">' + pbR57E(first) + '</p><p class="pb-help" id="pbRolesWho" style="margin:6px 0 0 0;">' + pbR57E(second) + '</p>';
+  };
+  // ---------- Settings > Notifications: the sent-back row is for crew members (their own run reports)
+  { const a0 = window.pbAcPushRows; if (typeof a0 === 'function') window.pbAcPushRows = function(uid) { const r = a0.apply(this, arguments); try { const el = document.getElementById('notifTypeRunBackRow'), a = pbAcAcc(uid); if (el && !el.hidden && !(a && a.member && (a.role === 'foreman' || a.role === 'pipelayer'))) el.hidden = true; } catch (e) {} return r; }; }
+  // the Results line follows the run: its end, the server's answer
+  ['pbEndRun', 'pbEndRunIncomplete'].forEach(fn => { const o = window[fn]; if (typeof o !== 'function') return; window[fn] = function() { const r = o.apply(this, arguments); Promise.resolve(r).then(() => { try { if (pbCurrentScreen === 'results') pbRolesApply(); } catch (e) {} }).catch(() => {}); return r; }; });
+  { const o = window.pbRrNoteSent; window.pbRrNoteSent = function() { const r = o.apply(this, arguments); if (r) setTimeout(() => { try { if (pbCurrentScreen === 'results') pbRolesApply(); } catch (e) {} }, 0); return r; }; }
+  window.pbPushRoutes = window.pbPushRoutes || {};
+  window.pbPushRoutes['/run/sentback'] = function() { try { pbGotoTab('home'); } catch (e) { pbGoto('home'); } setTimeout(() => { window.pbR57Fetch(true).catch(() => {}); }, 300); };
+  (function () { try { if (document.getElementById('pbR57Css')) return; const s = document.createElement('style'); s.id = 'pbR57Css';
+    s.textContent = '#pbApp .pb-r57-warn{color:var(--pb-warn-text)}#pbApp #reviewReportTo .pb-btn{margin-top:8px;min-height:44px}#pbApp .pb-arch-alert .pb-btn{min-height:44px;margin-top:6px}';
+    document.head.appendChild(s); } catch (e) {} })();
+  window.pbAccountLoadHooks.push((uid) => { pbR57S().loaded = false; pbR57Load(uid).then(() => setTimeout(() => window.pbR57Fetch(false).catch(() => {}), 6000)).catch(() => {}); });
+  window.pbScreenHooks.push((name) => { if (name === 'home' || name === 'archive') window.pbR57Fetch(false).catch(() => {}); if (name === 'results') { try { pbRolesApply(); } catch (e) {} } });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') window.pbR57Fetch(false).catch(() => {}); });
+  window.addEventListener('online', () => { setTimeout(() => window.pbR57Fetch(true).catch(() => {}), 4000); });
+  setInterval(() => { try { if (sbUser && document.visibilityState === 'visible' && (pbCurrentScreen === 'home' || pbCurrentScreen === 'archive')) window.pbR57Fetch(false).catch(() => {}); if (pbCurrentScreen === 'results') pbRolesApply(); } catch (e) {} }, 60000);
+  window.__pbR57Debug = { state: () => JSON.parse(JSON.stringify(pbR57S())), to: () => pbR57ToText(pbArchiveOwnerUid, null), noFm: (e) => pbR57NoFm(pbArchiveOwnerUid, e || null) }; // tests
+  // ================= end r15.57 route =================
   // ================= feat_super: Superintendent title + plan-change alerts on Home (sql/52_super.sql) =================
   // Owner (Oct 27): a superintendent has exactly a PM's account (role 'pm' + the title 'superintendent'); the app only
   // shows the title. When a job's plan is changed (any plan save by the office), each PM / super assigned to the job, and
