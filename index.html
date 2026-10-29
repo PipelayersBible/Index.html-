@@ -9421,7 +9421,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.58 · 2026-10-28'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.59 · 2026-10-29'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -10146,7 +10146,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbLogout = async function() {
     // Its answer may still set the password: leaving now would hide whether it changed.
     if (pbSetPwSaving) { pbAlert('Your new password is still being saved \u2014 wait for the answer (it needs signal), then log out.', 'Still Saving'); return; }
-    pbAskBeforeReload('Log Out', () => pbConfirm('Log out? This will lock you out of any subscription-gated features until you log back in. Everything you\u2019ve already saved on this device stays exactly as it is.', async () => {
+    pbAskBeforeReload('Log Out', async () => { const unsent = await pbUnsentSentence(pbArchiveOwnerUid); /* r15.57 G7: what hasn't reached the company, from every queue */ pbConfirm('Log out? This will lock you out of any subscription-gated features until you log back in. ' + (unsent ? unsent + ' Everything else saved on this device stays as it is.' : 'Everything you\u2019ve already saved on this device stays exactly as it is.'), async () => {
       const leaveSig = pbLeaveSignature(); // the work the questions above were answered about
       if (typeof window.pbPushBeforeSignOut === 'function') await window.pbPushBeforeSignOut(true); // batch 13 (P): notifications off for this phone first (max 5 s, never blocks)
       if (sbClient) {
@@ -10189,7 +10189,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       // manually tracking down every place state could otherwise leak.
       pbLeaveAnswered = leaveSig; // no browser "Leave site?" on top of answered questions (only if nothing new since)
       window.location.reload();
-    }, 'Log Out'));
+    }, 'Log Out'); });
   };
   function updateLoginStatusDisplay() {
     if (sbUser && sbUser.email) pbAccountEmails[sbUser.id] = String(sbUser.email).toLowerCase();
@@ -10506,6 +10506,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     });
     add(() => (typeof window.pbProdHomeAttention === 'function' ? window.pbProdHomeAttention() : null)); // batch 12 D2: crew runs waiting
     add(() => (typeof window.pbLocHomeAttention === 'function' ? window.pbLocHomeAttention() : null)); // feat_locates: dig tickets about to expire
+    add(() => (typeof window.pbUnsentHomeItem === 'function' ? window.pbUnsentHomeItem() : null)); // r15.57 integrity: what hasn't reached the company
     return items;
   }
   window.pbRenderHome = function() {
@@ -10592,7 +10593,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbClosedEmergencyShown) { pbAlert('The confined space permit for ' + (pbClosedEmergencyShown.space || 'the closed space') + ' was closed out with its EMERGENCY still OPEN. Locking the phone would take the emergency panel (dispatcher script, headcount, EMERGENCY call) off this phone. Keep it unlocked until the emergency is over, then tap Dismiss on the emergency panel.', 'Emergency Still Open'); return; }
     // A saved permit that can't be read right now may still be live: locking would hide it, and its Retry, from the entry team.
     if (confinedSessionUnreadable && confinedSessionUnreadable.uid === cachedStorageUserId) { pbAlert('A confined space permit saved on this phone can\u2019t be read right now, and it may still be open. Use Retry on the banner (Home or Confined Space) and close it out before locking the phone.', 'Permit Still Open'); return; }
-    pbAskBeforeReload('Lock This Phone', () => pbConfirm('Log out and lock this phone? No one can be verified signed in right now (no connection), but the last account\u2019s records are open. Locking hides them until that person logs in again. Nothing is deleted.', async () => {
+    pbAskBeforeReload('Lock This Phone', async () => { const unsent = await pbUnsentSentence(pbArchiveOwnerUid); /* r15.57 G7 */ pbConfirm('Log out and lock this phone? No one can be verified signed in right now (no connection), but the last account\u2019s records are open. Locking hides them until that person logs in again. Nothing is deleted.' + (unsent ? ' ' + unsent : ''), async () => {
       const leaveSig = pbLeaveSignature(); // the work the questions above were answered about
       if (typeof window.pbPushBeforeSignOut === 'function') await window.pbPushBeforeSignOut(false); // batch 13 (P): notifications off for this phone first (max 5 s, never blocks)
       sbCachedSubscription = { tier: 'none', status: 'inactive' };
@@ -10604,7 +10605,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!planOk && !idOk) { if (typeof window.pbPushAfterSignOutFailed === 'function') window.pbPushAfterSignOutFailed(); /* feat_pushcard: not locked, release the card hold */ pbAlert('The phone could not be locked \u2014 storage is unavailable. Try again.', 'Lock Failed'); return; }
       pbLeaveAnswered = leaveSig; // no browser "Leave site?" on top of answered questions (only if nothing new since)
       window.location.reload(); // a clean start, as Log Out does
-    }, 'Lock This Phone'));
+    }, 'Lock This Phone'); });
   };
 
   // ---------- Subscription gating ----------
@@ -33420,20 +33421,21 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbTkPhotoOwed(t) { return !!(t && t.photoLocal && t.photoKey && !t.photoSent && !t.photoRefused); }
   function pbTkNeeds(t) { const s = t.sync || {}; return s.h !== pbTkHash(t) || pbTkPhotoOwed(t); }
   // ---- phone storage ----
+  const pbTkKnown = (t) => !!(t && typeof t.cid === 'string' && pbTkIsType(t.type)); // r15.57 G4: the tickets this build can read
   async function pbTkLoad(uid) {
     if (uid && pbTk.uid === uid && pbTk.list && !pbTk.failed) { pbTicketsRefreshUI(); return; } // the same account again: memory is what was saved
     pbTk = { uid: null, list: null, failed: false }; pbTkCc = { uid: null, map: {} };
     if (!uid) return;
-    let list = [], failed = false;
+    let list = [], failed = false, foreign = [];
     try {
       const raw = await pbGetCriticalFor(uid, PB_TK_KEY);
-      if (raw) { const o = JSON.parse(raw); if (o && Array.isArray(o.tickets)) list = o.tickets.filter(t => t && typeof t.cid === 'string' && pbTkIsType(t.type)); else failed = true; }
+      if (raw) { const o = JSON.parse(raw); if (o && Array.isArray(o.tickets)) { list = o.tickets.filter(pbTkKnown); foreign = pbQsUnknown(o.tickets, pbTkKnown); } else failed = true; } /* r15.57 G4 */
     } catch (e) { failed = true; }
     let cc = {};
     try { const r = await pbGetFor(uid, PB_TK_CC_KEY); const o = r ? JSON.parse(r) : null; if (o && typeof o === 'object' && !Array.isArray(o)) cc = o; } catch (e) {}
     if ((await pbResolveStorageUserId()) !== uid) return; // another account loaded meanwhile
     list.forEach(t => { if (!t.sync || typeof t.sync !== 'object') t.sync = {}; });
-    pbTk = { uid, list, failed }; pbTkCc = { uid, map: cc };
+    pbTk = { uid, list, failed, foreign }; pbTkCc = { uid, map: cc };
     if (!failed && (pbTkPruneThumbs() | pbTkPruneOld())) pbTkSaveList(uid);
     pbTicketsRefreshUI();
   }
@@ -33488,7 +33490,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.addEventListener('storage', (e) => { // another tab saved this account's tickets
     const uid = pbTk.uid;
     if (!uid || !pbTk.list || e.key !== uid + ':' + PB_TK_KEY) return;
-    pbTkReadStored(uid).then(st => { if (pbTk.uid === uid && pbTkMergeStored(st)) pbTicketsRefreshUI(); }).catch(() => {});
+    pbTkReadStored(uid).then(st => { if (pbTk.uid !== uid) return; const nf = pbQsUnknown(st, pbTkKnown), fch = (pbTk.foreign || []).length !== nf.length; pbTk.foreign = nf; if (pbTkMergeStored(st) || fch) pbTicketsRefreshUI(); }).catch(() => {});
   });
   // overlay: a ticket being saved from the form, written in place of (or in front of) its list entry; memory
   // takes it only after the phone save worked (review round 2, D3).
@@ -33498,9 +33500,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       let stored; try { stored = await pbTkReadStored(uid); } catch (e) { return false; } // can't read what is there: never write over it
       if (pbTk.uid !== uid || !pbTk.list) return false;
       pbTkMergeStored(stored);
+      const keep = pbQsUnknown(stored, pbTkKnown); pbTk.foreign = keep; /* r15.57 G4: written back untouched */
       let out = pbTk.list;
       if (overlay) { out = pbTk.list.map(x => x.cid === overlay.cid ? overlay : x); if (!pbTk.list.some(x => x.cid === overlay.cid)) out.unshift(overlay); }
-      return pbSetFor(uid, PB_TK_KEY, JSON.stringify({ v: 1, tickets: out }));
+      const ok = await pbSetFor(uid, PB_TK_KEY, JSON.stringify({ v: 1, tickets: out.concat(keep) })); pbUnsentHomeSoon(); return ok;
     };
     const locked = () => (typeof navigator !== 'undefined' && navigator.locks && typeof navigator.locks.request === 'function') ? navigator.locks.request('pb-tickets-save', run) : run();
     const p = pbTkSaveQ.then(locked, locked); pbTkSaveQ = p.catch(() => {}); return p;
@@ -34062,7 +34065,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const shown = all.filter(t => !fj || (fj === '__none' ? !String(t.jobNumber || '').trim() : pbTkJobKey(t.jobNumber) === pbTkJobKey(fj)));
     const byKey = new Map(); all.forEach(t => { const k = pbTkDupKey(t); if (k) byKey.set(k, (byKey.get(k) || []).concat([t])); });
     if (st && !pbTk.list) st.textContent = pbTk.failed ? '' : 'Loading your tickets…';
-    else if (st) { const n = all.filter(t => pbTkState(t).k !== 'ok').length; st.textContent = (pbTkSavedMsg ? pbTkSavedMsg + ' ' : '') + (!all.length ? 'No tickets yet. Tap New Ticket to record one.' : (shown.length + ' ticket' + (shown.length === 1 ? '' : 's') + (n ? ' · ' + n + ' not synced yet' : ' · all synced'))); }
+    else if (st) { const n = all.filter(t => pbTkState(t).k !== 'ok').length; st.textContent = (pbTkSavedMsg ? pbTkSavedMsg + ' ' : '') + (!all.length ? 'No tickets yet. Tap New Ticket to record one.' : (shown.length + ' ticket' + (shown.length === 1 ? '' : 's') + (n ? ' · ' + n + ' not synced yet' : ' · all synced'))) + ((pbTk.foreign || []).length ? ' · ' + pbTk.foreign.length + ' more ' + (pbTk.foreign.length === 1 ? 'ticket' : 'tickets') + ' ' + PB_QS_NEWER + '.' : ''); } /* r15.57 G4 */
     const nc = pbTkEl('tkNoCompanyWarn'); if (nc) nc.style.display = pbTkNoCompany && sbUser && pbTkNoCompany.uid === sbUser.id ? '' : 'none';
     const mb = pbTkEl('tkMoreWrap'); if (mb) mb.style.display = shown.length > pbTkShowN ? '' : 'none';
     list.innerHTML = shown.slice(0, pbTkShowN).map(t => {
@@ -34485,7 +34488,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     'pb:bad_id': 'the server couldn’t read it',
     'pb:too_big': 'it is too big to send',
     'pb:too_many_versions': 'it has been changed too many times',
-    'pb:pipelayer_no_production': 'production is entered by your foreman, not on a pipelayer’s account' /* r15.48 access (sql/48) */
+    'pb:pipelayer_no_production': 'production is entered by your foreman, not on a pipelayer’s account', /* r15.48 access (sql/48) */
+    'pb:changed': 'it was changed on the company server meanwhile' /* r15.57 B1 */
   };
   let pbProd = { uid: null, st: null, failed: false };
   let pbProdBusy = false, pbProdAgain = false, pbProdForce = false, pbProdTimer = null, pbProdBackoffN = 0, pbProdBackoffUntil = 0, pbProdNoCompany = null, pbProdSaveQ = Promise.resolve();
@@ -34574,6 +34578,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     runArchive.forEach(e => {
       if (!e || e.kind !== 'run') return;
       const cid = pbProdCid(e), items = pbProdItemsOf(e), known = st.items[cid];
+      { const K = known && known.keep ? (Array.isArray(known.keep) ? { items: known.keep } : known.keep) : null; /* r15.57: the server's version he chose stands beside the run: its other items, and its hours (or none) until a person changes the crew log */
+        if (K && Array.isArray(K.items)) { const ci = items.findIndex(y => y.key === PB_PROD_HOURS_KEY), comp = ci >= 0 ? items[ci].qty : null, his = 'hoursAt' in K && comp !== K.hoursAt;
+          if (!his && ci >= 0) items.splice(ci, 1);
+          K.items.forEach(i => { if (i.key === PB_PROD_HOURS_KEY && his) return; const j = items.findIndex(y => y.key === i.key); if (j >= 0) items[j] = i; else items.push(i); }); } }
       if (!items.length && !known) return;
       const rec = pbProdRecordOf(e), h = pbHashText(JSON.stringify([rec, items]));
       const when = (e.foreman && e.foreman.enteredAt) || Date.parse(e.lockTime) || 0;
@@ -34585,6 +34593,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbProdStateOf(x) {
     const s = (pbProd.st && pbProd.st.items[x.cid]) || {}, stamp = s.stamp;
     if (s.voided) return { k: 'voided', label: 'Taken off the company totals' };
+    if (s.conflict) return { k: 'conflict', label: 'Not sent: choose below' }; // r15.57: someone else changed it; the card asks
     if (s.h === x.h) return pbCrewLabel(pbCrewOf(x.cid), pbCrewPendingFor('cid:' + x.cid)) || { k: 'ok', label: 'Synced' }; // batch 12 D2: a crew run says how it stands
     if (!stamp) return { k: 'earlier', label: 'Not sent yet: tap Save Production on this run to send it' };
     if (stamp.k === 'none') return { k: 'nocompany', label: 'Not sent to a company: saved while you weren’t in one' };
@@ -34638,22 +34647,51 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbCrewMergeActions(m, stored);
     pbLvMerge(m, stored); // batch 14 F
   }
+  // r15.57 integrity (improvement 2): ONE way an offline queue store is written. Under the store's own Web Lock (its name
+  // from before, so a tab still on an older build waits for the same lock), what is stored is read with the throwing
+  // getter (a read that fails is never taken as "empty": nothing is written), merged into memory by the store's rule (what
+  // another tab saved is kept, records of kinds this build doesn't know included), then written. The answer says why
+  // when it didn't work: 'read' (what is stored couldn't be read), 'full' (the write failed), 'gone' (another account now).
+  const pbQsChains = new Map();
+  function pbQsWrite(o) {
+    const run = async () => {
+      if (!o.alive()) return { ok: false, why: 'gone' };
+      let stored = null;
+      try { const raw = await pbGetCriticalFor(o.uid, o.key); stored = raw ? o.parse(raw) : null; } catch (e) { return { ok: false, why: 'read' }; }
+      if (!o.alive()) return { ok: false, why: 'gone' };
+      if (stored) o.merge(stored);
+      const ok = !!(await pbSetFor(o.uid, o.key, JSON.stringify(o.value())));
+      if (o.done) { try { o.done(ok); } catch (e) { console.error(e); } }
+      pbUnsentHomeSoon(); // the Home line follows what is waiting
+      return { ok, why: ok ? '' : 'full' };
+    };
+    const locked = () => (navigator.locks && typeof navigator.locks.request === 'function') ? navigator.locks.request(o.lock, run) : run();
+    const prev = pbQsChains.get(o.lock) || Promise.resolve();
+    const p = prev.then(locked, locked).then(x => x || { ok: false, why: 'gone' }, () => ({ ok: false, why: 'read' }));
+    pbQsChains.set(o.lock, p); return p;
+  }
+  // Another tab wrote the store: its copy is merged into memory (nothing is written here).
+  function pbQsListen(fullKey, parse, onStored) {
+    window.addEventListener('storage', (e) => {
+      const k = fullKey(); if (!k || e.key !== k) return;
+      let o = null; try { const raw = localStorage.getItem(k); if (!raw) return; o = parse(raw); } catch (x) { return; } // read again, as the listeners before did (what is stored now)
+      if (o) { try { onStored(o); } catch (x) { console.error(x); } }
+    });
+  }
+  // The records of a stored list this build can't read (a newer version's kinds): written back exactly as they are.
+  function pbQsUnknown(list, known) { return Array.isArray(list) ? list.filter(x => !known(x)) : []; }
+  const PB_QS_NEWER = 'from a newer version of the app; update the app to see it';
   // Read what is stored, merge it in (another tab may have synced), then write. Never writes over a state it couldn't read.
   const pbCrewSaveSt = new Map(); // bughunt Oct 19 (3): crew action id -> 'saving' | 'unsaved' (absent: saved on this phone)
-  function pbProdSave(uid) {
-    const run = async () => {
-      if (pbProd.uid !== uid || !pbProd.st || pbProd.failed) return false;
-      let stored = null;
-      try { const raw = await pbGetCriticalFor(uid, PB_PROD_KEY); stored = raw ? JSON.parse(raw) : null; } catch (e) { return false; }
-      if (pbProd.uid !== uid || !pbProd.st) return false;
-      pbProdMerge(stored);
-      pbProdIdsDirty = false;
-      const ids = (pbProd.st.actions || []).map(x => x && x.id), ok = await pbSetFor(uid, PB_PROD_KEY, JSON.stringify(pbProd.st));
-      if (ok) ids.forEach(id => pbCrewSaveSt.delete(id)); // bughunt Oct 19 (3): these crew actions are on the phone now
-      return ok;
-    };
-    const locked = () => (navigator.locks && typeof navigator.locks.request === 'function') ? navigator.locks.request('pb-prod-save', run) : run();
-    const p = pbProdSaveQ.then(locked, locked); pbProdSaveQ = p.catch(() => {}); return p;
+  const pbLvUnsaved = new Set(); // r15.57 B2: crew-run entries (cid) whose last save on this phone failed
+  function pbProdSave(uid) { // r15.57: through pbQsWrite (same lock, same merge, same answer: true when it is on the phone)
+    let ids = [];
+    return pbQsWrite({ uid, key: PB_PROD_KEY, lock: 'pb-prod-save', parse: (raw) => JSON.parse(raw),
+      alive: () => pbProd.uid === uid && !!pbProd.st && !pbProd.failed,
+      merge: (stored) => pbProdMerge(stored),
+      value: () => { pbProdIdsDirty = false; ids = (pbProd.st.actions || []).map(x => x && x.id); return pbProd.st; },
+      done: (ok) => { if (ok) { ids.forEach(id => pbCrewSaveSt.delete(id)); pbLvUnsaved.clear(); } } // bughunt Oct 19 (3): these crew actions are on the phone now
+    }).then(x => x.ok);
   }
   // The stamp from the answer HELD at save: { k: 'ok', companyId, accessAt } | { k: 'none' } | { k: 'noanswer' }.
   function pbProdStampFromHeld(a) {
@@ -34732,14 +34770,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const todo = pbProdSessions().filter(x => {
         const s = st.items[x.cid] || {};
         if (!s.stamp || s.stamp.k !== 'ok' || s.held || s.checking) return false; // no company answer held at save: never sent
-        if (s.voided || s.h === x.h || s.refused === x.h) return false;
+        if (s.voided || s.h === x.h || s.refused === x.h || s.conflict) return false; // r15.57: a draft waits for his choice
         return force || !((s.failH === x.h || s.quotaH === x.h) && s.nextAt && s.nextAt > now);
       }).sort((p, q) => p.when - q.when);
       for (const x of todo) {
         if (!same() || !(await pbLiveSessionIs(uid)) || !same()) break; // checked right before every upload
         if (navigator.onLine === false) break; // no signal: nothing is tried, nothing counts as a failure
         const s = st.items[x.cid];
-        const r = await pbPermitRpc('pb_prod_save', { p_client_entry_id: x.cid, p_record: x.rec, p_items: x.items, p_expect_uid: uid, p_access_company: s.stamp.companyId, p_access_at: s.stamp.accessAt }, 30000);
+        const prevKs = Array.isArray(s.sentKs) ? s.sentKs.slice() : []; st.items[x.cid] = Object.assign({}, st.items[x.cid], { sentKs: prevKs.concat([pbLvItemsKey(x.items)]).slice(-4), at: Date.now() }); await pbProdSave(uid); if (!same()) break; /* r15.57: what this phone has sent, kept with the entry (survives an app kill) */
+        const r = await pbProdRpcV('pb_prod_save', { p_client_entry_id: x.cid, p_record: x.rec, p_items: x.items, p_expect_uid: uid, p_access_company: s.stamp.companyId, p_access_at: s.stamp.accessAt, p_expect_version: typeof s.v === 'number' ? s.v : s.h ? null : 0 /* r15.57 B1: the version this change was made on (0: none on the server yet) */ }, 30000);
         if (!same()) break;
         const cur = st.items[x.cid] = Object.assign({}, st.items[x.cid] || {});
         if (r.error) {
@@ -34749,6 +34788,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           if (code === 'pb:joined_after_answer') { cur.held = 'joined'; changed = true; continue; } // the server's join time says so: never filed
           if (code === 'pb:company_changed') { Object.assign(cur, { checking: true, ccAt: Date.now() }); changed = true; pbProdAgain = true; continue; } // SF1: final only after a fresh answer
           if (code === 'pb:voided') { Object.assign(cur, { voided: true }); changed = true; continue; }
+          if (code === 'pb:changed') { const det = pbChangedDetail(r.error); /* r15.57 B1 */
+            if (det && det.mine && typeof det.version === 'number' && det.version !== cur.v && prevKs.includes(pbLvItemsKey(det.items))) { cur.v = det.version; changed = true; pbProdAgain = true; continue; } /* his own earlier save whose answer was lost (the server has numbers this phone sent): his change goes again on top, nothing shown */
+            if (det && typeof det.version === 'number') { Object.assign(cur, { conflict: { v: det.version, items: pbNormItems(det.items), office: !!det.office, at: Date.now() }, failH: null, at: Date.now() }); changed = true; continue; } /* someone else's newer version: his change waits as a draft; the card asks (nothing adopted or sent by itself) */
+            Object.assign(cur, { refused: x.h, why: code, at: Date.now() }); changed = true; continue; }
           if (PB_PROD_REFUSED[code]) { Object.assign(cur, { refused: x.h, why: code, at: Date.now() }); changed = true; continue; }
           if (navigator.onLine === false || /failed to fetch|networkerror|load failed|no client/i.test(msg)) break; // no signal: not a failure
           if (code === 'pb:quota') { Object.assign(cur, { quotaH: x.h, nextAt: Date.now() + 3 * 3600000 }); changed = true; break; }
@@ -34765,7 +34808,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           Object.assign(cur, { failH: x.h, fails: n, nextAt: Date.now() + Math.min(2 * 3600000, 5 * 60000 * Math.pow(2, n - 1)), lastErr: 'bad reply' }); changed = true; continue;
         }
         if (pbProdNoCompany && pbProdNoCompany.uid === uid) pbProdNoCompany = null;
-        st.items[x.cid] = { h: x.h, at: Date.now(), stamp: cur.stamp, stampedAt: cur.stampedAt, v: Number(d.version) || null, crew: pbCrewFromReply(d) };
+        st.items[x.cid] = { h: x.h, at: Date.now(), stamp: cur.stamp, stampedAt: cur.stampedAt, v: Number(d.version) || null, crew: pbCrewFromReply(d), keep: cur.keep || null, sentKs: cur.sentKs || null }; /* r15.57: what the office added is kept, and its notice until OK */
         changed = true;
       }
       if (same() && navigator.onLine !== false) { const ar = await pbCrewRunActions(uid, same); if (ar.changed) changed = true; if (ar.failed) failed++; }
@@ -34801,7 +34844,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         if (pbProd.uid !== uid || !pbProd.st) return;
         if (pbModalIsOpen()) { if (++tries < 600) setTimeout(ask, 500); return; } // after the deletion's own questions
         pbShowModal('Also take its production off the company totals? The run is removed from this phone, but its quantities were already sent to your company. Keep them if the work was real; remove them if the run was a mistake or a duplicate. The company keeps the history either way.',
-          [{ label: 'Remove' , onClick: () => { const it = pbProd.st && pbProd.st.items[cid]; if (!it) return; it.voidWanted = true; pbProdSave(uid).then(() => pbProdSyncSoon(500)); } },
+          [{ label: 'Remove' , onClick: () => { const it = pbProd.st && pbProd.st.items[cid]; if (!it) return; it.voidWanted = true; pbProdSave(uid).then((ok) => { if (!ok && pbProd.uid === uid) pbAlert('Taking this run’s production off the company totals couldn’t be saved on this phone. It is kept while the app stays open and goes as soon as there’s signal, but it is lost if the app is closed or reloaded first. ' + pbSaveAdvice(), 'Not Saved on This Phone'); pbProdSyncSoon(500); }); /* r15.57: its save result is checked */ } },
            { label: 'Keep', primary: true }], 'Company Production');
       };
       setTimeout(ask, 300);
@@ -35695,31 +35738,31 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const q = x.items.map(it => pbProdCatName(it.key) + ' ' + pbProdQtyText(it.qty, it.unit)).join(' · ') || 'Quantities cleared';
     return '<li class="pbp-mine-row" data-cid="' + escapeHtml(x.cid) + '"><span class="pbp-ehead">' + escapeHtml(pbProdJobLabel(x.rec.jobNumber) + ' · ' + pbProdDayText(x.rec.workDate)) + '</span>'
       + '<span class="pbp-eq">' + escapeHtml(q) + '</span>' + (x.nr && typeof window.pbNrMineExtra === 'function' ? window.pbNrMineExtra(x) : '') /* batch 28 MANUAL */ + (pbSlItems(x.e).length ? '<span class="pbp-dim pbp-sl">' + escapeHtml(pbSlTotalsText(pbSlTotals(x.e))) + '</span>' : '') + '<span class="pb-chip ' + chip + ' pbp-state" data-state="' + s.k + '">' + escapeHtml(s.label) + '</span>'
-      + (x.rec.jobNumber ? '' : '<span class="pbp-dim">Add a job number to this run (Stats &amp; Records Info) so it counts toward a job.</span>') + '</li>';
+      + (x.rec.jobNumber ? '' : '<span class="pbp-dim">Add a job number to this run (Stats &amp; Records Info) so it counts toward a job.</span>') + pbProdConflictHtml(x) /* r15.57: the card when someone else changed it */ + '</li>';
   }
   // feat_crew34 6: a row for a crew-run entry (My crew now) under Today / Earlier, with the same chips as the card
   function pbLvMineRowHtml(x) {
     const s = pbLvStateOf(x) || { k: 'wait', label: '' }, plan = pbLvPlanObj(x.rec.jobNumber);
     return '<li class="pbp-mine-row" data-cid="' + escapeHtml(x.cid) + '"><span class="pbp-ehead">' + escapeHtml((x.name || 'Crew') + '’s run · ' + pbProdJobLabel(x.rec.jobNumber) + ' · ' + pbProdDayText(x.rec.workDate)) + '</span>'
-      + '<span class="pbp-eq">' + escapeHtml(pbCrewQty(x.items, plan)) + '</span>' + pbRolesHoursHtml(x.items, plan) + '<span class="pb-chip ' + (s.k === 'ok' ? 'ok' : s.k === 'refused' ? 'notsent' : 'saved') + ' pbp-state" data-state="' + s.k + '">' + escapeHtml(s.label) + '</span></li>';
+      + '<span class="pbp-eq">' + escapeHtml(pbCrewQty(x.items, plan)) + '</span>' + pbRolesHoursHtml(x.items, plan) + '<span class="pb-chip ' + (s.k === 'ok' ? 'ok' : ['refused', 'unsaved', 'nocompany', 'conflict'].includes(s.k) ? 'notsent' : 'saved') + ' pbp-state" data-state="' + s.k + '">' + escapeHtml(s.label) + '</span>' + pbLvConflictRowHtml(x) /* r15.57: the card */ + '</li>';
   }
   window.pbProdMineRender = function() {
     const st = pbProdEl('pmStatus'); if (!st) return;
     const uid = pbArchiveOwnerUid, signedIn = !!sbUser && uid && uid !== 'shared';
     const all = pbProd.uid === uid ? pbProdSessions() : [], today = pbTkToday();
     const shown = all.filter(x => x.items.length || (pbProd.st && pbProd.st.items[x.cid])).sort((a, b) => b.when - a.when);
-    const waiting = shown.filter(x => x.eligible && ['wait', 'refused', 'local'].includes(pbProdStateOf(x).k));
+    const waiting = shown.filter(x => x.eligible && ['wait', 'refused', 'local', 'conflict'].includes(pbProdStateOf(x).k));
     const earlier = pbProd.st ? pbProdEarlierSendable() : [];
-    const crewAll = pbProd.uid === uid ? Object.values(pbLvRuns()).filter(x => x && x.rec && Array.isArray(x.items)).sort((a, b) => (b.at || 0) - (a.at || 0)) : [], crewTod = crewAll.filter(x => x.rec.workDate === today), crewOld = crewAll.filter(x => x.rec.workDate !== today).slice(0, 40), crewWait = crewAll.filter(x => (pbLvStateOf(x) || {}).k === 'wait').length; // feat_crew34 6
+    const crewAll = pbProd.uid === uid ? Object.values(pbLvRuns()).filter(x => x && x.rec && Array.isArray(x.items)).sort((a, b) => (b.at || 0) - (a.at || 0)) : [], crewTod = crewAll.filter(x => x.rec.workDate === today), crewOld = crewAll.filter(x => x.rec.workDate !== today).filter((x, i) => i < 40 || x.conflict) /* r15.57: an entry waiting for his choice is always listed (its card is here) */, crewWait = crewAll.filter(x => (pbLvStateOf(x) || { k: 'wait' }).k !== 'ok').length, nBad = waiting.filter(x => ['refused', 'conflict'].includes(pbProdStateOf(x).k)).length + crewAll.filter(x => ['refused', 'unsaved', 'nocompany', 'conflict'].includes((pbLvStateOf(x) || {}).k)).length; /* r15.57 G3: every crew entry not at the company counts */ // feat_crew34 6
     const nc = pbProdEl('pmNoCompany'); if (nc) nc.style.display = pbProdNoCompany && pbProdNoCompany.uid === uid ? '' : 'none';
     const fw = pbProdEl('pmFailWarn'); if (fw) fw.style.display = pbProd.failed && pbProd.uid === uid ? '' : 'none';
     st.textContent = !signedIn ? 'Sign in to sync production to your company. It is saved on this phone with each run.'
       : pbProd.failed ? 'Production sync is paused on this phone.'
       : !shown.length && !crewAll.length ? pbRolesEmptyText('mine') // batch 29 ROLES: by role (a pipelayer's foreman enters it)
-      : waiting.length + crewWait ? (waiting.length + crewWait) + ' run session' + (waiting.length + crewWait === 1 ? '' : 's') + ' not synced yet' + (navigator.onLine === false ? ' · no signal' : '') + '.'
+      : waiting.length + crewWait ? (waiting.length + crewWait) + ' run session' + (waiting.length + crewWait === 1 ? '' : 's') + ' not synced yet' + (nBad ? ' (' + nBad + ' can’t go as ' + (nBad === 1 ? 'it is' : 'they are') + ': see below)' : '') + (navigator.onLine === false ? ' · no signal' : '') + '.'
       : 'All production synced.';
     const tl = pbProdEl('pmToday'), el = pbProdEl('pmEarlier');
-    const tod = shown.filter(x => x.rec.workDate === today), old = shown.filter(x => x.rec.workDate !== today).slice(0, 40);
+    const tod = shown.filter(x => x.rec.workDate === today), old = shown.filter(x => x.rec.workDate !== today).filter((x, i) => i < 40 || ((pbProd.st && pbProd.st.items[x.cid]) || {}).conflict); /* r15.57: an entry waiting for his choice is always listed */
     if (tl) tl.innerHTML = tod.length || crewTod.length ? '<ul class="pbp-entries">' + tod.map(pbProdEntryHtml).join('') + crewTod.map(pbLvMineRowHtml).join('') + '</ul>' : '<p class="pbp-dim pbp-none">Nothing entered today yet.</p>'; /* feat_crew34 6: his entries for his crew's runs too */
     if (el) el.innerHTML = old.length || crewOld.length ? '<ul class="pbp-entries">' + old.map(pbProdEntryHtml).join('') + crewOld.map(pbLvMineRowHtml).join('') + '</ul>' : '<p class="pbp-dim pbp-none">None.</p>';
     const ew = pbProdEl('pmEarlierWrap'); if (ew) { ew.style.display = earlier.length && signedIn ? '' : 'none'; const t = pbProdEl('pmEarlierText'); if (t) t.textContent = earlier.length + ' run session' + (earlier.length === 1 ? '' : 's') + ' with production ' + (earlier.length === 1 ? 'was' : 'were') + ' saved before production sync started on this phone, so ' + (earlier.length === 1 ? 'it stays' : 'they stay') + ' on this phone unless you send ' + (earlier.length === 1 ? 'it' : 'them') + '.'; }
@@ -35807,6 +35850,26 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbCrewTarget = (a) => a.t === 'assign' || a.t === 'send' ? 'cid:' + a.cid : a.t === 'link' || a.t === 'unlink' ? 'link:' + a.pipelayer : a.t === 'approve' || a.t === 'reject' ? 'edit:' + a.editId : 'id:' + a.entryId;
   function pbCrewPendingFor(target) { const st = pbProd.st; return st && Array.isArray(st.actions) ? st.actions.filter(a => pbCrewTarget(a) === target).pop() || null : null; }
   // Queue one of my crew actions: saved on this phone first, then the sync pass runs it (now, or when there's signal).
+  // r15.57 G5 (+ review nit): a change of a claimed copy. Under the production store's lock, after what another tab saved
+  // is merged in: a waiting (unsent) edit of the same copy is replaced and its base version kept; one on its way right now
+  // stays, and this one goes on top of the version it makes.
+  function pbCrewQueueEdit(E, items) {
+    const uid = pbProd.uid;
+    if (!uid || !pbProd.st || pbProd.failed || pbArchiveOwnerUid !== uid) { pbAlert('Production sync is paused on this phone, so this can’t be queued right now. Nothing was changed.', 'Not Changed'); return false; }
+    const a = { t: 'edit', entryId: E.id, version: E.version, items, desc: 'Your change', id: 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), at: Date.now() };
+    const place = () => {
+      const st = pbProd.st; if (!Array.isArray(st.actions)) st.actions = []; if (st.actions.some(x => x && x.id === a.id)) return;
+      const old = st.actions.filter(x => x && x.t === 'edit' && x.entryId === E.id).pop(), known = st.claimV && st.claimV[E.id];
+      if (!old && known && known.v > (Number(a.version) || 0)) { a.version = known.v; a.sentKs = Array.isArray(known.ks) ? known.ks.slice() : undefined; } // his last change of it went through (maybe after a lost answer): this one goes on top of it
+      if (old) { a.version = old.version; a.sentKs = Array.isArray(old.sentKs) ? old.sentKs.slice() : undefined; if (pbCrewSending.has(old.id)) a.after = old.id; else { st.actions = st.actions.filter(x => x !== old); st.actDone = (st.actDone || []).concat([old.id]).slice(-200); pbCrewSaveSt.delete(old.id); } }
+      st.actions.push(a);
+    };
+    pbCrewSaveSt.set(a.id, 'saving');
+    pbQsWrite({ uid, key: PB_PROD_KEY, lock: 'pb-prod-save', parse: (raw) => JSON.parse(raw), alive: () => pbProd.uid === uid && !!pbProd.st && !pbProd.failed,
+      merge: (stored) => pbProdMerge(stored), value: () => { place(); pbProdIdsDirty = false; return pbProd.st; } })
+      .then(x => { if (pbProd.uid !== uid || !pbProd.st) return; if (!x.ok) { place(); pbCrewSaveFailed(a); } else pbCrewSaveSt.delete(a.id); pbProdRefreshUI(); pbProdSyncSoon(0); }, () => {});
+    return true;
+  }
   function pbCrewQueue(a) {
     const uid = pbProd.uid, st = pbProd.st;
     if (!uid || !st || pbProd.failed || pbArchiveOwnerUid !== uid) { pbAlert('Production sync is paused on this phone, so this can’t be queued right now. Nothing was changed.', 'Not Changed'); return false; }
@@ -35824,6 +35887,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbCrewSaveSt.set(a.id, 'unsaved');
     pbAlert((a.desc || 'This crew action') + ': couldn’t be saved on this phone. It is kept while the app stays open and goes as soon as there’s signal, but it is lost if the app is closed or reloaded before then. ' + pbSaveAdvice(), 'Not Saved on This Phone');
   }
+  const PB_CREW_KINDS = ['assign', 'send', 'claim', 'cover', 'edit', 'link', 'unlink', 'approve', 'reject']; // r15.57 G4: the kinds this build sends
   function pbCrewSavedTxt(a) { const s = a && pbCrewSaveSt.get(a.id); return s === 'unsaved' ? 'NOT saved on this phone (kept only while the app stays open)' : s === 'saving' ? 'saving on this phone' : 'saved on this phone'; }
   window.pbCrewRetrySave = function() {
     const uid = pbProd.uid; if (!uid || !pbProd.st) return;
@@ -35837,12 +35901,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (a.t === 'edit') return d.pending ? 'Your change to the run you claimed waits for the company\u2019s approval.' : 'Saved your change to the run you claimed.';
     if (a.t === 'link') return a.mine === 'pipelayer' ? 'Your foreman is now ' + (a.name || 'set') + '. Your new runs go to them.' : (a.name || 'They') + ' is now in your crew.';
     if (a.t === 'unlink') return a.mine === 'pipelayer' ? 'You no longer have a linked foreman.' : (a.name || 'They') + ' is no longer in your crew.';
+    if ((a.t === 'approve' || a.t === 'reject') && d.again) return (a.t === 'approve' ? 'Approved ' : 'Rejected ') + (a.who || 'the pipelayer') + '\u2019s change (your earlier tap had already reached the company).'; // r15.57
     if (a.t === 'approve') return 'Approved ' + (a.who || 'the pipelayer') + '\u2019s change: the new numbers count now.';
     if (a.t === 'reject') return 'Rejected ' + (a.who || 'the pipelayer') + '\u2019s change: the earlier numbers keep counting.';
     return 'Done.';
   }
   // Run the queued actions, in order. One that is waiting (its run hasn't reached the server yet, or no signal) keeps
   // its place and holds back later actions on the same thing; a final answer from the server is said and dropped.
+  const pbCrewSending = new Set(); // r15.57 G5: crew actions on their way to the server right now (this tab)
   async function pbCrewRunActions(uid, same) {
     const st = pbProd.st, out = { changed: false, failed: false };
     if (!st || !Array.isArray(st.actions) || !st.actions.length) return out;
@@ -35876,11 +35942,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         : a.t === 'link' ? ['pb_prod_crew_link_set', { p_foreman: a.foreman, p_pipelayer: a.pipelayer }]
         : a.t === 'unlink' ? ['pb_prod_crew_link_end', { p_foreman: a.foreman, p_pipelayer: a.pipelayer }]
         : a.t === 'approve' || a.t === 'reject' ? ['pb_prod_edit_decide', { p_edit_id: a.editId, p_approve: a.t === 'approve' }] : null;
-      if (!call) { finish(a, 'Skipped an action this version doesn’t know.', false); continue; }
-      const r = await pbPermitRpc(call[0], Object.assign(call[1], base), 30000);
+      if (!call) { blocked.add(tg); continue; } /* r15.57 G4: a newer version's action stays queued, untouched (My production says so) */
+      const editPrev = a.t === 'edit' ? (Array.isArray(a.sentKs) ? a.sentKs.slice() : []) : []; if (a.t === 'edit') { a.sentKs = editPrev.concat([pbLvItemsKey(a.items)]).slice(-4); a.at = Math.max(Number(a.at) || 0, Date.now()); await pbProdSave(uid); if (!same()) break; const live = (st.actions || []).find(x => x && x.id === a.id); if (!live) continue; if (live !== a) { Object.assign(a, live); st.actions[st.actions.indexOf(live)] = a; } } /* r15.57: what this phone has sent, kept with the action (survives an app kill); the queue holds this same object again (the save's merge copies them) */
+      pbCrewSending.add(a.id); let r; try { r = await pbPermitRpc(call[0], Object.assign(call[1], base), 30000); } finally { pbCrewSending.delete(a.id); } /* r15.57 G5 */
       if (!same()) break;
       const msg = String((r.error && r.error.message) || ''), code = (msg.match(/pb:\w+/) || [''])[0];
       if (!r.error && r.data && r.data.ok === true) {
+        if (a.t === 'edit' && Number(r.data.version)) { st.actions.forEach(x => { if (x && x.t === 'edit' && x.after === a.id) { x.version = Number(r.data.version); delete x.after; } }); st.claimV = Object.assign({}, st.claimV, { [a.entryId]: { v: Number(r.data.version), ks: a.sentKs || null, at: Date.now() } }); } /* r15.57 G5: queued while this one was on its way; and the copy's version and what was sent, for his next change */
         if ((a.t === 'assign' || a.t === 'send') && st.items[a.cid]) st.items[a.cid] = Object.assign({}, st.items[a.cid], { crew: Object.assign({}, st.items[a.cid].crew || {}, { status: a.t === 'send' ? 'sent' : 'assigned', assigned: a.t === 'assign' ? (r.data.assigned_name || a.name) : (st.items[a.cid].crew || {}).assigned, counted: a.t === 'send', at: Date.now() }) });
         if (a.t === 'link' || a.t === 'unlink') pbCrewLinkHooks.forEach(h => { try { h({ kind: a.t === 'link' ? 'set' : 'end', by: 'me', foreman: a.foreman, pipelayer: a.pipelayer, name: a.name }); } catch (e) {} });
         finish(a, pbCrewOkText(a, r.data), true); continue;
@@ -35888,6 +35956,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (navigator.onLine === false || /failed to fetch|networkerror|load failed|no client|timeout/i.test(msg)) break; // no signal: stays queued
       if (code === 'pb:signed_out' || code === 'pb:wrong_account') break;
       if (code === 'pb:not_found' && (a.t === 'assign' || a.t === 'send')) { blocked.add(tg); continue; } // the run isn't on the server yet
+      if (code === 'pb:changed' && a.t === 'edit') { const det = pbChangedDetail(r.error); if (det && det.mine && typeof det.version === 'number' && det.version !== a.version && editPrev.includes(pbLvItemsKey(det.items))) { a.version = det.version; out.changed = true; pbProdAgain = true; blocked.add(tg); continue; } } /* r15.57 BUG 2: his own earlier change whose answer was lost: this one goes again on top */
       if (PB_CREW_FINAL[code] || code === 'pb:not_found') { finish(a, (a.desc ? a.desc + ': ' : '') + (PB_CREW_FINAL[code] ? PB_CREW_FINAL[code](a) : 'It isn’t in your company any more.') + ' Nothing was changed.', false); continue; }
       a.fails = (a.fails || 0) + 1; a.nextAt = Date.now() + Math.min(2 * 3600000, 5 * 60000 * Math.pow(2, a.fails - 1)); a.lastErr = (code || msg).slice(0, 60);
       out.failed = true; out.changed = true; blocked.add(tg);
@@ -36036,7 +36105,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const acts = st.actions || [], nu = acts.filter(a => pbCrewSaveSt.get(a.id) === 'unsaved').length, nsv = acts.filter(a => pbCrewSaveSt.get(a.id) === 'saving').length, q = acts.length - nu - nsv;
     if (nu) h += '<div class="pb-warn" id="pmCrewUnsaved" role="alert"><strong>Not saved on this phone</strong>' + escapeHtml(nu + ' crew action' + (nu === 1 ? '' : 's') + ' couldn\u2019t be saved on this phone. ' + (nu === 1 ? 'It is' : 'They are') + ' kept while the app stays open and sent as soon as there\u2019s signal, but lost if the app is closed or reloaded first. ' + pbSaveAdvice(true)) + '<div class="pb-btn-wrap pbp-btns">' + pbCrewBtn('pmCrewSaveRetry', 'Try Saving Again', 'pbCrewRetrySave()') + '</div></div>';
     if (nsv) h += '<p class="pbp-dim" id="pmCrewSaving">' + nsv + ' crew action' + (nsv === 1 ? '' : 's') + ' being saved on this phone…</p>';
-    if (q) h += '<p class="pbp-dim" id="pmCrewQueued">' + q + ' crew action' + (q === 1 ? '' : 's') + ' saved on this phone, sent as soon as there\u2019s signal.</p>';
+    const nNew = acts.filter(a => !PB_CREW_KINDS.includes(a && a.t)).length; /* r15.57 G4 */
+    if (q - nNew > 0) h += '<p class="pbp-dim" id="pmCrewQueued">' + (q - nNew) + ' crew action' + (q - nNew === 1 ? '' : 's') + ' saved on this phone, sent as soon as there\u2019s signal.</p>';
+    if (nNew) h += '<p class="pbp-dim" id="pmCrewNewer">' + escapeHtml(nNew + ' crew action' + (nNew === 1 ? '' : 's') + ' ' + PB_QS_NEWER + '. ' + (nNew === 1 ? 'It is' : 'They are') + ' kept on this phone.') + '</p>';
     // picker (assign / my foreman / add to my crew)
     if (pbCrewPick) {
       const P = pbCrewPick, people = P.mode === 'addcrew' ? (L && Array.isArray(L.pipelayers) ? L.pipelayers.filter(p => !p.mine) : null) : (pbCrew.foremen || (L && L.foremen) || null);
@@ -36108,7 +36179,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
             + (E ? '<div class="pbp-manual"><div class="pb-pg"><div class="pb-pg-grid">' /* r15.52 prodgrid */ + E.rows.map((r, k) => '<div class="pb-field"><label for="pmEdit' + k + '">' + escapeHtml(r.label || (pbProdCatName(r.key) + (r.unit ? ' (' + r.unit + ')' : ''))) /* batch 29 ROLES */ + '</label><input id="pmEdit' + k + '" type="text" inputmode="decimal" autocomplete="off" value="' + escapeHtml(r.qty) + '"></div>').join('') + '</div></div>'
                 + (E.err ? '<p class="pb-warn pbp-manmsg" role="alert"><strong>Not saved</strong>' + escapeHtml(E.err) + '</p>' : '')
                 + '<div class="pb-btn-wrap pbp-btns2">' + pbCrewBtn('pmEditCancel', 'Cancel', 'pbCrewEditCancel()', 'ghost') + pbCrewBtn('pmEditSave', 'Save', 'pbCrewEditSave()', '') + '</div></div>'
-              : '<span class="pbp-eq">' + escapeHtml(pbCrewQty(x.items)) + '</span>' + pbRolesHoursHtml(x.items) /* batch 29 ROLES */ + (p ? '<span class="pb-chip notsent pbp-state">' + escapeHtml('Your change: ' + pbCrewSavedTxt(p) + ', goes as soon as there\u2019s signal') + '</span>' : x.approval === 'rejected' || x.approval === 'changed' ? '' : '<span class="pbp-eact">' + pbCrewBtn('pmEdit' + i, 'Edit', 'pbCrewEditOpen(' + i + ')', 'ghost') + '</span>')) + '</li>';
+              : '<span class="pbp-eq">' + escapeHtml(pbCrewQty(x.items)) + '</span>' + pbRolesHoursHtml(x.items) /* batch 29 ROLES */ + (p ? '<span class="pb-chip notsent pbp-state">' + escapeHtml('Your change: ' + pbCrewSavedTxt(p) + ', goes as soon as there\u2019s signal') + '</span>' + (p.t === 'edit' && !pbCrewSending.has(p.id) ? '<span class="pbp-eact">' + pbCrewBtn('pmEdit' + i, 'Edit', 'pbCrewEditOpen(' + i + ')', 'ghost') + '</span>' : '') /* r15.57 G5: a waiting change can be changed again (it replaces the waiting one) */ : x.approval === 'rejected' || x.approval === 'changed' ? '' : '<span class="pbp-eact">' + pbCrewBtn('pmEdit' + i, 'Edit', 'pbCrewEditOpen(' + i + ')', 'ghost') + '</span>')) + '</li>';
         }).join('') + '</ul></section>';
       }
     }
@@ -36180,7 +36251,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbCrewClaimedAt = (i) => { const W = pbCrew.wait; return W && Array.isArray(W.claimed) ? W.claimed.filter(x => x && x.id && !x.voided)[i] : null; };
   window.pbCrewEditOpen = function(i) {
     const x = pbCrewClaimedAt(i); if (!x) return;
-    pbCrewEdit = pbRolesClaimEdit(x); // batch 29 ROLES: every category, crew man-hours and equipment hours
+    { const p = pbCrewPendingFor('id:' + x.id); pbCrewEdit = pbRolesClaimEdit(p && p.t === 'edit' && Array.isArray(p.items) ? Object.assign({}, x, { items: p.items }) : x); } // batch 29 ROLES: every category, crew man-hours and equipment hours; r15.57 G5: from the change still waiting
     pbCrewRender(); const f = pbProdEl('pmEdit0'); if (f) f.focus();
   };
   window.pbCrewEditCancel = function() { pbCrewEdit = null; pbCrewRender(); };
@@ -36195,7 +36266,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     E.hours.forEach(h => items.push({ key: h.key, qty: h.qty, unit: h.unit || 'h' }));
     pbCrewEdit = null;
-    pbCrewQueue({ t: 'edit', entryId: E.id, version: E.version, items, desc: 'Your change' });
+    pbCrewQueueEdit(E, items); // r15.57 G5: replaces a waiting edit of the same copy, under the store's lock
     pbCrewRender();
   };
   function pbCrewResetFor(uid) {
@@ -37039,7 +37110,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     'pb:company_changed': 'it was saved while you were in another company',
     'pb:joined_after_answer': 'your membership changed after this phone last checked it',
     'pb:bad_access_at': 'the company check it was saved with is from the future by the server’s clock',
-    'pb:no_company_stamp': 'it was saved while your phone wasn’t linked to a company'
+    'pb:no_company_stamp': 'it was saved while your phone wasn’t linked to a company',
+    'pb:changed': 'it was changed on the company server meanwhile (by the office or on another phone); tap Refresh to see it' /* r15.57 B1 */
   };
   const pbLvCid = (pid, sref) => 'crewrun:' + pid + ':' + sref;
   function pbLvRuns() { const st = pbProd.st; return st && st.crewRuns && typeof st.crewRuns === 'object' ? st.crewRuns : {}; }
@@ -37058,11 +37130,133 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbLvStateOf(x) {
     if (!x) return null;
     if (x.sentH && x.sentH === x.h) return { k: 'ok', label: 'Synced: counts for the company' };
+    if (x.conflict) return { k: 'conflict', label: 'Not sent: choose below' }; // r15.57: someone else changed it; the card in its My production row asks
+    if (x.cid && pbLvUnsaved.has(x.cid)) return { k: 'unsaved', label: 'NOT saved on this phone: kept only while the app stays open. It sends when there’s signal.' }; // r15.57 B2
     if (!x.stamp || x.stamp.k !== 'ok') return { k: 'refused', label: 'Not sent: ' + (x.stamp && x.stamp.k === 'none' ? 'saved while you weren’t in a company' : 'saved before this phone first checked in with the server') };
-    if (x.refused === x.h) return { k: 'refused', label: 'Not sent: ' + (PB_LV_FINAL[x.why] || 'the server refused it') + '. Nothing was counted.' };
+    if (x.refused === x.h) return { k: 'refused', label: 'Not sent: ' + (x.why === 'pb:already_entered' && x.whyBy === 'office' ? 'the office already entered production for this run' : PB_LV_FINAL[x.why] || 'the server refused it') + '. Nothing was counted.' }; // r15.57: the office named as the office
+    if (pbProdNoCompany && pbProdNoCompany.uid === pbProd.uid) return { k: 'nocompany', label: 'Not sent: this account isn’t in a company now. It stays on this phone and goes if the company adds you back.' }; // r15.57 G2
     if (navigator.onLine === false || (x.noSignalAt && Date.now() - x.noSignalAt < 15 * 60000)) return { k: 'wait', label: 'Saved on this phone. Sends when there’s signal.' };
     return { k: 'wait', label: x.failH === x.h ? 'Saved on this phone. Not sent yet: will try again.' : 'Saved on this phone, sending…' };
   }
+  // r15.57 B1: the version an unsent change was made on (base), else the last one synced (version), else none yet (0)
+  const pbLvBase = (x) => typeof x.base === 'number' ? x.base : typeof x.version === 'number' ? x.version : 0;
+  const pbLvItemsKey = (a) => JSON.stringify((Array.isArray(a) ? a : []).filter(i => i && i.key && i.qty != null).map(i => [String(i.key), Number(i.qty), i.unit || '']).sort((p, q) => p[0].localeCompare(q[0])));
+  const pbNormItems = (a) => (Array.isArray(a) ? a : []).filter(i => i && i.key && i.qty != null).map(i => ({ key: String(i.key), qty: Number(i.qty), unit: i.unit || null }));
+  // r15.57 (round 3, simplified): a change refused because someone else made a newer version is NEVER merged or sent on
+  // top by itself. It stays on this phone as his draft and one card asks: use the server's numbers (the draft goes), or
+  // send his anyway (his full numbers on the server's version: an explicit overwrite). Only his OWN lost answer (the
+  // server says every newer version is his, and has numbers this phone sent: kept with the entry, up to 4) goes again on
+  // top by itself. A copy he hasn't changed simply takes a newer server version when My crew now loads (said once, OK).
+  function pbLvAdopt(cur, det, was) { // the load-time case only: his copy is synced and unchanged
+    const items = pbNormItems(det.items), differs = pbLvItemsKey(items) !== pbLvItemsKey(was);
+    Object.assign(cur, { items, h: pbHashText(JSON.stringify([cur.rec, items])), version: typeof det.version === 'number' ? det.version : cur.version, base: null, refused: null, why: null, whyBy: null, failH: null, noSignalAt: null, conflict: null, at: Date.now() });
+    cur.sentH = cur.h;
+    if (differs) cur.chg = { by: det.office ? 'office' : 'other', items, was: pbNormItems(was), at: Date.now(), seen: false };
+    return differs;
+  }
+  // after a fresh My crew now: a newer version on the server replaces a synced, unchanged copy
+  function pbLvAdoptAll(uid) {
+    const st = pbProd.st, D = pbLv.data; if (!st || pbProd.uid !== uid || !st.crewRuns || !D || !Array.isArray(D.crew)) return;
+    let ch = false;
+    D.crew.forEach(p => (p && Array.isArray(p.runs) ? p.runs : []).forEach(run => {
+      const m = run && run.mine; if (!m || typeof m.version !== 'number') return;
+      const cid = pbLvCid(p.id, run.session_ref), x = st.crewRuns[cid];
+      if (!x || x.conflict || !(m.version > (typeof x.version === 'number' ? x.version : 0))) return;
+      if (!(x.sentH && x.sentH === x.h)) return; // a change of his not sent yet: the server answers it (and the card asks)
+      const c = Object.assign({}, x); pbLvAdopt(c, { items: m.items, version: m.version, office: !!m.office }, x.items); st.crewRuns[cid] = c; ch = true;
+    }));
+    if (ch) pbProdSave(uid);
+  }
+  // "Changed by the office · Pipe Installed 90 LF (was your 100)": only what differs; hours have their own line
+  function pbChgText(by, items, was, plan) {
+    const now = new Map((items || []).filter(i => i && i.key && i.qty != null).map(i => [String(i.key), i])), before = new Map((was || []).filter(i => i && i.key && i.qty != null).map(i => [String(i.key), i]));
+    const parts = [];
+    new Set([...now.keys(), ...before.keys()]).forEach(k => {
+      if (k.charAt(0) === '_') return;
+      const a = now.get(k), b = before.get(k); if (a && b && Number(a.qty) === Number(b.qty)) return;
+      parts.push(pbProdCatName(k, plan) + ' ' + (a ? pbProdQtyText(a.qty, a.unit) : 'cleared') + (b ? ' (was your ' + pbProdQtyText(b.qty, a && (a.unit || '') === (b.unit || '') ? '' : b.unit) + ')' : ' (new)'));
+    });
+    return (by === 'office' ? 'Changed by the office' : 'Changed on another phone') + (parts.length ? ' · ' + parts.join(' · ') : '');
+  }
+  // the card's line: "The office changed this run: Pipe Installed 90 LF (yours 44)"; every item that differs, hours too
+  function pbConflictText(c, mine, plan) {
+    const srv = new Map(pbNormItems(c.items).map(i => [i.key, i])), my = new Map(pbNormItems(mine).map(i => [i.key, i])), parts = [];
+    new Set([...srv.keys(), ...my.keys()]).forEach(k => {
+      const a = srv.get(k), b = my.get(k); if (a && b && Number(a.qty) === Number(b.qty) && (a.unit || '') === (b.unit || '')) return;
+      parts.push(pbProdCatName(k, plan) + ' ' + (a ? pbProdQtyText(a.qty, a.unit) : 'cleared') + ' (yours ' + (b ? pbProdQtyText(b.qty, a && (a.unit || '') === (b.unit || '') ? '' : b.unit) : 'none') + ')');
+    });
+    return (c.office ? 'The office changed this run' : 'This run was changed on another phone') + (parts.length ? ': ' + parts.join(' · ') + '.' : ' (the numbers are the same; your other details differ).');
+  }
+  const pbConfErr = new Set(); // cid: the last choice couldn't be saved on this phone
+  const pbConfBusy = new Set(); // cid: "Use the office's numbers" being saved on this phone
+  function pbConflictHtml(id, text, onOffice, onMine, err) {
+    return '<div class="pb-note pbp-conflict" id="' + id + '" role="group" style="margin:8px 0"><p style="margin:0 0 8px">' + escapeHtml(text) + '</p>' + (err ? '<p class="pb-warn" role="alert" style="margin:0 0 8px">Couldn’t save on this phone: try again.</p>' : '') + '<div class="pb-btn-wrap pbp-btns2">'
+      + '<button type="button" class="pb-btn small" id="' + id + 'Office" onclick="' + onOffice + '">' + 'Use the ' + (/^The office/.test(text) ? 'office’s' : 'server’s') + ' numbers</button>'
+      + '<button type="button" class="pb-btn ghost small" id="' + id + 'Mine" onclick="' + onMine + '">Send mine anyway</button></div></div>';
+  }
+  // a server without the r15.57 overloads (the app reached it first): sent once more without the version, as before r15.57
+  async function pbProdRpcV(fn, args, ms) {
+    const r = await pbPermitRpc(fn, args, ms || 30000);
+    if (r && r.error && 'p_expect_version' in args && /Could not find the function|schema cache/i.test(String(r.error.message || ''))) { const a = Object.assign({}, args); delete a.p_expect_version; return pbPermitRpc(fn, a, ms || 30000); }
+    return r;
+  }
+  // a run session (his run or work without a run) refused the same way: the same card
+  function pbProdConflictHtml(x) {
+    const s = pbProd.st && pbProd.st.items[x.cid]; if (!s || !s.conflict) return '';
+    return pbConflictHtml('pmConf_' + String(x.cid).replace(/[^A-Za-z0-9_-]/g, '_'), pbConflictText(s.conflict, x.items, null), "pbProdConflict(this, 'office')", "pbProdConflict(this, 'mine')", pbConfErr.has(x.cid)).replace(/<button /g, '<button data-cid="' + escapeHtml(x.cid) + '" ');
+  }
+  window.pbProdConflict = function(btn, choice) {
+    const cid = btn && btn.dataset ? btn.dataset.cid : null, uid = pbProd.uid, st = pbProd.st, s = cid && st && st.items[cid], c = s && s.conflict; if (!c) return;
+    const fail = () => { pbConfErr.add(cid); pbProdRefreshUI(); };
+    if (pbConfBusy.has(cid)) return; // one choice at a time: while "Use the office's numbers" is being saved, the other button does nothing
+    if (choice === 'mine') { st.items[cid] = Object.assign({}, s, { v: c.v, conflict: null, refused: null, failH: null, at: Date.now() }); pbProdSave(uid).then(ok => { if (!ok) { st.items[cid] = s; fail(); return; } pbConfErr.delete(cid); pbProdForce = true; pbProdSyncSoon(0); pbProdRefreshUI(); }); pbProdRefreshUI(); return; } // his full numbers, on the server's version
+    const x = pbProdSessions().find(y => y.cid === cid); if (!x) return;
+    const own = (o, k) => !!o && Object.prototype.hasOwnProperty.call(o, k), copy = (v) => v === undefined ? undefined : JSON.parse(JSON.stringify(v));
+    const NRK = ['footage', 'qty', 'units', 'manHours'], nr0 = x.nr ? NRK.map(k => [k, own(x.nr, k), copy(x.nr[k])]) : null;
+    const fHad = own(x.e, 'foreman'), f0 = fHad ? copy(x.e.foreman) : undefined, keepHad = own(s, 'keep'), keep0 = s.keep;
+    const undo = () => { // exactly as before the tap (a run with no production numbers included): nothing of the office's stays in memory
+      if (nr0) nr0.forEach(([k, had, v]) => { if (had) x.nr[k] = v; else delete x.nr[k]; });
+      else if (x.e) { if (fHad) x.e.foreman = f0; else delete x.e.foreman; }
+      if (keepHad) s.keep = keep0; else delete s.keep;
+      pbConfBusy.delete(cid); fail(); };
+    pbConfBusy.add(cid);
+    const items = pbNormItems(c.items), by = new Map(items.map(i => [i.key, i]));
+    if (x.nr) {
+      const e = x.nr, p = by.get('pipe'), hh = by.get(PB_PROD_HOURS_KEY);
+      e.footage = p ? p.qty : null; e.qty = {}; e.units = Object.assign({}, e.units || {});
+      items.forEach(i => { if (i.key !== 'pipe' && i.key !== PB_PROD_HOURS_KEY) { e.qty[i.key] = i.qty; e.units[i.key] = i.unit || ''; } });
+      e.manHours = hh ? hh.qty : null;
+    } else if (x.e && x.e.kind === 'run') { // the server's version as it is: its production numbers into the run; everything else it has (other items, its hours or none) stands beside it
+      const e = x.e; e.foreman = Object.assign({}, e.foreman || {});
+      PB_PROD_FIELD_MAP.forEach(m => { const i = by.get(m.key); if (i) e.foreman[m.field] = i.qty; else delete e.foreman[m.field]; });
+      const comp = (pbProdItemsOf(e).find(i => i.key === PB_PROD_HOURS_KEY) || {}).qty;
+      s.keep = { items: items.filter(i => !PB_PROD_FIELD_MAP.some(m => m.key === i.key)), hoursAt: comp == null ? null : comp }; // its hours stand until a person changes the crew log
+    }
+    const done = (ok) => { if (!ok) { undo(); return; } pbConfBusy.delete(cid); const y = pbProdSessions().find(z => z.cid === cid), prev = st.items[cid]; st.items[cid] = Object.assign({}, prev, { h: y ? y.h : s.h, v: c.v, conflict: null, refused: null, failH: null, at: Date.now() });
+      pbProdSave(uid).then(k => { if (!k) { st.items[cid] = prev; fail(); return; } pbConfErr.delete(cid); pbProdRefreshUI(); }); pbProdRefreshUI(); };
+    (x.nr ? pbNrPersist(uid) : saveRunArchive()).then(ok => done(!!ok), () => done(false)); // only marked as matching once the run (or entry) holds the server's numbers on the phone
+  };
+  // what a pb:changed refusal carries (r15.57 server: the entry as it is now), or null
+  function pbChangedDetail(err) { try { const d = JSON.parse(String((err && err.details) || '')); return d && typeof d === 'object' && Array.isArray(d.items) ? d : null; } catch (e) { return null; } }
+  window.pbLvChgSeen = function(pi, ri) {
+    const p = pbLvCrewAt(pi), runs = p && Array.isArray(p.runs) ? p.runs.filter(r => r && r.session_ref) : [], run = runs[ri]; if (!p || !run) return;
+    const uid = pbArchiveOwnerUid, st = pbProd.st, cid = pbLvCid(p.id, run.session_ref), x = st && st.crewRuns && st.crewRuns[cid]; if (!x || !x.chg || pbProd.uid !== uid) return;
+    st.crewRuns[cid] = Object.assign({}, x, { chg: Object.assign({}, x.chg, { seen: true }), at: Date.now() });
+    pbLvRender(); pbProdSave(uid);
+  };
+  // the card of a crew-run entry: in its My production row (Today / Earlier lists every entry; My crew now's chip points there)
+  function pbLvConflictRowHtml(x) {
+    if (!x || !x.conflict) return '';
+    return pbConflictHtml('pmConf_' + String(x.cid).replace(/[^A-Za-z0-9_-]/g, '_'), pbConflictText(x.conflict, x.items, pbLvPlanObj(x.rec && x.rec.jobNumber)), "pbLvConflictCid(this, 'office')", "pbLvConflictCid(this, 'mine')", pbConfErr.has(x.cid)).replace(/<button /g, '<button data-cid="' + escapeHtml(x.cid) + '" ');
+  }
+  window.pbLvConflictCid = function(btn, choice) {
+    const uid = pbArchiveOwnerUid, st = pbProd.st, cid = btn && btn.dataset ? btn.dataset.cid : null, x = cid && st && st.crewRuns && st.crewRuns[cid], c = x && x.conflict; if (!c || pbProd.uid !== uid) return;
+    if (choice === 'mine') st.crewRuns[cid] = Object.assign({}, x, { base: c.v, conflict: null, refused: null, failH: null, at: Date.now() }); // his full numbers, on the server's version
+    else { const items = pbNormItems(c.items), h = pbHashText(JSON.stringify([x.rec, items])); st.crewRuns[cid] = Object.assign({}, x, { items, h, sentH: h, version: c.v, base: null, conflict: null, chg: null, refused: null, failH: null, at: Date.now() }); } // the draft goes
+    pbProdSave(uid).then(ok => { if (!ok) { st.crewRuns[cid] = x; pbConfErr.add(cid); } else { pbConfErr.delete(cid); if (choice === 'mine') { pbProdForce = true; pbProdSyncSoon(0); } } pbLvRender(); pbProdRefreshUI(); }); // a choice not saved on the phone isn't taken: the card stays
+    pbLvRender(); pbProdRefreshUI();
+  };
+  window.pbLvRetrySave = function() { const uid = pbProd.uid; if (!uid || !pbProd.st) return; pbProdSave(uid).then(ok => { if (!ok) pbAlert('Still couldn’t save on this phone. ' + pbSaveAdvice(), 'Not Saved on This Phone'); pbLvRender(); pbProdRefreshUI(); }); }; // r15.57 B2
   // Upload my crew-run entries (called from the production sync pass, after the run sessions: the same checks).
   async function pbLvSync(uid, same) {
     const out = { changed: false, failed: false }, st = pbProd.st;
@@ -37070,21 +37264,27 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const now = Date.now();
     for (const cid of Object.keys(st.crewRuns).sort((a, b) => (st.crewRuns[a].at || 0) - (st.crewRuns[b].at || 0))) {
       const x = st.crewRuns[cid];
-      if (!x || !x.h || x.sentH === x.h || x.refused === x.h || !x.stamp || x.stamp.k !== 'ok') continue;
+      if (!x || !x.h || x.sentH === x.h || x.refused === x.h || !x.stamp || x.stamp.k !== 'ok' || x.conflict) continue; // r15.57: a draft waits for his choice
       if (x.failH === x.h && x.nextAt && x.nextAt > now) continue;
       if (!same() || navigator.onLine === false || !(await pbLiveSessionIs(uid)) || !same()) break; // checked right before every upload
-      const r = await pbPermitRpc('pb_prod_crew_run_save', { p_pipelayer: x.pid, p_session_ref: x.sref, p_run_ref: x.rref, p_record: x.rec, p_items: x.items,
-        p_expect_uid: uid, p_access_company: x.stamp.companyId, p_access_at: x.stamp.accessAt }, 30000);
+      const prevKs = Array.isArray(x.sentKs) ? x.sentKs.slice() : []; st.crewRuns[cid] = Object.assign({}, st.crewRuns[cid], { sentKs: prevKs.concat([pbLvItemsKey(x.items)]).slice(-4), at: Date.now() }); await pbProdSave(uid); if (!same()) break; /* r15.57: what this phone has sent, kept with the entry (survives an app kill) */
+      const r = await pbProdRpcV('pb_prod_crew_run_save', { p_pipelayer: x.pid, p_session_ref: x.sref, p_run_ref: x.rref, p_record: x.rec, p_items: x.items,
+        p_expect_uid: uid, p_access_company: x.stamp.companyId, p_access_at: x.stamp.accessAt, p_expect_version: pbLvBase(x) /* r15.57 B1 */ }, 30000);
       if (!same()) break;
       const cur = st.crewRuns[cid] = Object.assign({}, st.crewRuns[cid]);
       const msg = String((r.error && r.error.message) || ''), code = (msg.match(/pb:\w+/) || [''])[0];
       if (!r.error && r.data && r.data.ok === true && r.data.id) {
-        if (cur.h === x.h) { cur.sentH = x.h; cur.version = Number(r.data.version) || null; cur.theirs = r.data.theirs || null; cur.failH = null; cur.noSignalAt = null; }
+        if (cur.h === x.h) { cur.sentH = x.h; cur.sentRecH = pbHashText(JSON.stringify(x.rec || null)); cur.version = Number(r.data.version) || null; cur.theirs = r.data.theirs || null; cur.failH = null; cur.noSignalAt = null; cur.base = null; }
+        else if (cur.base === pbLvBase(x) && Number(r.data.version)) cur.base = Number(r.data.version); /* r15.57 B1: changed again while this one was on its way: on top of it */
         out.changed = true; continue;
       }
-      if (code === 'pb:wrong_account' || code === 'pb:signed_out' || code === 'pb:not_company_member') { out.failed = true; break; }
+      if (code === 'pb:not_company_member') { pbProdNoCompany = { uid, at: Date.now() }; cur.noSignalAt = null; out.changed = true; out.failed = true; break; } /* r15.57 G2: the same rule as run sessions (pbProdNoCompany), said on the entry */
+      if (code === 'pb:wrong_account' || code === 'pb:signed_out') { out.failed = true; break; }
+      if (code === 'pb:changed') { const det = pbChangedDetail(r.error); /* r15.57 B1 */
+        if (det && det.mine && typeof det.version === 'number' && det.version !== pbLvBase(x) && prevKs.includes(pbLvItemsKey(det.items))) { cur.base = det.version; cur.failH = null; out.changed = true; pbProdAgain = true; continue; } /* BUG 2: his own earlier save whose answer was lost: sent again on top, nothing shown */
+        if (det && typeof det.version === 'number') { Object.assign(cur, { conflict: { v: det.version, items: pbNormItems(det.items), office: !!det.office, at: Date.now() }, failH: null, noSignalAt: null, at: Date.now() }); out.changed = true; continue; } } /* someone else's newer version: his change (as it is now) waits as a draft; the card asks */
       if (navigator.onLine === false || /failed to fetch|networkerror|load failed|no client/i.test(msg)) { cur.noSignalAt = Date.now(); out.changed = true; break; } // no signal: not a failure (said on screen)
-      if (PB_LV_FINAL[code]) { Object.assign(cur, { refused: x.h, why: code }); out.changed = true; continue; }
+      if (PB_LV_FINAL[code]) { Object.assign(cur, { refused: x.h, why: code, whyBy: code === 'pb:already_entered' && String((r.error && r.error.details) || '') === 'office' ? 'office' : null }); out.changed = true; continue; }
       const n = cur.failH === x.h ? (cur.fails || 0) + 1 : 1;
       Object.assign(cur, { failH: x.h, fails: n, nextAt: Date.now() + Math.min(2 * 3600000, 5 * 60000 * Math.pow(2, n - 1)), lastErr: (code || msg).slice(0, 60) });
       out.changed = true; out.failed = true;
@@ -37108,7 +37308,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const r = await pbPermitRpc('pb_prod_crew_live', { p_today: pbTkToday() }, 30000);
       if (pbLv.uid !== uid || !sbUser || sbUser.id !== uid) return;
       if (!r.error && r.data && typeof r.data === 'object' && Array.isArray(r.data.crew)) {
-        pbLv.data = r.data; pbLv.at = Date.now(); pbLv.cached = false; pbLv.msg = '';
+        pbLv.data = r.data; pbLv.at = Date.now(); pbLv.cached = false; pbLv.msg = ''; pbLvAdoptAll(uid); /* r15.57 B1 */
         pbProdCacheSet(uid, 'live', { at: pbLv.at, data: r.data });
       } else pbLv.msg = navigator.onLine === false || /failed to fetch|networkerror|load failed|timeout/i.test(String((r.error && r.error.message) || '')) ? 'No signal.' : 'Couldn’t load your crew’s runs.';
     } finally { pbLv.busy = false; }
@@ -37252,6 +37452,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return '<div class="pbp-liveprod"><span class="pbp-dim">Your production for this run</span><span class="pbp-eq">' + escapeHtml(pbCrewQty(items, pbLvPlanObj(run.job_number || (run.status && run.status.jobNumber)))) + '</span>' + pbRolesHoursHtml(items, pbLvPlanObj(run.job_number || (run.status && run.status.jobNumber))) /* batch 29 ROLES */
         + '<span class="pb-chip ' + (stt.k === 'ok' ? 'ok' : stt.k === 'refused' ? 'notsent' : 'notsent') + ' pbp-state">' + escapeHtml(stt.label) + '</span>'
         + (stt.k === 'ok' ? '<span class="pbp-dim">' + theirs + '</span>' : '')
+        + (x && x.chg && !x.chg.seen && !x.conflict ? '<span class="pb-note pbp-chg" id="pmLiveChg' + pi + '_' + ri + '" style="display:flex;align-items:center;gap:10px;margin:6px 0"><span style="flex:1;min-width:0">' + escapeHtml(pbChgText(x.chg.by, x.chg.items || x.items, x.chg.was, pbLvPlanObj(run.job_number || (run.status && run.status.jobNumber)))) + '</span>' + pbCrewBtn('pmLiveChgOk' + pi + '_' + ri, 'OK', 'pbLvChgSeen(' + pi + ', ' + ri + ')', 'ghost') + '</span>' : '') /* r15.57 B1 */
+        + (stt.k === 'unsaved' ? pbCrewBtn('pmLiveRetry' + pi, 'Try Saving Again', 'pbLvRetrySave()', '') : '') /* r15.57 B2 */
         + '<span class="pbp-eact">' + pbCrewBtn('pmLiveEdit' + pi, 'Change Production', 'pbLvFormOpen(' + pi + ', ' + ri + ')', 'ghost') + (typeof window.pbRrCrewBtn === 'function' ? window.pbRrCrewBtn(p, run, 'pmLiveRpt' + pi + '_' + ri) : '') + '</span></div>';
     }
     if (run.ended && run.theirs) return (typeof window.pbRrCrewBtn === 'function' ? '<div class="pb-btn-wrap pbp-btns">' + window.pbRrCrewBtn(p, run, 'pmLiveRpt' + pi + '_' + ri) + '</div>' : '') + '<p class="pbp-dim">This run has ended. ' /* batch 29 ROLES: with no entry of theirs, the foreman enters it */ + escapeHtml((p.name || 'The pipelayer') + '’s own production for it comes to Runs waiting for you.') + '</p>';
@@ -37308,7 +37510,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const P0 = pbLvPlans[String(run.job_number || (run.status && run.status.jobNumber) || '').trim().toLowerCase().slice(0, 60)], pc0 = P0 && Array.isArray(P0.cats) ? P0.cats.find(c => c && c.key === 'pipe') : null, lfPipe = !(pc0 && pc0.unit) || String(pc0.unit).trim().toUpperCase() === 'LF'; /* r15.50 review S2: laid feet only into an LF field */
     const rows = PB_PROD_FIELD_MAP.map(m => { const i = have.get(m.key); const q = i && i.qty != null ? String(i.qty) : ''; const pv = rlEnd ? rlEnd.ft : laid; const pre = !x && !mine && m.key === 'pipe' && pv > 0 && lfPipe ? String(+pv.toFixed(1)) : null; return { key: m.key, unit: (i && i.unit) || m.unit, itemUnit: (i && i.unit) || null /* r15.50 review S1 */, qty: pre !== null ? pre : q, pre, typed: false, preText: pre !== null && rlEnd ? rlEnd.text : null }; }).concat(pbRolesHourRows(x ? x.items : mine || [])); // batch 29 ROLES: hours
     // the laid rows can only fill the pipe field before anything was entered: a value already entered stays
-    pbLv.form = { cid, pid: p.id, name: p.name || '', sref: run.session_ref, rref: run.run_ref || (run.status && run.status.runRef) || run.session_ref, job: run.job_number || (run.status && run.status.jobNumber) || '', jobsite: (run.status && run.status.jobsite) || '', workDate: run.work_date || (run.status && run.status.workDate) || pbTkToday(), rows, err: '' };
+    pbLv.form = { cid, pid: p.id, name: p.name || '', sref: run.session_ref, rref: run.run_ref || (run.status && run.status.runRef) || run.session_ref, job: run.job_number || (run.status && run.status.jobNumber) || '', jobsite: (run.status && run.status.jobsite) || '', workDate: run.work_date || (run.status && run.status.workDate) || pbTkToday(), rows, err: '', mineV: run.mine && typeof run.mine.version === 'number' ? run.mine.version : 0 /* r15.57 B1 */ };
     { const F = pbLv.form; pbLvAddExtra(F, have); pbLvPlanLoad(F, have).catch(() => {}); } // r15.4
     pbLvRender(); const f = pbProdEl('pmLiveQ0'); if (f) f.focus();
   };
@@ -37380,11 +37582,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const prev = st.crewRuns[F.cid] || {};
     const rec = { jobNumber: String(F.job || '').slice(0, 60), jobsite: String(F.jobsite || '').slice(0, 200), workDate: String(F.workDate || '').slice(0, 10), enteredBy: '', src: 'crewrun', pipelayerName: String(F.name || '').slice(0, 120) };
     const h = pbHashText(JSON.stringify([rec, items]));
-    st.crewRuns[F.cid] = Object.assign({}, prev, { cid: F.cid, pid: F.pid, name: F.name, sref: F.sref, rref: F.rref, rec, items, h, at: Date.now(), stamp: prev.stamp || pbProdStampFromHeld(held), refused: prev.refused === h ? h : null });
+    const base = prev.h ? (prev.sentH && prev.sentH === prev.h ? (typeof prev.version === 'number' ? prev.version : 0) : pbLvBase(prev)) : (typeof F.mineV === 'number' ? F.mineV : 0); /* r15.57 B1: the version this change is made on */
+    st.crewRuns[F.cid] = Object.assign({}, prev, { cid: F.cid, pid: F.pid, name: F.name, sref: F.sref, rref: F.rref, rec, items, h, at: Date.now(), stamp: prev.stamp || pbProdStampFromHeld(held), refused: prev.refused === h ? h : null, base, chg: prev.chg ? Object.assign({}, prev.chg, { seen: true }) : null });
     pbLv.form = null;
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     pbLvRender();
-    await pbProdSave(uid);
+    if (!(await pbProdSave(uid))) { /* r15.57 B2: said plainly, as crew actions do */
+      pbLvUnsaved.add(F.cid);
+      pbAlert('Production for ' + (F.name || 'this run') + '’s run couldn’t be saved on this phone. It is kept while the app stays open and goes as soon as there’s signal, but it is lost if the app is closed or reloaded first. ' + pbSaveAdvice(), 'Not Saved on This Phone');
+    }
     pbLv.justSaved = F.cid; // feat_crew34 6: stays open in the card until he leaves the screen
     if (pbCurrentScreen === 'prodMine' && typeof window.pbRfApproveFor === 'function') window.pbRfApproveFor(F.pid, F.sref).catch(() => null); // feat_crew34 7: entered from My crew now: the sent report is approved too, as the report screen does
     pbProdForce = true; pbProdSyncSoon(0);
@@ -48839,7 +49045,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (st && (!Array.isArray(st.checks) || !Array.isArray(st.reports))) { failed = true; st = null; }
     if (st) { st.items = st.items && typeof st.items === 'object' ? st.items : {}; st.weather = st.weather && typeof st.weather === 'object' ? st.weather : {}; }
     pbDly = { uid, st, failed };
-    if (st) pbDlyScope(st, pbDlyCo(uid));
+    if (st) { pbDlyScope(st, pbDlyCo(uid)); pbDlyStSeen.clear(); st.checks.concat(st.reports).forEach(x => { if (x && x.cid) pbDlyStSeen.set(x.cid, x.state); }); } // r15.57 B3
     return st;
   }
   // Review S11: the phone's copies (items, the foreman's list, weather) belong to ONE company. When the account's company
@@ -48851,12 +49057,47 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const changed = st.co !== co; st.co = co; return changed;
   }
   const pbDlyItemsOfCo = (st) => st ? Object.keys(st.items).map(k => st.items[k]).filter(i => i && st.co && i.company_id === st.co) : [];
+  // r15.57 B3: two tabs (or the installed app and a browser tab) each hold the store in memory. Every write merges what
+  // is stored first (pbQsWrite): check-offs and reports by client id, keeping the most advanced state (sent always wins;
+  // otherwise the later state change, else the further state); the server's copies by version, for the same company.
+  const PB_DLY_RANK = { waiting: 1, blocked: 1, refused: 2, replaced: 3, discarded: 3, sent: 4 };
+  const pbDlyStSeen = new Map(); // cid -> the state this tab last read or wrote (a change since then gets stAt)
+  function pbDlyParse(raw) { const o = JSON.parse(raw); if (!o || typeof o !== 'object' || !Array.isArray(o.checks) || !Array.isArray(o.reports)) throw new Error('bad store'); o.items = o.items && typeof o.items === 'object' ? o.items : {}; o.weather = o.weather && typeof o.weather === 'object' ? o.weather : {}; return o; }
+  function pbDlyKeep(a, b) {
+    if (a.state === 'sent' || b.state === 'sent') return a.state === 'sent' && (a.serverId || !b.serverId) ? a : b.state === 'sent' ? b : a;
+    const ta = Number(a.stAt) || 0, tb = Number(b.stAt) || 0;
+    if (ta !== tb) return tb > ta ? b : a;
+    return (PB_DLY_RANK[b.state] || 0) > (PB_DLY_RANK[a.state] || 0) ? b : a;
+  }
+  function pbDlyMerge(m, s) {
+    if (!m || !s || s === m) return false;
+    let ch = false;
+    ['checks', 'reports'].forEach(k => (Array.isArray(s[k]) ? s[k] : []).forEach(b => {
+      if (!b || !b.cid) return;
+      const i = m[k].findIndex(x => x && x.cid === b.cid);
+      if (i < 0) { m[k].push(b); pbDlyStSeen.set(b.cid, b.state); ch = true; return; } // saved in another tab (kinds this build doesn't know included)
+      const w = pbDlyKeep(m[k][i], b); if (w !== m[k][i]) { m[k][i] = w; pbDlyStSeen.set(w.cid, w.state); ch = true; }
+    }));
+    if (!m.co || !s.co || m.co === s.co) { // the server's copies belong to one company (review S11)
+      Object.keys(s.items || {}).forEach(id => { const a = m.items[id], b = s.items[id]; if (b && (!a || (Number(b.version) || 0) > (Number(a.version) || 0))) { m.items[id] = b; ch = true; } });
+      Object.keys(s.weather || {}).forEach(k => { if (!m.weather[k] && s.weather[k]) { m.weather[k] = s.weather[k]; ch = true; } });
+      if (s.mine && (!m.mine || (s.mine.at || 0) > (m.mine.at || 0))) { m.mine = s.mine; ch = true; }
+    }
+    if (!m.lastInspector && s.lastInspector) m.lastInspector = s.lastInspector;
+    Object.keys(s).forEach(k => { if (!(k in m)) m[k] = s[k]; }); // what a newer version keeps here
+    return ch;
+  }
   async function pbDlySave(uid) {
     if (pbDly.uid !== uid || !pbDly.st) return false;
-    const ok = await pbSetFor(uid, PB_DLY_KEY, JSON.stringify(pbDly.st));
-    if (!ok) pbAlert('This phone’s storage is full, so this could not be saved. Free some space (old runs or photos) and try again.', 'Not Saved');
-    return ok;
+    const st = pbDly.st;
+    st.checks.concat(st.reports).forEach(x => { if (x && x.cid && pbDlyStSeen.get(x.cid) !== x.state) { x.stAt = Date.now(); pbDlyStSeen.set(x.cid, x.state); } });
+    const r = await pbQsWrite({ uid, key: PB_DLY_KEY, lock: 'pb-daily-save:' + uid, parse: pbDlyParse, alive: () => pbDly.uid === uid && pbDly.st === st, merge: (s) => pbDlyMerge(st, s), value: () => st });
+    if (!r.ok && r.why !== 'gone') pbAlert(r.why === 'read' ? 'This phone’s storage couldn’t be read just now, so this was not saved (nothing stored was written over). Try again.' : 'This phone’s storage is full, so this could not be saved. Free some space (old runs or photos) and try again.', 'Not Saved');
+    return r.ok;
   }
+  pbQsListen(() => pbDly.uid && pbDly.st ? pbDly.uid + ':' + PB_DLY_KEY : null, pbDlyParse, (o) => { // another tab saved this account's daily store
+    if (pbDlyMerge(pbDly.st, o)) { try { if (pbCurrentScreen === 'inspMine') pbInsMineRender(); if (pbCurrentScreen === 'inspJob') pbInsJobRender(); } catch (e) {} } // the report form keeps what is being typed: it shows this on its next redraw
+  });
 
   // ---- sending what is waiting (check-offs, then signed reports in order); retried until the server answers ----
   let pbDlySyncBusy = false, pbDlySyncTimer = null;
@@ -52388,7 +52629,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (V.err) { F.err = V.err; pbCxListRender(); return; }
     const items = V.items;
     F.saving = true; F.err = ''; pbCxListRender();
-    const r = await pbPermitRpc('pb_prod_company_run_prod_save', { p_id: x.id, p_items: items, p_expect_uid: uid, p_expect_version: x.prod ? x.prod.version : null }, 30000);
+    const offPrev = Array.isArray(F.sentKs) ? F.sentKs.slice() : []; F.sentKs = offPrev.concat([pbLvItemsKey(items)]).slice(-4); /* r15.57 re-review 1: what this form has sent */
+    let r = await pbPermitRpc('pb_prod_company_run_prod_save', { p_id: x.id, p_items: items, p_expect_uid: uid, p_expect_version: x.prod ? x.prod.version : 0 /* r15.57 G1: 0 = it had no production when opened */ }, 30000);
+    if (r && r.error && /pb:changed/.test(String(r.error.message || ''))) { const det = pbChangedDetail(r.error); if (det && det.mine && typeof det.version === 'number' && offPrev.includes(pbLvItemsKey(det.items)) && pbRo === O && O.open === x) r = await pbPermitRpc('pb_prod_company_run_prod_save', { p_id: x.id, p_items: items, p_expect_uid: uid, p_expect_version: det.version }, 30000); } /* r15.57 BUG 2: the newer version is this person's own save whose answer was lost: saved on top of it */
     if (pbRo !== O || O.open !== x) return;
     F.saving = false;
     if (r && !r.error && r.data && r.data.ok) {
@@ -52397,7 +52640,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       O.pe = null; pbCxListRender(); return true;
     }
     const msg = String((r && r.error && r.error.message) || ''), code = (msg.match(/pb:\w+/) || [''])[0];
-    F.err = navigator.onLine === false || /failed to fetch|networkerror|load failed|timeout/i.test(msg) ? 'No signal. Nothing was saved. Try again when you have signal.'
+    F.err = /^timeout$/.test(msg) && navigator.onLine !== false ? 'The company server didn’t answer in time, so this may or may not have saved. Tap Save Production again: if it did save, nothing is changed twice.' /* r15.57 */
+      : navigator.onLine === false || /failed to fetch|networkerror|load failed|timeout/i.test(msg) ? 'No signal. Nothing was saved. Try again when you have signal.'
       : PB_RR_OFF_ERR[code] || (/could not find the function|schema cache/i.test(msg) ? 'The company server isn’t ready for this yet.' : 'Couldn’t save it. Nothing was changed.');
     pbCxListRender(); return false;
   };
@@ -54980,9 +55224,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbLoc.uid !== uid) pbLoc = pbLocNew(uid);
     const L = pbLoc;
     L.loading = (async () => {
-      let st = null; try { st = JSON.parse((await pbGetFor(uid, PB_LOC_KEY)) || 'null'); } catch (e) { st = null; }
+      let st = null, bad = false; try { const raw = await pbGetCriticalFor(uid, PB_LOC_KEY); st = raw ? pbLocParse(raw) : null; } catch (e) { bad = true; } // r15.57 G8: the throwing getter
+      if (bad) { if (pbLoc === L) { L.loading = null; L.failed = true; } return null; } // an unreadable store is never taken as empty: nothing is shown or written, tried again on the next look
       st = pbLocValid(st);
-      if (pbLoc === L) { L.st = st; L.loading = null; }
+      if (pbLoc === L) { L.st = st; L.loading = null; L.failed = false; }
       return pbLoc === L ? st : null;
     })();
     return L.loading;
@@ -55009,23 +55254,87 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (o.mine && (!st.mine || (o.mine.at || 0) > (st.mine.at || 0))) st.mine = o.mine;
     return JSON.stringify(st) !== before;
   }
-  async function pbLocReadStored(uid) { let o = null; try { o = JSON.parse((await pbGetFor(uid, PB_LOC_KEY)) || 'null'); } catch (e) { o = null; } return o && typeof o === 'object' && Array.isArray(o.queue) ? pbLocValid(o) : null; }
-  let pbLocSaveQ = Promise.resolve();
-  function pbLocSave(uid, quiet) {
-    const run = async () => {
-      if (pbLoc.uid !== uid || !pbLoc.st) return false;
-      const st = pbLoc.st; pbLocMerge(st, await pbLocReadStored(uid));
-      if (pbLoc.uid !== uid || pbLoc.st !== st) return false;
-      return pbSetFor(uid, PB_LOC_KEY, JSON.stringify(st));
-    };
-    const locked = () => (navigator.locks && typeof navigator.locks.request === 'function') ? navigator.locks.request('pb-locates-save:' + uid, run) : run();
-    const p = pbLocSaveQ.then(locked, locked).then(ok => { if (!ok && !quiet && pbLoc.uid === uid) pbAlert('This phone’s storage is full, so this could not be saved. Free some space (old runs or photos) and try again.', 'Not Saved'); return !!ok; }, () => false);
-    pbLocSaveQ = p; return p;
+  function pbLocParse(raw) { const o = JSON.parse(raw); if (!o || typeof o !== 'object' || !Array.isArray(o.queue)) throw new Error('bad store'); return pbLocValid(o); } // r15.57 G8
+  async function pbLocReadStored(uid) { try { const raw = await pbGetCriticalFor(uid, PB_LOC_KEY); return raw ? pbLocParse(raw) : null; } catch (e) { return null; } } // null: nothing to merge in (a write goes through pbQsWrite, which refuses on a failed read)
+  function pbLocSave(uid, quiet) { // r15.57: through pbQsWrite (same lock name, same merge)
+    const st = pbLoc.uid === uid ? pbLoc.st : null;
+    return pbQsWrite({ uid, key: PB_LOC_KEY, lock: 'pb-locates-save:' + uid, parse: pbLocParse, alive: () => !!st && pbLoc.uid === uid && pbLoc.st === st, merge: (o) => pbLocMerge(st, o), value: () => st })
+      .then(x => { if (!x.ok && x.why !== 'gone' && !quiet && pbLoc.uid === uid) pbAlert(x.why === 'read' ? 'This phone’s storage couldn’t be read just now, so this was not saved (nothing stored was written over). Try again.' : 'This phone’s storage is full, so this could not be saved. Free some space (old runs or photos) and try again.', 'Not Saved'); return x.ok; });
   }
-  window.addEventListener('storage', (e) => { // another tab saved this account's tickets: take its changes in
-    const uid = pbLoc.uid; if (!uid || !pbLoc.st || e.key !== uid + ':' + PB_LOC_KEY) return;
-    pbLocReadStored(uid).then(o => { if (pbLoc.uid === uid && pbLoc.st && pbLocMerge(pbLoc.st, o)) pbLocRefreshScreens(); }).catch(() => {});
-  });
+  pbQsListen(() => pbLoc.uid && pbLoc.st ? pbLoc.uid + ':' + PB_LOC_KEY : null, pbLocParse, (o) => { if (pbLoc.st && pbLocMerge(pbLoc.st, o)) pbLocRefreshScreens(); }); // another tab saved this account's locate tickets
+  // ---- r15.57 integrity (G7, improvement 1): what hasn't reached the company yet, from every queue on this phone ----
+  // Each group: n, bad (not accepted: says why where it is), the words, and where to see it. Only stores already read
+  // for this account are counted (Home reads the daily and locates stores once, then shows the line again).
+  function pbUnsentGroups(uid) {
+    const out = []; if (!uid || uid === 'shared') return out;
+    const add = (key, n, bad, one, many, btn, open) => { if (n > 0) out.push({ key, n, bad, short: n + ' ' + (n === 1 ? one : many), text: n + ' ' + (n === 1 ? one : many) + (bad ? ' (' + bad + ' not accepted)' : ''), btn, open }); };
+    const run = (f) => { try { f(); } catch (e) { console.error(e); } };
+    run(() => { if (pbProd.uid !== uid || !pbProd.st || pbArchiveOwnerUid !== uid) return;
+      const ids0 = new Set(Object.keys(pbProd.st.ids || {})), dirty0 = pbProdIdsDirty; let S0;
+      try { S0 = pbProdSessions(); } finally { Object.keys(pbProd.st.ids || {}).forEach(k => { if (!ids0.has(k)) delete pbProd.st.ids[k]; }); pbProdIdsDirty = dirty0; } // read only: a run's id is given when its production is saved, never by this count
+      // what is still going: a refusal that is final (pb:pipelayer_no_production, left_company …) is said on the entry itself and not counted here (review BUG 4)
+      const S = S0.filter(x => x.eligible && (x.items.length || pbProd.st.items[x.cid])).map(x => pbProdStateOf(x).k).filter(k => ['wait', 'conflict'].includes(k)); // the run sessions My production counts (a choice to make is its own line below); not 'local' (this account isn't in the company: it can't go on its own, the entry says so)
+      const C = Object.values(pbLvRuns()).filter(x => x && x.rec && Array.isArray(x.items)).map(x => (pbLvStateOf(x) || { k: 'wait' }).k).filter(k => k !== 'ok' && k !== 'refused' && k !== 'nocompany'); // entries for the crew's runs (not one that can't go on its own: this account isn't in the company; the entry says so)
+      const nC = S.concat(C).filter(k => k === 'conflict').length;
+      add('choice', nC, 0, 'needs your choice', 'need your choice', 'Choose', () => pbUnsentShowChoice()); // someone else changed it: it goes only once he chooses
+      add('prod', S.length + C.length - nC, 0, 'production entry', 'production entries', 'My Production', () => window.pbOpenProdMine());
+      add('crew', (pbProd.st.actions || []).filter(a => a && a.id).length, 0, 'crew action', 'crew actions', 'My Production', () => window.pbOpenProdMine()); });
+    run(() => { if (pbDly.uid !== uid || !pbDly.st) return;
+      const R = pbDly.st.reports.filter(x => x && ['waiting', 'blocked', 'refused'].includes(x.state)), K = pbDly.st.checks.filter(x => x && ['waiting', 'refused'].includes(x.state));
+      add('daily', R.length, R.filter(x => x.state === 'refused').length, 'daily report', 'daily reports', 'Daily Report', () => window.pbOpenDailyReport());
+      add('checks', K.length, K.filter(x => x.state === 'refused').length, 'inspection check-off', 'inspection check-offs', 'My Inspections', () => window.pbOpenInspMine()); });
+    run(() => { if (pbDp.uid !== uid || !pbDp.send || !Array.isArray(pbDp.send.list)) return; const P = pbDp.send.list.filter(x => x && ['waiting', 'refused'].includes(x.state));
+      add('dphotos', P.length, P.filter(x => x.state === 'refused').length, 'daily report photo', 'daily report photos', 'Daily Report', () => window.pbOpenDailyReport()); });
+    run(() => { if (pbTk.uid !== uid || !pbTk.list) return; const T = pbTk.list.filter(t => { const k = pbTkState(t); return k.k !== 'ok' && !(k.k === 'refused' && k.company); }); // a company refusal is final (said on the ticket)
+      add('tickets', T.length, T.filter(t => pbTkState(t).k === 'refused').length, 'field ticket', 'field tickets', 'Field Tickets', () => window.pbOpenTickets());
+      add('tknew', (pbTk.foreign || []).length, 0, 'field ticket ' + PB_QS_NEWER, 'field tickets ' + PB_QS_NEWER, 'Field Tickets', () => window.pbOpenTickets()); });
+    run(() => { if (pbLoc.uid !== uid || !pbLoc.st) return; const Q = pbLoc.st.queue.filter(q => q && (q.state === 'waiting' || q.state === 'refused') && !pbLoc.st.gone[q.cid]);
+      add('locates', Q.length, Q.filter(q => q.state === 'refused').length, 'locate ticket change', 'locate ticket changes', 'Locate Tickets', () => window.pbOpenLocates(Q[0] && Q[0].job_number)); });
+    run(() => { if (pbJb.uid !== uid || !pbJb.st || !Array.isArray(pbJb.st.queue)) return; const Q = pbJb.st.queue.filter(q => q && (q.state === 'waiting' || q.state === 'refused')); // review nit: the job book's queue
+      add('jobbook', Q.length, Q.filter(q => q.state === 'refused').length, 'job book entry', 'job book entries', 'Job Book', () => window.pbJbOpen(Q[0] && Q[0].jobNumber)); });
+    run(() => { if (pbDa.uid !== uid || !pbDa.store || !Array.isArray(pbDa.store.q)) return; const P = pbDa.store.q.filter(x => x && (x.state === 'waiting' || x.state === 'refused')); // review nit: the daily report's attachments
+      add('dattach', P.length, P.filter(x => x.state === 'refused').length, 'daily report attachment', 'daily report attachments', 'Daily Report', () => window.pbOpenDailyReport()); });
+    run(() => { if (pbArchiveOwnerUid !== uid) return; const W = runArchive.filter(e => e && e.kind === 'run' && e.reportSendWanted && !e.reportSentAt && (e.completed || e.incomplete));
+      add('reports', W.length, 0, 'run report', 'run reports', 'Records', () => window.pbOpenArchive()); });
+    return out;
+  }
+  // the first card waiting for his choice, on My production
+  function pbUnsentShowChoice() { window.pbOpenProdMine(); setTimeout(() => { const el = document.querySelector('#screen-prodMine .pbp-conflict'); if (el) { el.scrollIntoView({ block: 'center' }); const b = el.querySelector('button'); if (b) b.focus({ preventScroll: true }); } }, 700); }
+  // Log Out / Lock This Phone: the sentence that says it (empty when everything has reached the company)
+  async function pbUnsentSentence(uid) {
+    if (!uid || uid === 'shared') return '';
+    try { await Promise.race([Promise.all([pbDlyLoad(uid), pbLocLoadSt(uid), pbJbLoadStore(uid), pbDaLoad(uid)].map(p => Promise.resolve(p).catch(() => null))), new Promise(r => setTimeout(r, 1500))]); } catch (e) {}
+    const g = pbUnsentGroups(uid); if (!g.length) return '';
+    const one = g.length === 1 && g[0].n === 1;
+    const ch = g.find(x => x.key === 'choice'), rest = g.filter(x => x.key !== 'choice'), nR = rest.reduce((a, x) => a + x.n, 0);
+    const choose = ch ? (ch.n === 1 ? 'The one that needs your choice goes once you choose.' : 'The ones that need your choice go once you choose.') : '';
+    return 'Not sent to your company yet: ' + g.map(x => x.text).join(', ') + '. ' + (nR ? (nR === 1 ? 'It stays' : 'They stay') + ' on this phone and ' + (nR === 1 ? 'goes' : 'go') + ' only when this account logs in here again.' + (ch ? ' ' : '') : ch ? (ch.n === 1 ? 'It stays on this phone. ' : 'They stay on this phone. ') : '') + choose;
+  }
+  const pbUnsentWarmed = new Set();
+  function pbUnsentWarm(uid) {
+    if (pbUnsentWarmed.has(uid)) return; pbUnsentWarmed.add(uid);
+    Promise.all([pbDlyLoad(uid), pbLocLoadSt(uid), pbJbLoadStore(uid), pbDaLoad(uid)].map(p => Promise.resolve(p).catch(() => null))).then(() => pbUnsentHomeSoon());
+  }
+  let pbUnsentT = null;
+  function pbUnsentHomeSoon() { clearTimeout(pbUnsentT); pbUnsentT = setTimeout(() => { try { if (pbCurrentScreen === 'home' && typeof window.pbRenderHome === 'function') window.pbRenderHome(); } catch (e) {} }, 400); }
+  // Home: one line for all of it (Needs Attention, the cloud-off style), tappable
+  window.pbUnsentHomeItem = function() {
+    const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared') return null;
+    pbUnsentWarm(uid);
+    const g = pbUnsentGroups(uid); if (!g.length) return null;
+    const bad = g.reduce((a, x) => a + x.bad, 0), ch = g.find(x => x.key === 'choice');
+    return { id: 'unsent', info: true, html: '<span class="t">Not sent yet</span>' + escapeHtml(g.map(x => x.short).join(' · ') + '. ' + (ch ? 'Tap to choose.' : bad ? bad + ' can’t go as ' + (bad === 1 ? 'it is' : 'they are') + '.' : 'On this phone only ' + (navigator.onLine === false ? 'until there’s signal.' : 'for now; ' + (g.length === 1 && g[0].n === 1 ? 'it goes on its own.' : 'they go on their own.'))))
+      + (ch ? '<button type="button" class="pb-btn small" id="homeUnsentChoose" onclick="pbUnsentChoose()">Choose</button>' : '') + '<button type="button" class="pb-btn ghost small" id="homeUnsentBtn" onclick="pbUnsentOpen()">See What’s Waiting</button>' };
+  };
+  window.pbUnsentChoose = function() { pbUnsentShowChoice();
+  };
+  window.pbUnsentOpen = function() {
+    const uid = pbArchiveOwnerUid, g = pbUnsentGroups(uid);
+    if (!g.length) { pbAlert('Everything has reached your company.', 'Not Sent Yet'); pbUnsentHomeSoon(); return; }
+    const seen = new Set(), btns = [];
+    g.forEach(x => { if (seen.has(x.btn) || btns.length >= 4) return; seen.add(x.btn); btns.push({ label: x.btn, onClick: x.open }); });
+    pbShowModal('On this phone only, not at your company yet:\n\n\u2022 ' + g.map(x => x.text).join('\n\u2022 ') + '\n\n' + (g.some(x => x.key === 'choice') ? 'One that needs your choice goes only once you choose (tap Choose). ' : '') + (navigator.onLine === false ? 'No signal now: they go on their own when there is.' : 'They go on their own. One that wasn’t accepted says why where it is.'), btns.concat([{ label: 'Close', primary: true }]), 'Not Sent Yet');
+  };
   const pbLocServerRows = (key) => { const J = pbLoc.st && pbLoc.st.jobs[key]; return J && Array.isArray(J.locates) ? J.locates.filter(l => l && l.id) : null; };
   const pbLocPend = (q) => q && (q.state === 'waiting' || q.state === 'refused');
   // the server's tickets with this phone's unsent changes on top
