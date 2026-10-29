@@ -1951,7 +1951,7 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
   content: ""; width: 48px; height: 48px; border-radius: 12px; align-self: start;
   background: var(--pb-raised-2) var(--pb-tile-img, var(--pb-img-pipe)) center / 26px 26px no-repeat;
 }
-#pbApp #confinedResumeTile { --pb-tile-img: var(--pb-img-helmet); }
+#pbApp #confinedResumeTile, #pbApp #confinedSharedTile { --pb-tile-img: var(--pb-img-helmet); }
 #pbApp :is(#resumeTile, #resumeLastRunTile) { --pb-tile-img: var(--pb-img-arrow-right); }
 #pbApp #homeRunDraftTile { --pb-tile-img: var(--pb-img-pencil); }
 #pbApp [id^="homeFinishRun_"] { --pb-tile-img: var(--pb-img-flag); }
@@ -3413,6 +3413,9 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp #screen-confinedHub .pb-home-tile::before { content: ""; width: 44px; height: 44px; border-radius: 12px; background: var(--pb-raised) var(--b4-tile-img, none) center / 24px 24px no-repeat; }
 #pbApp#pbApp #screen-confinedHub .pb-home-tile > div:last-child:not(:first-child) { font-size: 26px; line-height: 1; color: var(--pb-text-2); }
 #pbApp#pbApp #screen-confinedHub #confinedResumeTile2 { --b4-tile-img: var(--pb-img-clipboard); }
+#pbApp#pbApp #screen-confinedHub #confinedSharedTile2 { --b4-tile-img: var(--pb-img-helmet); }
+#pbApp#pbApp #screen-confinedHub #confinedSharedTile2 .sub .pb-home-line { display: block; }
+#pbApp#pbApp #screen-confinedHub #confinedSharedTile2 .sub .pb-home-urgent { display: inline-block; margin-top: 4px; padding: 3px 8px; border-radius: 8px; background: var(--pb-danger); color: #fff; font-size: 13px; font-weight: 800; }
 #pbApp#pbApp #screen-confinedHub #confinedResumeTile2 .name { color: var(--pb-brand); }
 #pbApp#pbApp #screen-confinedHub .pb-home-tile[onclick="pbOpenConfinedPermitForm()"] { --b4-tile-img: var(--pb-img-plus); }
 #pbApp#pbApp #screen-confinedHub .pb-home-tile[onclick="pbOpenVentCalc(true)"] { --b4-tile-img: var(--pb-img-air); }
@@ -3561,7 +3564,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp #screen-confinedActive #cpTextContactsBtn { display: block; width: 100%; min-height: 48px; margin: 10px 0 0 0; }
 #pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-tx-noloc { margin: 10px 0 0 0; padding: 10px 12px; background: #5a3a10; border-left: 4px solid var(--hazard); color: #fff; font-weight: 700; font-size: 15px; border-radius: 12px; }
 #pbApp#pbApp #screen-confinedActive #cpTextWrap .pb-help { margin: 8px 0 0 0; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
-#pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-em-link strong { font-family: 'IBM Plex Mono', monospace; font-weight: 600; letter-spacing: 0.02em; white-space: nowrap; }
+#pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-em-link strong { font-family: 'IBM Plex Mono', monospace; font-weight: 600; letter-spacing: 0.02em; white-space: normal; }
+#pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-em-link .cp-em-nw { white-space: nowrap; } /* r15.59: two unbreakable parts, may wrap between them */
 #pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-em-link .pb-btn { min-height: 44px; min-width: 64px; margin: 4px 0 0 6px; vertical-align: middle; }
 #pbApp#pbApp #screen-confinedActive #cpTextWrap .cp-tx-last { color: var(--pb-text, #fff); font-weight: 650; }
 /* ---- fixes after the first screenshots ---- */
@@ -4357,6 +4361,10 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     </div>
     <div class="pb-home-tile" role="button" tabindex="0" data-pb-a11y-btn="1" id="confinedResumeTile" style="display:none;" onclick="pbGoto('confinedActive')">
       <div><div class="name">Open Active Permit</div><div class="sub" id="confinedResumeSub">Return to your open confined space entry permit</div></div>
+      <div>&rsaquo;</div>
+    </div>
+    <div class="pb-home-tile" role="button" tabindex="0" data-pb-a11y-btn="1" id="confinedSharedTile" style="display:none;" onclick="pbOpenSharedPermit()">
+      <div><div class="name">Permit kept without an account</div><div class="sub">Not backed up. Tap to bring it on screen.</div></div>
       <div>&rsaquo;</div>
     </div>
     <div class="pb-home-tile" role="button" tabindex="0" data-pb-a11y-btn="1" id="resumeTile" style="display:none;" onclick="pbGoto('results')">
@@ -7430,6 +7438,10 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div><div class="name">Resume Active Permit</div><div class="sub">Return to your open confined space entry permit</div></div>
       <div>&rsaquo;</div>
     </div>
+    <div class="pb-home-tile" id="confinedSharedTile2" style="display:none;" onclick="pbOpenSharedPermit()">
+      <div><div class="name">Permit kept without an account</div><div class="sub">Not backed up. Tap to bring it on screen.</div></div>
+      <div>&rsaquo;</div>
+    </div>
     <div class="pb-home-tile" onclick="pbOpenConfinedPermitForm()">
       <div><div class="name">New Entry Permit</div><div class="sub">Start a new confined space entry permit</div></div>
       <div>&rsaquo;</div>
@@ -7581,7 +7593,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-field"><label>Rescue / emergency services and how to summon them</label><textarea id="cpRescue" rows="2" maxlength="1000" placeholder="e.g. 911, standby rescue team on site, radio channel 2"></textarea></div>
 <details class="pb-more b4-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>About a second contact</span></summary><p class="pb-help">The primary number is the one the EMERGENCY button dials: <strong class="cpDialEcho">911</strong>. Add a second only if someone else is worth reaching — an on-call super, safety contact.</p></details>
         <div class="pb-row">
-          <div class="pb-field"><label>Additional emergency contact number (optional)</label><input type="tel" enterkeyhint="next" id="cpEmergContactNum" placeholder="e.g. 555-123-4567" inputmode="numeric"></div>
+          <div class="pb-field"><label>Additional emergency contact number (optional)</label><input type="tel" enterkeyhint="next" id="cpEmergContactNum" placeholder="e.g. 555-123-4567"></div>
           <div class="pb-field"><label>Contact name (optional)</label><input type="text" enterkeyhint="next" id="cpEmergContactName" maxlength="200" placeholder="e.g. John, on-call supervisor"></div>
         </div>
       </div>
@@ -9421,7 +9433,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.59 · 2026-10-29'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.60 · 2026-10-29'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -9881,6 +9893,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbAfterBootAuthLink() {
     pbBootDone = true;
+    try { if (confinedPermit && pbEmergencyOpen() && (pbCurrentScreen === 'home' || pbCurrentScreen === 'confinedHub')) pbShellOpenPermitUrgent('cpEmergencyPanel'); } catch (e) {} /* r15.59 feat_permitfix: the app reopened during an open emergency */
     pbShowLoginNoticeAfterReset();
     pbShowRecoveryIfPending();
     // Start-up stops waiting for the link's sign-in after a few seconds (poor signal): its
@@ -9921,6 +9934,26 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // them): anything of theirs that never saved is asked about first, as Log Out does.
     // An account whose email isn't known here (no signal at start-up) may be either.
     const loaded = pbArchiveOwnerUid, loadedEmail = loaded ? pbAccountEmails[loaded] : null;
+    if (loaded === 'shared') { /* r15.59 feat_permitfix: a permit kept with no account is asked about too; the login then moves it into the account (pbMoveSharedPermit) */
+      const open = pbOpenPermitOf('shared');
+      const keptEm = !open && confinedPermit === null && pbClosedEmergencyShown && pbClosedEmergencyShown.uid === 'shared' ? pbClosedEmergencyShown : null;
+      const inside = open && open.inside.length ? open.inside.join(', ') + (open.inside.length === 1 ? ' is' : ' are') + ' checked in INSIDE the space' : '';
+      const go = () => pbLoginAs(email, password);
+      if (keptEm) {
+        pbShowModal('The confined space permit for ' + (keptEm.space || 'the closed space') + ' was closed out with its EMERGENCY still OPEN.\n\nIts emergency panel (dispatcher script, headcount, EMERGENCY call) was kept on this phone without an account. Logging in moves it into the account you log in to, and it stays on this screen. If that account already has an open permit on this phone, the panel is not moved: it goes off this screen and gets its own tile on Home until that permit is closed out.', [
+          { label: 'Go Back', primary: true },
+          { label: 'Log In Anyway', onClick: go }
+        ], 'Emergency Still Open');
+        return;
+      }
+      if (open) {
+        pbShowModal('The confined space permit for ' + open.space + ' is still open on this phone' + (inside ? ', and ' + inside : '') + '.\n\nIt was started without an account. Logging in moves it into the account you log in to: it stays on this screen, and it is backed up to that account when this phone has signal (then its responder link works). If that account already has an open permit on this phone, this one is not moved: it goes off this screen (its reminders stop) and gets its own tile on Home until that permit is closed out.', [
+          { label: 'Go Back', primary: true },
+          { label: 'Log In Anyway', onClick: go }
+        ], 'Permit Still Open');
+        return;
+      }
+    }
     if (loaded && loaded !== 'shared' && loadedEmail !== email.toLowerCase()) {
       // An open permit leaves the screen with its reminders and EMERGENCY panel while
       // people may still be inside: asked first, as Lock This Phone refuses it.
@@ -9966,7 +9999,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     btn.disabled = false; btn.textContent = 'Log In';
     if (result.error) { errEl.textContent = (/invalid login credentials/i.test(String(result.error.message || '')) ? 'Wrong email or password. Check both, or use Forgot password.' : 'Login failed: ' + result.error.message); errEl.style.display = ''; return; }
     pbForgetLinkSignIn(); // logged in with a password: not the link's sign-in any more
-    if (await pbSwitchToSignedInUser(result.data.user)) pbGoto('home', true);
+    if (await pbSwitchToSignedInUser(result.data.user)) { pbGoto('home', true); pbSharedAfterLogin(); } /* r15.59 feat_permitfix: a moved permit stays on screen */
   }
   // Makes USER the signed-in account and loads that account's records, exactly
   // as a login does. Also used when a start-up session check answers late with
@@ -9975,6 +10008,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   async function pbSwitchToSignedInUser(user, why) {
     const gen = ++pbAuthGen;
     const priorOwner = cachedStorageUserId;
+    let sharedMove = null; /* r15.59 feat_permitfix: a no-account permit moved into this account (pbMoveSharedPermit) */
     // Taken before anything waits: what the loaded account holds that never saved.
     const leaving = pbArchiveOwnerUid && pbArchiveOwnerUid !== 'shared' && pbArchiveOwnerUid !== user.id
       ? { uid: pbArchiveOwnerUid, entries: runArchive.filter(e => !pbLastPersistedEntryIds.has(e.id)), ends: runArchive.filter(e => pbLastPersistedEntryIds.has(e.id) && pbUnsavedEndGen.get(e) === pbSaveOkGen), why: why || 'this login' } : null;
@@ -10000,6 +10034,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (gen !== pbAuthGen) return false;
     await initAutofill();
     if (gen !== pbAuthGen) return false;
+    sharedMove = priorOwner === 'shared' && uid && uid !== 'shared' ? await pbMoveSharedPermit(uid, { hold: !!why }).catch(() => null) : null; /* r15.59 feat_permitfix: a switch nobody tapped (late check, email link) never moves it: it gets the tile */
+    pbSharedMoved = sharedMove; if (sharedMove && sharedMove.sid && !sharedMove.moved) pbSharedTold.add(sharedMove.sid); /* told once, below */
+    if (gen !== pbAuthGen) return false;
     await loadActiveConfinedSession();
     if (gen !== pbAuthGen) return false;
     // This account's own last verified plan, so a failed refresh below falls
@@ -10010,6 +10047,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     updateLoginStatusDisplay(); // this account's cached plan, shown now
     pbSyncOwedReports(); // this account's reports owed from an unverified start-up
     pbRefreshPlanInBackground(gen);
+    if (sharedMove) pbSharedTellAfterSwitch(sharedMove, why ? (user.email || 'another account') : null); /* r15.59 feat_permitfix */
     if (leftPermit) pbAlertAfterOpen('The phone\u2019s sign-in changed to another account, so the confined space permit for ' + leftPermit.space + ' that was open here is no longer on this screen, and its air-test and communication reminders have stopped' + (leftPermit.inside.length ? ' \u2014 ' + leftPermit.inside.join(', ') + (leftPermit.inside.length === 1 ? ' was' : ' were') + ' checked in INSIDE the space' : '') + '.\n\nThe permit is still saved on this phone. Log in again as ' + (leftEmail || 'the account that opened it') + ' to bring it back; until then keep watching the entry by radio and on paper.', 'Permit No Longer Shown');
     return true;
   }
@@ -10570,7 +10608,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const later = () => { if (queued) return; queued = true; setTimeout(() => { queued = false; window.pbRenderHome(); }, 0); };
     try {
       const mo = new MutationObserver(later);
-      ['confinedClosedEmTile', 'confinedResumeTile', 'resumeTile', 'resumeLastRunTile', 'pbSessionUnreadableBannerHome', 'cpUnsafeBanner', 'cpCloseoutPendingBanner', 'permitSaveStatusBanner', 'lockSaveStatusBanner', 'pendingPhotoBanner']
+      ['confinedClosedEmTile', 'confinedResumeTile', 'confinedSharedTile', 'resumeTile', 'resumeLastRunTile', 'pbSessionUnreadableBannerHome', 'cpUnsafeBanner', 'cpCloseoutPendingBanner', 'permitSaveStatusBanner', 'lockSaveStatusBanner', 'pendingPhotoBanner']
         .forEach(id => { const el = document.getElementById(id); if (el) mo.observe(el, { attributes: true, attributeFilter: ['style'] }); });
     } catch (e) {}
     setInterval(() => { try { if (pbCurrentScreen === 'home' && !document.hidden) window.pbRenderHome(); } catch (e) {} }, 3000);
@@ -21722,11 +21760,237 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     renderConfinedActive();
     return true;
   }
+  // ==== r15.59 feat_permitfix: a permit kept with no account ('shared') is never lost at a login ====
+  // A phone nobody has logged in on keeps its permit under 'shared'. A login used to load the account over it without a
+  // word, and nothing led back to it. Now Log In asks first (pbLoginChecked), and the switch moves it into the account
+  // (backed up, responder link). If that account already has a live permit or a kept emergency panel on this phone, the
+  // no-account one keeps its slot and gets a tile (Home, Confined Space) that moves it in once the account's is closed.
+  let pbSharedKept = null; // { kind: 'permit' | 'em', sid, space, inside, em, num } held in 'shared' while an account is loaded
+  let pbSharedMoved = null; // the last login's move, for pbSharedAfterLogin
+  const pbSharedTold = new Set(); // permits (sid) already told about on this page: said once, then the tile stays
+  const pbSharedInside = (roster) => [...new Set((Array.isArray(roster) ? roster : []).filter(p => p && p.status === 'in').map(p => String(p.name || '').trim()).filter(Boolean))];
+  // What uid's slot holds that is still live: null (empty, or closed out and only its clear failed), { bad } when it can't
+  // be used, else { d, raw }. Throws when it can't be read (never taken as empty).
+  async function pbSlotLive(uid) {
+    const raw = await pbGetCriticalFor(uid, 'activeConfinedSession');
+    if (!raw) return null;
+    let d = null; try { d = JSON.parse(raw); } catch (e) { return { bad: true }; }
+    if (!pbSessionShapeOk(d)) return { bad: true };
+    let arch = runArchive;
+    if (uid !== pbArchiveOwnerUid) { try { arch = JSON.parse((await pbGetFor(uid, 'runArchive')) || '[]'); } catch (e) { arch = []; } }
+    const sid = d.permit.sessionId;
+    const rec = Array.isArray(arch) ? arch.find(e => e && e.kind === 'confined' && e.permitSessionId === sid) : null;
+    if (rec && pbEntryEvidenceKey(rec) === pbConfinedEvidenceKey(d.emergencyIncidents, d.atmoLog, d.commLog, d.roster)) return null;
+    // a no-account copy left behind by an earlier move (its clear failed), since closed out under the account loaded now
+    if (uid === 'shared' && pbArchiveOwnerUid && pbArchiveOwnerUid !== 'shared') {
+      if (runArchive.some(e => e && e.kind === 'confined' && e.permitSessionId === sid)) return null;
+      try { const a = JSON.parse((await pbGetFor(pbArchiveOwnerUid, 'activeConfinedSession')) || 'null'); if (a && a.permit && a.permit.sessionId === sid) return null; } catch (e) {} // already the account's (the old copy's clear failed)
+    }
+    return { d, raw };
+  }
+  // The no-account kept emergency panel (a closed permit whose emergency is still open), unless dismissed or ended.
+  // A marker whose own save failed (still owed) is taken from memory.
+  async function pbSharedMarker() {
+    let m = null; try { m = JSON.parse((await pbGetFor('shared', 'confinedClosedEmergency')) || 'null'); } catch (e) { m = null; }
+    if (!pbClosedEmergencyOk(m) && pbClosedMarkerOwed && pbClosedMarkerOwed.uid === 'shared' && pbClosedEmergencyOk(pbClosedMarkerOwed)) m = pbClosedMarkerOwed;
+    if (!pbClosedEmergencyOk(m)) return null;
+    let dm = null; try { dm = JSON.parse((await pbGetFor('shared', 'confinedClosedEmergencyDismissed')) || 'null'); } catch (e) { dm = null; }
+    if (dm && dm.sid === m.sid) return null;
+    const me = await pbResolveStorageUserId();
+    if (me && me !== 'shared') { // already moved to this account (the old marker's clear failed), or dismissed there
+      try { const am = JSON.parse((await pbGetFor(me, 'confinedClosedEmergency')) || 'null'); if (am && am.sid === m.sid) return null; } catch (e) {}
+      try { const ad = JSON.parse((await pbGetFor(me, 'confinedClosedEmergencyDismissed')) || 'null'); if (ad && ad.sid === m.sid) return null; } catch (e) {}
+    }
+    let arch = runArchive;
+    if (pbArchiveOwnerUid !== 'shared') { try { arch = JSON.parse((await pbGetFor('shared', 'runArchive')) || '[]'); } catch (e) { arch = []; } }
+    const rec = Array.isArray(arch) ? arch.find(e => e && e.kind === 'confined' && e.permitSessionId === m.sid) : null;
+    const inc = rec && rec.permit && Array.isArray(rec.permit.emergencyIncidents) ? rec.permit.emergencyIncidents.find(i => i && new Date(i.start).getTime() === m.start) : null;
+    return inc && inc.end ? null : m;
+  }
+  // Moves what 'shared' holds into uid. { moved: true, kind, sid, space, inside, em, lost } | { moved: false, busy | held | why, ... }
+  // | null (nothing to move). opts.hold: only save it (a switch nobody tapped never moves it: it gets the tile).
+  // The account's own permit (on screen, stored, unreadable) or kept panel is never written over. Queued on the permit's
+  // writes, so no queued save of the no-account copy lands between the copy and the change of owner.
+  function pbMoveSharedPermit(uid, opts) {
+    if (!uid || uid === 'shared') return Promise.resolve(null);
+    const hold = !!(opts && opts.hold);
+    return pbRunOnSession(async () => {
+      const liveSid = confinedPermit && confinedSessionOwnerUid === 'shared' ? confinedPermit.sessionId : null;
+      let lost = [];
+      if (liveSid) { // its newest state first, as an account's permit is saved before a switch
+        try { await pbPersistObservation(); await pbPersistPendingAtmo(liveSid, 'shared'); if (pbRosterUnsavedFor().some(x => !x.stored)) await pbPersistRosterPending(liveSid, 'shared'); await saveActiveConfinedSession(); } catch (e) {}
+        try { lost = (pbConfinedUnsavedWork() || []).slice(); } catch (e) { lost = []; }
+      }
+      const liveInfo = liveSid ? { kind: 'permit', sid: liveSid, space: String(confinedPermit.space || ''), inside: pbSharedInside(confinedRoster), em: pbEmergencyOpen() } : {};
+      let sh = null, shBad = false; try { sh = await pbSlotLive('shared'); } catch (e) { shBad = true; }
+      if (sh && sh.bad) { sh = null; shBad = true; }
+      if (liveSid && !sh) {
+        // on screen but not (readably) in its slot: the load below would drop it, so it is taken from memory into the
+        // account (a switch nobody tapped too: losing it is worse), unless the account has its own permit there
+        let mineL = null, mineErr = false; try { mineL = await pbSlotLive(uid); } catch (e) { mineErr = true; }
+        if (mineL || mineErr || (pbClosedEmergencyShown && pbClosedEmergencyShown.uid === uid) || (confinedSessionUnreadable && confinedSessionUnreadable.uid === uid)) return { moved: false, why: 'unsaved', ...liveInfo, lost };
+        pbSharedFlip(uid, liveSid);
+        let ok = false; try { ok = !!(await saveActiveConfinedSession()); } catch (e) { ok = false; }
+        return { moved: true, adopted: true, saved: ok, ...liveInfo, lost: ok ? [] : lost };
+      }
+      if (shBad) return { moved: false, why: 'read', ...liveInfo, lost };
+      const marker = sh ? null : await pbSharedMarker();
+      if (!sh && !marker) return null;
+      const info = sh ? { kind: 'permit', sid: sh.d.permit.sessionId, space: String(sh.d.permit.space || ''), inside: pbSharedInside(sh.d.roster), em: (sh.d.emergencyIncidents || []).some(i => i && i.start && !i.end), lost }
+        : { kind: 'em', sid: marker.sid, space: String(marker.space || ''), inside: [], em: true, lost };
+      if (hold) { pbSharedTold.add(info.sid); return { moved: false, held: true, ...info }; }
+      if (confinedPermit && confinedSessionOwnerUid !== null && confinedSessionOwnerUid !== 'shared') return { moved: false, busy: true, mine: String(confinedPermit.space || ''), ...info }; // the account's on screen (its first save may not have landed)
+      if (pbClosedEmergencyShown && pbClosedEmergencyShown.uid === uid) return { moved: false, busy: true, mineEm: true, mine: String(pbClosedEmergencyShown.space || ''), ...info };
+      let mine = null; try { mine = await pbSlotLive(uid); } catch (e) { return { moved: false, busy: true, mineBad: true, ...info }; }
+      if (mine) return { moved: false, busy: true, mineBad: !mine.d, mine: mine.d ? String(mine.d.permit.space || '') : '', ...info };
+      if (confinedSessionUnreadable && confinedSessionUnreadable.uid === uid) return { moved: false, busy: true, mineBad: true, ...info };
+      if (marker) {
+        let m2 = null; try { m2 = JSON.parse((await pbGetFor(uid, 'confinedClosedEmergency')) || 'null'); } catch (e) { m2 = null; }
+        if (pbClosedEmergencyOk(m2) && m2.sid !== marker.sid) return { moved: false, busy: true, mineEm: true, mine: String(m2.space || ''), ...info };
+        // its closed record comes too (the panel's calls, texts and report are written to it; backed up from this account)
+        if (pbArchiveOwnerUid !== uid || archiveLoadFailed) return { moved: false, why: 'storage', ...info };
+        let sharr = null; try { sharr = JSON.parse((await pbGetCriticalFor('shared', 'runArchive')) || '[]'); } catch (e) { return { moved: false, why: 'read', ...info }; }
+        const recRaw = Array.isArray(sharr) ? sharr.find(e => e && e.kind === 'confined' && e.permitSessionId === marker.sid) : null;
+        let added = null; const had = !!recRaw && runArchive.some(e => e && e.id === recRaw.id);
+        if (recRaw && !had) {
+          added = normalizeArchiveEntry({ ...recRaw, lockTime: new Date(recRaw.lockTime) });
+          runArchive.unshift(added);
+          if (!(await saveRunArchive())) { const i = runArchive.indexOf(added); if (i !== -1) runArchive.splice(i, 1); return { moved: false, why: 'storage', ...info }; }
+        }
+        if (!(await pbSetFor(uid, 'confinedClosedEmergency', JSON.stringify({ ...marker, uid })))) return { moved: false, why: 'storage', ...info }; // the record is saved under the account either way: nothing lost
+        if (pbClosedEmergencyShown && pbClosedEmergencyShown.uid === 'shared') pbClosedEmergencyShown.uid = uid;
+        if (pbLastDialNumber.uid === 'shared') pbLastDialNumber = { uid, num: pbLastDialNumber.num };
+        if (pbTxKeptSnap && pbTxKeptSnap.uid === 'shared') pbTxKeptSnap = { ...pbTxKeptSnap, uid };
+        if (pbClosedMarkerOwed && pbClosedMarkerOwed.uid === 'shared') { pbClosedMarkerOwed = null; clearInterval(pbClosedMarkerRetry); pbClosedMarkerRetry = null; } // written now, under the account
+        if (!(await pbSetFor('shared', 'confinedClosedEmergency', ''))) await pbSetFor('shared', 'confinedClosedEmergencyDismissed', JSON.stringify({ sid: marker.sid, at: Date.now() })); // never shown again from there
+        if (added || had) { // out of the no-account Records (another tab's records there stay)
+          const drop = async () => { try { const a2 = JSON.parse((await pbGetCriticalFor('shared', 'runArchive')) || '[]'); if (!Array.isArray(a2)) return; const rest = a2.filter(e => !(e && e.id === recRaw.id)); if (rest.length === a2.length) return; if (await pbSetFor('shared', 'runArchive', JSON.stringify(rest))) { const rv = await pbGetFor('shared', 'runArchiveRevision'); await pbSetFor('shared', 'runArchiveRevision', String((parseInt(rv, 10) || 0) + 1)); } } catch (e) {} };
+          if (navigator.locks && navigator.locks.request) await navigator.locks.request('pb-archive-save', drop); else await drop();
+        }
+        try { pbPermitBackupSoon(3000); } catch (e) {}
+        return { moved: true, ...info };
+      }
+      const sid = sh.d.permit.sessionId;
+      // its side keys (lists by permit id) go with it, joined to whatever the account's hold
+      for (const k of ['confinedPendingAtmo', 'confinedRosterPending', 'confinedObservation']) {
+        let v = null; try { v = await pbGetFor('shared', k); } catch (e) { v = null; }
+        if (!v) continue;
+        let out = v;
+        if (k !== 'confinedObservation') { try { const f = k === 'confinedPendingAtmo' ? 'readings' : 'lines', a = JSON.parse(v), b = JSON.parse((await pbGetFor(uid, k)) || 'null'); if (a && b && Array.isArray(a[f]) && Array.isArray(b[f])) out = JSON.stringify({ ...b, [f]: b[f].concat(a[f]) }); } catch (e) {} }
+        await pbSetFor(uid, k, out);
+      }
+      if (!(await pbSetFor(uid, 'activeConfinedSession', sh.raw))) return { moved: false, why: 'storage', ...info };
+      let back = null; try { back = await pbGetCriticalFor(uid, 'activeConfinedSession'); } catch (e) { back = null; }
+      if (back !== sh.raw) return { moved: false, why: 'storage', ...info }; // the no-account copy stays where it is
+      if (liveSid === sid && confinedPermit && confinedPermit.sessionId === sid && confinedSessionOwnerUid === 'shared') {
+        // the permit on screen stays on screen, now the account's (its timers and what was typed carry on)
+        pbSharedFlip(uid, sid, true);
+        try { await saveActiveConfinedSession(); } catch (e) {} // what memory holds now (an emergency declared during the move) into the account's slot
+      } else {
+        let now2 = null; try { now2 = await pbGetCriticalFor('shared', 'activeConfinedSession'); } catch (e) { now2 = null; }
+        if (now2 && now2 !== sh.raw) { // saved there meanwhile (another tab): that newer copy comes too, or nothing is cleared
+          if (!(await pbSetFor(uid, 'activeConfinedSession', now2))) return { moved: true, ...info, keptCopy: true };
+        }
+      }
+      for (const k of ['activeConfinedSession', 'confinedPendingAtmo', 'confinedRosterPending', 'confinedObservation']) { if (!(await pbSetFor('shared', k, ''))) await pbSetFor('shared', k, ''); } // a copy left behind is recognised as the account's (pbSlotLive)
+      return { moved: true, ...info };
+    });
+  }
+  // The no-account permit on screen becomes the account's: owner, kept air tests and check-ins, the dialled number.
+  // stored: its copy is in the account's slot already; otherwise the slot is empty and the next save fills it.
+  function pbSharedFlip(uid, sid, stored) {
+    confinedSessionOwnerUid = uid;
+    pbAtmoPending.forEach(p => { if (p && p.sid === sid && p.owner === 'shared') p.owner = uid; });
+    pbRosterUnsaved.forEach(x => { if (x && x.sid === sid && x.owner === 'shared') x.owner = uid; });
+    if (pbLastDialNumber.uid === 'shared') pbLastDialNumber = { uid, num: pbLastDialNumber.num };
+    if (!stored) confinedSeenStored = false; // its (empty) new slot is not "closed out elsewhere"
+  }
+  const pbSharedWho = (k) => (k.kind === 'em' ? 'the emergency panel of the closed permit for ' + (k.space || 'the closed space') : 'the confined space permit for ' + (k.space || 'the space') + (k.inside && k.inside.length ? ' (' + k.inside.join(', ') + (k.inside.length === 1 ? ' is' : ' are') + ' checked in INSIDE)' : ''));
+  const pbSharedCap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+  const pbSharedBusyWhy = (mv) => mv.mineBad ? 'a permit of this account saved on this phone can’t be read right now' : mv.mineEm ? 'this account’s emergency panel' + (mv.mine ? ' for ' + mv.mine : '') + ' is still open' : 'this account already has an open permit' + (mv.mine ? ' (' + mv.mine + ')' : '') + ' on this phone';
+  const pbSharedLost = (mv) => mv.lost && mv.lost.length ? '\n\nThese had NOT saved, so they were not kept:\n\n• ' + mv.lost.join('\n• ') : '';
+  // After a switch: what happened to the no-account permit is said (a tapped login was told before a move: only the rest).
+  function pbSharedTellAfterSwitch(mv, toEmail) {
+    if (!mv) return;
+    if (mv.sid) pbSharedTold.add(mv.sid);
+    const who = pbSharedCap(pbSharedWho(mv));
+    if (mv.moved && mv.adopted && !mv.saved) { pbAlertAfterOpen(who + ' is still on this screen, now under ' + (toEmail ? toEmail + ' (the phone’s sign-in changed)' : 'this account') + ', but it could NOT be saved on this phone (the phone’s storage). Use Retry on its banner. Until it saves, keep the entry record on paper too.' + pbSharedLost(mv), 'Permit Not Saved'); return; }
+    if (mv.why === 'unsaved') { pbAlertAfterOpen(who + ' was kept on this phone without an account, but it could NOT be saved on this phone, and this account already has its own permit here, so it is no longer on this screen and is NOT kept. Keep watching that entry by radio and on paper, and write down who is inside.' + pbSharedLost(mv), 'Permit Not Kept'); return; }
+    if (mv.moved) { if (toEmail || (mv.lost && mv.lost.length)) pbAlertAfterOpen((toEmail ? 'The phone’s sign-in changed to ' + toEmail + '. ' : '') + who + ' was kept on this phone without an account and is now kept under ' + (toEmail ? 'that' : 'this') + ' account, still on this screen.' + pbSharedLost(mv), 'Permit Moved Into This Account'); return; }
+    if (mv.why === 'read') { pbAlertAfterOpen('A confined space permit saved on this phone without an account can’t be read right now, so it could not move into this account. It has NOT been deleted, but this account can’t open it. If people may be inside that space, keep watching the entry by radio and on paper.' + pbSharedLost(mv), 'Permit Kept Without an Account'); return; }
+    if (!mv.busy && !mv.held && mv.why !== 'storage') return;
+    const why = mv.held ? 'The phone’s sign-in changed to ' + (toEmail || 'another account') + ' without anyone on this phone choosing it, so it was not moved into that account' : mv.busy ? 'It could not move into this account, because ' + pbSharedBusyWhy(mv) : 'It could not move into this account just now (the phone’s storage)';
+    pbAlertAfterOpen(who + ' was kept on this phone without an account' + (mv.em ? ', and its EMERGENCY is still OPEN' : '') + '. ' + why + '. It is still saved on this phone: tap “Permit kept without an account” on Home to ' + (mv.held ? 'move it into this account and open it' : 'bring it back' + (mv.busy ? ' once that is closed out' : '')) + '. Until then keep watching that entry by radio and on paper.' + pbSharedLost(mv), 'Permit Kept Without an Account');
+  }
+  function pbSharedAfterLogin() {
+    const m = pbSharedMoved; pbSharedMoved = null;
+    if (!m || !m.moved) return;
+    if (m.kind === 'em') { try { window.pbOpenClosedEmergencyPanel(); } catch (e) {} return; }
+    if (!confinedPermit || confinedPermit.sessionId !== m.sid) return;
+    try { pbEmPushNow(); } catch (e) {} // the account's backup and responder link at once, not at the next 30 s tick
+    if (pbEmergencyOpen()) pbShellOpenPermitUrgent('cpEmergencyPanel'); else pbGoto('confinedActive', false, true);
+  }
+  async function pbSharedKeptRead() {
+    const me = await pbResolveStorageUserId();
+    if (!me || me === 'shared') return null;
+    let sh = null; try { sh = await pbSlotLive('shared'); } catch (e) { sh = null; }
+    const num = (v) => (v && !pbDialNumberError(v) ? String(v).trim() : '911');
+    if (sh && sh.d) {
+      if (confinedPermit && confinedPermit.sessionId === sh.d.permit.sessionId) return null; // the same permit, already this account's (only the old copy's clear failed)
+      return { kind: 'permit', sid: sh.d.permit.sessionId, space: String(sh.d.permit.space || ''), inside: pbSharedInside(sh.d.roster), em: (sh.d.emergencyIncidents || []).some(i => i && i.start && !i.end), num: num(sh.d.permit.emergencyDialNumber) };
+    }
+    const m = await pbSharedMarker();
+    if (m && !(pbClosedEmergencyShown && pbClosedEmergencyShown.sid === m.sid)) return { kind: 'em', sid: m.sid, space: String(m.space || ''), inside: [], em: true, num: num(m.num) };
+    return null;
+  }
+  function pbSharedTileRender() {
+    const k = pbSharedKept;
+    ['confinedSharedTile', 'confinedSharedTile2'].forEach(id => {
+      const t = document.getElementById(id); if (!t) return;
+      if (!!k !== (t.style.display !== 'none')) t.style.display = k ? '' : 'none';
+      const sub = t.querySelector('.sub'); if (!k || !sub) return;
+      const html = '<span class="pb-home-line">' + escapeHtml(k.kind === 'em' ? 'Closed permit' + (k.space ? ' for ' + k.space : '') : (k.space || 'Confined space') + ' · ' + k.inside.length + ' inside') + '</span>'
+        + (k.em ? '<span class="pb-home-urgent">EMERGENCY still OPEN</span>' : '') + '<span class="pb-home-line">Not backed up. Tap to bring it on screen.</span>';
+      if (typeof window.pbSetHtml === 'function') window.pbSetHtml(sub, html); else if (sub.innerHTML !== html) sub.innerHTML = html;
+    });
+  }
+  async function pbSharedTileRefresh() {
+    try { pbSharedKept = await pbSharedKeptRead(); } catch (e) { pbSharedKept = null; }
+    pbSharedTileRender();
+    const k = pbSharedKept; // found with someone inside or an emergency open (e.g. the app started signed in): said once
+    if (k && !pbSharedTold.has(k.sid) && (k.inside.length || k.em)) { pbSharedTold.add(k.sid); pbAlertAfterOpen(pbSharedCap(pbSharedWho(k)) + ' is saved on this phone without an account' + (k.em ? ', and its EMERGENCY is still OPEN' : '') + ', and is not on this screen. Tap “Permit kept without an account” on Home to bring it on screen (it then moves into this account). Until then keep watching that entry by radio and on paper.', 'Permit Kept Without an Account'); }
+  }
+  window.pbScreenHooks = Array.isArray(window.pbScreenHooks) ? window.pbScreenHooks : [];
+  window.pbScreenHooks.push((name) => { if (name === 'home' || name === 'confinedHub') pbSharedTileRefresh(); });
+  let pbSharedTapBusy = false;
+  window.pbOpenSharedPermit = async function() {
+    await pbSharedTileRefresh();
+    const k = pbSharedKept; if (!k) return;
+    const me = await pbResolveStorageUserId();
+    if (pbSharedTapBusy) return; pbSharedTapBusy = true; // a double tap moves it once
+    let mv = null; try { mv = await pbMoveSharedPermit(me).catch(() => null); } finally { pbSharedTapBusy = false; }
+    if (!mv) { await pbSharedTileRefresh(); return; } // already moved (or gone): nothing to say
+    if (mv && mv.moved) {
+      await loadActiveConfinedSession();
+      if (mv.kind === 'em') window.pbOpenClosedEmergencyPanel();
+      else { try { pbEmPushNow(); } catch (e) {} if (pbEmergencyOpen()) pbShellOpenPermitUrgent('cpEmergencyPanel'); else pbGoto('confinedActive', false, true); }
+      pbAlertAfterOpen(pbSharedCap(pbSharedWho(mv)) + ' is now kept under this account. It is backed up to it when this phone has signal' + (mv.kind === 'permit' ? ', and then its responder link works.' : '.'), 'Permit Moved Into This Account');
+      return;
+    }
+    const why = mv && mv.busy ? (mv.mineBad ? 'It can’t move in now: ' + pbSharedBusyWhy(mv) + '. Use Retry on that permit’s banner, then tap this tile again.' : 'Only one permit can be on this screen, and ' + pbSharedBusyWhy(mv) + '. Close that out (or Dismiss its emergency), then tap this tile again: it then moves into this account and opens.') : 'It couldn’t be moved into this account just now. Try again in a moment.';
+    pbShowModal(pbSharedCap(pbSharedWho(k)) + ' was kept on this phone without an account' + (k.em ? ', and its EMERGENCY is still OPEN' : '') + '.\n\n' + why + '\n\nUntil then keep watching that entry by radio and on paper.', [
+      { label: 'Call ' + k.num, primary: !!k.em, onClick: () => pbNavigateExternal('tel:' + k.num.replace(/[^0-9+]/g, '')) },
+      { label: 'OK', primary: !k.em }
+    ], 'Permit Kept Without an Account');
+  };
+  window.__debugSharedKept = () => pbSharedKept;
+  // ==== end feat_permitfix (P1) ====
   async function loadActiveConfinedSession() {
     { const u = await pbResolveStorageUserId(); if (pbClosedEmergencyShown && pbClosedEmergencyShown.uid !== u) pbClosedEmergencyShown = null; } // another account's kept panel is hidden by this load: never this account's to clear or to stay quiet about
     await pbLoadActiveConfinedSessionInner();
     await pbRestoreClosedEmergency(); // a closed permit's emergency still open: its panel comes back, never hidden silently
     pbRenderClosedEmergencyTiles();
+    await pbSharedTileRefresh(); /* r15.59 feat_permitfix: a no-account permit this account could not take has its own tile */
   }
   async function pbLoadActiveConfinedSessionInner() {
     const uid = await pbResolveStorageUserId();
@@ -22053,11 +22317,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     document.getElementById('cpControls').value = p.controls || '';
     document.getElementById('cpVentFail').value = p.ventFail || '';
     document.getElementById('cpConditions').value = p.conditions || '';
-    document.getElementById('cpMinO2').value = (p.minO2 !== null && p.minO2 !== undefined) ? p.minO2 : '';
+    document.getElementById('cpMinO2').value = (p.minO2 !== null && p.minO2 !== undefined && Number(p.minO2) !== 19.5) ? p.minO2 : ''; /* r15.59: the standard comes back blank (standard), not "entered" */
     // Reuse REPLACES every limit with the archived permit's effective value
     // (blank when it was the standard default), never keeps stale form edits.
     document.getElementById('cpMaxO2').value = (typeof p.maxO2 === 'number' && p.maxO2 !== 23.5) ? p.maxO2 : '';
-    document.getElementById('cpMaxLEL').value = (p.maxLEL !== null && p.maxLEL !== undefined) ? p.maxLEL : '';
+    document.getElementById('cpMaxLEL').value = (p.maxLEL !== null && p.maxLEL !== undefined && Number(p.maxLEL) !== 10) ? p.maxLEL : '';
     document.getElementById('cpMaxH2S').value = (typeof p.maxH2S === 'number' && p.maxH2S !== 10) ? p.maxH2S : ''; // a looser one is still confirmed at Lock
     document.getElementById('cpMaxCO').value = (typeof p.maxCO === 'number' && p.maxCO !== 35) ? p.maxCO : '';
     document.getElementById('cpRescue').value = p.rescue || '';
@@ -25548,6 +25812,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     } else { pbTxKeptLast = { sid: k.sid, rec }; pbKeptTxRecord({ text: rec }); }
     pbTxRender();
   };
+  // r15.59 feat_permitfix: "e.pipelayersbible.com/" and "?XXXX-XXXX-XXXX", each kept whole, with a break allowed between them
+  function pbEmLinkAddrSet(a, text) {
+    if (!a || a.textContent === text) return;
+    a.textContent = '';
+    if (!text) return;
+    const i = text.indexOf('?'), parts = i > 0 ? [text.slice(0, i), text.slice(i)] : [text];
+    parts.forEach((s, n) => { if (n) a.appendChild(document.createElement('wbr')); const sp = document.createElement('span'); sp.className = 'cp-em-nw'; sp.textContent = s; a.appendChild(sp); });
+  }
   function pbTxSet(el, text) { if (el && el.textContent !== text) el.textContent = text; } // unchanged text is not rewritten (nor announced again)
   // The Text block on the emergency panel (live permit and kept panel).
   function pbTxRender() {
@@ -25579,7 +25851,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbTxSet(el('cpTextLast'), last ? pbTxWords(last) + ' — press Send there if you haven’t.' : '');
     el('cpTextLast').style.display = last ? '' : 'none';
     { const lk = el('cpEmLink'), em = typeof f.em === 'string' && PB_EM_RE.test(f.em) ? f.em : ''; /* feat_emlink: the responder link, once */
-      if (lk) { lk.style.display = em ? '' : 'none'; lk.dataset.k = em; pbTxSet(el('cpEmLinkAddr'), em ? pbEmShown(em) : ''); } }
+      if (lk) { lk.style.display = em ? '' : 'none'; lk.dataset.k = em; pbEmLinkAddrSet(el('cpEmLinkAddr'), em ? pbEmShown(em) : ''); } }
   }
   window.pbTxRender = pbTxRender;
   // snap: from pbSnapOpenEmergency (closeout) or the stored marker (load). store: write the marker.
