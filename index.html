@@ -4349,6 +4349,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div class="pb-coh-brand" id="homeCoBrand" role="group" aria-label="Your company" hidden></div><!-- batch 20 HOME -->
     <!-- PB2:job -->
     <div class="pb-home-job" id="homeCurrentJob" style="display:none;"></div>
+    <div id="homeDxBar" class="dx-hbar" role="group" aria-label="Daily report" hidden></div><!-- feat_dailyx: Add note · Daily report -->
     <div id="homeFmPulse" class="pbx-pulse" role="group" aria-label="Your crew right now" hidden></div><!-- foreman home: crew live card -->
     <!-- PB2:work -->
     <p class="pb-home-empty" id="homeEmptyLine" style="display:none;">Nothing in progress.</p>
@@ -4477,6 +4478,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       </div>
       <div id="settingsCoTime" class="pbx-name pbx-cotime" hidden></div><!-- feat_cotz: the company's time zone and morning email -->
       <div id="settingsCoLocate" class="pbx-name pbx-cotime" hidden></div><!-- feat_locates: a new dig ticket is good for N days -->
+      <div id="settingsCoEquip" class="pbx-name pbx-cotime" hidden></div><!-- feat_coequip: the company's equipment -->
     </div>
     <div class="pb-section" id="settingsPrefsSection">
       <div class="pb-tag" id="settingsPrefsLabel">Preferences</div>
@@ -6649,6 +6651,107 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   #pbApp .dp-addrow .pb-field { flex: 1 1 auto; min-width: 0; margin: 0; }
   #pbApp .dp-addrow .pb-field input { width: 100%; min-width: 0; box-sizing: border-box; }
   #pbApp .dp-addrow .pb-btn { flex: 0 0 auto; width: auto; min-height: 44px; margin: 0; }
+  /* ==== feat_coequip ==== */
+  #pbApp .dp-eqrows { flex-direction: column; flex-wrap: nowrap; gap: 6px; }
+  #pbApp .dp-item.dp-eqrow { display: flex; width: 100%; box-sizing: border-box; border-radius: 14px; gap: 6px; padding: 2px 0 2px 14px; }
+  #pbApp .dp-eqtx { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; padding: 4px 0; }
+  #pbApp .dp-eqhw { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px; }
+  #pbApp #dpEquip input.dp-eqh, #pbApp #dpCrew input.dp-eqh { width: 64px; min-width: 0; min-height: 44px; box-sizing: border-box; margin: 0; padding: 0 8px; font-size: 16px; text-align: right; font-variant-numeric: tabular-nums; }
+  #pbApp #dpEquip input.dp-eqh.dp-bad, #pbApp #dpCrew input.dp-eqh.dp-bad { border-color: var(--pb-danger, #c0392b); }
+  #pbApp .dp-eqhu { font-size: 14px; color: var(--pb-text-2); }
+  #pbApp #dpEqSugW:empty { display: none; }
+  #pbApp .ce-edit .ce-h { margin: 4px 0 0; font-size: 15.5px; font-weight: 650; }
+  #pbApp .ce-list { list-style: none; margin: 6px 0 0; padding: 0; }
+  #pbApp .ce-row { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-bottom: 1px solid var(--pb-divider); }
+  #pbApp .ce-row .ce-tx { flex: 1 1 0; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
+  #pbApp .ce-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 10px; }
+  #pbApp .ce-two .pb-field input { width: 100%; min-width: 0; box-sizing: border-box; }
+  #pbApp.pb-text-big .ce-row { flex-wrap: wrap; }
+  #pbApp.pb-text-big .ce-row .ce-tx { flex-basis: 100%; }
+  #pbApp .ce-row .ce-nm { font-size: 15px; overflow-wrap: anywhere; }
+  #pbApp .ce-row .ce-cc { font-size: 13px; color: var(--pb-text-2); }
+  #pbApp .ce-row .pb-btn { flex: 0 0 auto; width: auto; min-height: 44px; margin: 0; }
+  #pbApp .ce-form { margin-top: 12px; }
+  #pbApp .ce-form .ce-fh { margin: 0 0 4px; font-size: 14px; font-weight: 650; color: var(--pb-text-2); }
+  #pbApp .ce-ret { margin-top: 10px; }
+  #pbApp .ce-ret summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--pb-text-2); }
+  /* ==== end feat_coequip ==== */
+  /* ==== feat_dailyx: the Daily report redesign ==== */
+  #pbApp .dx-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 8px 0 10px; padding: 4px; border-radius: 14px; background: var(--pb-raised-2); }
+  #pbApp .dx-tabs[hidden] { display: none; }
+  #pbApp .dx-tabb { -webkit-appearance: none; appearance: none; min-height: 44px; margin: 0; border: 0; border-radius: 10px; background: transparent; color: var(--pb-text-2); font: inherit; font-size: 16px; font-weight: 650; cursor: pointer; }
+  #pbApp .dx-tabb[aria-selected="true"] { background: var(--pb-surface, var(--pb-bg)); color: var(--pb-text); box-shadow: var(--pb-elev-1); }
+  #pbApp .dx-tabb:focus-visible, #pbApp .dx-tog:focus-visible, #pbApp .dx-hbtn:focus-visible, #pbApp .dx-hmiss:focus-visible, #pbApp .dx-phimg:focus-visible { outline: none; box-shadow: var(--pb-ring); }
+  #pbApp .dx-tabn { font-weight: 500; font-size: 13px; color: var(--pb-text-2); }
+  #pbApp .dx-tabn:empty { display: none; }
+  #pbApp #screen-dailyReport.dx-on-notes #drBody, #pbApp #screen-dailyReport.dx-on-notes #drAttachWrap, #pbApp #screen-dailyReport.dx-on-notes #drSignWrap { display: none; }
+  #pbApp #screen-dailyReport.dx-on-notes #drPlus > :not(#dxPhotos) { display: none; }
+  #pbApp #screen-dailyReport.dx-on-report #drDiary, #pbApp #screen-dailyReport.dx-on-report #dxPhotos { display: none; }
+  #pbApp .dx-diary[hidden] { display: none; }
+  #pbApp .dx-narr { margin: 0 0 12px; }
+  #pbApp .dx-narr textarea, #pbApp #dxNoteIn, #pbApp #dxNoteEd, #pbApp #dxqText { width: 100%; box-sizing: border-box; min-height: 44px; font-size: 16px; line-height: 1.4; resize: none; overflow: hidden; }
+  #pbApp .dx-narr textarea { min-height: 96px; }
+  #pbApp .dx-noteadd { display: flex; align-items: flex-end; gap: 8px; margin-top: 6px; }
+  #pbApp .dx-noteadd textarea { flex: 1 1 auto; min-width: 0; }
+  #pbApp .dx-noteadd .pb-btn { flex: 0 0 auto; width: auto; min-height: 44px; margin: 0; }
+  #pbApp .dx-notelist { list-style: none; margin: 8px 0 0; padding: 0; }
+  #pbApp .dx-note { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px 8px; padding: 8px 0; border-top: 1px solid var(--pb-divider); }
+  #pbApp .dx-note.dx-hl { background: var(--pb-raised-2); border-radius: 8px; }
+  #pbApp .dx-nt { flex: 1 1 180px; min-width: 0; font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
+  #pbApp .dx-nt::before { content: "\2022\00a0"; color: var(--pb-text-2); }
+  #pbApp .dx-ntime { font-variant-numeric: tabular-nums; color: var(--pb-text-2); font-size: 13.5px; }
+  #pbApp .dx-nb { display: flex; gap: 6px; flex: 0 0 auto; margin-left: auto; }
+  #pbApp .dx-nb .pb-btn, #pbApp .dx-noteed .pb-btn { width: auto; min-height: 44px; margin: 0; }
+  #pbApp .dx-noteed { display: block; }
+  #pbApp .dx-rem-on { display: block; font-size: 13px; color: var(--pb-text-2); margin-top: 2px; }
+  #pbApp .dx-bell { display: inline-block; width: 13px; height: 13px; margin-right: 4px; vertical-align: -1px; background: currentColor; -webkit-mask: var(--pb-icon-bell) center / contain no-repeat; mask: var(--pb-icon-bell) center / contain no-repeat; }
+  #pbApp .dx-rem { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 8px; font-size: 14px; color: var(--pb-text-2); }
+  #pbApp .dx-rem select, #pbApp .dx-rem input { min-height: 44px; font-size: 16px; max-width: 100%; }
+  #pbApp .dx-rem input[hidden] { display: none; }
+  #pbApp .dx-sec .dx-h { margin: 0; }
+  #pbApp .dx-tog { -webkit-appearance: none; appearance: none; display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; margin: 0; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  #pbApp .dx-tog .dx-t { flex: 0 1 auto; min-width: 0; }
+  #pbApp .dx-tog .dx-c { flex: 1 1 auto; min-width: 0; margin-left: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #pbApp .dx-chev { flex: 0 0 auto; width: 18px; height: 18px; background: currentColor; color: var(--pb-text-2); -webkit-mask: var(--pb-icon-chevron-down) center / contain no-repeat; mask: var(--pb-icon-chevron-down) center / contain no-repeat; transform: rotate(-90deg); transition: transform .15s; }
+  #pbApp .dx-sec.dx-open .dx-chev { transform: none; }
+  #pbApp .dx-sec:not(.dx-open) > .dx-body { display: none; }
+  #pbApp .dx-sec.dx-open > .dx-body { margin-top: 6px; }
+  #pbApp .dx-sub { margin: 10px 0 2px; font-size: 13.5px; font-weight: 650; color: var(--pb-text-2); }
+  #pbApp .dx-phs { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+  #pbApp .dx-ph { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  #pbApp .dx-phimg { -webkit-appearance: none; appearance: none; display: block; width: 100%; aspect-ratio: 4 / 3; margin: 0; padding: 0; border: 0; border-radius: 10px; overflow: hidden; background: var(--pb-raised-2); cursor: zoom-in; }
+  #pbApp .dx-phimg img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #pbApp .dx-phcap { width: 100%; box-sizing: border-box; min-height: 44px; font-size: 16px; }
+  #pbApp .dx-ph .pb-btn { width: 100%; min-height: 44px; margin: 0; }
+  #pbApp .dx-viewer { position: fixed; inset: 0; z-index: 9000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; background: rgba(0,0,0,.9); }
+  #pbApp .dx-viewer img { max-width: 100%; max-height: 78vh; object-fit: contain; border-radius: 6px; }
+  #pbApp .dx-viewer .dx-vcap { margin: 0; color: #fff; font-size: 15px; text-align: center; overflow-wrap: anywhere; }
+  #pbApp .dx-viewer .pb-btn { width: auto; min-width: 140px; }
+  #pbApp .dx-signbtns { display: flex; flex-wrap: wrap; gap: 8px; }
+  #pbApp .dx-signbtns .pb-btn { flex: 1 1 140px; margin: 0; }
+  #pbApp .dx-loc { margin-top: 8px; }
+  #pbApp .dx-toast { position: fixed; left: 16px; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 9500; margin: 0 auto; max-width: 520px; padding: 12px 14px; border-radius: 12px; background: var(--pb-text, #111); color: var(--pb-bg, #fff); font-size: 15px; box-shadow: var(--pb-elev-2, 0 4px 14px rgba(0,0,0,.3)); }
+  #pbApp .dx-sheetwrap { position: fixed; inset: 0; z-index: 8800; display: flex; align-items: flex-end; justify-content: center; background: rgba(0,0,0,.5); }
+  #pbApp .dx-sheet { width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; box-sizing: border-box; padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); border-radius: 18px 18px 0 0; background: var(--pb-surface, var(--pb-bg)); color: var(--pb-text); }
+  #pbApp .dx-sheeth { margin: 0 0 4px; font-size: 19px; }
+  #pbApp .dx-qph { display: flex; flex-wrap: wrap; gap: 6px; }
+  #pbApp .dx-qph:empty { display: none; }
+  #pbApp .dx-qph img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; }
+  #pbApp .dx-sheetbtns { display: flex; gap: 8px; margin-top: 12px; }
+  #pbApp .dx-sheetbtns .pb-btn { flex: 1 1 0; margin: 0; }
+  #pbApp .dx-hbar { margin: 8px 16px 0; }
+  #pbApp .dx-hbar[hidden] { display: none; }
+  #pbApp .dx-hpair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  #pbApp .dx-hbtn { -webkit-appearance: none; appearance: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 2px 8px; min-height: 52px; margin: 0; padding: 8px 12px; border: 1px solid var(--pb-divider); border-radius: 14px; background: var(--pb-raised-2); color: var(--pb-text); font: inherit; font-size: 15.5px; font-weight: 650; text-align: left; cursor: pointer; min-width: 0; }
+  #pbApp .dx-hl1 { min-width: 0; }
+  #pbApp .dx-hst { flex-basis: 100%; font-size: 13px; font-weight: 500; color: var(--pb-text-2); padding-left: 26px; }
+  #pbApp .dx-hic { flex: 0 0 auto; width: 18px; height: 18px; background: var(--pb-brand); }
+  #pbApp .dx-hic-note { -webkit-mask: var(--pb-icon-pencil) center / contain no-repeat; mask: var(--pb-icon-pencil) center / contain no-repeat; }
+  #pbApp .dx-hic-daily { -webkit-mask: var(--pb-icon-clipboard) center / contain no-repeat; mask: var(--pb-icon-clipboard) center / contain no-repeat; }
+  #pbApp .dx-hmiss { -webkit-appearance: none; appearance: none; display: block; width: 100%; min-height: 44px; margin: 6px 0 0; padding: 8px 12px; border: 0; border-left: 3px solid var(--pb-warn, #e0a100); border-radius: 8px; background: var(--pb-raised-2); color: var(--pb-text); font: inherit; font-size: 14.5px; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+  #pbApp .dx-hmiss-k { font-weight: 700; }
+  #pbApp.pb-text-big .dx-hpair { grid-template-columns: 1fr; }
+  /* ==== end feat_dailyx ==== */
   #pbApp .dp-evs { list-style: none; margin: 4px 0 0; padding: 0; }
   #pbApp .dp-ev { padding: 10px 0; border-top: 1px solid var(--pb-divider); }
   #pbApp .dp-ev:first-child { border-top: 0; }
@@ -6786,27 +6889,38 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   <!-- batch 23 DAILY: the foreman's DAILY REPORT -->
   <div class="pb-screen" id="screen-dailyReport">
     <div class="pb-header">
-      <p class="pb-eyebrow"><span>DAILY REPORT</span><button type="button" class="pb-back" id="drBack" title="Back" aria-label="Back" onclick="pbOpenArchive()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
+      <p class="pb-eyebrow"><span>DAILY REPORT</span><button type="button" class="pb-back" id="drBack" title="Back" aria-label="Back" onclick="pbDxBack()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
       <h1 class="pb-title">Daily report</h1>
     </div>
     <div class="pbd-wrap">
-      <p class="pbd-dim pbd-intro">One report per job per day. The app pulls in the day&rsquo;s runs and production, crew and equipment hours, materials, notes, inspections and tests, permits and the weather, each with its source. You add your narrative and sign it. Once signed it can&rsquo;t be changed; a correction is an amendment, and the company sees every version.</p>
       <div class="pbd-two">
         <div class="pb-field"><label for="drJob">Job number</label><input type="text" id="drJob" list="drJobList" maxlength="60" autocomplete="off" onchange="pbDlyPick()"><datalist id="drJobList"></datalist></div>
-        <div class="pb-field"><label for="drDate">Work date</label><input type="date" id="drDate" onchange="pbDlyPick()"></div>
+        <div class="pb-field"><label for="drDate">Report date</label><input type="date" id="drDate" onchange="pbDlyPick()"></div>
       </div>
       <p id="drStatus" class="pb-rpt-status" role="status"></p>
+      <div class="dx-tabs" id="dxTabs" role="tablist" aria-label="Daily report" hidden><!-- feat_dailyx: Notes / Report -->
+        <button type="button" role="tab" class="dx-tabb" id="dxTabNotes" aria-selected="true" aria-controls="drDiary" onclick="pbDxTab('notes')" onkeydown="pbDxTabKey(event)">Notes <span class="dx-tabn" id="dxTabNotesN"></span></button>
+        <button type="button" role="tab" class="dx-tabb" id="dxTabReport" aria-selected="false" aria-controls="drBody" tabindex="-1" onclick="pbDxTab('report')" onkeydown="pbDxTabKey(event)">Report</button>
+      </div>
+      <div id="drDiary" class="dx-diary" role="tabpanel" aria-labelledby="dxTabNotes" hidden><!-- feat_dailyx: the narrative and the notes, on top -->
+        <div class="pb-field dx-narr"><label for="drNarrative">Narrative of the day</label><textarea id="drNarrative" rows="3" maxlength="20000" oninput="pbDlyDraftSoon();pbDxGrow(this)" placeholder="What was done, where, problems and delays, visitors, instructions given"></textarea></div>
+        <section class="pbd-card dx-notes" id="dxNotes" aria-labelledby="dxNotesH"><h3 class="pbd-h3" id="dxNotesH">Notes <span class="dp-n" id="dxNotesN"></span></h3>
+          <div class="dx-noteadd"><label class="pb-sr" for="dxNoteIn">New note</label><textarea id="dxNoteIn" rows="1" maxlength="1000" placeholder="Quick note" oninput="pbDxGrow(this)"></textarea><button type="button" class="pb-btn secondary small" id="dxNoteAdd" onclick="pbDxNoteAdd()">Add Note</button></div>
+          <div id="dxNoteRemW"></div>
+          <p class="pb-rpt-status" id="dxNoteMsg" role="status"></p>
+          <ul class="dx-notelist" id="dxNoteList"></ul>
+        </section>
+      </div>
       <div id="drBody"></div>
       <div id="drPlus" class="dp-wrap" hidden></div><!-- feat_dailyplus -->
       <div id="drAttachWrap" class="da-wrap" hidden></div><!-- feat_dailyattach -->
       <div id="drSignWrap" class="pbd-card pbd-signwrap" hidden>
-        <div class="pb-field"><label for="drNarrative">Your narrative of the day</label><textarea id="drNarrative" rows="6" maxlength="20000" oninput="pbDlyDraftSoon()" placeholder="What was done, where, problems and delays, visitors, instructions given, anything that could matter later"></textarea></div>
         <div class="pb-field"><label for="drName">Sign: type your full name</label><input type="text" id="drName" maxlength="120" autocomplete="name" oninput="pbDlyDraftSoon()"></div>
         <p class="pbd-dim">Drawn signature (optional)</p>
         <canvas id="drSig" class="pbd-sig" width="600" height="180" aria-label="Signature pad: draw with a finger (optional)"></canvas>
         <div class="pb-btn-row"><button type="button" class="pb-btn ghost small" id="drSigClear" onclick="pbDlySigClear()">Clear Signature</button></div>
         <p id="drSignStatus" class="pb-rpt-status" role="status"></p>
-        <div class="pb-btn-wrap"><button type="button" class="pb-btn" id="drSignBtn" onclick="pbDlySign()">Sign Report</button></div>
+        <div class="pb-btn-wrap dx-signbtns"><button type="button" class="pb-btn" id="drSignBtn" onclick="pbDlySign()">Sign Report</button><button type="button" class="pb-btn ghost" id="drSaveLater" onclick="pbDxSaveLater()">Save for Later</button></div>
       </div>
     </div>
   </div>
@@ -9710,7 +9824,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.64 · 2026-10-29'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.65 · 2026-10-29'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -35650,9 +35764,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     v.extra.forEach(x => rows.push([pbProdCatName(x.key) + ' (not in plan)', pbProdQtyText(x.done, x.unit), 'Not planned', '', pbProdQtyText(x.today), pbProdQtyText(x.week)]));
     v.categories.forEach(c => c.otherUnits.forEach(o => rows.push([c.name + ' (in ' + (o.unit || 'no unit') + ')', pbProdQtyText(o.done, o.unit), 'Unit differs', '', pbProdQtyText(o.today), pbProdQtyText(o.week)])));
     { const C = Array.isArray(D.cats) ? D.cats.filter(r => r && typeof r.key === 'string') : [], sum = (k, f) => C.filter(r => r.key === k).reduce((s, r) => s + (Number(r[f]) || 0), 0); // feat_equip
-      const pcs = Array.from(new Set(C.filter(r => /^_eq_/.test(r.key)).map(r => r.key)));
-      if (sum(PB_ROLES_EQ_KEY, 'done')) rows.push(['Equipment hours', pbProdQtyText(sum(PB_ROLES_EQ_KEY, 'done'), 'h'), '', '', pbProdQtyText(sum(PB_ROLES_EQ_KEY, 'today')), pbProdQtyText(sum(PB_ROLES_EQ_KEY, 'week'))]);
-      pcs.forEach(k => { const q = D.plan && Array.isArray(D.plan.equipment) ? D.plan.equipment.find(e => e && '_' + e.key === k) : null; rows.push(['  ' + pbProdCatName(k, D.plan) + (q && q.cost_code ? ' · ' + q.cost_code : ''), pbProdQtyText(sum(k, 'done'), 'h'), '', '', pbProdQtyText(sum(k, 'today')), pbProdQtyText(sum(k, 'week'))]); }); }
+      const X = window.pbCeDailyEq(D), xs = (k, f) => X.filter(x => x.plan_key && '_' + x.plan_key === k).reduce((s, x) => s + x[f], 0), xt = (f) => X.reduce((s, x) => s + x[f], 0), tt = (f) => sum(PB_ROLES_EQ_KEY, f) + xt(f); // feat_coequip: + the daily reports' hours
+      const pcs = Array.from(new Set(C.filter(r => /^_eq_/.test(r.key)).map(r => r.key).concat(X.filter(x => x.plan_key).map(x => '_' + x.plan_key))));
+      if (tt('done')) rows.push(['Equipment hours', pbProdQtyText(tt('done'), 'h'), '', '', pbProdQtyText(tt('today')), pbProdQtyText(tt('week'))]);
+      pcs.forEach(k => { const q = D.plan && Array.isArray(D.plan.equipment) ? D.plan.equipment.find(e => e && '_' + e.key === k) : null, x = !q ? X.find(y => y.plan_key && '_' + y.plan_key === k) : null; rows.push(['  ' + (x ? window.pbCeXName(x) : pbProdCatName(k, D.plan)) + (q && q.cost_code ? ' · ' + q.cost_code : x && x.cost_code ? ' · ' + x.cost_code : ''), pbProdQtyText(sum(k, 'done') + xs(k, 'done'), 'h'), '', '', pbProdQtyText(sum(k, 'today') + xs(k, 'today')), pbProdQtyText(sum(k, 'week') + xs(k, 'week'))]); });
+      X.filter(x => !x.plan_key).forEach(x => rows.push(['  ' + window.pbCeXName(x) + (x.cost_code ? ' · ' + x.cost_code : ''), pbProdQtyText(x.done, 'h'), '', '', pbProdQtyText(x.today), pbProdQtyText(x.week)])); }
     if (v.hoursUsed) rows.push(['Crew hours', pbProdQtyText(v.hoursUsed, 'h'), v.budgetHours ? pbProdQtyText(v.budgetHours, 'h') : 'No budget', v.budgetHours ? pbProdPctText(v.hoursUsed / v.budgetHours) : '', pbProdQtyText(v.hoursToday), '']);
     const days = Array.isArray(D.days) ? D.days.filter(x => x && x.date) : [];
     const dayKeys = Array.from(new Set(days.map(x => x.key))).filter(k => k !== PB_PROD_HOURS_KEY && !/^_(eq|ei|ed)_/.test(String(k))); // feat_equip: the pieces are under By category
@@ -47661,6 +47777,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     b.style.display = 'none'; // feat_navfix: in Settings now
     const s = document.getElementById('settingsCompanySection'); if (s && s.hidden === mgr) s.hidden = !mgr;
     if (mgr && typeof window.pbCoTzLoad === 'function') { try { window.pbCoTzLoad(); } catch (e) {} } // feat_cotz
+    if (typeof window.pbCeSettingsLoad === 'function') { try { window.pbCeSettingsLoad(mgr); } catch (e) {} } // feat_coequip
   }
   try {
     const mo = new MutationObserver(() => pbBrShowRow());
@@ -50215,7 +50332,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return co;
   }
   // the zone was learned or changed: an open, unsigned daily pulls its records in again (same job and date)
-  function pbFmTzChanged() { try { if (pbCurrentScreen === 'dailyReport' && pbDlyView.job && pbDlyView.snap && !pbDlyView.building) setTimeout(() => { try { window.pbDlyRebuild(); } catch (e) {} }, 0); } catch (e) {} }
+  function pbFmTzChanged() { try { if (pbCurrentScreen === 'dailyReport' && pbDlyView.job) { const job = pbDlyView.job, date = pbDlyView.date, go = (n) => { if (pbDlyView.job !== job || pbDlyView.date !== date || n > 200) return; if (pbDlyView.building) { setTimeout(() => go(n + 1), 300); return; } if (pbDlyView.snap) window.pbDlyRebuild(); }; setTimeout(() => go(0), 0); } } catch (e) {} } /* feat_dailyx: also when the zone is learned while the records are being pulled in (the Notes tab opens first) */
 
   // --- 1. the foreman's entries on his crew's runs, for the daily (the rules pbRolesDailyCrew counts their hours by) ---
   function pbFmCrewRunsFor(job, date, co) {
@@ -50316,7 +50433,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   window.pbFmCrewTypeChanged = function() { const t = document.getElementById('crewLogType'), w = document.getElementById('crewLogRentalWrap'), c = document.getElementById('crewLogRental'), cat = document.getElementById('crewLogCategory'); if (!t || !w) return; const on = t.value === 'Equipment'; w.hidden = !on; if (!on && c) c.checked = false; if (on && cat && cat.value === 'Excavation') cat.value = 'General/Other'; /* feat_foreman 18 */ };
   window.pbFmDaRental = function(on) { if (pbDa.form) { pbDa.form.rental = !!on; pbDaFormKeep(); } };
-  window.pbFmDpRental = function(on) { pbDp.typed.rental = !!on; };
+  window.pbFmDpRental = function(on) { pbDp.typed.rental = !!on; try { pbCeSugPaint(); } catch (e) {} }; /* feat_coequip: a rental is typed, so no list while it's ticked */
 
   // --- 3. the own run's Enter Production follows the job plan (pb_prod_job_plan_crew, the plan My crew now uses) ---
   const PB_FM_OWN = [['fpExcavated', 'excavation', 'Feet excavated'], ['fpPipeInstalled', 'pipe', 'Feet of pipe installed'], ['fpBackfill', 'backfill', 'Feet of backfill completed'], ['fpRestoration', 'restoration', 'Feet of restoration completed'], ['fpDemo', 'demo', 'Feet of demo completed'], ['fpAppurtenances', 'structures', 'Number of appurtenances']];
@@ -50453,15 +50570,19 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     (runArchive || []).filter(e => e && e.kind === 'run').slice(-30).reverse().forEach(e => add(e.jobNumber, e.jobsite));
     return out;
   }
-  window.pbOpenDailyReport = async function() {
+  window.pbOpenDailyReport = async function(opts) { /* feat_dailyx: opts { job, date } */
+    opts = opts && typeof opts === 'object' && !(typeof Event !== 'undefined' && opts instanceof Event) ? opts : {};
     if (!pbCanOpen('dailyReport', { explain: true })) return;
     const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared') { pbAlert('Sign in with your foreman account to write daily reports.', 'Daily Report'); return; }
     const a = await pbDlyAccFresh(uid);
     if (!a.foreman) { pbAlert('Daily reports are written and signed by foremen. The company reads them under Inspections & tests.', 'Foremen Only'); return; }
     const st = await pbDlyLoad(uid); if (!st) { pbAlert('This phone’s daily reports couldn’t be read, so nothing will be overwritten. Try again.', 'Daily Report'); return; }
     const today = await pbFmOpenDay(uid), jobs = pbDlyJobsToday(uid, today); /* feat_foreman 2 */
-    pbDlyView = { job: jobs[0] ? jobs[0].n : '', jobsite: jobs[0] ? jobs[0].s : '', date: today, snap: null, building: false, msg: '', weather: null, wMsg: '', wBusy: false, server: null, sig: null, amend: null };
-    pbDlyEl('drJob').value = pbDlyView.job; pbDlyEl('drDate').value = today; pbDlyEl('drDate').max = [today, pbTkToday(), pbFmToday()].sort().pop();
+    const cj = typeof window.pbCurJobGet === 'function' ? window.pbCurJobGet() : null; if (cj && cj.job_number && !jobs.some(j => pbDlyKey(j.n) === pbDlyKey(cj.job_number))) jobs.unshift({ n: cj.job_number, s: cj.name || '' }); /* feat_dailyx: the current job first */
+    const pick = opts.job ? (jobs.find(j => pbDlyKey(j.n) === pbDlyKey(opts.job)) || { n: String(opts.job).trim(), s: '' }) : cj && cj.job_number ? (jobs.find(j => pbDlyKey(j.n) === pbDlyKey(cj.job_number)) || jobs[0]) : jobs[0], day = opts.date && opts.date <= [today, pbTkToday(), pbFmToday()].sort().pop() ? opts.date : today;
+    await pbDxNarrFlush(); pbDx.tab = opts.tab === 'report' ? 'report' : 'notes'; pbDx.edit = null; pbDx.locOpen = false;
+    pbDlyView = { job: pick ? pick.n : '', jobsite: pick ? pick.s : '', date: day, snap: null, building: false, msg: '', weather: null, wMsg: '', wBusy: false, server: null, sig: null, amend: null };
+    pbDlyEl('drJob').value = pbDlyView.job; pbDlyEl('drDate').value = pbDlyView.date; /* feat_dailyx */ pbDlyEl('drDate').max = [today, pbTkToday(), pbFmToday()].sort().pop();
     pbDlyEl('drJobList').innerHTML = jobs.map(j => '<option value="' + escapeHtml(j.n) + '">' + escapeHtml(j.s) + '</option>').join('');
     pbGoto('dailyReport');
     pbDlySigInit();
@@ -50470,6 +50591,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   };
   function pbDlyMineFor(job, date) { const k = pbDlyKey(job); return pbDly.st ? pbDly.st.reports.filter(r => pbDlyKey(r.jobNumber) === k && r.workDate === date).sort((a, b) => (a.signedAt || 0) - (b.signedAt || 0)) : []; }
   window.pbDlyPick = async function() {
+    await pbDxNarrFlush(); /* feat_dailyx: what was typed for the day being left is kept first */
     pbDlyView.job = pbDlyEl('drJob').value.trim(); pbDlyView.date = pbDlyEl('drDate').value || pbFmToday();
     const j = pbDlyJobsToday(pbArchiveOwnerUid, pbDlyView.date).find(x => pbDlyKey(x.n) === pbDlyKey(pbDlyView.job)); pbDlyView.jobsite = j ? j.s : '';
     pbDlyView.snap = null; pbDlyView.weather = null; pbDlyView.wMsg = ''; pbDlyView.server = null; pbDlyView.amend = null; pbDlyView.needLoc = false; pbDlyView.wxConfirmed = false; pbDlyView.changed = false; pbDlyView.wNext = null;
@@ -50711,15 +50833,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   async function pbDlyDraftRead(uid) { try { const o = JSON.parse((await pbGetFor(uid, PB_DLY_DRAFT)) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
   async function pbDlyDraftSave() {
     const uid = pbArchiveOwnerUid, V = pbDlyView; if (!uid || !V.job || !V.date) return;
+    if (pbDx.narrK !== pbDlyKey(V.job) + '|' + V.date) return true; /* feat_dailyx: the box holds another day's narrative (or none yet): nothing is written for this one */
     const o = await pbDlyDraftRead(uid), k = pbDlyKey(V.job) + '|' + V.date;
     const narr = (pbDlyEl('drNarrative') || {}).value || '', name = (pbDlyEl('drName') || {}).value || '', reason = (pbDlyEl('drAmendReason') || {}).value || '';
     if (!narr.trim() && !name.trim() && !reason.trim()) { if (o[k]) { o[k] = null; await pbSetFor(uid, PB_DLY_DRAFT, JSON.stringify(o)); } return; }
     o[k] = { narr: narr.slice(0, 20000), name: name.slice(0, 120), reason: reason.slice(0, 1000), at: Date.now() };
     Object.keys(o).forEach(x => { if (!o[x] || o[x].at < Date.now() - 30 * 86400000) o[x] = undefined; });
-    await pbSetFor(uid, PB_DLY_DRAFT, JSON.stringify(o));
+    return pbSetFor(uid, PB_DLY_DRAFT, JSON.stringify(o)); /* feat_dailyx: Save for Later checks it */
   }
   async function pbDlyDraftRestore() {
     const uid = pbArchiveOwnerUid, V = pbDlyView, o = await pbDlyDraftRead(uid), d = o[pbDlyKey(V.job) + '|' + V.date];
+    pbDx.narrK = pbDlyKey(V.job) + '|' + V.date; /* feat_dailyx: from here the box is this day's */
     if (!d) return false;
     const n = pbDlyEl('drNarrative'), m = pbDlyEl('drName'), r = pbDlyEl('drAmendReason');
     if (n && !n.value.trim() && d.narr) n.value = d.narr; if (m && !m.value.trim() && d.name) m.value = d.name; if (r && !r.value.trim() && d.reason) r.value = d.reason;
@@ -50749,9 +50873,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbDlyView.wBusy = false;
     const d = r && r.data;
     if (d && d.ok && d.weather) {
-      pbDlyView.weather = d.weather; pbDlyView.wMsg = ''; pbDlyView.location = d.location || pbDlyView.location;
+      pbDlyView.weather = d.weather; pbDlyView.wMsg = ''; pbDlyView.needLoc = false; /* feat_dailyx */ pbDlyView.location = d.location || pbDlyView.location;
       if (pbDly.st) { pbDly.st.weather[pbDlyKey(pbDlyView.job) + '|' + pbDlyView.date] = d.weather; pbDlySave(uid); }
     } else if (d && (d.code === 'pb:need_location' || d.code === 'pb:need_location_office')) { pbDlyView.wMsg = ''; pbDlyView.needLoc = d.code; }
+    else if (d && d.code === 'pb:location_pinned') pbDlyView.wMsg = 'The office pinned this job’s exact spot for the weather. Ask them to change it.'; /* feat_dailyx */
     else pbDlyView.wMsg = (d && d.message) || (r && r.error && /not found|404|Failed to send|FunctionsFetchError|FunctionsHttpError/i.test(String(r.error.message || r.error.name || '')) ? 'The weather service isn’t set up on the company server yet.' : 'Weather is not available right now.') + ' The report says so if it is signed without weather.';
     pbDlyView.wNext = d && d.next_at ? d.next_at : null;
     pbDlyRender();
@@ -50777,7 +50902,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---- render ----
-  function pbDlySecHtml(id, title, src, inner) { return '<section class="pbd-card pbd-sec" id="' + id + '"><h3 class="pbd-h3">' + escapeHtml(title) + '</h3>' + inner + pbDaSrcHtml(id, src) /* feat_dailyattach */ + '</section>'; }
+  function pbDlySecHtml(id, title, src, inner) { /* feat_dailyx: a section folds to its title row with a short count */
+    const m = /^(.*) \((\d+)\)$/.exec(title), t = id === 'drPermits' ? 'Confined Space Permits' : m ? m[1] : title, n = m ? m[2] : pbDxCount(id);
+    const more = id === 'drRuns' ? pbDxCrewRunsHtml() : id === 'drPermits' ? pbDxCrewPermitsHtml() : '';
+    return '<section class="pbd-card pbd-sec' + pbDxSecCls(id) + '" id="' + id + '">' + pbDxHead(id, id + 'H', t, id + 'N', n !== '' && n !== null && n !== undefined ? '· ' + n : '') + '<div class="dx-body" id="' + id + 'Body">' + inner + more + pbDaSrcHtml(id, src) /* feat_dailyattach */ + '</div></section>';
+  }
   function pbDlyQty(o) { return o ? (o.qty === null || o.qty === undefined ? '—' : o.qty) + ' ' + (o.unit || '') : '—'; }
   function pbDlyWeatherText(w) {
     const d = w && w.data; if (!d) return '';
@@ -50813,8 +50942,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!S) { body.innerHTML = h + (V.building ? '' : '<p class="pbd-dim">No records pulled in yet.</p>'); return; }
     // weather
     let wh = '';
-    if (V.weather && V.weather.data) wh = '<p id="drWeatherText">' + escapeHtml(pbDlyWeatherText(V.weather)) + '</p><p class="pbd-src" id="drWeatherLabel">' + escapeHtml(pbDlyWeatherLabel(V.weather)) + (V.location && V.location.source ? ' Job location: ' + escapeHtml({ geocoded: V.location.address || 'from the job’s city and state', pin: 'pinned by the office', device_once: 'a phone’s position taken once at the jobsite' }[V.location.source] || V.location.source) + '.' + (pbJcIsOsm(V.location) ? ' ' + PB_JC_OSM : '') : '') + '</p>';
-    else if (V.needLoc) wh = '<p id="drNeedLoc">This job has no city and state yet, so there’s no weather. The company account, a manager, a PM or a superintendent sets it in the job’s Project details.</p>'
+    if (V.weather && V.weather.data) wh = pbDxLocHtml(false) /* feat_dailyx */ + '<p id="drWeatherText">' + escapeHtml(pbDlyWeatherText(V.weather)) + '</p><p class="pbd-src" id="drWeatherLabel">' + escapeHtml(pbDlyWeatherLabel(V.weather)) + (V.location && V.location.source ? ' Job location: ' + escapeHtml({ geocoded: V.location.address || 'from the job’s city and state', pin: 'pinned by the office', device_once: 'a phone’s position taken once at the jobsite' }[V.location.source] || V.location.source) + '.' + (pbJcIsOsm(V.location) ? ' ' + PB_JC_OSM : '') : '') + '</p>';
+    else if (V.needLoc) wh = '<p id="drNeedLoc">This job has no city and state yet, so there’s no weather.</p>' + pbDxLocHtml(true) /* feat_dailyx: the foreman sets it */
       + (pbDlyAcc(pbArchiveOwnerUid).manager ? '<div class="pb-btn-row"><button type="button" class="pb-btn secondary small" id="drSetLocBtn" onclick="pbJcOpenDetails(' + escapeHtml(JSON.stringify(V.job)) + ')">Set City &amp; State</button></div>' : '');
     else wh = '<p class="pbd-dim" id="drWeatherNone">' + escapeHtml(V.wMsg || 'Not looked up yet.') + '</p>';
     wh += '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" id="drWeatherBtn" onclick="pbDlyWeather({})"' + (V.wBusy || (V.weather && V.weather.complete) ? ' disabled' : '') + '>' + (V.weather ? 'Update Weather' : V.needLoc ? 'Check Again' : 'Get Weather') + '</button></div>'
@@ -50823,10 +50952,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (V.weather && V.weather.data && !V.weather.complete) wh += '<label class="pbd-check" id="drWxConfirmWrap"><input type="checkbox" id="drWxConfirm"' + (V.wxConfirmed ? ' checked' : '') + ' onchange="pbDlyWxConfirm(this.checked)"> Work for the day is over: use the weather observed so far (through ' + escapeHtml(pbDlyTimeIn(V.weather.data.last_obs)) + ')</label>';
     h += pbDlySecHtml('drWeather', 'Weather', 'National Weather Service observations for the job’s location (api.weather.gov), through the company server.', wh);
     const R = S.runs;
-    h += pbDlySecHtml('drRuns', 'Runs and production (' + R.items.length + ')', R.source, R.items.length ? '<ul class="pbd-list">' + R.items.map(r => '<li><strong>' + escapeHtml(r.label) + '</strong> · ' + escapeHtml(r.status) + (r.run_ft !== null ? ' · run ' + r.run_ft + ' ft' : '') + (r.laid_ft_session !== null ? ' · laid this session ' + r.laid_ft_session + ' ft' : '')
+    h += pbDlySecHtml('drRuns', 'Runs and production (' + (R.items.length + pbDxCrewDay().runs.length) + ')', R.source, R.items.length ? '<ul class="pbd-list">' + R.items.map(r => '<li><strong>' + escapeHtml(r.label) + '</strong> · ' + escapeHtml(r.status) + (r.run_ft !== null ? ' · run ' + r.run_ft + ' ft' : '') + (r.laid_ft_session !== null ? ' · laid this session ' + r.laid_ft_session + ' ft' : '')
       + (Object.keys(r.production).length ? '<br><span class="pbd-dim">' + escapeHtml(Object.keys(r.production).map(k => (r.production[k].name || pbProdCatName(k, null)) + ' ' + pbDlyQty(r.production[k])).join(' · ')) + '</span>' : '<br><span class="pbd-dim">No production quantities entered on this run.</span>') + '</li>').join('') + '</ul>' : '<p class="pbd-dim" id="drNoRuns">No runs with this job number started on this day on this phone.</p>');
     const C = S.crew;
-    h += pbDlySecHtml('drCrew', 'Crew and equipment hours', C.source, (C.people.length || C.equipment.length) ? '<p>Laborer ' + C.totals.laborer_h + ' h · Operator ' + C.totals.operator_h + ' h · Equipment ' + C.totals.equipment_h + ' h' + (C.open_check_ins ? ' · <strong>' + C.open_check_ins + ' never checked out</strong>' : '') + '</p><ul class="pbd-list">' + C.people.concat(C.equipment).map(p => '<li>' + escapeHtml(p.name + ' (' + p.type + ')') + ' · ' + p.hours + ' h' + (p.open ? ' · still checked in' : '') + '</li>').join('') + '</ul>' : '<p class="pbd-dim">No one logged in the Crew & Equipment Log on these runs.</p>');
+    /* feat_dailyx: the Crew log's hours are in Crew today and Equipment on site (the PDF keeps its table) */
     const M = S.materials;
     h += pbDlySecHtml('drMat', 'Materials', M.source, (M.used.length || M.delivered.length) ? '<ul class="pbd-list">' + M.used.map(m => '<li>' + escapeHtml(m.what + ': ' + m.qty + ' ' + m.unit) + ' <span class="pbd-dim">(' + escapeHtml(m.basis) + ')</span></li>').join('') + M.delivered.map(t => '<li>Delivered: ' + escapeHtml(t.what + (t.qty !== null ? ' ' + t.qty + ' ' + t.unit : '') + (t.supplier ? ', ' + t.supplier : '') + (t.ticket_no ? ', ticket ' + t.ticket_no : '')) + '</li>').join('') + '</ul>' : '<p class="pbd-dim">No materials recorded for this day.</p>');
     const N = S.delays;
@@ -50836,14 +50965,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const I = S.inspections;
     h += pbDlySecHtml('drInsp', 'Inspections and tests (' + I.items.length + ')', I.source, I.items.length ? '<ul class="pbd-list">' + I.items.map(x => '<li><strong>' + escapeHtml(x.item) + '</strong> · ' + escapeHtml(pbDlyResName(x.result)) + ' · ' + escapeHtml(pbDlyTimeIn(x.at, x.tz)) + '<br><span class="pbd-dim">' + escapeHtml([x.where, x.tested_version ? 'tested item v' + x.tested_version : '', x.inspector + ', ' + x.agency, pbDaStateText(x.state) /* feat_dailyattach */].filter(Boolean).join(' · ')) + '</span>' + (x.tested_note ? '<br><span class="pbd-dim pbd-why">' + escapeHtml(x.tested_note) + '</span>' : '') + '</li>').join('') + '</ul>' : '<p class="pbd-dim">None checked off on this day.</p>');
     const P = S.permits;
-    h += pbDlySecHtml('drPermits', 'Permits (' + P.items.length + ')', P.source, P.items.length ? '<ul class="pbd-list">' + P.items.map(p => '<li><strong>' + escapeHtml(p.space || 'Confined space') + '</strong> · ' + escapeHtml(p.status) + ' · ' + p.air_tests + (p.air_tests === 1 ? ' air test' : ' air tests') + (p.air_outside ? ', ' + p.air_outside + ' OUTSIDE RANGE' : '') + (p.emergency_active ? ' · <strong>EMERGENCY IN PROGRESS</strong>' : '') + (p.emergencies ? ' · EMERGENCY declared ' + p.emergencies + 'x' : '') + '</li>').join('') + '</ul>' : '<p class="pbd-dim">None on this phone. Crew permits are under Attached reports.</p>')
+    h += pbDlySecHtml('drPermits', 'Permits (' + (P.items.length + pbDxCrewDay().permits.length) + ')', P.source, P.items.length ? '<ul class="pbd-list">' + P.items.map(p => '<li><strong>' + escapeHtml(p.space || 'Confined space') + '</strong> · ' + escapeHtml(p.status) + ' · ' + p.air_tests + (p.air_tests === 1 ? ' air test' : ' air tests') + (p.air_outside ? ', ' + p.air_outside + ' OUTSIDE RANGE' : '') + (p.emergency_active ? ' · <strong>EMERGENCY IN PROGRESS</strong>' : '') + (p.emergencies ? ' · EMERGENCY declared ' + p.emergencies + 'x' : '') + '</li>').join('') + '</ul>' : (pbDxCrewDay().permits.length ? '' : '<p class="pbd-dim">None of yours on this day.</p>'))
       + (pbDlyPermitAlerts(P.items).length ? '<div class="pb-warn photo" id="drPermitAlert"><strong>Needs attention</strong>' + pbDlyPermitAlerts(P.items).map(escapeHtml).join('<br>') + '</div>' : '');
     const T = S.talks;
     h += pbDlySecHtml('drTalks', 'Toolbox talks', T.source, T.items.length ? '<ul class="pbd-list">' + T.items.map(t => '<li>' + escapeHtml(t.text) + (t.where ? ' <span class="pbd-dim">(' + escapeHtml(t.where) + ')</span>' : '') + '</li>').join('') + '</ul>' : '<p class="pbd-dim">' + (T.available ? 'None recorded.' : 'Not available.') + '</p>');
     const OP = S.other_prod;
     if (OP) h += pbDlySecHtml('drOtherProd', 'Other crews’ production (' + (OP.entries || []).length + ')', OP.source, (OP.entries || []).length ? '<ul class="pbd-list">' + OP.entries.map(e => '<li>' + escapeHtml(e.entered_by + (e.role ? ' (' + e.role + ')' : '')) + ': ' + escapeHtml(e.items.map(x => pbProdCatName(x.key, null) + ' ' + (x.qty === null ? '—' : x.qty) + ' ' + x.unit).join(' · ') || 'no quantities') + '</li>').join('') + '</ul>' : '<p class="pbd-dim">' + (OP.available ? 'None synced for this job and day.' : 'Not loaded.') + '</p>');
     h += '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" id="drRebuild" onclick="pbDlyRebuild()">Pull In Again</button></div>';
-    body.innerHTML = h;
+    pbSetHtml(body, h); /* feat_dailyx: a redraw never takes the field he is typing in */
     const sw = pbDlyEl('drSignWrap'); if (sw) sw.hidden = false;
     try { pbDpRender(); } catch (e) { console.error(e); } // feat_dailyplus
     try { pbDaRender(); } catch (e) { console.error(e); } // feat_dailyattach
@@ -50861,13 +50990,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!V.snap || V.building) { say('Wait for the day’s records to be pulled in.'); return; }
     if (pbDlyMineFor(V.job, V.date).some(r => r.state !== 'discarded' && r.state !== 'replaced') && !V.amend) { say('This day already has a signed report. Add an amendment instead.'); return; }
     const name = pbDlyEl('drName').value.trim().replace(/\s+/g, ' '), narrative = pbDlyEl('drNarrative').value.trim();
-    if (name.length < 2) { say('Type your full name to sign.'); return; }
-    if (!narrative) { say('Write your narrative of the day (what was done, problems, anything that matters).'); return; }
+    if (name.length < 2) { window.pbDxTab('report'); say('Type your full name to sign.'); return; }
+    if (!narrative) { say('Write your narrative of the day (what was done, problems, anything that matters).'); window.pbDxTab('notes'); { const m = pbDlyEl('dxNoteMsg'); if (m) m.textContent = 'Write your narrative of the day before signing.'; const n = pbDlyEl('drNarrative'); if (n) try { n.focus(); } catch (e) {} } return; } /* feat_dailyx */
     { const dpw = pbDpBlock(); if (dpw) { say(dpw); return; } } // feat_dailyplus
     { const daw = pbDaBlock(); if (daw) { say(daw); return; } } // feat_dailyattach
     let reason = null; if (V.amend) { reason = ((pbDlyEl('drAmendReason') || {}).value || '').trim(); if (!reason) { say('Give the reason for the amendment.'); return; } }
     // Ruling (review S8): weather for a day that isn't over only with the foreman's explicit confirm.
-    if (V.weather && V.weather.data && !V.weather.complete && !V.wxConfirmed) { say('The weather covers the day only so far. Tick "Work for the day is over" under Weather to use it, or wait and update it.'); return; }
+    if (V.weather && V.weather.data && !V.weather.complete && !V.wxConfirmed) { pbDxTog('drWeather', true); say('The weather covers the day only so far. Tick "Work for the day is over" under Weather to use it, or wait and update it.'); return; }
     // Review S9 / ruling: pull everything in again right now and sign exactly what is shown; if it changed, show it first.
     say('Checking the day’s records…');
     try { if (window.__pbDaFresh) await window.__pbDaFresh(); } catch (e) {} /* feat_dailyattach S11: the crew's reports, fresh */
@@ -50907,6 +51036,751 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }, 'Sign This Report?', { no: 'Keep Editing', yes: 'Sign Report' });
   };
 
+  // ================= feat_coequip (owner, Oct 29): the company's equipment, and its hours on the daily report =================
+  // The list (pb_co_equip_list): every company member reads the active pieces, the company account / managers / PMs / supers
+  // also the retired ones, and edit it in Settings > Company. Kept on this phone per account (with its company) for no-signal
+  // days. Pieces on the daily report: { key (job plan piece) | co_id (company piece), name, unit_no, cost_code, rental, hours }.
+  const PB_CE_KEY = 'coEquipList';
+  let pbCe = { uid: null, co: null, list: null, canEdit: false, at: 0, busy: null, open: false, form: null, msg: '', msgKind: '', saving: false, mgr: false };
+  const pbCeName = (q) => q ? String(q.name || 'Equipment') + (q.unit_no ? ' #' + q.unit_no : '') : 'Equipment';
+  const pbCeCo = (uid) => { try { return pbDlyCo(uid); } catch (e) { return null; } };
+  const pbCeWhy = (r) => { const d = r && r.data; return (d && d.code) || (/pb:[a-z_]+/.exec(String((r && r.error && r.error.message) || '')) || [])[0] || ''; };
+  // the list for this account and company (null: not known yet)
+  function pbCeFor(uid) { return pbCe.uid === uid && pbCe.list && (!pbCe.co || !pbCeCo(uid) || pbCe.co === pbCeCo(uid)) ? pbCe.list : null; }
+  const pbCeActive = (uid) => { const L = pbCeFor(uid); return L ? L.filter(q => q && q.id && !q.retired) : null; };
+  async function pbCeLoad(uid, force) {
+    if (!uid || uid === 'shared') return null;
+    if (pbCe.uid !== uid) pbCe = { uid, co: null, list: null, canEdit: false, at: 0, busy: null, open: false, form: null, msg: '', msgKind: '', saving: false, mgr: false };
+    const S = pbCe;
+    if (!S.list) { try { const o = JSON.parse((await pbGetFor(uid, PB_CE_KEY)) || 'null'); if (o && Array.isArray(o.pieces) && pbCe === S && !S.list) { S.list = o.pieces.filter(q => q && q.id && q.name); S.co = o.co || null; S.canEdit = !!o.can_edit; } } catch (e) {} }
+    if (S.busy) return S.busy;
+    if (!force && S.at && Date.now() - S.at < 600000) return S.list;
+    if (!(sbClient && typeof sbClient.rpc === 'function' && sbUser && sbUser.id === uid && navigator.onLine !== false)) return S.list;
+    S.busy = (async () => {
+      try {
+        const r = await pbPermitRpc('pb_co_equip_list', { p_expect_uid: uid }, 20000);
+        if (pbCe !== S || !r || r.error || !r.data || r.data.ok !== true || !Array.isArray(r.data.pieces)) return S.list;
+        S.list = r.data.pieces.filter(q => q && q.id && q.name).map(q => ({ id: String(q.id), name: pbDpCut(String(q.name), 80), unit_no: q.unit_no ? pbDpCut(String(q.unit_no), 40) : null, cost_code: q.cost_code ? pbDpCut(String(q.cost_code), 60) : null, retired: !!q.retired, version: q.version || 1 }));
+        S.canEdit = !!r.data.can_edit; S.at = Date.now(); S.co = pbCeCo(uid);
+        await pbSetFor(uid, PB_CE_KEY, JSON.stringify({ at: S.at, co: S.co, can_edit: S.canEdit, pieces: S.list.filter(q => !q.retired || S.canEdit) }));
+        return S.list;
+      } finally { if (pbCe === S) S.busy = null; }
+    })();
+    return S.busy;
+  }
+  // ---- Settings > Company > Company equipment ----
+  const pbCeEl = (id) => document.getElementById(id);
+  window.pbCeSettingsLoad = async function(mgr) {
+    const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared') return;
+    if (pbCe.uid !== uid) await pbCeLoad(uid).catch(() => null);
+    pbCe.mgr = !!mgr; if (!mgr) { window.pbCeSettingsRender(); return; }
+    if (!(await pbProdIsManager(uid).catch(() => false))) { pbCe.mgr = false; window.pbCeSettingsRender(); return; }
+    window.pbCeSettingsRender();
+    await pbCeLoad(uid).catch(() => null);
+    window.pbCeSettingsRender();
+  };
+  window.pbCeSettingsRender = function() {
+    const w = pbCeEl('settingsCoEquip'); if (!w) return;
+    const S = pbCe, L = S.uid === pbArchiveOwnerUid && S.mgr && S.canEdit ? pbCeFor(S.uid) : null;
+    if (!L) { if (!w.hidden) w.hidden = true; pbSetHtml(w, ''); return; }
+    if (w.hidden) w.hidden = false;
+    const act = L.filter(q => !q.retired), ret = L.filter(q => q.retired), msg = S.msg ? '<p class="pb-help' + (S.msgKind === 'err' ? ' pb-err' : '') + '" id="ceMsg" role="status">' + escapeHtml(S.msg) + '</p>' : '';
+    if (!S.open) {
+      pbSetHtml(w, '<button type="button" class="pbx-namerow" id="settingsCoEquipRow" aria-expanded="false" onclick="pbCeOpen(true)"><span class="pbx-namerow-k">Company equipment</span><span class="pbx-namerow-v" id="settingsCoEquipShown">' + escapeHtml(act.length ? pbDpPieces(act.length) : 'None yet') + '</span><span class="pbx-namerow-a">Edit</span></button>' + msg);
+      return;
+    }
+    const F = S.form || { id: null, name: '', unit: '', cc: '' }, ed = !!F.id, row = (q, i, on) => '<li class="ce-row" id="ceRow_' + escapeHtml(q.id) + '"><span class="ce-tx"><span class="ce-nm">' + escapeHtml(pbCeName(q)) + '</span>' + (q.cost_code ? '<span class="ce-cc">' + escapeHtml(q.cost_code) + '</span>' : '') + '</span>'
+      + (on ? '<button type="button" class="pb-btn ghost small" id="ceEd_' + i + '" onclick="pbCeEdit(' + pbDpJs(q.id) + ')"' + (S.saving ? ' disabled' : '') + '>Edit</button><button type="button" class="pb-btn ghost small" id="ceRt_' + i + '" onclick="pbCeRetire(' + pbDpJs(q.id) + ',true)"' + (S.saving ? ' disabled' : '') + '>Retire</button>'
+        : '<button type="button" class="pb-btn ghost small" id="ceBk_' + i + '" onclick="pbCeRetire(' + pbDpJs(q.id) + ',false)"' + (S.saving ? ' disabled' : '') + '>Return</button>') + '</li>';
+    const h = '<div class="pbx-name-edit ce-edit" id="ceEdit"><p class="ce-h" id="ceHead">Company equipment <span class="dp-n">' + escapeHtml(act.length ? pbDpPieces(act.length) : 'none yet') + '</span></p>'
+      + (act.length ? '<ul class="ce-list" id="ceList">' + act.map((q, i) => row(q, i, true)).join('') + '</ul>' : '')
+      + '<div class="ce-form" id="ceForm" role="group" aria-labelledby="ceFormH"><p class="ce-fh" id="ceFormH">' + escapeHtml(ed ? 'Change ' + pbCeName(L.find(q => q.id === F.id)) : 'Add a piece') + '</p>'
+      + '<div class="pb-field"><label for="ceName">Name</label><input type="text" id="ceName" maxlength="80" autocomplete="off" autocapitalize="words" enterkeyhint="done" placeholder="e.g. Excavator" value="' + escapeHtml(F.name) + '" oninput="pbCeIn(\'name\',this.value)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();pbCeSave()}"></div>'
+      + '<div class="ce-two"><div class="pb-field"><label for="ceUnit">Unit no.</label><input type="text" id="ceUnit" maxlength="40" autocomplete="off" value="' + escapeHtml(F.unit) + '" oninput="pbCeIn(\'unit\',this.value)"></div>'
+      + '<div class="pb-field"><label for="ceCode">Cost code</label><input type="text" id="ceCode" maxlength="60" autocomplete="off" value="' + escapeHtml(F.cc) + '" oninput="pbCeIn(\'cc\',this.value)"></div></div>'
+      + '<div class="pbx-btnrow"><button type="button" class="pb-btn secondary small" id="ceSave" onclick="pbCeSave()"' + (S.saving ? ' disabled' : '') + '>' + (S.saving ? 'Saving…' : ed ? 'Save' : 'Add') + '</button>' + (ed ? '<button type="button" class="pb-btn ghost small" id="ceCancel" onclick="pbCeEdit(null)">Cancel</button>' : '') + '</div></div>'
+      + msg
+      + (ret.length ? '<details class="ce-ret" id="ceRetired"' + (S.retOpen ? ' open' : '') + ' ontoggle="pbCeRetToggle(this.open)"><summary>Retired (' + ret.length + ')</summary><ul class="ce-list">' + ret.map((q, i) => row(q, i, false)).join('') + '</ul></details>' : '')
+      + '<div class="pbx-btnrow"><button type="button" class="pb-btn ghost small" id="ceDone" onclick="pbCeOpen(false)">Done</button></div></div>';
+    pbSetHtml(w, h);
+  };
+  window.pbCeOpen = function(on) { pbCe.open = !!on; pbCe.form = null; pbCe.msg = ''; window.pbCeSettingsRender(); const f = pbCeEl(on ? 'ceName' : 'settingsCoEquipRow'); if (f) try { f.focus({ preventScroll: !on }); } catch (e) {} if (on) pbCeLoad(pbArchiveOwnerUid, true).then(() => window.pbCeSettingsRender()).catch(() => {}); };
+  window.pbCeRetToggle = function(on) { pbCe.retOpen = !!on; };
+  window.pbCeIn = function(f, v) { if (!pbCe.form) pbCe.form = { id: null, name: '', unit: '', cc: '' }; pbCe.form[f] = String(v || ''); };
+  window.pbCeEdit = function(id) {
+    const q = id ? (pbCeFor(pbArchiveOwnerUid) || []).find(x => x.id === id) : null;
+    pbCe.form = q ? { id: q.id, version: q.version, name: q.name, unit: q.unit_no || '', cc: q.cost_code || '' } : null; pbCe.msg = '';
+    window.pbCeSettingsRender(); const f = pbCeEl('ceName'); if (f) try { f.focus(); if (q && f.scrollIntoView) f.scrollIntoView({ block: 'center' }); } catch (e) {}
+  };
+  const PB_CE_MSG = { 'pb:duplicate': 'There is already a piece with that name and unit number.', 'pb:bad_piece': 'Type the equipment’s name.', 'pb:changed': 'Someone else changed this piece just now. Check it and save again.',
+    'pb:not_found': 'That piece is no longer on the list.', 'pb:quota': 'The list is full (500 pieces). Retire pieces the company no longer has.', 'pb:not_company_account': 'Only the company account, managers, PMs and supers change the list.' };
+  async function pbCeAsk(fn, args) {
+    const uid = pbArchiveOwnerUid, S = pbCe;
+    if (!(sbClient && sbUser && sbUser.id === uid && navigator.onLine !== false && (await pbLiveSessionIs(uid)))) { S.msg = 'No signal. Nothing was changed; try again with signal.'; S.msgKind = 'err'; window.pbCeSettingsRender(); return null; }
+    S.saving = true; S.msg = ''; window.pbCeSettingsRender();
+    let r; try { r = await pbPermitRpc(fn, Object.assign({ p_expect_uid: uid }, args), 30000); } finally { if (pbCe === S) S.saving = false; }
+    if (pbCe !== S) return null;
+    const d = r && r.data;
+    if (d && d.ok === true) { S.at = 0; await pbCeLoad(uid, true).catch(() => null); return d; }
+    const c = pbCeWhy(r); S.msg = PB_CE_MSG[c] || 'Not saved. Nothing was changed; try again.'; S.msgKind = 'err';
+    if (c === 'pb:changed' || c === 'pb:not_found') { S.at = 0; await pbCeLoad(uid, true).catch(() => null); if (c === 'pb:changed' && d && d.piece && S.form) Object.assign(S.form, { version: d.piece.version }); }
+    window.pbCeSettingsRender(); return null;
+  }
+  window.pbCeSave = async function() {
+    const S = pbCe; if (S.saving) return;
+    const F = S.form || { id: null, name: '', unit: '', cc: '' };
+    ['name', 'unit', 'cc'].forEach(f => { const el = pbCeEl({ name: 'ceName', unit: 'ceUnit', cc: 'ceCode' }[f]); if (el) F[f] = el.value; });
+    const name = pbDpCut(String(F.name).trim().replace(/\s+/g, ' '), 80);
+    if (!name) { S.form = F; S.msg = PB_CE_MSG['pb:bad_piece']; S.msgKind = 'err'; window.pbCeSettingsRender(); const el = pbCeEl('ceName'); if (el) el.focus(); return; }
+    S.form = F;
+    const d = await pbCeAsk('pb_co_equip_save', { p_piece: { id: F.id || null, name, unit_no: String(F.unit || '').trim() || null, cost_code: String(F.cc || '').trim() || null }, p_expect_version: F.id ? (F.version || null) : null });
+    if (!d) return;
+    S.form = null; S.msg = (F.id ? 'Saved: ' : 'Added: ') + pbCeName(d.piece || { name }) + '.'; S.msgKind = 'ok';
+    window.pbCeSettingsRender(); const el = pbCeEl('ceName'); if (el) try { el.focus({ preventScroll: true }); } catch (e) {}
+  };
+  window.pbCeRetire = async function(id, on) {
+    const q = (pbCeFor(pbArchiveOwnerUid) || []).find(x => x.id === id); if (!q || pbCe.saving) return;
+    const d = await pbCeAsk('pb_co_equip_retire', { p_id: id, p_retired: !!on });
+    if (!d) return;
+    if (pbCe.form && pbCe.form.id === id) pbCe.form = null;
+    pbCe.msg = (on ? 'Retired: ' : 'Back in service: ') + pbCeName(q) + '.'; pbCe.msgKind = 'ok'; window.pbCeSettingsRender();
+  };
+  // ---- the daily report's equipment ----
+  // hours as typed -> { n } (null: blank) or { bad: true }
+  function pbCeHrs(v) { const s = String(v === null || v === undefined ? '' : v).trim().replace(',', '.'); if (!s) return { n: null }; if (!/^\d{0,2}(\.\d{0,2})?$/.test(s) || s === '.' || Number(s) > 24) return { bad: true }; return { n: Math.round(Number(s) * 100) / 100 }; }
+  const pbCeSum = (L) => Math.round((L || []).reduce((s, q) => s + (q && typeof q.hours === 'number' && isFinite(q.hours) ? q.hours : (pbCeHrs(q && q.hours).n || 0)), 0) * 100) / 100;
+  const pbCeHasH = (L) => (L || []).some(q => q && typeof q.hours === 'number' && isFinite(q.hours));
+  // "Excavator #4 8 h · Water truck (Rental) 4 h · Light tower" (a signed report's pieces)
+  const pbCeLine = (L) => (L || []).map(q => pbDpEqName(q) + (q.rental ? ' (Rental)' : '') + (typeof q.hours === 'number' && isFinite(q.hours) ? ' ' + pbDpH(q.hours) : '')).join(' · ');
+  // the text version of a daily report (the Reports page): the equipment and its hours, when the report has hours
+  function pbCeDailyText(S) {
+    const L = S && S.equipment_today && Array.isArray(S.equipment_today.pieces) ? S.equipment_today.pieces.filter(q => q && q.name) : [];
+    const C = S && S.crew_today && Array.isArray(S.crew_today.people) ? S.crew_today.people.filter(p => p && p.name) : [], N = S && Array.isArray(S.notes) ? S.notes.filter(x => x && x.text) : [];
+    let t = '';
+    if (S && S.narrative && (N.length || pbCeHasH(C) || pbCeHasH(L))) t += '\n\nNARRATIVE\n' + S.narrative;
+    if (N.length) t += '\n\nNOTES (' + N.length + ')\n' + N.map(x => '- ' + pbRptDt(Date.parse(x.at), S.tz ? { tz: S.tz } : {}) + ' ' + x.text).join('\n'); // feat_dailyx
+    if (pbCeHasH(C)) t += '\n\nCREW TODAY (' + C.length + ', ' + pbDpH(pbCeSum(C)) + ')\n' + C.map(p => '- ' + p.name + ': ' + (typeof p.hours === 'number' && isFinite(p.hours) ? pbDpH(p.hours) : 'no hours')).join('\n');
+    if (pbCeHasH(L)) t += '\n\nEQUIPMENT ON SITE (' + L.length + ', ' + pbDpH(pbCeSum(L)) + ')\n' + L.map(q => '- ' + pbDpEqName(q) + (q.rental ? ' (Rental)' : '') + (q.cost_code ? ' · ' + q.cost_code : '') + ': ' + (typeof q.hours === 'number' && isFinite(q.hours) ? pbDpH(q.hours) : 'no hours')).join('\n');
+    return t;
+  }
+  window.pbCeDailyText = pbCeDailyText;
+  // the job page: the daily reports' equipment hours not already on production entries (pb_prod_job_detail.daily_eq)
+  window.pbCeDailyEq = function(D) { return (D && Array.isArray(D.daily_eq) ? D.daily_eq : []).filter(x => x && typeof x.id === 'string' && Number(x.done) > 0).map(x => ({ id: x.id, plan_key: typeof x.plan_key === 'string' && /^eq_[a-z0-9]/.test(x.plan_key) ? x.plan_key : null, name: String(x.name || 'Equipment'), unit_no: x.unit_no || null, cost_code: x.cost_code || null, done: Number(x.done) || 0, today: Number(x.today) || 0, week: Number(x.week) || 0 })); };
+  window.pbCeXName = (x) => pbCeName(x);
+  // the Equipment on site card: the type-ahead list and the hours boxes, painted without touching the field being typed in
+  function pbCeShown(d) {
+    if (pbDp.typed.rental) return [];
+    const t = pbDpNk(pbDp.typed.equip).replace(/#/g, ' ').split(' ').filter(Boolean), all = pbDpEqSugg(d);
+    return (t.length ? all.filter(q => { const s = pbDpNk([q.name, q.unit_no, q.cost_code].filter(Boolean).join(' ')).replace(/#/g, ' '); return t.every(w => s.includes(w)); }) : all).slice(0, 12);
+  }
+  function pbCeSugHtml(d) {
+    const es = pbCeShown(d);
+    return es.length ? '<div class="dp-sug" id="dpEqSug" role="group" aria-label="Add equipment">' + es.map((q, i) => '<button type="button" class="dp-sugb" id="dpEqSug_' + i + '" onclick="pbDpAddSugg(\'equip\',' + i + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>' + escapeHtml(pbDpEqName(q) + (q.rental ? ' · Rental' : '')) + '</button>').join('') + '</div>' : '';
+  }
+  function pbCeSugPaint() { const w = pbDlyEl('dpEqSugW'), d = pbDpDraft(); if (w && d) pbSetHtml(w, pbCeSugHtml(d)); }
+  const pbCeHead = (d) => { const m = d.equip.length, s = Math.round(d.equip.reduce((t, q) => t + (pbCeHrs(pbDxHv(q, true)).n || 0), 0) * 100) / 100; return '· ' + (m ? pbDpPieces(m) + (s > 0 ? ' · ' + pbDpH(s) : '') : 'none listed'); };
+  function pbCeRow(q, i) {
+    const nm = pbDpEqName(q), v = pbDxHv(q, true); /* feat_dailyx: the Crew log's hours until he types */
+    return '<li class="dp-item dp-eqrow" id="dpEq_' + i + '"><span class="dp-eqtx"><span class="dp-nm">' + escapeHtml(nm) + '</span>' + (q.rental ? '<span class="dp-sub">Rental</span>' : '') + '</span>'
+      + '<span class="dp-eqhw"><input type="text" class="dp-eqh" id="dpEqH_' + i + '" inputmode="decimal" autocomplete="off" maxlength="5" enterkeyhint="done" placeholder="0" aria-label="' + escapeHtml('Hours, ' + nm) + '" value="' + escapeHtml(v) + '" oninput="pbCeHours(' + i + ',this.value)" onblur="pbCeHoursKeep()"><span class="dp-eqhu" aria-hidden="true">h</span></span>'
+      + '<button type="button" class="dp-x" id="dpEqX_' + i + '" aria-label="' + escapeHtml('Remove ' + nm) + '" onclick="pbDpRemove(\'Eq\',' + i + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-x"/></svg></button></li>';
+  }
+  window.pbCeHours = function(i, v) {
+    const d = pbDpDraft(); if (!d || !d.equip[i]) return;
+    d.equip[i].hours = String(v || '').slice(0, 5);
+    if (d.k && pbDp.drafts && pbDp.drafts[d.k] !== d) pbDp.drafts[d.k] = d; // kept from the first key on (the draft is the one shown)
+    const el = pbDlyEl('dpEqH_' + i); if (el) el.classList.toggle('dp-bad', !!pbCeHrs(v).bad);
+    const n = pbDlyEl('dpEquipN'); if (n) n.textContent = pbCeHead(d);
+    clearTimeout(pbDp.hT); pbDp.hT = setTimeout(() => { if (pbDp.drafts && pbDp.drafts[d.k] === d) pbDpTouch(d).catch(() => {}); }, 400); // not after the report was signed (its draft is gone)
+  };
+  window.__debugCoEquip = () => ({ ce: pbCe, load: (f) => pbCeLoad(pbArchiveOwnerUid, f), shown: () => { const d = pbDpDraft(); return d ? pbCeShown(d) : null; } });
+  window.pbCeHoursKeep = function() { if (!pbDp.hT) return; clearTimeout(pbDp.hT); pbDp.hT = null; const d = pbDpDraft(); if (d && pbDp.drafts && pbDp.drafts[d.k] === d) pbDpTouch(d).catch(() => {}); }; // leaving the box (or the app) keeps it now
+  window.addEventListener('pagehide', () => { try { window.pbCeHoursKeep(); } catch (e) {} });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { try { window.pbCeHoursKeep(); } catch (e) {} } });
+  // ================= end feat_coequip (module) =================
+  // ================= feat_dailyx (owner, Oct 29): the foreman's Daily report, redesigned =================
+  // The narrative on top (full width, grows as he types) and NOTES (a bullet per note with its time, saved at once; edit,
+  // delete), then every section folded to one title row with a short count (open ones remembered on this phone). Crew today
+  // and Equipment on site carry the hours (the Crew log's figure filled in until he types; "Other hours" is folded into
+  // them). PHOTOS of the day (camera or library, caption, at most 12) go with the signed report, then up to the company
+  // server one by one (pb_daily_report_photo_put), and into the PDF. The crew's run reports and confined space permits for
+  // the day come from the server. The job's weather location can be set here (City, State, or the phone's position once).
+  // Job number from the current job; any earlier date; Save for Later. Two tabs on the one screen: NOTES (the narrative,
+  // the notes, the photos) and REPORT (every section, signing at the bottom). From Home: "Add note" (a quick sheet that adds
+  // to today's daily without opening it) and "Daily report" (opens on Notes), with the past days that have no daily.
+  // A note may carry a REMINDER: kept on this phone at once, scheduled on the company server (pb_daily_reminder_set; the
+  // server's cron sends the push at that time), shown in the app too when it is open then.
+  const PB_DX_OPEN = 'pbDailyOpen', PB_DX_MAXPH = 12;
+  // a note's id is a UUID (the server stores its reminder by it), also on Safari before crypto.randomUUID
+  const pbDxUuid = () => { try { if (crypto && crypto.randomUUID) return crypto.randomUUID(); const b = crypto.getRandomValues(new Uint8Array(16)); b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128; const h = [...b].map(x => x.toString(16).padStart(2, '0')).join(''); return h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12, 16) + '-' + h.slice(16, 20) + '-' + h.slice(20); } catch (e) { return pbDlyId(); } };
+  let pbDx = { open: null, edit: null, locOpen: false, locCity: '', capT: null, tab: 'notes', miss: { uid: null, list: null, at: 0, busy: false }, rq: { uid: null, map: null, busy: false }, q: null };
+  function pbDxOpenSet() {
+    if (pbDx.open) return pbDx.open;
+    let a = []; try { a = JSON.parse(localStorage.getItem(PB_DX_OPEN) || '[]'); } catch (e) { a = []; }
+    pbDx.open = new Set(Array.isArray(a) ? a.filter(x => typeof x === 'string').slice(0, 40) : []); return pbDx.open;
+  }
+  const pbDxSecCls = (id) => ' dx-sec' + (pbDxOpenSet().has(id) ? ' dx-open' : '');
+  window.pbDxTog = function(id, on) {
+    const S = pbDxOpenSet(), o = on === undefined ? !S.has(id) : !!on;
+    if (o) S.add(id); else S.delete(id);
+    try { localStorage.setItem(PB_DX_OPEN, JSON.stringify([...S])); } catch (e) {}
+    const sec = document.getElementById(id); if (sec) sec.classList.toggle('dx-open', o);
+    const b = document.getElementById(id + 'Tog'); if (b) b.setAttribute('aria-expanded', o ? 'true' : 'false');
+  };
+  // a folding section's title row: the title, a short count, a chevron
+  function pbDxHead(id, hid, title, nid, ntext) {
+    const o = pbDxOpenSet().has(id);
+    return '<h3 class="pbd-h3 dx-h" id="' + hid + '"><button type="button" class="dx-tog" id="' + id + 'Tog" aria-expanded="' + (o ? 'true' : 'false') + '" aria-controls="' + id + 'Body" onclick="pbDxTog(\'' + id + '\')">'
+      + '<span class="dx-t">' + escapeHtml(title) + '</span><span class="dp-n dx-c" id="' + nid + '">' + escapeHtml(ntext || '') + '</span><span class="dx-chev" aria-hidden="true"></span></button></h3>';
+  }
+  // the counts of the pulled-in sections that have none in their title
+  function pbDxCount(id) {
+    const S = pbDlyView.snap, V = pbDlyView;
+    if (id === 'drWeather') { const d = V.weather && V.weather.data; return d && d.high_f !== null && d.high_f !== undefined && d.low_f !== null ? Math.round(d.high_f) + '° / ' + Math.round(d.low_f) + '°' : V.needLoc ? 'no location' : ''; }
+    if (!S) return '';
+    if (id === 'drMat') return String(((S.materials && S.materials.used) || []).length + ((S.materials && S.materials.delivered) || []).length);
+    if (id === 'drTalks') return String(((S.talks && S.talks.items) || []).length);
+    return '';
+  }
+  window.pbDxGrow = function(el) { if (!el) return; try { el.style.height = 'auto'; el.style.height = Math.min(Math.max(el.scrollHeight + 2, 44), 4000) + 'px'; } catch (e) {} };
+  // ---- the hours: the Crew log's figure (completed check-ins) until he types one ----
+  const pbDxNk = (s) => String(s || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  function pbDxLogH(name, eq) {
+    const S = pbDlyView.snap, L = S && S.crew ? (eq ? S.crew.equipment : S.crew.people) : null; if (!L) return 0;
+    const k = pbDxNk(name); let h = 0;
+    L.forEach(p => { if (p && p.first_in && pbDxNk(String(p.name || '').replace(/ \(Rental\)$/, '')) === k) h += Number(p.hours) || 0; });
+    return Math.round(h * 100) / 100;
+  }
+  // what the box shows: what he typed (even blank), else the Crew log's hours
+  const pbDxHv = (q, eq) => q.hours !== undefined && q.hours !== null ? String(q.hours) : (() => { const h = pbDxLogH(eq ? pbDpEqName(q) : q.name, eq) || (eq ? pbDxLogH(q.name, true) : 0); return h > 0 ? String(h) : ''; })();
+  // ---- Crew today: a row per person with an hours box ----
+  function pbDxCrewRow(p, i, ids) {
+    const tag = pbDpCrewTag(p, ids), v = pbDxHv(p, false);
+    return '<li class="dp-item dp-eqrow" id="dpCrew_' + i + '"><span class="dp-eqtx"><span class="dp-nm">' + escapeHtml(p.name) + '</span>' + (tag ? '<span class="dp-sub">' + escapeHtml(tag) + '</span>' : '') + '</span>'
+      + '<span class="dp-eqhw"><input type="text" class="dp-eqh" id="dpCrewH_' + i + '" inputmode="decimal" autocomplete="off" maxlength="5" enterkeyhint="done" placeholder="0" aria-label="' + escapeHtml('Hours, ' + p.name) + '" value="' + escapeHtml(v) + '" oninput="pbDxCrewHours(' + i + ',this.value)" onblur="pbCeHoursKeep()"><span class="dp-eqhu" aria-hidden="true">h</span></span>'
+      + '<button type="button" class="dp-x" id="dpCrewX_' + i + '" aria-label="' + escapeHtml('Remove ' + p.name) + '" onclick="pbDpRemove(\'Crew\',' + i + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-x"/></svg></button></li>';
+  }
+  const pbDxCrewSum = (d) => Math.round(d.crew.reduce((s, p) => s + (pbCeHrs(pbDxHv(p, false)).n || 0), 0) * 100) / 100;
+  const pbDxCrewHead = (d) => { const n = d.crew.length, s = pbDxCrewSum(d); return '· ' + (n ? pbDpPeople(n) + (s > 0 ? ' · ' + pbDpH(s) : '') : 'nobody listed'); };
+  window.pbDxCrewHours = function(i, v) {
+    const d = pbDpDraft(); if (!d || !d.crew[i]) return;
+    d.crew[i].hours = String(v || '').slice(0, 5);
+    if (d.k && pbDp.drafts && pbDp.drafts[d.k] !== d) pbDp.drafts[d.k] = d;
+    const el = pbDlyEl('dpCrewH_' + i); if (el) el.classList.toggle('dp-bad', !!pbCeHrs(v).bad);
+    const n = pbDlyEl('dpCrewN'); if (n) n.textContent = pbDxCrewHead(d);
+    clearTimeout(pbDp.hT); pbDp.hT = setTimeout(() => { if (pbDp.drafts && pbDp.drafts[d.k] === d) pbDpTouch(d).catch(() => {}); }, 400);
+  };
+  // the Crew log's lines that aren't a person or a piece (hours typed on a crew run) and its open check-ins, said once
+  function pbDxLogLines(eq) {
+    const S = pbDlyView.snap, C = S && S.crew; if (!C) return '';
+    const L = (eq ? C.equipment : C.people).filter(p => p && !p.first_in && Number(p.hours) > 0);
+    let h = L.length ? '<p class="pbd-dim" id="' + (eq ? 'dxEqRuns' : 'dxCrewRuns') + '">' + escapeHtml('On runs: ' + L.map(p => p.name + ' ' + pbDpH(p.hours)).join(' · ')) + '</p>' : '';
+    const open = (eq ? C.equipment : C.people).filter(p => p && p.open).length;
+    if (open) h += '<p class="pbd-why" id="' + (eq ? 'dxEqOpen' : 'dxCrewOpen') + '">' + escapeHtml(open + (open === 1 ? ' is' : ' are') + ' still checked in on the Crew log (not counted).') + '</p>';
+    return h;
+  }
+  function pbDxCrewCard(d, cs, ids) {
+    const n = d.crew.length;
+    return '<section class="pbd-card' + pbDxSecCls('dpCrew') + '" id="dpCrew" aria-labelledby="dpCrewH">' + pbDxHead('dpCrew', 'dpCrewH', 'Crew today', 'dpCrewN', pbDxCrewHead(d)) + '<div class="dx-body" id="dpCrewBody">'
+      + (n ? '<ul class="dp-chips dp-eqrows" id="dpCrewList">' + d.crew.map((p, i) => pbDxCrewRow(p, i, ids)).join('') + '</ul>' : '') + pbDxLogLines(false)
+      + (cs.length ? '<div class="dp-sug" id="dpCrewSug" role="group" aria-label="Add from your crew">' + cs.map((p, i) => '<button type="button" class="dp-sugb" id="dpCrewSug_' + i + '" onclick="pbDpAddSugg(\'crew\',' + i + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>' + escapeHtml(p.name) + '</button>').join('') + '</div>' : '')
+      + pbDpAddRow('crew', 'Add a name', false) + '</div></section>';
+  }
+  // ---- "Other hours" (the earlier form) folds into the crew's and the equipment's hours, once per draft ----
+  function pbDxFold(d) {
+    try {
+      if (!pbDa || pbDa.uid !== pbArchiveOwnerUid || !pbDa.drafts) return false;
+      const a = pbDaDraft(); if (!a || (!a.people.length && !a.equip.length)) return false;
+      const add = (list, x, eq) => {
+        const nm = String(x.name || '').trim(); if (!nm) return;
+        let q = list.find(y => (x.user_id && y.user_id === x.user_id) || pbDxNk(eq ? pbDpEqName(y) : y.name) === pbDxNk(nm) || pbDxNk(y.name) === pbDxNk(nm));
+        if (!q) { q = eq ? Object.assign({ key: x.key || null, name: pbDpCut(nm, 80), unit_no: null }, x.rental ? { rental: true } : {}) : { name: pbDpCut(nm, 80), user_id: x.user_id || null }; list.push(q); }
+        const base = pbCeHrs(pbDxHv(q, eq)).n || 0, add = Number(x.hours) || 0;
+        q.hours = String(Math.min(24, Math.round((base + add) * 100) / 100));
+      };
+      a.people.forEach(x => add(d.crew, x, false)); a.equip.forEach(x => add(d.equip, x, true));
+      a.people = []; a.equip = []; a.form = null; pbDa.form = null;
+      pbDaTouch(a).catch(() => {}); pbDpTouch(d).catch(() => {});
+      return true;
+    } catch (e) { console.error(e); return false; }
+  }
+  // ---- NOTES: one bullet each, with its time; saved on this phone the moment it is added ----
+  const pbDxNotes = (d) => (d && Array.isArray(d.notes) ? d.notes : []);
+  const pbDxTime = (t) => { try { return new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; } };
+  function pbDxNotesRender() {
+    const L = pbDlyEl('dxNoteList'), N = pbDlyEl('dxNotesN'); if (!L) return;
+    const d = pbDp.uid === pbArchiveOwnerUid && pbDp.drafts ? pbDpDraft() : null, notes = pbDxNotes(d), E = pbDx.edit;
+    if (N) { const t = notes.length ? '· ' + notes.length : ''; if (N.textContent !== t) N.textContent = t; }
+    pbSetHtml(L, notes.map((x, i) => E && E.id === x.id
+      ? '<li class="dx-note dx-noteed" id="dxNote_' + i + '"><label class="pb-sr" for="dxNoteEd">Change this note</label><textarea id="dxNoteEd" rows="2" maxlength="1000" oninput="pbDxNoteEdIn(this.value);pbDxGrow(this)">' + escapeHtml(E.text) + '</textarea>' + pbDxRemHtml('dxNoteEdR', pbDxRemOf(x.id))
+        + '<div class="pbx-btnrow"><button type="button" class="pb-btn secondary small" id="dxNoteSave" onclick="pbDxNoteSave()">Save</button><button type="button" class="pb-btn ghost small" id="dxNoteCancel" onclick="pbDxNoteEdit(null)">Cancel</button></div></li>'
+      : '<li class="dx-note' + (pbDx.hl === x.id ? ' dx-hl' : '') + '" id="dxNote_' + i + '"><span class="dx-nt"><span class="dx-ntime">' + escapeHtml(pbDxTime(x.at)) + '</span> ' + escapeHtml(x.text) + pbDxRemLine(x.id, i) + '</span>'
+        + '<span class="dx-nb"><button type="button" class="pb-btn ghost small" id="dxNoteEdit_' + i + '" onclick="pbDxNoteEdit(' + pbDpJs(x.id) + ')" aria-label="Edit this note"' + (E ? ' disabled' : '') + '>Edit</button>'
+        + '<button type="button" class="pb-btn ghost small" id="dxNoteDel_' + i + '" onclick="pbDxNoteDel(' + pbDpJs(x.id) + ')" aria-label="Delete this note"' + (E ? ' disabled' : '') + '>Delete</button></span></li>').join(''));
+    try { pbDxTabPaint(); } catch (e) {}
+  }
+  window.pbDxNoteAdd = async function() {
+    if (pbDx.adding) return;
+    const el = pbDlyEl('dxNoteIn'), text = pbDpCut(String((el && el.value) || '').trim(), 1000);
+    if (!text) { if (el) el.focus(); return; }
+    const d = pbDp.uid === pbArchiveOwnerUid && pbDp.drafts ? pbDpDraft() : null;
+    if (!d) { const st = pbDlyEl('dxNoteMsg'); if (st) st.textContent = 'Still loading. Try again in a moment; your note is still in the box.'; return; }
+    if (!Array.isArray(d.notes)) d.notes = [];
+    if (d.notes.length >= 200) { pbAlert('A report holds at most 200 notes.', 'Notes'); return; }
+    const raw = el.value, rem = pbDxRemAt('dxNoteR'), note = { id: pbDxUuid(), at: Date.now(), text };
+    if (rem === 'bad') { const st0 = pbDlyEl('dxNoteMsg'); if (st0) st0.textContent = 'Pick a reminder time later than now.'; return; }
+    d.notes.push(note); pbDx.adding = true; el.value = ''; el.style.height = '';
+    let ok = false; try { ok = await pbDpTouch(d); } finally { pbDx.adding = false; }
+    const st = pbDlyEl('dxNoteMsg'); if (st) st.textContent = ok ? '' : 'Not saved on this phone (storage full). The note is back in the box.';
+    if (!ok) { d.notes = d.notes.filter(x => x !== note); if (!el.value) el.value = raw; pbDxNotesRender(); return; }
+    if (typeof rem === 'number') await pbDxRemPut(note, rem, pbDlyView.job, pbDlyView.date);
+    const rs = pbDlyEl('dxNoteRRem'); if (rs) rs.value = ''; const ra = pbDlyEl('dxNoteRRemAt'); if (ra) { ra.value = ''; ra.hidden = true; }
+    pbDxNotesRender();
+  };
+  window.pbDxNoteEdit = function(id) {
+    const d = pbDpDraft(), x = id && d ? pbDxNotes(d).find(n => n.id === id) : null;
+    pbDx.edit = x ? { id: x.id, text: x.text } : null; pbDxNotesRender();
+    if (x) setTimeout(() => { const t = pbDlyEl('dxNoteEd'); if (t) { pbDxGrow(t); try { t.focus(); const n = t.value.length; t.setSelectionRange(n, n); } catch (e) {} } }, 20);
+  };
+  window.pbDxNoteEdIn = function(v) { if (pbDx.edit) pbDx.edit.text = String(v || ''); };
+  window.pbDxNoteSave = async function() {
+    const E = pbDx.edit, d = pbDpDraft(); if (!E || !d) return;
+    const t = pbDlyEl('dxNoteEd'), text = pbDpCut(String(t ? t.value : E.text).trim(), 1000), x = pbDxNotes(d).find(n => n.id === E.id);
+    if (!x) { pbDx.edit = null; pbDxNotesRender(); return; }
+    if (!text) { window.pbDxNoteDel(x.id); return; }
+    const rem = pbDxRemAt('dxNoteEdR'); if (rem === 'bad') { const st0 = pbDlyEl('dxNoteMsg'); if (st0) st0.textContent = 'Pick a reminder time later than now.'; return; }
+    if (text !== x.text) { x.text = text; x.edited_at = Date.now(); }
+    pbDx.edit = null; await pbDpTouch(d);
+    if (typeof rem === 'number') await pbDxRemPut(x, rem, pbDlyView.job, pbDlyView.date); else if (rem === null) await pbDxRemClear(x.id); else if (pbDxRemOf(x.id) && pbDxRemOf(x.id).text !== x.text.slice(0, 180)) await pbDxRemPut(x, pbDxRemOf(x.id).at, pbDlyView.job, pbDlyView.date);
+    pbDxNotesRender();
+  };
+  window.pbDxNoteDel = function(id) {
+    const d = pbDpDraft(), x = d ? pbDxNotes(d).find(n => n.id === id) : null; if (!x) return;
+    pbConfirm('Delete this note?\n\n' + (x.text.length > 120 ? x.text.slice(0, 120) + '…' : x.text), async () => { const D = pbDpDraft(); if (!D) return; D.notes = pbDxNotes(D).filter(n => n.id !== id); if (pbDx.edit && pbDx.edit.id === id) pbDx.edit = null; await pbDpTouch(D); await pbDxRemClear(id); pbDxNotesRender(); }, 'Delete Note?', { no: 'Keep It', yes: 'Delete' });
+  };
+  // ---- PHOTOS of the day ----
+  const pbDxPhotos = (d) => (d && Array.isArray(d.photos) ? d.photos : []);
+  function pbDxPhotosCard(d) {
+    const L = pbDxPhotos(d);
+    return '<section class="pbd-card dx-photos" id="dxPhotos" aria-labelledby="dxPhotosH"><h3 class="pbd-h3" id="dxPhotosH">Photos <span class="dp-n" id="dxPhotosN">' + (L.length ? '· ' + L.length : '') + '</span></h3><div id="dxPhotosBody">'
+      + (L.length ? '<ul class="dx-phs" id="dxPhList">' + L.map((p, i) => { const P = pbDp.photos && pbDp.photos[p.sha];
+        return '<li class="dx-ph" id="dxPh_' + i + '"><button type="button" class="dx-phimg" id="dxPhView_' + i + '" onclick="pbDxPhView(' + i + ')" aria-label="View photo ' + (i + 1) + '">' + (P ? '<img src="data:image/jpeg;base64,' + P.b64 + '" alt="">' : '<span class="pbd-dim">Photo ' + (i + 1) + '</span>') + '</button>'
+          + '<label class="pb-sr" for="dxPhCap_' + i + '">Caption for photo ' + (i + 1) + '</label><input type="text" class="dx-phcap" id="dxPhCap_' + i + '" maxlength="200" autocomplete="off" enterkeyhint="done" placeholder="Caption" value="' + escapeHtml(p.caption || '') + '" oninput="pbDxPhCap(' + i + ',this.value)">'
+          + '<button type="button" class="pb-btn ghost small" id="dxPhDel_' + i + '" onclick="pbDxPhDel(' + i + ')">Delete</button></li>'; }).join('') + '</ul>' : '')
+      + '<input type="file" accept="image/*" multiple id="dxPhIn" aria-label="Add a photo" style="display:none;" onchange="pbDxPhPicked(this)">'
+      + '<div class="pb-btn-row"><button type="button" class="pb-btn secondary small" id="dxPhAdd" onclick="document.getElementById(\'dxPhIn\').click()"' + (L.length >= PB_DX_MAXPH ? ' disabled' : '') + '>Add Photo</button></div>'
+      + '<p class="pb-rpt-status" id="dxPhMsg" role="status"></p></div></section>';
+  }
+  window.pbDxPhPicked = async function(input) {
+    const d0 = pbDpDraft(), files = Array.from((input && input.files) || []); if (!d0) return;
+    const key = pbDpKey(), got = []; let full = false, bad = 0;
+    for (const f of files) {
+      if (pbDxPhotos(d0).length + got.length >= PB_DX_MAXPH) { full = true; break; }
+      const b64 = await pbDlyShrink(f); if (!b64) { bad++; continue; }
+      let taken = null; try { const m = await pbExifTakenFromFile(f); taken = m && m.taken ? m.taken : null; } catch (e) {}
+      let sha = null; try { sha = pbSha256Bytes(Uint8Array.from(atob(b64), ch => ch.charCodeAt(0))); } catch (e) {}
+      if (!sha) { bad++; continue; }
+      pbDp.photos[sha] = { b64, takenExif: taken, at: Date.now() };
+      if (!got.some(p => p.sha === sha)) got.push({ sha, taken_exif: taken, caption: '' });
+    }
+    try { input.value = ''; } catch (e) {}
+    if (!got.length) { const m0 = pbDlyEl('dxPhMsg'); if (m0) m0.textContent = bad ? 'The photo couldn’t be read.' : ''; return; }
+    if (!(await pbDpSave(['p']))) return; // the photo itself first, then the list that names it
+    if (pbDpKey() !== key) return; // another day was picked meanwhile
+    const d = pbDpDraft(); if (!d) return; if (!Array.isArray(d.photos)) d.photos = [];
+    got.forEach(p => { if (d.photos.length < PB_DX_MAXPH && !d.photos.some(x => x.sha === p.sha)) d.photos.push(p); });
+    await pbDpTouch(d); pbDpRender(); pbDxTabPaint();
+    const m = pbDlyEl('dxPhMsg'); if (m) m.textContent = [full ? 'At most ' + PB_DX_MAXPH + ' photos on one report.' : '', bad ? (bad === 1 ? 'A photo couldn’t be read.' : bad + ' photos couldn’t be read.') : ''].filter(Boolean).join(' ');
+  };
+  window.pbDxPhCap = function(i, v) {
+    const d = pbDpDraft(); if (!d || !pbDxPhotos(d)[i]) return;
+    d.photos[i].caption = String(v || '').slice(0, 200);
+    if (d.k && pbDp.drafts && pbDp.drafts[d.k] !== d) pbDp.drafts[d.k] = d;
+    clearTimeout(pbDx.capT); pbDx.capT = setTimeout(() => { if (pbDp.drafts && pbDp.drafts[d.k] === d) pbDpTouch(d).catch(() => {}); }, 400);
+  };
+  window.pbDxPhDel = function(i) {
+    const d = pbDpDraft(), p = d ? pbDxPhotos(d)[i] : null; if (!p) return;
+    pbConfirm('Delete photo ' + (i + 1) + (p.caption ? ' (' + p.caption + ')' : '') + ' from this report?', async () => { const D = pbDpDraft(); if (!D) return; D.photos = pbDxPhotos(D).filter(x => x.sha !== p.sha); await pbDpTouch(D); pbDpRender(); pbDxTabPaint(); }, 'Delete Photo?', { no: 'Keep It', yes: 'Delete' });
+  };
+  window.pbDxPhView = function(i) {
+    const d = pbDpDraft(), p = d ? pbDxPhotos(d)[i] : null, P = p && pbDp.photos ? pbDp.photos[p.sha] : null; if (!P) return;
+    const o = document.createElement('div'); o.className = 'dx-viewer'; o.id = 'dxViewer'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'Photo ' + (i + 1));
+    o.innerHTML = '<img src="data:image/jpeg;base64,' + P.b64 + '" alt="Photo ' + (i + 1) + '">' + (p.caption ? '<p class="dx-vcap">' + escapeHtml(p.caption) + '</p>' : '') + '<button type="button" class="pb-btn" id="dxViewClose">Close</button>';
+    const close = () => { try { o.remove(); } catch (e) {} const b = pbDlyEl('dxPhView_' + i); if (b) try { b.focus({ preventScroll: true }); } catch (e) {} };
+    o.addEventListener('click', (e) => { if (e.target === o || e.target.id === 'dxViewClose') close(); });
+    (document.getElementById('pbApp') || document.body).appendChild(o);
+    const c = o.querySelector('#dxViewClose'); if (c) try { c.focus(); } catch (e) {}
+  };
+  // ---- the crew's run reports and permits for the day (pb_daily_attach_day, the server's list) ----
+  function pbDxCrewDay() {
+    const k = pbDlyKey(pbDlyView.job) + '|' + pbDlyView.date, D = pbDa && pbDa.day && pbDa.day.k === k ? pbDa.day : null;
+    return D && D.data ? { runs: D.data.runs || [], permits: D.data.permits || [], checked: true, why: '' } : { runs: [], permits: [], checked: false, why: D ? D.why || '' : '' };
+  }
+  // what the Runs / Confined Space Permits sections show of the crew's day: a full redraw only when that changed (the form
+  // otherwise isn't redrawn under him: it signs what it shows, e.g. the 811 line)
+  function pbDxCrewKey() { const C = pbDxCrewDay(); try { return pbDlyKey(pbDlyView.job) + '|' + pbDlyView.date + '|' + C.checked + '|' + C.why + '|' + JSON.stringify(C.runs) + JSON.stringify(C.permits); } catch (e) { return String(Math.random()); } }
+  window.pbDxCrewKey = pbDxCrewKey;
+  function pbDxCrewRunsHtml() {
+    const C = pbDxCrewDay(); if (!C.runs.length && !C.why) return '';
+    return (C.runs.length ? '<p class="dx-sub">Crew run reports (' + C.runs.length + ')</p><ul class="pbd-list" id="dxCrewRuns">' + C.runs.map(x => '<li><strong>' + escapeHtml(x.who || 'A crew member') + '</strong> · ' + escapeHtml([x.start_label, x.end_label].filter(Boolean).join(' to ') || x.label || 'Run') + '<br><span class="pbd-dim">' + escapeHtml(x.sent ? 'Sent' : 'Not sent yet') + '</span></li>').join('') + '</ul>' : '')
+      + (C.why && !C.runs.length ? '<p class="pbd-dim" id="dxCrewRunsWhy">' + escapeHtml(C.why) + '</p>' : '');
+  }
+  function pbDxCrewPermitsHtml() {
+    const C = pbDxCrewDay(); if (!C.permits.length) return '';
+    return '<p class="dx-sub">Crew permits (' + C.permits.length + ')</p><ul class="pbd-list" id="dxCrewPermits">' + C.permits.map(x => '<li><strong>' + escapeHtml(x.space || 'Confined space') + '</strong> · ' + escapeHtml(x.who || 'A crew member') + '<br><span class="pbd-dim">' + escapeHtml(x.open ? 'Open' : 'Closed' + (x.closed_at ? ' ' + pbDlyTimeIn(x.closed_at) : '')) + '</span></li>').join('') + '</ul>';
+  }
+  function pbDxCrewIntoSnap(snap) {
+    const C = pbDxCrewDay();
+    snap.crew_reports = { checked: C.checked, source: 'The company server: the run reports and confined space permits of the foreman’s crew for this job and day.' + (C.checked ? '' : ' Not checked when he signed (no signal).'),
+      runs: C.runs.slice(0, 30).map(x => ({ who: pbDpCut(x.who || '', 80), label: pbDpCut([x.start_label, x.end_label].filter(Boolean).join(' to ') || x.label || '', 160), sent: !!x.sent, start_at: x.start_at || null })),
+      permits: C.permits.slice(0, 30).map(x => ({ who: pbDpCut(x.who || '', 80), space: pbDpCut(x.space || '', 80), open: !!x.open, closed_at: x.closed_at || null })) };
+  }
+  // ---- the job's weather location, by the foreman too (pb_daily_location_put lets a foreman who works the job) ----
+  function pbDxLocHtml(always) {
+    if (!always && !pbDx.locOpen) return '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" id="dxLocChange" onclick="pbDxLocToggle(true)">Change Location</button></div>';
+    return '<div class="dx-loc" id="dxLoc"><div class="pb-field"><label for="dxLocCity">City, State</label><input type="text" id="dxLocCity" maxlength="120" autocomplete="off" autocapitalize="words" enterkeyhint="go" placeholder="e.g. Springfield, IL" value="' + escapeHtml(pbDx.locCity) + '" oninput="pbDxLocIn(this.value)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();pbDxLocSet()}"></div>'
+      + '<div class="pb-btn-row"><button type="button" class="pb-btn secondary small" id="dxLocSet" onclick="pbDxLocSet()"' + (pbDlyView.wBusy ? ' disabled' : '') + '>Set Location</button><button type="button" class="pb-btn ghost small" id="dxLocPhone" onclick="pbDxLocPhone()"' + (pbDlyView.wBusy ? ' disabled' : '') + '>Use Phone Location Once</button></div></div>';
+  }
+  window.pbDxLocToggle = function(on) { pbDx.locOpen = !!on; pbDlyRender(); if (on) setTimeout(() => { const el = pbDlyEl('dxLocCity'); if (el) try { el.focus(); } catch (e) {} }, 20); };
+  window.pbDxLocIn = function(v) { pbDx.locCity = String(v || ''); };
+  window.pbDxLocSet = async function() {
+    const el = pbDlyEl('dxLocCity'), t = String((el && el.value) || pbDx.locCity || '').trim().replace(/\s+/g, ' ');
+    if (!/^[^,]{2,},\s*[A-Za-z .]{2,}$/.test(t)) { pbDlyView.wMsg = 'Type the city and state, like Springfield, IL.'; pbDlyRender(); const e2 = pbDlyEl('dxLocCity'); if (e2) e2.focus(); return; }
+    pbDx.locCity = t; await window.pbDlyWeather({ place: t });
+    if (pbDlyView.weather && pbDlyView.weather.data) { pbDx.locOpen = false; pbDx.locCity = ''; pbDlyRender(); }
+  };
+  window.pbDxLocPhone = function() {
+    if (!navigator.geolocation || typeof navigator.geolocation.getCurrentPosition !== 'function') { pbDlyView.wMsg = 'This phone can’t give its location. Type the city and state instead.'; pbDlyRender(); return; }
+    pbDlyView.wMsg = 'Getting the phone’s location…'; pbDlyRender();
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const c = pos && pos.coords; if (!c || !isFinite(c.latitude) || !isFinite(c.longitude)) { pbDlyView.wMsg = 'The phone’s location wasn’t available. Type the city and state instead.'; pbDlyRender(); return; }
+      pbDlyView.wMsg = ''; await window.pbDlyWeather({ lat: Math.round(c.latitude * 1000) / 1000, lon: Math.round(c.longitude * 1000) / 1000, source: 'device_once' });
+      if (pbDlyView.weather && pbDlyView.weather.data) { pbDx.locOpen = false; pbDlyRender(); }
+    }, () => { pbDlyView.wMsg = 'The phone’s location wasn’t available (not allowed, or no fix). Type the city and state instead.'; pbDlyRender(); }, { enableHighAccuracy: false, timeout: 20000, maximumAge: 600000 });
+  };
+  // ---- open the daily for a job and day (from a run report he approves, the Home card) ----
+  window.pbOpenDailyReportFor = function(job, date, tab) { return window.pbOpenDailyReport({ job: String(job || ''), date: /^\d{4}-\d\d-\d\d$/.test(String(date || '')) ? String(date) : null, tab: tab || 'notes' }); };
+  window.pbDxDailyForRun = function() {
+    const O = pbRoFor(pbArchiveOwnerUid), x = O && O.open; if (!x) return;
+    const t = x.start_at || x.locked_at || x.ended_at || x.sent_at || Date.now();
+    window.pbOpenDailyReportFor(x.job_number || '', pbFmDay(typeof t === 'string' ? Date.parse(t) : t), 'report'); // from a run he approves: the Report tab
+  };
+  // Save for Later: everything typed is on the phone already; this writes what is still waiting, then goes back
+  window.pbDxSaveLater = async function() {
+    const st = pbDlyEl('drSignStatus');
+    try {
+      clearTimeout(pbDlyDraftT); if ((await pbDlyDraftSave()) === false) { if (st) st.textContent = 'Not saved: this phone’s storage is full.'; return; }
+      window.pbCeHoursKeep(); clearTimeout(pbDx.capT);
+      const d = pbDp.uid === pbArchiveOwnerUid && pbDp.drafts ? pbDpDraft() : null;
+      if (d && (pbDp.drafts[d.k] === d || (d.from && d.from.edited))) { if (!(await pbDpTouch(d))) { if (st) st.textContent = 'Not saved: this phone’s storage is full.'; return; } }
+    } catch (e) { console.error(e); if (st) st.textContent = 'Not saved. Try again.'; return; }
+    const V = pbDlyView; pbDxToast('Saved on this phone: ' + pbProdJobLabel(V.job) + ', ' + pbDlyDayText(V.date) + '.');
+    pbBackOr(function() { pbGotoTab('home'); });
+  };
+  function pbDxToast(t) {
+    try { const old = document.getElementById('dxToast'); if (old) old.remove();
+      const o = document.createElement('div'); o.id = 'dxToast'; o.className = 'dx-toast'; o.setAttribute('role', 'status'); o.textContent = t;
+      (document.getElementById('pbApp') || document.body).appendChild(o); setTimeout(() => { try { o.remove(); } catch (e) {} }, 3500); } catch (e) {}
+  }
+  // the narrative box belongs to one day at a time (pbDx.narrK): typing makes it this day's; leaving a day writes it first
+  async function pbDxNarrFlush() {
+    try { clearTimeout(pbDlyDraftT); const V = pbDlyView; if (V.job && V.date && pbDx.narrK === pbDlyKey(V.job) + '|' + V.date) await pbDlyDraftSave(); window.pbCeHoursKeep(); } catch (e) { console.error(e); }
+    pbDx.narrK = null;
+  }
+  { const o = window.pbDlyDraftSoon; window.pbDlyDraftSoon = function() { pbDx.narrK = pbDlyKey(pbDlyView.job) + '|' + pbDlyView.date; return o.apply(this, arguments); }; }
+  window.pbDxBack = function() { pbBackOr(function() { pbOpenArchive(); }); };
+  // ---- Home: past days with crew work and no daily report (14 days; the server's list, plus this phone's own runs) ----
+  async function pbDxMissLoad(force) {
+    const uid = pbArchiveOwnerUid, M = pbDx.miss;
+    if (!uid || uid === 'shared' || !(typeof pbLvIsForeman === 'function' && pbLvIsForeman(uid))) return;
+    if (M.uid !== uid) Object.assign(M, { uid, list: null, at: 0, busy: false, local: null });
+    if (M.busy || (!force && M.at && Date.now() - M.at < 600000)) return;
+    M.busy = true;
+    try {
+      const st = await pbDlyLoad(uid).catch(() => null); if (pbDx.miss !== M || M.uid !== uid) return;
+      const today = pbFmToday(), from = (() => { const x = new Date(today + 'T12:00:00'); x.setDate(x.getDate() - 14); return x.toISOString().slice(0, 10); })();
+      const signed = (job, date) => !!(st && st.reports.some(r => r && r.state !== 'discarded' && r.state !== 'replaced' && r.workDate === date && pbDlyKey(r.jobNumber) === pbDlyKey(job) && (r.co || null) === (st.co || null)));
+      const out = new Map(), add = (job, date) => { job = String(job || '').trim(); if (!job || !date || date >= today || date < from || signed(job, date)) return; const k = pbDlyKey(job) + '|' + date; if (!out.has(k)) out.set(k, { job, date }); };
+      (runArchive || []).filter(e => e && e.kind === 'run' && e.jobNumber).forEach(e => add(e.jobNumber, pbFmDay(e.runStartTime || e.lockTime)));
+      let srv = null;
+      if (await pbDlyCanAsk(uid)) { const r = await pbPermitRpc('pb_daily_missing', { p_days: 14, p_expect_uid: uid }, 20000); if (r && !r.error && r.data && r.data.ok && Array.isArray(r.data.days)) srv = r.data.days; }
+      if (pbDx.miss !== M || M.uid !== uid) return;
+      (srv || []).forEach(x => x && add(x.job_number, String(x.work_date || '').slice(0, 10)));
+      M.list = [...out.values()].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)); M.at = Date.now();
+    } finally { M.busy = false; }
+    pbDxHomeBar();
+  }
+  const pbDxShort = (d) => { const x = new Date(d + 'T12:00:00'); return isNaN(x) ? d : x.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }); };
+  window.pbDxMissOpen = function() {
+    const L = (pbDx.miss.list || []).filter(x => !(pbDly.st && pbDly.st.reports.some(r => r && r.state !== 'discarded' && r.state !== 'replaced' && r.workDate === x.date && pbDlyKey(r.jobNumber) === pbDlyKey(x.job)))).slice(0, 14); if (!L.length) return;
+    if (L.length === 1) { window.pbOpenDailyReportFor(L[0].job, L[0].date, 'notes'); return; }
+    pbShowModal('', L.map((x, i) => ({ label: pbDxShort(x.date) + ' · Job ' + x.job, onClick: () => { window.pbOpenDailyReportFor(x.job, x.date, 'notes'); } })).concat([{ label: 'Close' }]), 'Daily Reports Not Done');
+  };
+  window.pbScreenHooks.push((name) => { try { if (name === 'home') pbDxMissLoad(false).catch(() => {}); } catch (e) {} });
+  window.pbAccountLoadHooks.push(() => { pbDx.miss = { uid: null, list: null, at: 0, busy: false }; setTimeout(() => { pbDxMissLoad(false).catch(() => {}); }, 4000); });
+  // ---- the two tabs: Notes (narrative, notes, photos) and Report (every section, signing) ----
+  window.pbDxTab = function(t) {
+    pbDx.tab = t === 'report' ? 'report' : 'notes';
+    pbDxTabPaint();
+    const b = pbDlyEl(pbDx.tab === 'report' ? 'dxTabReport' : 'dxTabNotes'); if (b && document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('dx-tabb')) try { b.focus(); } catch (e) {}
+    try { const h = document.querySelector('#screen-dailyReport .pb-header'); if (h && h.getBoundingClientRect().bottom < 0) window.scrollTo(0, 0); } catch (e) {}
+  };
+  // the tabs and the Notes tab show for a day that can still be written: the report form is up, or the records are being
+  // pulled in and the day has no signed report (notes can be typed meanwhile)
+  function pbDxOn() {
+    const sw = pbDlyEl('drSignWrap'), V = pbDlyView; if (sw && !sw.hidden) return true;
+    if (!V.job || V.snap) return false;
+    const mine = pbDlyMineFor(V.job, V.date); return !(mine.some(r => r.state !== 'discarded' && r.state !== 'replaced') && !V.amend);
+  }
+  function pbDxTabPaint() {
+    const scr = document.getElementById('screen-dailyReport'), tabs = pbDlyEl('dxTabs'), on = pbDxOn();
+    if (tabs && tabs.hidden === on) tabs.hidden = !on;
+    if (!scr) return;
+    scr.classList.toggle('dx-on-notes', on && pbDx.tab !== 'report'); scr.classList.toggle('dx-on-report', on && pbDx.tab === 'report');
+    [['dxTabNotes', 'notes'], ['dxTabReport', 'report']].forEach(([id, k]) => { const b = pbDlyEl(id); if (b) { const sel = pbDx.tab === k ? 'true' : 'false'; if (b.getAttribute('aria-selected') !== sel) b.setAttribute('aria-selected', sel); b.tabIndex = pbDx.tab === k ? 0 : -1; } });
+    const n = pbDlyEl('dxTabNotesN'); if (n) { const d = pbDp.uid === pbArchiveOwnerUid && pbDp.drafts && pbDlyView.job ? pbDpDraft() : null, c = d ? pbDxNotes(d).length + pbDxPhotos(d).length : 0, t = c ? String(c) : ''; if (n.textContent !== t) n.textContent = t; }
+  }
+  window.pbDxTabKey = function(ev) { if (ev && (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft')) { ev.preventDefault(); window.pbDxTab(pbDx.tab === 'report' ? 'notes' : 'report'); const b = pbDlyEl(pbDx.tab === 'report' ? 'dxTabReport' : 'dxTabNotes'); if (b) b.focus(); } };
+
+  // ---- REMINDERS: { noteId: { id, at, text, job, date, state: queued | set | clear | failed, why, shown } } on this phone ----
+  const PB_DX_RQ = 'dailyNoteReminders';
+  async function pbDxRqLoad(uid) {
+    if (!uid || uid === 'shared') return null;
+    if (pbDx.rq.uid === uid && pbDx.rq.map) return pbDx.rq.map;
+    let m = {}; try { const o = JSON.parse((await pbGetFor(uid, PB_DX_RQ)) || '{}'); if (o && typeof o === 'object') m = o; } catch (e) { m = {}; }
+    if (pbDx.rq.uid !== uid || !pbDx.rq.map) pbDx.rq = { uid, map: m, busy: false };
+    return pbDx.rq.map;
+  }
+  async function pbDxRqSave() { const R = pbDx.rq; if (!R.uid || !R.map) return false;
+    const old = Date.now() - 7 * 86400000; Object.keys(R.map).forEach(k => { const x = R.map[k]; if (!x || ((x.state === 'set' || x.state === 'failed') && x.at < old)) delete R.map[k]; });
+    return pbSetFor(R.uid, PB_DX_RQ, JSON.stringify(R.map)); }
+  const pbDxRemOf = (id) => (pbDx.rq.uid === pbArchiveOwnerUid && pbDx.rq.map && pbDx.rq.map[id] && pbDx.rq.map[id].state !== 'clear') ? pbDx.rq.map[id] : null;
+  const pbDxRemWhen = (t) => { try { const d = new Date(t), same = d.toDateString() === new Date().toDateString(); return (same ? '' : d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ') + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; } };
+  function pbDxRemLine(id, i) {
+    const r = pbDxRemOf(id); if (!r) return '';
+    return '<span class="dx-rem-on" id="dxNoteRem_' + i + '"><span class="dx-bell" aria-hidden="true"></span>' + escapeHtml(pbDxRemWhen(r.at) + (r.state === 'queued' ? ' · reminder not set yet' : r.state === 'failed' ? ' · reminder not set' + (r.why ? ': ' + r.why : '') : '')) + '</span>';
+  }
+  // the picker: quick picks, or a time he chooses
+  function pbDxRemHtml(p, cur) {
+    const now = new Date(), eod = new Date(now); eod.setHours(15, 0, 0, 0);
+    return '<div class="dx-rem"><label for="' + p + 'Rem">Reminder</label><select id="' + p + 'Rem" onchange="pbDxRemSel(\'' + p + '\',this.value)">'
+      + (cur ? '<option value="keep" selected>' + escapeHtml(pbDxRemWhen(cur.at)) + '</option><option value="">None (clear it)</option>' : '<option value="">None</option>')
+      + '<option value="1h">In 1 hour</option>' + (eod > now ? '<option value="eod">End of day (3:00 PM)</option>' : '') + '<option value="tom">Tomorrow 7:00 AM</option><option value="custom">Pick a time…</option></select>'
+      + '<input type="datetime-local" id="' + p + 'RemAt" aria-label="Reminder time" hidden></div>';
+  }
+  window.pbDxRemSel = function(p, v) { const a = document.getElementById(p + 'RemAt'); if (!a) return; a.hidden = v !== 'custom'; if (v === 'custom') { if (!a.value) { const d = new Date(Date.now() + 3600000); d.setSeconds(0, 0); a.value = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); } try { a.focus(); } catch (e) {} } };
+  // -> a time (ms), null (none / clear), 'keep' (unchanged), or 'bad'
+  function pbDxRemAt(p) {
+    const s = document.getElementById(p + 'Rem'), v = s ? s.value : ''; if (!v) return null; if (v === 'keep') return 'keep';
+    const now = new Date();
+    if (v === '1h') return Date.now() + 3600000;
+    if (v === 'eod') { const d = new Date(now); d.setHours(15, 0, 0, 0); return d.getTime() > Date.now() ? d.getTime() : 'bad'; }
+    if (v === 'tom') { const d = new Date(now); d.setDate(d.getDate() + 1); d.setHours(7, 0, 0, 0); return d.getTime(); }
+    const a = document.getElementById(p + 'RemAt'), t = a && a.value ? new Date(a.value).getTime() : NaN;
+    return isFinite(t) && t > Date.now() + 30000 && t < Date.now() + 30 * 86400000 ? t : 'bad';
+  }
+  async function pbDxRemPut(note, at, job, date) {
+    const uid = pbArchiveOwnerUid; if (!(await pbDxRqLoad(uid))) return;
+    const old = pbDx.rq.map[note.id];
+    pbDx.rq.map[note.id] = { id: note.id, at, text: String(note.text || '').slice(0, 180) || 'Note', job: String(job || '').slice(0, 60), date: date || null, state: 'queued', why: '', shown: false, ever: !!(old && old.ever) };
+    await pbDxRqSave(); pbDxRemSoon(300);
+  }
+  async function pbDxRemClear(id) {
+    const uid = pbArchiveOwnerUid; if (!(await pbDxRqLoad(uid))) return; const x = pbDx.rq.map[id]; if (!x) return;
+    if (x.state === 'queued' && !x.ever && !pbDx.rq.busy) delete pbDx.rq.map[id]; else { x.state = 'clear'; x.why = ''; }
+    await pbDxRqSave(); pbDxRemSoon(300);
+  }
+  let pbDxRemT = null;
+  function pbDxRemSoon(ms) { clearTimeout(pbDxRemT); pbDxRemT = setTimeout(() => { pbDxRemSync().catch(() => {}); }, ms || 1000); }
+  // queued ones go to the company server (which sends the push at that time); a missing function waits for the server
+  async function pbDxRemSync() {
+    const uid = pbArchiveOwnerUid, R = pbDx.rq; if (!uid || R.busy || !(await pbDxRqLoad(uid))) return;
+    const L = Object.values(R.map).filter(x => x && (x.state === 'queued' || x.state === 'clear')); if (!L.length) return;
+    if (!(await pbDlyCanAsk(uid))) return;
+    R.busy = true; let changed = false;
+    try {
+      for (const x of L) {
+        if (pbDx.rq !== R) break;
+        const r = x.state === 'clear' ? await pbPermitRpc('pb_daily_reminder_clear', { p_note_id: x.id, p_expect_uid: uid }, 20000)
+          : await pbPermitRpc('pb_daily_reminder_set', { p_note_id: x.id, p_due_at: new Date(x.at).toISOString(), p_text: x.text, p_job_number: x.job || null, p_work_date: x.date || null, p_expect_uid: uid }, 20000);
+        const d = r && r.data, A = pbDlyAnswer(r), wasSet = x.state !== 'clear';
+        if (R.map[x.id] !== x) { if (d && d.ok === true && wasSet && !R.map[x.id]) await pbPermitRpc('pb_daily_reminder_clear', { p_note_id: x.id, p_expect_uid: uid }, 20000); if (R.map[x.id]) R.map[x.id].ever = true; changed = true; continue; } // changed or deleted meanwhile
+        if (d && d.ok === true) { if (x.state === 'clear') delete R.map[x.id]; else { x.state = 'set'; x.ever = true; x.why = ''; } changed = true; continue; }
+        if (A.k === 'retry') break; // no signal, or the server isn't ready: stays queued
+        if (x.state === 'clear') delete R.map[x.id]; else { x.state = 'failed'; x.why = A.code === 'pb:bad_time' ? 'the time has passed' : pbDlyWhy(A.code); }
+        changed = true;
+      }
+    } finally { R.busy = false; }
+    if (changed && pbDx.rq === R) { await pbDxRqSave(); if (pbCurrentScreen === 'dailyReport') pbDxNotesRender(); }
+  }
+  // while the app is open: the reminder shows here too, once
+  setInterval(() => { try {
+    const R = pbDx.rq; if (!R.map || R.uid !== pbArchiveOwnerUid || document.visibilityState !== 'visible') return;
+    const due = Object.values(R.map).find(x => x && !x.shown && (x.state === 'set' || x.state === 'queued') && x.at <= Date.now() && x.at > Date.now() - 6 * 3600000);
+    if (!due || (typeof pbModalIsOpen === 'function' && pbModalIsOpen())) return;
+    due.shown = true; pbDxRqSave();
+    pbShowModal(due.text, [{ label: 'Close' }, { label: 'Open Note', primary: true, onClick: () => { window.pbDxOpenNote(due.id); } }], 'Reminder' + (due.job ? ' · Job ' + due.job : ''));
+  } catch (e) {} }, 20000);
+  window.addEventListener('online', () => pbDxRemSoon(3000));
+  setInterval(() => { try { if (document.visibilityState === 'visible' && navigator.onLine !== false && pbDx.rq.map && Object.values(pbDx.rq.map).some(x => x && (x.state === 'queued' || x.state === 'clear'))) pbDxRemSync().catch(() => {}); } catch (e) {} }, 60000);
+  window.pbAccountLoadHooks.push((uid) => { pbDx.rq = { uid: null, map: null, busy: false }; if (uid && uid !== 'shared') pbDxRqLoad(uid).then(() => pbDxRemSoon(5000)).catch(() => {}); });
+  // a reminder's push opens its note: the daily it is on, the Notes tab, the note shown
+  window.pbDxOpenNote = async function(id) {
+    const uid = pbArchiveOwnerUid; await pbDpLoad(uid).catch(() => null); await pbDxRqLoad(uid).catch(() => null);
+    let job = null, date = null;
+    const D = pbDp.uid === uid && pbDp.drafts ? pbDp.drafts : {};
+    Object.keys(D).some(k => { const d = D[k]; if (d && Array.isArray(d.notes) && d.notes.some(n => n && n.id === id)) { const i = k.lastIndexOf('|'); date = k.slice(i + 1); const r = pbDx.rq.map && pbDx.rq.map[id]; job = (r && r.job) || null; if (!job) { const j = (runArchive || []).find(e => e && pbDlyKey(e.jobNumber) === k.slice(0, i)); job = j ? j.jobNumber : k.slice(0, i); } return true; } return false; });
+    if (!job) { const r = pbDx.rq.map && pbDx.rq.map[id]; if (r) { job = r.job; date = r.date; } }
+    await window.pbOpenDailyReport(job ? { job, date, tab: 'notes' } : { tab: 'notes' });
+    pbDx.hl = id; clearTimeout(pbDx.hlT); pbDx.hlT = setTimeout(() => { pbDx.hl = null; try { pbDxNotesRender(); } catch (e) {} }, 4000);
+    for (let k = 0; k < 40; k++) { pbDxNotesRender(); const li = document.querySelector('#dxNoteList .dx-hl'); if (li) { try { li.scrollIntoView({ block: 'center' }); } catch (e) {} break; } await new Promise(r => setTimeout(r, 250)); }
+  };
+  { const o = window.pbPushOpen; if (typeof o === 'function') window.pbPushOpen = function(hash) { const m = /^#\/daily\/note\/([0-9a-z-]{8,40})$/.exec(String(hash || '')); if (m) { if (typeof pbLinkBusyWhy === 'function' && pbLinkBusyWhy()) return false; window.pbDxOpenNote(m[1]).catch(() => {}); return true; } return o(hash); }; }
+
+  // ---- the quick note from Home: today's daily for his current job, without opening it ----
+  function pbDxQuickJob(uid) {
+    const cj = typeof window.pbCurJobGet === 'function' ? window.pbCurJobGet() : null; if (cj && cj.job_number) return cj.job_number;
+    const j = pbDlyJobsToday(uid, pbFmToday())[0]; return j ? j.n : '';
+  }
+  window.pbDxQuickOpen = async function() {
+    const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared') return;
+    if (!(await pbDpLoad(uid))) { pbAlert('This phone’s daily report drafts couldn’t be read, so nothing will be overwritten. Close the app and open it again.', 'Add Note'); return; }
+    await pbDxRqLoad(uid);
+    const old = document.getElementById('dxQuick'); if (old) old.remove();
+    const job = pbDxQuickJob(uid);
+    pbDx.q = { photos: [], job };
+    const o = document.createElement('div'); o.id = 'dxQuick'; o.className = 'dx-sheetwrap';
+    o.innerHTML = '<div class="dx-sheet" role="dialog" aria-modal="true" aria-labelledby="dxqH"><h2 class="dx-sheeth" id="dxqH">Add note</h2>'
+      + (job ? '<p class="pbd-dim" id="dxqJob">' + escapeHtml(pbProdJobLabel(job) + ' · today') + '</p>' : '<div class="pb-field"><label for="dxqJobIn">Job number</label><input type="text" id="dxqJobIn" maxlength="60" autocomplete="off"></div>')
+      + '<div class="pb-field"><label class="pb-sr" for="dxqText">Note</label><textarea id="dxqText" rows="3" maxlength="1000" placeholder="Note" oninput="pbDxGrow(this)"></textarea></div>'
+      + '<div class="dx-qph" id="dxqPhs"></div><input type="file" accept="image/*" multiple id="dxqPhIn" aria-label="Add or take a photo" style="display:none;" onchange="pbDxQuickPh(this)">'
+      + '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" id="dxqPhBtn" onclick="document.getElementById(\'dxqPhIn\').click()">Add Photo</button></div>'
+      + pbDxRemHtml('dxq', null)
+      + '<p class="pb-rpt-status" id="dxqMsg" role="status"></p>'
+      + '<div class="pbx-btnrow dx-sheetbtns"><button type="button" class="pb-btn" id="dxqSave" onclick="pbDxQuickSave()">Save</button><button type="button" class="pb-btn ghost" id="dxqCancel" onclick="pbDxQuickClose()">Cancel</button></div></div>';
+    o.addEventListener('click', (e) => { if (e.target === o) window.pbDxQuickClose(); });
+    (document.getElementById('pbApp') || document.body).appendChild(o);
+    const t = o.querySelector('#dxqText'); if (t) try { t.focus(); } catch (e) {}
+  };
+  window.pbDxQuickClose = function() { const o = document.getElementById('dxQuick'); if (o) o.remove(); pbDx.q = null; const b = document.getElementById('homeDxNote'); if (b) try { b.focus({ preventScroll: true }); } catch (e) {} };
+  window.pbDxQuickPh = async function(input) {
+    const Q = pbDx.q, files = Array.from((input && input.files) || []); if (!Q) return;
+    for (const f of files) {
+      if (Q.photos.length >= PB_DX_MAXPH) break;
+      const b64 = await pbDlyShrink(f); if (!b64) continue;
+      let taken = null; try { const m = await pbExifTakenFromFile(f); taken = m && m.taken ? m.taken : null; } catch (e) {}
+      let sha = null; try { sha = pbSha256Bytes(Uint8Array.from(atob(b64), ch => ch.charCodeAt(0))); } catch (e) {}
+      if (sha && !Q.photos.some(p => p.sha === sha)) Q.photos.push({ sha, b64, taken });
+    }
+    try { input.value = ''; } catch (e) {}
+    const w = document.getElementById('dxqPhs'); if (w) w.innerHTML = Q.photos.map((p, i) => '<img src="data:image/jpeg;base64,' + p.b64 + '" alt="Photo ' + (i + 1) + '">').join('');
+  };
+  window.pbDxQuickSave = async function() {
+    const Q = pbDx.q, uid = pbArchiveOwnerUid; if (!Q || Q.busy) return;
+    const say = (t) => { const m = document.getElementById('dxqMsg'); if (m) m.textContent = t; };
+    const tEl = document.getElementById('dxqText'), text = pbDpCut(String((tEl && tEl.value) || '').trim(), 1000);
+    if (!text && !Q.photos.length) { if (tEl) tEl.focus(); return; } // an empty Save does nothing
+    const job = Q.job || String(((document.getElementById('dxqJobIn') || {}).value) || '').trim();
+    if (!job) { say('Type the job number.'); const j = document.getElementById('dxqJobIn'); if (j) j.focus(); return; }
+    const rem = text ? pbDxRemAt('dxq') : null; if (rem === 'bad') { say('Pick a reminder time later than now.'); return; }
+    if (!(await pbDpLoad(uid)) || pbDp.uid !== uid) { say('Not saved: the drafts couldn’t be read.'); return; }
+    const date = pbFmToday(), st = await pbDlyLoad(uid).catch(() => null);
+    if (st && st.reports.some(r => r && r.state !== 'discarded' && r.state !== 'replaced' && r.workDate === date && pbDlyKey(r.jobNumber) === pbDlyKey(job))) { say('Today’s daily for ' + pbProdJobLabel(job) + ' is already signed. Open it and add an amendment to add this.'); return; }
+    Q.busy = true;
+    try {
+      const k = pbDlyKey(job) + '|' + date;
+      if (Q.photos.length) { Q.photos.forEach(p => { pbDp.photos[p.sha] = { b64: p.b64, takenExif: p.taken, at: Date.now() }; }); if (!(await pbDpSave(['p']))) { say('Not saved: this phone’s storage is full.'); return; } }
+      const D = pbDp.drafts, d = D[k] || { quick: true, crew: [], equip: [], events: [], notes: [], photos: [], from: { kind: 'none' }, k, at: Date.now() }; // read after the photos were kept
+      if (!Array.isArray(d.notes)) d.notes = []; if (!Array.isArray(d.photos)) d.photos = [];
+      Q.photos.forEach(p => { if (d.photos.length < PB_DX_MAXPH && !d.photos.some(x => x.sha === p.sha)) d.photos.push({ sha: p.sha, taken_exif: p.taken, caption: text ? text.slice(0, 200) : '' }); });
+      const note = text ? { id: pbDxUuid(), at: Date.now(), text } : null; if (note) d.notes.push(note);
+      d.at = Date.now(); d.k = k; D[k] = d;
+      if (!(await pbDpSave(['d']))) { if (note) d.notes = d.notes.filter(x => x !== note); say('Not saved: this phone’s storage is full.'); return; }
+      if (note && typeof rem === 'number') await pbDxRemPut(note, rem, job, date);
+      window.pbDxQuickClose();
+      pbDxToast((note ? 'Note' : 'Photo') + ' added to today’s daily · ' + pbProdJobLabel(job));
+      pbDxHomeBar();
+    } finally { if (pbDx.q === Q) Q.busy = false; }
+  };
+
+  // ---- the foreman's Home: "Add note" and "Daily report" side by side, with the days still without a daily ----
+  function pbDxHomeBar() {
+    const el = document.getElementById('homeDxBar'), uid = pbArchiveOwnerUid; if (!el) return;
+    const fm = typeof pbLvIsForeman === 'function' && pbLvIsForeman(uid);
+    if (!fm) { if (!el.hidden) el.hidden = true; return; }
+    if (pbDp.uid !== uid || !pbDp.drafts) { if (!pbDp.loading) pbDpLoad(uid).then(x => { if (x) pbDxHomeBar(); }).catch(() => {}); }
+    if (!pbDly.st && !pbDx.stAsked) { pbDx.stAsked = true; pbDlyLoad(uid).then(() => pbDxHomeBar()).catch(() => {}); }
+    const job = pbDxQuickJob(uid), date = pbFmToday(), k = pbDlyKey(job) + '|' + date;
+    const signed = !!(job && pbDly.st && pbDly.st.reports.some(r => r && r.state !== 'discarded' && r.state !== 'replaced' && r.workDate === date && pbDlyKey(r.jobNumber) === pbDlyKey(job)));
+    const d = pbDp.uid === uid && pbDp.drafts ? pbDp.drafts[k] : null, nn = d ? pbDxNotes(d).length : 0;
+    const st = signed ? 'Signed' : nn ? nn + (nn === 1 ? ' note' : ' notes') : '';
+    const M = (pbDx.miss.uid === uid && pbDx.miss.list ? pbDx.miss.list : []).filter(x => !(pbDly.st && pbDly.st.reports.some(r => r && r.state !== 'discarded' && r.state !== 'replaced' && r.workDate === x.date && pbDlyKey(r.jobNumber) === pbDlyKey(x.job)))), days = [...new Set(M.map(x => x.date))];
+    const h = '<div class="dx-hpair"><button type="button" class="dx-hbtn" id="homeDxNote" onclick="pbDxQuickOpen()"><span class="dx-hic dx-hic-note" aria-hidden="true"></span><span class="dx-hl1">Add note</span></button>'
+      + '<button type="button" class="dx-hbtn" id="homeDxDaily" onclick="pbDxHomeDaily()"><span class="dx-hic dx-hic-daily" aria-hidden="true"></span><span class="dx-hl1">Daily report</span>' + (st ? '<span class="dx-hst" id="homeDxDailySt">' + escapeHtml(st) + '</span>' : '') + '</button></div>'
+      + (days.length ? '<button type="button" class="dx-hmiss" id="homeDxMiss" onclick="pbDxMissOpen()"><span class="dx-hmiss-k">Not done</span> ' + escapeHtml(days.slice(0, 3).map(pbDxShort).join(' · ') + (days.length > 3 ? ' +' + (days.length - 3) : '')) + '</button>' : '');
+    pbSetHtml(el, h); if (el.hidden) el.hidden = false;
+  }
+  window.pbDxHomeDaily = function() { window.pbOpenDailyReport({ tab: 'notes' }); };
+  { const r0 = window.pbRenderHome; if (typeof r0 === 'function') window.pbRenderHome = function() { const out = r0.apply(this, arguments); try { pbDxHomeBar(); } catch (e) { console.error(e); } return out; }; }
+
+  // ---- the PDF: the narrative, the notes and the day's photos up front; the crew's reports; the crew's hours ----
+  function pbDxPdfFront(R, S, src) {
+    R.section('narrative', 'Foreman’s narrative', { keep: 30 });
+    R.para(S.narrative || '(none written)', { size: 10 });
+    src('Typed by the foreman before signing.');
+    const N = Array.isArray(S.notes) ? S.notes.filter(x => x && x.text) : [];
+    if (N.length) {
+      R.section('notes', 'Notes (' + N.length + ')', { keep: 24 });
+      R.table({ head: ['Time', 'Note'], columns: [{ cellWidth: 34 }, {}], fontSize: 9, body: N.map(x => [pbRptDt(Date.parse(x.at), S.tz ? { tz: S.tz } : {}) + (x.edited_at ? '\n(edited ' + pbRptDt(Date.parse(x.edited_at), S.tz ? { tz: S.tz } : {}) + ')' : ''), String(x.text)]) });
+      src('Typed by the foreman during the day; each kept on his phone with the time it was added.');
+    }
+    const PH = Array.isArray(S.photos) ? S.photos.filter(p => p && p.sha).slice(0, PB_DX_MAXPH) : [];
+    if (PH.length) {
+      const P = (pbDa.pdfRep && pbDa.pdfRep.evPhotos) || {}, by = (S.signed && S.signed.name) || 'the foreman';
+      R.section('dphotos', 'Photos of the day (' + PH.length + ')', { keep: 24 });
+      R.table({ head: ['#', 'Caption', 'Photo'], columns: [{ cellWidth: 9, halign: 'right' }, {}, { cellWidth: 42 }], fontSize: 9,
+        body: PH.map((p, i) => { const ph = R.photo(P[p.sha] || null, { shows: p.caption || 'no caption', belongs: 'Photos of the day, ' + (i + 1), taken: p.taken_exif || 'not recorded', attached: 'on this report', by, backup: 'kept with the report on the company server' },
+          P[p.sha] ? null : 'Not on this phone and not on the company server yet (the foreman’s phone sends it once the report is accepted). Its SHA-256: ' + p.sha, true); return [String(i + 1), p.caption || '—', R.photoCell([ph])]; }) });
+    }
+  }
+  function pbDxPdfCrew(R, S, which) {
+    const C = S && S.crew_reports; if (!C) return;
+    if (which === 'runs' && Array.isArray(C.runs) && C.runs.length) {
+      R.sub('Crew run reports (' + C.runs.length + ')');
+      R.table({ head: ['Who', 'Run', 'Status'], columns: [{ cellWidth: 44 }, {}, { cellWidth: 30 }], fontSize: 8.6, body: C.runs.map(x => [x.who || '—', x.label || '—', x.sent ? 'Sent' : 'Not sent yet']) });
+      R.para('Source: ' + C.source, { size: 8.5, color: PB_RPT.MUTED, after: 2.5 });
+    }
+    if (which === 'permits' && Array.isArray(C.permits) && C.permits.length) {
+      R.sub('Crew permits (' + C.permits.length + ')');
+      R.table({ head: ['Space', 'Who', 'Status'], columns: [{ cellWidth: 50 }, {}, { cellWidth: 46 }], fontSize: 8.6, body: C.permits.map(x => [x.space || 'Confined space', x.who || '—', x.open ? 'Open' : 'Closed' + (x.closed_at ? '\n' + pbRptDt(Date.parse(x.closed_at)) : '')]) });
+    }
+  }
+  function pbDxPdfCrewTable(R, crew) {
+    R.sub('Crew (' + crew.length + ')');
+    const sum = Math.round(crew.reduce((s, p) => s + (typeof p.hours === 'number' ? p.hours : 0), 0) * 100) / 100;
+    R.table({ head: ['Name', 'Hours', 'Crew log'], columns: [{}, { cellWidth: 22, halign: 'right' }, { cellWidth: 24, halign: 'right' }], fontSize: 8.6,
+      body: crew.map(p => [p.name + (p.user_id ? '' : ' *'), typeof p.hours === 'number' ? String(p.hours) : '—', typeof p.log_h === 'number' ? String(p.log_h) : '—']), foot: ['Total', String(sum), ''] });
+    // the server's cross-job check (the Other hours section prints it on reports that have one)
+    const W = ((typeof pbDa !== 'undefined' && pbDa.pdfRep && pbDa.pdfRep.warnings) || []).filter(w => w && w.kind === 'over_24_across_jobs');
+    if (W.length) R.para('Over 24 h across jobs (check): ' + W.map(w => w.name + ' ' + pbDaH(w.hours) + ' (' + (w.jobs || []).map(j => 'job ' + j.job + ' ' + pbDaH(j.hours)).join(', ') + ')').join('; ') + '.', { size: 9.5, style: 'bold', color: PB_RPT.ACCENT });
+  }
+  window.__debugDailyX = () => ({ dx: pbDx, missLoad: (f) => pbDxMissLoad(f), crewDay: pbDxCrewDay, logH: pbDxLogH });
+  // ================= end feat_dailyx (module) =================
+
+  { const r0 = window.pbDlyRender; window.pbDlyRender = function() { const out = r0.apply(this, arguments); try { pbDxAfterRender(); } catch (e) { console.error(e); } return out; }; } // feat_dailyx
+  function pbDxAfterRender() {
+    try { pbDx.crewKey = pbDxCrewKey(); } catch (e) {}
+    const dia = pbDlyEl('drDiary'), on = pbDxOn();
+    if (on && (pbDp.uid !== pbArchiveOwnerUid || !pbDp.drafts) && !pbDp.loading) pbDpLoad(pbArchiveOwnerUid).then(x => { if (x && pbCurrentScreen === 'dailyReport') pbDxAfterRender(); }).catch(() => {});
+    if (dia && dia.hidden === on) dia.hidden = !on;
+    if (!on) { pbDxTabPaint(); return; }
+    pbDxNotesRender(); window.pbDxGrow(pbDlyEl('drNarrative')); pbDxTabPaint();
+    { const w = pbDlyEl('dxNoteRemW'), kk = pbDlyKey(pbDlyView.job) + '|' + pbDlyView.date; if (w && w.dataset.k !== kk) { w.dataset.k = kk; w.innerHTML = pbDxRemHtml('dxNoteR', null); } }
+    if (pbDx.rq.uid !== pbArchiveOwnerUid) pbDxRqLoad(pbArchiveOwnerUid).then(() => pbDxNotesRender()).catch(() => {});
+    const V = pbDlyView, k = pbDlyKey(V.job) + '|' + V.date; // the crew's reports for the day, also with Attached reports switched off
+    if (V.job && pbDa && pbDa.uid === pbArchiveOwnerUid && (!pbDa.day || pbDa.day.k !== k || (!pbDa.day.data && !pbDa.day.busy && Date.now() - (pbDx.dayAt || 0) > 60000))) { pbDx.dayAt = Date.now(); pbDaDayLoad(false).catch(() => {}); }
+  }
+
   // ================= feat_dailyplus: crew on site, equipment on site, delays / standby / extra work (owner, Oct 24) =================
   // FOREMAN (the daily report): "Crew today" (his crew in the app + typed names), "Equipment on site" (the job plan's pieces
   // + typed) and the day's delay / standby / extra-work entries (kind, reason + detail, hours, crew size, idle equipment,
@@ -50933,7 +51807,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // review N2: cut by code points (a cut emoji is a lone surrogate the server refuses, and the whole report with it)
   const pbDpCut = (s, n) => { const a = Array.from(String(s === null || s === undefined ? '' : s)); return a.length > n ? a.slice(0, n).join('') : a.join(''); };
   const pbDpEntries = (n) => n + (n === 1 ? ' entry' : ' entries');
-  Object.assign(PB_DLY_WORDS, { 'pb:bad_events': 'The company server couldn’t store the entries under Delays & extra work, so it did not take the report (nothing was half-saved).',
+  Object.assign(PB_DLY_WORDS, { 'pb:need_photo': 'This photo is no longer on this phone, and the company server doesn’t have it.', 'pb:bad_events': 'The company server couldn’t store the entries under Delays & extra work, so it did not take the report (nothing was half-saved).',
     'pb:photo_not_signed': 'This photo is not one the signed entry lists, so the server won’t add it.', 'pb:superseded': 'That entry was changed by an amendment.' });
   let pbDp = { uid: null, drafts: null, photos: null, send: null, plans: null, failed: false, loading: null, form: null, typed: { crew: '', equip: '' }, busy: false, timer: null };
 
@@ -50970,6 +51844,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbDp.send.list = S.filter(x => x && (x.state === 'waiting' || (x.at || 0) > old));
     const need = new Set();
     Object.keys(D).forEach(k => (D[k].events || []).forEach(e => (e.photos || []).forEach(p => p && p.sha && need.add(p.sha))));
+    Object.keys(D).forEach(k => (D[k].photos || []).forEach(p => p && p.sha && need.add(p.sha))); // feat_dailyx: the report's own photos
     pbDp.send.list.forEach(x => need.add(x.sha));
     Object.keys(P).forEach(sha => { if (!need.has(sha) && (P[sha].at || 0) < old) delete P[sha]; });
   }
@@ -50977,15 +51852,18 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // ---- what the form starts from: the draft, else the version being amended, else his previous report ----
   const pbDpKey = () => pbDlyKey(pbDlyView.job) + '|' + pbDlyView.date;
   function pbDpFromSnap(s, withEvents) {
-    const crew = (s && s.crew_today && Array.isArray(s.crew_today.people) ? s.crew_today.people : []).filter(p => p && String(p.name || '').trim()).map(p => ({ name: pbDpCut(String(p.name).trim(), 80), user_id: p.user_id || null }));
-    const equip = (s && s.equipment_today && Array.isArray(s.equipment_today.pieces) ? s.equipment_today.pieces : []).filter(q => q && String(q.name || '').trim()).map(q => Object.assign({ key: q.key || null, name: pbDpCut(String(q.name).trim(), 80), unit_no: q.unit_no || null }, q.rental ? { rental: true } : {}));
+    const crew = (s && s.crew_today && Array.isArray(s.crew_today.people) ? s.crew_today.people : []).filter(p => p && String(p.name || '').trim()).map(p => Object.assign({ name: pbDpCut(String(p.name).trim(), 80), user_id: p.user_id || null }, withEvents && typeof p.hours === 'number' && isFinite(p.hours) ? { hours: String(p.hours) } : {})); /* feat_dailyx: an amendment keeps the hours */
+    const equip = (s && s.equipment_today && Array.isArray(s.equipment_today.pieces) ? s.equipment_today.pieces : []).filter(q => q && String(q.name || '').trim()).map(q => Object.assign({ key: q.key || null, name: pbDpCut(String(q.name).trim(), 80), unit_no: q.unit_no || null }, q.rental ? { rental: true } : {}, q.co_id ? { co_id: String(q.co_id) } : {}, q.cost_code ? { cost_code: pbDpCut(String(q.cost_code), 60) } : {}, withEvents && typeof q.hours === 'number' && isFinite(q.hours) ? { hours: String(q.hours) } : {})); /* feat_coequip */
     const events = withEvents && s && Array.isArray(s.events) ? s.events.filter(e => e && e.cid).map(e => ({ cid: String(e.cid), kind: e.kind, reason: e.reason, detail: e.detail || '', hours: e.hours, crew_size: e.crew_size === null || e.crew_size === undefined ? null : e.crew_size,
       equipment: Array.isArray(e.equipment) ? e.equipment.map(q => ({ key: q.key || null, name: q.name, unit_no: q.unit_no || null })) : [], photos: Array.isArray(e.photos) ? e.photos.filter(p => p && p.sha).map(p => ({ sha: p.sha, taken_exif: p.taken_exif || null })) : [] })) : [];
-    return { crew, equip, events };
+    const notes = withEvents && s && Array.isArray(s.notes) ? s.notes.filter(x => x && x.text).map(x => Object.assign({ id: pbDlyId(), at: Date.parse(x.at) || Date.now(), text: pbDpCut(String(x.text), 1000) }, x.edited_at ? { edited_at: Date.parse(x.edited_at) || null } : {})) : []; // feat_dailyx
+    const photos = withEvents && s && Array.isArray(s.photos) ? s.photos.filter(p => p && /^[0-9a-f]{64}$/.test(p.sha || '')).slice(0, PB_DX_MAXPH).map(p => ({ sha: p.sha, taken_exif: p.taken_exif || null, caption: p.caption || '' })) : [];
+    return { crew, equip, events, notes, photos };
   }
   function pbDpDraft() {
     const D = pbDp.drafts; if (!D || pbDp.uid !== pbArchiveOwnerUid || !pbDlyView.job) return null;
-    const k = pbDpKey(); if (D[k]) { D[k].k = k; return D[k]; }
+    const k = pbDpKey(); if (D[k] && !D[k].quick) { D[k].k = k; return D[k]; }
+    const Q = D[k] && D[k].quick ? D[k] : null; /* feat_dailyx: notes added from Home: the day still starts as usual (crew and equipment from the last report) */
     const V = pbDlyView, st = pbDly.st; let d = null;
     if (V.amend && st) { const r = st.reports.find(x => x.cid === V.amend.prevCid); if (r && r.snapshot) d = Object.assign(pbDpFromSnap(r.snapshot, true), { from: { kind: 'amend' } }); }
     if (!d && st) {
@@ -50993,10 +51871,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         .sort((a, b) => (b.workDate > a.workDate ? 1 : b.workDate < a.workDate ? -1 : (b.signedAt || 0) - (a.signedAt || 0)));
       const p = prev.find(r => pbDlyKey(r.jobNumber) === pbDlyKey(V.job)) || prev[0];
       if (p) { const x = pbDpFromSnap(p.snapshot, false), ids = pbDpCrewIds(); if (ids) x.crew = x.crew.map(c => c.user_id && !ids.has(c.user_id) ? { name: c.name, user_id: null, left: true } : c);
+        { const act = pbCeActive(pbArchiveOwnerUid); if (act) { x.equip = x.equip.filter(q => !q.co_id || act.some(a => a.id === q.co_id)).map(q => { const a = q.co_id && act.find(z => z.id === q.co_id); return a ? Object.assign({}, q, { name: a.name, unit_no: a.unit_no || null }, a.cost_code ? { cost_code: a.cost_code } : {}) : q; }); } } /* feat_coequip: a retired piece isn't carried forward; a renamed one comes as the list has it now */
         if (x.crew.length || x.equip.length) d = Object.assign(x, { from: { kind: 'prev', job: p.jobNumber, date: p.workDate } }); }
     }
     // not kept until he changes something: until then it follows his latest signed report
-    return Object.assign({ crew: [], equip: [], events: [], from: { kind: 'none' } }, d || {}, { k, at: Date.now() });
+    { const out = Object.assign({ crew: [], equip: [], events: [], notes: [], photos: [], from: { kind: 'none' } }, d || {}, { k, at: Date.now() }); /* feat_dailyx: + notes, photos */
+      if (Q) { out.notes = (Array.isArray(Q.notes) ? Q.notes : []).concat(out.notes || []); out.photos = (Array.isArray(Q.photos) ? Q.photos : []).concat(out.photos || []).slice(0, PB_DX_MAXPH); D[k] = out; } // the quick notes and photos from Home stay
+      return out; }
   }
   // review S8: the phone keeps one list of reports per account, not per company: only this company's reports fill or suggest
   const pbDpSameCo = (r) => (r.co || null) === ((pbDly.st && pbDly.st.co) || null);
@@ -51018,11 +51899,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbDpEqSugg(d) {
     const out = [], seen = new Set(d.equip.map(pbDpEqKey)), names = new Set(d.equip.map(q => pbDpNk(pbDpEqName(q))));
-    const add = (q) => { if (!q || !String(q.name || '').trim()) return; const x = Object.assign({ key: q.key || null, name: pbDpCut(String(q.name).trim(), 80), unit_no: q.unit_no ? pbDpCut(q.unit_no, 40) : null }, q.rental ? { rental: true } : {}); const k = pbDpEqKey(x); if (seen.has(k) || names.has(pbDpNk(pbDpEqName(x)))) return; seen.add(k); names.add(pbDpNk(pbDpEqName(x))); out.push(x); };
+    const act = pbCeActive(pbArchiveOwnerUid), on = act ? new Set(act.map(q => q.id)) : null; // feat_coequip
+    const add = (q) => { if (!q || !String(q.name || '').trim()) return; const x = Object.assign({ key: q.key || null, name: pbDpCut(String(q.name).trim(), 80), unit_no: q.unit_no ? pbDpCut(q.unit_no, 40) : null }, q.rental ? { rental: true } : q.co_id ? { co_id: String(q.co_id) } : {}, q.cost_code ? { cost_code: pbDpCut(String(q.cost_code), 60) } : {});
+      if (x.co_id && on && !on.has(x.co_id)) return; // retired
+      const k = pbDpEqKey(x), nk = pbDpNk(pbDpEqName(x)); if (seen.has(k) || names.has(nk)) { const o = x.co_id && out.find(y => !y.co_id && !y.rental && pbDpNk(pbDpEqName(y)) === nk); if (o) { o.co_id = x.co_id; if (!o.cost_code && x.cost_code) o.cost_code = x.cost_code; } return; } seen.add(k); names.add(nk); out.push(x); };
     const P = pbDp.plans && pbDp.plans[pbDlyKey(pbDlyView.job)]; (P && Array.isArray(P.equip) ? P.equip : []).forEach(add);
-    const S = pbDlyView.snap; if (S && S.crew && Array.isArray(S.crew.equipment)) S.crew.equipment.forEach(q => q && q.name && q.name !== 'not named' && add({ name: q.name }));
+    (act || []).forEach(q => add({ key: null, co_id: q.id, name: q.name, unit_no: q.unit_no, cost_code: q.cost_code })); // feat_coequip: the company's pieces
+    const S = pbDlyView.snap; if (S && S.crew && Array.isArray(S.crew.equipment)) S.crew.equipment.forEach(q => q && q.name && q.name !== 'not named' && !q.rental && q.first_in && add({ name: q.name })); /* feat_dailyx: the Crew log's pieces (not the hours typed on a run) */
     (pbDly.st ? pbDly.st.reports : []).filter(r => r && r.snapshot && r.snapshot.equipment_today && pbDpSameCo(r) && pbDlyKey(r.jobNumber) === pbDlyKey(pbDlyView.job)).slice(-6).reverse().forEach(r => (r.snapshot.equipment_today.pieces || []).forEach(add));
-    return out.slice(0, 16);
+    return out.slice(0, 600);
   }
   // the job plan's equipment (pb_prod_job_plan_crew, the call My crew now makes), kept on this phone for no-signal days
   async function pbDpPlanLoad(job) {
@@ -51083,34 +51968,33 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return;
     }
     const d = pbDpDraft(); if (!d) return;
+    pbDxFold(d); /* feat_dailyx: Other hours become the crew's and equipment's hours */
     if (pbDp.form && pbDp.form.key !== pbDpKey()) pbDp.form = null; // another job or day was picked
     pbDpPlanLoad(pbDlyView.job).catch(() => {});
     if (pbLv && pbLv.uid === uid && !pbLv.data && !pbLv.busy && Date.now() - (pbDp.lvAt || 0) > 60000) { pbDp.lvAt = Date.now(); pbLvLoad(uid).then(() => { if (pbLv.data && pbCurrentScreen === 'dailyReport') pbDpRender(); }).catch(() => null); } // his crew in the app, for the suggestions (asked at most once a minute)
-    const cs = pbDpCrewSugg(d), es = pbDpEqSugg(d), n = d.crew.length, m = d.equip.length, ids = pbDpCrewIds();
+    const cs = pbDpCrewSugg(d), n = d.crew.length, m = d.equip.length, ids = pbDpCrewIds();
+    if (!pbCe.busy && (pbCe.uid !== uid || Date.now() - (pbCe.at || 0) > 600000) && Date.now() - (pbDp.ceAt || 0) > 60000) { pbDp.ceAt = Date.now(); pbCeLoad(uid).then(() => { if (pbCurrentScreen === 'dailyReport') pbDpRender(); }).catch(() => null); } // feat_coequip: the company's pieces (asked at most once a minute)
     let h = '';
     if (d.from && d.from.kind === 'prev' && !d.from.edited) h += '<p class="pbd-dim dp-from" id="dpFrom">Crew and equipment are filled in from your report of ' + escapeHtml(pbDlyDayText(d.from.date)) + (pbDlyKey(d.from.job) !== pbDlyKey(pbDlyView.job) ? ' (job ' + escapeHtml(d.from.job) + ')' : '') + '. Change what’s different today.</p>';
     // crew
-    h += '<section class="pbd-card" id="dpCrew" aria-labelledby="dpCrewH"><h3 class="pbd-h3" id="dpCrewH">Crew today <span class="dp-n" id="dpCrewN">' + escapeHtml(n ? pbDpPeople(n) : 'nobody listed') + '</span></h3>'
-      + (n ? '<ul class="dp-chips" id="dpCrewList">' + d.crew.map((p, i) => pbDpChip('Crew', i, p.name, pbDpCrewTag(p, ids))).join('') + '</ul>' : '')
-      + (cs.length ? '<div class="dp-sug" id="dpCrewSug" role="group" aria-label="Add from your crew">' + cs.map((p, i) => '<button type="button" class="dp-sugb" id="dpCrewSug_' + i + '" onclick="pbDpAddSugg(\'crew\',' + i + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>' + escapeHtml(p.name) + '</button>').join('') + '</div>' : '')
-      + pbDpAddRow('crew', 'Add a name', false) + '</section>';
+    h += pbDxCrewCard(d, cs, ids); /* feat_dailyx: a row per person with hours */
     // equipment
-    h += '<section class="pbd-card" id="dpEquip" aria-labelledby="dpEquipH"><h3 class="pbd-h3" id="dpEquipH">Equipment on site <span class="dp-n" id="dpEquipN">' + escapeHtml(m ? pbDpPieces(m) : 'none listed') + '</span></h3>'
-      + (m ? '<ul class="dp-chips" id="dpEqList">' + d.equip.map((q, i) => pbDpChip('Eq', i, pbDpEqName(q), q.rental ? 'Rental' : '')).join('') + '</ul>' : '')
-      + (es.length ? '<div class="dp-sug" id="dpEqSug" role="group" aria-label="Add from the job plan">' + es.map((q, i) => '<button type="button" class="dp-sugb" id="dpEqSug_' + i + '" onclick="pbDpAddSugg(\'equip\',' + i + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>' + escapeHtml(pbDpEqName(q)) + '</button>').join('') + '</div>' : '')
-      + pbDpAddRow('equip', 'Add equipment', false) + '<label class="pbd-check" for="dpEqRental"><input type="checkbox" id="dpEqRental"' + (pbDp.typed.rental ? ' checked' : '') + ' onchange="pbFmDpRental(this.checked)"> Rental</label></section>'; /* feat_foreman 11 */
+    h += '<section class="pbd-card' + pbDxSecCls('dpEquip') + '" id="dpEquip" aria-labelledby="dpEquipH">' + pbDxHead('dpEquip', 'dpEquipH', 'Equipment on site', 'dpEquipN', pbCeHead(d)) + '<div class="dx-body" id="dpEquipBody">' /* feat_dailyx: folds */
+      + (m ? '<ul class="dp-chips dp-eqrows" id="dpEqList">' + d.equip.map((q, i) => pbCeRow(q, i)).join('') + '</ul>' : '') + pbDxLogLines(true) /* feat_coequip: an hours box per piece */
+      + pbDpAddRow('equip', 'Add equipment', false) + '<div id="dpEqSugW">' + pbCeSugHtml(d) + '</div>'
+      + '<label class="pbd-check" for="dpEqRental"><input type="checkbox" id="dpEqRental"' + (pbDp.typed.rental ? ' checked' : '') + ' onchange="pbFmDpRental(this.checked)"> Rental</label></div></section>'; /* feat_foreman 11 */
     // delays / standby / extra work
     const E = d.events, tot = E.reduce((s, e) => s + pbDpNum(e.hours), 0);
-    h += '<section class="pbd-card" id="dpEvents" aria-labelledby="dpEventsH"><h3 class="pbd-h3" id="dpEventsH">Delays &amp; extra work <span class="dp-n" id="dpEventsN">' + escapeHtml(E.length ? pbDpEntries(E.length) + ' · ' + pbDpH(tot) : 'none') + '</span></h3>'
+    h += '<section class="pbd-card' + pbDxSecCls('dpEvents') + '" id="dpEvents" aria-labelledby="dpEventsH">' + pbDxHead('dpEvents', 'dpEventsH', 'Delays & extra work', 'dpEventsN', '· ' + (E.length ? pbDpEntries(E.length) + ' · ' + pbDpH(tot) : 'none')) + '<div class="dx-body" id="dpEventsBody">' /* feat_dailyx */
       + (E.length ? '<ul class="dp-evs" id="dpEvList">' + E.map((e, i) => (pbDp.form && pbDp.form.i === i) ? '<li class="dp-ev" id="dpEv_' + i + '">' + pbDpFormHtml(d) + '</li>'
         : '<li class="dp-ev" id="dpEv_' + i + '"><p class="dp-evh"><strong>' + escapeHtml(pbDpKindName(e.kind) + ' · ' + pbDpH(e.hours)) + '</strong> · ' + escapeHtml(pbDpReasonName(e.reason)) + '</p>'
           + (e.detail ? '<p class="dp-evd">' + escapeHtml(e.detail) + '</p>' : '') + (pbDpEvLine(e) ? '<p class="pbd-dim">' + escapeHtml(pbDpEvLine(e)) + '</p>' : '')
           + '<div class="pbd-acts"><button type="button" class="pb-btn ghost small" id="dpEvEdit_' + i + '" onclick="pbDpFormOpen(' + i + ')"' + (pbDp.form ? ' disabled' : '') + '>Change</button><button type="button" class="pb-btn ghost small" id="dpEvDel_' + i + '" onclick="pbDpEvRemove(' + i + ')"' + (pbDp.form ? ' disabled' : '') + '>Remove</button></div></li>').join('') + '</ul>' : '')
       + (pbDp.form && pbDp.form.i < 0 ? pbDpFormHtml(d) : pbDp.form ? '' : '<div class="pb-btn-row"><button type="button" class="pb-btn ghost" id="dpEvAdd" onclick="pbDpFormOpen(-1)">Add an Entry</button></div>')
-      + '<p class="pbd-src">Delays, standby and extra work, sent with the signed report. The office reviews each entry; a T&amp;M ticket is the office’s to send.</p></section>';
+      + '<p class="pbd-src">Delays, standby and extra work, sent with the signed report. The office reviews each entry; a T&amp;M ticket is the office’s to send.</p></div></section>' + pbDxPhotosCard(d); /* feat_dailyx */
     const keep = pbFocusKeep(el); pbSetHtml(el, h); pbFocusBack(keep);
   }
-  window.pbDpTyped = function(kind, v) { pbDp.typed[kind] = String(v || ''); };
+  window.pbDpTyped = function(kind, v) { pbDp.typed[kind] = String(v || ''); if (kind === 'equip') pbCeSugPaint(); }; /* feat_coequip: the type-ahead */
   window.pbDpAddTyped = async function(kind) {
     const d = pbDpDraft(); if (!d) return;
     const el = pbDlyEl(kind === 'crew' ? 'dpCrewIn' : 'dpEqIn'), v = pbDpCut(String((el ? el.value : pbDp.typed[kind]) || '').trim().replace(/\s+/g, ' '), 80);
@@ -51118,8 +52002,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (kind === 'crew') {
       if (!d.crew.some(p => pbDpNk(p.name) === pbDpNk(v))) { const s = pbDpCrewSugg(d).find(p => pbDpNk(p.name) === pbDpNk(v)); d.crew.push({ name: s ? s.name : v, user_id: s ? s.user_id : null }); }
     } else {
-      const s = pbDpEqSugg(d).find(q => pbDpNk(pbDpEqName(q)) === pbDpNk(v) || pbDpNk(q.name) === pbDpNk(v));
-      if (!d.equip.some(q => pbDpNk(pbDpEqName(q)) === pbDpNk(v))) d.equip.push(pbDp.typed.rental ? { key: null, name: v, unit_no: null, rental: true } : (s || { key: null, name: v, unit_no: null })); pbDp.typed.rental = false; /* feat_foreman 11 */
+      const all = pbDpEqSugg(d), byName = all.filter(q => pbDpNk(q.name) === pbDpNk(v)), s = all.find(q => pbDpNk(pbDpEqName(q)) === pbDpNk(v)) || (byName.length === 1 ? byName[0] : null); /* feat_coequip: a bare name picks a piece only when one piece has it */
+      if (!d.equip.some(q => pbDpNk(pbDpEqName(q)) === pbDpNk(v) && !q.rental === !pbDp.typed.rental)) d.equip.push(pbDp.typed.rental ? { key: null, name: v, unit_no: null, rental: true } : (s || { key: null, name: v, unit_no: null })); pbDp.typed.rental = false; /* feat_foreman 11 */
     }
     pbDp.typed[kind] = ''; if (el) el.value = '';
     await pbDpTouch(d); pbDpRender();
@@ -51127,7 +52011,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   };
   window.pbDpAddSugg = async function(kind, i) {
     const d = pbDpDraft(); if (!d) return;
-    if (kind === 'crew') { const s = pbDpCrewSugg(d)[i]; if (s) d.crew.push(s); } else { const s = pbDpEqSugg(d)[i]; if (s) d.equip.push(s); }
+    if (kind === 'crew') { const s = pbDpCrewSugg(d)[i]; if (s) d.crew.push(s); } else { const s = pbCeShown(d)[i]; if (!s) return; d.equip.push(s); pbDp.typed.equip = ''; const el = pbDlyEl('dpEqIn'); if (el) el.value = ''; } /* feat_coequip: from the filtered list */
     await pbDpTouch(d); pbDpRender();
   };
   window.pbDpRemove = async function(kind, i) {
@@ -51186,8 +52070,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // ---- signing: what blocks it, what goes into the snapshot, the photos after it ----
   function pbDpBlock() {
     if (pbDp.uid === pbArchiveOwnerUid && pbDp.failed) return 'The crew, equipment and delays on this phone couldn’t be read. Close the app and open it again before signing.';
-    if (pbDp.form) return 'Add or cancel the entry you are writing under Delays & extra work first.';
+    if (pbDp.form) { pbDxTog('dpEvents', true); return 'Add or cancel the entry you are writing under Delays & extra work first.'; }
     if (!pbDpDraft()) return 'The crew and equipment are still loading. Try again in a moment.';
+    { const q = pbDpDraft().equip.find(x => pbCeHrs(pbDxHv(x, true)).bad); if (q) { pbDxTog('dpEquip', true); return 'Equipment on site: check the hours for ' + pbDpEqName(q) + ' (a number of hours, at most 24).'; } } // feat_coequip
+    { const p = pbDpDraft().crew.find(x => pbCeHrs(pbDxHv(x, false)).bad); if (p) { pbDxTog('dpCrew', true); return 'Crew today: check the hours for ' + p.name + ' (a number of hours, at most 24).'; } } // feat_dailyx
     return '';
   }
   function pbDpIntoSnap(snap) {
@@ -51195,7 +52081,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const src = d.from && d.from.kind === 'prev' ? 'Listed by the foreman on this report (started from his report of ' + d.from.date + ').' : 'Listed by the foreman on this report.';
     const ids = pbDpCrewIds();
     snap.crew_today = { source: src, people: d.crew.map(p => ({ name: pbDpCut(p.name, 80), user_id: p.user_id && !p.left && (!ids || ids.has(p.user_id)) ? p.user_id : null })) };
-    snap.equipment_today = { source: src, pieces: d.equip.map(q => Object.assign({ key: q.key || null, name: q.name, unit_no: q.unit_no || null }, q.rental ? { rental: true } : {})) };
+    snap.equipment_today = { source: src, pieces: d.equip.map(q => { const h = pbCeHrs(pbDxHv(q, true)).n; return Object.assign({ key: q.key || null, name: q.name, unit_no: q.unit_no || null }, q.rental ? { rental: true } : {}, q.co_id && !q.rental ? { co_id: q.co_id } : {}, q.cost_code ? { cost_code: q.cost_code } : {}, h !== null && h !== undefined ? { hours: h } : {}, pbDxLogH(pbDpEqName(q), true) > 0 ? { log_h: pbDxLogH(pbDpEqName(q), true) } : {}); }) }; /* feat_coequip: + the hours, the company piece, its cost code */
+    snap.crew_today.people = d.crew.map((p, i) => { const o = snap.crew_today.people[i], h = pbCeHrs(pbDxHv(p, false)).n, lh = pbDxLogH(p.name, false); return Object.assign(o, h !== null && h !== undefined ? { hours: h } : {}, lh > 0 ? { log_h: lh } : {}); }); /* feat_dailyx: hours per person */
+    if (pbDxNotes(d).length) snap.notes = pbDxNotes(d).slice(0, 200).map(x => Object.assign({ at: new Date(x.at).toISOString(), text: pbDpCut(x.text, 1000) }, x.edited_at ? { edited_at: new Date(x.edited_at).toISOString() } : {}));
+    if (pbDxPhotos(d).length) snap.photos = pbDxPhotos(d).slice(0, PB_DX_MAXPH).map(p => ({ sha: p.sha, taken_exif: p.taken_exif || null, caption: p.caption ? pbDpCut(String(p.caption).trim(), 200) || null : null }));
+    pbDxCrewIntoSnap(snap); /* feat_dailyx */
     snap.events = d.events.map(e => ({ cid: e.cid, kind: e.kind, reason: e.reason, detail: e.detail ? pbDpCut(e.detail, 2000) : null, hours: pbDpNum(e.hours), crew_size: e.crew_size === null || e.crew_size === undefined ? null : Number(e.crew_size),
       equipment: (e.equipment || []).map(q => ({ key: q.key || null, name: q.name, unit_no: q.unit_no || null })), photos: (e.photos || []).map(p => ({ sha: p.sha, taken_exif: p.taken_exif || null })) }));
     return true;
@@ -51205,6 +52095,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       await pbDpLoad(pbDp.uid);
       const S = rec && rec.snapshot; if (!S || !Array.isArray(S.events)) return;
       S.events.forEach(e => (e.photos || []).forEach((p, i) => { if (p && p.sha && i < PB_DP_MAXPH) pbDp.send.list.push({ rcid: rec.cid, ecid: e.cid, n: i + 1, sha: p.sha, state: pbDp.photos[p.sha] ? 'waiting' : 'gone', why: pbDp.photos[p.sha] ? '' : 'This photo is no longer on this phone.', at: Date.now() }); }));
+      (Array.isArray(S.photos) ? S.photos : []).forEach((p, i) => { if (p && p.sha && i < PB_DX_MAXPH) { const ok = !!pbDp.photos[p.sha] || !!rec.prevCid; pbDp.send.list.push({ rcid: rec.cid, kind: 'report', ecid: null, n: i + 1, sha: p.sha, state: ok ? 'waiting' : 'gone', why: ok ? '' : 'This photo is no longer on this phone.', at: Date.now() }); } }); // feat_dailyx
       const k = pbDlyKey(rec.jobNumber) + '|' + rec.workDate; if (pbDp.drafts && pbDp.drafts[k]) delete pbDp.drafts[k];
       pbDp.form = null;
       await pbDpSave(['d', 's']);
@@ -51229,8 +52120,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         if (rep.state !== 'sent') continue; // goes once its report is on the server
         if (st.reports.some(r => r && r.prevCid === rep.cid && ['sent', 'waiting', 'blocked'].includes(r.state))) { Object.assign(x, { state: 'gone', why: 'Its report was amended (the photo goes with the amendment).' }); changed = true; continue; } // review N3
         const P = pbDp.photos[x.sha];
-        if (!P) { Object.assign(x, { state: 'gone', why: 'This photo is no longer on this phone.' }); changed = true; continue; }
-        const r = await pbPermitRpc('pb_daily_event_photo_put', { p_client_report_id: x.rcid, p_client_event_id: x.ecid, p_n: x.n, p_b64: P.b64, p_sha256: x.sha, p_taken_exif: P.takenExif || null, p_expect_uid: uid }, 60000);
+        if (!P && !(x.kind === 'report' && rep.prevCid)) { Object.assign(x, { state: 'gone', why: 'This photo is no longer on this phone.' }); changed = true; continue; }
+        const r = x.kind === 'report' ? await pbPermitRpc('pb_daily_report_photo_put', { p_client_report_id: x.rcid, p_n: x.n, p_b64: P ? P.b64 : null, p_sha256: x.sha, p_taken_exif: P ? P.takenExif || null : null, p_expect_uid: uid }, 60000) /* feat_dailyx */ : await pbPermitRpc('pb_daily_event_photo_put', { p_client_report_id: x.rcid, p_client_event_id: x.ecid, p_n: x.n, p_b64: P.b64, p_sha256: x.sha, p_taken_exif: P.takenExif || null, p_expect_uid: uid }, 60000);
         const A = pbDlyAnswer(r);
         if (A.k === 'retry') { if (x.why !== A.why) { x.why = A.why || ''; changed = true; } break; }
         if (A.k === 'ok') Object.assign(x, { state: 'sent', why: '', matches: A.d.matches !== false, at: Date.now() });
@@ -51251,7 +52142,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!S || !S.crew_today) return '';
     if (pbDp.uid !== pbArchiveOwnerUid || (!pbDp.send && !pbDp.loading && !pbDp.failed)) pbDpLoad(pbArchiveOwnerUid).then(x => { if (x && x.send && pbCurrentScreen === 'dailyReport') pbDlyRender(); }).catch(() => {}); // its photos' state (read once)
     const n = (S.crew_today.people || []).length, m = (S.equipment_today && S.equipment_today.pieces || []).length, E = S.events || [];
-    let h = '<div class="pbd-card" id="dpSigned"><p id="dpSignedLine">' + escapeHtml('Crew ' + (n ? pbDpPeople(n) : 'none listed') + ' · Equipment ' + (m ? pbDpPieces(m) : 'none listed') + ' · Delays & extra work ' + (E.length ? pbDpEntries(E.length) + ', ' + pbDpH(E.reduce((s, e) => s + pbDpNum(e.hours), 0)) : 'none')) + '</p>';
+    const EQ = (S.equipment_today && S.equipment_today.pieces || []).filter(q => q && q.name), eqH = pbCeHasH(EQ), CR = (S.crew_today.people || []), crH = pbCeHasH(CR), NT = Array.isArray(S.notes) ? S.notes : []; // feat_coequip, feat_dailyx
+    let h = '<div class="pbd-card" id="dpSigned"><p id="dpSignedLine">' + escapeHtml('Crew ' + (n ? pbDpPeople(n) + (crH ? ', ' + pbDpH(pbCeSum(CR)) : '') : 'none listed') + ' · Equipment ' + (m ? pbDpPieces(m) + (eqH ? ', ' + pbDpH(pbCeSum(EQ)) : '') : 'none listed') + ' · Delays & extra work ' + (E.length ? pbDpEntries(E.length) + ', ' + pbDpH(E.reduce((s, e) => s + pbDpNum(e.hours), 0)) : 'none')) + '</p>'
+      + (eqH ? '<p class="pbd-dim" id="dpSignedEq">' + escapeHtml(pbCeLine(EQ)) + '</p>' : '')
+      + (crH ? '<p class="pbd-dim" id="dpSignedCrew">' + escapeHtml(CR.map(p => p.name + (typeof p.hours === 'number' ? ' ' + pbDpH(p.hours) : '')).join(' · ')) + '</p>' : '')
+      + (NT.length ? '<p class="dx-sub">Notes (' + NT.length + ')</p><ul class="pbd-list" id="dpSignedNotes">' + NT.map(x => '<li><span class="dx-ntime">' + escapeHtml(pbDxTime(Date.parse(x.at))) + '</span> ' + escapeHtml(x.text) + '</li>').join('') + '</ul>' : '');
     const P = pbDp.send ? pbDp.send.list.filter(x => x.rcid === r.cid) : [];
     if (P.length) {
       const c = (k) => P.filter(x => x.state === k).length, w = c('waiting'), bad = P.filter(x => x.state === 'refused' || x.state === 'gone');
@@ -51264,13 +52159,20 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbDpKv(S) {
     if (!S || !S.crew_today) return [];
     const E = S.events || [];
-    return [['Crew on site', (S.crew_today.people || []).length ? pbDpPeople(S.crew_today.people.length) : 'none listed'], ['Delays & extra work', E.length ? pbDpEntries(E.length) + ', ' + pbDpH(E.reduce((s, e) => s + pbDpNum(e.hours), 0)) : 'none']];
+    const EQ = (S.equipment_today && S.equipment_today.pieces || []).filter(q => q && q.name); // feat_coequip: the equipment's hours, when the report has them
+    return [['Crew on site', (S.crew_today.people || []).length ? pbDpPeople(S.crew_today.people.length) + (pbCeHasH(S.crew_today.people) ? ', ' + pbDpH(pbCeSum(S.crew_today.people)) : '') : 'none listed']].concat(pbCeHasH(EQ) ? [['Equipment on site', pbDpPieces(EQ.length) + ', ' + pbDpH(pbCeSum(EQ))]] : [], [['Delays & extra work', E.length ? pbDpEntries(E.length) + ', ' + pbDpH(E.reduce((s, e) => s + pbDpNum(e.hours), 0)) : 'none']]);
   }
   function pbDpPdf(R, S, src) {
     if (!S || !S.crew_today) return;
     const crew = S.crew_today.people || [], eq = (S.equipment_today && S.equipment_today.pieces) || [], E = S.events || [];
     R.section('onsite', 'Crew and equipment on site', { keep: 24 });
+    if (pbCeHasH(crew)) pbDxPdfCrewTable(R, crew); else /* feat_dailyx: hours per person */
     R.para('Crew (' + crew.length + '): ' + (crew.length ? crew.map(p => p.name + (p.user_id ? '' : ' *')).join(', ') : 'none listed'), { size: 9.5, after: 1.5 });
+    if (pbCeHasH(eq)) { /* feat_coequip: the pieces and their hours */
+      R.sub('Equipment (' + eq.length + ')');
+      R.table({ head: ['Equipment', 'Cost code', 'Hours'], columns: [{}, { cellWidth: 40 }, { cellWidth: 24, halign: 'right' }], fontSize: 8.6,
+        body: eq.map(q => [pbDpEqName(q) + (q.rental ? ' (Rental)' : ''), q.cost_code || '—', typeof q.hours === 'number' && isFinite(q.hours) ? String(q.hours) : '—']), foot: ['Total', '', String(pbCeSum(eq))] });
+    } else
     R.para('Equipment (' + eq.length + '): ' + (eq.length ? eq.map(q => pbDpEqName(q) + (q.rental ? ' (Rental)' : '')).join(', ') : 'none listed'), { size: 9.5, after: 1.5 });
     src((crew.some(p => !p.user_id) ? '* typed by the foreman (not an app account). ' : '') + (S.crew_today.source || 'Listed by the foreman on this report.'));
     R.section('events', 'Delays & extra work (' + E.length + ')', { keep: 26 });
@@ -51634,7 +52536,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbDaRepaint();
   }
   window.__pbDaFresh = () => pbDaDayLoad(true); // review S11: signing asks for the crew's list again first (with signal)
-  function pbDaRepaint() { try { if (pbCurrentScreen === 'dailyReport') pbDaRender(); } catch (e) { console.error(e); } }
+  function pbDaRepaint() { try { if (pbCurrentScreen === 'dailyReport') { if (pbDxCrewKey() !== pbDx.crewKey) pbDlyRender(); else pbDaRender(); } } catch (e) { console.error(e); } } /* feat_dailyx: Runs and Confined Space Permits list the crew's too (redrawn only when that changed) */
 
   // ---- the form: Other hours, then the attached reports ----
   function pbDaCrewNames() {
@@ -51695,7 +52597,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbDaItemNote(it) { return it.state === 'pending' ? it.why || 'Not on this phone yet — attaches when it syncs.' : it.state === 'open' || it.state === 'running' ? it.why : ''; }
   function pbDaAttachHtml(d) {
     const L = pbDaItems(pbDlyView.job, pbDlyView.date), on = d.on !== false;
-    let h = '<section class="pbd-card" id="daAttach" aria-labelledby="daAttachH"><h3 class="pbd-h3" id="daAttachH">Attached reports</h3>'
+    let h = '<section class="pbd-card' + pbDxSecCls('daAttach') + '" id="daAttach" aria-labelledby="daAttachH">' + pbDxHead('daAttach', 'daAttachH', 'Attached reports', 'daAttachN', on ? '· ' + L.items.length : '· off') + '<div class="dx-body" id="daAttachBody">'
       + '<label class="pb-set-switch da-switch" for="daAttachOn"><span class="tx"><span class="name">Attach to the PDF</span></span>'
       + '<input type="checkbox" role="switch" id="daAttachOn" class="pb-pn-switch"' + (on ? ' checked' : '') + ' onchange="pbDaSwitch(this.checked)"></label>';
     if (on) {
@@ -51705,7 +52607,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (L.busy) h += '<p class="pbd-dim" id="daAttachBusy">Checking your crew’s reports…</p>';
       else if (L.why) h += '<p class="pbd-why" id="daAttachCrew">' + escapeHtml(L.why) + '</p>';
     }
-    return h + '</section>';
+    return h + '</div></section>';
   }
   function pbDaOtherHtml(d) {
     const F = pbDa.form, S = pbDlyView.snap, rep = pbDaReportHours(S), oth = { people: pbDaSum(d.people), equip: pbDaSum(d.equip) }, any = d.people.length || d.equip.length;
@@ -51730,7 +52632,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbDa.form && pbDa.form.key !== pbDaKey()) pbDa.form = null;
     if (!pbDa.form && d.form && d.form.key === pbDaKey()) pbDa.form = Object.assign({}, d.form); // a half-typed row comes back
     const keep = typeof pbFocusKeep === 'function' ? pbFocusKeep(w) : null;
-    w.innerHTML = pbDaOtherHtml(d) + pbDaAttachHtml(d); w.hidden = false;
+    pbSetHtml(w, pbDaAttachHtml(d)); w.hidden = false; /* feat_dailyx: Other hours folded into the crew's and equipment's hours */
     try { if (keep) pbFocusBack(keep); } catch (e) {}
     pbDaNamePrefill();
     if (d.on !== false && (!pbDa.day || pbDa.day.k !== pbDaKey())) pbDaDayLoad(false).catch(() => {});
@@ -51952,7 +52854,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   // the photos of the day's delays & extra work (this phone's, else the company server's)
   async function pbDaEvPhotos(rep, fromServer) {
-    const E = rep.snapshot && Array.isArray(rep.snapshot.events) ? rep.snapshot.events : [], out = {}; if (!E.length) return out;
+    const E = rep.snapshot && Array.isArray(rep.snapshot.events) ? rep.snapshot.events : [], out = {}, PH = rep.snapshot && Array.isArray(rep.snapshot.photos) ? rep.snapshot.photos : []; if (!E.length && !PH.length) return out; /* feat_dailyx: + the report's photos */
     const uid = pbArchiveOwnerUid;
     if (!fromServer) { try { await pbDpLoad(uid); } catch (e) {} }
     const can = rep.serverId && (await pbDlyCanAsk(uid));
@@ -51962,6 +52864,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const L = !fromServer && pbDp.photos && pbDp.photos[p.sha];
       if (L && L.b64) { out[p.sha] = 'data:image/jpeg;base64,' + L.b64; continue; }
       if (can) { const g = await pbPermitRpc('pb_daily_report_event_photo', { p_report_id: rep.serverId, p_client_event_id: e.cid, p_n: i + 1, p_expect_uid: uid }, 30000); if (g && g.data && g.data.ok && g.data.b64) { out[p.sha] = 'data:image/jpeg;base64,' + g.data.b64; pbDa.pdfCache.set(ck, { url: out[p.sha] }); } }
+    }
+    for (let i = 0; i < PH.length && i < PB_DX_MAXPH; i++) { // feat_dailyx: the report's own photos (this phone's, else the company server's)
+      const p = PH[i]; if (!p || !p.sha || out[p.sha]) continue;
+      const ck = 'ph:' + p.sha, c = pbDa.pdfCache.get(ck); if (c) { out[p.sha] = c.url; continue; }
+      const L2 = !fromServer && pbDp.photos && pbDp.photos[p.sha]; if (L2 && L2.b64) { out[p.sha] = 'data:image/jpeg;base64,' + L2.b64; continue; }
+      if (can) { const g = await pbPermitRpc('pb_daily_report_photo', { p_report_id: rep.serverId, p_n: i + 1, p_expect_uid: uid }, 30000); if (g && g.data && g.data.ok && g.data.b64) { out[p.sha] = 'data:image/jpeg;base64,' + g.data.b64; pbDa.pdfCache.set(ck, { url: out[p.sha] }); } }
     }
     return out;
   }
@@ -52002,7 +52910,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       P[p.sha] ? null : 'Not on this phone and not on the company server yet (the foreman’s phone sends it once the report is accepted). Its SHA-256: ' + p.sha, true));
     return R.photoCell(phs);
   }
-  function pbDaPhotosSection(R) { try { R.photosSection({ intro: 'Photos of the delays & extra work entries above.' }); } catch (e) { console.error(e); } }
+  function pbDaPhotosSection(R) { try { R.photosSection({ intro: pbDa.pdfRep && pbDa.pdfRep.snapshot && Array.isArray(pbDa.pdfRep.snapshot.photos) && pbDa.pdfRep.snapshot.photos.length ? 'Photos from this report: the day’s photos and those of the delays & extra work entries.' : 'Photos of the delays & extra work entries above.' }); } catch (e) { console.error(e); } } /* feat_dailyx */
   // the attached reports, each starting on a new page with its own header (as in a Records export). A report that can't
   // be laid out is marked (review S10: one more layout at most, never one per failure).
   function pbDaPdfAppend(R, rep) {
@@ -52098,6 +53006,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     R.contents();
     const src = (t) => R.para('Source: ' + t, { size: 8.5, color: G.MUTED, after: 2.5 });
     const t = (iso, z) => iso ? pbRptDt(Date.parse(iso), z ? { tz: z } : {}) : 'not recorded';
+    pbDxPdfFront(R, S, src); /* feat_dailyx: the narrative, the notes, the photos of the day */
     R.section('weather', 'Weather', { keep: 30 });
     if (S.weather && S.weather.available) {
       const d = S.weather.data;
@@ -52115,6 +53024,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     else R.para('No runs with this job number started on this day on the foreman’s phone.', { size: 9.5 });
     if (Object.keys(S.runs.totals || {}).length) R.para('Day total (foreman entries): ' + prodT.join(' · '), { size: 9.5, style: 'bold' });
     src(S.runs.source);
+    try { pbDxPdfCrew(R, S, 'runs'); } catch (e) { console.error(e); } // feat_dailyx
     if (S.other_prod) {
       R.sub('Other crews’ production (' + (S.other_prod.entries || []).length + ')');
       if ((S.other_prod.entries || []).length) R.table({ head: ['Entered by', 'Quantities', 'Last updated'], columns: [{ cellWidth: 50 }, {}, { cellWidth: 44 }], fontSize: 8.6,
@@ -52148,18 +53058,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         [x.notes, x.photos ? x.photos + ' photo(s), SHA-256 ' + (x.photo_sha256 || []).map(h => h ? String(h).slice(0, 12) : '?').join(', ') + ' (kept with the item on the company server)' : 'no photos', 'Checked off by ' + (x.by || '—') + '; ' + String(x.state || '').replace(/^received (\d{4}-\d\d-\d\dT[^\s]+)$/, (m0, iso) => isNaN(Date.parse(iso)) ? m0 : 'received ' + pbRptDt(Date.parse(iso), { sec: true }) + ' (server time)')].filter(Boolean).join('\n')]) });
     else R.para('None checked off on this day.', { size: 9.5 });
     src(S.inspections.source);
-    R.section('permits', 'Permits (' + S.permits.items.length + ')', { keep: 26 });
+    R.section('permits', 'Confined Space Permits (' + (S.permits.items.length + ((S.crew_reports && S.crew_reports.permits) || []).length) + ')', { keep: 26 }); /* feat_dailyx */
     if (S.permits.items.length) R.table({ head: ['Space', 'Window', 'People', 'Air tests', 'Status'], columns: [{ cellWidth: 38 }, { cellWidth: 34 }, { cellWidth: 40 }, { cellWidth: 24 }, {}], fontSize: 8.4,
       body: S.permits.items.map(p => [(p.space || '—') + (p.address ? '\n' + p.address : ''), p.window, 'Supervisor ' + (p.supervisor || '—') + '\nAttendant ' + (p.attendant || '—') + '\nEntrants: ' + (p.entrants.join(', ') || 'none'), p.air_tests + (p.air_outside ? '\n' + p.air_outside + ' OUTSIDE RANGE' : ''), p.status + (p.emergency_active ? '\nEMERGENCY IN PROGRESS' : '') + (p.emergencies ? '\nEMERGENCY declared ' + p.emergencies + 'x' + (p.emergency_times || []).map(x => '\n  ' + t(x.start) + (x.end ? ' to ' + t(x.end) : ' (not resolved)')).join('') : '') + (p.closed_at ? '\n' + t(p.closed_at) : '')]) });
     else R.para('None on the foreman’s phone. Crew permits are under Attached reports.', { size: 9.5 });
     src(S.permits.source);
+    try { pbDxPdfCrew(R, S, 'permits'); } catch (e) { console.error(e); } // feat_dailyx
     R.section('talks', 'Toolbox talks', { keep: 20 });
     if (S.talks.items.length) R.table({ head: ['Time', 'Talk', 'Attendees'], columns: [{ cellWidth: 36 }, {}, { cellWidth: 56 }], fontSize: 8.6, body: S.talks.items.map(x => [t(x.time), x.text, x.where || '—']) });
     else R.para(S.talks.available ? 'None recorded.' : 'Not available.', { size: 9.5 });
     src(S.talks.source);
-    R.section('narrative', 'Foreman’s narrative', { keep: 30 });
-    R.para(S.narrative || '(none written)', { size: 10 });
-    src('Typed by the foreman before signing.');
+    /* feat_dailyx: the narrative, the notes and the photos of the day are up front */
     R.section('sign', 'Signature', { keep: 50 });
     R.kv([['Signed (typed name)', signed.name || 'not signed'], ['Signed at', signed.at ? pbRptDt(Date.parse(signed.at), { sec: true, tz: signed.tz }) + ' · ' + signed.tz + ' (phone clock)' : '—'], ['Drawn signature', signed.drawn ? 'included below (SHA-256 ' + pbRptShort(signed.drawn_sha256) + ')' : 'none drawn'],
       ['Received by the company', rep.receivedAt ? pbRptDt(Date.parse(rep.receivedAt), { sec: true }) + ' (server time)' : 'not yet']].concat(am ? [['Amendment', 'version ' + am.version + ': ' + am.reason]] : []), { cols: 1, labelW: 46 });
@@ -52501,25 +53410,27 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     window.pbRrCrewOpen(x.pipelayer_id, x.entry_id, (x.author && x.author.name) || '', tier === 'foreman' ? 'crewreports' : 'runs');
     const O = pbRoFor(uid); O.rpfBack = O.open; // its "All run reports" (Close) comes back here
   }
-  async function pbRpfDailyDoc(id) {
+  async function pbRpfDailyDoc(id, E) {
     const uid = pbRpfUid();
     const r = await pbPermitRpc('pb_daily_get', { p_report_id: id, p_expect_uid: uid }, 30000);
     if (!r.data || !r.data.ok || !r.data.snapshot) throw new Error(pbDlyWhy(r.data && r.data.code, r));
     const d = r.data;
+    if (E && typeof E.reportText === 'string' && !E.ceText) { try { E.ceText = window.pbCeDailyText(d.snapshot); E.reportText += E.ceText; } catch (e) {} } /* feat_coequip */
     return pbDlyMakePdf({ cid: d.client_report_id || d.id, serverId: d.id, snapshot: d.snapshot, sha: d.snapshot_sha256, serverSha: d.server_sha256, receivedAt: d.received_at, signature: d.signature_png_b64, version: d.version, clockAheadS: d.phone_clock_ahead_s }, true, true);
   }
   async function pbRpfOpenDaily(id) {
     const uid = pbRpfUid(); if (!uid || !id) return;
     if (!(await pbDlyCanAsk(uid))) { pbAlert('Daily reports open from the company server. Try again with signal.', 'Daily Report'); return; }
     const row = (pbRpfFor(uid).rows || []).find(y => y.type === 'daily' && y.id === id) || {};
+    const E = { kind: 'daily', reportText: 'Daily report' + (row.job_number ? ', ' + pbProdJobLabel(row.job_number) : '') + (row.work_date ? ', ' + pbDlyDayText(row.work_date) : '') + '. The PDF has the whole report.' }; /* feat_coequip: + the equipment once loaded */
     window.pbPdfViewOpen({ key: 'rpfdaily|' + id, eyebrow: 'DAILY REPORT', title: 'Daily report' + (row.job_number ? ' — ' + pbProdJobLabel(row.job_number) : ''), sub: row.work_date ? pbDlyDayText(row.work_date) : '',
-      entry: { kind: 'daily', reportText: 'Daily report' + (row.job_number ? ', ' + pbProdJobLabel(row.job_number) : '') + (row.work_date ? ', ' + pbDlyDayText(row.work_date) : '') + '. The PDF has the whole report.' },
-      make: () => pbRpfDailyDoc(id), name: 'daily-report' + (row.job_number ? '-' + String(row.job_number).replace(/[^a-z0-9-]/gi, '_') : '') + (row.work_date ? '-' + row.work_date : '') + '.pdf' });
+      entry: E,
+      make: () => pbRpfDailyDoc(id, E), name: 'daily-report' + (row.job_number ? '-' + String(row.job_number).replace(/[^a-z0-9-]/gi, '_') : '') + (row.work_date ? '-' + row.work_date : '') + '.pdf' });
   }
   async function pbRpfOpenLocalDaily(r) {
     if (r.state === 'sent' && r.serverId && !r.snapshot) return pbRpfOpenDaily(r.serverId);
     if (r.state === 'sent' && r.snapshot) {
-      window.pbPdfViewOpen({ key: 'rpfldaily|' + r.cid, eyebrow: 'DAILY REPORT', title: 'Daily report — ' + pbProdJobLabel(r.jobNumber), sub: pbDlyDayText(r.workDate), entry: { kind: 'daily', reportText: 'Daily report, ' + pbProdJobLabel(r.jobNumber) + ', ' + pbDlyDayText(r.workDate) + '.' },
+      window.pbPdfViewOpen({ key: 'rpfldaily|' + r.cid, eyebrow: 'DAILY REPORT', title: 'Daily report — ' + pbProdJobLabel(r.jobNumber), sub: pbDlyDayText(r.workDate), entry: { kind: 'daily', reportText: 'Daily report, ' + pbProdJobLabel(r.jobNumber) + ', ' + pbDlyDayText(r.workDate) + '.' + (() => { try { return window.pbCeDailyText(r.snapshot); } catch (e) { return ''; } })() /* feat_coequip */ },
         make: () => pbDlyMakePdf(r, false, true), name: 'daily-report-' + String(r.jobNumber).replace(/[^a-z0-9-]/gi, '_') + '-' + r.workDate + '.pdf' });
       return;
     }
@@ -53276,7 +54187,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // r15.2.1 (owner): reviewing is ONE step for the foreman: his production for the run (the PM's tracking data) on top,
     // Approve Report; the report's PDF is there to open when he needs it (rarely). The office sees the PDF first.
     const approve = canProd ? '<section id="cxRunApprove" style="margin-top:4px"><h3 class="pbx-h2">Production for this run</h3><style>#cxRunProdBox .pbp-btns2{display:none}</style><div id="cxRunProdBox"' + (x.reviewed_at ? ' class="pbx-rf-late"' : '') /* feat_runflow P8: once approved, the form keeps its own Save */ + '>' + window.pbRrProdBox(x) + '</div>'
-        + (x.reviewed_at || window.pbRrAqHas(x.id) ? '<p class="pbx-note" id="cxRunApproved">' + pbCxCheck() + pbCxE(x.reviewed_at ? ' Approved ' + pbRoWhen({ locked_at: x.reviewed_at }) : ' Approved on this phone · it sends when there’s signal') + '</p>' /* feat_rrflow 6 */ : '<p class="pb-warn pbp-manmsg" id="cxRunApproveErr" role="alert" style="display:none"></p><button type="button" class="pb-btn" id="cxRunApproveBtn" onclick="pbRrApprove()">Approve Report</button>') + '</section>' : '';
+        + (x.reviewed_at || window.pbRrAqHas(x.id) ? '<p class="pbx-note" id="cxRunApproved">' + pbCxCheck() + pbCxE(x.reviewed_at ? ' Approved ' + pbRoWhen({ locked_at: x.reviewed_at }) : ' Approved on this phone · it sends when there’s signal') + '</p>' /* feat_rrflow 6 */ + (typeof pbLvIsForeman === 'function' && pbLvIsForeman(pbArchiveOwnerUid) ? '<div class="pbx-btnrow"><button type="button" class="pb-btn secondary small" id="dxRunDaily" onclick="pbDxDailyForRun()">Daily Report</button></div>' : '') /* feat_dailyx */ : '<p class="pb-warn pbp-manmsg" id="cxRunApproveErr" role="alert" style="display:none"></p><button type="button" class="pb-btn" id="cxRunApproveBtn" onclick="pbRrApprove()">Approve Report</button>') + '</section>' : '';
     // feat_pdfview (owner, Oct 24): the report is read on the PDF viewer screen (View Run Report); Download / Share / the text are there
     const pdf = '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn small" id="cxRunView" onclick="pbRrView()">View Run Report</button></div>'
       /* feat_runflow P5: the photo count is in the summary block (cxRunSum) */;
@@ -53802,7 +54713,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (O.open) return pbRoDetailHtml(O);
     const L = pbRf.uid === uid ? pbRf.list : null;
     const s = L ? (pbRf.busy ? 'Updating…' : 'Updated ' + pbProdTimeText(pbRf.at) + '.') : (pbCxOnline() ? 'Loading…' : 'No signal. Reports load with signal.');
-    let h = '<p class="pbx-note">Run reports your crew sent in the last 14 days. Open one, check it, enter its production and tap Approve Report.</p>';
+    let h = '<p class="pbx-note">Run reports your crew sent in the last 14 days. Open one, check it, enter its production and tap Approve Report.</p>'
+      + '<div class="pbx-btnrow"><button type="button" class="pb-btn secondary small" id="dxRevDaily" onclick="pbOpenDailyReport()">Today’s Daily Report</button></div>'; /* feat_dailyx */
     if (L) h += L.length ? '<div class="pbx-rows">' + L.map((x, i) => '<button type="button" class="pbx-row" id="cxRev' + i + '" onclick="pbRfOpen(' + i + ')"><span class="pbx-row-tx">'
         + '<span class="pbx-row-h">' + pbCxE(pbProdJobLabel(x.job_number || '') + (x.label ? ' · ' + x.label : '')) + '</span>'
         + '<span class="pbx-row-s">' + pbCxE([x.who, 'sent ' + pbRfWhen(x.sent_at) + (x.sent_how === 'auto' ? ' (automatically)' : '')].join(' · ')) + '</span>'
@@ -54443,18 +55355,21 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const nameOf = (k) => { const q = plan.find(x => x.key === k); return k === 'eq_other' ? 'Other equipment' : q ? String(q.name || 'Equipment') + (q.unit_no ? ' #' + q.unit_no : '') : k.replace(/^eq_/, '').replace(/_/g, ' ') + ' (not on the plan)'; };
     const h1 = (x) => pbProdQtyText(Math.round(x * 10) / 10, 'h');
     let h = '<section class="pbx-panel" id="pjCxEquipSec" aria-labelledby="pjCxEquipH"><h3 class="pbx-h3" id="pjCxEquipH">Equipment</h3>';
-    if (!keys.length) { const lump = sum('_equiphours', 'done'); // feat_runedit: hours entered as one total, before the pieces
+    const X = window.pbCeDailyEq(D), xs = (k, f) => X.filter(x => x.plan_key === k).reduce((s, x) => s + x[f], 0); X.forEach(x => { if (x.plan_key && !keys.includes(x.plan_key)) keys.push(x.plan_key); }); // feat_coequip: + the daily reports' hours
+    if (!keys.length && !X.length) { const lump = sum('_equiphours', 'done'); // feat_runedit: hours entered as one total, before the pieces
       return h + '<p class="pbx-none">' + (lump > 0 ? pbCxE(h1(lump)) + ' of equipment reported as one total, no pieces yet. ' : 'No equipment on this job yet. ') + 'Add the pieces under Edit project &gt; Job plan; foremen then enter each piece’s used, idle and down hours with each run.</p></section>'; }
-    const P = keys.map(k => ({ k, used: sum('_' + k, 'done'), idle: sum('_ei_' + sk(k), 'done'), down: sum('_ed_' + sk(k), 'done'), today: sum('_' + k, 'today'), week: sum('_' + k, 'week') }));
+    const P = keys.map(k => ({ k, used: sum('_' + k, 'done') + xs(k, 'done'), idle: sum('_ei_' + sk(k), 'done'), down: sum('_ed_' + sk(k), 'done'), today: sum('_' + k, 'today') + xs(k, 'today'), week: sum('_' + k, 'week') + xs(k, 'week') }))
+      .concat(X.filter(x => !x.plan_key).map(x => ({ k: x.id, nm: window.pbCeXName(x), cc: x.cost_code, used: x.done, idle: 0, down: 0, today: x.today, week: x.week })), // feat_coequip
+        !plan.length && !C.some(r => /^_e[qid]_/.test(r.key)) && sum('_equiphours', 'done') > 0 ? [{ k: 'lump', nm: 'Entered as one total', used: sum('_equiphours', 'done'), idle: 0, down: 0, today: sum('_equiphours', 'today'), week: sum('_equiphours', 'week') }] : []);
     const T = P.reduce((a, p) => ({ used: a.used + p.used, idle: a.idle + p.idle, down: a.down + p.down }), { used: 0, idle: 0, down: 0 });
     h += '<p class="pbx-eq-tot" id="pjEqTotal"><span><strong>' + pbCxE(h1(T.used)) + '</strong> used</span><span>' + pbCxE(h1(T.idle)) + ' idle</span><span>' + pbCxE(h1(T.down)) + ' down</span></p>'
       + '<p class="pbx-eq-key"><span class="pbx-eq-sw u"></span>Used <span class="pbx-eq-sw i"></span>Idle <span class="pbx-eq-sw d"></span>Down</p><ul class="pbx-eq-list">';
     h += P.map(p => { const all = p.used + p.idle + p.down, q = plan.find(x => x.key === p.k);
-      return '<li class="pbx-eq-row" id="pjEq_' + pbCxE(p.k) + '"><span class="pbx-eq-top"><span class="pbx-eq-name">' + pbCxE(nameOf(p.k)) + (q && q.cost_code ? '<span class="pbx-eq-code"> · ' + pbCxE(q.cost_code) + '</span>' : '') + '</span><span class="pbx-eq-used">' + pbCxE(h1(p.used)) + ' used</span></span>'
+      return '<li class="pbx-eq-row" id="pjEq_' + pbCxE(p.k) + '"><span class="pbx-eq-top"><span class="pbx-eq-name">' + pbCxE(p.nm || nameOf(p.k)) + ((q && q.cost_code) || p.cc ? '<span class="pbx-eq-code"> · ' + pbCxE((q && q.cost_code) || p.cc) + '</span>' : '') + '</span><span class="pbx-eq-used">' + pbCxE(h1(p.used)) + ' used</span></span>'
         + '<span class="pbx-eq-bar" aria-hidden="true">' + (all > 0 ? ['used', 'idle', 'down'].map((f, j) => p[f] > 0 ? '<span class="pbx-eq-seg ' + 'uid'[j] + '" style="flex:' + p[f] + ' 1 0"></span>' : '').join('') : '<span class="pbx-eq-seg z"></span>') + '</span>'
         + '<span class="pbx-eq-sub">' + pbCxE('Idle ' + h1(p.idle) + ' · Down ' + h1(p.down) + (all > 0 ? ' · ' + Math.round(p.used / all * 100) + '% of its hours used' : ' · nothing reported yet')) + '</span>'
         + (p.today || p.week ? '<span class="pbx-eq-sub">' + pbCxE('Used today ' + h1(p.today) + ' · last 7 days ' + h1(p.week)) + '</span>' : '') + '</li>'; }).join('');
-    return h + '</ul><p class="pbx-note">From the hours foremen enter for their pipelayers’ runs (My crew now) and the office enters on run reports.</p></section>';
+    return h + '</ul><p class="pbx-note">From the hours on run reports and on foremen’s daily reports (counted once).</p></section>';
   }
   // ==== end feat_eqtab ====
   function pbCxPut(parent, id, cls, html, first) {
