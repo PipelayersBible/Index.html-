@@ -5779,7 +5779,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       </details>
       <section class="pbc-add pbc-alerts" id="crAlerts" aria-labelledby="crAlertsHead" hidden><!-- batch 19 PM -->
         <h2 class="pb-h2 pbc-h2" id="crAlertsHead">Job alerts</h2>
-        <p class="pb-help" id="crAlertsHelp">Each job&rsquo;s job and material alerts go to the PMs assigned to it on its job page: a push right away, and one email in the morning on days a material needs a look. A job with no PM sends them to the company account.</p>
+        <p class="pb-help" id="crAlertsHelp">Each job&rsquo;s alerts go to the PMs and supers assigned to it on its job page: a push right away, and one email in the morning on days something needs a look. A job with none sends them to every PM and super in the company, and to the owner only when the company has none.</p>
         <div id="crAlertsBody"></div>
       </section>
     </div>
@@ -6740,6 +6740,9 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   #pbApp .dx-sheetbtns { display: flex; gap: 8px; margin-top: 12px; }
   #pbApp .dx-sheetbtns .pb-btn { flex: 1 1 0; margin: 0; }
   #pbApp .dx-hbar { margin: 8px 16px 0; }
+  #pbApp .dp-sub.dp-rf { color: var(--pb-accent, #1d6fd8); } /* feat_dailyfill: "from runs" */
+  #pbApp .da-fm { display: block; font-size: 13px; line-height: 1.35; margin-top: 2px; overflow-wrap: anywhere; }
+  #pbApp .dx-fm { overflow-wrap: anywhere; }
   #pbApp .dx-hbar[hidden] { display: none; }
   #pbApp .dx-hpair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   #pbApp .dx-hbtn { -webkit-appearance: none; appearance: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 2px 8px; min-height: 52px; margin: 0; padding: 8px 12px; border: 1px solid var(--pb-divider); border-radius: 14px; background: var(--pb-raised-2); color: var(--pb-text); font: inherit; font-size: 15.5px; font-weight: 650; text-align: left; cursor: pointer; min-width: 0; }
@@ -9101,7 +9104,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp .pbx-job-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 #pbApp .pbx-job-id { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 #pbApp .pbx-job-num { font-size: 13px; font-weight: 650; color: var(--pb-text-2); font-variant-numeric: tabular-nums; }
-#pbApp .pbx-job-site { font-size: 18px; font-weight: 700; line-height: 1.25; color: var(--pb-text); overflow-wrap: anywhere; }
+#pbApp .pbx-job-site { font-size: 18px; font-weight: 700; line-height: 1.25; color: var(--pb-text); overflow-wrap: break-word; word-break: normal; min-width: 0; }
 #pbApp .pbx-pct { display: flex; flex-direction: column; align-items: flex-end; flex: 0 0 auto; }
 #pbApp .pbx-pct-n { font-size: 32px; font-weight: 750; line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--pb-text); }
 #pbApp .pbx-pct-k { font-size: 12.5px; color: var(--pb-text-2); margin-top: 3px; }
@@ -9254,7 +9257,9 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp .pbx-hero { display: flex; flex-direction: column; gap: 14px; margin: 16px 0 0 0; padding: 18px 16px; background: var(--pb-surface); border: 1px solid var(--pbx-line); border-radius: var(--pb-r-card, 14px); box-shadow: var(--pb-elev-1); }
 #pbApp .pbx-hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 #pbApp .pbx-hero-id { min-width: 0; }
-#pbApp .pbx-hero-site { margin: 0; font-size: 21px; font-weight: 750; line-height: 1.2; color: var(--pb-text); overflow-wrap: anywhere; }
+#pbApp .pbx-hero-site { margin: 0; font-size: 21px; font-weight: 750; line-height: 1.2; color: var(--pb-text); overflow-wrap: break-word; word-break: normal; }
+/* feat_office A8: on a narrow phone Edit project goes under the name, which then has the whole width */
+@media (max-width: 400px) { #pbApp .pbx-hero-top { flex-direction: column; align-items: stretch; gap: 10px; } #pbApp .pbx-hero-top .pbx-editbtn { align-self: flex-start; } #pbApp .pbx-job-top { flex-wrap: wrap; } }
 #pbApp .pbx-hero-num { margin: 2px 0 0 0; font-size: 14px; font-weight: 600; color: var(--pb-text-2); }
 #pbApp .pbx-editbtn { -webkit-appearance: none; appearance: none; flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin: 0; padding: 0 14px; border-radius: 12px; border: 1px solid var(--pbx-line-2); background: var(--pb-raised); color: var(--pb-text); font: inherit; font-size: 14.5px; font-weight: 650; cursor: pointer; }
 #pbApp .pbx-editbtn[aria-expanded="true"] { background: var(--pb-brand-soft); border-color: var(--pb-brand-line); }
@@ -9416,9 +9421,6 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp .pb-jc[hidden], #pbApp .pb-jc-spot[hidden], #pbApp .pb-jc-btns .pb-btn[hidden] { display: none; }
 #pbApp .pb-jc-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px 12px; margin: 0; font-size: 14px; line-height: 1.4; color: var(--pb-text-2); }
 #pbApp .pb-jc-line > span { min-width: 0; overflow-wrap: anywhere; }
-#pbApp .pb-osm { font-size: 11.5px; color: var(--pb-text-2); white-space: nowrap; }
-#pbApp .pb-osm[hidden] { display: none; }
-#pbApp .pb-osm a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 #pbApp .pb-jc-spotbtn { -webkit-appearance: none; appearance: none; min-height: 44px; margin: 0; padding: 0 2px; border: 0; background: transparent; color: var(--pb-brand); font: inherit; font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 #pbApp .pb-jc-spotbtn:focus-visible { outline: none; box-shadow: var(--pb-ring); border-radius: 6px; }
 #pbApp .pb-jc-spot { margin: 6px 0 0 0; padding: 12px; border-radius: 12px; background: var(--pb-raised); }
@@ -9824,7 +9826,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.65 · 2026-10-29'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.67 · 2026-10-30'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -10646,6 +10648,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // A style is only written when it changes, so the Home renderer's watcher never loops.
     const hide = (el) => { if (el.style.display !== 'none') el.style.display = 'none'; };
     const show = (el) => { if (el.style.display !== '') el.style.display = ''; };
+    { const pt = document.getElementById('homeTileNewPermit'); if (pt) { if (sbUser && sbCachedSubscription.tier === 'individual') { hide(pt); pt.dataset.pbInd = '1'; } else if (pt.dataset.pbInd) { delete pt.dataset.pbInd; show(pt); } } } // feat_office A10: permits are a Contractor-plan feature
     // UX batch 2 (A3), D6: an ended run is not shown on Home (it stays in Records);
     // it is treated like a run nobody may open from here. Crew left checked in on it get a
     // Needs Attention line instead (pbRenderHome).
@@ -28809,7 +28812,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (entry.jobNumber) lines.push('Job number: ' + entry.jobNumber);
     if (entry.costCode) lines.push('Cost code: ' + entry.costCode);
     if (entry.pipelayer) lines.push('Pipelayer: ' + entry.pipelayer);
-    if (entry.crew) lines.push('Foreman / crew: ' + entry.crew);
+    { let f = typeof window.pbRptFm === 'function' ? window.pbRptFm(entry, { stable: true }) : null; /* feat_rptfm: the run's foreman by name (what the run holds from Lock: the text is hashed for sent) */
+      if (f && f.name && entry.reportText && !/\nForeman: /.test(entry.reportText)) f = null; /* a run whose text was made before: rebuilt as it read (a revert keeps its sent mark) */
+      if (f && f.name) lines.push('Foreman: ' + f.name);
+      if (entry.crew && !(f && f.name && String(entry.crew).replace(/\s+/g, ' ').trim().toLowerCase() === f.name.toLowerCase())) lines.push('Foreman / crew: ' + entry.crew); }
     if (entry.notesField) lines.push('Notes (as of lock, ' + entry.lockTime.toLocaleString() + '): ' + entry.notesField);
     if (entry.endNote && entry.endNote.text) lines.push('Note at end: ' + entry.endNote.text); // feat_runflow P9
     lines.push('');
@@ -33544,9 +33550,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     clearTimeout(pbPermitBkTimer);
     pbPermitBkTimer = setTimeout(() => { pbPermitBackupPass(); }, typeof ms === 'number' ? ms : 2500);
   }
+  // feat_office A5: a save made on a job's page makes Home's next look load again (no 60 s wait)
+  const PB_CX_WRITE_RE = /_(set|save|add2?|create|delete|void|undo|edit|remove|archive|mute|check|review|clear|cancel|close|reopen|put|done|restore|approve|reject|order|used|nudge|send_back|claim|link|unlink|assign)(_|$)/;
+  function pbCxNoteWrite(fn, r) { try { if (pbCurrentScreen === 'prodJob' && r && !r.error && !(r.data && r.data.ok === false) && PB_CX_WRITE_RE.test(String(fn))) window.pbCxDirtyAt = Date.now(); } catch (e) {} }
   async function pbPermitRpc(fn, args, ms) {
     if (!sbClient || typeof sbClient.rpc !== 'function') return { data: null, error: { message: 'no client' } };
-    try { const r0 = (await Promise.race([sbClient.rpc(fn, args), new Promise(res => setTimeout(() => res({ data: null, error: { message: 'timeout' } }), ms))])) || { data: null, error: { message: 'no answer' } }; return typeof window.pbAcWord === 'function' ? window.pbAcWord(fn, r0) : r0; } /* r15.48 access: a coworker with no name is worded here */
+    try { const r0 = (await Promise.race([sbClient.rpc(fn, args), new Promise(res => setTimeout(() => res({ data: null, error: { message: 'timeout' } }), ms))])) || { data: null, error: { message: 'no answer' } }; pbCxNoteWrite(fn, r0); return typeof window.pbAcWord === 'function' ? window.pbAcWord(fn, r0) : r0; } /* r15.48 access: a coworker with no name is worded here */
     catch (x) { return { data: null, error: { message: String((x && x.message) || x) } }; }
   }
   async function pbPermitBackupPass() {
@@ -35103,7 +35112,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       today: out.reduce((s, c) => s + (c.today ? 1 : 0), 0) };
   }
   // A % for the screen: whole numbers, honest above 100, "<1%" for a sliver of work, never a fake 0 for nothing planned.
-  function pbProdPctText(p) { if (p === null || p === undefined || !Number.isFinite(p)) return ''; if (p > 0 && p < 0.005) return '<1%'; return Math.round(p * 100) + '%'; }
+  function pbProdPctText(p) { return pbCxPctText(p); } // feat_office C3: one % formatter (pbCxPctText: under 100% never rounds up)
   function pbProdQtyText(n, unit) { const x = Number(n) || 0; return x.toLocaleString(undefined, { maximumFractionDigits: 1 }) + (unit ? ' ' + unit : ''); }
   // A new category key from a name the PM typed: lower-case, unique within the plan.
   function pbProdNewKey(name, taken) {
@@ -35176,10 +35185,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbProdLocalDate(t) { const d = new Date(t); if (isNaN(d)) return ''; return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function pbProdDayText(iso) { if (!iso) return 'No date'; const d = new Date(String(iso).slice(0, 10) + 'T12:00:00'); if (isNaN(d)) return String(iso); if (String(iso).slice(0, 10) === pbTkToday()) return 'Today'; return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }); }
   function pbProdTimeText(t) { const d = new Date(t); if (isNaN(d)) return ''; return pbProdLocalDate(d) === pbTkToday() ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+  // feat_office A11: equipment hours under a piece that isn't on the plan: "Dozer (not on the plan)", on every screen
+  function pbEqLoose(key) { const k = String(key || '').replace(/^_?eq_/, '').replace(/_+/g, ' ').trim(); return (k ? k.charAt(0).toUpperCase() + k.slice(1) : 'Equipment') + ' (not on the plan)'; }
   function pbProdCatName(key, plan) {
     if (key === PB_PROD_HOURS_KEY) return 'Crew hours';
     { const m = /^_e([id])_(.+)$/.exec(String(key)); if (m) return pbProdCatName('_eq_' + m[2], plan) + (m[1] === 'i' ? ' idle' : ' down'); } // feat_eqtab
-    if (/^_eq_/.test(String(key))) { const q = plan && Array.isArray(plan.equipment) ? plan.equipment.find(e => e && '_' + e.key === key) : null; return key === '_eq_other' ? 'Other equipment' : q ? pbEqName(q) : 'Equipment'; } // feat_equip
+    if (/^_eq_/.test(String(key))) { const q = plan && Array.isArray(plan.equipment) ? plan.equipment.find(e => e && '_' + e.key === key) : null; return key === '_eq_other' ? 'Other equipment' : q ? pbEqName(q) : plan && typeof plan === 'object' ? pbEqLoose(key) : 'Equipment'; } // feat_equip; feat_office A11: named as the Equipment tab names it
     if (key === '_equiphours') return 'Equipment hours'; // batch 29 ROLES
     const p = plan && Array.isArray(plan.categories) ? plan.categories.find(c => c && c.key === key) : null;
     if (p && p.name) return p.name;
@@ -35619,7 +35630,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // The job page's copy kept for offline viewing holds no email addresses (it shows the names).
   function pbProdNoEmails(d) {
     const strip = (a) => Array.isArray(a) ? a.map(x => { if (!x || typeof x !== 'object') return x; const y = Object.assign({}, x); delete y.email; return y; }) : a;
-    return Object.assign({}, d, { reporters: strip(d.reporters), recent: strip(d.recent), crew: strip(d.crew) });
+    return Object.assign({}, d, { reporters: strip(d.reporters), recent: strip(d.recent), crew: strip(d.crew) }, Array.isArray(d.crew_today) ? { crew_today: d.crew_today.map((x, i) => ({ name: (x && x.name) || 'Crew member ' + (i + 1) })) } : {}); /* feat_office A3: no emails kept */
   }
   async function pbProdIsManager(uid) {
     const a = await pbProdAccessFor(uid);
@@ -35843,15 +35854,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbPmJobHtml() {
     const job = pbPj.job, P = pbPj.pms;
     let h = '<section class="pbp-block" id="pjPmSec"><h3 class="pb-h2 pbp-h3">PMs &amp; supers on this job</h3>'
-      + '<p class="pbp-dim">This job’s alerts go to its PMs and superintendents: a push right away, and one email in the morning on days a material needs a look. With none, they go to the company account.</p>';
+      + '<p class="pbp-dim">This job’s alerts go to its PMs and superintendents: a push right away, and one email in the morning on days something needs a look. With none, they go to every PM and super in the company (the owner only when there are none).</p>'; /* feat_office B1 */
     if (!job || !job.job_number) return h + '<p class="pbp-dim pbp-none">PMs and supers are assigned by job number.</p></section>';
     if (!P) return h + '<p class="pbp-dim pbp-none" id="pjPmNone">' + escapeHtml(pbPj.pmMsg || 'Loading…') + '</p></section>';
     const assigned = P.assigned.filter(x => x && x.user_id), cands = Array.isArray(P.candidates) ? P.candidates.filter(x => x && x.user_id) : [];
     if (pbPj.pmEdit) {
       if (!cands.length) h += '<p class="pbp-dim pbp-none" id="pjPmNoCands">No PMs or superintendents in the company yet. The owner adds them in Crew members.</p>';
       // only the owner takes someone else off a job; a PM can take only themselves off (the server checks it too)
-      const me = sbUser && sbUser.id, locked = (c) => !P.is_owner && c.user_id !== me && assigned.some(a => a.user_id === c.user_id);
-      if (cands.length && !P.is_owner && assigned.some(a => a.user_id !== me)) h += '<p class="pbp-dim" id="pjPmOwnerNote">Only the owner can take another PM or super off this job. You can add PMs and supers, or take yourself off.</p>';
+      // feat_office B3 (owner rule Oct 28): the owner, PMs and supers take anyone off; a manager who isn't a PM only themselves
+      const me = sbUser && sbUser.id, mayAll = !!P.is_owner || cands.some(c => c.user_id === me), locked = (c) => !mayAll && c.user_id !== me && assigned.some(a => a.user_id === c.user_id);
+      if (cands.length && !mayAll && assigned.some(a => a.user_id !== me)) h += '<p class="pbp-dim" id="pjPmOwnerNote">Only the owner, a PM or a superintendent can take another PM or super off this job. You can add PMs and supers, or take yourself off.</p>';
       if (cands.length) h += '<div class="pbp-pmpick" role="group" aria-label="PMs and superintendents for this job">' + cands.map((c, i) => '<label class="pb-checkrow pbp-pmrow"><input type="checkbox" id="pjPmC' + i + '" data-uid="' + escapeHtml(c.user_id) + '"' + (pbPj.pmEdit.has(c.user_id) ? ' checked' : '') + (locked(c) ? ' disabled' : '') + ' onchange="pbPmJobTick(' + i + ', this.checked)">'
         + '<span><span class="pbp-whoname">' + escapeHtml(pbPmName(c)) + '</span><span class="pbp-dim"> ' + escapeHtml([pbPmTitleTxt(c), c.name && c.email ? c.email : ''].filter(Boolean).join(' · ')) + '</span></span></label>').join('') + '</div>';
       return h + (pbPj.pmMsg ? '<p class="pbp-dim pbp-err" id="pjPmMsg" role="alert">' + escapeHtml(pbPj.pmMsg) + '</p>' : '')
@@ -35860,7 +35872,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     h += assigned.length ? '<ul class="pbp-who" id="pjPmList">' + assigned.map(x => '<li><span class="pbp-whoname">' + escapeHtml(pbPmName(x)) + (x.current === false ? ' <span class="pb-chip notsent">No longer a PM or super</span>' : '') + '</span>'
         + '<span class="pbp-dim">' + escapeHtml([x.current === false ? '' : pbPmTitleTxt(x), x.name ? x.email : '', x.since ? 'since ' + pbProdDayText(String(x.since).slice(0, 10)) : ''].filter(Boolean).join(' · ')) + '</span></li>').join('') + '</ul>'
-      : '<p class="pbp-dim pbp-none" id="pjPmNone">No PM or super assigned. Alerts go to the company account.</p>';
+      : '<p class="pbp-dim pbp-none" id="pjPmNone">No PM or super assigned. Alerts go to every PM and super in the company.</p>' /* feat_office B1 */;
     if (pbPj.pmMsg) h += '<p class="pbp-dim" id="pjPmMsg" role="status">' + escapeHtml(pbPj.pmMsg) + '</p>';
     return h + '<div class="pb-btn-wrap pbp-btns"><button type="button" class="pb-btn secondary" id="pjPmEdit" onclick="pbPmJobEdit()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-pencil"/></svg>' + (assigned.length ? 'Change PMs & Supers' : 'Assign PMs & Supers') + '</button></div></section>';
   }
@@ -35887,10 +35899,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const d = r && r.data, m = String((r && r.error && r.error.message) || '');
     if (d && d.ok === true && Array.isArray(d.assigned)) {
       pbPj.pms = Object.assign({}, pbPj.pms, d); pbPj.pmEdit = null;
-      pbPj.pmMsg = d.assigned.length ? 'Saved. ' + pbPmCountTxt(d.assigned) + ' on this job.' : 'Saved. No PM or super on this job: alerts go to the company account.';
+      pbPj.pmMsg = d.assigned.length ? 'Saved. ' + pbPmCountTxt(d.assigned) + ' on this job.' : 'Saved. No PM or super on this job: alerts go to every PM and super in the company.' /* feat_office B1 */;
       pbPmJobPaint(); return;
     }
-    pbPj.pmMsg = (d && d.code === 'pb:owner_only') ? 'Only the owner can take another PM or super off this job. Nothing was changed.'
+    pbPj.pmMsg = (d && d.code === 'pb:owner_only') ? 'Only the owner, a PM or a superintendent can take another PM or super off this job. Nothing was changed.'
       : (d && d.code === 'pb:not_pm') ? 'Someone you picked isn’t a PM or superintendent of the company any more. Nothing was changed. Refresh and try again.'
       : /pb:too_many_pms/.test(m) ? 'Up to 10 PMs and supers per job.' : /Could not find the function|does not exist/i.test(m) ? 'Assigning PMs and supers isn’t ready on the company server yet. Nothing was changed.' : pbProdErrText(r) + ' Nothing was changed; try again.';
     pbPmJobPaint();
@@ -36333,7 +36345,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbProdPlanRead();
     const r = E.rows[i], c = r.key ? pbProdJobView(pbPj.data.plan || null, pbPj.data.cats).categories.find(x => x.key === r.key) : null;
     const go = () => { E.rows.splice(i, 1); pbProdJobRender(); const b = pbProdEl('ppAddBtn') || pbProdEl('ppSaveBtn'); if (b) b.focus(); };
-    if (c && c.done) pbConfirm('Remove ' + (r.name || 'this category') + ' from the plan? Its ' + pbProdQtyText(c.done, c.unit) + ' already reported stays on record and shows as not in this job’s plan.', go, 'Remove Category');
+    const linked = r.key && typeof window.pbMatLinkedTo === 'function' ? window.pbMatLinkedTo(r.key) : []; // feat_office C4
+    const parts = [c && c.done ? 'Its ' + pbProdQtyText(c.done, c.unit) + ' already reported stays on record and shows as not in this job’s plan.' : '',
+      linked.length ? 'Materials count from it: ' + linked.join(', ') + '. They keep their amounts but stop following this item until you pick another one for them.' : ''].filter(Boolean);
+    if (parts.length) pbConfirm('Remove ' + (r.name || 'this category') + ' from the plan? ' + parts.join(' '), go, 'Remove Category');
     else go();
   };
   window.pbProdEqAdd = function() { const E = pbPj.edit; if (!E) return; pbProdPlanRead(); E.equip = E.equip || []; if (E.equip.length >= 40) return; E.equip.push({ key: null, name: '', unitNo: '', costCode: '' }); pbProdJobRender(); const f = pbProdEl('ppEqName' + (E.equip.length - 1)); if (f) f.focus(); };
@@ -36349,6 +36364,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const planned = num(r.planned), weight = num(r.weight), hours = num(r.hours), alertTxt = String(r.alertPct == null ? '' : r.alertPct).trim(), alert = alertTxt === '' ? null : Number(alertTxt);
       if (alert !== null && !(Number.isInteger(alert) && alert >= 10 && alert <= 100)) { E.err = (String(r.name || '').trim() || 'A category') + ': Alert at is a whole number from 10 to 100 (% of planned).'; pbProdJobRender(); return; } // feat_itemmat
       if (!name) { E.err = 'Every category needs a name (or remove the empty one).'; pbProdJobRender(); return; }
+      if (E.rows.filter(x => String(x.name || '').trim().toLowerCase() === name.toLowerCase()).length > 1) { E.err = 'Two categories are named ' + name + '. Give each its own name.'; pbProdJobRender(); return; } // feat_office C4
       if ([planned, weight, hours].some(x => Number.isNaN(x))) { E.err = name + ': planned, weight and budget hours must be plain numbers (or left empty).'; pbProdJobRender(); return; }
       if (planned !== null && planned > 10000000 || hours !== null && hours > 1000000 || weight !== null && weight > 1000) { E.err = name + ': that number is too large. Check for a typo.'; pbProdJobRender(); return; }
       const alerts = []; // feat_itemalerts
@@ -36368,7 +36384,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     E.saving = true; E.err = ''; pbProdJobRender();
     const equipment = [], ekeys = (E.equip || []).filter(q => q.key).map(q => q.key); // feat_equip
     for (const q of (E.equip || [])) {
-      const name = String(q.name || '').trim(); if (!name) { if (!q.unitNo && !q.costCode) continue; E.err = 'Every piece of equipment needs a name (or remove the empty one).'; pbProdJobRender(); return; }
+      const name = String(q.name || '').trim(); if (!name) { if (!q.unitNo && !q.costCode) continue; E.saving = false; /* feat_office C2 */ E.err = 'Every piece of equipment needs a name (or remove the empty one).'; pbProdJobRender(); return; }
       let key = q.key; if (!key) { const base = 'eq_' + (name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 24) || 'x'); key = base; let n = 2; while (ekeys.includes(key) || key === 'eq_other') key = base + '_' + n++; ekeys.push(key); }
       equipment.push({ key, name: name.slice(0, 60), unit_no: String(q.unitNo || '').trim().slice(0, 30) || null, cost_code: String(q.costCode || '').trim().slice(0, 60) || null });
     }
@@ -41566,7 +41582,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   //    derived report text), minus keys starting "_" (local bookkeeping), with every photo replaced by
   //    "sha256:" + the SHA-256 of its image bytes.
   const PB_RPT_VOLATILE = ['sent', 'sentReportHash', 'supabaseId', 'cloudSyncFailed', 'restoredFromCloud', 'reportText', 'savedCaptureIds',
-    'delivery', 'deliveryAt', 'deliveryWhy', 'photosSent', 'photosWhy', 'thread', 'threadSeen', 'outbox', 'outboxWhy', 'resends', 'replyToken', 'clientReportId'];
+    'delivery', 'deliveryAt', 'deliveryWhy', 'photosSent', 'photosWhy', 'thread', 'threadSeen', 'outbox', 'outboxWhy', 'resends', 'replyToken', 'clientReportId', 'rptFm' /* feat_rptfm: phone-only, kept later */];
   function pbRptCanonical(e) {
     if (e.kind === 'confined') return pbPermitBackupRecord(e);
     if (e.kind === 'report' && e.anonymous) return { kind: 'report', anonymous: true, category: e.category || '', description: e.description || '', photos: (e.photos || []).map(u => 'sha256:' + pbPhotoSha(pbRptPhotoUrl(u) || '')) };
@@ -41751,7 +41767,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       ['Overall slope', s ? (pbRptNum(s.overallSlopePct, 2) !== '\u2014' && s.overallSlopePct >= 0 ? '+' : '') + pbRptNum(s.overallSlopePct, 2) + '% (+ = rising toward end)' : null], ['Start / end invert', s ? (s.startInv !== undefined ? s.startInv : '\u2014') + ' / ' + (s.endInv !== undefined ? s.endInv : '\u2014') + ' ft' : null],
       ['Pipe', (e.statsType ? e.statsType + ' \u00b7 ' : '') + (pipeTxt || 'not recorded')], ['Bedding volume', e.beddingVolumeYd3 !== null && e.beddingVolumeYd3 !== undefined ? e.beddingVolumeYd3.toFixed(1) + ' cu yd (calculated)' + pbVolumeScopeNote(e) + (e.beddingVolumeIncomplete ? ', partial' : '') : null],
       ['Jobsite', e.jobsite || null], ['Job / cost code', [e.jobNumber ? '#' + e.jobNumber : '', e.costCode ? 'cost code ' + e.costCode : ''].filter(Boolean).join(' \u00b7 ') || null],
-      ['Pipelayer', pbRfPdfWho(e, 'pipelayer')], ['Foreman / crew', pbRfPdfWho(e, 'crew')], /* feat_runflow P6 */
+      ['Pipelayer', pbRfPdfWho(e, 'pipelayer')], ...pbRptFmRows(e), /* feat_runflow P6; feat_rptfm: the foreman by name */
       ['Run form opened', e.runStartTime ? pbRptDt(e.runStartTime) : null], ['Locked', pbRptDt(e.lockTime)],
       ['Run ended', e.runEndTime ? pbRptDt(e.runEndTime) + pbEaRptSuffix(e, ' (time entered after the fact)') : 'not ended in the app'], ['Elapsed run time', e.durationMin !== null && e.durationMin !== undefined ? (t => t.chained ? t.session + ' this session; ' + t.total + ' total, all sessions' : t.session + (t.continued ? ' this session (continued later)' : ''))(pbRunTimeText(e)) : null]
     ], { cols: 2 });
@@ -41796,7 +41812,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     R.section('job', 'Job, crew and notes', { keep: 30 });
     R.kv([
       ['Jobsite', e.jobsite ? e.jobsite + ' (typed)' : null], ['Job number', e.jobNumber || null], ['Cost code', e.costCode || (e.whoFrom ? 'per category, from the job plan' : null)] /* feat_runflow P6 */, ['Pipe type (Stats)', e.statsType || 'not picked (run not tracked in Stats)'],
-      ['Pipelayer', pbRfPdfWho(e, 'pipelayer')], ['Foreman / crew', pbRfPdfWho(e, 'crew')], /* feat_runflow P6 */
+      ['Pipelayer', pbRfPdfWho(e, 'pipelayer')], ...pbRptFmRows(e), /* feat_runflow P6; feat_rptfm: the foreman by name */
       ['Rod reading unit', e.rodUnit || null], ['Instrument height (HI)', e.hi !== null && e.hi !== undefined ? fmt(e.hi, 3) + ' ft (entered)' : 'not used']
     ], { cols: 2 });
     if (e.notesField) { R.sub('Notes (as of lock)'); R.para(e.notesField + ' (typed by hand)', { size: 9.5 }); }
@@ -41957,7 +41973,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     for (let k = have; k < want; k++) R.photo(null, { shows: 'not recorded', belongs: 'This run (the record counts ' + want + ' photos)' }, 'The run records ' + want + ' photos but only ' + have + ' are on this phone. Photos are not backed up, so a missing one stays on the phone that took it.');
     R.photosSection();
     R.signatures('Attestation', [
-      { role: 'Foreman', recorded: e.foreman && e.foreman.enteredBy ? 'name typed on the production entry: ' + e.foreman.enteredBy + ' (saved ' + pbRptDt(e.foreman.enteredAt) + '; who saved it is not recorded)' : 'no foreman production entry', statement: 'I reviewed this run record, its corrections and the production quantities above, and they are correct to the best of my knowledge.' },
+      { role: 'Foreman', recorded: (fmA => [fmA && fmA.name ? fmA.name + ' (' + fmA.src + ')' : '', e.foreman && e.foreman.enteredBy ? 'name typed on the production entry: ' + e.foreman.enteredBy + ' (saved ' + pbRptDt(e.foreman.enteredAt) + '; who saved it is not recorded)' : ''].filter(Boolean).join('; ') || 'no foreman production entry')(pbRptFm(e)) /* feat_rptfm */, statement: 'I reviewed this run record, its corrections and the production quantities above, and they are correct to the best of my knowledge.' },
       { role: 'Pipelayer', recorded: e.pipelayer ? e.pipelayer + ' (typed on the run)' : 'not recorded' }
     ], 'The app records typed names, not signatures. Sign here when a signed copy is required.');
     pbRptIntegrity(R, e, fp, [['Photos in this record', R.rec.photos.length + ' (' + R.rec.photos.filter(p => p.missing).length + ' not included)'], ['Record backup', e.supabaseId ? 'Cloud copy exists (photos are not in it)' : 'No cloud copy known on this phone']]);
@@ -46259,7 +46275,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbCmSt.rows = rows;
     if (!D) { list.innerHTML = ''; const pl0 = pbCmEl('crPending'); if (pl0) pl0.innerHTML = ''; const ph0 = pbCmEl('crPendingHead'); if (ph0) ph0.hidden = true; return; }
     if (!rows.length) list.innerHTML = '<p class="pbc-row pbc-dim">No one is in the company yet.</p>';
-    const isOwner = !!D.is_owner;
+    const isOwner = !!D.is_owner, iAmPm = rows.some(x => x && x.me && x.role === 'pm'); // feat_office B4: a PM or super (the server checks again)
     if (rows.length) list.innerHTML = rows.map((m, i) => {
       const nm = pbCmName(m), tags = [];
       if (m.owner) tags.push('<span class="pbc-tag">Owner</span>');
@@ -46274,7 +46290,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (m.owner) acts = '<p class="pbc-note">Company owner. Can’t be changed or removed here.</p>';
       else if (m.me) acts = '<p class="pbc-note">This is you.</p>';
       else if (!m.member) acts = '';
+      else if (m.role === 'pm' && !isOwner && iAmPm) acts = '<div class="pbc-acts">' // feat_office B4/B5 (owner rule Oct 28): a PM or super renames and switches PM <-> Superintendent
+        + '<button type="button" class="pb-btn secondary small" data-crew-act="name" data-i="' + i + '" onclick="pbCmNameEdit(' + i + ')">Edit Name</button>'
+        + (pbCmRoleKey(m) === 'superintendent' ? '<button type="button" class="pb-btn secondary small" data-crew-act="pm" data-i="' + i + '" onclick="pbCmAct(\'role\',' + i + ',\'pm\')">Make Project Manager</button>'
+          : '<button type="button" class="pb-btn secondary small" data-crew-act="super" data-i="' + i + '" onclick="pbCmAct(\'role\',' + i + ',\'superintendent\')">Make Superintendent</button>')
+        + '</div><p class="pbc-note">Only the owner can remove a ' + (pbCmRoleKey(m) === 'superintendent' ? 'superintendent' : 'project manager') + ' or give them another role.</p>';
       else if (m.role === 'pm' && !isOwner) acts = '<p class="pbc-note">Only the owner can change or remove a ' + (pbCmRoleKey(m) === 'superintendent' ? 'superintendent' : 'project manager') + '.</p>'; // batch 19 PM
+      else if (m.manager && !isOwner && iAmPm) acts = '<div class="pbc-acts"><button type="button" class="pb-btn secondary small" data-crew-act="name" data-i="' + i + '" onclick="pbCmNameEdit(' + i + ')">Edit Name</button></div><p class="pbc-note">Only the owner can change or remove a manager.</p>'; // feat_office B5
       else if (m.manager && !isOwner) acts = '<p class="pbc-note">Only the owner can change or remove a manager.</p>';
       else {
         const other = m.role === 'foreman' ? 'pipelayer' : 'foreman';
@@ -46354,7 +46376,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbCmAdd = async function() {
     const inp = pbCmEl('crEmail'), err = pbCmEl('crAddErr');
     const email = String(inp.value || '').trim();
-    const bad = (t) => { err.textContent = t; err.hidden = false; inp.setAttribute('aria-invalid', 'true'); };
+    const bad = (t) => { err.textContent = t; err.hidden = false; inp.setAttribute('aria-invalid', 'true'); if (!pbCmSt.busy) { pbCmSt.msg = ''; pbCmSt.msgKind = ''; const st = pbCmEl('crStatus'); if (st) { st.textContent = ''; st.className = 'pbc-status'; } } }; // feat_office A11: the last success line goes
     err.hidden = true; err.textContent = ''; inp.removeAttribute('aria-invalid');
     if (!email) return bad('Type their email address.');
     if (email.length > 254 || !/^[^@\s<>(),;:"\[\]]+@[^@\s<>(),;:"\[\]]+\.[^@\s<>(),;:"\[\]]+$/.test(email)) return bad(PB_CM_MSG['pb:bad_email']);
@@ -46525,7 +46547,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!times.includes(t)) times.unshift(t);
     const zones = PB_PM_TZS.some(x => x[0] === z) ? PB_PM_TZS : [[z, z]].concat(PB_PM_TZS);
     body.innerHTML = '<label class="pb-checkrow pbc-check"><input type="checkbox" id="crAlertsCopies"' + (on ? ' checked' : '') + '><span>Send my own copies to this account (the company account)</span></label>'
-      + '<p class="pbc-dim">Off: alerts go only to each job’s assigned PMs, and a job with no PM sends nothing to you.</p>'
+      + '<p class="pbc-dim">Off (the default): job alerts go to the PMs and supers only; you get them only while the company has no PM or super.</p>' /* feat_office B1 */
       + '<div class="pbc-two"><div class="pb-field"><label for="crAlertsTime">Morning email time</label><select id="crAlertsTime">' + times.map(x => '<option value="' + x + '"' + (x === t ? ' selected' : '') + '>' + pbPmTimeText(x) + '</option>').join('') + '</select></div>'
       + '<div class="pb-field"><label for="crAlertsTz">Time zone</label><select id="crAlertsTz">' + zones.map(x => '<option value="' + escapeHtml(x[0]) + '"' + (x[0] === z ? ' selected' : '') + '>' + escapeHtml(x[1]) + '</option>').join('') + '</select></div></div>'
       + '<div class="pb-btn-wrap"><button type="button" class="pb-btn secondary" id="crAlertsSave" onclick="pbPmAlertsSave()">Save Alert Settings</button></div>';
@@ -46593,7 +46615,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<div class="pb-field"><label for="settingsCoTz">Company time zone</label><select id="settingsCoTz">' + zones.map(x => '<option value="' + escapeHtml(x[0]) + '"' + (x[0] === z ? ' selected' : '') + '>' + escapeHtml(x[1]) + '</option>').join('') + '</select></div>'
       + '<div class="pb-field"><label for="settingsCoTime2">Morning email time</label><select id="settingsCoTime2">' + times.map(x => '<option value="' + x + '"' + (x === t ? ' selected' : '') + '>' + pbPmTimeText(x) + '</option>').join('') + '</select></div>'
       + '<label class="pb-checkrow pbp-auto-row" for="settingsCoCopies"><input type="checkbox" id="settingsCoCopies"' + (on ? ' checked' : '') + '> <span>Send my own copies to this account</span></label>'
-      + '<p class="pb-help">Each job’s alerts go to its assigned PMs and supers: a push right away, and one email in the morning on days something needs a look. A job with none sends them to this account; a plan change on a job with none goes to no one. Quiet hours (8:55 PM to 6 AM) and the morning email follow the time zone.</p>'
+      + '<p class="pb-help">Each job’s alerts go to its assigned PMs and supers: a push right away, and one email in the morning on days something needs a look. A job with none sends them to every PM and super in the company, and to the owner only when the company has none; a plan change on a job with none goes to no one. “Send my own copies” also sends the owner a copy of every job’s alerts (plan changes only on jobs with a PM or super; off unless the owner turns it on). Quiet hours (8:55 PM to 6 AM) and the morning email follow the time zone.</p>' /* feat_office B1 */
       + '<div class="pbx-btnrow"><button type="button" class="pb-btn secondary small" id="settingsCoTimeSave" onclick="pbCoTzSave()"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? 'Saving…' : 'Save') + '</button><button type="button" class="pb-btn ghost small" id="settingsCoTimeCancel" onclick="pbCoTzEdit(false)">Cancel</button></div>'
       + (S.msg ? '<p class="pb-help' + (S.msgKind === 'err' ? ' pb-err' : '') + '" id="settingsCoTimeMsg" role="status">' + escapeHtml(S.msg) + '</p>' : '') + '</div>';
   };
@@ -48562,6 +48584,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const prog = pbProdEl('pjProgress');
     if (prog && prog.parentNode) prog.parentNode.insertBefore(nw, prog.nextSibling); else body.insertBefore(nw, body.firstChild);
   }
+  // feat_office C5: an inspection added, changed or canceled on the job's Inspections page: the job page's counts follow
+  function pbCxInspFollow(num) { try { if (pbPj.job && String(pbPj.job.job_number || '').trim().toLowerCase() === String(num || '').trim().toLowerCase() && typeof pbCxInspLoad === 'function') pbCxInspLoad(); } catch (e) {} }
+  window.pbCxInspFollow = pbCxInspFollow;
   // ==== feat_insp: the job's inspections on the overview ====
   let pbCxInsp = { uid: null, jobs: {}, busy: null, gen: 0, edit: null };
   async function pbCxInspLoad() {
@@ -48988,13 +49013,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // ==== end feat_calcimp ====
   // ==== feat_itemmat: a material's overview item ====
   const pbMatItemOf = (m) => m.source === 'pipe_footage' || m.source === 'bedding_calc' ? (m.footage_cat || 'pipe') : (m.item_key || '');
+  window.pbMatLinkedTo = function(key) { const L = typeof pbMatList === 'function' ? pbMatList() : null; return (L || []).filter(m => m && !m.archived && pbMatItemOf(m) === key).map(m => String(m.name || 'A material')); }; // feat_office C4
   window.pbItemMatGroups = function(keys) {
     const list = typeof pbMatList === 'function' ? pbMatList() : null; if (!list || !pbPj.job) return null;
     const by = {}, loose = []; let count = 0;
     list.filter(m => m && !m.archived).forEach(m => {
-      const s = pbMatState(m), u = m.unit || '', f = (x) => x === null || x === undefined ? '–' : pbMatFmt(Number(x), u);
+      const s = pbMatState(m), u = m.unit || '', f = (x) => x === null || x === undefined ? '—' : pbMatFmt(Number(x), u);
       const row = { name: m.name, alert: !!(s.reached || s.over), alertText: s.over ? 'Over expected' : s.reached ? pbMatShareText(s) : '',
-        amounts: f(s.used) + ' / ' + f(s.ord) + ' / ' + (s.exp === null ? '–' : pbMatFmt(s.exp, u)) + ' ' + u };
+        amounts: (s.est && s.used !== null ? '≈ ' : '') + f(s.used) + ' / ' + (s.ord ? f(s.ord) : '—') + ' / ' + (s.exp === null || s.exp === undefined ? '—' : pbMatFmt(s.exp, u)) + ' ' + u }; // feat_office A11: as the Materials tab writes them
       const k = pbMatItemOf(m); count++;
       if (k && keys.includes(k)) (by[k] = by[k] || []).push(row); else loose.push(row);
     });
@@ -49076,7 +49102,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       h += '<fieldset class="pb-field pbm-fs"><legend>How “used” is counted</legend>'
         + radio('pmfSource', v.category === 'pipe' ? 'pipe_footage' : 'bedding_calc', v.category === 'pipe' ? 'From the Pipe Installed footage crews report' : 'Calculated from the footage (an estimate)', v.source)
         + radio('pmfSource', 'entered', 'Amounts I record by hand', v.source) + '</fieldset>';
-      if (v.source !== 'entered') { const fcs = pbMatFootCats(), cur = v.footage_cat || 'pipe'; if (!fcs.some(c => c.key === cur)) fcs.push({ key: cur, name: cur + ' (not in the plan)' });
+      if (v.source !== 'entered') { const fcs = pbMatFootCats(), cur = v.footage_cat || 'pipe'; if (!fcs.some(c => c.key === cur)) fcs.push({ key: cur, name: pbProdCatName(cur) + ' (not in the plan)' }); /* feat_office C4: never a raw key */
         const pipes = v.category !== 'pipe' ? (pbMatList() || []).filter(m => m && !m.archived && m.source === 'pipe_footage' && m.id !== F.id) : [];
         h += '<div class="pb-field"><label for="pmf_footage_cat">Footage from</label><select id="pmf_footage_cat" onchange="pbMatFormRefresh()">' + (pipes.length ? '<optgroup label="Production items">' : '') + fcs.map(c => '<option value="' + escapeHtml(c.key) + '"' + (c.key === cur ? ' selected' : '') + '>' + escapeHtml(c.name) + '</option>').join('')
           + (pipes.length ? '</optgroup><optgroup label="Same footage as a pipe">' + pipes.map(m => '<option value="mat:' + escapeHtml(m.id) + '">' + escapeHtml(m.name + ' (' + pbMatFootName(m.footage_cat) + (m.each_ft ? ' × ' + m.each_ft + ' ft each' : '') + ')') + '</option>').join('') + '</optgroup>' : '') + '</select>'
@@ -49114,7 +49140,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const icode = (v.source === 'pipe_footage' || calc) ? pbMatItemCode(v.footage_cat) : '';
       if (!F.ccTyped && (!v.cost_code || v.cost_code === F.ccAuto)) { v.cost_code = icode; F.ccAuto = icode; }
       if (v.source === 'entered') { const cats = pbPj.data && pbPj.data.plan && Array.isArray(pbPj.data.plan.categories) ? pbPj.data.plan.categories.filter(c => c && c.key) : []; // feat_itemmat
-        const ik = v.item_key || '', opts = cats.slice(); if (ik && !opts.some(c => c.key === ik)) opts.push({ key: ik, name: ik + ' (not in the plan)' });
+        const ik = v.item_key || '', opts = cats.slice(); if (ik && !opts.some(c => c.key === ik)) opts.push({ key: ik, name: pbProdCatName(ik) + ' (not in the plan)' }); /* feat_office C4 */
         h += '<div class="pb-field"><label for="pmf_item_key">Overview item</label><select id="pmf_item_key" onchange="pbMatFormRefresh()"><option value="">None</option>' + opts.map(c => '<option value="' + escapeHtml(c.key) + '"' + (c.key === ik ? ' selected' : '') + '>' + escapeHtml(c.name) + '</option>').join('') + '</select><p class="pb-help pbm-fhelp">It shows under this item on the job overview.</p></div>'; }
       const codes = pbMatJobCodes();
       h += pbMatField('cost_code', 'Cost code', v.cost_code || '', 'type="text" maxlength="60" autocomplete="off" autocapitalize="characters" list="pmfCodes" placeholder="e.g. 02-100" oninput="pbMatCodeTyped()"', escapeHtml(icode ? 'From ' + pbMatFootName(v.footage_cat) + ' (' + icode + ') unless you typed one.' : 'Optional.'))
@@ -50157,7 +50183,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!jobs) { list.innerHTML = ''; return; }
     list.innerHTML = jobs.length ? jobs.map((j, i) => '<button type="button" class="pbp-job pbd-job" id="icoJob' + i + '" onclick="pbOpenInspJob(' + escapeHtml(JSON.stringify(j.job_number)) + ')"><span class="pbp-jobhead"><span class="pbp-jobnum">Job ' + escapeHtml(j.job_number) + '</span></span>'
       + '<span class="pbd-counts"><span class="pbd-open">' + Number(j.open) + ' open</span> · <span class="pbd-done">' + Number(j.done) + ' done</span>' + (Number(j.failed_open) ? ' · <span class="pb-chip notsent pbd-chip">' + Number(j.failed_open) + ' failed, retest</span>' : '') + '</span>'
-      + '<span class="pbp-meta">' + escapeHtml([j.next_scheduled ? 'Next scheduled ' + pbDlyDayText(j.next_scheduled) : '', Number(j.reports) ? j.reports + ' daily report' + (Number(j.reports) === 1 ? '' : 's') + (j.last_report ? ', last ' + pbDlyDayText(j.last_report) : '') : 'No daily reports yet'].filter(Boolean).join(' · ')) + '<span class="chev" aria-hidden="true">&rsaquo;</span></span></button>').join('')
+      + '<span class="pbp-meta">' + escapeHtml([j.next_scheduled ? (String(j.next_scheduled).slice(0, 10) < pbTkToday() ? 'Past due: scheduled ' : 'Next scheduled ') + pbDlyDayText(j.next_scheduled) : '', /* feat_office A11 */ Number(j.reports) ? j.reports + ' daily report' + (Number(j.reports) === 1 ? '' : 's') + (j.last_report ? ', last ' + pbDlyDayText(j.last_report) : '') : 'No daily reports yet'].filter(Boolean).join(' · ')) + '<span class="chev" aria-hidden="true">&rsaquo;</span></span></button>').join('')
       : '<p class="pbd-dim" id="icoEmpty">No inspections or tests yet. Tap Add Inspection or Test.</p>';
   };
   window.pbOpenInspJob = async function(jobNumber, jobsite) {
@@ -50231,7 +50257,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<div class="pbd-two"><div class="pb-field"><label for="ifStaFrom">Station (or start of range)</label><input type="text" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" enterkeyhint="next" id="ifStaFrom" placeholder="1+00 or 100"></div><div class="pb-field"><label for="ifStaTo">To station (optional)</label><input type="text" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" enterkeyhint="next" id="ifStaTo" placeholder="4+50"></div></div>'
       + '<div class="pb-field"><label for="ifPlace">Place (optional if a station is given)</label><input type="text" id="ifPlace" maxlength="200" placeholder="e.g. MH-7 to MH-10"></div>'
       + '<div class="pb-field"><label for="ifDate">Scheduled date (optional)</label><input type="date" id="ifDate"></div>'
-      + '<div class="pb-field"><label for="ifForeman">Assigned foreman</label><select id="ifForeman">' + fm.map(f => '<option value="' + escapeHtml(f.uid) + '">' + escapeHtml(f.name) + '</option>').join('') + '</select></div>'
+      + '<div class="pb-field"><label for="ifForeman">Assigned foreman</label><select id="ifForeman"><option value="">Pick the foreman</option>' + fm.map(f => '<option value="' + escapeHtml(f.uid) + '">' + escapeHtml(f.name) + '</option>').join('') + '</select></div>' /* feat_office C8: no preselected foreman */
       + '<div class="pb-field"><label for="ifNote">Note for the foreman (optional)</label><textarea id="ifNote" maxlength="2000" rows="2"></textarea></div>'
       + (F.mode === 'edit' ? '<div class="pb-field"><label for="ifReason">Reason for the change (required; kept in the history)</label><input type="text" id="ifReason" maxlength="500"></div>' : '')
       + '<p class="pb-rpt-status" id="ifStatus" role="status"></p><div class="pb-btn-row"><button type="button" class="pb-btn" id="ifSave" onclick="pbInsFormSave()">' + (F.mode === 'add' ? 'Add Item' : 'Save Changes') + '</button><button type="button" class="pb-btn ghost" onclick="pbInsFormCancel()">Cancel</button></div></div>';
@@ -50255,6 +50281,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (Number.isNaN(a) || Number.isNaN(b)) { say('Stations look like 1+00 or 100.'); return; }
     if (b !== null && a === null) { say('Give the start station of the range too.'); return; }
     if (a === null && !place) { say('Give a station (or a range) or a place.'); return; }
+    if (!pbDlyEl('ifForeman').value) { say('Pick the foreman who checks it off.'); return; } // feat_office C8
     if (F.mode === 'edit' && !String((pbDlyEl('ifReason') || {}).value || '').trim()) { say('Give the reason for the change (it is kept in the history).'); return; }
     if (F.mode === 'edit' && F.item.status === 'done' && pbDlyEl('ifForeman').value !== F.item.foreman_uid) { say('A done item keeps the foreman who checked it off.'); return; }
     if (!(await pbDlyCanAsk(uid))) { say('No signal. Nothing was saved.'); return; }
@@ -50270,6 +50297,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbInsJob.form = null;
     if (!pbInsJob.job.job_number) pbInsJob.job.job_number = r.data.item.job_number;
     pbInsJobLoad();
+    pbCxInspFollow(job); // feat_office C5
   };
   window.pbInsCancel = function(itemId) {
     const it = pbInsJob.data && pbInsJob.data.items.find(x => x.id === itemId); if (!it) return;
@@ -50290,6 +50318,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const r = await pbPermitRpc('pb_insp_edit', { p_item_id: it.id, p_expect_version: it.version, p_kind: it.kind, p_kind_detail: it.kind_detail, p_sta_from: it.sta_from, p_sta_to: it.sta_to, p_location_text: it.location_text,
         p_scheduled_date: it.scheduled_date, p_foreman: it.foreman_uid, p_note: it.note, p_status: 'canceled', p_reason: reason, p_expect_uid: uid }, 30000);
       if (r.error || !r.data || !r.data.ok) pbAlert(pbDlyWhy(r.data && r.data.code, r), 'Not Canceled');
+      else pbCxInspFollow(it.job_number); // feat_office C5
       pbInsJobLoad();
     })();
   }
@@ -50594,7 +50623,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     await pbDxNarrFlush(); /* feat_dailyx: what was typed for the day being left is kept first */
     pbDlyView.job = pbDlyEl('drJob').value.trim(); pbDlyView.date = pbDlyEl('drDate').value || pbFmToday();
     const j = pbDlyJobsToday(pbArchiveOwnerUid, pbDlyView.date).find(x => pbDlyKey(x.n) === pbDlyKey(pbDlyView.job)); pbDlyView.jobsite = j ? j.s : '';
-    pbDlyView.snap = null; pbDlyView.weather = null; pbDlyView.wMsg = ''; pbDlyView.server = null; pbDlyView.amend = null; pbDlyView.needLoc = false; pbDlyView.wxConfirmed = false; pbDlyView.changed = false; pbDlyView.wNext = null;
+    pbDlyView.snap = null; pbDlyView.weather = null; pbDlyView.wMsg = ''; pbDlyView.server = null; pbDlyView.amend = null; pbDlyView.needLoc = false; pbDlyView.needLocPlace = ''; /* feat_wxfix */ pbDlyView.wxConfirmed = false; pbDlyView.changed = false; pbDlyView.wNext = null;
     ['drNarrative', 'drAmendReason'].forEach(id => { const el = pbDlyEl(id); if (el) el.value = ''; }); try { pbDlySigClear(); } catch (e) {} /* feat_wording35 D1: a day's report starts with a clean pad */
     pbDlyRender();
     if (!pbDlyView.job) return;
@@ -50875,9 +50904,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (d && d.ok && d.weather) {
       pbDlyView.weather = d.weather; pbDlyView.wMsg = ''; pbDlyView.needLoc = false; /* feat_dailyx */ pbDlyView.location = d.location || pbDlyView.location;
       if (pbDly.st) { pbDly.st.weather[pbDlyKey(pbDlyView.job) + '|' + pbDlyView.date] = d.weather; pbDlySave(uid); }
-    } else if (d && (d.code === 'pb:need_location' || d.code === 'pb:need_location_office')) { pbDlyView.wMsg = ''; pbDlyView.needLoc = d.code; }
+    } else if (d && (d.code === 'pb:need_location' || d.code === 'pb:need_location_office')) { pbDlyView.wMsg = ''; pbDlyView.needLoc = d.code; pbDlyView.needLocPlace = d.place_found === false && d.place ? String(d.place).slice(0, 120) : ''; /* feat_wxfix */ }
     else if (d && d.code === 'pb:location_pinned') pbDlyView.wMsg = 'The office pinned this job’s exact spot for the weather. Ask them to change it.'; /* feat_dailyx */
-    else pbDlyView.wMsg = (d && d.message) || (r && r.error && /not found|404|Failed to send|FunctionsFetchError|FunctionsHttpError/i.test(String(r.error.message || r.error.name || '')) ? 'The weather service isn’t set up on the company server yet.' : 'Weather is not available right now.') + ' The report says so if it is signed without weather.';
+    else { if (d && d.location_saved && d.location) { pbDlyView.needLoc = false; pbDlyView.needLocPlace = ''; pbDlyView.location = d.location; } /* feat_wxfix: saved; NWS said no */
+    pbDlyView.wMsg = (d && d.message) || (r && r.error && /not found|404|Failed to send|FunctionsFetchError|FunctionsHttpError/i.test(String(r.error.message || r.error.name || '')) ? 'The weather service isn’t set up on the company server yet.' : 'Weather is not available right now.') + ' The report says so if it is signed without weather.'; }
     pbDlyView.wNext = d && d.next_at ? d.next_at : null;
     pbDlyRender();
   };
@@ -50903,7 +50933,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
 
   // ---- render ----
   function pbDlySecHtml(id, title, src, inner) { /* feat_dailyx: a section folds to its title row with a short count */
-    const m = /^(.*) \((\d+)\)$/.exec(title), t = id === 'drPermits' ? 'Confined Space Permits' : m ? m[1] : title, n = m ? m[2] : pbDxCount(id);
+    const m = /^(.*) \((\d+)\)$/.exec(title), t = pbDfTitle(id === 'drPermits' ? 'Confined Space Permits' : m ? m[1] : title), n = m ? m[2] : pbDxCount(id);
+    if (pbDfHideSec(id, n)) return ''; /* feat_dailyfill C: a read-only section with nothing in it is left out */
     const more = id === 'drRuns' ? pbDxCrewRunsHtml() : id === 'drPermits' ? pbDxCrewPermitsHtml() : '';
     return '<section class="pbd-card pbd-sec' + pbDxSecCls(id) + '" id="' + id + '">' + pbDxHead(id, id + 'H', t, id + 'N', n !== '' && n !== null && n !== undefined ? '· ' + n : '') + '<div class="dx-body" id="' + id + 'Body">' + inner + more + pbDaSrcHtml(id, src) /* feat_dailyattach */ + '</div></section>';
   }
@@ -50942,8 +50973,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!S) { body.innerHTML = h + (V.building ? '' : '<p class="pbd-dim">No records pulled in yet.</p>'); return; }
     // weather
     let wh = '';
-    if (V.weather && V.weather.data) wh = pbDxLocHtml(false) /* feat_dailyx */ + '<p id="drWeatherText">' + escapeHtml(pbDlyWeatherText(V.weather)) + '</p><p class="pbd-src" id="drWeatherLabel">' + escapeHtml(pbDlyWeatherLabel(V.weather)) + (V.location && V.location.source ? ' Job location: ' + escapeHtml({ geocoded: V.location.address || 'from the job’s city and state', pin: 'pinned by the office', device_once: 'a phone’s position taken once at the jobsite' }[V.location.source] || V.location.source) + '.' + (pbJcIsOsm(V.location) ? ' ' + PB_JC_OSM : '') : '') + '</p>';
-    else if (V.needLoc) wh = '<p id="drNeedLoc">This job has no city and state yet, so there’s no weather.</p>' + pbDxLocHtml(true) /* feat_dailyx: the foreman sets it */
+    if (V.weather && V.weather.data) wh = pbDxLocHtml(false) /* feat_dailyx */ + '<p id="drWeatherText">' + escapeHtml(pbDlyWeatherText(V.weather)) + '</p><p class="pbd-src" id="drWeatherLabel">' + escapeHtml(pbDlyWeatherLabel(V.weather)) + (V.location && V.location.source ? ' Job location: ' + escapeHtml({ geocoded: V.location.address || 'from the job’s city and state', pin: 'pinned by the office', device_once: 'a phone’s position taken once at the jobsite' }[V.location.source] || V.location.source) + '.' : '') + '</p>'; /* feat_wxfix: no OSM credit */
+    else if (V.needLoc) wh = '<p id="drNeedLoc">' + (V.needLocPlace ? '“' + escapeHtml(V.needLocPlace) + '” wasn’t found, so there’s no weather.' : 'This job has no city and state yet, so there’s no weather.') + '</p>' + pbDxLocHtml(true) /* feat_wxfix: names a city that wasn't found */ /* feat_dailyx: the foreman sets it */
       + (pbDlyAcc(pbArchiveOwnerUid).manager ? '<div class="pb-btn-row"><button type="button" class="pb-btn secondary small" id="drSetLocBtn" onclick="pbJcOpenDetails(' + escapeHtml(JSON.stringify(V.job)) + ')">Set City &amp; State</button></div>' : '');
     else wh = '<p class="pbd-dim" id="drWeatherNone">' + escapeHtml(V.wMsg || 'Not looked up yet.') + '</p>';
     wh += '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" id="drWeatherBtn" onclick="pbDlyWeather({})"' + (V.wBusy || (V.weather && V.weather.complete) ? ' disabled' : '') + '>' + (V.weather ? 'Update Weather' : V.needLoc ? 'Check Again' : 'Get Weather') + '</button></div>'
@@ -51181,7 +51212,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbCeHead = (d) => { const m = d.equip.length, s = Math.round(d.equip.reduce((t, q) => t + (pbCeHrs(pbDxHv(q, true)).n || 0), 0) * 100) / 100; return '· ' + (m ? pbDpPieces(m) + (s > 0 ? ' · ' + pbDpH(s) : '') : 'none listed'); };
   function pbCeRow(q, i) {
     const nm = pbDpEqName(q), v = pbDxHv(q, true); /* feat_dailyx: the Crew log's hours until he types */
-    return '<li class="dp-item dp-eqrow" id="dpEq_' + i + '"><span class="dp-eqtx"><span class="dp-nm">' + escapeHtml(nm) + '</span>' + (q.rental ? '<span class="dp-sub">Rental</span>' : '') + '</span>'
+    return '<li class="dp-item dp-eqrow" id="dpEq_' + i + '"><span class="dp-eqtx"><span class="dp-nm">' + escapeHtml(nm) + '</span>' + (q.rental ? '<span class="dp-sub">Rental</span>' : '') + pbDfTag(q) + '</span>' /* feat_dailyfill */
       + '<span class="dp-eqhw"><input type="text" class="dp-eqh" id="dpEqH_' + i + '" inputmode="decimal" autocomplete="off" maxlength="5" enterkeyhint="done" placeholder="0" aria-label="' + escapeHtml('Hours, ' + nm) + '" value="' + escapeHtml(v) + '" oninput="pbCeHours(' + i + ',this.value)" onblur="pbCeHoursKeep()"><span class="dp-eqhu" aria-hidden="true">h</span></span>'
       + '<button type="button" class="dp-x" id="dpEqX_' + i + '" aria-label="' + escapeHtml('Remove ' + nm) + '" onclick="pbDpRemove(\'Eq\',' + i + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-x"/></svg></button></li>';
   }
@@ -51256,7 +51287,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // ---- Crew today: a row per person with an hours box ----
   function pbDxCrewRow(p, i, ids) {
     const tag = pbDpCrewTag(p, ids), v = pbDxHv(p, false);
-    return '<li class="dp-item dp-eqrow" id="dpCrew_' + i + '"><span class="dp-eqtx"><span class="dp-nm">' + escapeHtml(p.name) + '</span>' + (tag ? '<span class="dp-sub">' + escapeHtml(tag) + '</span>' : '') + '</span>'
+    return '<li class="dp-item dp-eqrow" id="dpCrew_' + i + '"><span class="dp-eqtx"><span class="dp-nm">' + escapeHtml(p.name) + '</span>' + (tag ? '<span class="dp-sub">' + escapeHtml(tag) + '</span>' : '') + pbDfTag(p) + '</span>' /* feat_dailyfill */
       + '<span class="dp-eqhw"><input type="text" class="dp-eqh" id="dpCrewH_' + i + '" inputmode="decimal" autocomplete="off" maxlength="5" enterkeyhint="done" placeholder="0" aria-label="' + escapeHtml('Hours, ' + p.name) + '" value="' + escapeHtml(v) + '" oninput="pbDxCrewHours(' + i + ',this.value)" onblur="pbCeHoursKeep()"><span class="dp-eqhu" aria-hidden="true">h</span></span>'
       + '<button type="button" class="dp-x" id="dpCrewX_' + i + '" aria-label="' + escapeHtml('Remove ' + p.name) + '" onclick="pbDpRemove(\'Crew\',' + i + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-x"/></svg></button></li>';
   }
@@ -51418,11 +51449,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   // what the Runs / Confined Space Permits sections show of the crew's day: a full redraw only when that changed (the form
   // otherwise isn't redrawn under him: it signs what it shows, e.g. the 811 line)
-  function pbDxCrewKey() { const C = pbDxCrewDay(); try { return pbDlyKey(pbDlyView.job) + '|' + pbDlyView.date + '|' + C.checked + '|' + C.why + '|' + JSON.stringify(C.runs) + JSON.stringify(C.permits); } catch (e) { return String(Math.random()); } }
+  function pbDxCrewKey() { const C = pbDxCrewDay(); try { return pbDlyKey(pbDlyView.job) + '|' + pbDlyView.date + '|' + C.checked + '|' + C.why + '|' + JSON.stringify(C.runs) + JSON.stringify(C.permits) + pbDfKeyPart(); } catch (e) { return String(Math.random()); } } /* feat_dailyfill: + his side and the loaded copies */
   window.pbDxCrewKey = pbDxCrewKey;
   function pbDxCrewRunsHtml() {
     const C = pbDxCrewDay(); if (!C.runs.length && !C.why) return '';
-    return (C.runs.length ? '<p class="dx-sub">Crew run reports (' + C.runs.length + ')</p><ul class="pbd-list" id="dxCrewRuns">' + C.runs.map(x => '<li><strong>' + escapeHtml(x.who || 'A crew member') + '</strong> · ' + escapeHtml([x.start_label, x.end_label].filter(Boolean).join(' to ') || x.label || 'Run') + '<br><span class="pbd-dim">' + escapeHtml(x.sent ? 'Sent' : 'Not sent yet') + '</span></li>').join('') + '</ul>' : '')
+    return (C.runs.length ? '<p class="dx-sub">Crew run reports (' + C.runs.length + ')</p><ul class="pbd-list" id="dxCrewRuns">' + C.runs.map(x => '<li><strong>' + escapeHtml(x.who || 'A crew member') + '</strong> · ' + escapeHtml([x.start_label, x.end_label].filter(Boolean).join(' to ') || x.label || 'Run') + '<br><span class="pbd-dim">' + escapeHtml(x.sent ? 'Sent' : 'Not sent yet') + '</span>' + pbDfRunLine(x) + '</li>').join('') + '</ul>' : '')
       + (C.why && !C.runs.length ? '<p class="pbd-dim" id="dxCrewRunsWhy">' + escapeHtml(C.why) + '</p>' : '');
   }
   function pbDxCrewPermitsHtml() {
@@ -51432,30 +51463,31 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbDxCrewIntoSnap(snap) {
     const C = pbDxCrewDay();
     snap.crew_reports = { checked: C.checked, source: 'The company server: the run reports and confined space permits of the foreman’s crew for this job and day.' + (C.checked ? '' : ' Not checked when he signed (no signal).'),
-      runs: C.runs.slice(0, 30).map(x => ({ who: pbDpCut(x.who || '', 80), label: pbDpCut([x.start_label, x.end_label].filter(Boolean).join(' to ') || x.label || '', 160), sent: !!x.sent, start_at: x.start_at || null })),
+      runs: C.runs.slice(0, 30).map(x => Object.assign({ id: String(x.id || ''), who: pbDpCut(x.who || '', 80), label: pbDpCut([x.start_label, x.end_label].filter(Boolean).join(' to ') || x.label || '', 160), sent: !!x.sent, start_at: x.start_at || null }, (() => { try { const f = pbDfSnapRun(x); return f ? { fm: f } : {}; } catch (e) { console.error(e); return {}; } })())), /* feat_dailyfill: + the foreman's side */
       permits: C.permits.slice(0, 30).map(x => ({ who: pbDpCut(x.who || '', 80), space: pbDpCut(x.space || '', 80), open: !!x.open, closed_at: x.closed_at || null })) };
   }
   // ---- the job's weather location, by the foreman too (pb_daily_location_put lets a foreman who works the job) ----
   function pbDxLocHtml(always) {
     if (!always && !pbDx.locOpen) return '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" id="dxLocChange" onclick="pbDxLocToggle(true)">Change Location</button></div>';
     return '<div class="dx-loc" id="dxLoc"><div class="pb-field"><label for="dxLocCity">City, State</label><input type="text" id="dxLocCity" maxlength="120" autocomplete="off" autocapitalize="words" enterkeyhint="go" placeholder="e.g. Springfield, IL" value="' + escapeHtml(pbDx.locCity) + '" oninput="pbDxLocIn(this.value)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();pbDxLocSet()}"></div>'
+      + (pbDlyView.wMsg ? '<p class="pbd-dim" id="dxLocMsg" role="status">' + escapeHtml(String(pbDlyView.wMsg).replace(/ The report says so if it is signed without weather\.$/, '')) + '</p>' : '') /* feat_wxfix */
       + '<div class="pb-btn-row"><button type="button" class="pb-btn secondary small" id="dxLocSet" onclick="pbDxLocSet()"' + (pbDlyView.wBusy ? ' disabled' : '') + '>Set Location</button><button type="button" class="pb-btn ghost small" id="dxLocPhone" onclick="pbDxLocPhone()"' + (pbDlyView.wBusy ? ' disabled' : '') + '>Use Phone Location Once</button></div></div>';
   }
   window.pbDxLocToggle = function(on) { pbDx.locOpen = !!on; pbDlyRender(); if (on) setTimeout(() => { const el = pbDlyEl('dxLocCity'); if (el) try { el.focus(); } catch (e) {} }, 20); };
   window.pbDxLocIn = function(v) { pbDx.locCity = String(v || ''); };
   window.pbDxLocSet = async function() {
     const el = pbDlyEl('dxLocCity'), t = String((el && el.value) || pbDx.locCity || '').trim().replace(/\s+/g, ' ');
-    if (!/^[^,]{2,},\s*[A-Za-z .]{2,}$/.test(t)) { pbDlyView.wMsg = 'Type the city and state, like Springfield, IL.'; pbDlyRender(); const e2 = pbDlyEl('dxLocCity'); if (e2) e2.focus(); return; }
-    pbDx.locCity = t; await window.pbDlyWeather({ place: t });
-    if (pbDlyView.weather && pbDlyView.weather.data) { pbDx.locOpen = false; pbDx.locCity = ''; pbDlyRender(); }
+    if (!/^[^,]{2,}(,\s*|\s)[A-Za-z .]{2,}$/.test(t)) { /* feat_wxfix: "beaumont ca" too */ pbDlyView.wMsg = 'Type the city and state, like Springfield, IL.'; pbDlyRender(); const e2 = pbDlyEl('dxLocCity'); if (e2) e2.focus(); return; }
+    pbDx.locCity = t; const w0 = pbDlyView.weather; await window.pbDlyWeather({ place: t });
+    if (pbDlyView.weather && pbDlyView.weather.data && pbDlyView.weather !== w0 && !pbDlyView.wMsg) { pbDx.locOpen = false; pbDx.locCity = ''; pbDlyRender(); } /* feat_wxfix: only on success */
   };
   window.pbDxLocPhone = function() {
     if (!navigator.geolocation || typeof navigator.geolocation.getCurrentPosition !== 'function') { pbDlyView.wMsg = 'This phone can’t give its location. Type the city and state instead.'; pbDlyRender(); return; }
     pbDlyView.wMsg = 'Getting the phone’s location…'; pbDlyRender();
     navigator.geolocation.getCurrentPosition(async (pos) => {
       const c = pos && pos.coords; if (!c || !isFinite(c.latitude) || !isFinite(c.longitude)) { pbDlyView.wMsg = 'The phone’s location wasn’t available. Type the city and state instead.'; pbDlyRender(); return; }
-      pbDlyView.wMsg = ''; await window.pbDlyWeather({ lat: Math.round(c.latitude * 1000) / 1000, lon: Math.round(c.longitude * 1000) / 1000, source: 'device_once' });
-      if (pbDlyView.weather && pbDlyView.weather.data) { pbDx.locOpen = false; pbDlyRender(); }
+      pbDlyView.wMsg = ''; const w0 = pbDlyView.weather; await window.pbDlyWeather({ lat: Math.round(c.latitude * 1000) / 1000, lon: Math.round(c.longitude * 1000) / 1000, source: 'device_once' });
+      if (pbDlyView.weather && pbDlyView.weather.data && pbDlyView.weather !== w0 && !pbDlyView.wMsg) { pbDx.locOpen = false; pbDlyRender(); } /* feat_wxfix: only on success */
     }, () => { pbDlyView.wMsg = 'The phone’s location wasn’t available (not allowed, or no fix). Type the city and state instead.'; pbDlyRender(); }, { enableHighAccuracy: false, timeout: 20000, maximumAge: 600000 });
   };
   // ---- open the daily for a job and day (from a run report he approves, the Home card) ----
@@ -51747,7 +51779,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const C = S && S.crew_reports; if (!C) return;
     if (which === 'runs' && Array.isArray(C.runs) && C.runs.length) {
       R.sub('Crew run reports (' + C.runs.length + ')');
-      R.table({ head: ['Who', 'Run', 'Status'], columns: [{ cellWidth: 44 }, {}, { cellWidth: 30 }], fontSize: 8.6, body: C.runs.map(x => [x.who || '—', x.label || '—', x.sent ? 'Sent' : 'Not sent yet']) });
+      R.table({ head: ['Who', 'Run', 'Status'], columns: [{ cellWidth: 44 }, {}, { cellWidth: 30 }], fontSize: 8.6, body: C.runs.map(x => [x.who || '—', x.label || '—', x.sent ? 'Sent' : 'Not sent yet']).map((row, i) => { const f = C.runs[i] && C.runs[i].fm; if (f) row[1] = row[1] + '\nForeman: ' + pbDfSumLine(f, true); return row; }) }); /* feat_dailyfill */
       R.para('Source: ' + C.source, { size: 8.5, color: PB_RPT.MUTED, after: 2.5 });
     }
     if (which === 'permits' && Array.isArray(C.permits) && C.permits.length) {
@@ -51807,7 +51839,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // review N2: cut by code points (a cut emoji is a lone surrogate the server refuses, and the whole report with it)
   const pbDpCut = (s, n) => { const a = Array.from(String(s === null || s === undefined ? '' : s)); return a.length > n ? a.slice(0, n).join('') : a.join(''); };
   const pbDpEntries = (n) => n + (n === 1 ? ' entry' : ' entries');
-  Object.assign(PB_DLY_WORDS, { 'pb:need_photo': 'This photo is no longer on this phone, and the company server doesn’t have it.', 'pb:bad_events': 'The company server couldn’t store the entries under Delays & extra work, so it did not take the report (nothing was half-saved).',
+  Object.assign(PB_DLY_WORDS, { 'pb:need_photo': 'This photo is no longer on this phone, and the company server doesn’t have it.', 'pb:bad_events': 'The company server couldn’t store the entries under Delays & Extra Work, so it did not take the report (nothing was half-saved).',
     'pb:photo_not_signed': 'This photo is not one the signed entry lists, so the server won’t add it.', 'pb:superseded': 'That entry was changed by an amendment.' });
   let pbDp = { uid: null, drafts: null, photos: null, send: null, plans: null, failed: false, loading: null, form: null, typed: { crew: '', equip: '' }, busy: false, timer: null };
 
@@ -51969,6 +52001,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     const d = pbDpDraft(); if (!d) return;
     pbDxFold(d); /* feat_dailyx: Other hours become the crew's and equipment's hours */
+    try { pbDfApply(d); } catch (e) { console.error(e); } /* feat_dailyfill: the day's runs fill the crew and equipment */
     if (pbDp.form && pbDp.form.key !== pbDpKey()) pbDp.form = null; // another job or day was picked
     pbDpPlanLoad(pbDlyView.job).catch(() => {});
     if (pbLv && pbLv.uid === uid && !pbLv.data && !pbLv.busy && Date.now() - (pbDp.lvAt || 0) > 60000) { pbDp.lvAt = Date.now(); pbLvLoad(uid).then(() => { if (pbLv.data && pbCurrentScreen === 'dailyReport') pbDpRender(); }).catch(() => null); } // his crew in the app, for the suggestions (asked at most once a minute)
@@ -51985,7 +52018,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<label class="pbd-check" for="dpEqRental"><input type="checkbox" id="dpEqRental"' + (pbDp.typed.rental ? ' checked' : '') + ' onchange="pbFmDpRental(this.checked)"> Rental</label></div></section>'; /* feat_foreman 11 */
     // delays / standby / extra work
     const E = d.events, tot = E.reduce((s, e) => s + pbDpNum(e.hours), 0);
-    h += '<section class="pbd-card' + pbDxSecCls('dpEvents') + '" id="dpEvents" aria-labelledby="dpEventsH">' + pbDxHead('dpEvents', 'dpEventsH', 'Delays & extra work', 'dpEventsN', '· ' + (E.length ? pbDpEntries(E.length) + ' · ' + pbDpH(tot) : 'none')) + '<div class="dx-body" id="dpEventsBody">' /* feat_dailyx */
+    h += '<section class="pbd-card' + pbDxSecCls('dpEvents') + '" id="dpEvents" aria-labelledby="dpEventsH">' + pbDxHead('dpEvents', 'dpEventsH', 'Delays & Extra Work', 'dpEventsN', pbDfEvHead(E, tot)) + '<div class="dx-body" id="dpEventsBody">' + pbDfRunNotesHtml() /* feat_dailyfill E: the runs' notes on top */ /* feat_dailyx */
       + (E.length ? '<ul class="dp-evs" id="dpEvList">' + E.map((e, i) => (pbDp.form && pbDp.form.i === i) ? '<li class="dp-ev" id="dpEv_' + i + '">' + pbDpFormHtml(d) + '</li>'
         : '<li class="dp-ev" id="dpEv_' + i + '"><p class="dp-evh"><strong>' + escapeHtml(pbDpKindName(e.kind) + ' · ' + pbDpH(e.hours)) + '</strong> · ' + escapeHtml(pbDpReasonName(e.reason)) + '</p>'
           + (e.detail ? '<p class="dp-evd">' + escapeHtml(e.detail) + '</p>' : '') + (pbDpEvLine(e) ? '<p class="pbd-dim">' + escapeHtml(pbDpEvLine(e)) + '</p>' : '')
@@ -52023,7 +52056,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // the entry form (its typed values live in pbDp.form, so a redraw of the report never loses them)
   window.pbDpFormOpen = function(i) {
     const d = pbDpDraft(); if (!d || pbDp.form) return;
-    if (i < 0 && d.events.length >= 40) { pbAlert('A report holds at most 40 entries under Delays & extra work.', 'Daily Report'); return; }
+    if (i < 0 && d.events.length >= 40) { pbAlert('A report holds at most 40 entries under Delays & Extra Work.', 'Daily Report'); return; }
     const e = i >= 0 ? d.events[i] : null;
     pbDp.form = e ? { key: pbDpKey(), i, cid: e.cid, kind: e.kind, reason: e.reason, detail: e.detail || '', hours: e.hours === null || e.hours === undefined ? '' : String(e.hours), crew: e.crew_size === null || e.crew_size === undefined ? '' : String(e.crew_size), equipment: (e.equipment || []).map(pbDpEqKey), photos: (e.photos || []).slice(), msg: '' }
       : { key: pbDpKey(), i: -1, cid: pbDlyId(), kind: 'delay', reason: 'weather', detail: '', hours: '', crew: d.crew.length ? String(d.crew.length) : '', equipment: [], photos: [], msg: '' };
@@ -52070,7 +52103,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // ---- signing: what blocks it, what goes into the snapshot, the photos after it ----
   function pbDpBlock() {
     if (pbDp.uid === pbArchiveOwnerUid && pbDp.failed) return 'The crew, equipment and delays on this phone couldn’t be read. Close the app and open it again before signing.';
-    if (pbDp.form) { pbDxTog('dpEvents', true); return 'Add or cancel the entry you are writing under Delays & extra work first.'; }
+    if (pbDp.form) { pbDxTog('dpEvents', true); return 'Add or cancel the entry you are writing under Delays & Extra Work first.'; }
     if (!pbDpDraft()) return 'The crew and equipment are still loading. Try again in a moment.';
     { const q = pbDpDraft().equip.find(x => pbCeHrs(pbDxHv(x, true)).bad); if (q) { pbDxTog('dpEquip', true); return 'Equipment on site: check the hours for ' + pbDpEqName(q) + ' (a number of hours, at most 24).'; } } // feat_coequip
     { const p = pbDpDraft().crew.find(x => pbCeHrs(pbDxHv(x, false)).bad); if (p) { pbDxTog('dpCrew', true); return 'Crew today: check the hours for ' + p.name + ' (a number of hours, at most 24).'; } } // feat_dailyx
@@ -52078,7 +52111,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbDpIntoSnap(snap) {
     const d = pbDpDraft(); if (!d) return false;
-    const src = d.from && d.from.kind === 'prev' ? 'Listed by the foreman on this report (started from his report of ' + d.from.date + ').' : 'Listed by the foreman on this report.';
+    const src = (d.from && d.from.kind === 'prev' ? 'Listed by the foreman on this report (started from his report of ' + d.from.date + ').' : 'Listed by the foreman on this report.') + (d.crew.concat(d.equip).some(x => x && x.rf) ? ' Lines marked from runs were filled from the day’s run reports (Crew & Equipment Log check-ins, overlapping time once; Run Notes and his production entry for machine hours and rentals).' : ''); /* feat_dailyfill */
     const ids = pbDpCrewIds();
     snap.crew_today = { source: src, people: d.crew.map(p => ({ name: pbDpCut(p.name, 80), user_id: p.user_id && !p.left && (!ids || ids.has(p.user_id)) ? p.user_id : null })) };
     snap.equipment_today = { source: src, pieces: d.equip.map(q => { const h = pbCeHrs(pbDxHv(q, true)).n; return Object.assign({ key: q.key || null, name: q.name, unit_no: q.unit_no || null }, q.rental ? { rental: true } : {}, q.co_id && !q.rental ? { co_id: q.co_id } : {}, q.cost_code ? { cost_code: q.cost_code } : {}, h !== null && h !== undefined ? { hours: h } : {}, pbDxLogH(pbDpEqName(q), true) > 0 ? { log_h: pbDxLogH(pbDpEqName(q), true) } : {}); }) }; /* feat_coequip: + the hours, the company piece, its cost code */
@@ -52143,7 +52176,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbDp.uid !== pbArchiveOwnerUid || (!pbDp.send && !pbDp.loading && !pbDp.failed)) pbDpLoad(pbArchiveOwnerUid).then(x => { if (x && x.send && pbCurrentScreen === 'dailyReport') pbDlyRender(); }).catch(() => {}); // its photos' state (read once)
     const n = (S.crew_today.people || []).length, m = (S.equipment_today && S.equipment_today.pieces || []).length, E = S.events || [];
     const EQ = (S.equipment_today && S.equipment_today.pieces || []).filter(q => q && q.name), eqH = pbCeHasH(EQ), CR = (S.crew_today.people || []), crH = pbCeHasH(CR), NT = Array.isArray(S.notes) ? S.notes : []; // feat_coequip, feat_dailyx
-    let h = '<div class="pbd-card" id="dpSigned"><p id="dpSignedLine">' + escapeHtml('Crew ' + (n ? pbDpPeople(n) + (crH ? ', ' + pbDpH(pbCeSum(CR)) : '') : 'none listed') + ' · Equipment ' + (m ? pbDpPieces(m) + (eqH ? ', ' + pbDpH(pbCeSum(EQ)) : '') : 'none listed') + ' · Delays & extra work ' + (E.length ? pbDpEntries(E.length) + ', ' + pbDpH(E.reduce((s, e) => s + pbDpNum(e.hours), 0)) : 'none')) + '</p>'
+    let h = '<div class="pbd-card" id="dpSigned"><p id="dpSignedLine">' + escapeHtml('Crew ' + (n ? pbDpPeople(n) + (crH ? ', ' + pbDpH(pbCeSum(CR)) : '') : 'none listed') + ' · Equipment ' + (m ? pbDpPieces(m) + (eqH ? ', ' + pbDpH(pbCeSum(EQ)) : '') : 'none listed') + ' · Delays & Extra Work ' + (E.length ? pbDpEntries(E.length) + ', ' + pbDpH(E.reduce((s, e) => s + pbDpNum(e.hours), 0)) : 'none')) + '</p>'
       + (eqH ? '<p class="pbd-dim" id="dpSignedEq">' + escapeHtml(pbCeLine(EQ)) + '</p>' : '')
       + (crH ? '<p class="pbd-dim" id="dpSignedCrew">' + escapeHtml(CR.map(p => p.name + (typeof p.hours === 'number' ? ' ' + pbDpH(p.hours) : '')).join(' · ')) + '</p>' : '')
       + (NT.length ? '<p class="dx-sub">Notes (' + NT.length + ')</p><ul class="pbd-list" id="dpSignedNotes">' + NT.map(x => '<li><span class="dx-ntime">' + escapeHtml(pbDxTime(Date.parse(x.at))) + '</span> ' + escapeHtml(x.text) + '</li>').join('') + '</ul>' : '');
@@ -52160,7 +52193,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!S || !S.crew_today) return [];
     const E = S.events || [];
     const EQ = (S.equipment_today && S.equipment_today.pieces || []).filter(q => q && q.name); // feat_coequip: the equipment's hours, when the report has them
-    return [['Crew on site', (S.crew_today.people || []).length ? pbDpPeople(S.crew_today.people.length) + (pbCeHasH(S.crew_today.people) ? ', ' + pbDpH(pbCeSum(S.crew_today.people)) : '') : 'none listed']].concat(pbCeHasH(EQ) ? [['Equipment on site', pbDpPieces(EQ.length) + ', ' + pbDpH(pbCeSum(EQ))]] : [], [['Delays & extra work', E.length ? pbDpEntries(E.length) + ', ' + pbDpH(E.reduce((s, e) => s + pbDpNum(e.hours), 0)) : 'none']]);
+    return [['Crew on site', (S.crew_today.people || []).length ? pbDpPeople(S.crew_today.people.length) + (pbCeHasH(S.crew_today.people) ? ', ' + pbDpH(pbCeSum(S.crew_today.people)) : '') : 'none listed']].concat(pbCeHasH(EQ) ? [['Equipment on site', pbDpPieces(EQ.length) + ', ' + pbDpH(pbCeSum(EQ))]] : [], [['Delays & Extra Work', E.length ? pbDpEntries(E.length) + ', ' + pbDpH(E.reduce((s, e) => s + pbDpNum(e.hours), 0)) : 'none']]);
   }
   function pbDpPdf(R, S, src) {
     if (!S || !S.crew_today) return;
@@ -52175,14 +52208,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     } else
     R.para('Equipment (' + eq.length + '): ' + (eq.length ? eq.map(q => pbDpEqName(q) + (q.rental ? ' (Rental)' : '')).join(', ') : 'none listed'), { size: 9.5, after: 1.5 });
     src((crew.some(p => !p.user_id) ? '* typed by the foreman (not an app account). ' : '') + (S.crew_today.source || 'Listed by the foreman on this report.'));
-    R.section('events', 'Delays & extra work (' + E.length + ')', { keep: 26 });
+    const dfRN = pbDfRunNoteCount(S); R.section('events', 'Delays & Extra Work (' + (E.length + dfRN) + ')', { keep: 26 }); try { pbDfPdfRunNotes(R, S); } catch (e) { console.error(e); } /* feat_dailyfill E */
     if (E.length) {
       R.table({ head: ['Entry', 'Hours', 'Crew', 'Idle equipment', 'Photos'], columns: [{}, { cellWidth: 16, halign: 'right' }, { cellWidth: 14, halign: 'right' }, { cellWidth: 44 }, { cellWidth: 30 }], fontSize: 8.6,
         body: E.map(e => [pbDpKindName(e.kind) + ': ' + pbDpReasonName(e.reason) + (e.detail ? '\n' + e.detail : ''), String(pbDpNum(e.hours)), e.crew_size === null || e.crew_size === undefined ? '—' : String(e.crew_size), (e.equipment || []).map(pbDpEqName).join('\n') || '—',
           pbDaEvPhotoCell(R, e, E.indexOf(e)) /* feat_dailyattach: the photos themselves */]) });
       const by = PB_DP_KINDS.map(([k, n]) => { const x = E.filter(e => e.kind === k); return x.length ? n + ' ' + pbDpH(x.reduce((s, e) => s + pbDpNum(e.hours), 0)) : ''; }).filter(Boolean);
       R.para('Total ' + pbDpH(E.reduce((s, e) => s + pbDpNum(e.hours), 0)) + (by.length > 1 ? ' (' + by.join(' · ') + ')' : ''), { size: 9.5, style: 'bold' });
-    } else R.para('None entered.', { size: 9.5 });
+    } else R.para(dfRN ? 'None entered by the foreman.' : 'None entered.', { size: 9.5 });
     src('Entered by the foreman on this report. The photos are kept with the entry on the company server; the office marks each entry reviewed or T&M ticket sent there.');
   }
 
@@ -52374,6 +52407,285 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     crewNow: (list) => { if (pbLv && pbLv.data) pbLv.data = Object.assign({}, pbLv.data, { crew: list }); } }); // for the tests
   // ==== end feat_dailyplus ====
 
+  // ================= feat_dailyfill (owner, Oct 29, after r15.65 field test on job 26014) =================
+  // A. Crew today and Equipment on site fill themselves from the day's run reports: his own runs on this phone, and his
+  //    crew's run reports from the server (pbDa.recs, the same copies that get attached), with his production entry on
+  //    each (the server's pb_daily_crew_input, else his entry on this phone). Crew & Equipment Log check-ins give the
+  //    people and pieces; one person or piece across runs counts overlapping check-in time once (the union of the
+  //    periods); Run Notes "Equipment" hours and his entry's machine hours / rentals add only what is beyond that run's
+  //    Crew log hours. A line filled this way carries d.crew[i].rf (rfH: the hours it was given). He can change the hours
+  //    (rfEdited: never overwritten again) or remove the line (remembered in d.rfGone: not added back). New people or
+  //    pieces from later runs are added. On a day that started from his previous report, the run data replaces that
+  //    list (each of the two lists, when the runs have any).
+  // B. Each crew run report carries his side: what he entered on it (quantities, crew man-hours, equipment hours and
+  //    pieces, rentals, notes), claimed or entered, and its review (Approved / Sent back with the note / not yet). A
+  //    summary line under the run on the report and on the attached list; in the snapshot (crew_reports.runs[].fm), so
+  //    the office's copy has it; in the PDF a line in Runs and the full detail right after the attached run report.
+  let pbDf = { fm: null };
+  const pbDfK = () => pbDlyKey(pbDlyView.job) + '|' + pbDlyView.date;
+  const pbDfHs = (h) => h > 0 ? String(Math.round(Math.min(24, h) * 100) / 100) : '';
+  const pbDfNm = (s, n) => pbDpCut(String(s == null ? '' : s).trim().replace(/\s+/g, ' '), n || 80);
+  // the job's plan for names: categories (pbLvPlans) and equipment (the plan kept for the daily)
+  function pbDfPlan() {
+    const jk = pbDlyKey(pbDlyView.job), out = { categories: [], equipment: [] };
+    try { const P = typeof pbLvPlans === 'object' && pbLvPlans ? pbLvPlans[String(pbDlyView.job || '').trim().toLowerCase().slice(0, 60)] : null; if (P && Array.isArray(P.cats)) out.categories = P.cats.filter(c => c && c.key); } catch (e) {}
+    try { const Q = pbDp.plans && pbDp.plans[jk]; if (Q && Array.isArray(Q.equip)) out.equipment = Q.equip; } catch (e) {}
+    return out;
+  }
+  // ---- the foreman's side of each crew run: the server's, else this phone's ----
+  async function pbDfFmLoad(force) {
+    const uid = pbArchiveOwnerUid, job = pbDlyView.job, date = pbDlyView.date; if (!job || !date || !uid || uid === 'shared') return;
+    const k = pbDfK(); if (!pbDf.fm || pbDf.fm.k !== k) pbDf.fm = { k, rows: null, at: 0, busy: false, missing: false };
+    const F = pbDf.fm; if (F.missing) return;
+    if (F.busy) { if (force) for (let i = 0; i < 80 && F.busy; i++) await new Promise(r => setTimeout(r, 250)); return; } // review 3 (8): signing waits for the answer in flight
+    if (!force && F.rows && Date.now() - F.at < 120000) return;
+    if (!(await pbDlyCanAsk(uid))) return;
+    F.busy = true;
+    try {
+      const r = await pbPermitRpc('pb_daily_crew_input', { p_job_number: job, p_work_date: date, p_expect_uid: uid }, 20000);
+      if (pbDf.fm !== F) return;
+      if (r && !r.error && r.data && r.data.ok && Array.isArray(r.data.runs)) { const rows = {}; r.data.runs.forEach(x => { if (x && x.id) rows[String(x.id)] = x; }); F.rows = rows; F.at = Date.now(); }
+      else if (pbDlyMissing(r)) F.missing = true; // an older server: this phone's entries only
+    } catch (e) { console.error(e); } finally { F.busy = false; }
+  }
+  function pbDfFmOf(run) {
+    if (!run || !run.id) return null;
+    const F = pbDf.fm, srv = F && F.k === pbDfK() && F.rows ? F.rows[String(run.id)] || null : null; if (srv && srv.fm) return srv;
+    const loc = pbDfFmLocal(run); if (loc && srv) return Object.assign({}, srv, { fm: loc.fm, local: true }); // review 4 (2): entered here, not synced yet
+    return loc || srv;
+  }
+  function pbDfFmLocal(run) {
+    try { // this phone: what he entered on the run (feat_foreman)
+      const uid = pbArchiveOwnerUid, cr = pbProd.uid === uid && pbProd.st && pbProd.st.crewRuns && typeof pbProd.st.crewRuns === 'object' ? pbProd.st.crewRuns : {};
+      const cid = Object.keys(cr).find(c => { const x = cr[c]; return x && x.rec && Array.isArray(x.items) && run.pipelayer_id && String(x.pid || '') === String(run.pipelayer_id) && String(x.sref || '') === String(run.entry_id || '') && !(x.refused && x.refused === x.h); });
+      if (!cid) return null;
+      const x = cr[cid];
+      return { id: String(run.id), review: null, local: true, fm: { kind: 'entered', by: 'you', at: x.at ? new Date(x.at).toISOString() : null, items: x.items, rentals: pbFmRentFrom(x.rec).map(y => ({ name: y.name, hours: Number(y.hours) || null })), notes: x.rec.notes || null } };
+    } catch (e) { return null; }
+  }
+  // the summary: "Pipe Installed 80 LF · Crew hours 16 h · Equipment hours 6 h (Excavator #312 6 h) · Rental: Water truck 2.5 h"
+  function pbDfFmParts(fm, plan) {
+    const it = (fm && Array.isArray(fm.items) ? fm.items : []).filter(i => i && typeof i.key === 'string' && i.qty != null && isFinite(Number(i.qty)));
+    const prod = it.filter(i => i.key.charAt(0) !== '_').map(i => ({ key: i.key, name: pbProdCatName(i.key, plan), qty: Number(i.qty), unit: i.unit || '' }));
+    const man = it.filter(i => i.key === PB_PROD_HOURS_KEY).reduce((s, i) => s + Number(i.qty), 0);
+    const pieces = new Map(); it.forEach(i => { const m = /^_eq_(.+)$/.exec(i.key) || /^_e([id])_(.+)$/.exec(i.key); if (!m) return; const id = m.length === 2 ? m[1] : m[2], f = m.length === 2 ? 'used' : m[1] === 'i' ? 'idle' : 'down'; const r = pieces.get(id) || { name: pbProdCatName('_eq_' + id, plan), used: 0, idle: 0, down: 0 }; r[f] += Number(i.qty); pieces.set(id, r); });
+    const tot = it.filter(i => i.key === PB_ROLES_EQ_KEY).reduce((s, i) => s + Number(i.qty), 0), eqUsed = [...pieces.values()].reduce((s, r) => s + r.used, 0);
+    const rent = (fm && Array.isArray(fm.rentals) ? fm.rentals : []).filter(y => y && y.name).map(y => ({ name: pbDfNm(y.name), hours: typeof y.hours === 'number' && isFinite(y.hours) ? y.hours : null }));
+    return { prod, crew_h: pbDlyR(man, 2), equipment_h: pbDlyR(tot > 0 ? tot : eqUsed, 2), equipment: [...pieces.values()].map(r => ({ name: r.name, used: pbDlyR(r.used, 2), idle: pbDlyR(r.idle, 2), down: pbDlyR(r.down, 2) })), rentals: rent, notes: fm && fm.notes ? pbDpCut(String(fm.notes), 1000) : null };
+  }
+  const pbDfQ = (n, u) => pbProdQtyText(n, u);
+  function pbDfReviewText(rv, pdf) {
+    if (!rv || !rv.state) return '';
+    const by = rv.by && rv.by !== 'you' ? ' by ' + rv.by : rv.by === 'you' && pdf ? ' by the foreman' : '';
+    if (rv.state === 'approved') return 'Approved' + by + (rv.at ? ' ' + pbDlyTimeIn(rv.at) : '');
+    if (rv.state === 'sent_back') return 'Sent back' + by + (rv.note ? ': “' + rv.note + '”' : '');
+    if (rv.state === 'waiting') return 'Not reviewed yet';
+    return 'Not sent yet';
+  }
+  function pbDfSumLine(f, pdf) { // f: the snapshot's fm (see pbDfSnapRun); pdf: said of "the foreman", not "you"
+    if (!f) return '';
+    const p = [], who = (b) => b === 'you' ? (pdf ? 'the foreman' : 'you') : b;
+    if (f.entered) p.push(f.entered.kind === 'claimed' ? 'Claimed by ' + who(f.entered.by) : 'Entered by ' + who(f.entered.by));
+    else p.push('No production entered for it');
+    if (f.entered) {
+      p.push(f.prod.length ? f.prod.map(x => x.name + ' ' + pbDfQ(x.qty, x.unit)).join(' · ') : 'no quantities');
+      if (f.crew_h > 0) p.push('Crew hours ' + pbDpNum(f.crew_h) + ' h');
+      if (f.equipment_h > 0) p.push('Equipment hours ' + pbDpNum(f.equipment_h) + ' h' + (f.equipment.length ? ' (' + f.equipment.map(q => q.name + ' ' + pbDpNum(q.used) + ' h').join(', ') + ')' : ''));
+      if (f.rentals.length) p.push('Rental: ' + f.rentals.map(y => y.name + (y.hours !== null ? ' ' + pbDpNum(y.hours) + ' h' : '')).join(', '));
+    }
+    const rv = pbDfReviewText(f.review, pdf); if (rv) p.push(rv);
+    return p.join(' · ');
+  }
+  // what goes in the snapshot for one crew run (crew_reports.runs[i].fm); null when nothing is known of his side
+  function pbDfSnapRun(run) {
+    const row = pbDfFmOf(run); if (!row) return null;
+    const plan = pbDfPlan(), P = row.fm ? pbDfFmParts(row.fm, plan) : null;
+    const rv = row.review ? { state: String(row.review), by: row.review === 'approved' ? row.reviewed_by || null : row.review === 'sent_back' ? row.sent_back_by || null : null, at: row.review === 'approved' ? row.reviewed_at || null : row.review === 'sent_back' ? row.sent_back_at || null : null, note: row.review === 'sent_back' && row.sent_back_note ? pbDpCut(String(row.sent_back_note), 500) : null } : null;
+    const o = { entered: row.fm ? { kind: row.fm.kind === 'claimed' ? 'claimed' : 'entered', by: pbDfNm(row.fm.by || 'you'), at: row.fm.at || null } : null, prod: P ? P.prod.slice(0, 40) : [], crew_h: P ? P.crew_h : 0, equipment_h: P ? P.equipment_h : 0,
+      equipment: P ? P.equipment.slice(0, 20) : [], rentals: P ? P.rentals.slice(0, 10) : [], notes: P ? P.notes : null, review: rv, source: row.local ? 'this phone (the company server couldn’t be asked)' : 'company server' + (pbDf.fm && pbDf.fm.at ? ', as of ' + pbRptDt(pbDf.fm.at) : '') };
+    try { const g = pbDa.recs.get('run:' + run.id), L = g && g.rec && Array.isArray(g.rec.crewLog) ? g.rec.crewLog : []; // the run's Crew & Equipment Log, as hours
+      o.crew_log = L.filter(p => p && p.name).slice(0, 40).map(p => ({ name: pbDfNm(p.name), type: String(p.type || ''), rental: !!p.rental, hours: pbDlyR(pbDfIvH(pbDfIv(p.log)), 2), open: (() => { try { return pbLogHasOpenCheckIn(p.log); } catch (e) { return false; } })() })); } catch (e) { o.crew_log = []; }
+    return o;
+  }
+  // ---- A: periods, merged ----
+  function pbDfIv(log) {
+    const out = []; let a = null;
+    (Array.isArray(log) ? log : []).filter(l => l && typeof l.time === 'number' && isFinite(l.time) && typeof l.action === 'string').slice().sort((x, y) => x.time - y.time).forEach(l => {
+      if (l.action === 'Checked In') { if (a === null) a = l.time; } else if (l.action.indexOf('Checked Out') === 0 && a !== null) { if (l.time > a) out.push([a, l.time]); a = null; } });
+    return out;
+  }
+  function pbDfIvH(iv) {
+    const s = iv.slice().sort((x, y) => x[0] - y[0]); let ms = 0, cur = null;
+    s.forEach(([a, b]) => { if (!cur) cur = [a, b]; else if (a <= cur[1]) cur[1] = Math.max(cur[1], b); else { ms += cur[1] - cur[0]; cur = [a, b]; } });
+    if (cur) ms += cur[1] - cur[0];
+    return ms / 3600000;
+  }
+  // one run: its Crew & Equipment Log, its Run Notes "Equipment" entries, and his entry (machine hours, rentals)
+  function pbDfFromRun(rec, fm, plan, out) {
+    const runH = {}, put = (k, o) => out[k] || (out[k] = Object.assign({ iv: [], extra: 0, ex: [] }, o));
+    const rs = rec ? Date.parse(rec.runStartTime || rec.lockTime || '') : NaN, re = rec ? Date.parse(rec.runEndTime || '') : NaN;
+    (rec && Array.isArray(rec.crewLog) ? rec.crewLog : []).forEach(p => {
+      if (!p) return; const nm = pbDfNm(p.name); if (!nm || nm.toLowerCase() === 'not named') return;
+      const eq = p.type === 'Equipment', k = (eq ? 'e:' : 'p:') + pbDpNk(nm) + (eq && p.rental ? '|r' : ''), iv = pbDfIv(p.log);
+      const L = put(k, { eq, name: nm, rental: eq && !!p.rental }); L.iv.push.apply(L.iv, iv); runH[k] = (runH[k] || 0) + pbDfIvH(iv);
+    });
+    const more = {}; // hours from elsewhere on this run, per piece
+    const bump = (k, o, h) => { if (!(h > 0)) return; if (!more[k]) more[k] = { o, sl: 0, fm: 0 }; more[k][o.src] += h; };
+    try { if (rec && typeof pbSlItems === 'function') pbSlItems(rec).forEach(x => { if (x.type !== 'equip' || x.d.hoursSrc === 'crewlog') return; const nm = pbDfNm(x.d.machine); if (!nm) return; bump('e:' + pbDpNk(nm), { eq: true, name: nm, rental: false, src: 'sl' }, Number(x.d.hours) || 0); }); } catch (e) {}
+    if (fm) {
+      (Array.isArray(fm.items) ? fm.items : []).forEach(i => { const m = i && /^_eq_(.+)$/.exec(String(i.key)); if (!m || m[1] === 'other' || i.qty == null) return;
+        const pq = (plan.equipment || []).find(q => q && q.key === m[1]) || (plan.equipment || []).find(q => q && '_' + q.key === String(i.key)), nm = pq ? pbDpEqName(pq) : pbProdCatName(String(i.key), plan); if (!nm || nm === 'Equipment') return;
+        bump('e:' + pbDpNk(nm), Object.assign({ eq: true, name: pq ? pq.name : nm, rental: false, src: 'fm' }, pq ? { key: pq.key, unit_no: pq.unit_no || null } : {}), Number(i.qty) || 0); });
+      (Array.isArray(fm.rentals) ? fm.rentals : []).forEach(y => { const nm = y && pbDfNm(y.name); if (!nm) return; bump('e:' + pbDpNk(nm) + '|r', { eq: true, name: nm, rental: true, src: 'fm' }, Number(y.hours) || 0); });
+    }
+    const logKey = (k, o) => { // review 3 (4, 5): the same piece as a Crew log line on this run (a rental of that name; the plan piece's unit number in the log name)
+      if (runH[k] !== undefined) return k; if (runH[k + '|r'] !== undefined) return k + '|r';
+      const un = o.unit_no ? String(o.unit_no).replace(/^#/, '').toLowerCase() : ''; if (un) { const re = new RegExp('(^|[^0-9a-z])#?' + un.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '($|[^0-9a-z])'); const hit = Object.keys(runH).find(x => x.indexOf('e:') === 0 && re.test(x.slice(2))); if (hit) return hit; }
+      return out[k] ? k : out[k + '|r'] ? k + '|r' : k; };
+    const merged = {}; Object.keys(more).forEach(k0 => { const m = more[k0], k = logKey(k0, m.o); const g = merged[k] || (merged[k] = { o: m.o, sl: 0, fm: 0 }); g.sl += m.sl; g.fm += m.fm; if (m.o.key && !g.o.key) g.o = m.o; });
+    Object.keys(merged).forEach(k => { const m = merged[k], L = put(k, { eq: true, name: m.o.name, rental: !!m.o.rental }); if (m.o.key && !L.key) { L.key = m.o.key; L.unit_no = m.o.unit_no; if (runH[k] === undefined) L.name = m.o.name; }
+      const x = Math.max(0, Math.max(m.sl, m.fm) - (runH[k] || 0)); if (x > 0) L.ex.push({ x, s: isFinite(rs) ? rs : null, e: isFinite(re) ? re : (isFinite(rs) ? rs : null) }); });
+  }
+  // every run of the day: { people: [...], equip: [...] } or null while nothing is known
+  function pbDfLines() {
+    const job = pbDlyView.job, date = pbDlyView.date; if (!job || !date) return null;
+    const out = {}, plan = pbDfPlan(); let n = 0;
+    try { // his own runs on this phone (the ones the report pulls in) with his production entry on each
+      const co = pbDly.st && pbDly.st.co, st = pbProd.uid === pbArchiveOwnerUid ? pbProd.st : null;
+      pbDlyRunsOf(job, date).filter(e => { const c = pbDlyRunCo(e); return !c || !co || c === co; }).forEach(e => {
+        const cid = st && st.ids ? st.ids[String(e.id)] : null, x = cid && st.items ? st.items[cid] : null;
+        pbDfFromRun(e, x && Array.isArray(x.items) ? { items: x.items, rentals: pbFmRentFrom(x.rec).map(y => ({ name: y.name, hours: Number(y.hours) || 0 })) } : null, plan, out); n++; });
+    } catch (e) { console.error(e); }
+    try { // his crew's run reports from the server, with his side
+      pbDxCrewDay().runs.forEach(x => { const g = pbDa.recs.get('run:' + x.id), row = pbDfFmOf(x); if (!(g && g.rec) && !(row && row.fm)) return; pbDfFromRun(g && g.rec ? g.rec : null, row && row.fm ? row.fm : null, plan, out); n++; });
+    } catch (e) { console.error(e); }
+    if (!n) return null;
+    const ids = pbDpCrewIds(), crew = pbLv && pbLv.uid === pbArchiveOwnerUid && pbLv.data && Array.isArray(pbLv.data.crew) ? pbLv.data.crew : [];
+    const act = pbCeActive(pbArchiveOwnerUid) || [];
+    const people = [], equip = [];
+    const exOf = (L) => { // review 4 (3): two runs at the same time on one machine: the larger figure, not both
+      const A = (L.ex || []).slice().sort((a, b) => (a.s === null ? Infinity : a.s) - (b.s === null ? Infinity : b.s)); let tot = 0, g = null;
+      A.forEach(r => { if (g && r.s !== null && g.e !== null && r.s < g.e) { g.x = Math.max(g.x, r.x); g.e = Math.max(g.e, r.e === null ? r.s : r.e); } else { if (g) tot += g.x; g = Object.assign({}, r); } });
+      return tot + (g ? g.x : 0) + (L.extra || 0); };
+    Object.keys(out).forEach(k => { const L = out[k], h = pbDfHs(pbDfIvH(L.iv) + exOf(L));
+      if (!L.eq) { const m = crew.find(c => c && c.id && c.name && pbDpNk(c.name) === pbDpNk(L.name)); people.push({ k, name: L.name, user_id: m && (!ids || ids.has(m.id)) ? m.id : null, hours: h }); return; }
+      const q = { k, name: L.name, unit_no: L.unit_no || null, key: L.key || null, rental: !!L.rental, hours: h };
+      if (!q.rental) { const a = act.find(z => pbDpNk(pbDpEqName(z)) === pbDpNk(pbDpEqName(q)) || pbDpNk(pbDpEqName(z)) === pbDpNk(q.name)); if (a) { q.co_id = a.id; q.name = a.name; q.unit_no = a.unit_no || null; if (a.cost_code) q.cost_code = a.cost_code; } }
+      equip.push(q); });
+    return { people, equip };
+  }
+  const pbDfCk = (p) => 'p:' + pbDpNk(p.name);
+  const pbDfEk = (q) => 'e:' + pbDpNk(q.rental ? q.name : pbDpEqName(q)) + (q.rental ? '|r' : '');
+  // into the draft; true when it changed
+  function pbDfApply(d) {
+    if (!d || pbDlyView.amend) return false;
+    const R = pbDfLines(); if (!R || (!R.people.length && !R.equip.length)) return false;
+    let ch = false; const gone = Array.isArray(d.rfGone) ? d.rfGone : [];
+    if (d.from && (d.from.kind === 'prev' || d.from.was === 'prev') && !d.from.edited && !pbDp.hT) { // review 4 (1): not while his typing waits to be kept // the day's runs win over the previous report's list, each list when its run data first shows (review 3, 2)
+      if (R.people.length && !d.from.runC) { d.crew = d.crew.filter(p => p.rf); d.from = Object.assign({}, d.from, { runC: true }); ch = true; }
+      if (R.equip.length && !d.from.runE) { d.equip = d.equip.filter(q => q.rf); d.from = Object.assign({}, d.from, { runE: true }); ch = true; }
+      if (ch && d.from.runC && d.from.runE) d.from = Object.assign({}, d.from, { kind: 'runs', was: 'prev' }); // review 4 (nit 1)
+    }
+    R.people.forEach(L => {
+      const p = d.crew.find(x => pbDfCk(x) === L.k || (L.user_id && x.user_id === L.user_id));
+      if (!p) { if (gone.includes(L.k)) return; d.crew.push(Object.assign({ name: L.name, user_id: L.user_id }, { hours: L.hours, rf: true, rfH: L.hours })); ch = true; return; }
+      if (p.rfEdited) return;
+      if (p.rf) { if (String(p.hours || '') !== String(p.rfH || '')) { p.rfEdited = true; ch = true; return; } /* changed some other way (review 3, 1): his */ if (String(p.hours || '') !== L.hours) { p.hours = L.hours; p.rfH = L.hours; ch = true; } return; }
+      if (p.hours === undefined || p.hours === null) { p.hours = L.hours; p.rf = true; p.rfH = L.hours; ch = true; } // a box he cleared stays clear (review 3, 7)
+    });
+    R.equip.forEach(L => {
+      const q = d.equip.find(x => pbDfEk(x) === L.k || pbDfEk(x) === pbDfEk(L) || (L.co_id && x.co_id === L.co_id) || (L.key && x.key === L.key));
+      if (!q) { if (gone.includes(L.k) || gone.includes(pbDfEk(L))) return; const o = { key: L.key, name: L.name, unit_no: L.unit_no, hours: L.hours, rf: true, rfH: L.hours }; if (L.rental) o.rental = true; else if (L.co_id) o.co_id = L.co_id; if (L.cost_code) o.cost_code = L.cost_code; d.equip.push(o); ch = true; return; }
+      if (q.rfEdited) return;
+      if (q.rf) { if (String(q.hours || '') !== String(q.rfH || '')) { q.rfEdited = true; ch = true; return; } if (String(q.hours || '') !== L.hours) { q.hours = L.hours; q.rfH = L.hours; ch = true; } return; }
+      if (q.hours === undefined || q.hours === null) { q.hours = L.hours; q.rf = true; q.rfH = L.hours; ch = true; }
+    });
+    if (ch && pbDp.drafts && d.k) { d.at = Date.now(); pbDp.drafts[d.k] = d; pbDpSave(['d']).catch(() => {}); }
+    return ch;
+  }
+  const pbDfTag = (x) => x && x.rf && !x.rfEdited ? '<span class="dp-sub dp-rf">from runs</span>' : '';
+  // his changes: the hours (kept as typed, never overwritten) and a removed line (not added back)
+  const pbDfMine = (d) => { if (d && d.from && !d.from.edited) d.from = Object.assign({}, d.from, { edited: true }); }; // review 4 (1): his typing counts as his change at once
+  { const o = window.pbDxCrewHours; window.pbDxCrewHours = function(i, v) { const d = pbDpDraft(), p = d && d.crew[i]; const r = o.apply(this, arguments); pbDfMine(d);
+      if (p && p.rf && !p.rfEdited && String(p.hours || '') !== String(p.rfH || '')) { p.rfEdited = true; const t = document.querySelector('#dpCrew_' + i + ' .dp-rf'); if (t) t.remove(); } return r; }; }
+  { const o = window.pbCeHours; window.pbCeHours = function(i, v) { const d = pbDpDraft(), q = d && d.equip[i]; const r = o.apply(this, arguments); pbDfMine(d);
+      if (q && q.rf && !q.rfEdited && String(q.hours || '') !== String(q.rfH || '')) { q.rfEdited = true; const t = document.querySelector('#dpEq_' + i + ' .dp-rf'); if (t) t.remove(); } return r; }; }
+  { const o = window.pbDpRemove; window.pbDpRemove = function(kind, i) { try { const d = pbDpDraft(), x = d && (kind === 'Crew' ? d.crew[i] : d.equip[i]); if (x) { d.rfGone = (Array.isArray(d.rfGone) ? d.rfGone : []).concat([kind === 'Crew' ? pbDfCk(x) : pbDfEk(x)]).slice(-200); } } catch (e) {} return o.apply(this, arguments); }; }
+  // ---- B: on the screen ----
+  function pbDfRunLine(x) { const f = pbDfSnapRun(x), t = pbDfSumLine(f); return t ? '<br><span class="pbd-dim dx-fm" id="dxFm_' + escapeHtml(String(x.id)) + '">' + escapeHtml('Your side: ' + t) + '</span>' : ''; }
+  function pbDfAttLine(it) {
+    if (!it || it.kind !== 'run' || it.src !== 'crew' || !it.ref) return '';
+    const x = pbDxCrewDay().runs.find(r => String(r.id) === String(it.ref.id)); if (!x) return '';
+    const t = pbDfSumLine(pbDfSnapRun(x)); return t ? '<span class="pbd-dim da-fm" id="daFm_' + escapeHtml(String(it.ref.id)) + '">' + escapeHtml('Your side: ' + t) + '</span>' : '';
+  }
+  // part of the "redraw?" key: his side and the loaded copies (a new version of a run report fills again)
+  function pbDfKeyPart() { try { const F = pbDf.fm; return '|' + (F && F.k === pbDfK() ? JSON.stringify(F.rows) : '') + '|' + pbDxCrewDay().runs.map(x => { const g = pbDa.recs.get('run:' + x.id); return g ? g.ver + (g.rec ? 'r' : 'n') : '-'; }).join(','); } catch (e) { return ''; } }
+  // ---- B: in the PDF ----
+  function pbDfFmTable(R, f, title) {
+    const body = [];
+    body.push(['Production', f.entered ? (f.entered.kind === 'claimed' ? 'Claimed (Approve as Mine)' : 'Entered on the run') + ' by ' + (f.entered.by === 'you' ? 'the foreman' : f.entered.by) + (f.entered.at ? ', ' + pbRptDt(Date.parse(f.entered.at)) : '') : 'None entered by the foreman for this run']);
+    if (f.entered) {
+      body.push(['Quantities', f.prod.length ? f.prod.map(x => x.name + ': ' + pbDfQ(x.qty, x.unit)).join('\n') : 'none']);
+      body.push(['Crew hours', f.crew_h > 0 ? pbDpNum(f.crew_h) + ' h (laborers and operators together)' : 'none']);
+      body.push(['Equipment hours', f.equipment_h > 0 ? pbDpNum(f.equipment_h) + ' h' + (f.equipment.length ? '\n' + f.equipment.map(q => q.name + ': used ' + pbDpNum(q.used) + ' h' + (q.idle > 0 ? ', idle ' + pbDpNum(q.idle) + ' h' : '') + (q.down > 0 ? ', down ' + pbDpNum(q.down) + ' h' : '')).join('\n') : '') : 'none']);
+      if (f.rentals.length) body.push(['Rental equipment', f.rentals.map(y => y.name + (y.hours !== null ? ': ' + pbDpNum(y.hours) + ' h' : '')).join('\n')]);
+    }
+    if (Array.isArray(f.crew_log) && f.crew_log.length) body.push(['Crew & Equipment Log', f.crew_log.map(p => p.name + (p.rental ? ' (Rental)' : '') + (p.type ? ' · ' + p.type : '') + ' · ' + pbDpNum(p.hours) + ' h' + (p.open ? ' (still checked in)' : '')).join('\n')]);
+    body.push(['Review', pbDfReviewText(f.review, true) || 'Not known']);
+    if (f.notes) body.push(['Notes', f.notes]);
+    R.sub(title, { keep: 30 });
+    R.table({ head: ['', ''], columns: [{ cellWidth: 42 }, {}], fontSize: 8.8, after: 2, body });
+    R.para('Source: ' + (f.source || 'company server') + ', when the report was signed.', { size: 8.5, color: PB_RPT.MUTED, after: 2.5 });
+  }
+  function pbDfPdfAfterAttached(R, rep, x) {
+    const S = rep && rep.snapshot, A = S && S.attach, C = S && S.crew_reports; if (!A || !Array.isArray(A.items) || !C || !Array.isArray(C.runs)) return;
+    const ai = A.items.find((a, i) => (a.n || i + 1) === x.n); if (!ai || ai.kind !== 'run' || ai.src !== 'crew' || !ai.ref) return;
+    const run = C.runs.find(r => r && r.id && String(r.id) === String(ai.ref.id)); if (!run || !run.fm) return;
+    pbDfFmTable(R, run.fm, 'The foreman’s side of this run report');
+  }
+  // ---- C / D: a read-only section with nothing in it is left out (also while its data is still loading: no jump);
+  // the sections he fills in (Weather, Crew today, Equipment on site, Delays & Extra Work, Sign) always show ----
+  const PB_DF_TITLES = { 'Runs and production': 'Runs & Production', 'Delays and conflicts': 'Delays & Extra Work', 'Run notes': 'Delays & Extra Work', 'Inspections and tests': 'Inspections & Tests' };
+  const pbDfTitle = (t) => PB_DF_TITLES[t] || t;
+  // the day can still be written (no signed report, or an amendment is open): the form with his entries shows
+  function pbDfWritable() { const V = pbDlyView; if (!V.job) return false; if (V.amend) return true; return !pbDlyMineFor(V.job, V.date).some(r => r.state !== 'discarded' && r.state !== 'replaced'); }
+  function pbDfHideSec(id, n) {
+    if (!['drRuns', 'drMat', 'drDelays', 'drInsp', 'drPermits', 'drTalks', 'drOtherProd'].includes(id)) return false;
+    if (id === 'drDelays' && pbDfWritable()) return true; // E: the runs' notes are at the top of Delays & Extra Work (the one he adds to)
+    if (id === 'drRuns' && (() => { try { return !!pbDxCrewDay().why; } catch (e) { return false; } })()) return false; // review 3 (3): "couldn't be checked" is said (in Runs & Production)
+    if (String(n) !== '0') return false;
+    if (id === 'drDelays') { const D = pbDlyView.snap && pbDlyView.snap.delays; if (D && (((D.other || []).length) || ((D.totals || []).length))) return false; }
+    return true;
+  }
+  // ---- E: ONE "Delays & Extra Work": the runs' notes (read only, "from runs") on top, then his own entries ----
+  const pbDfRunItems = (S) => S && S.delays && Array.isArray(S.delays.items) ? S.delays.items : [];
+  const pbDfRunNoteCount = (S) => pbDfRunItems(S).length;
+  function pbDfEvHead(E, tot) { const n = E.length + pbDfRunNoteCount(pbDlyView.snap); return '· ' + (n ? pbDpEntries(n) + (tot > 0 ? ' · ' + pbDpH(tot) : '') : 'none'); }
+  const pbDfKind = (k) => { const t = String(k || 'note'); return t.charAt(0).toUpperCase() + t.slice(1); };
+  function pbDfRunNotesHtml() {
+    const D = pbDlyView.snap && pbDlyView.snap.delays; if (!D) return '';
+    const I = Array.isArray(D.items) ? D.items : [], O = Array.isArray(D.other) ? D.other : [], T = Array.isArray(D.totals) ? D.totals : [];
+    if (!I.length && !O.length && !T.length) return '';
+    let h = '<div class="df-runnotes" id="dfRunNotes">' + (T.length ? '<p class="pbd-dim" id="dfRunTotals">' + escapeHtml(T.join(' · ')) + '</p>' : '');
+    if (I.length) h += '<ul class="dp-evs" id="dfRunList">' + I.map((x, i) => '<li class="dp-ev df-rn" id="dfRun_' + i + '"><p class="dp-evh"><strong>' + escapeHtml(pbDfKind(x.kind)) + '</strong> · ' + escapeHtml(x.text || '') + ' <span class="dp-sub dp-rf">from runs</span></p>'
+      + '<p class="pbd-dim">' + escapeHtml([x.time ? pbDlyTimeIn(x.time) : '', x.where || ''].filter(Boolean).join(' · ')) + '</p></li>').join('') + '</ul>';
+    if (O.length) h += '<p class="dx-sub">Other run notes (' + O.length + ')</p><ul class="pbd-list" id="dfRunOther">' + O.map(x => '<li>' + escapeHtml(x.text || '') + ' <span class="pbd-dim">(' + escapeHtml([x.time ? pbDlyTimeIn(x.time) : '', x.where || ''].filter(Boolean).join(' · ')) + ')</span></li>').join('') + '</ul>';
+    return h + '</div>';
+  }
+  function pbDfPdfRunNotes(R, S) {
+    const D = S && S.delays; if (!D) return;
+    const I = Array.isArray(D.items) ? D.items : [], O = Array.isArray(D.other) ? D.other : [], T = Array.isArray(D.totals) ? D.totals : [];
+    if (!I.length && !O.length && !T.length) return;
+    const t = (iso) => iso ? pbRptDt(Date.parse(iso), S.tz ? { tz: S.tz } : {}) : '—';
+    R.sub('From the runs’ notes (' + I.length + ')');
+    T.forEach(x => R.para(x, { size: 9.5, style: 'bold', after: 1 }));
+    if (I.length) R.table({ head: ['Time', 'Kind', 'Note', 'Where'], columns: [{ cellWidth: 36 }, { cellWidth: 22 }, {}, { cellWidth: 46 }], fontSize: 8.6, body: I.map(n => [t(n.time), n.kind || '—', n.text, n.where || '—']) });
+    if (O.length) { R.sub('Other run notes (' + O.length + ')'); R.table({ head: ['Time', 'Note', 'Where'], columns: [{ cellWidth: 36 }, {}, { cellWidth: 56 }], fontSize: 8.6, body: O.map(n => [t(n.time), n.text, n.where || '—']) }); }
+    R.para('Source: ' + (D.source || 'the runs’ notes'), { size: 8.5, color: PB_RPT.MUTED, after: 2.5 });
+    R.sub('Entered by the foreman');
+  }
+  window.__debugDailyFill = () => ({ rf: pbDf, lines: () => pbDfLines(), snapRun: (x) => pbDfSnapRun(x), load: (f) => pbDfFmLoad(f) });
+  // ================= end feat_dailyfill =================
   // ================= feat_dailyattach: the day's reports attached to the daily, and Other hours (owner, Oct 27) =================
   // ATTACH: the daily report's PDF ends with the day's run reports and confined space permits for the job (one switch,
   // "Attach to the PDF", on by default, saved with the report). Which ones: this job and work date in the company's time
@@ -52533,6 +52845,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         }
       } else { const A = pbDlyAnswer(r); D.why = A.k === 'retry' && pbDlyMissing(r) ? 'Your crew’s reports can’t be checked yet: the company server isn’t ready for this.' : 'Your crew’s run reports and permits couldn’t be checked (' + (A.why || pbDlyWhy(A.code)) + ').'; }
     } finally { D.busy = false; }
+    try { await pbDfFmLoad(force); } catch (e) { console.error(e); } // feat_dailyfill: his side of each crew run
     pbDaRepaint();
   }
   window.__pbDaFresh = () => pbDaDayLoad(true); // review S11: signing asks for the crew's list again first (with signal)
@@ -52601,7 +52914,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<label class="pb-set-switch da-switch" for="daAttachOn"><span class="tx"><span class="name">Attach to the PDF</span></span>'
       + '<input type="checkbox" role="switch" id="daAttachOn" class="pb-pn-switch"' + (on ? ' checked' : '') + ' onchange="pbDaSwitch(this.checked)"></label>';
     if (on) {
-      h += L.items.length ? '<ol class="da-list" id="daAttachList">' + L.items.map((it, i) => { const n = pbDaItemNote(it); return '<li id="daAtt_' + i + '"><span class="da-att-h">' + escapeHtml(it.label + ' · ' + it.who) + '</span>' + (n ? '<span class="' + (it.state === 'pending' ? 'pbd-why' : 'pbd-dim') + '" id="daAttWhy_' + i + '">' + escapeHtml(n) + '</span>' : '') + '</li>'; }).join('') + '</ol>'
+      h += L.items.length ? '<ol class="da-list" id="daAttachList">' + L.items.map((it, i) => { const n = pbDaItemNote(it); return '<li id="daAtt_' + i + '"><span class="da-att-h">' + escapeHtml(it.label + ' · ' + it.who) + '</span>' + pbDfAttLine(it) /* feat_dailyfill */ + (n ? '<span class="' + (it.state === 'pending' ? 'pbd-why' : 'pbd-dim') + '" id="daAttWhy_' + i + '">' + escapeHtml(n) + '</span>' : '') + '</li>'; }).join('') + '</ol>'
         : '<p class="pbd-dim" id="daAttachNone">' + (L.crew === 'checked' ? 'No run reports or permits for this job on this day.' : 'None on this phone for this job on this day.') + '</p>';
       if (L.leftOut) h += '<p class="pbd-why" id="daAttachLeft">' + escapeHtml(L.leftOut + (L.leftOut === 1 ? ' more report isn’t' : ' more reports aren’t') + ' listed (at most ' + PB_DA_ITEMS + ' attach). Open them from Records.') + '</p>';
       if (L.busy) h += '<p class="pbd-dim" id="daAttachBusy">Checking your crew’s reports…</p>';
@@ -52632,7 +52945,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbDa.form && pbDa.form.key !== pbDaKey()) pbDa.form = null;
     if (!pbDa.form && d.form && d.form.key === pbDaKey()) pbDa.form = Object.assign({}, d.form); // a half-typed row comes back
     const keep = typeof pbFocusKeep === 'function' ? pbFocusKeep(w) : null;
-    pbSetHtml(w, pbDaAttachHtml(d)); w.hidden = false; /* feat_dailyx: Other hours folded into the crew's and equipment's hours */
+    { const none = !pbDaItems(pbDlyView.job, pbDlyView.date).items.length; pbSetHtml(w, none ? '' : pbDaAttachHtml(d)); w.hidden = none; } /* feat_dailyfill C: no attached reports: no card */ /* feat_dailyx: Other hours folded into the crew's and equipment's hours */
     try { if (keep) pbFocusBack(keep); } catch (e) {}
     pbDaNamePrefill();
     if (d.on !== false && (!pbDa.day || pbDa.day.k !== pbDaKey())) pbDaDayLoad(false).catch(() => {});
@@ -52920,6 +53233,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       R.nextPrefix = 'Attached ' + (i + 1) + ' of ' + list.length + tag;
       try { (x.fail ? (Rr) => pbRptFallbackInto(Rr, e, x.fail) : pbRptRecordBuilder(e))(R); }
       catch (err) { if (!x.fail) { x.failNew = String(err && err.message || err); rep.layoutFailed = true; } else throw err; }
+      if (!x.fail && !x.failNew) { try { pbDfPdfAfterAttached(R, rep, x); } catch (err) { console.error(err); } } // feat_dailyfill: the foreman's side, right after the run report
       R.anchors['att:' + x.n] = R.recFirst['r' + k];
       if (!x.failNew && pbRptHasEmergency(e)) { R.nextPrefix = 'Attached ' + (i + 1) + ' of ' + list.length + ' (incident report)'; try { pbRptEmergencyInto(R, e); } catch (err) { x.failNew = String(err && err.message || err); rep.layoutFailed = true; } }
     });
@@ -53016,7 +53330,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (S.weather.partial_confirmed) R.para('The day was not over when this was retrieved; the foreman confirmed the work day had ended and used the weather observed so far.', { size: 9, style: 'bold' });
       src(S.weather.label + ' Observed values from the station, not a forecast; the station can be several miles from the job. Job location: ' + ({ geocoded: 'the job’s address (city and state, or street address), geocoded', pin: 'coordinates pinned by the office', device_once: 'a phone’s position taken once at the jobsite with permission' }[S.weather.location_source] || 'as recorded') + '.');
     } else { R.para(S.weather ? S.weather.label : 'Weather was not available.', { size: 9.5, style: 'bold' }); src('National Weather Service (api.weather.gov), not reached for this report.'); }
-    R.section('runs', 'Runs and production (' + S.runs.items.length + ')', { keep: 30 });
+    if (S.runs.items.length + ((S.crew_reports && S.crew_reports.runs) || []).length) { /* feat_dailyfill C: left out when empty */
+    R.section('runs', 'Runs & Production (' + (S.runs.items.length + ((S.crew_reports && S.crew_reports.runs) || []).length) + ')', { keep: 30 });
     if (S.runs.items.length) R.table({ head: ['Run', 'Times', 'Footage', 'Production entered (this session)'], columns: [{ cellWidth: 40 }, { cellWidth: 50 }, { cellWidth: 30 }, {}], fontSize: 8.4,
       body: S.runs.items.map(r => r.crew_run ? pbFmDailyPdfRow(r, t) /* feat_foreman 1 */ : r.manual && typeof window.pbNrDailyPdfRow === 'function' ? window.pbNrDailyPdfRow(r, t) /* batch 28 MANUAL */ : [r.label + (r.resumed ? '\n(resumed run)' : '') + (r.cost_code ? '\nCost code ' + r.cost_code : ''), 'Started ' + t(r.start) + '\n' + (r.end ? 'Ended ' + t(r.end) : 'Not ended') + '\nStatus: ' + r.status,
         (r.run_ft !== null ? 'Run ' + r.run_ft + ' ft' : '—') + (r.laid_ft_session !== null ? '\nLaid this session ' + r.laid_ft_session + ' ft' : '') + (r.sizes.length ? '\n' + r.sizes.map(s => (s.id_in !== null ? s.id_in + '" ID ' : '') + s.ft + ' ft').join('\n') : ''),
@@ -53025,13 +53340,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (Object.keys(S.runs.totals || {}).length) R.para('Day total (foreman entries): ' + prodT.join(' · '), { size: 9.5, style: 'bold' });
     src(S.runs.source);
     try { pbDxPdfCrew(R, S, 'runs'); } catch (e) { console.error(e); } // feat_dailyx
+    }
+    if (S.other_prod && (S.other_prod.entries || []).length) { /* feat_dailyfill C: left out when empty */
     if (S.other_prod) {
-      R.sub('Other crews’ production (' + (S.other_prod.entries || []).length + ')');
+      if (S.runs.items.length + ((S.crew_reports && S.crew_reports.runs) || []).length) R.sub('Other crews’ production (' + (S.other_prod.entries || []).length + ')'); else R.section('otherprod', 'Other crews’ production (' + (S.other_prod.entries || []).length + ')', { keep: 26 });
       if ((S.other_prod.entries || []).length) R.table({ head: ['Entered by', 'Quantities', 'Last updated'], columns: [{ cellWidth: 50 }, {}, { cellWidth: 44 }], fontSize: 8.6,
         body: S.other_prod.entries.map(e => [e.entered_by + (e.role ? '\n(' + e.role + ')' : ''), e.items.map(x => pbProdCatName(x.key, null) + ': ' + (x.qty === null ? '—' : x.qty) + ' ' + x.unit).join('\n') || 'none', t(e.updated_at)]) });
       else R.para(S.other_prod.available ? 'None synced for this job and day.' : 'Not loaded.', { size: 9.5 });
       src(S.other_prod.source);
     }
+    }
+    if (S.crew.people.length + S.crew.equipment.length) { /* feat_dailyfill C: left out when empty */
     R.section('crew', 'Crew and equipment hours', { keep: 30 });
     const crewRows = S.crew.people.concat(S.crew.equipment);
     if (crewRows.length) R.table({ head: ['Name', 'Type', 'First in', 'Last out', 'Hours'], columns: [{ cellWidth: 46 }, { cellWidth: 30 }, { cellWidth: 38 }, { cellWidth: 38 }, { halign: 'right' }], fontSize: 8.6,
@@ -53039,35 +53358,46 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       foot: ['Totals', '', '', '', 'L ' + S.crew.totals.laborer_h + ' · O ' + S.crew.totals.operator_h + ' · E ' + S.crew.totals.equipment_h] });
     else R.para('No one logged in the Crew & Equipment Log on these runs.', { size: 9.5 });
     src(S.crew.source);
+    }
     try { pbDaPdfOther(R, S, src); } catch (e) { console.error(e); } // feat_dailyattach
     try { pbDpPdf(R, S, src); } catch (e) { console.error(e); } // feat_dailyplus
+    if (S.materials.used.length || S.materials.delivered.length) { /* feat_dailyfill C: left out when empty */
     R.section('materials', 'Materials', { keep: 30 });
     if (S.materials.used.length) R.table({ head: ['Used', 'Quantity', 'Basis'], columns: [{ cellWidth: 70 }, { cellWidth: 30 }, {}], fontSize: 8.6, body: S.materials.used.map(m => [m.what, m.qty + ' ' + m.unit, m.basis]) });
     if (S.materials.delivered.length) R.table({ head: ['Delivered (field tickets)', 'Quantity', 'Supplier / ticket'], columns: [{ cellWidth: 70 }, { cellWidth: 30 }, {}], fontSize: 8.6, body: S.materials.delivered.map(x => [x.what + (x.use ? '\nUse: ' + x.use : ''), x.qty !== null ? x.qty + ' ' + x.unit : '—', [x.supplier, x.ticket_no ? 'ticket ' + x.ticket_no : ''].filter(Boolean).join(', ') || '—']) });
     if (!S.materials.used.length && !S.materials.delivered.length) R.para('No materials recorded for this day.', { size: 9.5 });
     src(S.materials.source);
-    R.section('delays', S.delays.available ? 'Delays and conflicts (' + S.delays.items.length + ')' : 'Run notes (' + S.delays.items.length + ')', { keep: 26 });
+    }
+    if (!S.crew_today && (S.delays.items.length || (S.delays.other || []).length || (S.delays.totals || []).length)) { /* feat_dailyfill C: left out when empty */
+    R.section('delays', 'Delays & Extra Work (' + S.delays.items.length + ')', { keep: 26 });
     if (S.delays.totals && S.delays.totals.length) S.delays.totals.forEach(x => R.para(x, { size: 9.5, style: 'bold', after: 1 }));
     if (S.delays.items.length) R.table({ head: ['Time', 'Kind', 'Note', 'Where'], columns: [{ cellWidth: 36 }, { cellWidth: 22 }, {}, { cellWidth: 46 }], fontSize: 8.6, body: S.delays.items.map(n => [t(n.time), n.kind || '—', n.text, n.where || '—']) });
     else R.para('None.', { size: 9.5 });
     if (S.delays.other && S.delays.other.length) { R.sub('Other run notes (' + S.delays.other.length + ')'); R.table({ head: ['Time', 'Note', 'Where'], columns: [{ cellWidth: 36 }, {}, { cellWidth: 56 }], fontSize: 8.6, body: S.delays.other.map(n => [t(n.time), n.text, n.where || '—']) }); }
     src(S.delays.source);
-    R.section('insp', 'Inspections and tests (' + ins.length + ')', { keep: 26 });
+    }
+    if (ins.length) { /* feat_dailyfill C: left out when empty */
+    R.section('insp', 'Inspections & Tests (' + ins.length + ')', { keep: 26 });
     if (ins.length) R.table({ head: ['Item', 'Result', 'When (entered zone)', 'Inspector / agency', 'Notes, photos, status'], columns: [{ cellWidth: 38 }, { cellWidth: 18 }, { cellWidth: 36 }, { cellWidth: 36 }, {}], fontSize: 8.3,
       body: ins.map(x => [x.item + (x.where ? '\n' + x.where : '') + (x.tested_version ? '\n(tested item v' + x.tested_version + (x.server_version && x.server_version !== x.tested_version ? '; v' + x.server_version + ' on the server' : '') + ')' : ''), { content: pbDlyResName(x.result) + (x.result !== 'pass' ? (x.closes ? '\nclosed' : '\nretest') : ''), _accent: x.result !== 'pass' }, t(x.at, x.tz) + '\n(' + x.tz + ')', x.inspector + '\n' + x.agency,
         [x.notes, x.photos ? x.photos + ' photo(s), SHA-256 ' + (x.photo_sha256 || []).map(h => h ? String(h).slice(0, 12) : '?').join(', ') + ' (kept with the item on the company server)' : 'no photos', 'Checked off by ' + (x.by || '—') + '; ' + String(x.state || '').replace(/^received (\d{4}-\d\d-\d\dT[^\s]+)$/, (m0, iso) => isNaN(Date.parse(iso)) ? m0 : 'received ' + pbRptDt(Date.parse(iso), { sec: true }) + ' (server time)')].filter(Boolean).join('\n')]) });
     else R.para('None checked off on this day.', { size: 9.5 });
     src(S.inspections.source);
+    }
+    if (S.permits.items.length + ((S.crew_reports && S.crew_reports.permits) || []).length) { /* feat_dailyfill C: left out when empty */
     R.section('permits', 'Confined Space Permits (' + (S.permits.items.length + ((S.crew_reports && S.crew_reports.permits) || []).length) + ')', { keep: 26 }); /* feat_dailyx */
     if (S.permits.items.length) R.table({ head: ['Space', 'Window', 'People', 'Air tests', 'Status'], columns: [{ cellWidth: 38 }, { cellWidth: 34 }, { cellWidth: 40 }, { cellWidth: 24 }, {}], fontSize: 8.4,
       body: S.permits.items.map(p => [(p.space || '—') + (p.address ? '\n' + p.address : ''), p.window, 'Supervisor ' + (p.supervisor || '—') + '\nAttendant ' + (p.attendant || '—') + '\nEntrants: ' + (p.entrants.join(', ') || 'none'), p.air_tests + (p.air_outside ? '\n' + p.air_outside + ' OUTSIDE RANGE' : ''), p.status + (p.emergency_active ? '\nEMERGENCY IN PROGRESS' : '') + (p.emergencies ? '\nEMERGENCY declared ' + p.emergencies + 'x' + (p.emergency_times || []).map(x => '\n  ' + t(x.start) + (x.end ? ' to ' + t(x.end) : ' (not resolved)')).join('') : '') + (p.closed_at ? '\n' + t(p.closed_at) : '')]) });
     else R.para('None on the foreman’s phone. Crew permits are under Attached reports.', { size: 9.5 });
     src(S.permits.source);
     try { pbDxPdfCrew(R, S, 'permits'); } catch (e) { console.error(e); } // feat_dailyx
+    }
+    if (S.talks.items.length) { /* feat_dailyfill C: left out when empty */
     R.section('talks', 'Toolbox talks', { keep: 20 });
     if (S.talks.items.length) R.table({ head: ['Time', 'Talk', 'Attendees'], columns: [{ cellWidth: 36 }, {}, { cellWidth: 56 }], fontSize: 8.6, body: S.talks.items.map(x => [t(x.time), x.text, x.where || '—']) });
     else R.para(S.talks.available ? 'None recorded.' : 'Not available.', { size: 9.5 });
     src(S.talks.source);
+    }
     /* feat_dailyx: the narrative, the notes and the photos of the day are up front */
     R.section('sign', 'Signature', { keep: 50 });
     R.kv([['Signed (typed name)', signed.name || 'not signed'], ['Signed at', signed.at ? pbRptDt(Date.parse(signed.at), { sec: true, tz: signed.tz }) + ' · ' + signed.tz + ' (phone clock)' : '—'], ['Drawn signature', signed.drawn ? 'included below (SHA-256 ' + pbRptShort(signed.drawn_sha256) + ')' : 'none drawn'],
@@ -53287,7 +53617,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const row = { key: x.key, type: x.type, at, job_number: x.job_number || '', who, mine: !!(x.author && x.author.id === me), x };
     if (x.type === 'run') {
       row.title = String(x.label || 'Run report').replace(/ to /, ' → ');
-      row.stText = x.st === 'corrected' ? 'Corrected · waiting' : x.office_only && x.st === 'needs_review' && office ? 'Sent to the office' : x.st === 'approved' ? 'Approved' : x.st === 'sent_back' ? 'Sent back' : x.st === 'with_foreman' ? 'With foreman' : 'Needs review';
+      row.stText = x.st === 'corrected' ? 'Corrected · waiting' : x.office_only && x.st === 'needs_review' && office ? 'Sent to the office' : x.st === 'approved' ? 'Approved' : x.st === 'sent_back' ? 'Sent back' : 'Not approved yet'; /* feat_office A11: the office's words */
       row.dedupe = row.mine ? 'run|' + String(x.entry_id) : null;
       row.open = () => pbRpfOpenRun(x, tier);
     } else if (x.type === 'daily') {
@@ -53570,7 +53900,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const PB_CX_FIELD_LABEL = 'Records';
   const PB_CX_SIDE_MQ = '(min-width: 1024px)';
   const PB_CX_TABS = [['overview', 'Overview'], ['waiting', 'Waiting'], ['materials', 'Materials'], ['equipment', 'Equipment'], ['production', 'Production']]; // feat_eqtab
-  const PB_CX_JOBS_MAX = 60; // Home lists at most this many jobs at once (Show all for the rest)
+  const PB_CX_JOBS_MAX = 10; // Home lists at most this many jobs at once (Show all for the rest); feat_office A9: was 60, Field tools sat under them
   let pbCx = { uid: null, on: false, inbox: null, inboxBusy: false, inboxGen: 0, loadAt: 0, tab: 'overview', jobKey: null, menu: false, list: null, allJobs: false, nf: null };
   const pbCxE = (t) => escapeHtml(String(t == null ? '' : t));
   const pbCxN = (n, one, many) => n + ' ' + (n === 1 ? one : (many || one + 's'));
@@ -53616,8 +53946,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbCxWaitTotals(jobs) {
     const wt = jobs ? jobs.reduce((n, j) => n + (Number(j.waiting) || 0), 0) : 0, ew = jobs ? jobs.reduce((n, j) => n + (Number(j.edits_waiting) || 0), 0) : 0;
     let mine = 0; try { mine = pbCrewEditsForMe().length; } catch (e) { mine = 0; }
-    let rr = 0; try { rr = typeof window.pbRrWaitingCount === 'function' ? window.pbRrWaitingCount(pbArchiveOwnerUid) : 0; } catch (e) { rr = 0; } // r15.1 PM RUNS: crew runs with no production yet
-    return { runs: wt + rr, edits: Math.max(ew, mine), total: wt + rr + Math.max(ew, mine) };
+    let rr = 0, known = true; try { rr = typeof window.pbRrWaitingCount === 'function' ? window.pbRrWaitingCount(pbArchiveOwnerUid) : 0; } catch (e) { rr = 0; } // r15.1 PM RUNS: crew runs with no production yet
+    if (rr === null) { rr = 0; known = false; } // feat_office A2: the run reports haven't loaded: the total isn't known
+    return { runs: wt + rr, edits: Math.max(ew, mine), total: wt + rr + Math.max(ew, mine), known };
   }
   // Unread reports to management: the inbox's own answer (pb_report_inbox), counted; the count (only) is kept with its time.
   function pbCxInboxNow(uid) {
@@ -53646,7 +53977,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbCxRefresh = function(force) {
     const uid = pbArchiveOwnerUid, X = pbCxSync(uid);
     if (!X.on) return;
-    if (!force && Date.now() - X.loadAt < 60000) { window.pbCxRender(); return; }
+    if (!force && Date.now() - X.loadAt < 60000 && !((window.pbCxDirtyAt || 0) >= X.loadAt)) { window.pbCxRender(); return; } // feat_office A5: not after a save on a job page
     X.loadAt = Date.now();
     if (pbPd.uid !== uid) pbPd = pbPdNew(uid);
     const D = pbCohDash(uid); if (!pbPd.data && D) { pbPd.data = D.data; pbPd.at = D.at || 0; pbPd.cached = true; }
@@ -53765,7 +54096,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (em) f.push(pbCxFlag('emerg', 'siren', 'EMERGENCY reported on a permit'));
     if (runs) f.push(pbCxFlag('live', 'pipe', pbCxN(runs, 'run') + ' live'));
     if (pm.length - em > 0) f.push(pbCxFlag('live', 'helmet', pbCxN(pm.length - em, 'permit') + ' open'));
-    const w = (Number(j.waiting) || 0) + (Number(j.edits_waiting) || 0);
+    const w = (Number(j.waiting) || 0) + (Number(j.edits_waiting) || 0) + (typeof window.pbRrWaitingFor === 'function' ? window.pbRrWaitingFor(pbArchiveOwnerUid, j) || 0 : 0); // feat_office A7: + its run reports waiting
     if (w) f.push(pbCxFlag('wait', 'clock', w + ' waiting on foremen'));
     const ma = A ? A.list.filter(x => x.job_key === j.job_key).length : 0;
     if (ma) f.push(pbCxFlag('mat', 'cube', pbCxN(ma, 'material alert')));
@@ -53778,7 +54109,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const meta = [j.last_at ? 'Updated ' + pbProdTimeText(j.last_at) : 'No production yet', Number(j.reporters_today) ? pbCxN(Number(j.reporters_today), 'crew member') + ' reported today' : (j.last_work_date ? 'last work ' + pbProdDayText(j.last_work_date) : j.start_date ? 'starts ' + pbProdDayText(String(j.start_date).slice(0, 10)) : '')].filter(Boolean).join(' · ');
     return '<button type="button" class="pbx-job' + (pbCxComplete(v) ? ' complete' : '') + '" id="homeCxJob' + i + '" data-job="' + pbCxE(j.job_key) + '" onclick="pbCxOpenJob(this.dataset.job)">'
       + '<span class="pbx-job-top"><span class="pbx-job-id"><span class="pbx-job-num">' + pbCxE(pbProdJobLabel(j.job_number)) + '</span><span class="pbx-job-site">' + pbCxE(j.project_name || j.jobsite || j.address || 'No project name') + '</span></span>' + pbCxPct(v) + '</span>'
-      + (v.anyPlanned ? pbCxBar(v, false, vr) : j.last_at ? '<span class="pbx-noplan">No plan yet. Amounts so far:</span>' : '') + (!v.anyPlanned && !j.last_at ? '' : pbCxLegend(v, false, vr))
+      + (v.anyPlanned ? pbCxBar(v, false, vr) : j.last_at ? '<span class="pbx-noplan">Amounts so far:</span>' : '' /* feat_office A11 */) + (!v.anyPlanned && !j.last_at ? '' : pbCxLegend(v, false, vr))
       + pbCxJobFlags(j, L, A) + '<span class="pbx-meta">' + pbCxE(meta) + '</span></button>';
   }
   // the status line under a heading: how old the numbers are, said in words
@@ -53819,7 +54150,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       : act('homeCxInbox', 'reports', '–', 'Unread reports', 'Inbox loads with signal', false, 'pbCxOpenInbox()');
     const mat = A ? act('homeCxMat', 'cube', A.list.length, A.list.length === 1 ? 'Material alert' : 'Material alerts', A.list.length ? 'Near or over what’s ordered' : 'Nothing near its order', A.list.length > 0, 'pbCxOpenList(\'mat\')')
       : act('homeCxMat', 'cube', '–', 'Material alerts', 'Load with signal', false, 'pbCxOpenList(\'mat\')');
-    const wait = jobs ? act('homeCxWait', 'clock', W.total, 'Waiting on foremen', W.total ? [W.runs ? pbCxN(W.runs, 'run') : '', W.edits ? pbCxN(W.edits, 'edit') : ''].filter(Boolean).join(' · ') : 'Nothing waiting', W.total > 0, 'pbCxOpenList(\'wait\')')
+    const wait = jobs && !W.known && !W.total ? act('homeCxWait', 'clock', '–', 'Waiting on foremen', window.pbRrMsg(uid) || (pbCxOnline() ? 'Loading…' : 'Loads with signal'), false, 'pbCxOpenList(\'wait\')') /* feat_office A2 */
+      : jobs ? act('homeCxWait', 'clock', W.total, 'Waiting on foremen', W.total ? [W.runs ? pbCxN(W.runs, 'run') : '', W.edits ? pbCxN(W.edits, 'edit') : ''].filter(Boolean).join(' · ') : 'Nothing waiting', W.total > 0, 'pbCxOpenList(\'wait\')')
       : act('homeCxWait', 'clock', '–', 'Waiting on foremen', 'Loads with signal', false, 'pbCxOpenList(\'wait\')');
     return now + inbox + mat + wait + (typeof window.pbRrTile === 'function' ? window.pbRrTile(uid) : '') + (typeof window.pbDpTile === 'function' ? window.pbDpTile(uid) : ''); // feat_dailyplus
   }
@@ -53981,9 +54313,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         h += w.length ? '<div class="pbx-rows">' + w.map((j, i) => pbCxRowBtn(j, 'waiting', '<span class="pbx-row-tx"><span class="pbx-row-h">' + pbCxE(pbProdJobLabel(j.job_number)) + '</span><span class="pbx-row-s">' + pbCxE(j.jobsite || '') + '</span><span class="pbx-row-flags">'
             + (Number(j.waiting) ? '<span class="pbx-tag warn">' + pbCxIc('clock') + pbCxE(pbCxN(Number(j.waiting), 'run') + ' waiting for a foreman') + '</span>' : '') + (Number(j.edits_waiting) ? '<span class="pbx-tag warn">' + pbCxIc('pencil') + pbCxE(pbCxN(Number(j.edits_waiting), 'edit') + ' waiting for approval') + '</span>' : '') + '</span></span>', 'cxWait' + i)).join('') + '</div>'
           : '';
-        const rrw = typeof window.pbRrWaitingCount === 'function' ? window.pbRrWaitingCount(uid) : 0; // r15.1 PM RUNS
+        const rrw0 = typeof window.pbRrWaitingCount === 'function' ? window.pbRrWaitingCount(uid) : 0, rrw = rrw0 || 0; // r15.1 PM RUNS; feat_office A2: null = not loaded
         if (rrw) h += '<div class="pbx-rows"><button type="button" class="pbx-row" id="cxWaitRuns" onclick="pbCxOpenList(\'runs\')"><span class="pbx-row-tx"><span class="pbx-row-h">' + pbCxE(pbCxN(rrw, 'run report') + ' not reviewed yet') + '</span><span class="pbx-row-s">Sent by the crew; their foreman hasn’t reviewed ' + (rrw === 1 ? 'it' : 'them') + ' or entered production yet' + ((n) => n ? ' (' + n + ' sent back, waiting for the fix)' : '')(((pbRoFor(uid).list) || []).filter(x => !x.reviewed_at && !x.removed_at && !x.office_only && x.sent_back_at && !pbRrCorrected(x)).length) + '.</span></span><span class="pbx-chev" aria-hidden="true">' + pbCxIc('chevron-right') + '</span></button></div>';
-        if (!w.length && !rrw) h += '<p class="pbx-none" id="cxWaitNone">Nothing is waiting on a foreman.</p>';
+        if (!w.length && !rrw) h += rrw0 === null ? '<p class="pbx-none" id="cxWaitRrLoad">' + pbCxE(window.pbRrMsg(uid) || (pbCxOnline() ? 'Loading run reports…' : 'Run reports load with signal.')) + '</p>' /* feat_office A2 */ : '<p class="pbx-none" id="cxWaitNone">Nothing is waiting on a foreman.</p>';
         if (mine) h += '<div class="pbx-rows"><button type="button" class="pbx-row" id="cxWaitMine" onclick="pbOpenProdMine()"><span class="pbx-row-tx"><span class="pbx-row-h">' + pbCxE(pbCxN(mine, 'edit') + ' on runs you count') + '</span><span class="pbx-row-s">Approve or reject them in My production</span></span><span class="pbx-chev" aria-hidden="true">' + pbCxIc('chevron-right') + '</span></button></div>';
       }
     }
@@ -54036,7 +54368,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const wd = isFinite(lt.getTime()) ? lt.getFullYear() + '-' + String(lt.getMonth() + 1).padStart(2, '0') + '-' + String(lt.getDate()).padStart(2, '0') : '';
     rec.pbOffice = { laidFt, photosLeftOut: left, workDate: wd, send: !!(e.reportSendWanted && (e.completed || e.incomplete)) }; // r15.2: Send Report
     if (e.rfForeman && typeof e.rfForeman === 'object' && (e.rfForeman.id || e.rfForeman.none)) rec.pbOffice.foremanId = e.rfForeman.none ? 'none' : String(e.rfForeman.id); /* r15.48 access: the server sends the report to him (sql/48); 'none': the office only */
-    delete rec.reportForeman; delete rec.reportRefused; /* r15.57: phone-only */ if (typeof window.pbAcStripSl === 'function') window.pbAcStripSl(rec); /* r15.48 access: no Site Log emails in the company's copy */
+    delete rec.reportForeman; delete rec.reportRefused; delete rec.rptFm; /* r15.57: phone-only; feat_rptfm */ if (typeof window.pbAcStripSl === 'function') window.pbAcStripSl(rec); /* r15.48 access: no Site Log emails in the company's copy */
     if (e.rfWho && typeof e.rfWho === 'object') { ['who', 'whoRole', 'foreman'].forEach(k => { if (e.rfWho[k]) rec.pbOffice[k] = e.rfWho[k]; }); } delete rec.rfWho; // feat_runflow P6 / review S3: names as stamped at End, never the live ones (a name or crew change re-uploads nothing)
     if (typeof window.pbRfEndHeld === 'function' && window.pbRfEndHeld(e)) rec.pbOffice.send = false; // review S1: an end not saved on the phone yet is not sent
     return rec;
@@ -54135,7 +54467,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbRoStatus = (x) => x.status || (x.confirmed ? 'foreman' : 'waiting');
   const pbRoWaiting = (L) => L.filter(x => !x.reviewed_at && !x.removed_at && !x.office_only && (pbRoStatus(x) === 'waiting' || !!x.sent_back_at)).length; /* feat_rrflow 3/4: the office's own (office only) aren't a foreman's; a sent-back one still waits */ // r15.2.1 (owner): a report the foreman reviewed isn't waiting on him
   // for Home's "Waiting on foremen": crew runs with no production at all (a run held for a foreman is already counted there)
-  window.pbRrWaitingCount = function(uid) { const O = pbRoFor(uid); return O.list ? pbRoWaiting(O.list) : 0; };
+  window.pbRrWaitingCount = function(uid) { const O = pbRoFor(uid); return O.list ? pbRoWaiting(O.list.filter(x => x && !x.removed_at)) : null; }; /* feat_office A2: null = not loaded yet (not "nothing waiting"); a deleted report never waits */
+  window.pbRrIsWaiting = (x) => !!x && !x.removed_at && pbRoWaiting([x]) === 1; /* feat_office A7: one report, the same rule as the counts */
+  window.pbRrWaitingFor = function(uid, job) { /* feat_office A7: the job's run reports waiting (null = not loaded) */
+    const O = pbRoFor(uid); if (!O.list) return null; if (!job) return 0;
+    const k = String(job.job_key || '').toLowerCase(), n = String(job.job_number || '').trim().toLowerCase();
+    return pbRoWaiting(O.list.filter(x => x && !x.removed_at && (String(x.job_key || '').toLowerCase() === k || (n && String(x.job_number || '').trim().toLowerCase() === n))));
+  };
+  window.pbRrMsg = function(uid) { return pbRoFor(uid).msg || ''; };
   const PB_RO_TAGS = { foreman: ['', 'Production entered'], counted: ['', 'Counted without a foreman'], held: ['warn', 'Held for a foreman'], waiting: ['warn', 'Waiting for a foreman'] };
   function pbRoTag(x) { const t = pbRoStatus(x) === 'waiting' && x.reviewed_at ? ['', 'No production entered'] : PB_RO_TAGS[pbRoStatus(x)] || PB_RO_TAGS.waiting; return '<span class="pbx-tag' + (t[0] ? ' ' + t[0] : '') + '">' + (t[0] ? pbCxIc('clock') : pbCxCheck()) + pbCxE(t[1]) + '</span>'; }
   // r15.2: "new" = a sent report not opened on this phone yet (kept per account on this phone)
@@ -54146,7 +54485,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbRoMarkSeen(uid, id) { const S = pbRoSeenSet(uid); if (S.has(String(id))) return; S.add(String(id)); pbSetFor(uid, 'rrSeen', JSON.stringify(Array.from(S).slice(-500))).catch(() => {}); }
   window.pbRrTile = function(uid) {
-    const O = pbRoFor(uid), L = O.list, S = pbRoSeenSet(uid), nNew = L ? L.filter(x => !S.has(pbRoSeenKey(x))).length : 0;
+    const O = pbRoFor(uid), L = O.list, S = pbRoSeenSet(uid), nNew = L ? L.filter(x => !x.removed_at /* feat_office A6 */ && !S.has(pbRoSeenKey(x))).length : 0;
     const sub = !L ? 'Loads with signal' : !L.length ? 'No run reports sent yet' : [nNew ? nNew + ' new' : 'Nothing new', pbRoWaiting(L) ? pbRoWaiting(L) + ' waiting for a foreman' : '', window.pbRrOfficeMine(uid) ? window.pbRrOfficeMine(uid) + ' sent to the office' : '' /* feat_rrflow 3 */].filter(Boolean).join(' · ');
     return '<button type="button" class="pbx-act pbx-rr-tile" id="homeCxRuns2" onclick="pbCxOpenList(\'runs\')" style="grid-column:1 / -1">'
       + '<span class="pbx-act-ic">' + pbCxIc('pipe') + '</span><span class="pbx-num">' + (L ? nNew : '–') + '</span><span class="pbx-lbl">' + (nNew === 1 ? 'New run report' : 'New run reports') + '</span><span class="pbx-sub">' + pbCxE(sub) + '</span></button>';
@@ -54174,7 +54513,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const x = O.open, e = O.rec;
     let h = '' /* feat_rrflow F4: the header's Back closes the report (pbCxListBack) */
       + '<h2 class="pbx-h2">' + pbCxE(pbProdJobLabel(x.job_number || '') + (x.label ? ' · ' + x.label : '')) + '</h2>'
-      + '<p class="pbx-note">' + pbCxE([x.who, e && e.kind === 'run' && e.runStartTime ? '' : pbRoWhen(x)].filter(Boolean).join(' · ')) + '</p>' /* feat_runflow P8: the state is said once, on the next line; feat_foreman 7: the start time once, in the summary */
+      + '<p class="pbx-note">' + pbCxE([x.who, (f => f && f.name ? 'Foreman: ' + f.name + (/^(approved|claimed)/.test(f.src) ? ' (' + f.src + ')' : '') : '')(e && e.kind === 'run' && typeof window.pbRptFm === 'function' ? window.pbRptFm(e) : null) /* feat_rptfm */, e && e.kind === 'run' && e.runStartTime ? '' : pbRoWhen(x)].filter(Boolean).join(' · ')) + '</p>' /* feat_runflow P8: the state is said once, on the next line; feat_foreman 7: the start time once, in the summary */
       + (x.sent_at ? '<p class="pbx-note" id="cxRunSent">' + pbCxE('Sent ' + pbRoWhen({ locked_at: x.sent_at }) + (x.sent_how === 'auto' ? ' (automatically, 12 hours after the run ended)' : '') + (x.removed_at ? '' : x.sent_back_at && !x.reviewed_at ? (O.fromCrew || O.fromList || pbRrCorrected(x) || x.office_only ? '' : ' · waiting for ' + (x.foreman_name || 'the foreman')) : ' · ' + window.pbRfStateText(x, O))) + '</p>' : ''); /* feat_rrflow F4: the Send Back is said once, below */
     if (e && typeof window.pbRfSummaryHtml === 'function') h += window.pbRfSummaryHtml(x, e); // feat_runflow P5: one summary block
     if (x.removed_at) h += '<p class="pb-warn pbp-manmsg" id="cxRunRemoved"><strong>Deleted</strong>' + pbCxE('by ' + (x.removed_by_name || 'the foreman') + ' ' + pbRoWhen({ locked_at: x.removed_at }) + (x.removed_reason ? ': ' + x.removed_reason : '') + '. It doesn’t count in production. The server keeps a copy.') + '</p>';
@@ -54919,10 +55258,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (x.office_only && !x.reviewed_at && !x.sent_back_at) return { w: true, t: 'Sent to the office' + (st === 'foreman' ? ' · production entered' : '') }; /* feat_rrflow 3 */
     if (x.sent_back_at && !x.reviewed_at) return { w: true, t: 'Sent back' + (x.sent_back_by_name ? ' by ' + x.sent_back_by_name : '') + ', waiting for ' + (x.foreman_name || 'the foreman') };
     if (x.reviewed_at) return { w: false, ok: true, t: 'Approved' + (x.reviewed_by_name ? ' by ' + x.reviewed_by_name : '') + (st === 'waiting' ? ', no production' : ', production entered') };
-    if (st === 'foreman') return { w: false, t: 'Production entered, not approved yet' };
-    if (st === 'counted') return { w: false, t: 'Counted without a foreman' };
-    if (st === 'held') return { w: true, t: 'Held for a foreman' };
-    return { w: true, t: 'Waiting for ' + (x.foreman_name || 'a foreman') };
+    if (st === 'foreman') return { w: false, t: 'Not approved yet · production entered' }; /* feat_office A11: one set of status words */
+    if (st === 'counted') return { w: false, t: 'Not approved yet · counted without a foreman' };
+    if (st === 'held') return { w: true, t: 'Not approved yet · held for a foreman' };
+    return { w: true, t: 'Not approved yet · waiting for ' + (x.foreman_name || 'a foreman') };
   };
   window.pbRfOfficeTag = function(x) { const s = window.pbRfOfficeState(x); return '<span class="pbx-tag' + (s.w ? ' warn' : '') + '">' + (s.w ? pbCxIc('clock') : s.ok ? pbCxCheck() : '') + pbCxE(s.t) + '</span>'; };
   window.pbRfNewDot = function(isNew) { return isNew ? '<span class="pbx-newdot" aria-hidden="true"></span><span class="pb-sr">New: </span>' : ''; };
@@ -54953,6 +55292,67 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!company) return e && e.sent ? 'Sent / emailed: yes' : 'Not sent or emailed from the app';
     return (at && isFinite(at) ? 'Sent in the app ' + pbRptDt(at) : e && e.reportSendWanted ? 'Not sent yet (waiting for signal)' : 'Not sent in the app yet') + (e && e.sent ? ' \u00b7 emailed' : '');
   }
+  // ==== feat_rptfm (owner, Oct 29): the run's foreman by name on the run report. Name only, never an email ====
+  function pbRptFmNm(v) { const n = String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff]/g, '').replace(/\s+/g, ' ').trim().slice(0, 120).trim(); return n && !/@/.test(n) ? n : ''; }
+  let pbRptFmT = null;
+  function pbRptFmKeep(e, c) { // a claim or an approval: known only with signal, kept on the run for the PDF offline (phone-only)
+    try {
+      if (!pbArchiveOwnerUid || pbArchiveOwnerUid === 'shared' || !Array.isArray(runArchive) || runArchive.indexOf(e) < 0) return;
+      const o = e.rptFm && typeof e.rptFm === 'object' ? e.rptFm : null; if (o && o.name === c.name && o.src === c.src) return;
+      e.rptFm = { name: c.name, src: c.src, at: Date.now() };
+      clearTimeout(pbRptFmT); pbRptFmT = setTimeout(() => { try { Promise.resolve(saveRunArchive()).catch(() => {}); } catch (x) {} }, 1200);
+    } catch (x) {}
+  }
+  // is this name one of the company's foremen (role foreman), by the lists this phone already has: the Run Setup foremen
+  // (pb_prod_crew_links, kept per account), the crew picker's foremen, the office's crew list and inspection foremen
+  function pbRptFmIsForeman(name) {
+    const n = pbRptFmNm(name).toLowerCase(); if (!n) return false;
+    const uid = pbArchiveOwnerUid, L = [];
+    try { if (pbAf && pbAf.uid === uid && pbAf.data && Array.isArray(pbAf.data.foremen)) L.push(...pbAf.data.foremen); } catch (x) {}
+    try { if (pbCrew && pbCrew.uid === uid) { if (Array.isArray(pbCrew.foremen)) L.push(...pbCrew.foremen); if (pbCrew.links && Array.isArray(pbCrew.links.foremen)) L.push(...pbCrew.links.foremen); } } catch (x) {}
+    try { if (pbCmSt && pbCmSt.uid === uid && pbCmSt.data && Array.isArray(pbCmSt.data.members)) L.push(...pbCmSt.data.members.filter(m => m && m.role === 'foreman' && m.member !== false && m.status !== 'invited')); } catch (x) {}
+    try { if (pbInsJob && pbInsJob.uid === uid && Array.isArray(pbInsJob.foremen)) L.push(...pbInsJob.foremen); } catch (x) {}
+    return L.some(f => f && !f.unnamed && pbRptFmNm(f.name).toLowerCase() === n);
+  }
+  // { name, src } | { office: true } (the office only: no foreman line) | null (no foreman known: the report as before)
+  // o.stable (the text report, which is hashed for "sent"): only what the run holds from Lock (the pick, the account / crew
+  // link names), so a rebuilt text never changes by itself. o.keep: a claim or an approval found is kept on the run.
+  function pbRptFm(e, o) {
+    o = o || {};
+    if (!e || typeof e !== 'object') return null;
+    const F = e.rfForeman && typeof e.rfForeman === 'object' ? e.rfForeman : null, S = e.reportForeman && typeof e.reportForeman === 'object' ? e.reportForeman : null;
+    const W = e.whoFrom && typeof e.whoFrom === 'object' ? e.whoFrom : {}, O = e.pbOffice && typeof e.pbOffice === 'object' ? e.pbOffice : {}, V = e.rfWho && typeof e.rfWho === 'object' ? e.rfWho : {};
+    let open = null; try { open = pbRo && pbRo.rec === e ? pbRo.open : null; } catch (x) { open = null; }
+    if ((F && F.none && (o.stable || !(S && S.id))) || (!o.stable && open && open.office_only)) return { office: true };
+    const one = (n, src) => { n = pbRptFmNm(n); return n ? { name: n, src } : null; };
+    const r0 = (F && F.id && one(F.name, 'picked on Run Setup'))
+      || (e.crew && /^(pick|link|account)$/.test(W.crew || '') && one(e.crew, W.crew === 'pick' ? 'picked on Run Setup' : W.crew === 'link' ? 'crew link' : 'account'));
+    if (o.stable) return r0 || null;
+    const r = r0
+      || (S && S.id && (F && F.id && String(F.id) === String(S.id) ? one(S.name || F.name, 'picked on Run Setup') : one(S.name, 'crew link')))
+      || one(V.foreman, V.whoRole === 'foreman' ? 'account' : 'crew link') || one(O.foreman, O.whoRole === 'foreman' ? 'account' : 'crew link')
+      || (open && one(open.foreman_name, 'crew link'));
+    if (r) return r;
+    let c = null;
+    try { const k = pbProd && pbProd.st && pbArchiveOwnerUid === pbProd.uid && runArchive.indexOf(e) >= 0 ? pbCrewOf(pbProdCid(e)) : null; if (k && (k.status === 'claimed' || k.status === 'covered')) c = one(k.by, 'claimed the run'); } catch (x) {}
+    if (!c) { try { const Q = window.__pbR57S, y = Q && Q.uid === pbArchiveOwnerUid && e.reportSentAt && Q.map ? Q.map[String(e.id)] : null; if (y && y.reviewed_at && pbRptFmIsForeman(y.reviewed_by)) c = one(y.reviewed_by, 'approved the report'); } catch (x) {} }
+    if (!c && open && open.reviewed_at && pbRptFmIsForeman(open.reviewed_by_name)) c = one(open.reviewed_by_name, 'approved the report'); /* an office person or PM who approved is not the foreman */
+    if (c) { if (o.keep) pbRptFmKeep(e, c); return c; }
+    const K = e.rptFm && typeof e.rptFm === 'object' ? e.rptFm : null;
+    return K ? one(K.name, K.src === 'approved the report' ? 'approved the report' : 'claimed the run') : null;
+  }
+  // the PDF's people rows after "Pipelayer"
+  function pbRptFmRows(e) {
+    const f = pbRptFm(e);
+    if (!f) return [['Foreman / crew', pbRfPdfWho(e, 'crew')]];
+    const W = e.whoFrom && typeof e.whoFrom === 'object' ? e.whoFrom : {}, typed = /^(pick|link|account)$/.test(W.crew || '') ? '' : pbRptFmNm(e.crew);
+    if (f.office) return typed ? [['Foreman / crew', typed + ' (typed)']] : []; /* the office only: no foreman line; a typed crew name stays */
+    return [['Foreman', f.name + ' (' + f.src + ')'], typed && typed.toLowerCase() !== f.name.toLowerCase() ? ['Foreman / crew', typed + ' (typed)'] : null].filter(Boolean);
+  }
+  window.pbRptFm = pbRptFm;
+  window.pbRptFmKeepAll = function() { try { runArchive.forEach(e => { if (e && e.kind === 'run' && e.reportSentAt) pbRptFm(e, { keep: true }); }); } catch (x) {} }; // after the server's report answers (pbR57Changed)
+  window.__pbRptFmScope = () => [typeof pbCrewOf, typeof pbProdCid, typeof pbProd, typeof pbRo, typeof saveRunArchive, typeof runArchive, typeof pbRfPdfWho, typeof pbAf, typeof pbCrew, typeof pbCmSt, typeof pbInsJob].join(','); // tests
+  // ==== end feat_rptfm ====
   function pbRfPdfWho(e, k) {
     const W = e && e.whoFrom && typeof e.whoFrom === 'object' ? e.whoFrom : {}, O = e && e.pbOffice && typeof e.pbOffice === 'object' ? e.pbOffice : {};
     let open = null; try { open = pbRo && pbRo.rec === e ? pbRo.open : null; } catch (x) { open = null; }
@@ -55226,7 +55626,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbRfJobWaitHtml = function(job) {
     const uid = pbArchiveOwnerUid, O = pbRoFor(uid); if (!job || !O.list) return '';
     const k = String(job.job_key || '').toLowerCase(), n = String(job.job_number || '').trim().toLowerCase();
-    const L = O.list.map((x, i) => ({ x, i })).filter(({ x }) => x && !x.reviewed_at && !x.removed_at && (x.status || (x.confirmed ? 'foreman' : 'waiting')) === 'waiting' && (String(x.job_key || '').toLowerCase() === k || String(x.job_number || '').trim().toLowerCase() === n));
+    const L = O.list.map((x, i) => ({ x, i })).filter(({ x }) => x && window.pbRrIsWaiting(x) /* feat_office A7: the rule the counts use */ && (String(x.job_key || '').toLowerCase() === k || String(x.job_number || '').trim().toLowerCase() === n));
     if (!L.length) return '';
     return '<section class="pbx-panel" id="pjRfRuns" aria-labelledby="pjRfRunsH"><h3 class="pbx-h3" id="pjRfRunsH">Run reports waiting for a foreman</h3><div class="pbx-rows flat">'
       + L.map(({ x, i }) => '<button type="button" class="pbx-row" id="pjRfRun' + i + '" onclick="pbRrOpenFromJob(' + i + ')"><span class="pbx-row-tx"><span class="pbx-row-h">' + pbCxE([x.who, pbRoWhen(x)].filter(Boolean).join(' · ')) + '</span>'
@@ -55267,8 +55667,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbCxJobCounts() {
     const uid = pbArchiveOwnerUid, D = pbPj.data, job = pbPj.job;
     let wait = 0;
+    const rrJob = typeof window.pbRrWaitingFor === 'function' ? window.pbRrWaitingFor(uid, job) || 0 : 0; // feat_office A7: the job's run reports waiting
     if (D && !D.partial) wait = (Array.isArray(D.crew) ? D.crew.filter(x => x && !x.voided && (x.status === 'pending' || x.status === 'assigned')).length /* feat_company32 C3: approvals carry every pending edit */ : 0) + (Array.isArray(D.approvals) ? D.approvals.filter(x => x && x.id).length : 0);
     else { const j = pbPd.data && (pbPd.data.jobs || []).find(x => x && job && x.job_key === job.job_key); wait = j ? (Number(j.waiting) || 0) + (Number(j.edits_waiting) || 0) : 0; }
+    wait += rrJob; // feat_office A7
     let mats = null;
     try { const list = pbMat.uid === uid ? pbMatList() : null; const src = list || ((pbCxMatCo(uid) || { data: { jobs: [] } }).data.jobs.find(x => x && job && x.job_key === job.job_key) || {}).materials || null; if (src) mats = src.filter(m => m && !m.archived).map(m => pbMatState(m)).filter(s => s.reached || s.over).length; } catch (e) { mats = null; }
     const L = pbCxLive(pbCxBoard(uid)), live = L && job ? { runs: L.runs.filter(x => pbCxSameJob(x.job, job.job_number)), permits: L.permits.filter(x => pbCxSameJob(x.job, job.job_number)), L } : null;
@@ -55277,7 +55679,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbCxHeroHtml(C) {
     const job = pbPj.job, D = pbPj.data;
     const v = pbProdJobView(D.plan || null, D.cats);
-    const today = v.categories.filter(c => c.today).map(c => c.name + ' ' + pbProdQtyText(c.today, c.unit));
+    const today = v.categories.filter(c => c.today).map(c => c.name + ' ' + pbProdQtyText(c.today, c.unit))
+      .concat(...v.categories.map(c => (c.otherUnits || []).filter(o => o.today).map(o => c.name + ' ' + pbProdQtyText(o.today, o.unit))))
+      .concat((v.extra || []).filter(x => x.today).map(x => pbProdCatName(x.key, D.plan || null) + ' ' + pbProdQtyText(x.today, x.unit))); // feat_office A4: not-in-plan items and other units too
     const st = [];
     if (C.live) { const em = C.live.permits.filter(x => x.s.emergency).length; if (em) st.push(pbCxFlag('emerg', 'siren', 'EMERGENCY reported on a permit')); if (C.live.runs.length) st.push(pbCxFlag('live', 'pipe', pbCxN(C.live.runs.length, 'run') + ' live')); if (C.live.permits.length - em) st.push(pbCxFlag('live', 'helmet', pbCxN(C.live.permits.length - em, 'permit') + ' open')); }
     if (C.wait) st.push(pbCxFlag('wait', 'clock', C.wait + ' waiting on foremen'));
@@ -55287,10 +55691,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + [['plan', 'Job plan', 'Categories, planned amounts, budget hours, alerts, cost codes and equipment'], ['mat', 'Materials', 'The material list, orders, amounts used and delivery tickets'], ['trench', 'Trench settings', 'Trench width, bedding and shading thickness, pipe size'], ['pms', 'PMs & supers', 'Who gets this job’s alerts and plan changes'], ['info', 'Project details', 'Name, address and start date'], ['sched', 'Schedule', 'End date, milestones, checkpoints and holidays']] /* feat_schedule */
         .map(x => '<button type="button" class="pbx-menu-btn" id="pjCxEdit_' + x[0] + '" onclick="pbCxEdit(\'' + x[0] + '\')"><span class="pbx-menu-h">' + pbCxE(x[1]) + '</span><span class="pbx-menu-s">' + pbCxE(x[2]) + '</span></button>').join('') + '</div>' : '';
     const dj = pbPd.data && Array.isArray(pbPd.data.jobs) ? pbPd.data.jobs.find(x => x && x.job_key === job.job_key) || {} : {};
-    return '<div class="pbx-hero-top"><div class="pbx-hero-id"><p class="pbx-hero-site">' + pbCxE(dj.project_name || (D && D.jobsite) || job.jobsite || dj.address || 'No project name') + '</p><p class="pbx-hero-num">' + pbCxE(pbProdJobLabel(job.job_number) + (dj.address ? ' · ' + dj.address : '') + (dj.start_date && !dj.last_at ? ' · starts ' + pbProdDayText(String(dj.start_date).slice(0, 10)) : '')) + '</p></div>'
+    return '<div class="pbx-hero-top"><div class="pbx-hero-id"><p class="pbx-hero-site">' + pbCxE(dj.project_name || (D && D.jobsite) || job.jobsite || dj.address || 'No project name') + '</p>' + ((t) => t ? '<p class="pbx-hero-num">' + pbCxE(t) + '</p>' : '')([dj.address && (dj.project_name || (D && D.jobsite) || job.jobsite) ? dj.address : '', dj.start_date && !dj.last_at ? 'Starts ' + pbProdDayText(String(dj.start_date).slice(0, 10)) : ''].filter(Boolean).join(' · ')) /* feat_office A8: the job number is the title */ + '</div>'
       + '<button type="button" class="pbx-editbtn" id="pjCxEdit" aria-expanded="' + (pbCx.menu ? 'true' : 'false') + '" aria-controls="pjCxMenu" onclick="pbCxMenu()">' + pbCxIc('pencil') + '<span>Edit project</span></button></div>' + menu
       + '<div class="pbx-hero-pct">' + pbCxPct(v, true) + (v.pace ? '<span class="pbx-pace">' + pbCxE(v.pace.state === 'on' ? 'On the hours budget' : v.pace.state === 'over' ? 'Over the hours pace' : '') + '</span>' : '') + '</div>'
-      + (v.anyPlanned ? pbCxBar(v, true) : pbPj.edit ? '' : '<p class="pbx-noplan">No plan yet. Set one up under Edit project to see % complete.</p>')
+      + (v.anyPlanned ? pbCxBar(v, true) : pbPj.edit ? '' : '<p class="pbx-noplan">Set up a plan under Edit project to see % complete.</p>') /* feat_office A11: "No plan yet" once */
       + pbCxLegend(v, true)
       + (typeof window.pbPlanMatNote === 'function' ? window.pbPlanMatNote() : '') // feat_planuse
       + (v.pace ? '<p class="pbx-hero-line">' + pbCxE(pbProdQtyText(v.pace.hoursUsed) + ' of ' + pbProdQtyText(v.pace.budgetHours) + ' budget hours used (' + pbProdPctText(v.pace.hoursPct) + ')') + '</p>' : '')
@@ -55316,12 +55720,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     try { h += window.pbLocJobPanel ? window.pbLocJobPanel(C) : ''; } catch (e) { console.error(e); } // feat_locates: the Locates row
     // crew working it today: who reported today, and who is live on it now
     const names = new Set();
-    (Array.isArray(D.reporters) ? D.reporters : []).forEach(x => { if (x && x.today && x.name) names.add(x.name); });
+    // feat_office A3: the server's crew_today (the rule Home's count uses); an older answer: the reporters, by name or email,
+    // without the office's own entries
+    if (Array.isArray(D.crew_today)) D.crew_today.forEach(x => { const n = x && (x.name || x.email); if (n) names.add(n); });
+    else (Array.isArray(D.reporters) ? D.reporters : []).forEach(x => { const n = x && (x.name || x.email); if (x && x.today && x.role !== 'manager' && n) names.add(n); });
     if (C.live) C.live.runs.forEach(x => { if (x.p && x.p.name) names.add(x.p.name); });
     h += '<section class="pbx-panel" id="pjCxCrew" aria-labelledby="pjCxCrewH"><h3 class="pbx-h3" id="pjCxCrewH">Crew today</h3>'
       + (names.size ? '<ul class="pbx-people">' + [...names].map(n => '<li>' + pbCxIc('user') + pbCxE(n) + '</li>').join('') + '</ul>' : '<p class="pbx-none">' + (D.partial ? 'Loads with signal.' : 'Nobody has reported on this job today.') + '</p>') + '</section>';
     try { h += window.pbSchedPanelHtml ? window.pbSchedPanelHtml() : ''; } catch (e) { console.error(e); } // feat_schedule
-    if (C.wait) h += '<section class="pbx-panel pbx-panel-wait" id="pjCxWaitSum"><h3 class="pbx-h3">Waiting on foremen</h3><p class="pbx-line">' + pbCxE(C.wait + ' waiting: runs held for a foreman and edits waiting for your approval.') + '</p><button type="button" class="pbx-link" onclick="pbCxTab(\'waiting\')">Review what’s waiting</button></section>';
+    if (C.wait) h += '<section class="pbx-panel pbx-panel-wait" id="pjCxWaitSum"><h3 class="pbx-h3">Waiting on foremen</h3><p class="pbx-line">' + pbCxE(C.wait + ' waiting: run reports and runs waiting for a foreman, and edits waiting for your approval.') /* feat_office A7 */ + '</p><button type="button" class="pbx-link" onclick="pbCxTab(\'waiting\')">Review what’s waiting</button></section>';
     // recent documents: delivery tickets (batch 7, as materials read them) and the crews' production entries
     const T = pbMat.uid === uid && job ? pbMat.tk[job.job_key] : null, tl = T && Array.isArray(T.lines) ? T.lines.filter(x => x && typeof x === 'object') : [];
     const tks = tl.slice().sort((a, b) => String(b.ticket_date || '').localeCompare(String(a.ticket_date || ''))).slice(0, 3);
@@ -55352,7 +55759,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const keys = plan.map(q => q.key);
     C.forEach(r => { const m = /^_(eq_.+)$/.exec(r.key) || (/^_e[id]_(.+)$/.exec(r.key) ? [null, (/^_e[id]_(.+)$/.exec(r.key)[1] === 'other' ? 'eq_other' : 'eq_' + /^_e[id]_(.+)$/.exec(r.key)[1])] : null); if (m && !keys.includes(m[1])) keys.push(m[1]); });
     const sk = (k) => k === 'eq_other' ? 'other' : k.replace(/^eq_/, '');
-    const nameOf = (k) => { const q = plan.find(x => x.key === k); return k === 'eq_other' ? 'Other equipment' : q ? String(q.name || 'Equipment') + (q.unit_no ? ' #' + q.unit_no : '') : k.replace(/^eq_/, '').replace(/_/g, ' ') + ' (not on the plan)'; };
+    const nameOf = (k) => { const q = plan.find(x => x.key === k); return k === 'eq_other' ? 'Other equipment' : q ? String(q.name || 'Equipment') + (q.unit_no ? ' #' + q.unit_no : '') : pbEqLoose(k); }; /* feat_office A11 */
     const h1 = (x) => pbProdQtyText(Math.round(x * 10) / 10, 'h');
     let h = '<section class="pbx-panel" id="pjCxEquipSec" aria-labelledby="pjCxEquipH"><h3 class="pbx-h3" id="pjCxEquipH">Equipment</h3>';
     const X = window.pbCeDailyEq(D), xs = (k, f) => X.filter(x => x.plan_key === k).reduce((s, x) => s + x[f], 0); X.forEach(x => { if (x.plan_key && !keys.includes(x.plan_key)) keys.push(x.plan_key); }); // feat_coequip: + the daily reports' hours
@@ -55482,10 +55889,6 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // source } is an exact spot (a pin, or this phone's position once, both rounded to about 100 m). A job with an address and
   // no location yet is geocoded once on the server, the first time anyone asks for its weather (here: Project details).
   var pbJc = { key: null, data: null, msg: '', busy: false, spot: false, asked: {} };
-  // a city/state place comes from OpenStreetMap (Nominatim; ODbL): credited, small, where the place is named. A Census
-  // street match (it starts with a house number), a pin and a phone's spot are not OSM data.
-  var PB_JC_OSM = '<span class="pb-osm">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</span>';
-  function pbJcIsOsm(L) { return !!(L && L.source === 'geocoded' && L.address && !/^\d/.test(String(L.address).trim())); }
   function pbJcCan() { return !!(sbClient && sbClient.functions && typeof sbClient.functions.invoke === 'function'); }
   async function pbJcInvoke(body) {
     if (!pbJcCan()) return null;
@@ -55507,7 +55910,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return 'Weather: ' + (pbJcLabel(L.address) || 'set');
   }
   function pbJcBoxHtml() {
-    return '<div class="pb-jc" id="cxiWx" hidden><p class="pb-jc-line"><span><span id="cxiWxT" role="status"></span> <span id="cxiWxOsm" hidden>' + PB_JC_OSM + '</span></span><button type="button" class="pb-jc-spotbtn" id="cxiSpotBtn" aria-expanded="false" aria-controls="cxiSpot">Exact spot</button></p>'
+    return '<div class="pb-jc" id="cxiWx" hidden><p class="pb-jc-line"><span><span id="cxiWxT" role="status"></span></span><button type="button" class="pb-jc-spotbtn" id="cxiSpotBtn" aria-expanded="false" aria-controls="cxiSpot">Exact spot</button></p>'
       + '<div class="pb-jc-spot" id="cxiSpot" hidden><div class="pb-field"><label for="cxiPin">Latitude, longitude</label><input type="text" id="cxiPin" autocomplete="off" spellcheck="false" placeholder="e.g. 41.8781, -87.6298"></div>'
       + '<div class="pb-jc-btns"><button type="button" class="pb-btn secondary small" id="cxiPinBtn">Use This Spot</button><button type="button" class="pb-btn ghost small" id="cxiDevBtn">Use Phone’s Location Once</button><button type="button" class="pb-btn ghost small" id="cxiSpotCity" hidden>Use the City Instead</button></div></div></div>';
   }
@@ -55516,7 +55919,6 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const D = pbJc.data;
     box.hidden = !((D && D.can_set_location) || pbJc.msg);
     const t = document.getElementById('cxiWxT'); if (t) t.textContent = pbJcText();
-    const o = document.getElementById('cxiWxOsm'); if (o) o.hidden = !!pbJc.msg || !(D && pbJcIsOsm(D.location));
     const p = document.getElementById('cxiSpot'), b = document.getElementById('cxiSpotBtn');
     if (p) p.hidden = !pbJc.spot; if (b) b.setAttribute('aria-expanded', pbJc.spot ? 'true' : 'false');
     const c = document.getElementById('cxiSpotCity'), J = pbJc.key ? (pbCxKnownJob(pbJc.key) || {}) : {}, sq = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -55641,6 +56043,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // r15.50 clean2: THE pace rule, for the schedule and the job page's "≈ N work days left" rows (feat_pace) alike (the server's
   // pb_prod.schedule_state does the same): an item's production over the 7 days before today (rows = the server's pace_week)
   // ÷ the work days in them (wd); what is left = planned − what was done before today (leftB); eta = work days from today.
+  // feat_office A1 (the server's pb_prod.schedule_state does the same): the pace window starts at the later of the job's
+  // start and today-7 (a job's first week isn't divided by work days before it started); work logged before the start
+  // date still makes at least one work day
+  function pbPaceWd(info, T, hol, rows) {
+    const S = info && info.start ? pbSchedDN(info.start) : null;
+    let wd = pbSchedWork(S !== null && S > T - 7 ? S : T - 7, T - 1, hol);
+    const pw = Array.isArray(rows) ? rows : info && Array.isArray(info.paceWeek) ? info.paceWeek : [];
+    if (wd === 0 && pw.some(x => x && (pbProdNumOrNull(x.qty) || 0) > 0)) wd = 1;
+    return wd;
+  }
+  window.__pbPaceWd = pbPaceWd; window.__pbPaceCalcFor = (key, today) => { const dj = pbPd.data && Array.isArray(pbPd.data.jobs) ? pbPd.data.jobs.find(j => j && j.job_key === key) : null; return dj && pbPj.data && typeof window.__pbSchedCalc === 'function' ? window.__pbSchedCalc(dj, pbPj.data, today) : null; }; // test hooks
   function pbPaceItem(c, rows, wd) {
     const U = pbProdUnitKey;
     const week = (Array.isArray(rows) ? rows : []).filter(r => r && r.key === c.key && U(r.unit) === U(c.unit)).reduce((s, r) => s + (pbProdNumOrNull(r.qty) || 0), 0);
@@ -55655,7 +56068,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (info.end) { const R = pbSchedR(info, D.plan || null, D.cats, today), it = R && R.items.find(i => i.key === key); return it && it.eta !== null && it.eta !== undefined ? it.eta : null; }
     if (!Array.isArray(info.paceWeek)) return null;
     const c = pbProdJobView(D.plan || null, D.cats).categories.find(x => x.key === key && x.planned !== null); if (!c) return null;
-    const T = pbSchedDN(today); return pbPaceItem(c, info.paceWeek, pbSchedWork(T - 7, T - 1, new Set(info.holidays))).eta;
+    const T = pbSchedDN(today); return pbPaceItem(c, info.paceWeek, pbPaceWd(info, T, new Set(info.holidays), info.paceWeek)).eta; /* feat_office A1 */
   }
   window.pbPaceEta = function(c) { // the job page on screen
     const info0 = c && c.key ? pbSchedHere() : null; if (!info0) return null;
@@ -55665,7 +56078,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbSchedCalc(info, v, pw, today) {
     if (!info || !info.end) return null;
     const hol = new Set(info.holidays), T = pbSchedDN(today), E = pbSchedDN(info.end), S0 = info.start ? pbSchedDN(info.start) : null, U = pbProdUnitKey;
-    const wd = pbSchedWork(T - 7, T - 1, hol), rows = Array.isArray(pw) ? pw : [];
+    const wd = pbPaceWd(info, T, hol, pw), rows = Array.isArray(pw) ? pw : []; /* feat_office A1 */
     const items = (v && Array.isArray(v.categories) ? v.categories : []).filter(c => c.planned !== null).map(c => Object.assign({ key: c.key, name: c.name, unit: c.unit, planned: c.planned, done: c.done, share: c.share }, pbPaceItem(c, rows, wd))); // r15.50: the one pace rule
     const overall = v && v.overall !== null && v.overall !== undefined ? v.overall : null, complete = overall !== null && overall >= 0.999999999;
     const overallB = items.reduce((s, i) => s + i.share * Math.min(Math.max(1 - i.leftB / i.planned, 0), 1), 0);
@@ -55765,7 +56178,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + (F.canCo ? '<div class="pb-field" style="margin-top:12px;"><label for="cxsCk">Status checkpoints <span class="pbx-opt">(every job)</span></label><select id="cxsCk">' + opt('25', pbSchedCkText['25'], F.ck) + opt('10', pbSchedCkText['10'], F.ck) + opt('off', pbSchedCkText.off, F.ck) + '</select></div>'
         + '<div class="pb-field"><label for="cxsHol">Company holidays <span class="pbx-opt">(not work days)</span></label><div class="pbx-sched-hol"><input type="date" id="cxsHol" value="' + pbCxE(F.newHol) + '"><button type="button" class="pb-btn ghost small" id="cxsHolAdd">Add</button></div>'
         + (F.hol.length ? '<ul class="pbx-sched-hl" id="cxsHolList">' + F.hol.map((d, i) => '<li>' + pbCxE(pbSchedHolText(d)) + '<button type="button" class="pbx-sched-x cxs-hx" data-i="' + i + '" aria-label="Remove holiday ' + pbCxE(d) + '">×</button></li>').join('') + '</ul>' : '') + '</div>'
-        : '<p class="pbx-dim" id="cxsCoRo">' + pbCxE('Status checkpoints: ' + (pbSchedCkText[F.ck] || pbSchedCkText['25']) + '. Company holidays: ' + (F.hol.length ? F.hol.map(pbSchedHolText).join(', ') : 'none') + '. Set by the company owner.') + '</p>')
+        : '<p class="pbx-dim" id="cxsCoRo">' + pbCxE('Status checkpoints: ' + (pbSchedCkText[F.ck] || pbSchedCkText['25']) + '. Company holidays: ' + (F.hol.length ? F.hol.map(pbSchedHolText).join(', ') : 'none') + '. Set by the owner, PMs and superintendents.') /* feat_office B6 */ + '</p>')
       + '<label class="pbd-check" for="cxsMute"><input type="checkbox" id="cxsMute"' + (F.mute ? ' checked' : '') + '> Silence schedule alerts for this job</label>';
     wrap.innerHTML = h;
     const on = (sel, ev, fn) => wrap.querySelectorAll(sel).forEach(el => el.addEventListener(ev, fn));
@@ -55843,7 +56256,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const m2 = String((r2 && r2.error && r2.error.message) || ''), d2 = r2 && !r2.error && r2.data ? r2.data : null;
         if (d2 && d2.ok === true) pbSchedCoApply(uid, { holidays: Array.isArray(d2.holidays) ? d2.holidays : e.co.holidays, checkpoints: d2.checkpoints || e.co.checkpoints, ver: d2.ver });
         else if (d2 && d2.ok === false && d2.code === 'pb:stale') { if (d2.current) pbSchedCoApply(uid, d2.current); note = 'The schedule was saved; the holidays and checkpoints were not: they were changed on another phone since you opened the form. Open it again to see them.'; }
-        else if (d2 && d2.ok === false && d2.code === 'pb:owner_only') note = 'The schedule was saved; only the company owner can change the holidays and checkpoints.';
+        else if (d2 && d2.ok === false && d2.code === 'pb:owner_only') note = 'The schedule was saved; only the owner, a PM or a superintendent can change the holidays and checkpoints.'; /* feat_office B6 */
         else if (!r2 || net(m2)) return 'wait';
         else note = 'The schedule was saved; the holidays and checkpoints were not' + (/Could not find the function|function .* does not exist/i.test(m2) ? ' (the company server can’t keep them yet).' : ': ' + pbProdErrText(r2));
         const q = pbSchedQ(uid); if (q[key] && q[key].at === at) { delete q[key]; pbSchedQSet(uid, q); }
@@ -55980,16 +56393,32 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     let locNote = '';
     if (addr && !partial && pbJcCan()) {
       pbJcInvoke({ job_number: job.job_number, work_date: pbTkToday(), place: addr }).then((d) => {
-        if (pbCx.nf && pbCx.nf.key === key) { pbCx.nf.loc = pbJcSavedLine(d, addr); pbCx.nf.locOsm = pbJcSaved(d) && pbJcIsOsm(d.location); window.pbCxJobPaint(); }
+        if (pbCx.nf && pbCx.nf.key === key) { pbCx.nf.loc = pbJcSavedLine(d, addr); window.pbCxJobPaint(); }
       }).catch(() => {});
     }
     pbCx.nf = { key, step: 1, saw: false, partial, loc: locNote };
     const f = document.getElementById('cxNewForm'); if (f) f.reset();
+    try { await pbCxForgetJob(uid, key, job.job_number); } catch (e) { console.error(e); } // feat_office C1: nothing of an earlier job with this number
     await window.pbCxOpenJob(key);
     if (pbHistory[pbHistory.length - 1] === 'cxNew') pbHistory.pop(); // Back from the new job goes where New job was opened from
-    if (pbPj.job && pbPj.job.job_key === key) { window.pbProdPlanEdit(); window.pbCxJobPaint(); }
+    if (pbPj.job && pbPj.job.job_key === key) {
+      if (pbPj.data) { pbPj.data.plan = r.data.plan || plan; pbPj.data.plan_version = Number(r.data.version) || 1; } // feat_office C1: the editor starts from the plan just created
+      window.pbProdPlanEdit(); window.pbCxJobPaint();
+      setTimeout(() => { try { const t = document.getElementById('ppTitle') || document.getElementById('ppRows'); if (t && t.scrollIntoView) t.scrollIntoView({ block: 'start' }); } catch (e) {} }, 0); // feat_office C6
+    }
     try { window.pbProdDashLoad(); } catch (e) {}
   };
+  // feat_office C1: a job created with a number used before (a deleted job): drop this phone's copies of that job: its
+  // detail, materials and tickets, inspections, locate tickets; the new job's page then starts clean
+  async function pbCxForgetJob(uid, key, num) {
+    if (!uid || !key) return;
+    if (pbPj.uid === uid && pbPj.job && pbPj.job.job_key === key) pbPj = pbPjNew(uid);
+    if (pbMat.uid === uid) { delete pbMat.jobs[key]; if (pbMat.tk) delete pbMat.tk[key]; }
+    if (pbCxInsp.uid === uid) delete pbCxInsp.jobs[key];
+    await pbProdCachePurge(uid, (k) => k === 'job:' + key || k === 'mat:' + key || k === 'insp:' + key);
+    try { const st = await pbLocLoadSt(uid); if (st && pbLoc.uid === uid && st.jobs && st.jobs[key]) { st.jobs[key] = { job_number: num, locates: [], at: Date.now() }; await pbLocSave(uid, true); } } catch (e) {}
+  }
+  window.__pbCxForgetJob = pbCxForgetJob;
   // steps 2 and 3, on the new job's screen (above its header)
   function pbCxWizPaint() {
     const wrap = document.querySelector('#screen-prodJob .pbx-jobwrap'); if (!wrap) return;
@@ -55999,7 +56428,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (N.step === 1) { if (pbPj.edit) N.saw = true; else if (N.saw) { N.step = 2; pbCx.tab = 'overview'; } } // the plan editor closed (saved, or cancelled)
     if (!el) { el = document.createElement('section'); el.id = 'pjCxWiz'; el.className = 'pbx-wiz'; el.setAttribute('aria-label', 'New job'); wrap.insertBefore(el, wrap.firstChild); }
     const note = (N.partial ? '<p class="pbx-wiz-note" id="pjCxWizPartial">' + pbCxE('The job and its plan are saved. Its name, address and start date aren’t kept yet: that needs a server update that isn’t in.') + '</p>' : '')
-      + (N.loc ? '<p class="pbx-wiz-note" id="pjCxWizLoc">' + pbCxE(N.loc) + (N.locOsm ? ' ' + PB_JC_OSM : '') + '</p>' : '');
+      + (N.loc ? '<p class="pbx-wiz-note" id="pjCxWizLoc">' + pbCxE(N.loc) + '</p>' : '');
     const h = '<ol class="pbx-steps">' + pbCxStepsHtml(N.step, N.step) + '</ol>'
       + (N.step === 1 ? '<p class="pbx-wiz-t" id="pjCxWizT">' + pbCxE('Set the planned amount for each category, then Save Plan. Categories can be renamed, added or removed.') + '</p>'
           + '<div class="pbx-btnrow"><button type="button" class="pbx-link" id="pjCxWizSkipPlan" onclick="pbCxWizSkip()">Skip the plan for now</button></div>'
@@ -58635,6 +59064,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     } catch (e) { console.error('Run report status failed:', e); } finally { S.busy = false; }
   };
   function pbR57Changed() {
+    try { if (typeof window.pbRptFmKeepAll === 'function') window.pbRptFmKeepAll(); } catch (e) {} /* feat_rptfm: an approval learned is kept on the run */
     try { pbFxRenderHome(); } catch (e) {}
     try { if (pbCurrentScreen === 'home') window.pbRenderHome(); } catch (e) {}
     try { if (pbCurrentScreen === 'archive') renderArchiveList(); } catch (e) {}
