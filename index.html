@@ -4567,6 +4567,9 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <label class="pb-set-switch" for="notifTypePermit" id="notifTypePermitRow" hidden><span class="tx"><span class="name">Crew permit closed</span><span class="sub">Foreman account: when a pipelayer on your crew closes a confined space permit</span></span><input type="checkbox" role="switch" id="notifTypePermit" class="pb-pn-switch" checked onchange="pbPushSetPref('permit_closed', this.checked)"></label>
         <label class="pb-set-switch" for="notifTypePermitDue" id="notifTypePermitDueRow" hidden><span class="tx"><span class="name">Permit checks due</span><span class="sub">On your open confined space permit: when an air test or communication check comes due, and once more 5 minutes later. The alarm in the app stays the main reminder.</span></span><input type="checkbox" role="switch" id="notifTypePermitDue" class="pb-pn-switch" checked onchange="pbPushSetPref('permit_due', this.checked)"></label>
         <label class="pb-set-switch" for="notifTypeLoc" id="notifTypeLocRow" hidden><span class="tx"><span class="name">Locate tickets expiring</span><span class="sub">An open 811 ticket on your jobs: 7 days before it expires, 2 days before, and on the day</span></span><input type="checkbox" role="switch" id="notifTypeLoc" class="pb-pn-switch" checked onchange="pbPushSetPref('locates', this.checked)"></label><!-- feat_locates --><!-- feat_permitdue -->
+        <label class="pb-set-switch" for="notifTypeWx" id="notifTypeWxRow" hidden><span class="tx"><span class="name">Weather alerts</span><span class="sub">Sunday 4 PM: bad weather on your jobs this week</span></span><input type="checkbox" role="switch" id="notifTypeWx" class="pb-pn-switch" checked onchange="pbWxSetPref('enabled', this.checked)"></label><!-- feat_wxalert -->
+        <label class="pb-set-switch" for="notifTypeWxEve" id="notifTypeWxEveRow" hidden><span class="tx"><span class="name">Evening before</span><span class="sub">6 PM before a work day with bad weather</span></span><input type="checkbox" role="switch" id="notifTypeWxEve" class="pb-pn-switch" checked onchange="pbWxSetPref('evening', this.checked)"></label>
+        <div class="pbx-wx-linkrow" id="notifWxLinkRow" hidden><button type="button" class="pb-btn ghost small" id="notifWxOpen" onclick="pbOpenWeekAhead()">Week Ahead</button></div>
         <label class="pb-set-switch" for="notifTypeSafety" id="notifTypeSafetyRow" hidden><span class="tx"><span class="name">Safety events</span><span class="sub">When a foreman adds a near miss, first aid, incident, property damage or stop work on your jobs</span></span><input type="checkbox" role="switch" id="notifTypeSafety" class="pb-pn-switch" checked onchange="pbPushSetPref('safety', this.checked)"></label><!-- feat_jobbook -->
         <label class="pb-set-switch" for="notifTypeSchedule" id="notifTypeScheduleRow" hidden><span class="tx"><span class="name">Schedule</span><span class="sub">When a job falls behind its end date or hits a checkpoint</span></span><input type="checkbox" role="switch" id="notifTypeSchedule" class="pb-pn-switch" checked onchange="pbPushSetPref('schedule', this.checked)"></label><!-- feat_schedule -->
         <label class="pb-set-switch" for="notifTypePlan" id="notifTypePlanRow" hidden><span class="tx"><span class="name">Plan changes</span><span class="sub">When someone else changes the plan of a job you’re on (its PMs and supers; the company account when it gets copies). Saves within 10 minutes come as one.</span></span><input type="checkbox" role="switch" id="notifTypePlan" class="pb-pn-switch" checked onchange="pbPushSetPref('plan_change', this.checked)"></label><!-- feat_super -->
@@ -6453,6 +6456,18 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div class="pbp-wrap pbx-listwrap">
       <p id="cxListStatus" class="pb-rpt-status" role="status"></p>
       <div id="cxListBody"></div>
+    </div>
+  </div>
+
+  <!-- feat_wxalert: WEEK AHEAD (the weather push opens it): each job's flagged work days, National Weather Service wording -->
+  <div class="pb-screen" id="screen-wxWeek">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>Weather</span><button type="button" class="pb-back" id="wxWeekBack" title="Back" aria-label="Back" onclick="pbGoBack()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
+      <h1 class="pb-title">Week ahead</h1>
+    </div>
+    <div class="pbp-wrap pbx-listwrap">
+      <p id="wxWeekStatus" class="pb-rpt-status" role="status"></p>
+      <div id="wxWeekBody"></div>
     </div>
   </div>
 
@@ -9826,7 +9841,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.67 · 2026-10-30'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.68 · 2026-10-30'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -11086,7 +11101,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // UX batch 3 (T1): tabs are 'home', 'calculators', 'tools', 'reports'. Jobs and Job Summary moved into
   // Reports; Stats moved into Tools (both plans); every calculator and its category is Calculators.
   const PB_SCREEN_TABS = {
-    home: 'home', settings: 'home', shortcutsEdit: 'home',
+    home: 'home', settings: 'home', shortcutsEdit: 'home', wxWeek: 'home', /* feat_wxalert */
     jobs: 'reports', jobSummary: 'reports', stats: 'tools',
     reports: 'reports', archive: 'reports', reportIssue: 'reports', reportReceipt: 'reports', myReports: 'reports', reportsInbox: 'reports',
     calcHub: 'calculators', calcCatGrade: 'calculators', calcCatTrench: 'calculators', calcCatPipe: 'calculators', calcCatStructures: 'calculators',
@@ -59515,6 +59530,168 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   } catch (e) {}
   window.__debugPa = () => pbPa;
   // ================= end feat_super =================
+
+  // ================= feat_wxalert (owner, Oct 30 2026): weather alerts for jobsites =================
+  // Server: sql/90_wxalert.sql (pb_wx_week, pb_wx_prefs_get / _set) and the 'weather-alerts' edge function. The push comes
+  // as the existing "locates" kind (a 'weather' kind needs the push type constraints changed); its own on/off is here.
+  let pbWx = { uid: null, data: null, at: 0, busy: false, gen: 0, err: '' };
+  const PB_WX_NAME = { storms: 'Storms', ice: 'Freezing rain', sleet: 'Sleet', snow: 'Snow', rain: 'Rain', wind: 'Wind', heat: 'Heat', freeze: 'Freeze' };
+  function pbWxDay(s) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || '')); if (!m) return { dow: '', md: '' }; const d = new Date(+m[1], +m[2] - 1, +m[3]); return { dow: d.toLocaleDateString(undefined, { weekday: 'short' }), md: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) }; }
+  function pbWxTag(f) {
+    const k = f && f.k;
+    let t = f && typeof f.label === 'string' && f.label ? f.label : PB_WX_NAME[k] || ''; /* the server's words for how bad ("Heavy rain", "Flood Watch") */
+    if (!t) return '';
+    if ((k === 'rain' || k === 'storms') && typeof f.pop === 'number') t += ' ' + f.pop + '%';
+    if (k === 'rain' && typeof f.qpf === 'number' && f.qpf >= 0.05) t += ', ' + f.qpf.toFixed(2).replace(/0$/, '') + ' in';
+    else if (k === 'snow' && typeof f.snow_in === 'number' && f.snow_in >= 0.5) t += ' ' + Math.round(f.snow_in) + ' in';
+    else if (k === 'wind') t += (typeof f.mph === 'number' ? ' ' + f.mph + ' mph' : '') + (typeof f.gust === 'number' && f.gust >= 35 ? (typeof f.mph === 'number' ? ', gusts ' : ' gusts ') + f.gust : '');
+    else if ((k === 'heat' || k === 'freeze') && typeof f.f === 'number') t += ' ' + f.f + '°F';
+    return '<span class="pbx-tag ' + (Number(f.rank) >= 80 ? 'wx-bad' : 'warn') + '">' + escapeHtml(t) + '</span>';
+  }
+  function pbWxWhen(t) { const d = t ? new Date(t) : null; return d && isFinite(d.getTime()) ? d.toLocaleDateString(undefined, { weekday: 'short' }) + ' ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : ''; }
+  window.pbWxRender = function() {
+    const body = document.getElementById('wxWeekBody'), st = document.getElementById('wxWeekStatus');
+    if (!body) return;
+    const D = pbWx.uid === pbArchiveOwnerUid ? pbWx.data : null, jobs = D && Array.isArray(D.jobs) ? D.jobs : null;
+    const last = jobs ? jobs.reduce((m, j) => (j.fetched_at && j.fetched_at > m ? j.fetched_at : m), '') : '';
+    if (st) st.textContent = pbWx.busy && !jobs ? 'Loading…' : pbWx.err && !jobs ? pbWx.err : (last ? 'National Weather Service · checked ' + pbWxWhen(last) : '') + (pbWx.err && jobs ? (last ? ' · ' : '') + pbWx.err : '');
+    if (!jobs) { body.innerHTML = ''; return; }
+    if (!jobs.length) { body.innerHTML = '<p class="pbx-none" id="wxWeekNone">No forecast for your jobs yet.</p>'; return; }
+    const n0 = new Date(), today = n0.getFullYear() + '-' + String(n0.getMonth() + 1).padStart(2, '0') + '-' + String(n0.getDate()).padStart(2, '0');
+    body.innerHTML = jobs.map((j, i) => {
+      const days = (Array.isArray(j.days) ? j.days : []).filter((d) => String(d && d.date) >= today); /* the last copy on a later day: past days drop */
+      return '<section class="pbx-wx-job" id="wxJob' + i + '"><div class="pbx-wx-h"><span class="pbx-wx-num">' + escapeHtml(/^job\b/i.test(String(j.job_number || '')) ? j.job_number : 'Job ' + (j.job_number || j.job_key || '')) + '</span>'
+        + (j.project_name ? '<span class="pbx-wx-name">' + escapeHtml(j.project_name) + '</span>' : '') + '</div>'
+        + (days.length ? days.map((d, k) => { const w = pbWxDay(d.date); return '<div class="pbx-wx-day" id="wxJob' + i + 'Day' + k + '"><div class="pbx-wx-dl"><span class="pbx-wx-dow">' + escapeHtml(w.dow) + '</span><span class="pbx-wx-md">' + escapeHtml(w.md) + '</span></div>'
+            + '<div class="pbx-wx-dx"><div class="pbx-wx-tags">' + (Array.isArray(d.flags) ? d.flags.map(pbWxTag).join('') : '') + '</div>'
+            + (d.short ? '<p class="pbx-wx-short">' + escapeHtml(d.short) + '</p>' : '') + (d.detail ? '<p class="pbx-wx-detail">' + escapeHtml(d.detail) + '</p>' : '')
+            + (d.night ? '<p class="pbx-wx-detail">' + escapeHtml(d.night) + '</p>' : '') + (Array.isArray(d.alerts) ? d.alerts.map((x) => x && x.headline ? '<p class="pbx-wx-detail">' + escapeHtml(x.headline) + '</p>' : '').join('') : '') + '</div></div>'; }).join('')
+          : '<p class="pbx-wx-ok" id="wxJob' + i + 'Ok">Nothing flagged</p>')
+        + '<div class="pbx-btnrow"><button type="button" class="pb-btn secondary small" id="wxJob' + i + 'Open" onclick="pbWxOpenJob(' + i + ')">Open Job</button></div></section>';
+    }).join('');
+  };
+  async function pbWxLoad(uid) {
+    if (!uid || uid === 'shared') return;
+    if (pbWx.uid !== uid) { pbWx = { uid, data: null, at: 0, busy: false, gen: pbWx.gen + 1, err: '' }; try { const c = JSON.parse((await pbGetFor(uid, 'wxWeek')) || 'null'); if (c && Array.isArray(c.jobs) && pbWx.uid === uid) pbWx.data = c; } catch (e) {} }
+    const gen = pbWx.gen;
+    if (!sbClient || typeof sbClient.rpc !== 'function' || !sbUser || sbUser.id !== uid || navigator.onLine === false) { pbWx.err = pbWx.data ? 'No signal. The last copy.' : 'No signal. The forecast loads with signal.'; window.pbWxRender(); return; }
+    pbWx.busy = true; pbWx.err = ''; window.pbWxRender();
+    const r = await pbReportRpc('pb_wx_week', { p_expect_uid: uid });
+    if (pbWx.gen !== gen || !sbUser || sbUser.id !== uid) return;
+    pbWx.busy = false;
+    const c = pbReportClassify(r);
+    if (c.ok && r.data && r.data.ok) { pbWx.data = r.data; pbWx.at = Date.now(); pbWx.err = ''; try { await pbSetFor(uid, 'wxWeek', JSON.stringify(r.data)); } catch (e) {} }
+    else pbWx.err = c.kind === 'nobackend' ? 'Weather alerts aren’t set up on the company server yet.' : c.kind === 'offline' || c.kind === 'network' ? (pbWx.data ? 'No signal. The last copy.' : 'No signal. The forecast loads with signal.') : 'The forecast couldn’t be loaded. Try again later.';
+    window.pbWxRender();
+  }
+  window.pbOpenWeekAhead = function() {
+    const uid = pbArchiveOwnerUid;
+    pbGoto('wxWeek');
+    window.pbWxRender();
+    pbWxLoad(uid).catch(() => {});
+  };
+  window.pbWxOpenJob = function(i) {
+    const uid = pbArchiveOwnerUid, D = pbWx.uid === uid ? pbWx.data : null, j = D && Array.isArray(D.jobs) ? D.jobs[i] : null;
+    if (!j) return;
+    const a = pbDlyAcc(uid);
+    try {
+      if (D.office || a.manager) { if (typeof window.pbCxOpenJob === 'function' && pbCx && pbCx.on) window.pbCxOpenJob(j.job_key, 'overview'); else window.pbOpenProdDashboard(); return; }
+      Promise.resolve(window.pbOpenDailyReport({ job: j.job_number || j.job_key })).catch(() => {});
+    } catch (e) { console.error(e); }
+  };
+  window.pbPushRoutes = window.pbPushRoutes && typeof window.pbPushRoutes === 'object' ? window.pbPushRoutes : {};
+  window.pbPushRoutes['/weekahead'] = function() { try { pbGotoTab('home'); } catch (e) { try { pbGoto('home'); } catch (x) {} } setTimeout(() => window.pbOpenWeekAhead(), 300); };
+
+  // ---- the switches (Settings > Notifications) ----
+  async function pbWxPrefsLocal(uid) {
+    let p = null, q = null;
+    try { p = JSON.parse((await pbGetFor(uid, 'wxPrefs')) || 'null'); } catch (e) {}
+    try { q = JSON.parse((await pbGetFor(uid, 'wxPrefsPending')) || 'null'); } catch (e) {}
+    p = p && typeof p === 'object' ? p : {}; q = q && typeof q === 'object' ? q : {};
+    const v = (k) => (typeof q[k] === 'boolean' ? q[k] : typeof p[k] === 'boolean' ? p[k] : true);
+    return { enabled: v('enabled'), evening: v('evening'), eligible: typeof p.eligible === 'boolean' ? p.eligible : null, server: p.server !== false, pending: q, at: Number(p.at) || 0 };
+  }
+  let pbWxRowsGen = 0;
+  async function pbWxRows(uid, fetched) {
+    const row = document.getElementById('notifTypeWxRow'), eve = document.getElementById('notifTypeWxEveRow'), link = document.getElementById('notifWxLinkRow');
+    if (!row || !eve) return;
+    const my = ++pbWxRowsGen;
+    const L = uid && uid !== 'shared' ? await pbWxPrefsLocal(uid) : null;
+    if (my !== pbWxRowsGen) return;
+    const a = uid ? pbDlyAcc(uid) : { known: false };
+    const show = !!L && L.server && (L.eligible === null ? !!(a.known && (a.foreman || a.manager)) : L.eligible);
+    row.hidden = !show; eve.hidden = !show || !L.enabled; if (link) link.hidden = !show;
+    const i1 = document.getElementById('notifTypeWx'), i2 = document.getElementById('notifTypeWxEve');
+    if (L && i1) i1.checked = L.enabled;
+    if (L && i2) i2.checked = L.evening;
+    if (!fetched && L && Date.now() - L.at > 60000) pbWxPrefsFetch(uid).then((ch) => { if (ch) pbWxRows(uid, true); }).catch(() => {});
+  }
+  async function pbWxPrefsFetch(uid) {
+    if (!sbClient || typeof sbClient.rpc !== 'function' || !sbUser || sbUser.id !== uid || navigator.onLine === false) return false;
+    await pbWxPrefsFlush(uid);
+    const r = await pbReportRpc('pb_wx_prefs_get', {});
+    if (!sbUser || sbUser.id !== uid) return false;
+    const c = pbReportClassify(r);
+    let o = null;
+    if (c.ok && r.data && r.data.ok) o = { enabled: r.data.enabled !== false, evening: r.data.evening !== false, eligible: r.data.eligible === true, server: true, at: Date.now() };
+    else if (c.kind === 'nobackend') o = { server: false, at: Date.now() };
+    if (!o) return false;
+    await pbSetFor(uid, 'wxPrefs', JSON.stringify(o));
+    return true;
+  }
+  async function pbWxPrefsFlush(uid) {
+    let q = null; try { q = JSON.parse((await pbGetFor(uid, 'wxPrefsPending')) || 'null'); } catch (e) {}
+    if (!q || typeof q !== 'object' || !Object.keys(q).length) return 'none';
+    if (!sbClient || typeof sbClient.rpc !== 'function' || !sbUser || sbUser.id !== uid || navigator.onLine === false) return 'later';
+    const r = await pbReportRpc('pb_wx_prefs_set', { p_enabled: typeof q.enabled === 'boolean' ? q.enabled : null, p_evening: typeof q.evening === 'boolean' ? q.evening : null, p_expect_uid: uid });
+    if (!sbUser || sbUser.id !== uid) return 'stop';
+    const c = pbReportClassify(r);
+    if (!c.ok && c.kind !== 'refused') return c.kind;
+    let cur = null; try { cur = JSON.parse((await pbGetFor(uid, 'wxPrefsPending')) || 'null'); } catch (e) {}
+    cur = cur && typeof cur === 'object' ? cur : {};
+    ['enabled', 'evening'].forEach((k) => { if (cur[k] === q[k]) delete cur[k]; });
+    await pbSetFor(uid, 'wxPrefsPending', JSON.stringify(cur));
+    if (c.ok && r.data && r.data.ok) { let p = null; try { p = JSON.parse((await pbGetFor(uid, 'wxPrefs')) || 'null'); } catch (e) {} p = p && typeof p === 'object' ? p : {}; p.enabled = r.data.enabled; p.evening = r.data.evening; await pbSetFor(uid, 'wxPrefs', JSON.stringify(p)); }
+    return 'ok';
+  }
+  window.pbWxSetPref = async function(field, on) {
+    if (field !== 'enabled' && field !== 'evening') return;
+    const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared') return;
+    let q = null; try { q = JSON.parse((await pbGetFor(uid, 'wxPrefsPending')) || 'null'); } catch (e) {}
+    q = q && typeof q === 'object' ? q : {}; q[field] = !!on;
+    const saved = await pbSetFor(uid, 'wxPrefsPending', JSON.stringify(q));
+    const m = document.getElementById('notifPrefsMsg');
+    if (!saved) { if (m) { m.hidden = false; m.textContent = 'This phone couldn’t save the change. ' + pbSaveAdvice(); } await pbWxRows(uid, true); return; }
+    await pbWxRows(uid, true);
+    const r = await pbWxPrefsFlush(uid);
+    await pbWxRows(uid, true);
+    if (m) { m.hidden = false; m.textContent = r === 'ok' ? (on ? 'On.' : 'Off. You won’t get these on any phone.') : 'Saved on this phone. The change is sent when there’s signal.'; }
+  };
+  { const a0 = window.pbAcPushRows; window.pbAcPushRows = function(uid) { const r = typeof a0 === 'function' ? a0.apply(this, arguments) : undefined; pbWxRows(uid).catch(() => {}); return r; }; }
+  window.addEventListener('online', () => { const uid = pbArchiveOwnerUid; if (uid && uid !== 'shared') setTimeout(() => { pbWxPrefsFlush(uid).catch(() => {}); }, 3000); });
+  window.pbAccountLoadHooks.push((uid) => { if (pbWx.uid && pbWx.uid !== uid) pbWx = { uid: null, data: null, at: 0, busy: false, gen: pbWx.gen + 1, err: '' }; });
+  try {
+    const st = document.createElement('style'); st.id = 'pbWxCss';
+    st.textContent = '#pbApp #screen-wxWeek .pbp-wrap{padding:0 16px}'
+      + '#pbApp .pbx-wx-job{margin:0 0 12px;padding:12px;background:var(--pb-surface);border:1px solid var(--pbx-line);border-radius:14px}'
+      + '#pbApp .pbx-wx-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:0 0 6px}'
+      + '#pbApp .pbx-wx-num{font-weight:700;font-size:17px;overflow-wrap:anywhere}'
+      + '#pbApp .pbx-wx-name{font-size:14px;color:var(--pb-text-2);overflow-wrap:anywhere;min-width:0}'
+      + '#pbApp .pbx-wx-day{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--pbx-line)}'
+      + '#pbApp .pbx-wx-dl{flex:0 0 52px;display:flex;flex-direction:column}'
+      + '#pbApp .pbx-wx-dow{font-weight:700}#pbApp .pbx-wx-md{font-size:13px;color:var(--pb-text-2)}'
+      + '#pbApp .pbx-wx-dx{flex:1 1 auto;min-width:0}'
+      + '#pbApp .pbx-wx-tags{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 4px}'
+      + '#pbApp .pbx-wx-short{margin:0;font-weight:600;overflow-wrap:anywhere}'
+      + '#pbApp .pbx-wx-detail{margin:2px 0 0;font-size:14px;line-height:1.4;color:var(--pb-text-2);overflow-wrap:anywhere}'
+      + '#pbApp .pbx-tag.wx-bad{background:var(--pb-danger-soft);color:var(--pb-danger-text)}'
+      + '#pbApp .pbx-wx-ok{margin:4px 0 6px;color:var(--pb-text-2)}'
+      + '#pbApp .pbx-wx-job .pbx-btnrow{margin-top:8px}'
+      + '#pbApp .pbx-wx-linkrow{display:flex;justify-content:flex-end;margin:-4px 0 6px}#pbApp .pbx-wx-linkrow[hidden]{display:none}';
+    document.head.appendChild(st);
+  } catch (e) {}
+  window.__debugWx = () => pbWx;
+  // ================= end feat_wxalert =================
 
   pbRunScreenHooks(pbCurrentScreen, false); // UX batch 2: Home is shown by the markup at start-up, not by pbGoto
   const pbBootGuard = setTimeout(() => {
