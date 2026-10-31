@@ -10990,7 +10990,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.72 · 2026-10-31'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.73 · 2026-10-31'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -22100,6 +22100,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const additionalRunNums = pbLoadRunIntoForm(entry, { open: true }).additionalRunNums; /* feat_run33 (2) */
     window._pbResumingFromEntryId = entry.id;
     window._pbResumingFromLabel = pbResumedFromLabel(entry);
+    try { setTimeout(() => window.pbRsEarlyFold(entry), 0); } catch (e) {} /* feat_resume2 */
     window._pbResumeFormKey = pbFormStateKey(); /* feat_run33 (9): the form as Resume left it (nothing new typed yet) */
     pbAlert((entry.rodUnit === 'lenker'
       ? 'Elevations are pre-filled from the earlier run' + (entry.stoppedAtStation ? ' \u2014 ' + entry.stoppedAtStation + ' is where you left off' : '') + '. Check them, then Lock to continue it.'
@@ -22107,6 +22108,39 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + (additionalRunNums.length ? ' This run\u2019s additional run(s) have been carried over too.' : ''), 'Resuming This Run'); /* feat_run33 (9): a Lenker run has no rod readings or HI */
     pbGoto('input');
   };
+  // feat_resume2 (owner, Oct 31): a continued run's setup starts where it left off. The start point and the hubs before
+  // the first point at or past the stop fold into one line ("N earlier points · Show"); the page opens at that point.
+  // A stop in a later run of a multi-run record: as before. A new run (pbResetRunForm) unfolds them.
+  window.pbRsEarlyClear = function() {
+    const sc = document.getElementById('screen-input'); if (!sc) return;
+    sc.querySelectorAll('.pb-rs-early').forEach(x => x.classList.remove('pb-rs-early')); sc.classList.remove('pb-rs-early-open');
+    const b = document.getElementById('pbRsEarlyBar'); if (b) b.remove();
+  };
+  window.pbRsEarlyFold = function(entry) {
+    try {
+      window.pbRsEarlyClear();
+      const stop = entry && entry.incomplete && entry.completedDistance !== null && entry.completedDistance !== undefined ? Number(entry.completedDistance) : NaN; if (!Number.isFinite(stop)) return;
+      const sc = document.getElementById('screen-input'), tot = numVal('totalDist'); if (!sc || tot === null || stop > tot + 0.005) return;
+      const startSec = sc.querySelector('.pb-section.start.pb-pt'), endSec = sc.querySelector('.pb-section.end.pb-pt'); if (!startSec || !endSec) return;
+      const pts = [{ ft: 0, el: startSec }];
+      sc.querySelectorAll('#hubsContainer .pb-hub-card').forEach(c => { const f = c.dataset.hubId ? numVal(c.dataset.hubId + 'Station') : null; if (f !== null) pts.push({ ft: f, el: c }); });
+      pts.sort((a, b) => a.ft - b.ft); pts.push({ ft: tot, el: endSec });
+      let t = pts.findIndex(q => q.ft >= stop - 0.005); if (t < 0) t = pts.length - 1;
+      const early = pts.slice(0, t).map(q => q.el); if (!early.length) return;
+      early.forEach(el => el.classList.add('pb-rs-early'));
+      const n = early.length, bar = document.createElement('button');
+      bar.type = 'button'; bar.id = 'pbRsEarlyBar'; bar.className = 'pb-btn ghost pb-rs-earlybar'; bar.setAttribute('aria-expanded', 'false');
+      const lab = () => { const open = sc.classList.contains('pb-rs-early-open'); bar.setAttribute('aria-expanded', String(open)); bar.innerHTML = '<span>' + escapeHtml(n + ' earlier point' + (n === 1 ? '' : 's') + ' (before where you left off)') + '</span><span class="pb-laid-sumact">' + (open ? 'Fold' : 'Show') + '</span>'; };
+      bar.onclick = () => { sc.classList.toggle('pb-rs-early-open'); lab(); };
+      lab(); startSec.parentNode.insertBefore(bar, startSec);
+      if (!document.getElementById('pbRsEarlyCss')) { const st = document.createElement('style'); st.id = 'pbRsEarlyCss';
+        st.textContent = '#pbApp #screen-input:not(.pb-rs-early-open) .pb-rs-early{display:none !important}#pbApp #screen-input .pb-rs-earlybar{display:flex;width:calc(100% - 32px);margin:0 16px 12px;justify-content:space-between;align-items:center;gap:8px;text-align:left}#pbApp #screen-input .pb-rs-earlybar .pb-laid-sumact{color:var(--pb-brand);font-weight:600;white-space:nowrap}';
+        document.head.appendChild(st); }
+      const tgt = pts[t].el; setTimeout(() => { try { tgt.scrollIntoView({ block: 'start' }); } catch (e) {} }, 60);
+    } catch (e) { console.error(e); }
+  };
+  // a Lock that stops on a missing or wrong value must be able to show it: Lock opens the folded points first
+  { const o = window.pbLock; if (typeof o === 'function') window.pbLock = function() { try { const sc = document.getElementById('screen-input'); if (sc && sc.querySelector('.pb-rs-early')) { sc.classList.add('pb-rs-early-open'); const b = document.getElementById('pbRsEarlyBar'); if (b) b.remove(); } } catch (e) {} return o.apply(this, arguments); }; }
   // feat_run33 (2): the run form rebuilt from a locked record: rod, distances, intervals, pipe, points and hubs (stake
   // data, labels, photos), job info and pipe layout. Resume calls it with { open: true } (New Run first, as before).
   // Without it the form is emptied in place and then holds the record as if it had just locked it: a correction can read
@@ -38923,6 +38957,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       let x = null; try { x = typeof pbEndEntryOf === 'function' ? pbEndEntryOf(prev) : null; } catch (e) { x = null; }
       const xf = x ? Number(x.ft) : NaN;
       if (Number.isFinite(xf) && (out.reach === null || xf > out.reach)) { out.reach = xf; out.endAt = typeof x.endAt === 'number' ? x.endAt : null; }
+      { const cf = prev.incomplete ? Number(prev.completedDistance) : NaN; // feat_resume2 (owner, Oct 31): a run ended short with no laid marks and no END entry still reached its stop point
+        if (prev.completedDistance !== null && prev.completedDistance !== undefined && Number.isFinite(cf) && (out.reach === null || cf > out.reach + 0.005)) { out.reach = cf; const et = Date.parse(prev.runEndTime || '') || (prev.lockTime ? new Date(prev.lockTime).getTime() : NaN); out.endAt = Number.isFinite(et) ? et : out.endAt; } }
     }
     return out;
   }
@@ -46966,6 +47002,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbJobGrpAccount = function() { try { return pbArchiveOwnerUid || null; } catch (e) { return null; } }; // batch 14 R3
   window.pbJobGrpIsFreshForm = function() { try { return pbFormFresh && !window._pbResumingFromEntryId && !hasUnsavedRunData({ fieldsOnly: true }); } catch (e) { return false; } }; // batch 14 R3
   function pbResetRunForm() {
+    try { if (window.pbRsEarlyClear) window.pbRsEarlyClear(); } catch (e) {} /* feat_resume2 */
     pbRdBeforeReset(); // batch 14 R: the form's draft is saved and kept, not lost
     pbFormGen++;
     pbFormFresh = true; pbFormEdited = null; pbFormFromBoot = false;
