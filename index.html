@@ -7097,6 +7097,11 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   #pbApp .pbloc-no { font-size: 17px; overflow-wrap: anywhere; }
   #pbApp .pbloc-chip.notsent, #pbApp .pbloc-mchip.notsent { --pb-chip-icon: var(--pb-icon-warn); }
   #pbApp .pbloc-help { margin: -4px 0 12px; }
+  #pbApp .pbloc-dates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 8px 0; } /* feat_locate28 */
+  #pbApp .pbloc-dates.two { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0 0 8px; }
+  #pbApp .pbloc-dk { display: block; font-size: 13px; color: var(--pb-text-2); line-height: 1.25; }
+  #pbApp .pbloc-dv { display: block; font-size: 15px; font-weight: 700; line-height: 1.3; }
+  @media (max-width: 359px) { #pbApp .pbloc-dates:not(.two) { grid-template-columns: 1fr; gap: 2px; } #pbApp .pbloc-dates:not(.two) .pbloc-d { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; } #pbApp .pbloc-dates:not(.two) .pbloc-dk, #pbApp .pbloc-dates:not(.two) .pbloc-dv { display: inline; } }
   #pbApp .pbloc-err { margin: 8px 0; }
   #pbApp .pbloc-btns .pb-btn { min-height: 48px; }
   #pbApp .pbloc-closed { margin-top: 16px; }
@@ -7106,6 +7111,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   #pbApp .pbloc-fmbtn.red { color: var(--pb-danger-text); }
   #pbApp .pbloc-fc { margin: 4px 0; }
   #pbApp #homeAttentionList #homeAttention_locates.info::before { -webkit-mask-image: var(--pb-icon-warn); mask-image: var(--pb-icon-warn); }
+  #pbApp #homeAttentionList #homeAttention_coTz.info::before { -webkit-mask-image: var(--pb-icon-clock); mask-image: var(--pb-icon-clock); } /* feat_server */
   </style>
   <div class="pb-screen" id="screen-locates">
     <div class="pb-header">
@@ -10984,7 +10990,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.70 · 2026-10-30'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.71 · 2026-10-30'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -12100,7 +12106,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     });
     add(() => (typeof window.pbProdHomeAttention === 'function' ? window.pbProdHomeAttention() : null)); // batch 12 D2: crew runs waiting
     add(() => (typeof window.pbLocHomeAttention === 'function' ? window.pbLocHomeAttention() : null)); // feat_locates: dig tickets about to expire
+    add(() => (typeof window.pbCoTzHomeAttention === 'function' ? window.pbCoTzHomeAttention() : null)); // feat_server: the company time zone was never chosen
     add(() => (typeof window.pbUnsentHomeItem === 'function' ? window.pbUnsentHomeItem() : null)); // r15.57 integrity: what hasn't reached the company
+    add(() => (typeof window.pbSpHomeAttention === 'function' ? window.pbSpHomeAttention() : null)); // feat_spoils: a job's spoils reached an alert %
     return items;
   }
   window.pbRenderHome = function() {
@@ -48286,15 +48294,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (pbCoTz !== S) return;
       if (r.error || !r.data || r.data.ok !== true) { S.busy = false; return; }
       S.data = r.data; S.at = Date.now();
-      // the first time: the owner's phone sets the company's time zone (no tap)
-      const z = pbCoTzPhone();
-      if (S.data.is_owner && !S.data.tz_set && z && z !== S.data.tz) {
-        const w = await pbPermitRpc('pb_pm_settings_set', { p_owner_copies: null, p_digest_time: null, p_tz: z, p_expect_uid: uid }, 30000);
-        if (pbCoTz !== S) return;
-        if (w.data && w.data.ok === true) { S.data.tz = w.data.tz; S.data.tz_set = true; S.data.from_phone = true; }
-      }
+      // feat_server: no automatic setting. Until someone picks a zone (Settings, or the Home card) the server uses the
+      // owner's phone zone, else a PM's or super's.
     } finally { if (pbCoTz === S) S.busy = false; }
-    pbCoTzRender();
+    pbCoTzRender(); pbCoTzHome();
   };
   window.pbCoTzRender = function() {
     const w = pbCoTzEl('settingsCoTime'); if (!w) return;
@@ -48304,7 +48307,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const t = String(D.digest_time || '06:00').slice(0, 5), z = String(D.tz || 'America/Chicago'), on = D.owner_copies !== false;
     const line = pbPmTzText(z) + ' · morning email ' + pbPmTimeText(t);
     if (!S.edit) {
-      w.innerHTML = '<button type="button" class="pbx-namerow" id="settingsCoTimeRow" aria-expanded="false"' + (D.is_owner ? ' onclick="pbCoTzEdit(true)"' : ' disabled') + '><span class="pbx-namerow-k">Time zone</span><span class="pbx-namerow-v" id="settingsCoTimeShown">' + escapeHtml(line) + '</span>' + (D.is_owner ? '<span class="pbx-namerow-a">Edit</span>' : '') + '</button>'
+      w.innerHTML = '<button type="button" class="pbx-namerow" id="settingsCoTimeRow" aria-expanded="false"' + (pbCoTzCan(D) ? ' onclick="pbCoTzEdit(true)"' : ' disabled') + '><span class="pbx-namerow-k">Time zone</span><span class="pbx-namerow-v" id="settingsCoTimeShown">' + escapeHtml(line) + '</span>' + (pbCoTzCan(D) ? '<span class="pbx-namerow-a">Edit</span>' : '') + '</button>'
         + (D.from_phone ? '<p class="pb-help" id="settingsCoTimeNote">Set from this phone. Alerts, quiet hours and the morning email use it.</p>' : '')
         + (S.msg ? '<p class="pb-help' + (S.msgKind === 'err' ? ' pb-err' : '') + '" id="settingsCoTimeMsg" role="status">' + escapeHtml(S.msg) + '</p>' : '');
       return;
@@ -48315,23 +48318,50 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     w.innerHTML = '<div class="pbx-name-edit" id="settingsCoTimeEdit">'
       + '<div class="pb-field"><label for="settingsCoTz">Company time zone</label><select id="settingsCoTz">' + zones.map(x => '<option value="' + escapeHtml(x[0]) + '"' + (x[0] === z ? ' selected' : '') + '>' + escapeHtml(x[1]) + '</option>').join('') + '</select></div>'
       + '<div class="pb-field"><label for="settingsCoTime2">Morning email time</label><select id="settingsCoTime2">' + times.map(x => '<option value="' + x + '"' + (x === t ? ' selected' : '') + '>' + pbPmTimeText(x) + '</option>').join('') + '</select></div>'
-      + '<label class="pb-checkrow pbp-auto-row" for="settingsCoCopies"><input type="checkbox" id="settingsCoCopies"' + (on ? ' checked' : '') + '> <span>Send my own copies to this account</span></label>'
+      + (D.is_owner ? '<label class="pb-checkrow pbp-auto-row" for="settingsCoCopies"><input type="checkbox" id="settingsCoCopies"' + (on ? ' checked' : '') + '> <span>Send my own copies to this account</span></label>' : '') /* feat_server: the owner's own setting */
       + '<p class="pb-help">Each job’s alerts go to its assigned PMs and supers: a push right away, and one email in the morning on days something needs a look. A job with none sends them to every PM and super in the company, and to the owner only when the company has none; a plan change on a job with none goes to no one. “Send my own copies” also sends the owner a copy of every job’s alerts (plan changes only on jobs with a PM or super; off unless the owner turns it on). Quiet hours (8:55 PM to 6 AM) and the morning email follow the time zone.</p>' /* feat_office B1 */
       + '<div class="pbx-btnrow"><button type="button" class="pb-btn secondary small" id="settingsCoTimeSave" onclick="pbCoTzSave()"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? 'Saving…' : 'Save') + '</button><button type="button" class="pb-btn ghost small" id="settingsCoTimeCancel" onclick="pbCoTzEdit(false)">Cancel</button></div>'
       + (S.msg ? '<p class="pb-help' + (S.msgKind === 'err' ? ' pb-err' : '') + '" id="settingsCoTimeMsg" role="status">' + escapeHtml(S.msg) + '</p>' : '') + '</div>';
   };
   window.pbCoTzEdit = function(on) { pbCoTz.edit = !!on; pbCoTz.msg = ''; pbCoTzRender(); const f = pbCoTzEl(on ? 'settingsCoTz' : 'settingsCoTimeRow'); if (f) f.focus({ preventScroll: true }); };
   window.pbCoTzSave = async function() {
-    const S = pbCoTz, uid = pbArchiveOwnerUid; if (!S.data || !S.data.is_owner || S.busy || S.uid !== uid) return;
-    const z = pbCoTzEl('settingsCoTz') ? pbCoTzEl('settingsCoTz').value : null, t = pbCoTzEl('settingsCoTime2') ? pbCoTzEl('settingsCoTime2').value : null, on = !!(pbCoTzEl('settingsCoCopies') && pbCoTzEl('settingsCoCopies').checked);
+    const S = pbCoTz, uid = pbArchiveOwnerUid; if (!S.data || !pbCoTzCan(S.data) || S.busy || S.uid !== uid) return;
+    const z = pbCoTzEl('settingsCoTz') ? pbCoTzEl('settingsCoTz').value : null, t = pbCoTzEl('settingsCoTime2') ? pbCoTzEl('settingsCoTime2').value : null, on = S.data.is_owner ? !!(pbCoTzEl('settingsCoCopies') && pbCoTzEl('settingsCoCopies').checked) : null;
     if (!(sbClient && sbUser && sbUser.id === uid && navigator.onLine !== false && (await pbLiveSessionIs(uid)))) { S.msg = 'No signal. Nothing was changed; try again with signal.'; S.msgKind = 'err'; pbCoTzRender(); return; }
     S.busy = true; S.msg = ''; pbCoTzRender();
     let r; try { r = await pbPermitRpc('pb_pm_settings_set', { p_owner_copies: on, p_digest_time: t, p_tz: z, p_expect_uid: uid }, 30000); } finally { if (pbCoTz === S) S.busy = false; }
     if (pbCoTz !== S) return;
     const d = r && r.data;
     if (d && d.ok === true) { S.data = Object.assign({}, S.data, { tz: d.tz, digest_time: String(d.digest_time || t).slice(0, 5), owner_copies: d.owner_copies, tz_set: true, from_phone: false }); S.at = Date.now(); S.edit = false; S.msg = 'Saved.'; S.msgKind = 'ok'; }
-    else { const code = (d && d.code) || (/pb:[a-z_]+/.exec(String((r && r.error && r.error.message) || '')) || [])[0]; S.msg = code === 'pb:owner_only' ? 'Only the owner changes these.' : code === 'pb:bad_tz' ? 'That time zone isn’t known.' : code === 'pb:bad_time' ? 'Pick a time on the quarter hour.' : 'Not saved. Nothing was changed; try again.'; S.msgKind = 'err'; }
-    pbCoTzRender(); const f = pbCoTzEl('settingsCoTimeRow'); if (f) f.focus({ preventScroll: true });
+    else { const code = (d && d.code) || (/pb:[a-z_]+/.exec(String((r && r.error && r.error.message) || '')) || [])[0]; S.msg = code === 'pb:owner_only' ? 'Only the owner, a PM or a super changes these.' : code === 'pb:bad_tz' ? 'That time zone isn’t known.' : code === 'pb:bad_time' ? 'Pick a time on the quarter hour.' : 'Not saved. Nothing was changed; try again.'; S.msgKind = 'err'; }
+    pbCoTzRender(); pbCoTzHome(); const f = pbCoTzEl('settingsCoTimeRow'); if (f) f.focus({ preventScroll: true });
+  };
+  // ---- feat_server: who may change it, and the Home card while the zone was never chosen ----
+  function pbCoTzCan(D) { return !!D && (D.is_owner === true || D.can_edit_tz === true); } // the owner, a PM or a super (the server checks again)
+  function pbCoTzHome() { try { if (pbCurrentScreen === 'home' && typeof window.pbRenderHome === 'function') window.pbRenderHome(); } catch (e) {} }
+  // PMs and supers see it; the owner only when the company has no PM or super (owner, Oct 28: disturb owners as little as possible)
+  window.pbCoTzHomeAttention = function() {
+    const S = pbCoTz, D = S.uid && S.uid === pbArchiveOwnerUid && sbUser && sbUser.id === S.uid ? S.data : null;
+    if (!D || D.tz_set !== false) return null;
+    if (!(D.is_owner ? D.has_pm === false : D.can_edit_tz === true)) return null;
+    const z = pbCoTzPhone();
+    const btn = z ? '<button type="button" class="pb-btn small" id="homeCoTzUse" onclick="pbCoTzQuickSet()"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? 'Saving…' : escapeHtml('Use ' + pbPmTzText(z))) + '</button>'
+      : '<button type="button" class="pb-btn small" id="homeCoTzOpen" onclick="pbCoTzOpenEdit()">Choose Time Zone</button>';
+    return { id: 'coTz', info: true, html: '<span class="t">Set your company time zone</span>' + escapeHtml('Alerts, quiet hours and the morning email use it. Until it’s set they follow ' + pbPmTzText(D.tz) + '.')
+      + (S.homeMsg ? '<span class="pb-pc-note" id="homeCoTzMsg" role="status">' + escapeHtml(S.homeMsg) + '</span>' : '') + btn };
+  };
+  window.pbCoTzOpenEdit = function() { pbGoto('settings'); setTimeout(() => { try { window.pbCoTzEdit(true); } catch (e) {} }, 300); };
+  window.pbCoTzQuickSet = async function() {
+    const S = pbCoTz, uid = pbArchiveOwnerUid, z = pbCoTzPhone();
+    if (!S.data || !pbCoTzCan(S.data) || S.busy || S.uid !== uid || !z) return;
+    if (!(sbClient && sbUser && sbUser.id === uid && navigator.onLine !== false && (await pbLiveSessionIs(uid)))) { S.homeMsg = 'No signal. Nothing was changed; try again with signal.'; pbCoTzHome(); return; }
+    S.busy = true; S.homeMsg = ''; pbCoTzHome();
+    let r; try { r = await pbPermitRpc('pb_pm_settings_set', { p_owner_copies: null, p_digest_time: String(S.data.digest_time || '06:00').slice(0, 5), p_tz: z, p_expect_uid: uid }, 30000); } finally { if (pbCoTz === S) S.busy = false; } /* the email time as it is: this is a pick */
+    if (pbCoTz !== S) return;
+    const d = r && r.data;
+    if (d && d.ok === true) { S.data = Object.assign({}, S.data, { tz: d.tz, tz_set: true, from_phone: false }); S.at = Date.now(); }
+    else { const code = (d && d.code) || (/pb:[a-z_]+/.exec(String((r && r.error && r.error.message) || '')) || [])[0]; S.homeMsg = code === 'pb:owner_only' ? 'Only the owner, a PM or a super changes it.' : 'Not saved. Nothing was changed; try again.'; }
+    pbCoTzRender(); pbCoTzHome();
   };
   window.pbAccountLoadHooks.push(() => { setTimeout(() => { try { window.pbCoTzLoad(); } catch (e) {} }, 1500); });
   // ==== end feat_cotz ====
@@ -51387,7 +51417,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     } catch (e) { return null; }
   };
   const pbMat3OrigTk = pbMatTicketsHtml;
-  pbMatTicketsHtml = function() { return pbMat3OrigTk() + pbMat3UnlistedHtml() + pbMat4SpoilsHtml(pbMat4For().sp[pbPj.job.job_key], 'pjSpoils'); };
+  pbMatTicketsHtml = function() { return pbMat3OrigTk() + pbMat3UnlistedHtml() + pbSpMatHtml(pbMat4For().sp[pbPj.job.job_key], 'pjSpoils'); }; /* feat_spoils */
   const pbMat3OrigSetForm = pbMatSettingsFormHtml;
   pbMatSettingsFormHtml = function(F, btns) {
     const h = pbMat3OrigSetForm(F, function() { return ''; }), v = F.v;
@@ -51469,10 +51499,164 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const b = pbProdEl('pdJob' + i), sp = co.find(x => x && x.job_key === j.job_key);
       if (!b || !sp || sp.status !== 'ok' || !(Number(sp.haul_loose_yd3) > 0)) return;
       const el = document.createElement('span'); el.className = 'pbm4-dash';
-      el.innerHTML = '<span class="pbm4-line">' + escapeHtml('Spoils: ' + pbMatFmt(sp.haul_loose_yd3) + ' yd³ loose to haul (estimate)' + (sp.loads ? ' ≈ ' + sp.loads + ' load' + (sp.loads === 1 ? '' : 's') + ' at ' + pbMatFmt(sp.truck_yd3) + ' yd³' : '') + (sp.native_unsuitable ? '; import ≈ ' + pbMatFmt(sp.import_bank_yd3) + ' yd³ backfill' : '')) + '</span><span class="pbm-estkey">' + escapeHtml(PB_MAT4_NOTE) + '</span>';
+      el.innerHTML = '<span class="pbm4-line">' + escapeHtml((pbSpView(sp) ? 'Spoils: ' + pbSpTot(pbSpView(sp)) + ' loose (estimate)' : 'Spoils: ' + pbMatFmt(sp.haul_loose_yd3) + ' yd³ loose to haul (estimate)') /* feat_spoils */ + (sp.loads ? ' ≈ ' + sp.loads + ' load' + (sp.loads === 1 ? '' : 's') + ' at ' + pbMatFmt(sp.truck_yd3) + ' yd³' : '') + (sp.native_unsuitable ? '; import ≈ ' + pbMatFmt(sp.import_bank_yd3) + ' yd³ backfill' : '')) + '</span><span class="pbm-estkey">' + escapeHtml(PB_MAT4_NOTE) + '</span>';
       b.insertBefore(el, b.querySelector('.pbp-meta') || null);
     });
   };
+  // ==== feat_spoils (owner, Oct 30 2026): expected spoils from the plan, so far, %, alerts at 50% / 100% (sql/73_spoils.sql) ====
+  // Expected = each planned pipe item's length x the haul-off estimate's per-foot figure (pipe outside area + bedding + shading,
+  // + the job's swell, blank = 25%); so far = the runs / production as before. The server sends both with pb_mat_spoils.
+  const pbSpF = (x) => pbMatFmt(Number(x) || 0, 'yd³');
+  const pbSpPctText = (p) => { p = Number(p); if (!Number.isFinite(p)) return ''; return p > 0 && p < 1 ? '<1%' : Math.floor(p + 1e-9) + '%'; };
+  function pbSpView(sp) { // the figures to show, or null when there's no expected figure (an older server, no plan, settings missing)
+    const E = sp && sp.expected && typeof sp.expected === 'object' ? sp.expected : null;
+    if (!E || E.status !== 'ok' || !(Number(E.loose_yd3) > 0) || !(sp.status === 'ok' || sp.status === 'no_footage')) return null;
+    const act = sp.status === 'ok' ? Number(sp.haul_loose_yd3) || 0 : 0, exp = Number(E.loose_yd3);
+    const pct = sp.pct !== null && sp.pct !== undefined && Number.isFinite(Number(sp.pct)) ? Number(sp.pct) : act / exp * 100;
+    const pcts = Array.isArray(sp.alert_pcts) ? sp.alert_pcts.map(Number).filter(n => n > 0) : [50, 100];
+    const hit = pcts.filter(n => pct >= n).pop() || null;
+    const actBank = sp.status !== 'ok' ? 0 : sp.native_unsuitable ? Number(sp.trench_bank_yd3) || 0 : Number(sp.bank_yd3) || 0;
+    return { act, exp, pct, pcts, hit, actBank, expBank: Number(E.bank_yd3) || 0, E };
+  }
+  const pbSpTot = (V) => pbSpF(V.act) + ' of ' + pbSpF(V.exp) + ' yd³ (' + pbSpPctText(V.pct) + ')';
+  { const o = window.pbItemSpoils; window.pbItemSpoils = function() {
+      try { const S = pbMat4For(), job = pbPj.job, sp = S && job && S.sp ? S.sp[job.job_key] : null, V = pbSpView(sp);
+        if (V) return { a: pbSpF(V.act) + ' of ' + pbSpF(V.exp) + ' yd³', v: pbSpPctText(V.pct), hit: V.hit, k: 'Loose · estimate' };
+      } catch (e) {}
+      return o.apply(this, arguments);
+    }; }
+  const PB_SP_EXP_MISSING = { no_plan: 'Expected: needs planned pipe footage (LF) in the job plan.', needs_width: 'Expected: needs the trench width (trench settings).', needs_od: 'Expected: needs the pipe OD (trench settings).', needs_depth: 'Expected: needs a run with cut/fill on this job (native backfill unsuitable).' };
+  function pbSpExpText(sp, E) {
+    const items = Array.isArray(E.items) ? E.items.filter(x => x && Number(x.ft) > 0) : [];
+    const len = items.length > 1 ? items.map(x => (x.name || x.key) + ' ' + pbMatFmt(x.ft, 'LF') + ' LF').join(' + ') : pbMatFmt(E.ft, 'LF') + ' LF planned';
+    return 'Expected: ' + len + ' × ' + Number(E.per_ft_bank).toFixed(3) + ' yd³ in place (' + Number(E.per_ft_loose).toFixed(3) + ' loose) per foot' + (E.basis === 'native' ? ', the haul per foot of the runs with cut/fill so far' : '') + '.';
+  }
+  function pbSpAlertsHtml(sp) {
+    const pcts = Array.isArray(sp.alert_pcts) ? sp.alert_pcts.map(Number).filter(n => n > 0) : null; if (!pcts) return '';
+    const hit = Array.isArray(sp.alerts_hit) ? sp.alerts_hit.map(Number) : [];
+    return '<div class="pbsp-al" id="pjSpAlerts"><span class="pbsp-al-t">' + escapeHtml(pcts.length ? 'Alerts at ' + pcts.map(n => n + '%').join(' · ') : 'No spoils alerts') + '</span>'
+      + pcts.filter(n => hit.includes(n)).map(n => '<span class="pb-chip warn pbm-chip">' + escapeHtml('Reached ' + n + '%') + '</span>').join('')
+      + '<button type="button" class="pb-btn ghost small" id="pjSpAlertEdit" onclick="pbSpAlertEdit()">Edit Alerts</button></div>';
+  }
+  function pbSpMatHtml(sp, id) {
+    let h = pbMat4SpoilsHtml(sp, id); if (!sp) return h;
+    const V = pbSpView(sp), E = sp.expected && typeof sp.expected === 'object' ? sp.expected : null;
+    if (!E) return h; // an older server: as before
+    const lines = (V ? '<p class="pbp-dim" id="pjSpInPlace">' + escapeHtml('In place: ' + pbSpF(V.actBank) + ' of ' + pbSpF(V.expBank) + ' yd³.') + '</p>' : '')
+      + '<p class="pbp-dim" id="pjSpExp">' + escapeHtml(E.status === 'ok' ? pbSpExpText(sp, E) : PB_SP_EXP_MISSING[E.status] || 'Expected: not known yet.') + '</p>' + pbSpAlertsHtml(sp);
+    const big = V ? '<p class="pbm4-big" id="pjSpTot">' + escapeHtml('Spoils: ' + pbSpTot(V)) + (E.loads ? ' <span class="pbp-dim">' + escapeHtml('≈ ' + (Number(sp.loads) || 0) + ' of ' + E.loads + ' loads at ' + pbMatFmt(sp.truck_yd3) + ' yd³') + '</span>' : '') + '</p>' : '';
+    const m = /<p class="pbm4-big">[\s\S]*?<\/p>/.exec(h);
+    if (m) return h.slice(0, m.index) + (big || m[0]) + lines + h.slice(m.index + m[0].length);
+    if (V) return '<h4 class="pbm-h4">Spoils <span class="pb-chip calculated pbm-chip">Estimate</span></h4><div class="pbm4-sp" id="' + id + '">' + big + lines + '</div>'; // nothing counted yet: 0 of the expected
+    const end = h.lastIndexOf('</p>'); return end > 0 ? h.slice(0, end + 4) + '<div class="pbm4-sp">' + lines + '</div>' + h.slice(end + 4) : h;
+  }
+  window.pbSpAlertEdit = function() {
+    const key = pbPj.job && pbPj.job.job_key;
+    if (typeof window.pbCxEdit === 'function' && pbCx && pbCx.on) window.pbCxEdit('trench');
+    else if (pbMat.set && key && pbMat.set[key]) window.pbMatSettingsForm();
+    setTimeout(() => { const el = document.getElementById('pmf_spoil_alerts'); if (el) { try { el.scrollIntoView({ block: 'center' }); } catch (e) {} el.focus({ preventScroll: true }); } }, 120);
+  };
+  // the trench settings form: Alerts (% of expected), "50, 100" by default; add or remove a % by typing; blank = none
+  const pbSpParse = (t) => { const s = String(t || '').trim(); if (!s) return []; const a = s.split(/[\s,;]+/).map(x => x.replace(/%$/, '')).filter(Boolean); if (a.some(x => !/^\d{1,3}(\.\d+)?$/.test(x))) return null; const n = [...new Set(a.map(x => Math.round(Number(x))))].sort((x, y) => x - y); return n.length > 6 || n.some(x => x < 1 || x > 300) ? null : n; };
+  { const o = pbMatSettingsFormHtml; pbMatSettingsFormHtml = function(F, btns) {
+      const h = o.apply(this, arguments), v = F.v; if (v.spoil_alerts === undefined) return h;
+      const f = pbMatField('spoil_alerts', 'Alerts (% of expected)', v.spoil_alerts, 'type="text" maxlength="40" autocomplete="off" autocapitalize="off" enterkeyhint="done" placeholder="e.g. 50, 100"');
+      const i = h.indexOf('id="pmf_truck_yd3"'), j = i > 0 ? h.indexOf('</div>', i) : -1;
+      return j > 0 ? h.slice(0, j + 6) + f + h.slice(j + 6) : h;
+    }; }
+  { const o = window.pbMatSettingsForm; window.pbMatSettingsForm = function() {
+      o.apply(this, arguments);
+      const F = pbMat.form, E = pbMat.set && pbPj.job && pbMat.set[pbPj.job.job_key], S = (E && E.s) || {};
+      if (!F || F.kind !== 'job') return;
+      const sp = pbMat4For().sp[pbPj.job.job_key]; /* only a server that knows spoils alerts (an older one would ignore the field) */
+      if (!Array.isArray(S.spoil_alerts) && !(sp && Array.isArray(sp.alert_pcts))) return;
+      F.v.spoil_alerts = Array.isArray(S.spoil_alerts) ? S.spoil_alerts.join(', ') : '50, 100';
+      F.base = JSON.stringify(F.v); pbMatJobPaint();
+    }; }
+  { const o = pbMatFormRead; pbMatFormRead = function() {
+      const F = o.apply(this, arguments);
+      if (F && F.kind === 'job' && pbProdEl('pmfForm')) { const el = pbProdEl('pmf_spoil_alerts'); if (el) F.v.spoil_alerts = String(el.value).trim(); }
+      return F;
+    }; }
+  { const o = window.pbMatFormSave; window.pbMatFormSave = async function() {
+      const F = pbMatFormRead();
+      if (F && F.kind === 'job' && F.v.spoil_alerts !== undefined && !pbSpParse(F.v.spoil_alerts)) { F.err = 'Alerts: enter up to 6 percents from 1 to 300, e.g. 50, 100 (blank = no alerts).'; pbMatJobPaint(); return; }
+      return o.apply(this, arguments);
+    }; }
+  // Home > Needs Attention: the spoils alerts this account got (the server's list: the job's PMs / supers, as material alerts)
+  const PB_SP_KEY = 'pbSpoilAlerts';
+  let pbSpA = { uid: null, list: [], hide: [], asked: 0, busy: false };
+  async function pbSpLocal(uid) {
+    if (pbSpA.uid === uid) return;
+    let c = null; try { c = JSON.parse((await pbGetFor(uid, PB_SP_KEY)) || 'null'); } catch (e) { c = null; }
+    if (pbSpA.uid === uid) return;
+    pbSpA = { uid, list: c && Array.isArray(c.list) ? c.list.filter(x => x && x.id && x.job_key) : [], hide: c && Array.isArray(c.hide) ? c.hide.filter(Number.isFinite).slice(-100) : [], asked: 0, busy: false };
+  }
+  async function pbSpSave(uid) { if (pbSpA.uid !== uid) return; try { await pbSetFor(uid, PB_SP_KEY, JSON.stringify({ list: pbSpA.list, hide: pbSpA.hide })); } catch (e) {} }
+  const pbSpOn = (uid) => { try { return !!(uid && sbUser && sbUser.id === uid && typeof window.pbIsCompanyHome === 'function' && window.pbIsCompanyHome(uid)); } catch (e) { return false; } };
+  async function pbSpFlush(uid) { // dismissals made without signal
+    const ids = pbSpA.hide.filter(i => pbSpA.list.some(a => a.id === i)); if (!ids.length) return true;
+    const r = await pbPermitRpc('pb_mat_spoil_alerts_seen', { p_ids: ids.slice(0, 50), p_expect_uid: uid }, 20000);
+    return !!(r && !r.error && r.data && r.data.ok === true);
+  }
+  window.pbSpFetch = async function(uid, force) {
+    uid = uid || pbArchiveOwnerUid; if (!uid || !sbUser || sbUser.id !== uid) return;
+    await pbSpLocal(uid);
+    if (!pbSpOn(uid) || pbSpA.busy || navigator.onLine === false || !sbClient || typeof sbClient.rpc !== 'function') { window.pbSpRender(); return; }
+    if (!force && Date.now() - pbSpA.asked < 60000) { window.pbSpRender(); return; }
+    pbSpA.busy = true; pbSpA.asked = Date.now();
+    try {
+      const flushed = await pbSpFlush(uid);
+      const r = await pbPermitRpc('pb_mat_spoil_alerts_mine', {}, 20000);
+      if (pbSpA.uid !== uid || !sbUser || sbUser.id !== uid) return;
+      if (r && !r.error && r.data && r.data.ok === true && Array.isArray(r.data.alerts)) {
+        pbSpA.list = r.data.alerts.filter(x => x && typeof x === 'object' && Number.isFinite(Number(x.id)) && x.job_key).map(x => Object.assign({}, x, { id: Number(x.id) }));
+        if (flushed) pbSpA.hide = pbSpA.hide.filter(i => pbSpA.list.some(a => a.id === i));
+        await pbSpSave(uid);
+      }
+    } finally { if (pbSpA.uid === uid) pbSpA.busy = false; }
+    window.pbSpRender();
+  };
+  window.pbSpRender = function() { try { if (pbCurrentScreen === 'home') window.pbRenderHome(); } catch (e) {} };
+  function pbSpJobs() { // the highest open % per job, newest first
+    const by = new Map();
+    pbSpA.list.filter(a => !pbSpA.hide.includes(a.id)).forEach(a => { const b = by.get(a.job_key); if (!b) by.set(a.job_key, { top: a, ids: [a.id] }); else { b.ids.push(a.id); if (Number(a.pct) > Number(b.top.pct)) b.top = a; } });
+    return [...by.values()];
+  }
+  window.pbSpHomeAttention = function() {
+    const uid = pbArchiveOwnerUid; if (!uid || pbSpA.uid !== uid || !pbSpOn(uid)) return null;
+    const J = pbSpJobs(); if (!J.length) return null;
+    const job = (a) => pbProdJobLabel(a.job_number || a.job_key);
+    const t = J.length === 1 ? 'Spoils at ' + J[0].top.pct + '% · ' + job(J[0].top) : 'Spoils alerts on ' + J.length + ' jobs';
+    const body = J.length === 1 ? 'About ' + pbSpF(J[0].top.actual_yd3) + ' of ' + pbSpF(J[0].top.expected_yd3) + ' yd³ loose to haul so far (estimate).'
+      : J.slice(0, 4).map(x => job(x.top) + ': ' + x.top.pct + '%').join('; ') + (J.length > 4 ? '; and ' + (J.length - 4) + ' more' : '') + '.';
+    const btns = J.slice(0, 3).map((x, i) => '<button type="button" class="pb-btn small" id="homeSpOpen' + i + '" data-job="' + escapeHtml(x.top.job_key) + '" onclick="pbSpOpen(this.dataset.job)">' + escapeHtml(J.length > 1 ? 'Open ' + job(x.top) : 'Open Job') + '</button>').join('')
+      + '<button type="button" class="pb-btn ghost small" id="homeSpDismiss" onclick="pbSpDismiss()">Dismiss</button>';
+    return { id: 'spoils', info: J.every(x => Number(x.top.pct) < 100), html: '<span class="t">' + escapeHtml(t) + '</span>' + escapeHtml(body) + '<span class="pbsp-btns">' + btns + '</span>' };
+  };
+  function pbSpMark(uid, ids) {
+    if (pbSpA.uid !== uid || !ids.length) return;
+    pbSpA.hide = [...new Set(pbSpA.hide.concat(ids))].slice(-100); pbSpSave(uid); window.pbSpRender();
+    (async () => { if (navigator.onLine === false) return; const ok = await pbSpFlush(uid); if (ok && pbSpA.uid === uid) { pbSpA.list = pbSpA.list.filter(a => !ids.includes(a.id)); pbSpA.hide = pbSpA.hide.filter(i => !ids.includes(i)); pbSpSave(uid); } })().catch(() => {});
+  }
+  window.pbSpOpen = function(key) {
+    const uid = pbArchiveOwnerUid, J = pbSpJobs().find(x => x.top.job_key === key); if (J) pbSpMark(uid, J.ids);
+    if (typeof window.pbCxOpenJob === 'function' && pbCx && pbCx.on) window.pbCxOpenJob(key, 'overview');
+  };
+  window.pbSpDismiss = function() { const uid = pbArchiveOwnerUid; pbSpMark(uid, [].concat(...pbSpJobs().map(x => x.ids))); };
+  window.pbAccountLoadHooks.push((uid) => { if (pbSpA.uid && pbSpA.uid !== uid) pbSpA = { uid: null, list: [], hide: [], asked: 0, busy: false }; setTimeout(() => { if (sbUser && sbUser.id === uid) window.pbSpFetch(uid, true).catch(() => {}); }, 1500); });
+  window.pbScreenHooks.push((name) => { if (name === 'home' && sbUser) window.pbSpFetch(sbUser.id, false).catch(() => {}); });
+  window.addEventListener('online', () => { if (sbUser) window.pbSpFetch(sbUser.id, true).catch(() => {}); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && sbUser && pbCurrentScreen === 'home') window.pbSpFetch(sbUser.id, false).catch(() => {}); });
+  try {
+    const st = document.createElement('style'); st.id = 'pbSpCss';
+    st.textContent = '#pbApp .pbsp-al{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0 0}#pbApp .pbsp-al-t{font-weight:600;color:var(--pb-text)}#pbApp .pbsp-al .pb-btn{margin:0 0 0 auto;min-height:44px}'
+      + '#pbApp .pb-home-att .pbsp-btns{display:flex;flex-wrap:wrap;gap:8px}#pbApp#pbApp .pb-home-att .pbsp-btns .pb-btn{flex:1 1 auto;margin-top:0}#pbApp .pb-home-att .pbsp-btns{margin-top:10px}'
+      + '#pbApp #homeAttentionList #homeAttention_spoils.info::before{-webkit-mask-image:var(--pb-icon-warn);mask-image:var(--pb-icon-warn)}';
+    document.head.appendChild(st);
+  } catch (e) {}
+  window.__debugSp = () => ({ a: pbSpA, view: (sp) => pbSpView(sp) });
+  // ==== end feat_spoils ====
   window.__debugMat3 = () => ({ lists: pbMat3Lists, mat4: pbMat4 });
   // ==== end batch 18 M3 + M4 ====
 
@@ -55838,7 +56022,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (G && G.loose.length) { const a = G.loose.filter(m => m.alert).length;
       h += '<span class="pbx-legrow pbx-loose"><span class="pbx-leg-n">Not under an item' + (!shown && a ? '<span class="pbx-iflags">' + chip('warn', 'cube', pbCxN(a, 'material alert')) + '</span>' : '') + '</span><span class="pbx-leg-a"></span><span class="pbx-leg-v"></span></span>' + (shown ? matRows(G.loose) : ''); }
     { const SP = typeof window.pbItemSpoils === 'function' ? window.pbItemSpoils() : null; // r15.16: spoils last
-      if (SP) h += '<span class="pbx-legrow pbx-spoils" id="pjItemSpoils"><span class="pbx-leg-n">Spoils to haul<span class="pbx-spoils-k">Estimate</span></span><span class="pbx-leg-a">' + pbCxE(SP.a) + '</span><span class="pbx-leg-v">' + pbCxE(SP.v) + '</span></span>'; }
+      if (SP) h += '<span class="pbx-legrow pbx-spoils' + (SP.hit ? ' alert' : '') + '" id="pjItemSpoils"><span class="pbx-leg-n">' + (SP.k ? 'Spoils' : 'Spoils to haul') + '<span class="pbx-spoils-k">' + pbCxE(SP.k || 'Estimate') + '</span>' + (SP.hit ? '<span class="pbx-iflags">' + chip('warn', 'warn', 'Reached ' + SP.hit + '%') + '</span>' : '') + '</span><span class="pbx-leg-a">' + pbCxE(SP.a) + '</span><span class="pbx-leg-v">' + pbCxE(SP.v) + '</span></span>'; } /* feat_spoils: X of Y yd³, %, the alert reached */
     try { if (typeof window.pbInspRowsHtml === 'function' && pbCxDashOn()) h += window.pbInspRowsHtml(); } catch (e) { console.error(e); } // feat_insp: inspections last
     if (items.some(c => pbItemEta(c))) h += '<span class="pbx-etanote">Days left: at last week’s pace; work days are Mon–Fri minus company holidays.</span>'; // feat_pace (r15.50: the schedule's rule)
     return h + '</span>';
@@ -59262,6 +59446,52 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbLocIsDay = (d) => /^\d{4}-\d{2}-\d{2}$/.test(String(d || '')) && isFinite(pbLocDayMs(d));
   function pbLocDay(d) { const t = pbLocDayMs(d); return isFinite(t) ? new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) : String(d || ''); }
   function pbLocAddDays(d, n) { const t = pbLocDayMs(d); return isFinite(t) ? new Date(t + n * 86400000).toISOString().slice(0, 10) : ''; }
+  /* feat_locate28: California 811 (Gov Code 4216.2): call at least 2 working days before digging (the call day doesn't
+     count), start within 14 calendar days of the call, the ticket is good for 28 days. A working day is Mon-Fri except
+     federal and California holidays, as the 811 centers post them (a Saturday holiday is the Friday before, a Sunday one
+     the Monday after). The holidays are worked out from their rules for any year, never typed in. */
+  const PB_LOC_START = 14, PB_LOC_WAIT = 2, pbLocHolC = {};
+  function pbLocHolidays(y) {
+    if (pbLocHolC[y]) return pbLocHolC[y];
+    const D = (m, d) => Date.UTC(y, m - 1, d, 12), W = (t) => new Date(t).getUTCDay(), DAY = 86400000;
+    const nth = (m, wd, n) => D(m, 1) + (((wd - W(D(m, 1)) + 7) % 7) + 7 * (n - 1)) * DAY;
+    const last = (m, wd) => { const t = Date.UTC(y, m, 0, 12); return t - ((W(t) - wd + 7) % 7) * DAY; };
+    const obs = (t) => t + (W(t) === 6 ? -DAY : W(t) === 0 ? DAY : 0);
+    const tg = nth(11, 4, 4);
+    const L = [obs(D(1, 1)), nth(1, 1, 3), nth(2, 1, 3), obs(D(3, 31)), last(5, 1), obs(D(6, 19)) /* Juneteenth: from 2021 */, obs(D(7, 4)), nth(9, 1, 1), nth(10, 1, 2), obs(D(11, 11)), tg, tg + DAY, obs(D(12, 25))];
+    /* New Year's Day, MLK Day, Presidents' Day, Cesar Chavez Day, Memorial Day, Juneteenth, Independence Day, Labor Day,
+       Columbus Day, Veterans Day, Thanksgiving, the day after, Christmas */
+    return (pbLocHolC[y] = L.filter((t, i) => i !== 5 || y >= 2021).map(t => new Date(t).toISOString().slice(0, 10)));
+  }
+  const pbLocHoliday = (d) => { const y = Number(String(d).slice(0, 4)); return pbLocHolidays(y).includes(d) || pbLocHolidays(y + 1).includes(d); }; /* Jan 1 on a Saturday is Dec 31 */
+  const pbLocWorkDay = (d) => { const w = new Date(pbLocDayMs(d)).getUTCDay(); return w !== 0 && w !== 6 && !pbLocHoliday(d); };
+  function pbLocCanDig(called) { /* the called-in day + 2 working days, the call day not counted; a call on a weekend or a
+     holiday counts from the next working day (a working day is 7 AM to 5 PM: Saturday's call starts Monday's clock) */
+    called = String(called || '').slice(0, 10); if (!pbLocIsDay(called)) return '';
+    let d = called, n = 0, g = 0; while (!pbLocWorkDay(d) && g++ < 20) d = pbLocAddDays(d, 1);
+    while (n < PB_LOC_WAIT && g++ < 40) { d = pbLocAddDays(d, 1); if (pbLocWorkDay(d)) n++; }
+    return d;
+  }
+  function pbLocStartBy(l) { /* the called-in day + 14 days, or the expiry when that is sooner */
+    const c = String((l && l.called_at) || '').slice(0, 10), x = String((l && l.expires_at) || '').slice(0, 10);
+    const s = pbLocIsDay(c) ? pbLocAddDays(c, PB_LOC_START) : ''; return s && pbLocIsDay(x) && x < s ? x : s;
+  }
+  function pbLocDayW(d) { const t = pbLocDayMs(d); return isFinite(t) ? new Date(t).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }).replace(',', '') : String(d || ''); }
+  function pbLocStat(l) { /* one status for a ticket: not valid yet, the expiry alert (7 days or less), the start window, days left */
+    if (!l || l.closed) return null;
+    const today = pbTkToday(), cd = pbLocCanDig(l.called_at), sb = pbLocStartBy(l), left = pbLocLeft(l), lv = pbLocLevel(l);
+    if (cd && today < cd && !(left !== null && left < 0)) return { k: 'early', d: cd, text: 'Not valid until ' + pbLocDayW(cd), lv };
+    if (lv) return { k: 'exp', text: pbLocLeftText(l), lv };
+    if (sb && today <= sb) return { k: 'start', d: sb, text: 'Start work by ' + pbLocDayW(sb), lv };
+    return { k: 'left', text: pbLocLeftText(l), lv };
+  }
+  const pbLocStatText = (l) => { const s = pbLocStat(l); return s ? s.text : pbLocLeftText(l); };
+  function pbLocDatesHtml(v, id, form) {
+    const cell = (k, t, d) => '<div class="pbloc-d"><span class="pbloc-dk">' + k + '</span><span class="pbloc-dv" id="' + id + t + '">' + escapeHtml(d ? pbLocDayW(d) : '—') + '</span></div>';
+    return '<div class="pbloc-dates' + (form ? ' two' : '') + '" id="' + id + 'Dates">' + cell('Can dig from', 'Dig', pbLocCanDig(v.called_at)) + cell('Start work by', 'Start', pbLocStartBy(v))
+      + (form ? '' : cell('Expires', 'Exp', pbLocIsDay(String(v.expires_at || '').slice(0, 10)) ? String(v.expires_at).slice(0, 10) : '')) + '</div>';
+  }
+  window.__debugLoc28 = { canDig: pbLocCanDig, startBy: pbLocStartBy, holidays: pbLocHolidays, workDay: pbLocWorkDay, stat: pbLocStat, dayW: pbLocDayW }; /* tests */
   function pbLocLeft(l) { const a = pbLocDayMs(l && l.expires_at), b = pbLocDayMs(pbTkToday()); return isFinite(a) && isFinite(b) ? Math.round((a - b) / 86400000) : null; }
   function pbLocLevel(l) { const d = pbLocLeft(l); return d === null || l.closed ? '' : d <= 2 ? 'red' : d <= 7 ? 'amber' : ''; } // red: 2 days or less, or expired
   function pbLocLeftText(l) { const d = pbLocLeft(l); return d === null ? '' : d < 0 ? 'Expired ' + (-d) + (d === -1 ? ' day ago' : ' days ago') : d === 0 ? 'Expires today' : d === 1 ? 'Expires tomorrow' : d + ' days left'; }
@@ -59437,7 +59667,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const J = pbLoc.st && pbLoc.st.jobs[key], M = pbLoc.st && pbLoc.st.mine;
     let n = Number((J && J.locate_days) || (M && M.locate_days) || 0);
     if (!(n >= 1)) { try { n = Number(pbCoTz && pbCoTz.data && pbCoTz.data.locate_days) || 0; } catch (e) { n = 0; } }
-    return n >= 1 && n <= 60 ? Math.round(n) : 14;
+    return n >= 1 && n <= 60 ? Math.round(n) : 28; /* feat_locate28: DigAlert 28 days */
   }
   function pbLocRefreshScreens() {
     try { if (pbCurrentScreen === 'locates') window.pbLocRender(); } catch (e) { console.error(e); }
@@ -59552,10 +59782,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbLocCard(l) {
     const lv = pbLocLevel(l), p = l.pend, sid = escapeHtml(String(l.id)), addr = pbLoc.job ? pbLocJobInfo(pbLoc.job).address : '';
     const chip = l.closed ? '<span class="pb-chip calculated pbd-chip">Closed</span>'
-      : '<span class="pb-chip pbd-chip pbloc-chip' + (lv === 'red' ? ' overdue' : lv === 'amber' ? ' notsent' : '') + '">' + escapeHtml(pbLocLeftText(l)) + '</span>';
-    const line = 'Called in ' + pbLocDay(l.called_at) + ' · expires ' + pbLocDay(l.expires_at) + (l.by_name && !p ? ' · ' + l.by_name : '');
+      : '<span class="pb-chip pbd-chip pbloc-chip' + ((pbLocStat(l) || {}).k === 'early' ? ' notsent' : lv === 'red' ? ' overdue' : lv === 'amber' ? ' notsent' : '') + '" id="locChip_' + sid + '">' + escapeHtml(pbLocStatText(l)) + '</span>'; /* feat_locate28 */
+    const line = 'Called in ' + pbLocDay(l.called_at) + (l.by_name && !p ? ' · ' + l.by_name : ''); /* feat_locate28: the dates are in the row below */
     let h = '<div class="pbd-card pbloc-card' + (lv ? ' ' + lv : '') + (l.closed ? ' closed' : '') + '" id="locT_' + sid + '"><div class="pbd-ihead"><strong class="pbloc-no">Ticket ' + escapeHtml(l.ticket_no) + '</strong> ' + chip + '</div>'
-      + '<p class="pbd-dim">' + escapeHtml(line) + '</p>' + (l.note && l.note !== addr ? '<p class="pbd-note">' + escapeHtml(l.note) + '</p>' : '') // the job's own address is in the header already
+      + '<p class="pbd-dim">' + escapeHtml(line) + '</p>' + (l.closed ? '' : pbLocDatesHtml(l, 'loc_' + sid)) /* feat_locate28 */ + (l.note && l.note !== addr ? '<p class="pbd-note">' + escapeHtml(l.note) + '</p>' : '') // the job's own address is in the header already
       + (!l.closed && pbLocLeft(l) !== null && pbLocLeft(l) < 0 ? '<p class="pbp-err pbloc-nodig" id="locNoDig_' + sid + '">' + escapeHtml('Expired ' + pbLocDay(l.expires_at) + ' — don’t dig until it’s refreshed.') + '</p>' : '');
     if (p) h += '<p class="pbd-pend" id="locPend_' + sid + '"><span class="pb-chip ' + (p.state === 'refused' ? 'overdue' : 'notsent') + ' pbd-chip">' + (p.state === 'refused' ? 'Not accepted' : 'Waiting to send') + '</span>' + (p.state === 'refused' || p.why ? ' <span class="pbd-why" id="locWhy_' + sid + '">' + escapeHtml(p.state === 'refused' ? (p.why || '') : pbLocWaitWhy(p)) + '</span>' : '') + '</p>'; // the plain wait is said once, in the status line
     if (p && p.state === 'refused') h += '<div class="pbd-acts"><button type="button" class="pb-btn secondary small" id="locFix_' + sid + '" onclick="pbLocEdit(' + pbLocQ(l.id) + ')">Fix and Send Again</button><button type="button" class="pb-btn ghost small" id="locDiscard_' + sid + '" onclick="pbLocDiscard(' + pbLocQ(l.id) + ')">Discard</button></div>';
@@ -59601,6 +59831,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<div class="pb-field"><label for="locNo">811 ticket number</label><input type="text" id="locNo" maxlength="40" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="next" placeholder="From the 811 call or email"></div>'
       + '<div class="pbd-two"><div class="pb-field"><label for="locCalled">Called in</label><input type="date" id="locCalled"></div><div class="pb-field"><label for="locExp">Expires</label><input type="date" id="locExp" aria-describedby="locExpHelp"></div></div>'
       + '<p class="pb-help pbloc-help" id="locExpHelp">' + escapeHtml(pbLocExpHelp(F)) + '</p>'
+      + pbLocDatesHtml(F.v, 'locF', true) + '<p class="pb-help pbloc-help" id="locRuleHelp">Can’t dig before the 2-working-day wait. Work must start within 14 days of the call, or call in a new ticket.</p>' /* feat_locate28 */
       + '<div class="pb-field"><label for="locNote">Where <span class="pbx-opt">(optional)</span></label><input type="text" id="locNote" maxlength="300" autocomplete="off" placeholder="e.g. Elm St, MH-7 to MH-10"></div>'
       + '<p class="pbp-err pbloc-err" id="locErr" role="alert"' + (F.err ? '' : ' hidden') + '>' + escapeHtml(F.err || '') + '</p>'
       + '<div class="pb-btn-row pbloc-btns"><button type="button" class="pb-btn" id="locSave" onclick="pbLocFormSave()">Save Ticket</button><button type="button" class="pb-btn ghost" id="locCancel" onclick="pbLocFormCancel()">Cancel</button></div></div>';
@@ -59611,9 +59842,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!no || !c || !x || !nt) return;
     no.value = F.v.ticket_no; c.value = F.v.called_at; x.value = F.v.expires_at; nt.value = F.v.note;
     no.addEventListener('input', () => { F.v.ticket_no = no.value; });
-    const called = () => { F.v.called_at = c.value; if (!F.expTyped && pbLocIsDay(c.value)) { F.v.expires_at = pbLocAddDays(c.value, F.days); x.value = F.v.expires_at; } };
+    const dates = () => { const w = pbLocE('locFDates'); if (w) w.outerHTML = pbLocDatesHtml(F.v, 'locF', true); }; /* feat_locate28 */
+    const called = () => { F.v.called_at = c.value; if (!F.expTyped && pbLocIsDay(c.value)) { F.v.expires_at = pbLocAddDays(c.value, F.days); x.value = F.v.expires_at; } dates(); };
     c.addEventListener('input', called); c.addEventListener('change', called);
-    const exp = () => { F.v.expires_at = x.value; F.expTyped = x.value !== ''; if (!x.value && pbLocIsDay(F.v.called_at)) { F.v.expires_at = pbLocAddDays(F.v.called_at, F.days); x.value = F.v.expires_at; } if (help) help.textContent = pbLocExpHelp(F); };
+    const exp = () => { F.v.expires_at = x.value; F.expTyped = x.value !== ''; if (!x.value && pbLocIsDay(F.v.called_at)) { F.v.expires_at = pbLocAddDays(F.v.called_at, F.days); x.value = F.v.expires_at; } if (help) help.textContent = pbLocExpHelp(F); dates(); };
     x.addEventListener('input', exp); x.addEventListener('change', exp);
     nt.addEventListener('input', () => { F.v.note = nt.value; F.noteTyped = true; });
   }
@@ -59663,7 +59895,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!have && !Array.isArray(D.locates) && !(rows && rows.length)) return ''; // the server hasn't sent tickets (not on it yet, or still loading)
     const open = (rows || []).filter(l => l && !l.closed).sort(pbLocByExp), next = open[0] || null, lv = next ? pbLocLevel(next) : '', pend = (rows || []).filter(l => l && l.pend).length;
     const sub = !open.length ? (rows && rows.length ? 'No open tickets.' : 'No dig tickets yet. Tap to add one.') : open.length + ' open · next: ' + next.ticket_no + ', ' + pbLocDay(next.expires_at);
-    const tags = (next ? '<span class="pbx-tag' + (lv === 'red' ? ' emerg' : lv === 'amber' ? ' warn' : '') + '" id="pjLocTag">' + pbCxIc(lv ? 'warn' : 'clock') + pbCxE(pbLocLeftText(next)) + '</span>' : '')
+    const tags = (next ? '<span class="pbx-tag' + (lv === 'red' ? ' emerg' : lv === 'amber' ? ' warn' : '') + '" id="pjLocTag">' + pbCxIc(lv ? 'warn' : 'clock') + pbCxE(pbLocStatText(next)) /* feat_locate28 */ + '</span>' : '')
       + (pend ? '<span class="pbx-tag" id="pjLocPend">' + pbCxIc('cloud-off') + pbCxE(pend + ' not sent yet') + '</span>' : '');
     return '<section class="pbx-panel pbx-locpanel" id="pjCxLoc"><div class="pbx-rows flat"><button type="button" class="pbx-row" id="pjLocRow" data-job="' + pbCxE(job.job_number) + '" onclick="pbOpenLocates(this.dataset.job)">'
       + '<span class="pbx-doc-ic">' + pbCxIc('flag') + '</span><span class="pbx-row-tx"><span class="pbx-row-h">Locates</span><span class="pbx-row-s" id="pjLocSub">' + pbCxE(sub) + '</span>' + (tags ? '<span class="pbx-row-flags">' + tags + '</span>' : '') + '</span>'
@@ -59679,7 +59911,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!rows || (!rows.length && !Array.isArray(j.locates) && !(pbLoc.st && pbLocServerRows(key)))) return '';
     const open = rows.filter(l => l && !l.closed).sort(pbLocByExp), next = open[0] || null, lv = next ? pbLocLevel(next) : '';
     return '<button type="button" class="pb-btn ghost small pbloc-fmbtn' + (lv ? ' ' + lv : '') + '" id="pmJobLoc' + i + '" data-job="' + escapeHtml(j.job_number) + '" onclick="pbOpenLocates(this.dataset.job)"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-flag"/></svg>'
-      + escapeHtml(open.length ? 'Locates · ' + open.length + ' open · ' + pbLocLeftText(next).replace(/^E/, 'e') : 'Locates · add a dig ticket') + '</button>';
+      + escapeHtml(open.length ? 'Locates · ' + open.length + ' open · ' + pbLocStatText(next).replace(/^[A-Z]/, (c) => c.toLowerCase()) /* feat_locate28 */ : 'Locates · add a dig ticket') + '</button>';
   };
   // ---- the foreman's Needs attention: his jobs' open tickets within 7 days ----
   function pbLocMineRows() {
@@ -59693,12 +59925,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbLocHomeAttention = function() {
     const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared' || pbLoc.uid !== uid || !pbLoc.st || !pbCanOpen('locates')) return null;
     if (!pbDlyAcc(uid).foreman) return null;
-    const L = pbLocMineRows().filter(l => l && !l.closed && pbLocLeft(l) !== null && pbLocLeft(l) <= 7).sort(pbLocByExp);
+    /* feat_locate28: + a ticket not valid yet, + a ticket in its last 2 days to start work (the expiry alert comes first) */
+    const pbL28 = (l) => { const s = pbLocStat(l); return !s ? null : s.k === 'early' ? s : s.k === 'start' ? (pbLocDayMs(s.d) - pbLocDayMs(pbTkToday()) <= 2 * 86400000 ? s : null) : pbLocLeft(l) !== null && pbLocLeft(l) <= 7 ? { k: 'exp' } : null; };
+    const pbL28T = (l) => { const s = pbL28(l); return s.k === 'early' ? 'isn’t valid until ' + pbLocDayW(s.d) : s.k === 'start' ? 'start work by ' + pbLocDayW(s.d) : pbLocDueText(l); };
+    const L = pbLocMineRows().filter(l => l && !l.closed && pbL28(l)).sort(pbLocByExp);
     if (!L.length) return null;
-    const red = L.some(l => pbLocLevel(l) === 'red'), gone = L.some(l => pbLocLeft(l) < 0), jobs = [...new Set(L.map(l => String(l.job_number || '')))].filter(Boolean);
-    const t = L.length === 1 ? 'Locate ticket ' + L[0].ticket_no + ' ' + pbLocDueText(L[0]) : L.length + ' locate tickets ' + (gone ? 'expired or expiring' : 'expire within 7 days');
-    const body = L.length === 1 ? pbProdJobLabel(L[0].job_number) + (gone ? '. Call 811 for a new ticket, then update it here.' : '. Call 811 for a refresh, then update the ticket.')
-      : L.slice(0, 4).map(l => pbProdJobLabel(l.job_number) + ': ' + l.ticket_no + ' ' + pbLocDueText(l)).join('; ') + (L.length > 4 ? '; and ' + (L.length - 4) + ' more' : '') + '. Call 811 for a refresh.';
+    const red = L.some(l => pbLocLevel(l) === 'red' && pbL28(l).k === 'exp'), gone = L.some(l => pbLocLeft(l) < 0), jobs = [...new Set(L.map(l => String(l.job_number || '')))].filter(Boolean);
+    const allExp = L.every(l => pbL28(l).k === 'exp'), k0 = pbL28(L[0]).k;
+    const t = L.length === 1 ? 'Locate ticket ' + L[0].ticket_no + (k0 === 'start' ? ': ' : ' ') + pbL28T(L[0]) : L.length + ' locate tickets ' + (!allExp ? 'need a look' : gone ? 'expired or expiring' : 'expire within 7 days');
+    const body = L.length === 1 ? pbProdJobLabel(L[0].job_number) + (k0 === 'early' ? '.' : k0 === 'start' ? '. If work hasn’t started by then, call 811 for a new ticket.' : gone ? '. Call 811 for a new ticket, then update it here.' : '. Call 811 for a refresh, then update the ticket.')
+      : L.slice(0, 4).map(l => pbProdJobLabel(l.job_number) + ': ' + l.ticket_no + ' ' + pbL28T(l)).join('; ') + (L.length > 4 ? '; and ' + (L.length - 4) + ' more' : '') + (L.some(l => pbL28(l).k === 'exp') ? '. Call 811 for a refresh.' : '.');
     const btns = jobs.slice(0, 3).map((n, i) => '<button type="button" class="pb-btn small" id="homeLocBtn' + i + '" data-job="' + escapeHtml(n) + '" onclick="pbOpenLocates(this.dataset.job)">' + escapeHtml(jobs.length > 1 ? 'Locates · ' + pbProdJobLabel(n) : 'Open Locates') + '</button>').join('');
     return { id: 'locates', info: !red, html: '<span class="t">' + escapeHtml(t) + '</span>' + escapeHtml(body) + btns };
   };
@@ -59737,6 +59973,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (l.closed) { const cd = pbLc811Day(l.closed_at, tz); if (pbLocIsDay(cd) ? cd < d : d >= today) return 'closed'; }
     if (exp < d) return 'expired';
     if (pbLocIsDay(called) && called > d) return 'after';
+    if (pbLocIsDay(called) && d < pbLocCanDig(called)) return 'early'; /* feat_locate28: the 2-working-day wait */
     return 'ok';
   }
   window.pbLc811 = function(job, date) {
@@ -59760,9 +59997,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const all = rows.concat(mine).map(l => ({ l, st: pbLc811State(l, date, today, tz) }));
     if (!all.length) return { none: true };
     if (all.some(x => x.st === 'ok')) return null;
-    const day = pbLocDay(date), live = all.filter(x => x.st === 'expired' || x.st === 'after').sort((a, b) => pbLocByExp(a.l, b.l));
+    const day = pbLocDay(date), live = all.filter(x => x.st === 'expired' || x.st === 'after' || x.st === 'early') /* feat_locate28 */.sort((a, b) => pbLocByExp(a.l, b.l));
     let why;
-    if (live.length) { const x = live[live.length - 1], l = x.l; why = x.st === 'expired' ? 'Ticket ' + l.ticket_no + ' expired ' + pbLocDay(l.expires_at) + '.' : 'Ticket ' + l.ticket_no + ' was called in ' + pbLocDay(l.called_at) + ', after that day.'; }
+    if (live.length) { const x = live[live.length - 1], l = x.l; why = x.st === 'expired' ? 'Ticket ' + l.ticket_no + ' expired ' + pbLocDay(l.expires_at) + '.' : x.st === 'early' ? 'Ticket ' + l.ticket_no + ' isn’t valid until ' + pbLocDay(pbLocCanDig(l.called_at)) + '.' /* feat_locate28 */ : 'Ticket ' + l.ticket_no + ' was called in ' + pbLocDay(l.called_at) + ', after that day.'; }
     else why = all.some(x => x.st === 'closed') ? 'Every ticket on file for this job was closed by then.' : 'No ticket on file has usable dates.';
     const at = Number(J.at) || 0, old = at && Date.now() - at > 12 * 3600000;
     return { warn: 'No 811 ticket on file that covers ' + day + ' for this job — check before digging.', why, at, asOf: old ? 'This phone’s list is from ' + pbRptDt(at) + '.' : '',
@@ -59797,10 +60034,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const D = pbCoTz.uid === pbArchiveOwnerUid ? pbCoTz.data : null, S = pbLocCo;
     if (!D || D.locate_days === undefined || D.locate_days === null) { if (!w.hidden) w.hidden = true; if (w.innerHTML) w.innerHTML = ''; return; }
     w.hidden = false;
-    const n = Math.round(Number(D.locate_days) || 14), msg = S.msg ? '<p class="pb-help' + (S.kind === 'err' ? ' pb-err' : '') + '" id="settingsCoLocMsg" role="status">' + escapeHtml(S.msg) + '</p>' : '';
-    if (!S.edit) { w.innerHTML = '<button type="button" class="pbx-namerow" id="settingsCoLocRow" aria-expanded="false" onclick="pbLocCoEdit(true)"><span class="pbx-namerow-k">Locate tickets</span><span class="pbx-namerow-v" id="settingsCoLocShown">' + escapeHtml('Good for ' + n + ' days') + '</span><span class="pbx-namerow-a">Edit</span></button>' + msg; return; }
+    const n = Math.round(Number(D.locate_days) || 28) /* feat_locate28 */, msg = S.msg ? '<p class="pb-help' + (S.kind === 'err' ? ' pb-err' : '') + '" id="settingsCoLocMsg" role="status">' + escapeHtml(S.msg) + '</p>' : '';
+    if (!S.edit) { w.innerHTML = '<button type="button" class="pbx-namerow" id="settingsCoLocRow" aria-expanded="false" onclick="pbLocCoEdit(true)"><span class="pbx-namerow-k">Locate tickets</span><span class="pbx-namerow-v" id="settingsCoLocShown">' + escapeHtml('Tickets are good for ' + n + ' days (DigAlert: 28).') + '</span><span class="pbx-namerow-a">Edit</span></button>' + msg; return; }
     w.innerHTML = '<div class="pbx-name-edit" id="settingsCoLocEdit"><div class="pb-field"><label for="settingsCoLocDays">A new dig ticket is good for (days)</label><input type="text" inputmode="numeric" maxlength="2" autocomplete="off" id="settingsCoLocDays" value="' + n + '"></div>'
-      + '<p class="pb-help">The expiry a new ticket starts with: the called-in day plus this many days (1 to 60). Each ticket’s date can still be changed. Check your state’s 811 rules.</p>'
+      + '<p class="pb-help">A new ticket expires on the called-in day plus this many days (1 to 60). Each ticket’s date can still be changed. California DigAlert: 28.</p>'
       + '<div class="pbx-btnrow"><button type="button" class="pb-btn secondary small" id="settingsCoLocSave" onclick="pbLocCoSave()"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? 'Saving…' : 'Save') + '</button><button type="button" class="pb-btn ghost small" id="settingsCoLocCancel" onclick="pbLocCoEdit(false)">Cancel</button></div>' + msg + '</div>';
   }
   window.pbLocCoEdit = function(on) { pbLocCo.edit = !!on; pbLocCo.msg = ''; pbLocCoRender(); const f = pbLocE(on ? 'settingsCoLocDays' : 'settingsCoLocRow'); if (f) f.focus({ preventScroll: true }); };
