@@ -10990,7 +10990,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.71 · 2026-10-30'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.72 · 2026-10-31'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -39233,9 +39233,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const groups = new Map(); // idx -> [label strip, main, note, tools]
     body.querySelectorAll('tr[data-laid-idx], tr[data-laid-for]').forEach(tr => { const i = Number(tr.dataset.laidIdx !== undefined ? tr.dataset.laidIdx : tr.dataset.laidFor); if (!groups.has(i)) groups.set(i, []); groups.get(i).push(tr); });
     // blocks of laid rows (for folding)
+    // feat_resumefold (owner, Oct 31): a continued run starts at the point it continues from; the earlier session's rows
+    // before it are one line ("N rows from the earlier session"), opened with a tap
+    let eEnd = -1; if (S.early) { let k = -1; while (k + 1 < S.early.length && S.early[k + 1]) k++; eEnd = k - 1; } // the continue-from row itself stays
     const blocks = []; let cur = null;
-    S.laid.forEach((t, i) => { if (t !== null) { if (!cur) { cur = { start: i, end: i }; blocks.push(cur); } else cur.end = i; } else cur = null; });
+    S.laid.forEach((t, i) => { if (t !== null && i > eEnd) { if (!cur) { cur = { start: i, end: i }; blocks.push(cur); } else cur.end = i; } else cur = null; });
     const folded = new Set();
+    if (eEnd >= 0 && !pbLaidExpanded.open.has(-1)) for (let i = 0; i <= eEnd; i++) folded.add(i);
     if (hide) blocks.forEach(b => { if (!pbLaidExpanded.open.has(b.start)) for (let i = b.start; i <= b.end; i++) folded.add(i); });
     groups.forEach((trs, i) => {
       const t = S.laid[i], isLaid = t !== null && t !== undefined, isNext = i === S.next, isEarly = !!(S.early && S.early[i]);
@@ -39264,6 +39268,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + escapeHtml(n + ' row' + (n === 1 ? '' : 's') + ' laid (' + S.rows[b.start].station + ' to ' + S.rows[b.end].station + ')') + '</span><span class="pb-laid-sumact">' + (open ? 'Fold' : 'Show') + '</span></button>';
       tr.appendChild(td); first.parentNode.insertBefore(tr, first);
     });
+    if (eEnd >= 0) { const first = (groups.get(0) || [])[0]; if (first) { // feat_resumefold
+      const open = pbLaidExpanded.open.has(-1), n = eEnd + 1;
+      const tr = document.createElement('tr'); tr.className = 'pb-laid-sum pb-laid-sumearly'; tr.dataset.start = '-1';
+      const td = document.createElement('td'); td.colSpan = (first.parentNode && first.parentNode.parentNode && first.parentNode.parentNode.tHead && first.parentNode.parentNode.tHead.rows[0]) ? first.parentNode.parentNode.tHead.rows[0].cells.length : 5;
+      td.innerHTML = '<button type="button" class="pb-laid-sumbtn" aria-expanded="' + open + '" onclick="pbLaidExpand(-1)"><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-ok"/></svg><span>'
+        + escapeHtml(n + ' row' + (n === 1 ? '' : 's') + ' from the earlier session (' + S.rows[0].station + ' to ' + S.rows[eEnd].station + ')') + '</span><span class="pb-laid-sumact">' + (open ? 'Fold' : 'Show') + '</span></button>';
+      tr.appendChild(td); first.parentNode.insertBefore(tr, first); } }
     const prog = pbProdEl('laidProgress'); if (prog) { const t = pbLaidProgressText(S); prog.textContent = t; prog.hidden = !t; }
     const hb = pbProdEl('laidHideBtn'); if (hb) { hb.hidden = !S.n && !hide; hb.setAttribute('aria-pressed', String(hide)); hb.lastChild.textContent = hide ? 'Show laid' : 'Hide laid'; hb.setAttribute('aria-label', hide ? 'Show laid rows' : 'Hide laid rows'); } /* feat_results2 (9): short labels, one toolbar row */
     try { pbRsEndTopPaint(entry, S); } catch (e) { console.error(e); } /* feat_runsetup (12) */
@@ -52844,7 +52855,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbDlyRebuild = function() { if (pbDlyView.job) pbDlyBuild(); }; // nit: keeps an amendment in progress (pbDlyPick starts over)
 
   // ---- weather (edge function "weather"; NWS; per JOB location only) ----
-  function pbDlyWeatherLabel(w) { if (!w || !w.data) return ''; return 'Weather from National Weather Service station ' + (w.station || w.data.station) + (w.data.station_name ? ' (' + w.data.station_name + ')' : '') + ', retrieved ' + pbDlyTimeIn(w.retrieved_at) + '.'; }
+  function pbDlyWeatherLabel(w) { if (!w || !w.data) return ''; return 'Weather from National Weather Service station ' + (w.station || w.data.station) + (w.data.station_name ? ' (' + w.data.station_name + ')' : '') + '.'; } /* feat_wxlabel: owner: the look-up time read like the weather's date */
   async function pbDlyWeatherCached() {
     const uid = pbArchiveOwnerUid, wk = pbDlyKey(pbDlyView.job) + '|' + pbDlyView.date;
     if (pbDly.st && pbDly.st.weather[wk]) { pbDlyView.weather = pbDly.st.weather[wk]; pbDlyRender(); }
@@ -52903,7 +52914,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const d = w && w.data; if (!d) return '';
     const parts = [];
     if (d.high_f !== null && d.low_f !== null) parts.push('High ' + Math.round(d.high_f) + '°F / low ' + Math.round(d.low_f) + '°F');
-    parts.push(d.precip_in === null || d.precip_in === undefined ? 'precipitation not reported' : 'precipitation ' + d.precip_in.toFixed(2) + ' in (' + d.precip_hours_reported + ' hourly reports)');
+    if (!(d.precip_in === null || d.precip_in === undefined)) parts.push('precipitation ' + d.precip_in.toFixed(2) + ' in (' + d.precip_hours_reported + ' hourly reports)'); // feat_wxlabel: a station that doesn't measure rain says nothing about it
     if (d.wind_max_mph !== null) parts.push('wind to ' + d.wind_max_mph + ' mph' + (d.gust_max_mph !== null ? ', gusts ' + d.gust_max_mph + ' mph' : ''));
     if (Array.isArray(d.conditions) && d.conditions.length) parts.push(d.conditions.map(c => c.text).join(', '));
     return parts.join(' · ') + (w.complete ? '' : ' (day still in progress: observations through ' + pbDlyTimeIn(d.last_obs) + ')');
@@ -53169,11 +53180,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return es.length ? '<div class="dp-sug" id="dpEqSug" role="group" aria-label="Add equipment">' + es.map((q, i) => '<button type="button" class="dp-sugb" id="dpEqSug_' + i + '" onclick="pbDpAddSugg(\'equip\',' + i + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>' + escapeHtml(pbDpEqName(q) + (q.rental ? ' · Rental' : '')) + '</button>').join('') + '</div>' : '';
   }
   function pbCeSugPaint() { const w = pbDlyEl('dpEqSugW'), d = pbDpDraft(); if (w && d) pbSetHtml(w, pbCeSugHtml(d)); }
-  const pbCeHead = (d) => { const m = d.equip.length, s = Math.round(d.equip.reduce((t, q) => t + (pbCeHrs(pbDxHv(q, true)).n || 0), 0) * 100) / 100; return '· ' + (m ? pbDpPieces(m) + (s > 0 ? ' · ' + pbDpH(s) : '') : 'none listed'); };
+  const pbCeHead = (d) => { const m = d.equip.length, s = Math.round(d.equip.reduce((t, q) => t + (pbCeHrs(pbDxHvC(q, true)).n || 0), 0) * 100) / 100; return '· ' + (m ? pbDpPieces(m) + (s > 0 ? ' · ' + pbDpH(s) : '') : 'none listed'); };
   function pbCeRow(q, i) {
-    const nm = pbDpEqName(q), v = pbDxHv(q, true); /* feat_dailyx: the Crew log's hours until he types */
+    const nm = pbDpEqName(q), v = pbDxHvC(q, true); /* feat_dailyx: the Crew log's hours until he types */
     return '<li class="dp-item dp-eqrow" id="dpEq_' + i + '"><span class="dp-eqtx"><span class="dp-nm">' + escapeHtml(nm) + '</span>' + (q.rental ? '<span class="dp-sub">Rental</span>' : '') + pbDfTag(q) + '</span>' /* feat_dailyfill */
-      + '<span class="dp-eqhw"><input type="text" class="dp-eqh" id="dpEqH_' + i + '" inputmode="decimal" autocomplete="off" maxlength="5" enterkeyhint="done" placeholder="0" aria-label="' + escapeHtml('Hours, ' + nm) + '" value="' + escapeHtml(v) + '" oninput="pbCeHours(' + i + ',this.value)" onblur="pbCeHoursKeep()"><span class="dp-eqhu" aria-hidden="true">h</span></span>'
+      + '<span class="dp-eqhw"><input type="text" class="dp-eqh" id="dpEqH_' + i + '" inputmode="decimal" autocomplete="off" maxlength="5" enterkeyhint="done" placeholder="0" aria-label="' + escapeHtml('Hours, ' + nm) + '" value="' + escapeHtml(v) + '" oninput="pbCeHours(' + i + ',this.value)" onfocus="try{this.select()}catch(e){}" onblur="pbCeHoursKeep()"><span class="dp-eqhu" aria-hidden="true">h</span></span>'
       + '<button type="button" class="dp-x" id="dpEqX_' + i + '" aria-label="' + escapeHtml('Remove ' + nm) + '" onclick="pbDpRemove(\'Eq\',' + i + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-x"/></svg></button></li>';
   }
   window.pbCeHours = function(i, v) {
@@ -53245,13 +53256,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // what the box shows: what he typed (even blank), else the Crew log's hours
   const pbDxHv = (q, eq) => q.hours !== undefined && q.hours !== null ? String(q.hours) : (() => { const h = pbDxLogH(eq ? pbDpEqName(q) : q.name, eq) || (eq ? pbDxLogH(q.name, true) : 0); return h > 0 ? String(h) : ''; })();
   // ---- Crew today: a row per person with an hours box ----
+  const pbDxHvC = (p, eq) => { const v = pbDxHv(p, !!eq); return v === '' && (p.hours === undefined || p.hours === null) ? '8' : v; }; // feat_crew8: a full day unless he changes it
   function pbDxCrewRow(p, i, ids) {
-    const tag = pbDpCrewTag(p, ids), v = pbDxHv(p, false);
+    const tag = pbDpCrewTag(p, ids), v = pbDxHvC(p);
     return '<li class="dp-item dp-eqrow" id="dpCrew_' + i + '"><span class="dp-eqtx"><span class="dp-nm">' + escapeHtml(p.name) + '</span>' + (tag ? '<span class="dp-sub">' + escapeHtml(tag) + '</span>' : '') + pbDfTag(p) + '</span>' /* feat_dailyfill */
-      + '<span class="dp-eqhw"><input type="text" class="dp-eqh" id="dpCrewH_' + i + '" inputmode="decimal" autocomplete="off" maxlength="5" enterkeyhint="done" placeholder="0" aria-label="' + escapeHtml('Hours, ' + p.name) + '" value="' + escapeHtml(v) + '" oninput="pbDxCrewHours(' + i + ',this.value)" onblur="pbCeHoursKeep()"><span class="dp-eqhu" aria-hidden="true">h</span></span>'
+      + '<span class="dp-eqhw"><input type="text" class="dp-eqh" id="dpCrewH_' + i + '" inputmode="decimal" autocomplete="off" maxlength="5" enterkeyhint="done" placeholder="0" aria-label="' + escapeHtml('Hours, ' + p.name) + '" value="' + escapeHtml(v) + '" oninput="pbDxCrewHours(' + i + ',this.value)" onfocus="try{this.select()}catch(e){}" onblur="pbCeHoursKeep()"><span class="dp-eqhu" aria-hidden="true">h</span></span>'
       + '<button type="button" class="dp-x" id="dpCrewX_' + i + '" aria-label="' + escapeHtml('Remove ' + p.name) + '" onclick="pbDpRemove(\'Crew\',' + i + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-x"/></svg></button></li>';
   }
-  const pbDxCrewSum = (d) => Math.round(d.crew.reduce((s, p) => s + (pbCeHrs(pbDxHv(p, false)).n || 0), 0) * 100) / 100;
+  const pbDxCrewSum = (d) => Math.round(d.crew.reduce((s, p) => s + (pbCeHrs(pbDxHvC(p)).n || 0), 0) * 100) / 100;
   const pbDxCrewHead = (d) => { const n = d.crew.length, s = pbDxCrewSum(d); return '· ' + (n ? pbDpPeople(n) + (s > 0 ? ' · ' + pbDpH(s) : '') : 'nobody listed'); };
   window.pbDxCrewHours = function(i, v) {
     const d = pbDpDraft(); if (!d || !d.crew[i]) return;
@@ -53854,7 +53866,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbDpDraft() {
     const D = pbDp.drafts; if (!D || pbDp.uid !== pbArchiveOwnerUid || !pbDlyView.job) return null;
-    const k = pbDpKey(); if (D[k] && !D[k].quick) { D[k].k = k; return D[k]; }
+    const k = pbDpKey(); if (D[k] && !D[k].quick) { D[k].k = k; pbDpMe(D[k]); return D[k]; }
     const Q = D[k] && D[k].quick ? D[k] : null; /* feat_dailyx: notes added from Home: the day still starts as usual (crew and equipment from the last report) */
     const V = pbDlyView, st = pbDly.st; let d = null;
     if (V.amend && st) { const r = st.reports.find(x => x.cid === V.amend.prevCid); if (r && r.snapshot) d = Object.assign(pbDpFromSnap(r.snapshot, true), { from: { kind: 'amend' } }); }
@@ -53869,13 +53881,33 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // not kept until he changes something: until then it follows his latest signed report
     { const out = Object.assign({ crew: [], equip: [], events: [], notes: [], photos: [], from: { kind: 'none' } }, d || {}, { k, at: Date.now() }); /* feat_dailyx: + notes, photos */
       if (Q) { out.notes = (Array.isArray(Q.notes) ? Q.notes : []).concat(out.notes || []); out.photos = (Array.isArray(Q.photos) ? Q.photos : []).concat(out.photos || []).slice(0, PB_DX_MAXPH); D[k] = out; } // the quick notes and photos from Home stay
-      return out; }
+      pbDpMe(out); return out; }
+  }
+  // feat_crew8: the foreman is on his own crew list (first), unless he took himself off; not on an amendment (it keeps what was signed)
+  let pbDpMeAsk = null;
+  function pbDpMeName(uid) {
+    let n = ''; try { n = typeof pbRfMyName === 'function' ? pbRfMyName(uid) : ''; } catch (e) { n = ''; }
+    if (!n) { try { if (pbMyName && pbMyName.uid === uid && pbMyName.name) n = String(pbMyName.name); } catch (e) {} }
+    if (!n && pbDpMeAsk !== uid && typeof pbMyNameLoad === 'function') { pbDpMeAsk = uid; pbMyNameLoad().then(r => { if (r && r.name && typeof pbDpRender === 'function' && pbDlyView && pbDlyView.job) { try { pbDpRender(); } catch (e) {} } }).catch(() => {}); }
+    return String(n || '').trim();
+  }
+  function pbDpMe(d) {
+    try {
+      if (!d || !Array.isArray(d.crew) || pbDlyView.amend || (d.from && d.from.kind === 'amend')) return;
+      const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared') return;
+      if (d.crew.some(p => p && (p.me || p.user_id === uid))) return;
+      let nm = pbDpMeName(uid); if (!nm) { let fm = false; try { fm = typeof pbLvIsForeman === 'function' && pbLvIsForeman(uid); } catch (e) {} if (!fm) return; nm = 'Foreman'; } nm = pbDpCut(nm, 80); const k = 'p:' + pbDpNk(nm);
+      if ((Array.isArray(d.rfGone) ? d.rfGone : []).includes(k) || d.meGone) return;
+      const i = d.crew.findIndex(p => p && !p.user_id && pbDpNk(p.name) === pbDpNk(nm));
+      if (i >= 0) { const p = d.crew.splice(i, 1)[0]; delete p.left; d.crew.unshift(Object.assign(p, { user_id: uid, me: true })); return; }
+      d.crew.unshift({ name: nm, user_id: uid, me: true });
+    } catch (e) { console.error(e); }
   }
   // review S8: the phone keeps one list of reports per account, not per company: only this company's reports fill or suggest
   const pbDpSameCo = (r) => (r.co || null) === ((pbDly.st && pbDly.st.co) || null);
   // his crew in the app as the server has it now (null while not loaded): someone no longer on it is kept as a typed name
   const pbDpCrewIds = () => pbLv && pbLv.uid === pbArchiveOwnerUid && pbLv.data && Array.isArray(pbLv.data.crew) ? new Set(pbLv.data.crew.filter(c => c && c.id).map(c => c.id)) : null;
-  const pbDpCrewTag = (p, ids) => p.left || (p.user_id && ids && !ids.has(p.user_id)) ? 'no longer on the crew' : p.user_id ? 'in the app' : '';
+  const pbDpCrewTag = (p, ids) => p.me ? 'foreman' : p.left || (p.user_id && ids && !ids.has(p.user_id)) ? 'no longer on the crew' : p.user_id ? 'in the app' : '';
   function pbDpTouch(d) { d.at = Date.now(); d.from = Object.assign({}, d.from, { edited: true }); if (d.k && pbDp.drafts) pbDp.drafts[d.k] = d; return pbDpSave(['d']); }
 
   // ---- suggestions: his crew in the app, the day's Crew & Equipment Log, the job plan's equipment, earlier reports ----
@@ -54065,17 +54097,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbDp.uid === pbArchiveOwnerUid && pbDp.failed) return 'The crew, equipment and delays on this phone couldn’t be read. Close the app and open it again before signing.';
     if (pbDp.form) { pbDxTog('dpEvents', true); return 'Add or cancel the entry you are writing under Delays & Extra Work first.'; }
     if (!pbDpDraft()) return 'The crew and equipment are still loading. Try again in a moment.';
-    { const q = pbDpDraft().equip.find(x => pbCeHrs(pbDxHv(x, true)).bad); if (q) { pbDxTog('dpEquip', true); return 'Equipment on site: check the hours for ' + pbDpEqName(q) + ' (a number of hours, at most 24).'; } } // feat_coequip
-    { const p = pbDpDraft().crew.find(x => pbCeHrs(pbDxHv(x, false)).bad); if (p) { pbDxTog('dpCrew', true); return 'Crew today: check the hours for ' + p.name + ' (a number of hours, at most 24).'; } } // feat_dailyx
+    { const q = pbDpDraft().equip.find(x => pbCeHrs(pbDxHvC(x, true)).bad); if (q) { pbDxTog('dpEquip', true); return 'Equipment on site: check the hours for ' + pbDpEqName(q) + ' (a number of hours, at most 24).'; } } // feat_coequip
+    { const p = pbDpDraft().crew.find(x => pbCeHrs(pbDxHvC(x)).bad); if (p) { pbDxTog('dpCrew', true); return 'Crew today: check the hours for ' + p.name + ' (a number of hours, at most 24).'; } } // feat_dailyx
     return '';
   }
   function pbDpIntoSnap(snap) {
     const d = pbDpDraft(); if (!d) return false;
     const src = (d.from && d.from.kind === 'prev' ? 'Listed by the foreman on this report (started from his report of ' + d.from.date + ').' : 'Listed by the foreman on this report.') + (d.crew.concat(d.equip).some(x => x && x.rf) ? ' Lines marked from runs were filled from the day’s run reports (Crew & Equipment Log check-ins, overlapping time once; Run Notes and his production entry for machine hours and rentals).' : ''); /* feat_dailyfill */
     const ids = pbDpCrewIds();
-    snap.crew_today = { source: src, people: d.crew.map(p => ({ name: pbDpCut(p.name, 80), user_id: p.user_id && !p.left && (!ids || ids.has(p.user_id)) ? p.user_id : null })) };
-    snap.equipment_today = { source: src, pieces: d.equip.map(q => { const h = pbCeHrs(pbDxHv(q, true)).n; return Object.assign({ key: q.key || null, name: q.name, unit_no: q.unit_no || null }, q.rental ? { rental: true } : {}, q.co_id && !q.rental ? { co_id: q.co_id } : {}, q.cost_code ? { cost_code: q.cost_code } : {}, h !== null && h !== undefined ? { hours: h } : {}, pbDxLogH(pbDpEqName(q), true) > 0 ? { log_h: pbDxLogH(pbDpEqName(q), true) } : {}); }) }; /* feat_coequip: + the hours, the company piece, its cost code */
-    snap.crew_today.people = d.crew.map((p, i) => { const o = snap.crew_today.people[i], h = pbCeHrs(pbDxHv(p, false)).n, lh = pbDxLogH(p.name, false); return Object.assign(o, h !== null && h !== undefined ? { hours: h } : {}, lh > 0 ? { log_h: lh } : {}); }); /* feat_dailyx: hours per person */
+    snap.crew_today = { source: src, people: d.crew.map(p => ({ name: pbDpCut(p.name, 80), user_id: p.me && p.user_id === pbArchiveOwnerUid ? p.user_id : p.user_id && !p.left && (!ids || ids.has(p.user_id)) ? p.user_id : null })) /* feat_crew8 */ };
+    snap.equipment_today = { source: src, pieces: d.equip.map(q => { const h = pbCeHrs(pbDxHvC(q, true)).n; return Object.assign({ key: q.key || null, name: q.name, unit_no: q.unit_no || null }, q.rental ? { rental: true } : {}, q.co_id && !q.rental ? { co_id: q.co_id } : {}, q.cost_code ? { cost_code: q.cost_code } : {}, h !== null && h !== undefined ? { hours: h } : {}, pbDxLogH(pbDpEqName(q), true) > 0 ? { log_h: pbDxLogH(pbDpEqName(q), true) } : {}); }) }; /* feat_coequip: + the hours, the company piece, its cost code */
+    snap.crew_today.people = d.crew.map((p, i) => { const o = snap.crew_today.people[i], h = pbCeHrs(pbDxHvC(p)).n, lh = pbDxLogH(p.name, false); return Object.assign(o, h !== null && h !== undefined ? { hours: h } : {}, lh > 0 ? { log_h: lh } : {}); }); /* feat_dailyx: hours per person */
     if (pbDxNotes(d).length) snap.notes = pbDxNotes(d).slice(0, 200).map(x => Object.assign({ at: new Date(x.at).toISOString(), text: pbDpCut(x.text, 1000) }, x.edited_at ? { edited_at: new Date(x.edited_at).toISOString() } : {}));
     if (pbDxPhotos(d).length) snap.photos = pbDxPhotos(d).slice(0, PB_DX_MAXPH).map(p => ({ sha: p.sha, taken_exif: p.taken_exif || null, caption: p.caption ? pbDpCut(String(p.caption).trim(), 200) || null : null }));
     pbDxCrewIntoSnap(snap); /* feat_dailyx */
@@ -54542,23 +54574,23 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const R = pbDfLines(); if (!R || (!R.people.length && !R.equip.length)) return false;
     let ch = false; const gone = Array.isArray(d.rfGone) ? d.rfGone : [];
     if (d.from && (d.from.kind === 'prev' || d.from.was === 'prev') && !d.from.edited && !pbDp.hT) { // review 4 (1): not while his typing waits to be kept // the day's runs win over the previous report's list, each list when its run data first shows (review 3, 2)
-      if (R.people.length && !d.from.runC) { d.crew = d.crew.filter(p => p.rf); d.from = Object.assign({}, d.from, { runC: true }); ch = true; }
-      if (R.equip.length && !d.from.runE) { d.equip = d.equip.filter(q => q.rf); d.from = Object.assign({}, d.from, { runE: true }); ch = true; }
+      if (R.people.length && !d.from.runC) { /* feat_crew8: the previous report's people stay; the runs add to them */ d.from = Object.assign({}, d.from, { runC: true }); ch = true; }
+      if (R.equip.length && !d.from.runE) { /* feat_crew8: the previous report's equipment stays; the runs add to it */ d.from = Object.assign({}, d.from, { runE: true }); ch = true; }
       if (ch && d.from.runC && d.from.runE) d.from = Object.assign({}, d.from, { kind: 'runs', was: 'prev' }); // review 4 (nit 1)
     }
     R.people.forEach(L => {
       const p = d.crew.find(x => pbDfCk(x) === L.k || (L.user_id && x.user_id === L.user_id));
-      if (!p) { if (gone.includes(L.k)) return; d.crew.push(Object.assign({ name: L.name, user_id: L.user_id }, { hours: L.hours, rf: true, rfH: L.hours })); ch = true; return; }
+      if (!p) { if (gone.includes(L.k)) return; d.crew.push(Object.assign({ name: L.name, user_id: L.user_id }, L.hours !== '' ? { hours: L.hours } : {}, { rf: true, rfH: L.hours })); ch = true; return; } /* feat_crew8: no hours on the runs: the 8 h default */
       if (p.rfEdited) return;
-      if (p.rf) { if (String(p.hours || '') !== String(p.rfH || '')) { p.rfEdited = true; ch = true; return; } /* changed some other way (review 3, 1): his */ if (String(p.hours || '') !== L.hours) { p.hours = L.hours; p.rfH = L.hours; ch = true; } return; }
-      if (p.hours === undefined || p.hours === null) { p.hours = L.hours; p.rf = true; p.rfH = L.hours; ch = true; } // a box he cleared stays clear (review 3, 7)
+      if (p.rf) { if (String(p.hours || '') !== String(p.rfH || '')) { p.rfEdited = true; ch = true; return; } /* changed some other way (review 3, 1): his */ if (String(p.hours || '') !== L.hours) { if (L.hours === '') delete p.hours; else p.hours = L.hours; p.rfH = L.hours; ch = true; } return; }
+      if ((p.hours === undefined || p.hours === null) && L.hours !== '') { p.hours = L.hours; p.rf = true; p.rfH = L.hours; ch = true; } // a box he cleared stays clear (review 3, 7); feat_crew8: no run hours keeps the default
     });
     R.equip.forEach(L => {
       const q = d.equip.find(x => pbDfEk(x) === L.k || pbDfEk(x) === pbDfEk(L) || (L.co_id && x.co_id === L.co_id) || (L.key && x.key === L.key));
-      if (!q) { if (gone.includes(L.k) || gone.includes(pbDfEk(L))) return; const o = { key: L.key, name: L.name, unit_no: L.unit_no, hours: L.hours, rf: true, rfH: L.hours }; if (L.rental) o.rental = true; else if (L.co_id) o.co_id = L.co_id; if (L.cost_code) o.cost_code = L.cost_code; d.equip.push(o); ch = true; return; }
+      if (!q) { if (gone.includes(L.k) || gone.includes(pbDfEk(L))) return; const o = { key: L.key, name: L.name, unit_no: L.unit_no, rf: true, rfH: L.hours }; if (L.hours !== '') o.hours = L.hours; /* feat_crew8 */ if (L.rental) o.rental = true; else if (L.co_id) o.co_id = L.co_id; if (L.cost_code) o.cost_code = L.cost_code; d.equip.push(o); ch = true; return; }
       if (q.rfEdited) return;
-      if (q.rf) { if (String(q.hours || '') !== String(q.rfH || '')) { q.rfEdited = true; ch = true; return; } if (String(q.hours || '') !== L.hours) { q.hours = L.hours; q.rfH = L.hours; ch = true; } return; }
-      if (q.hours === undefined || q.hours === null) { q.hours = L.hours; q.rf = true; q.rfH = L.hours; ch = true; }
+      if (q.rf) { if (String(q.hours || '') !== String(q.rfH || '')) { q.rfEdited = true; ch = true; return; } if (String(q.hours || '') !== L.hours) { if (L.hours === '') delete q.hours; else q.hours = L.hours; q.rfH = L.hours; ch = true; } return; }
+      if ((q.hours === undefined || q.hours === null) && L.hours !== '') { q.hours = L.hours; q.rf = true; q.rfH = L.hours; ch = true; }
     });
     if (ch && pbDp.drafts && d.k) { d.at = Date.now(); pbDp.drafts[d.k] = d; pbDpSave(['d']).catch(() => {}); }
     return ch;
@@ -54570,7 +54602,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (p && p.rf && !p.rfEdited && String(p.hours || '') !== String(p.rfH || '')) { p.rfEdited = true; const t = document.querySelector('#dpCrew_' + i + ' .dp-rf'); if (t) t.remove(); } return r; }; }
   { const o = window.pbCeHours; window.pbCeHours = function(i, v) { const d = pbDpDraft(), q = d && d.equip[i]; const r = o.apply(this, arguments); pbDfMine(d);
       if (q && q.rf && !q.rfEdited && String(q.hours || '') !== String(q.rfH || '')) { q.rfEdited = true; const t = document.querySelector('#dpEq_' + i + ' .dp-rf'); if (t) t.remove(); } return r; }; }
-  { const o = window.pbDpRemove; window.pbDpRemove = function(kind, i) { try { const d = pbDpDraft(), x = d && (kind === 'Crew' ? d.crew[i] : d.equip[i]); if (x) { d.rfGone = (Array.isArray(d.rfGone) ? d.rfGone : []).concat([kind === 'Crew' ? pbDfCk(x) : pbDfEk(x)]).slice(-200); } } catch (e) {} return o.apply(this, arguments); }; }
+  { const o = window.pbDpRemove; window.pbDpRemove = function(kind, i) { try { const d = pbDpDraft(), x = d && (kind === 'Crew' ? d.crew[i] : d.equip[i]); if (x) { d.rfGone = (Array.isArray(d.rfGone) ? d.rfGone : []).concat([kind === 'Crew' ? pbDfCk(x) : pbDfEk(x)]).slice(-200); if (kind === 'Crew' && x.me) d.meGone = true; /* feat_crew8 */ } } catch (e) {} return o.apply(this, arguments); }; }
   // ---- B: on the screen ----
   function pbDfRunLine(x) { const f = pbDfSnapRun(x), t = pbDfSumLine(f); return t ? '<br><span class="pbd-dim dx-fm" id="dxFm_' + escapeHtml(String(x.id)) + '">' + escapeHtml('Your side: ' + t) + '</span>' : ''; }
   function pbDfAttLine(it) {
