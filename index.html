@@ -9519,6 +9519,10 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 
 /* ---- what needs you: Right now, Inbox, Material alerts, Waiting on foremen ---- */
 #pbApp .pbx-pulse { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 16px var(--pb-gutter) 0 var(--pb-gutter); }
+.pbx-pair { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: inherit; }
+.pbx-pair > :only-child { grid-column: 1 / -1; }
+#pbApp.pb-text-big .pbx-pair { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 359px) { #pbApp .pbx-pair { grid-template-columns: minmax(0, 1fr); } }
 #pbApp :is(.pbx-now, .pbx-act) { -webkit-appearance: none; appearance: none; position: relative; margin: 0; font: inherit; color: var(--pb-text); text-align: left; cursor: pointer; background: var(--pb-surface); border: 1px solid var(--pbx-line); border-radius: var(--pb-r-card, 14px); box-shadow: var(--pb-elev-1); min-width: 0; }
 #pbApp :is(.pbx-now, .pbx-act):hover { border-color: var(--pbx-line-2); }
 #pbApp :is(.pbx-now, .pbx-act):focus-visible { outline: none; box-shadow: var(--pb-ring); }
@@ -11050,7 +11054,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.77 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.78 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -54427,7 +54431,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (O.missing || !O.read) return '';
     const E = O.list ? pbDpoEff(O).filter(e => e.status === 'new') : null, jobs = E ? new Set(E.map(e => e.job_key)).size : 0;
     const sub = !E ? 'Loads with signal' : E.length ? 'To review · ' + pbDpH(E.reduce((s, e) => s + pbDpNum(e.hours), 0)) + (jobs > 1 ? ' on ' + jobs + ' jobs' : '') : 'Nothing to review';
-    return '<button type="button" class="pbx-act pbx-dp-tile' + (E && E.length ? ' hot' : '') + '" id="homeCxDelays" onclick="pbDpoOpen(null)" style="grid-column:1 / -1">'
+    return '<button type="button" class="pbx-act pbx-dp-tile' + (E && E.length ? ' hot' : '') + '" id="homeCxDelays" onclick="pbDpoOpen(null)">'
       + '<span class="pbx-act-ic">' + pbCxIc('clock') + '</span><span class="pbx-num" id="homeCxDelaysN">' + (E ? E.length : '–') + '</span><span class="pbx-lbl">Delays &amp; extra work</span><span class="pbx-sub" id="homeCxDelaysSub">' + pbCxE(sub) + '</span></button>';
   };
   // the job's Overview: this week, in one line
@@ -56255,7 +56259,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const wait = jobs && !W.known && !W.total ? act('homeCxWait', 'clock', '–', 'Waiting on foremen', window.pbRrMsg(uid) || (pbCxOnline() ? 'Loading…' : 'Loads with signal'), false, 'pbCxOpenList(\'wait\')') /* feat_office A2 */
       : jobs ? act('homeCxWait', 'clock', W.total, 'Waiting on foremen', W.total ? [W.runs ? pbCxN(W.runs, 'run') : '', W.edits ? pbCxN(W.edits, 'edit') : ''].filter(Boolean).join(' · ') : 'Nothing waiting', W.total > 0, 'pbCxOpenList(\'wait\')')
       : act('homeCxWait', 'clock', '–', 'Waiting on foremen', 'Loads with signal', false, 'pbCxOpenList(\'wait\')');
-    return now + inbox + mat + wait + (typeof window.pbRrTile === 'function' ? window.pbRrTile(uid) : '') + (typeof window.pbDpTile === 'function' ? window.pbDpTile(uid) : ''); // feat_dailyplus
+    const pair = (typeof window.pbRrTile === 'function' ? window.pbRrTile(uid) : '') + (typeof window.pbDpTile === 'function' ? window.pbDpTile(uid) : ''); // feat_dailyplus
+    return now + inbox + mat + wait + (pair ? '<div class="pbx-pair">' + pair + '</div>' : ''); // feat_pair (owner Nov 1): run reports and delays side by side
   }
   window.pbCxRender = function() {
     const uid = pbArchiveOwnerUid, X = pbCxSync(uid);
@@ -56589,7 +56594,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbRrTile = function(uid) {
     const O = pbRoFor(uid), L = O.list, S = pbRoSeenSet(uid), nNew = L ? L.filter(x => !x.removed_at /* feat_office A6 */ && !S.has(pbRoSeenKey(x))).length : 0;
     const sub = !L ? 'Loads with signal' : !L.length ? 'No run reports sent yet' : [nNew ? nNew + ' new' : 'Nothing new', pbRoWaiting(L) ? pbRoWaiting(L) + ' waiting for a foreman' : '', window.pbRrOfficeMine(uid) ? window.pbRrOfficeMine(uid) + ' sent to the office' : '' /* feat_rrflow 3 */].filter(Boolean).join(' · ');
-    return '<button type="button" class="pbx-act pbx-rr-tile" id="homeCxRuns2" onclick="pbCxOpenList(\'runs\')" style="grid-column:1 / -1">'
+    return '<button type="button" class="pbx-act pbx-rr-tile" id="homeCxRuns2" onclick="pbCxOpenList(\'runs\')">'
       + '<span class="pbx-act-ic">' + pbCxIc('pipe') + '</span><span class="pbx-num">' + (L ? nNew : '–') + '</span><span class="pbx-lbl">' + (nNew === 1 ? 'New run report' : 'New run reports') + '</span><span class="pbx-sub">' + pbCxE(sub) + '</span></button>';
   };
   function pbRoFt(n) { const v = Number(n); return Number.isFinite(v) ? (Math.round(v * 10) / 10).toLocaleString() + ' ft' : ''; }
