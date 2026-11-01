@@ -10990,7 +10990,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.73 · 2026-10-31'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.74 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -36221,6 +36221,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbTk.failed) { pbTkShowErr('Your saved tickets couldn’t be read on this phone, so saving is turned off to keep from overwriting them. It’s still here on the form. Reload the app and try again.'); return; }
     if (!uid || pbTk.uid !== uid || !pbTk.list) { pbTkShowErr('The signed-in account changed, or your tickets are still loading, so this ticket wasn’t saved. It’s still here on the form.'); return; }
     if (f.readOnly) return; // another company's ticket: nothing to save
+    if (f.pending && !(opts && opts.skipAi)) { // feat_tkpending (owner, Oct 31): a ticket was saved empty with the AI's reading still waiting under the photo
+      pbShowModal('AI read this ticket, but what it read isn’t on the form yet.', [{ label: 'Save Without It', onClick: () => window.pbTicketSave(force, Object.assign({}, opts || {}, { skipAi: true })) }, { label: 'Use What AI Read', primary: true, onClick: () => { window.pbTicketAiUse(); setTimeout(() => { const el = pbTkEl('tkAiReview') && document.getElementById('tkF_' + (PB_TK_FIELDS[pbTkType()] || [['']])[0][0]); try { (el || pbTkEl('tkAiReview')).scrollIntoView({ block: 'center' }); } catch (e) {} }, 50); } }], 'Check What AI Read');
+      return;
+    }
     if (f.cid && !pbTkFormDirty() && !(opts && opts.noPhoto)) { pbTkFormDropOrig(f); pbTkForm = null; pbGoto('tickets', false, true); pbTkSavedMsg = 'No changes to save.'; pbTicketsRender(); return; } // nothing changed: no new version (round 2, D2)
     const rec = pbTkReadForm(), fl = rec.fields;
     const sup = rec.type === 'sub' ? fl.company : fl.supplier;
@@ -50349,7 +50353,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (H.err) return '<p class="pbp-dim pbp-err">' + escapeHtml(H.err) + '</p>';
     const ch = Array.isArray(H.changes) ? H.changes : [], al = Array.isArray(H.alerts) ? H.alerts : [];
     const when = (x) => { const d = new Date(x.at); return isNaN(d) ? '' : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'medium' }); };
-    return '<h4 class="pbm-h4">History</h4><ul class="pbm-sub pbm-hist">' + ch.map(x => '<li><span>' + escapeHtml((x.after && x.after.merged_into_name ? 'Merged into ' + x.after.merged_into_name : x.after && x.after.merged_from_name ? 'Merged in: ' + x.after.merged_from_name : x.action === 'create' && x.after && x.after.field_added ? 'Added from the field' : (PB_MAT_ACT[x.action] || x.action)) + ' · ' + when(x) + (x.by ? ' · ' + x.by : '')) + '</span>'
+    return '<h4 class="pbm-h4">History</h4><ul class="pbm-sub pbm-hist">' + ch.map(x => '<li><span>' + escapeHtml((x.after && x.after.merged_into_name ? 'Merged into ' + x.after.merged_into_name : x.after && x.after.merged_from_name ? 'Merged in: ' + x.after.merged_from_name : x.action === 'create' && x.after && x.after.field_added ? 'Added from the field' : x.action === 'ticket_link' && x.after && x.after.auto ? 'Ticket counted automatically' : x.action === 'ticket_unlink' && x.after && x.after.auto && /^The ticket changed after it was counted automatically/.test(x.after.unlink_reason || '') ? 'Ticket changed' : (PB_MAT_ACT[x.action] || x.action)) + ' · ' + when(x) + (x.by ? ' · ' + x.by : '')) + '</span>'
         + (x.phone_at ? '<span class="pbp-dim">Phone time ' + escapeHtml(new Date(x.phone_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'medium' })) + '</span>' : '') + '</li>').join('')
       + al.map(a => '<li><span>' + escapeHtml('Alert at ' + a.alert_pct + '% · ' + when(a) + ': ' + pbMatFmt(a.used, a.unit) + ' used + ' + pbMatFmt(a.waiting, a.unit) + ' waiting of ' + pbMatFmt(a.ordered, a.unit) + ' ' + a.unit + ' ordered') + '</span><span class="pbp-dim">' + escapeHtml(({ sending: 'Waiting for 6:00 AM to send', sent: 'Sent', superseded: 'Not sent: a new order came first', expired: 'Not sent (3 days)', no_recipients: 'Nobody to send to' }[a.state] || a.state)
         + (Array.isArray(a.sent_to) && a.sent_to.length ? ' · to ' + a.sent_to.map(s => s.to).filter(Boolean).join(', ') : '')) + '</span></li>').join('') + '</ul>';
@@ -50471,7 +50475,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const un = lines.filter(x => !x.link);
     let h = '<h4 class="pbm-h4" id="pjTkHead">Delivery tickets: ' + (un.length ? un.length + ' unassigned' : 'all assigned') + '</h4>';
     if (!un.length) return h + '<p class="pbp-dim">Every ticket line on this job counts toward a material.</p>';
-    h += '<p class="pbp-dim">Ticket lines the foremen photographed for this job. Assign each one to a material and it counts toward what’s ordered. A suggestion is only applied when you tap it.</p><ul class="pbm-sub pbm-tk" id="pjTkList">';
+    h += '<p class="pbp-dim">Ticket lines the foremen photographed for this job. Assign each one to a material and it counts toward what’s ordered.</p><ul class="pbm-sub pbm-tk" id="pjTkList">';
     un.slice(0, 40).forEach((x) => {
       const key = x.ticket_id + ':' + x.line_no, sg = x.suggest;
       const wl = x.was_linked && typeof x.was_linked === 'object' ? '<br><span class="pbp-dim pbm-was">' + escapeHtml('Was counted toward ' + (x.was_linked.material || 'a material') + (x.was_linked.job_number ? ' on Job ' + x.was_linked.job_number : '') + ' as ' + pbMatFmt(x.was_linked.qty, x.was_linked.unit) + ' ' + (x.was_linked.unit || '') + '; the ticket changed since') + '</span>' : '';
@@ -50483,10 +50487,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return h + '</ul>' + (un.length > 40 ? '<p class="pbp-dim">+' + (un.length - 40) + ' more</p>' : '');
   }
   function pbMatLinkedHtml(m) {
-    const L = Array.isArray(m.tickets) ? m.tickets.filter(x => x && typeof x === 'object') : [];
+    const L = Array.isArray(m.tickets) ? m.tickets.filter(x => x && typeof x === 'object' && !x.replaced) : []; /* feat_tkauto: a link retired by a newer ticket is in History */
     if (!L.length) return '';
     return '<h4 class="pbm-h4">Delivery tickets</h4><ul class="pbm-sub">' + L.map(l => '<li class="' + (l.unlinked ? 'pbp-voided' : '') + '"><span>' + escapeHtml(pbMatTkLabel(l) + ' · ' + (l.item || '') + ': ' + pbMatFmt(l.ticket_qty, l.ticket_unit) + ' ' + l.ticket_unit
-        + (Number(l.factor) === 1 ? '' : ' = ' + pbMatFmt(l.qty, l.unit) + ' ' + l.unit + ' (× ' + l.factor + ')') + (l.order_id ? ' · inside an order' : '')) + (l.changed && !l.unlinked ? ' <span class="pb-chip notsent pbm-chip">Ticket changed or moved: not counting</span>' : '') + '</span>'
+        + (Number(l.factor) === 1 ? '' : ' = ' + pbMatFmt(l.qty, l.unit) + ' ' + l.unit + ' (× ' + l.factor + ')') + (l.order_id ? ' · inside an order' : '')) + (l.auto && !l.unlinked && !l.changed ? ' <span class="pb-chip ok pbm-chip pbm-tkauto">Counted automatically</span>' : '') + (l.changed && !l.unlinked ? ' <span class="pb-chip notsent pbm-chip">Ticket changed or moved: not counting</span>' : '') + '</span>'
       + (l.unlinked ? '<span class="pbp-dim">Unassigned ' + escapeHtml(pbProdTimeText(l.unlinked_at) + (l.unlink_reason ? ': ' + l.unlink_reason : '')) + '</span>'
         : '<span class="pbm-acts">' + (l.has_photo ? '<button type="button" class="pb-btn ghost small" onclick="pbMatPhoto(\'' + l.ticket_id + '\')">' + (pbMat.photos[l.ticket_id] ? 'Hide Ticket' : 'View Ticket') + '</button>' : '') + '<button type="button" class="pb-btn ghost small" onclick="pbMatVoidForm(\'tlink\', \'' + m.id + '\', \'' + l.id + '\')">Unassign</button></span>')
       + pbMatPhotoHtml(l.ticket_id) + '</li>').join('') + '</ul>';
