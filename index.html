@@ -4603,7 +4603,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
           <button type="button" class="pb-edu-row pb-tool-row" id="settingsReportProblemBtn" data-ic="warn" onclick="pbOpenAppProblem()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Report an App Problem</span><span class="sub">Goes to the app&rsquo;s owner, not your company</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
           <button type="button" class="pb-edu-row pb-tool-row" id="settingsAppProblemsBtn" data-ic="people" hidden onclick="pbOpenAppProblems()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">App problems</span><span class="sub">Reports from people using the app (app owner only)</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
         </div>
-        <div class="pb-w10-ver"><span class="k" id="settingsAppBuildLabel">App version</span><code id="settingsAppBuild" aria-labelledby="settingsAppBuildLabel">r10</code><button type="button" class="pb-btn ghost small" id="settingsCopyBuildBtn" onclick="pbCopyAppVersion()">Copy app version</button></div>
+        <div class="pb-w10-ver"><span class="k" id="settingsAppBuildLabel">App version</span><code id="settingsAppBuild" aria-labelledby="settingsAppBuildLabel" style="cursor:pointer; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;">r10</code><button type="button" class="pb-btn ghost small" id="settingsCopyBuildBtn" onclick="pbCopyAppVersion()">Copy app version</button></div>
         <p class="pb-help" id="settingsCopyBuildMsg" role="status" hidden></p>
       </div>
     </div>
@@ -11050,7 +11050,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.76 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.77 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -13801,7 +13801,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (tb) {
         const b = tb.getBoundingClientRect(), c = getComputedStyle(tb);
         L.push('tabbar ' + (tb.hidden ? 'hidden ' : '') + 'top ' + r1(b.top) + ' bottom ' + r1(b.bottom) + ' h ' + r1(b.height));
-        L.push('tabbar css ' + c.position + ' bottom ' + c.bottom + ' zoom ' + c.zoom + ' transform ' + c.transform + ' shift ' + (de.style.getPropertyValue('--pb-vv-shift') || '0'));
+        L.push('tabbar css ' + c.position + ' bottom ' + c.bottom + ' zoom ' + c.zoom + ' transform ' + c.transform + ' shift ' + (de.style.getPropertyValue('--pb-vv-shift') || '0') + ' raw ' + (window.__pbVvRaw == null ? '-' : window.__pbVvRaw) + ' kb ' + (function () { try { return pbShellKb ? 'up' : 'down'; } catch (e) { return '?'; } })() + ' osk ' + (function () { try { return pbShellOskLikely() ? 'y' : 'n'; } catch (e) { return '?'; } })());
+      L.push('tabbar padding-bottom ' + c.paddingBottom + ' · screen h ' + screen.height);
         const anc = [];
         for (let e = tb.parentElement; e; e = e.parentElement) { const s = getComputedStyle(e); const bits = []; if (s.transform !== 'none') bits.push('transform'); if (s.filter && s.filter !== 'none') bits.push('filter'); if ((s.backdropFilter || s.webkitBackdropFilter || 'none') !== 'none') bits.push('backdrop'); if (s.contain && s.contain !== 'none') bits.push('contain ' + s.contain); if (s.willChange && s.willChange !== 'auto') bits.push('will-change'); if (s.perspective && s.perspective !== 'none') bits.push('perspective'); if (s.zoom && s.zoom !== '1') bits.push('zoom ' + s.zoom); if (bits.length) anc.push(name(e) + ' ' + bits.join(',')); }
         L.push('ancestors ' + (anc.length ? anc.join('; ') : 'clean'));
@@ -13849,11 +13850,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     ['scroll', 'resize', 'orientationchange', 'focusin', 'focusout', 'pageshow', 'visibilitychange'].forEach(t => window.addEventListener(t, queue, { passive: true, capture: true }));
     if (window.visualViewport) { window.visualViewport.addEventListener('resize', queue); window.visualViewport.addEventListener('scroll', queue); }
     setInterval(() => { if (box) queue(); }, 1000);
-    document.addEventListener('click', (e) => {
+    let lastTap = 0;
+    const tapAt = (e) => {
       const v = e.target && e.target.closest && e.target.closest('#settingsAppBuild'); if (!v) return;
-      const now = Date.now(); taps = taps.filter(t => now - t < 3000); taps.push(now);
+      const now = Date.now(); if (now - lastTap < 250) return; lastTap = now; taps = taps.filter(t => now - t < 3000); taps.push(now);
       if (taps.length >= 5) { taps = []; setOn(!box); }
-    }, true);
+    };
+    document.addEventListener('pointerup', tapAt, true); document.addEventListener('click', tapAt, true);
     if (on()) { if (document.body) show(); else document.addEventListener('DOMContentLoaded', show); }
   })();
   window.addEventListener('resize', () => { try { pbShellLayout(); } catch (e) {} });
@@ -13866,7 +13869,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       let shift = 0;
       try {
         if (vv && pbShellOskLikely() && !pbShellKb && Math.abs((vv.scale || 1) - 1) < 0.01) {
-          shift = Math.round((vv.offsetTop + vv.height) - root.clientHeight);
+          shift = Math.round((vv.offsetTop + vv.height) - root.clientHeight); window.__pbVvRaw = shift;
           if (Math.abs(shift) < 2 || (shift < 0 && -shift > root.clientHeight / 2) || shift > root.clientHeight) shift = 0; // feat_tabbar: noise, or a shift that would hide the bar; a stale SHORT layout viewport (bar mid-screen after a tab restore) is a positive shift and is applied
         }
       } catch (e) { shift = 0; }
