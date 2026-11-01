@@ -1811,6 +1811,18 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 #pbApp .pbx-eq-used { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--pb-text); }
 #pbApp .pbx-eq-bar { display: flex; gap: 2px; height: 10px; border-radius: 5px; overflow: hidden; }
 #pbApp .pbx-eq-sub { font-size: 13.5px; color: var(--pb-text-2); }
+/* feat_jobequip */
+#pbApp .pbx-eq-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 10px; margin: 0 0 8px; }
+#pbApp .pbx-eq-head .pbx-h3 { margin: 0; }
+#pbApp .pbx-eq-head .pbx-link { min-height: 40px; }
+#pbApp .pbx-eq-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#pbApp .pbx-eq-foot .pb-btn { margin: 0; width: auto; min-height: 36px; }
+#pbApp .pbx-eq-lump { margin: 8px 0 0; font-size: 13.5px; color: var(--pb-text-2); }
+#pbApp #pbModalMessage:empty { display: none; }
+#pbApp .je-form { margin: 0 0 14px; }
+#pbApp .je-form select, #pbApp .je-form input[type="text"] { width: 100%; min-width: 0; box-sizing: border-box; }
+#pbApp .je-check { display: flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 600; cursor: pointer; }
+#pbApp .je-check input { width: 22px; height: 22px; margin: 0; accent-color: var(--pb-brand); }
 #pbApp .pbeq-piece { padding: 10px 12px; border-radius: 12px; background: var(--pb-raised); border: 1px solid var(--pb-divider); }
 #pbApp .pbeq-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
 #pbApp .pbeq-head .pb-btn { margin: 0; width: auto; }
@@ -10990,7 +11002,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.74 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.75 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -37806,7 +37818,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // owner, Oct 21: the whole-job budget fills itself in from the categories' hours, and can still be changed
     const sum = pbProdPlanHoursSum(rows), auto = bh === '' || (sum !== '' && Number(bh) === Number(sum));
     pbPj.edit = { version: Number(pbPj.data.plan_version) || 0, rows, budget: auto ? sum : bh, budgetAuto: auto, err: '', saving: false,
-      equip: pbEqOf(pbPj.data.plan && pbPj.data.plan.equipment).map(q => ({ key: q.key, name: String(q.name || ''), unitNo: String(q.unit_no || ''), costCode: String(q.cost_code || '') })) }; // feat_equip
+      equip: pbEqOf(pbPj.data.plan && pbPj.data.plan.equipment).map(q => ({ key: q.key, name: String(q.name || ''), unitNo: String(q.unit_no || ''), costCode: String(q.cost_code || ''), coId: typeof q.co_id === 'string' ? q.co_id : '', rental: q.rental === true })) }; // feat_equip; feat_jobequip: co_id / rental kept
     pbPj.edit.base = JSON.stringify([pbPlanRowsCmp(rows), pbPj.edit.budget, pbPj.edit.equip]);
     try { if (typeof pbMatJobLoad === 'function') Promise.resolve(pbMatJobLoad()).catch(() => {}); } catch (e) {} // feat_planfill: nothing is filled in; pbPlanFreshPaint repaints the help lines when the list arrives
     pbProdJobRender();
@@ -38012,7 +38024,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     for (const q of (E.equip || [])) {
       const name = String(q.name || '').trim(); if (!name) { if (!q.unitNo && !q.costCode) continue; E.saving = false; /* feat_office C2 */ E.err = 'Every piece of equipment needs a name (or remove the empty one).'; pbProdJobRender(); return; }
       let key = q.key; if (!key) { const base = 'eq_' + (name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 24) || 'x'); key = base; let n = 2; while (ekeys.includes(key) || key === 'eq_other') key = base + '_' + n++; ekeys.push(key); }
-      equipment.push({ key, name: name.slice(0, 60), unit_no: String(q.unitNo || '').trim().slice(0, 30) || null, cost_code: String(q.costCode || '').trim().slice(0, 60) || null });
+      equipment.push(Object.assign({ key, name: name.slice(0, 60), unit_no: String(q.unitNo || '').trim().slice(0, 30) || null, cost_code: String(q.costCode || '').trim().slice(0, 60) || null }, q.coId ? { co_id: q.coId } : {}, q.rental ? { rental: true } : {})); /* feat_jobequip */
     }
     const r = await pbPermitRpc('pb_prod_plan_set', { p_job_number: job.job_number, p_plan: Object.assign({ categories: cats, budget_hours: budget }, equipment.length ? { equipment } : {}, pbPj.data && pbPj.data.plan && pbPj.data.plan.inspections ? { inspections: pbPj.data.plan.inspections } : {}), p_expect_uid: uid, p_expect_version: E.version }, 30000); // feat_company32 C1: the required inspections ride along
     if (pbPj.edit !== E || pbPj.job !== job || !sbUser || sbUser.id !== uid) return;
@@ -50325,7 +50337,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbMatRowHtml(m) {
     const s = pbMatState(m), id = m.id, open = !!pbMat.open[id];
-    const orders = Array.isArray(m.orders) ? m.orders : [], uses = Array.isArray(m.uses) ? m.uses : [];
+    const orders = Array.isArray(m.orders) ? m.orders : [], uses = Array.isArray(m.uses) ? m.uses.filter(u => u && typeof u === 'object').map((u, i) => [u, i]).sort((a, b) => String(b[0].used_on || '').localeCompare(String(a[0].used_on || '')) || a[1] - b[1]).map(x => x[0]) : []; /* feat_tkused: ticket amounts in date order */
     const G = m.fig && m.fig.geom, gw = G ? G.width_ft : m.trench_width_ft, gt = G ? G.thick_ft : m.bed_thick_ft;
     const calc = pbMatCalcText(m); /* feat_matform: a "both" adds its bedding and shading */
     const hist = pbMat.hist[id];
@@ -50343,8 +50355,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + pbMatLinkedHtml(m)
         + '<h4 class="pbm-h4">Orders</h4>' + (orders.length ? '<ul class="pbm-sub">' + orders.map(o => '<li class="' + (o.voided ? 'pbp-voided' : '') + '"><span>' + escapeHtml(pbMatFmt(o.qty, o.unit) + ' ' + o.unit + ' · ordered ' + pbProdDayText(o.ordered_on) + (o.ref ? ' · ' + o.ref : '') + (o.note ? ' · ' + o.note : '') + pbMatOrderTk(m, o) + pbLocOrderTxt(o)) + '</span>'
             + (o.voided ? '<span class="pbp-dim">Voided ' + escapeHtml(pbProdTimeText(o.voided_at) + (o.void_reason ? ': ' + o.void_reason : '')) + '</span>' : pbLocOrderBtn(id, o) + '<button type="button" class="pb-btn ghost small" onclick="pbMatVoidForm(\'order\', \'' + id + '\', \'' + o.id + '\')">Void</button>') + '</li>').join('') + '</ul>' : '<p class="pbp-dim pbp-none">No orders yet.</p>')
-        + (m.source === 'entered' ? '<h4 class="pbm-h4">Amounts used</h4>' + (uses.length ? '<ul class="pbm-sub">' + uses.map(u => '<li class="' + (u.voided ? 'pbp-voided' : '') + '"><span>' + escapeHtml(pbMatFmt(u.qty, u.unit) + ' ' + u.unit + ' · ' + pbProdDayText(u.used_on) + (u.note ? ' · ' + u.note : '')) + '</span>'
-            + (u.voided ? '<span class="pbp-dim">Voided ' + escapeHtml(pbProdTimeText(u.voided_at) + (u.void_reason ? ': ' + u.void_reason : '')) + '</span>' : '<button type="button" class="pb-btn ghost small" onclick="pbMatVoidForm(\'use\', \'' + id + '\', \'' + u.id + '\')">Void</button>') + '</li>').join('') + '</ul>' : '<p class="pbp-dim pbp-none">None recorded yet.</p>') : '')
+        + (m.source === 'entered' ? '<h4 class="pbm-h4">Amounts used</h4>' + (uses.length ? '<ul class="pbm-sub">' + uses.map(u => '<li class="' + (u.voided ? 'pbp-voided' : '') + (u.link_id ? ' pbm-tkuse' : '') + '"><span>' + escapeHtml(pbMatFmt(u.qty, u.unit) + ' ' + u.unit + ' · ' + pbProdDayText(u.used_on) + (u.link_id ? ' · From ticket' + (u.ticket_no ? ' ' + u.ticket_no : '') : '') + (u.note ? ' · ' + u.note : '')) + '</span>'
+            + (u.link_id ? '' : u.voided ? '<span class="pbp-dim">Voided ' + escapeHtml(pbProdTimeText(u.voided_at) + (u.void_reason ? ': ' + u.void_reason : '')) + '</span>' : '<button type="button" class="pb-btn ghost small" onclick="pbMatVoidForm(\'use\', \'' + id + '\', \'' + u.id + '\')">Void</button>') + '</li>').join('') + '</ul>' : '<p class="pbp-dim pbp-none">None recorded yet.</p>') : '')
         + '<div class="pbm-acts"><button type="button" class="pb-btn ghost small" onclick="pbMatHistory(\'' + id + '\')">' + (hist ? 'Refresh History' : 'Show History') + '</button><button type="button" class="pb-btn ghost small" id="pjMatMute_' + id + '" onclick="pbMatMute(\'' + id + '\', ' + !s.muted + ')">' + (s.muted ? 'Turn Alerts Back On' : 'Silence Alerts') + '</button><button type="button" class="pb-btn ghost small" onclick="pbMatArchive(\'' + id + '\', true)">Archive</button></div>'
         + (hist ? pbMatHistHtml(hist) : '') + '</div>' : '') + '</li>';
   }
@@ -51089,7 +51101,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!/^\d{4}-\d{2}-\d{2}$/.test(F.v.date || '')) return fail('Pick the date.');
       F.cid = F.cid || pbMatCid();
       if (F.kind === 'order') { fn = 'pb_mat_order_add'; args = { p_material_id: F.id, p_client_order_id: F.cid, p_qty: Number(F.v.qty), p_ordered_on: F.v.date, p_ref: F.v.ref || null, p_note: F.v.note || null, p_expect_uid: uid, p_phone_at: now }; { const e = typeof pbLocOrderArgs === 'function' ? pbLocOrderArgs(F, args) : ''; if (e) return fail(e); if (args.p_expected_at) fn = 'pb_mat_order_add2'; } /* feat_locates B */ }
-      else { fn = 'pb_mat_used_add'; args = { p_material_id: F.id, p_client_use_id: F.cid, p_qty: Number(F.v.qty), p_used_on: F.v.date, p_note: F.v.note || null, p_expect_uid: uid, p_phone_at: now }; }
+      else { const tu = ((pbMatFind(F.id) || {}).uses || []).find(u => u && u.link_id && !u.voided && u.used_on === F.v.date && Math.abs(Number(u.qty) - Number(F.v.qty)) < 0.0005); /* feat_tkused */
+        const dk = F.v.date + '|' + Number(F.v.qty);
+        if (tu && F.dupOk !== dk) { pbShowModal((tu.ticket_no ? 'Ticket ' + tu.ticket_no : 'A ticket') + ' already counted ' + pbMatFmt(tu.qty, tu.unit) + ' ' + tu.unit + ' that day.', [{ label: 'Cancel' }, { label: 'Add Another Load', primary: true, onClick: () => { F.dupOk = dk; window.pbMatFormSave(); } }], 'Already Counted'); return; }
+        fn = 'pb_mat_used_add'; args = { p_material_id: F.id, p_client_use_id: F.cid, p_qty: Number(F.v.qty), p_used_on: F.v.date, p_note: F.v.note || null, p_expect_uid: uid, p_phone_at: now }; }
     } else if (F.kind === 'job') {
       const nums = [['trench_width_ft', 0.01, 100, 'Trench width'], ['bed_thick_ft', 0.01, 20, 'Bedding thickness'], ['shade_thick_ft', 0.01, 20, 'Shading thickness'], ['pipe_id_in', 0.1, 240, 'Pipe ID'], ['pipe_wall_in', 0.01, 24, 'Wall thickness'], ['pipe_od_in', 0.1, 240, 'Pipe OD']];
       for (const [k, lo, hi, lab] of nums) if (!pbMatNumOk(F.v[k] || '', lo, hi)) return fail(lab + ': enter a number from ' + lo + ' to ' + hi + ', or leave it blank.');
@@ -57788,29 +57803,161 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbCxEquipHtml() {
     const D = pbPj.data || {}, C = Array.isArray(D.cats) ? D.cats.filter(r => r && typeof r.key === 'string') : [];
     const sum = (k, f) => C.filter(r => r.key === k).reduce((s, r) => s + (Number(r[f]) || 0), 0);
-    const plan = (D.plan && Array.isArray(D.plan.equipment) ? D.plan.equipment : []).filter(q => q && typeof q.key === 'string' && /^eq_[a-z0-9]/.test(q.key) && q.key !== 'eq_other');
+    const plan = pbJePlanEq(); // feat_jobequip: the job plan's pieces (the list Edit project > Job plan edits)
     const keys = plan.map(q => q.key);
     C.forEach(r => { const m = /^_(eq_.+)$/.exec(r.key) || (/^_e[id]_(.+)$/.exec(r.key) ? [null, (/^_e[id]_(.+)$/.exec(r.key)[1] === 'other' ? 'eq_other' : 'eq_' + /^_e[id]_(.+)$/.exec(r.key)[1])] : null); if (m && !keys.includes(m[1])) keys.push(m[1]); });
     const sk = (k) => k === 'eq_other' ? 'other' : k.replace(/^eq_/, '');
     const nameOf = (k) => { const q = plan.find(x => x.key === k); return k === 'eq_other' ? 'Other equipment' : q ? String(q.name || 'Equipment') + (q.unit_no ? ' #' + q.unit_no : '') : pbEqLoose(k); }; /* feat_office A11 */
     const h1 = (x) => pbProdQtyText(Math.round(x * 10) / 10, 'h');
-    let h = '<section class="pbx-panel" id="pjCxEquipSec" aria-labelledby="pjCxEquipH"><h3 class="pbx-h3" id="pjCxEquipH">Equipment</h3>';
-    const X = window.pbCeDailyEq(D), xs = (k, f) => X.filter(x => x.plan_key === k).reduce((s, x) => s + x[f], 0); X.forEach(x => { if (x.plan_key && !keys.includes(x.plan_key)) keys.push(x.plan_key); }); // feat_coequip: + the daily reports' hours
-    if (!keys.length && !X.length) { const lump = sum('_equiphours', 'done'); // feat_runedit: hours entered as one total, before the pieces
-      return h + '<p class="pbx-none">' + (lump > 0 ? pbCxE(h1(lump)) + ' of equipment reported as one total, no pieces yet. ' : 'No equipment on this job yet. ') + 'Add the pieces under Edit project &gt; Job plan; foremen then enter each piece’s used, idle and down hours with each run.</p></section>'; }
+    // feat_jobequip: a company piece from the daily reports that is on the job plan (same company piece) counts on its plan row
+    const raw = Array.isArray(D.daily_eq) ? D.daily_eq.filter(y => y && typeof y.id === 'string') : [];
+    const X = window.pbCeDailyEq(D).map(x => { if (x.plan_key) return x; const r0 = raw.find(y => y.id === x.id) || {}, co = typeof r0.co_id === 'string' ? r0.co_id : null, q = co ? plan.find(p => p.co_id === co) : null; return Object.assign(x, { co_id: co, rental: r0.rental === true }, q ? { plan_key: q.key } : {}); });
+    const xs = (k, f) => X.filter(x => x.plan_key === k).reduce((s, x) => s + x[f], 0); X.forEach(x => { if (x.plan_key && !keys.includes(x.plan_key)) keys.push(x.plan_key); }); // feat_coequip: + the daily reports' hours
+    const can = pbJeCan(), jk = pbPj.job ? pbPj.job.job_key : null;
+    // hours entered as one total on runs, not by piece (feat_runedit): only the part no piece accounts for
+    const un = Math.round((sum('_equiphours', 'done') - C.filter(r => /^_eq_/.test(r.key)).reduce((s, r) => s + (Number(r.done) || 0), 0)) * 10) / 10;
+    let h = '<section class="pbx-panel" id="pjCxEquipSec" aria-labelledby="pjCxEquipH"><div class="pbx-eq-head"><h3 class="pbx-h3" id="pjCxEquipH">Equipment</h3>'
+      + (can && plan.length < 40 ? '<button type="button" class="pbx-link" id="pjEqAdd" onclick="pbJeAdd()"' + (pbJe.saving ? ' disabled' : '') + '>' + pbCxIc('plus') + 'Add Equipment</button>' : '') + '</div>'
+      + (pbJe.msg && pbJe.job === jk && pbJe.ver === (Number(D.plan_version) || 0) ? '<p class="pb-help pb-err" id="pjEqMsg" role="alert">' + pbCxE(pbJe.msg) + '</p>' : '');
+    const lump = un > 0.05 ? '<p class="pbx-eq-lump" id="pjEqLump">' + pbCxE(h1(un) + ' reported as one total, not by piece') + '</p>' : '';
+    if (!keys.length && !X.length) return h + '<p class="pbx-none" id="pjEqNone">No equipment on this job yet.</p>' + lump + '</section>';
     const P = keys.map(k => ({ k, used: sum('_' + k, 'done') + xs(k, 'done'), idle: sum('_ei_' + sk(k), 'done'), down: sum('_ed_' + sk(k), 'done'), today: sum('_' + k, 'today') + xs(k, 'today'), week: sum('_' + k, 'week') + xs(k, 'week') }))
-      .concat(X.filter(x => !x.plan_key).map(x => ({ k: x.id, nm: window.pbCeXName(x), cc: x.cost_code, used: x.done, idle: 0, down: 0, today: x.today, week: x.week })), // feat_coequip
-        !plan.length && !C.some(r => /^_e[qid]_/.test(r.key)) && sum('_equiphours', 'done') > 0 ? [{ k: 'lump', nm: 'Entered as one total', used: sum('_equiphours', 'done'), idle: 0, down: 0, today: sum('_equiphours', 'today'), week: sum('_equiphours', 'week') }] : []);
-    const T = P.reduce((a, p) => ({ used: a.used + p.used, idle: a.idle + p.idle, down: a.down + p.down }), { used: 0, idle: 0, down: 0 });
+      .concat(X.filter(x => !x.plan_key).map(x => ({ k: x.id, nm: window.pbCeXName(x), cc: x.cost_code, x, used: x.done, idle: 0, down: 0, today: x.today, week: x.week }))); // feat_coequip
+    const T = P.reduce((a, p) => ({ used: a.used + p.used, idle: a.idle + p.idle, down: a.down + p.down }), { used: Math.max(un, 0), idle: 0, down: 0 });
     h += '<p class="pbx-eq-tot" id="pjEqTotal"><span><strong>' + pbCxE(h1(T.used)) + '</strong> used</span><span>' + pbCxE(h1(T.idle)) + ' idle</span><span>' + pbCxE(h1(T.down)) + ' down</span></p>'
       + '<p class="pbx-eq-key"><span class="pbx-eq-sw u"></span>Used <span class="pbx-eq-sw i"></span>Idle <span class="pbx-eq-sw d"></span>Down</p><ul class="pbx-eq-list">';
-    h += P.map(p => { const all = p.used + p.idle + p.down, q = plan.find(x => x.key === p.k);
-      return '<li class="pbx-eq-row" id="pjEq_' + pbCxE(p.k) + '"><span class="pbx-eq-top"><span class="pbx-eq-name">' + pbCxE(p.nm || nameOf(p.k)) + ((q && q.cost_code) || p.cc ? '<span class="pbx-eq-code"> · ' + pbCxE((q && q.cost_code) || p.cc) + '</span>' : '') + '</span><span class="pbx-eq-used">' + pbCxE(h1(p.used)) + ' used</span></span>'
+    h += P.map(p => { const all = p.used + p.idle + p.down, q = plan.find(x => x.key === p.k), kind = pbJeKind(q || p.x), nm = p.nm || nameOf(p.k);
+      const foot = (kind ? '<span class="pbx-tag" id="pjEqKind_' + pbCxE(p.k) + '">' + pbCxE(kind) + '</span>' : '<span></span>')
+        + (can && q ? '<button type="button" class="pb-btn ghost small" id="pjEqEd_' + pbCxE(p.k) + '" onclick="pbJeEdit(\'' + pbCxE(p.k) + '\')" aria-label="' + pbCxE('Edit ' + nm) + '"' + (pbJe.saving ? ' disabled' : '') + '>Edit</button>' : '');
+      return '<li class="pbx-eq-row" id="pjEq_' + pbCxE(p.k) + '"><span class="pbx-eq-top"><span class="pbx-eq-name">' + pbCxE(nm) + ((q && q.cost_code) || p.cc ? '<span class="pbx-eq-code"> · ' + pbCxE((q && q.cost_code) || p.cc) + '</span>' : '') + '</span><span class="pbx-eq-used">' + pbCxE(h1(p.used)) + ' used</span></span>'
         + '<span class="pbx-eq-bar" aria-hidden="true">' + (all > 0 ? ['used', 'idle', 'down'].map((f, j) => p[f] > 0 ? '<span class="pbx-eq-seg ' + 'uid'[j] + '" style="flex:' + p[f] + ' 1 0"></span>' : '').join('') : '<span class="pbx-eq-seg z"></span>') + '</span>'
         + '<span class="pbx-eq-sub">' + pbCxE('Idle ' + h1(p.idle) + ' · Down ' + h1(p.down) + (all > 0 ? ' · ' + Math.round(p.used / all * 100) + '% of its hours used' : ' · nothing reported yet')) + '</span>'
-        + (p.today || p.week ? '<span class="pbx-eq-sub">' + pbCxE('Used today ' + h1(p.today) + ' · last 7 days ' + h1(p.week)) + '</span>' : '') + '</li>'; }).join('');
-    return h + '</ul><p class="pbx-note">From the hours on run reports and on foremen’s daily reports (counted once).</p></section>';
+        + (p.today || p.week ? '<span class="pbx-eq-sub">' + pbCxE('Used today ' + h1(p.today) + ' · last 7 days ' + h1(p.week)) + '</span>' : '')
+        + (kind || (can && q) ? '<span class="pbx-eq-foot">' + foot + '</span>' : '') + '</li>'; }).join('');
+    return h + '</ul>' + lump + '<p class="pbx-note">From the hours on run reports and on foremen’s daily reports (counted once).</p></section>';
   }
+  // ==== feat_jobequip (owner, Nov 1): the job's equipment on the Equipment tab: see, add, change and remove the pieces
+  // right there. Saved through the Job plan's own server path (pb_prod_plan_set with the plan's version: the whole plan
+  // goes back with only its equipment changed), the same rules: who can (company account, PMs, supers), signal needed,
+  // nothing queued, "someone else saved meanwhile" refused. A piece picked from the company's equipment keeps its co_id;
+  // a typed one can be marked rental. ====
+  let pbJe = { saving: false, msg: '', job: null, ver: 0, ceAsked: null, mgrAsked: null };
+  function pbJePlanEq() { const D = pbPj.data || {}; return (D.plan && Array.isArray(D.plan.equipment) ? D.plan.equipment : []).filter(q => q && typeof q.key === 'string' && /^eq_[a-z0-9]/.test(q.key) && q.key !== 'eq_other'); }
+  // who can edit = who can edit the Job plan (the server's managed_company: company account, managers, PMs, supers)
+  function pbJeCan() {
+    const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared' || !pbPj.job || !pbPj.data || pbPj.edit) return false;
+    const a = pbProdAccMem.get(uid); if (a) return !!a.manager;
+    if (pbJe.mgrAsked !== uid) { pbJe.mgrAsked = uid; pbProdIsManager(uid).then(() => { if (pbArchiveOwnerUid === uid && pbCx.tab === 'equipment') window.pbCxJobPaint(); }).catch(() => {}); }
+    return false;
+  }
+  const pbJeNk = (q) => pbDpNk(pbCeName(q));
+  // 'Company' (a company piece), 'Rental', or '' (not known)
+  function pbJeKind(q) {
+    if (!q) return ''; if (q.rental === true) return 'Rental'; if (q.co_id) return 'Company';
+    const uid = pbArchiveOwnerUid, L = pbCeFor(uid);
+    if (!L && pbJe.ceAsked !== uid) { pbJe.ceAsked = uid; pbCeLoad(uid).then(() => { if (pbArchiveOwnerUid === uid && pbCx.tab === 'equipment' && pbCeFor(uid)) window.pbCxJobPaint(); }).catch(() => {}); }
+    return L && L.some(a => pbJeNk(a) === pbJeNk(q)) ? 'Company' : '';
+  }
+  // the company's pieces not already on the job
+  function pbJeCoLeft() { const P = pbJePlanEq(); return (pbCeActive(pbArchiveOwnerUid) || []).filter(a => !P.some(q => q.co_id === a.id || (!q.co_id && pbJeNk(q) === pbJeNk(a)))); }
+  const pbJeEl = (id) => document.getElementById(id);
+  function pbJeFields(v, rent) {
+    return '<div class="pb-field"><label for="jeName">Name</label><input type="text" id="jeName" maxlength="60" autocomplete="off" autocapitalize="words" placeholder="e.g. CAT 320 excavator"></div>'
+      + '<div class="ce-two"><div class="pb-field"><label for="jeUnit">Unit no.</label><input type="text" id="jeUnit" maxlength="30" autocomplete="off"></div>'
+      + '<div class="pb-field"><label for="jeCode">Cost code</label><input type="text" id="jeCode" maxlength="60" autocomplete="off" autocapitalize="characters"></div></div>'
+      + (rent ? '<label class="je-check" for="jeRent"><input type="checkbox" id="jeRent"><span>Rental</span></label>' : '');
+  }
+  function pbJeMount(html, v) {
+    const wrap = document.createElement('div'); wrap.className = 'pb-modal-extra je-form'; wrap.id = 'jeForm'; wrap.innerHTML = html;
+    const bind = (id, f, chk) => { const el = wrap.querySelector('#' + id); if (!el) return; if (chk) el.checked = !!v[f]; else el.value = v[f] || ''; el.addEventListener(chk ? 'change' : 'input', () => { v[f] = chk ? el.checked : el.value; }); };
+    bind('jeName', 'name'); bind('jeUnit', 'unit'); bind('jeCode', 'cc'); bind('jeRent', 'rent', true);
+    document.getElementById('pbModalMessage').insertAdjacentElement('afterend', wrap);
+    return wrap;
+  }
+  window.pbJeAdd = async function() {
+    const uid = pbArchiveOwnerUid, job = pbPj.job; if (!job || pbJe.saving || !pbJeCan()) return;
+    pbJe.msg = '';
+    if (!pbCeFor(uid)) { try { await Promise.race([pbCeLoad(uid), new Promise(r => setTimeout(r, 4000))]); } catch (e) {} }
+    if (pbPj.job !== job || pbArchiveOwnerUid !== uid) return;
+    pbJeAddForm({ co: '', name: '', unit: '', cc: '', rent: true }, '');
+  };
+  function pbJeAddForm(v, err) {
+    const job = pbPj.job; if (!job) return;
+    const L = pbJeCoLeft(); if (!L.length) v.co = '_t';
+    pbShowModal(err || '', [{ label: 'Cancel' }, { label: 'Add', primary: true, onClick: () => pbJeAddGo(v) }], 'Add Equipment · ' + pbProdJobLabel(job.job_number));
+    const wrap = pbJeMount((L.length ? '<div class="pb-field"><label for="jeCo">Company equipment</label><select id="jeCo"><option value="">Choose a piece…</option>'
+      + L.map(a => '<option value="' + escapeHtml(a.id) + '">' + escapeHtml(pbCeName(a) + (a.cost_code ? ' · ' + a.cost_code : '')) + '</option>').join('')
+      + '<option value="_t">Not on the list: type it</option></select></div>' : '') + '<div id="jeTyped"' + (v.co === '_t' ? '' : ' hidden') + '>' + pbJeFields(v, true) + '</div>', v);
+    const sel = wrap.querySelector('#jeCo');
+    if (sel) { sel.value = v.co || ''; sel.addEventListener('change', () => { v.co = sel.value; const t = wrap.querySelector('#jeTyped'); if (t) t.hidden = v.co !== '_t'; if (v.co === '_t') { const n = wrap.querySelector('#jeName'); if (n) n.focus(); } }); }
+    setTimeout(() => { const el = pbJeEl(v.co === '_t' ? 'jeName' : 'jeCo'); if (el) try { el.focus(); } catch (e) {} }, 50);
+  }
+  const pbJeClean = (s, n) => String(s || '').trim().replace(/\s+/g, ' ').slice(0, n);
+  function pbJeAddGo(v) {
+    const P = pbJePlanEq(); let piece;
+    if (v.co && v.co !== '_t') {
+      const a = (pbCeActive(pbArchiveOwnerUid) || []).find(x => x.id === v.co); if (!a) { pbJeAddForm(v, 'That piece is no longer on the company’s list.'); return; }
+      piece = { co_id: a.id, name: pbJeClean(a.name, 60), unit_no: pbJeClean(a.unit_no, 30) || null, cost_code: pbJeClean(a.cost_code, 60) || null };
+    } else {
+      if (v.co !== '_t') { pbJeAddForm(v, 'Choose a piece.'); return; }
+      const name = pbJeClean(v.name, 60); if (!name) { pbJeAddForm(v, 'Type the equipment’s name.'); return; }
+      piece = Object.assign({ name, unit_no: pbJeClean(v.unit, 30) || null, cost_code: pbJeClean(v.cc, 60) || null }, v.rent ? { rental: true } : {});
+    }
+    if (P.some(q => pbJeNk(q) === pbJeNk(piece))) { pbJeAddForm(v, pbCeName(piece) + ' is already on this job.'); return; }
+    const taken = P.map(q => q.key), base = 'eq_' + (piece.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 24) || 'x'); /* the Job plan editor's keys */
+    let key = base, n = 2; while (taken.includes(key) || key === 'eq_other') key = base + '_' + n++;
+    piece = Object.assign({ key }, piece);
+    pbJeSave((L) => L.concat([piece]), () => pbJeEl('pjEqEd_' + key) || pbJeEl('pjEqAdd'));
+  }
+  window.pbJeEdit = function(key, v, err) {
+    const job = pbPj.job, q = pbJePlanEq().find(x => x.key === key); if (!job || !q || pbJe.saving || !pbJeCan()) return;
+    pbJe.msg = '';
+    v = v || { name: q.name || '', unit: q.unit_no || '', cc: q.cost_code || '', rent: q.rental === true };
+    pbShowModal(err || '', [{ label: 'Remove', danger: true, onClick: () => pbJeRemove(key) }, { label: 'Cancel' }, { label: 'Save', primary: true, onClick: () => pbJeEditGo(key, v) }], pbCeName(q));
+    pbJeMount(pbJeFields(v, !q.co_id), v);
+    setTimeout(() => { const el = pbJeEl('jeName'); if (el) try { el.focus(); } catch (e) {} }, 50);
+  };
+  function pbJeEditGo(key, v) {
+    const P = pbJePlanEq(), q = P.find(x => x.key === key); if (!q) return;
+    const name = pbJeClean(v.name, 60); if (!name) { window.pbJeEdit(key, v, 'Type the equipment’s name.'); return; }
+    const nq = Object.assign({}, q, { name, unit_no: pbJeClean(v.unit, 30) || null, cost_code: pbJeClean(v.cc, 60) || null });
+    if (!q.co_id) { if (v.rent) nq.rental = true; else delete nq.rental; }
+    if (P.some(x => x.key !== key && pbJeNk(x) === pbJeNk(nq))) { window.pbJeEdit(key, v, pbCeName(nq) + ' is already on this job.'); return; }
+    pbJeSave((L) => L.map(x => x.key === key ? nq : x), () => pbJeEl('pjEqEd_' + key));
+  }
+  function pbJeRemove(key) {
+    const q = pbJePlanEq().find(x => x.key === key); if (!q) return;
+    pbConfirm('Remove ' + pbCeName(q) + ' from this job? Hours already reported stay on record.', () => pbJeSave((L) => L.filter(x => x.key !== key), () => pbJeEl('pjEqAdd') || pbJeEl('pjCxTab_equipment')), 'Remove Equipment');
+  }
+  // the Job plan editor's save (pbProdPlanSave): same RPC, version, checks and messages; only the equipment changes
+  async function pbJeSave(change, focusEl) {
+    const uid = pbArchiveOwnerUid, job = pbPj.job, D = pbPj.data; if (!job || !D || pbJe.saving || pbPj.edit) return;
+    pbJe.saving = true; // a second tap waits (set before the checks below, which wait too)
+    const fail = (m) => { pbJe.saving = false; pbJe.msg = m; pbJe.job = job.job_key; pbJe.ver = Number((pbPj.data || {}).plan_version) || 0; /* shown until the plan changes or the next try */ window.pbCxJobPaint(); const el = pbJeEl('pjEqMsg'); if (el && el.scrollIntoView) try { el.scrollIntoView({ block: 'nearest' }); } catch (e) {} };
+    if (!job.job_number) { fail('Entries without a job number can’t have a plan. Add a job number on those runs.'); return; }
+    if (!(sbClient && sbUser && sbUser.id === uid && (await pbLiveSessionIs(uid)))) { fail('Sign in with signal to change the job’s equipment. Nothing was changed.'); return; }
+    if (navigator.onLine === false) { fail('No signal. Nothing was changed; try again with signal.'); return; }
+    if (pbPj.job !== job || pbPj.data !== D || pbPj.edit) { pbJe.saving = false; return; }
+    const plan = D.plan && typeof D.plan === 'object' && Array.isArray(D.plan.categories) ? D.plan : null;
+    const p = Object.assign({}, plan || { categories: PB_PROD_DEFAULT_CATS.map(c => ({ key: c.key, name: c.name, unit: c.unit || '', alert_pct: 80 })) }); // no plan yet: the editor's default categories
+    const eq = change(pbJePlanEq().map(q => Object.assign({}, q)));
+    if (eq.length) p.equipment = eq; else delete p.equipment;
+    pbJe.msg = ''; window.pbCxJobPaint();
+    let r; try { r = await pbPermitRpc('pb_prod_plan_set', { p_job_number: job.job_number, p_plan: p, p_expect_uid: uid, p_expect_version: Number(D.plan_version) || 0 }, 30000); } finally { pbJe.saving = false; }
+    if (pbPj.job !== job || !sbUser || sbUser.id !== uid) return;
+    if (!r || r.error || !r.data || r.data.ok !== true) {
+      const m = String((r && r.error && r.error.message) || '');
+      if (/pb:plan_changed/.test(m)) { try { await pbProdJobLoad(); } catch (e) {} if (pbPj.job !== job) return; } // the plan as it is now, then the message (kept for that version)
+      fail(/pb:plan_changed/.test(m) ? 'Someone else saved this job’s plan meanwhile. Nothing was changed; try again.' : /pb:bad_plan/.test(m) ? 'The server couldn’t accept this. Check the name.' : /pb:not_company_account/.test(m) ? 'Only the company account, a PM or a superintendent can change the job’s equipment.' : pbProdErrText(r) + ' Nothing was changed; try again.');
+      return;
+    }
+    pbJe.msg = '';
+    pbPj.data = Object.assign({}, pbPj.data, { plan: r.data.plan, plan_version: r.data.version });
+    if (pbPd.data && Array.isArray(pbPd.data.jobs)) pbPd.data.jobs.forEach(j => { if (j && j.job_key === job.job_key) { j.plan = r.data.plan; j.plan_version = r.data.version; } });
+    pbProdJobRender(); pbProdJobLoad();
+    const f = focusEl && focusEl(); if (f) try { f.focus({ preventScroll: true }); } catch (e) {}
+  }
+  // ==== end feat_jobequip ====
   // ==== end feat_eqtab ====
   function pbCxPut(parent, id, cls, html, first) {
     let el = document.getElementById(id);
