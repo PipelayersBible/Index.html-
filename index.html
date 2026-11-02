@@ -11061,7 +11061,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.84 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.85 · 2026-11-02'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -62735,13 +62735,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       let p; try { p = pbNgPol(x); } catch (e) { vis.push(x); return; }
       pbNg.shown[x.id] = { x, p };
       const s = pbNg.snz[p.sig], u = pbNgUntil(p, s, now);
-      if (u) { sn.push({ p, u, m: s.m }); if (u < wake) wake = u; return; }
+      if (u) { sn.push({ p, u, m: s.m, red: !x.info && !x.ngCls0 /* feat_alertpage: a red card's row stays red */ }); if (u < wake) wake = u; return; }
       const can = p.later || p.min || (p.nudge && pbNgCan());
       vis.push(Object.assign({}, x, { ngCls: (x.ngCls0 || '') + (can ? ' pb-ng-has' : ''), html: (can ? '<button type="button" class="pb-ng-dots" id="homeNgDots_' + pbNgE(x.id) + '" data-ng-id="' + pbNgE(x.id) + '" aria-haspopup="dialog" aria-label="' + pbNgE((p.later || p.min ? 'Remind later' : pbNgLabel(pbNgLevel())) + ': ' + p.title) + '" onclick="pbNgMenu(this.dataset.ngId)"><span aria-hidden="true"></span></button>' : '') + x.html }));
     });
     pbNg.wake = wake; pbNg.rows = sn;
-    if (sn.length) vis.push({ id: 'ngSnoozed', ngRaw: '<div class="pb-ng-fold" id="homeAttention_ngSnoozed"><button type="button" class="pb-ng-foldbtn" id="homeNgFold" aria-expanded="' + (pbNg.open ? 'true' : 'false') + '" onclick="pbNgFold()">Snoozed (' + sn.length + ')</button>'
-      + (pbNg.open ? '<ul class="pb-ng-rows" id="homeNgRows">' + sn.map((r, i) => '<li><button type="button" class="pb-ng-row" id="homeNgRow' + i + '" onclick="pbNgWake(' + i + ')"><span class="tx">' + pbNgE(r.p.title) + '</span><span class="when">' + pbNgE(r.m === 'later' ? pbNgWhen(r.u) : 'Minimized') + '</span></button></li>').join('') + '</ul>' : '') + '</div>' });
+    if (sn.length) vis.push({ id: 'ngSnoozed', ngRaw: '<div class="pb-ng-fold" id="homeAttention_ngSnoozed"><button type="button" class="pb-ng-foldbtn' + (sn.some(r => r.red) ? ' red' : '') + '" id="homeNgFold" aria-expanded="' + (pbNg.open ? 'true' : 'false') + '" onclick="pbNgFold()"><span class="ic" aria-hidden="true"></span>Snoozed (' + sn.length + ')</button>'
+      + (pbNg.open ? '<ul class="pb-ng-rows" id="homeNgRows">' + sn.map((r, i) => '<li class="pb-ng-li' + (r.red ? ' red' : '') + '"><button type="button" class="pb-ng-row" id="homeNgRow' + i + '" onclick="pbNgWake(' + i + ')"><span class="ic" aria-hidden="true"></span><span class="tx">' + pbNgE(r.p.title) + '</span><span class="when">' + pbNgE(r.m === 'later' ? pbNgWhen(r.u) : 'Minimized') + '</span></button>'
+      + '<button type="button" class="pb-ng-dots" id="homeNgRowDots' + i + '" data-ng-id="' + pbNgE(r.p.id) + '" aria-haspopup="dialog" aria-label="' + pbNgE((r.p.later || r.p.min ? 'Remind later' : pbNgLabel(pbNgLevel())) + ': ' + r.p.title) + '" onclick="pbNgMenu(this.dataset.ngId)"><span aria-hidden="true"></span></button></li>').join('') + '</ul>' : '') + '</div>' });
     return vis;
   };
   window.pbNgFold = function() { pbNg.open = !pbNg.open; pbNgRerender(); setTimeout(() => { const b = document.getElementById('homeNgFold'); if (b) b.focus({ preventScroll: true }); }, 0); };
@@ -62753,9 +62754,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbNgRerender(); pbNgSyncSoon();
   }
   window.pbNgWake = function(i) { const r = pbNg.rows[i]; if (!r) return; pbNgSet(r.p.sig, 'off', null); setTimeout(() => { const el = document.getElementById('homeAttention_' + r.p.id); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' }); }, 0); };
-  window.pbNgMenu = function(id) {
+  window.pbNgMenu = function(id, from) { /* feat_alertpage: from 'page' = the alert row on a page a card opened */
     const S = pbNg.shown[id]; if (!S) return;
-    const p = S.p, opts = pbNgOpts(p), btns = opts.map(o => ({ label: o.label, k: o.k, onClick: () => pbNgSet(p.sig, o.m, o.u) }));
+    const p = S.p, opts = pbNgOpts(p), btns = opts.map(o => ({ label: o.label, k: o.k, onClick: () => { pbNgSet(p.sig, o.m, o.u); if (from === 'page' && typeof window.pbApDone === 'function') window.pbApDone(o); } }));
     let msg = p.title;
     if (p.nudge && pbNgCan()) {
       const last = pbNgLast(p.nudge.key);
@@ -62962,6 +62963,127 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     document.head.appendChild(st);
   } catch (e) {}
   // ================= end feat_nudge =================
+
+  // ================= feat_alertpage (owner, Nov 1): the card's Remind later / Minimize / Nudge on the page its button opens =================
+  // "If someone opens the alerts, they should be able to snooze or nudge or whatever from that page too."
+  // A tap on a button of a Home › Needs Attention card (not its "⋯") that opens a screen (Open Locates, Open My Production,
+  // Open Run, Open Records, Open My Inspections, a nudge's Open, Choose Time Zone …) puts one compact row under that screen's
+  // header: the hazard triangle, the card's title and the card's own "⋯" at the right. The "⋯" opens feat_nudge's own menu
+  // (window.pbNgMenu, the function the Home card calls, with the same items and rules: no snooze on permit / safety / unsaved
+  // cards, the deadline rules, Nudge only where the card offers it). Owner, Nov 1: no separate buttons on the row. "See What’s Waiting" (Not sent yet) opens a dialog: the row
+  // goes in the dialog. View Report on the Home run card while its report waits for approval: its Nudge on the report.
+  // Shown only while that screen (or dialog) is the one the card opened, and only while the card's problem is current and not
+  // snoozed: the card is recomputed from the same providers every paint. Any other screen change ends it.
+  // A choice in that menu confirms in place (pbNgMenu calls window.pbApDone: a toast; the row goes; the card is under Snoozed on
+  // Home): the person may be in the middle of something on that page, and Back is one tap.
+  let pbAp = { pend: null, cur: null, c: null, tap: false, last: typeof pbCurrentScreen === 'string' ? pbCurrentScreen : 'home' };
+  const pbApNow = () => (typeof performance === 'object' && performance && typeof performance.now === 'function' ? performance.now() : Date.now()); // a tap's age: a clock the phone's date changes can't move
+  function pbApCard(id) {
+    const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared') return null;
+    pbNgLoad(uid);
+    let items = []; try { items = pbHomeAttentionItems(); } catch (e) { items = []; }
+    try { items = items.concat(pbNgCards()); } catch (e) {}
+    const x = items.find(y => y && y.id === id && typeof y.html === 'string'); if (!x) return null;
+    const p = pbNgPol(x);
+    if (pbNgUntil(p, pbNg.snz[p.sig], Date.now())) return null; // snoozed or minimized meanwhile
+    const opts = pbNgOpts(p), nudge = p.nudge && pbNgCan() ? p.nudge : null;
+    if (!opts.length && !nudge) return null;
+    return { key: id, x, p, opts, nudge, red: !x.info && !x.ngCls0 };
+  }
+  function pbApRun(id) {
+    try {
+      const e = runArchive.find(x => x && String(x.id) === String(id)), n = pbNgRunItem(e);
+      if (!n || !pbNgCan()) return null;
+      const p = { id: 'rr_' + id, title: n.label, later: false, min: false, nudge: n, due: null, sig: null }; // the Home run card: Nudge only
+      return { key: p.id, x: null, p, opts: [], nudge: n, red: false };
+    } catch (er) { return null; }
+  }
+  // the row: triangle, title, the card's "⋯". It is shown only when that menu has something to offer (pbNgMenu opens nothing for
+  // a card with no snooze whose nudge went in the last 4 hours). The material list shows its own Nudge: the menu here then has none.
+  function pbApHtml(c, host) {
+    let p = c.p, nudge = c.nudge;
+    if (nudge && host !== 'modal' && host.querySelector('#cxMatNudge')) { p = Object.assign({}, p, { nudge: null }); nudge = null; }
+    if (nudge) { const last = pbNgLast(nudge.key); if (last && (last.queued || Date.now() - last.at < 4 * 3600000) && !c.opts.length) nudge = null; }
+    if (!c.opts.length && !nudge) return '';
+    pbNg.shown[c.key] = { x: c.x, p }; // what pbNgMenu reads: this card as it is now
+    return '<span class="pb-ap-ic" aria-hidden="true"></span><span class="pb-ap-t">' + pbNgE(p.title) + '</span>'
+      + '<button type="button" class="pb-ng-dots" id="pbApDots" data-ng-id="' + pbNgE(c.key) + '" aria-haspopup="dialog" aria-label="' + pbNgE((p.later || p.min ? 'Remind later' : pbNgLabel(pbNgLevel())) + ': ' + p.title) + '" onclick="pbNgMenu(this.dataset.ngId, \'page\')"><span aria-hidden="true"></span></button>';
+  }
+  function pbApPaint() {
+    const A = pbAp.cur; let host = null, c = null;
+    if (A && A.uid === pbArchiveOwnerUid) {
+      if (A.modal) { const t = document.getElementById('pbModalTitle'); if (pbModalIsOpen() && t && t.textContent === A.title) host = 'modal'; else pbAp.cur = null; }
+      else if (pbCurrentScreen === A.screen) host = document.getElementById('screen-' + A.screen);
+      if (host) c = A.run !== undefined ? pbApRun(A.run) : pbApCard(A.id);
+    } else if (A) pbAp.cur = null;
+    let row = document.getElementById('pbApRow');
+    const h = c ? pbApHtml(c, host) : '';
+    pbAp.c = h ? c : null;
+    if (!h) { if (row) row.remove(); return; }
+    if (!row) { row = document.createElement('div'); row.id = 'pbApRow'; row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'Alert'); }
+    const cls = 'pb-ap' + (c.red ? ' red' : '') + (host === 'modal' ? ' pb-modal-extra' : ''); if (row.className !== cls) row.className = cls;
+    if (host === 'modal') { const m = document.getElementById('pbModalMessage'); if (m && (row.parentNode !== m.parentNode || row.nextElementSibling !== m)) m.before(row); }
+    else { const hd = host.querySelector(':scope > .pb-header'); if (hd) { if (hd.nextElementSibling !== row) hd.after(row); } else if (host.firstElementChild !== row) host.prepend(row); }
+    if (row.dataset.h !== h) { row.innerHTML = h; row.dataset.h = h; }
+  }
+  window.pbApPaint = pbApPaint;
+  // a choice in that menu, made from the row: confirm in place (the card is under Snoozed on Home), the row goes
+  window.pbApDone = function(o) {
+    try { pbNgToast(o.m === 'later' ? 'Snoozed until ' + pbNgWhen(o.u).replace(/^Tomorrow/, 'tomorrow') + '.' : o.label === 'Minimize for today' ? 'Minimized for today.' : 'Minimized.'); } catch (e) {}
+    pbApPaint();
+  };
+  // where the tap came from: a card's own button (capture: before its onclick moves the screen)
+  document.addEventListener('click', (ev) => {
+    try {
+      const b = ev.target && ev.target.closest ? ev.target.closest('button') : null;
+      pbAp.pend = null; pbAp.tap = true; // any other tap (a tab, Back, a dialog's OK) ends what a card's tap started
+      if (!b || b.disabled) return;
+      if (b.id === 'pbApDots') { pbApPaint(); return; } // the menu reads the card as it is at this tap (a Home render may have reset it)
+      const card = b.closest('#homeAttentionList .pb-home-att'), uid = pbArchiveOwnerUid;
+      if (card && /^homeAttention_./.test(card.id) && !b.classList.contains('pb-ng-dots')) {
+        pbAp.pend = { id: card.id.slice(14), at: pbApNow(), uid };
+        setTimeout(() => { // a card whose button opens a dialog with its list (Not sent yet)
+          const P = pbAp.pend, t = document.getElementById('pbModalTitle');
+          if (P && P.id === 'unsent' && pbApNow() - P.at < 2000 && pbModalIsOpen() && t && t.textContent === 'Not Sent Yet') { pbAp.pend = null; pbAp.cur = { id: P.id, modal: true, title: t.textContent, uid: P.uid }; pbApPaint(); }
+        }, 0);
+        return;
+      }
+      if (b.id === 'homeRunReportView') { const w = b.closest('#homeRunReport'), id = w && w.dataset.rfId; pbAp.pend = id && pbNg.run[id] ? { run: id, at: pbApNow(), uid } : null; }
+    } catch (e) {}
+  }, true);
+  window.pbScreenHooks.push((name, back) => {
+    const prev = pbAp.last, P = pbAp.pend, A = pbAp.cur; pbAp.last = name; pbAp.pend = null;
+    if (P && prev === 'home' && name !== 'home' && !back && P.uid === pbArchiveOwnerUid && pbApNow() - P.at < 5000) { pbAp.cur = { id: P.id, run: P.run, screen: name, uid: P.uid, at: pbApNow() }; pbAp.tap = false; }
+    else if (A && (A.modal || name !== A.screen)) {
+      if (!A.modal && name !== 'home' && !back && !pbAp.tap && pbApNow() - A.at < 1500) A.screen = name; // the opener goes on by itself (View Report: Records, then the report): no tap between
+      else pbAp.cur = null;
+    }
+    pbApPaint(); if (pbAp.cur) setTimeout(pbApPaint, 0); // again once the opener has drawn the page (a list's own Nudge button)
+  });
+  setInterval(() => { try { if (pbAp.cur && !document.hidden) pbApPaint(); } catch (e) {} }, 2000); // the problem solved on the page, a nudge sent: the row follows
+  window.__debugAp = () => pbAp;
+  try {
+    const st = document.createElement('style'); st.id = 'pbApCss';
+    st.textContent = '#pbApp#pbApp .pb-ap{display:flex;flex-wrap:nowrap;align-items:center;gap:10px;margin:0 16px 12px;padding:10px 12px;background:var(--pb-brand-soft);border:1px solid var(--pb-brand-line);border-radius:14px;color:var(--pb-text);font-size:14px;line-height:1.35;box-sizing:border-box}'
+      + '#pbApp#pbApp #pbModalDialog .pb-ap{margin:0 0 14px}'
+      + '#pbApp .pb-ap-ic{flex:0 0 20px;width:20px;height:20px;background:var(--pb-brand);-webkit-mask:var(--pb-icon-warn) center / contain no-repeat;mask:var(--pb-icon-warn) center / contain no-repeat}'
+      + '#pbApp .pb-ap-t{flex:1 1 0;min-width:0;font-weight:650;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}'
+      // the card's "⋯" (as on Home: 44 px, the same glyph), at the right of a page row and of a Snoozed row
+      + '#pbApp#pbApp :is(.pb-ap, .pb-ng-li) .pb-ng-dots{flex:0 0 44px;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;margin:-8px -8px -8px 0;padding:0;background:transparent;border:0;border-radius:10px;color:var(--pb-text);font:inherit;font-size:24px;font-weight:700;line-height:1;cursor:pointer;-webkit-appearance:none;appearance:none}'
+      + '#pbApp :is(.pb-ap, .pb-ng-li) .pb-ng-dots>span{transform:translateY(-3px)}#pbApp :is(.pb-ap, .pb-ng-li) .pb-ng-dots>span::before{content:"\\22EF"}'
+      + '#pbApp :is(.pb-ap, .pb-ng-li) .pb-ng-dots:active{background:var(--pb-raised-2)}#pbApp :is(.pb-ap, .pb-ng-li) .pb-ng-dots:focus-visible{outline:none;box-shadow:var(--pb-ring)}'
+      + '#pbApp#pbApp .pb-ap.red{background:var(--pb-danger-soft);border-color:var(--pb-danger-line)}#pbApp .pb-ap.red .pb-ap-ic{background:var(--pb-danger-text)}'
+      // the Snoozed rows (and their fold): the card's own colour, a hazard triangle in front
+      + '#pbApp#pbApp .pb-ng-rows{border-top:0}'
+      + '#pbApp#pbApp .pb-ng-li{display:flex;align-items:center;margin:6px 0 0;padding:0 8px 0 0;background:var(--pb-brand-soft);border:1px solid var(--pb-brand-line);border-radius:12px}'
+      + '#pbApp#pbApp .pb-ng-li.red{background:var(--pb-danger-soft);border-color:var(--pb-danger-line)}'
+      + '#pbApp#pbApp .pb-ng-li .pb-ng-row{flex:1 1 auto;min-width:0;padding:8px 4px 8px 12px;border-bottom:0}#pbApp#pbApp .pb-ng-li .pb-ng-dots{margin:0}'
+      + '#pbApp .pb-ng-row .ic,#pbApp .pb-ng-foldbtn .ic{flex:0 0 18px;width:18px;height:18px;background:var(--pb-brand);-webkit-mask:var(--pb-icon-warn) center / contain no-repeat;mask:var(--pb-icon-warn) center / contain no-repeat}'
+      + '#pbApp .pb-ng-li.red .ic,#pbApp .pb-ng-foldbtn.red .ic{background:var(--pb-danger-text)}'
+      + '#pbNgToast{font-family:var(--pb-font)}'; // the toast sits outside #pbApp: the app's font, not the browser's
+    document.head.appendChild(st);
+  } catch (e) {}
+  // ================= end feat_alertpage =================
 
   pbRunScreenHooks(pbCurrentScreen, false); // UX batch 2: Home is shown by the markup at start-up, not by pbGoto
   const pbBootGuard = setTimeout(() => {
