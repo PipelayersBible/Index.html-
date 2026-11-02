@@ -11045,7 +11045,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.87 · 2026-11-02'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.88 · 2026-11-02'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -45405,12 +45405,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       cutsheetUnparsedLines = []; cutsheetXings = [];
       cutsheetRowsGen = pbCutsheetImportGen; // these rows belong to THIS import context — checked at import time so a stale set can never be imported against a context it didn't come from
       cutsheetRowsManualGen = pbCutsheetManualParseGen; // ALSO bound to the manual-edit generation at this exact moment — an edit made to the text AFTER this parse bumps pbCutsheetManualParseGen without touching pbCutsheetImportGen at all (the PDF/context hasn't changed, just the text), so checking only the import generation at import time would let a post-parse edit's OLD, already-parsed values still be imported even though the visible text now says something different
+      const seenRows = new Set(), seenXings = new Set(); /* feat_csdup (owner, Nov 2): a row printed twice with the same values is read once */
+      const dupKey = r => [r.stakeNum, r.station, r.offsetSide, r.offsetDist, r.designPt, String(r.description || '').trim().replace(/\s+/g, ' ').toUpperCase(), r.planElev, r.cfType, r.cfVal, r.stakeElev].join('|');
       text.split('\n').flatMap(pbSplitJoinedCutsheetRows).forEach(line => {
         if (!line.trim()) return;
         const parsed = parseCutsheetLine(line);
         const xing = pbCutsheetXingRow(line, parsed); /* feat_cutxing */
-        if (xing) { xing.at = cutsheetRows.length; xing.checked = true; cutsheetXings.push(xing); return; }
-        if (parsed && (parsed.station !== null || parsed.designPt !== null)) { parsed.checked = cutsheetRowIsPlausiblePipePoint(parsed); cutsheetRows.push(parsed); }
+        if (xing) { const xk = line.trim().replace(/\s+/g, ' ').toUpperCase(); if (seenXings.has(xk)) return; seenXings.add(xk); xing.at = cutsheetRows.length; xing.checked = true; cutsheetXings.push(xing); return; }
+        if (parsed && (parsed.station !== null || parsed.designPt !== null)) { const k = dupKey(parsed); if (seenRows.has(k)) return; seenRows.add(k); parsed.checked = cutsheetRowIsPlausiblePipePoint(parsed); cutsheetRows.push(parsed); }
         else cutsheetUnparsedLines.push(line.trim()); // no station and no point number: nothing to place it by
       });
       cutsheetRows.forEach((r, i) => r.idx = i);
