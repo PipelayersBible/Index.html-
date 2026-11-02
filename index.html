@@ -11055,7 +11055,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.80 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.81 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -22189,6 +22189,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     try {
       window.pbRsEarlyClear();
       const stop = entry && entry.incomplete && entry.completedDistance !== null && entry.completedDistance !== undefined ? Number(entry.completedDistance) : NaN; if (!Number.isFinite(stop)) return;
+      { const j = document.getElementById('runSecJob'); if (j) { j.open = false; try { pbRunSecSchedule(); } catch (e) {} } } /* feat_jobfold (owner, Nov 1): a continued run's Job & Pipe starts folded */
       const sc = document.getElementById('screen-input'), tot = numVal('totalDist'); if (!sc || tot === null || stop > tot + 0.005) return;
       const startSec = sc.querySelector('.pb-section.start.pb-pt'), endSec = sc.querySelector('.pb-section.end.pb-pt'); if (!startSec || !endSec) return;
       const pts = [{ ft: 0, el: startSec }];
