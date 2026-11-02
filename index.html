@@ -9025,6 +9025,12 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp #screen-results .pb-rs-colopt[aria-pressed="true"] { border-color: var(--pb-brand-line); background: var(--pb-brand-soft); }
 #pbApp#pbApp #screen-results .pb-rs-colopt[aria-pressed="true"] .pb-rs-colnum { background: var(--pb-brand); border-color: var(--pb-brand); color: var(--pb-brand-ink); }
 #pbApp#pbApp #screen-results .pb-rs-cols { gap: 8px; }
+/* feat_colrow (owner, Nov 1): the column picks fit on one row: number over name, equal widths */
+#pbApp#pbApp #screen-results .pb-rs-cols:not([hidden]) { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
+#pbApp#pbApp #screen-results .pb-rs-colopt { flex-direction: column; justify-content: center; gap: 4px; min-width: 0; min-height: 60px; padding: 6px 2px; border-radius: 14px; font-size: clamp(11px, 3.3vw, 13px); }
+#pbApp#pbApp #screen-results .pb-rs-colopt > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#pbApp#pbApp #screen-results .pb-rs-colopt .pb-rs-colnum { width: 26px; height: 26px; font-size: 14px; }
+@media (max-width: 359px) { #pbApp#pbApp #screen-results .pb-rs-cols:not([hidden]) { gap: 4px; margin-left: 12px; margin-right: 12px; } #pbApp#pbApp #screen-results .pb-rs-colopt { padding: 6px 0; font-size: 11px; letter-spacing: -0.01em; } }
 /* Warning cards: the headline row; tap for the full text */
 #pbApp#pbApp #screen-results .pb-wc { padding-top: 0; padding-bottom: 0; }
 #pbApp#pbApp #screen-results .pb-wc .pb-wc-head { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; margin: 0; padding: 8px 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
@@ -11055,7 +11061,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.83 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.84 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
