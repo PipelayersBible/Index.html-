@@ -11045,7 +11045,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.88 · 2026-11-02'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.89 · 2026-11-02'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -14472,7 +14472,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if ((m = t.match(/^NOT_A_CUTSHEET:?\s*(.*)$/i))) { out.refused = m[1] || 'it doesn’t look like a cutsheet'; return; }
       if ((m = t.match(/^UNCERTAIN:?\s*(.*)$/i))) { out.uncertain.push(m[1]); return; }
       if ((m = t.match(/^UNREADABLE:?\s*(.*)$/i))) { out.unreadable.push(m[1]); return; }
-      if ((m = t.match(/^NOTE:?\s*(.*)$/i))) { out.notes.push(m[1]); return; }
+      if ((m = t.match(/^NOTE:?\s*(.*)$/i))) { if (/no plan elevation column/i.test(m[1])) out.notes.push('The sheet has no plan elevation column: plan elevations were worked out from the stake elevation and cut/fill.'); return; } /* feat_ainote (owner, Nov 2) */
       out.rows.push(t);
     });
     return out;
@@ -14500,11 +14500,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const key = pbCutsheetAiKey();
     if (pbCutsheetAiAck === key) return false;
     const rv = pbCutsheetAiReview && pbCutsheetAiReview.text === cutsheetAiRawText ? pbCutsheetAiReview : { uncertain: [], unreadable: [], notes: [], truncated: false, kind: 'pdf' };
-    const parts = ['These rows were read by AI from ' + (rv.kind === 'photo' ? 'a photo of the sheet' : 'a scanned PDF') + ', not from the sheet’s own text. Check every checked row (station, cut/fill, elevations) against the sheet before importing.'];
-    if (rv.truncated) parts.push('The AI’s answer was cut off: rows near the end of the sheet may be missing.');
-    if (rv.uncertain.length) parts.push('AI wasn’t sure about:\n' + rv.uncertain.map(x => '• ' + x).join('\n'));
-    if (rv.unreadable.length) parts.push('AI couldn’t read these rows (not in the list):\n' + rv.unreadable.map(x => '• ' + x).join('\n'));
-    if (rv.notes.length) parts.push('Note:\n' + rv.notes.map(x => '• ' + x).join('\n'));
+    const parts = ['AI read these rows. Check the checked rows against the sheet before importing.']; /* feat_ainote: the doubts are listed above the rows, not again here */
     pbShowModal(parts.join('\n\n'), [{ label: 'Cancel' }, { label: 'I’ve Checked Them', primary: true, onClick: () => {
       if (pbCutsheetAiKey() !== key) { pbAlert('The cutsheet results changed while that dialog was open — what you reviewed is no longer current. Please review the rows again and click Import once more.', 'Review Changed'); return; }
       pbCutsheetAiAck = key;
