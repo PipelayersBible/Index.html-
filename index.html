@@ -2520,6 +2520,7 @@ html.pb-scrolled #pbApp .pb-screen.active:not(#screen-home) > .pb-header > :is(.
 #pbApp #screen-cutsheetImport .pb-cs-route { margin: 14px 0 6px 0; font-size: 15px; font-weight: 700; color: var(--pb-text); }
 #pbApp #screen-cutsheetImport .pb-cs-route:first-child { margin-top: 0; }
 #pbApp #screen-cutsheetImport .pb-cs-route .pb-chip { margin-left: 6px; }
+#pbApp #cutsheetPdfStatus.pb-cs-plain { color: var(--pb-text-2); } /* feat_cutone: "Not read." after Cancel */
 #pbApp #screen-cutsheetImport .pb-cs-cols { margin: 8px 0 0 0; padding: 0; list-style: none; }
 #pbApp #screen-cutsheetImport .pb-cs-cols li { padding: 8px 0; border-top: 1px solid var(--pb-divider); font-size: 14px; color: var(--pb-text-2); }
 #pbApp #screen-cutsheetImport .pb-cs-cols li > b { display: block; color: var(--pb-text); }
@@ -8691,34 +8692,15 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <p class="pb-eyebrow"><span>NEW RUN</span><button class="pb-back" title="Back" onclick="pbGoto('input')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
       <h1 class="pb-title">Import From Cutsheet</h1>
     </div>
-    <p class="pb-help pb-b3-intro">Upload the PDF or paste rows. Both stay on this phone. Reading with AI is a separate choice below, and needs signal.</p>
-    <details class="pb-more pb-b3-gutter"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>How importing works</span></summary><p class="pb-help">Upload the PDF or paste rows — both stay local, nothing sent anywhere. If that fails (a scanned PDF with no text layer), AI reading below can help instead, which does send the PDF to Anthropic.</p></details>
+    <p class="pb-help pb-b3-intro">Add the cutsheet (a PDF or a photo), or paste rows.</p>
+    <details class="pb-more pb-b3-gutter"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>How importing works</span></summary><p class="pb-help">A PDF the phone can read, and pasted rows, stay on this phone. A scanned PDF or a photo can only be read by AI: the app asks first, and only then sends it to Anthropic.</p></details>
     <div class="pb-section">
-      <div class="pb-tag">Upload Cutsheet PDF</div>
+      <div class="pb-tag">Cutsheet PDF or Photo</div>
       <div class="pb-body">
-        <p class="pb-cs-route" id="cutsheetRouteLocal">Read on this phone<span class="pb-chip saved">Stays on this phone</span></p>
-        <p class="pb-help" style="margin-top:0;">A PDF with a text layer is read here, with no signal. If the phone can&rsquo;t read it, nothing is sent anywhere until you choose AI reading below.</p>
-        <p class="pb-help" style="margin-top:0; display:flex; align-items:flex-start; gap:6px;">
-          <span>Don’t use AI reading (below) with confidential or sensitive project info.</span>
-          <button type="button" class="pb-b3-why" onclick="pbShowCutsheetAiPrivacyInfo()" title="Why?" aria-label="Why?" style="flex-shrink:0; width:18px; height:18px; border-radius:50%; border:1px solid var(--ink-soft); background:none; color:var(--ink-soft); font-size:12px; line-height:16px; padding:0; cursor:pointer;">i</button>
-        </p>
-        <input type="file" accept="application/pdf" id="cutsheetPdfInput" style="display:none;" onchange="pbHandleCutsheetPDF(this)">
-        <div class="pb-btn-wrap" style="padding-top:0;"><button class="pb-btn ghost" style="width:100%;" onclick="document.getElementById('cutsheetPdfInput').click()">Choose PDF File</button></div>
+        <input type="file" accept="application/pdf,image/*" id="cutsheetPdfInput" style="display:none;" onchange="pbAddCutsheet(this)">
+        <div class="pb-btn-wrap" style="padding:0;"><button type="button" class="pb-btn" id="cutsheetAddBtn" style="width:100%;" onclick="document.getElementById('cutsheetPdfInput').click()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Cutsheet</button></div>
         <div class="pb-derived" id="cutsheetPdfStatus"></div>
-        <div id="cutsheetAiReadWrap" style="display:none; margin-top:10px; border-top:1px solid var(--paper-2); padding-top:10px;">
-          <p class="pb-help" style="margin:0 0 8px 0;">This PDF has no text layer, so the phone can’t read it. AI can read it instead (paid plans). AI-read numbers are less certain than real text — you check every row before importing.</p>
-          <button class="pb-btn" id="cutsheetAiReadBtn" style="width:100%;" onclick="pbReadCutsheetWithAI()">Read This PDF With AI</button>
-          <p class="pb-ai-privacy">Sent to Anthropic to be read; not stored by the app. Don’t use AI with confidential project info.</p>
-          <div class="pb-ai-status" id="cutsheetAiStatus" aria-live="polite"></div>
-        </div>
-        <p class="pb-cs-route" id="cutsheetRouteAi">Read with AI: internet required<span class="pb-chip notsent">Sent to Anthropic</span></p>
-        <p class="pb-help" style="margin-top:0;">Only when you tap an AI button: the photo (or the PDF the phone couldn&rsquo;t read) goes through the app&rsquo;s server to Anthropic to be read, and the rows come back here for you to check. Without signal it can&rsquo;t run.</p>
-        <div class="pb-ai-block" id="cutsheetAiPhotoWrap">
-          <input type="file" accept="image/*" capture="environment" id="cutsheetAiPhotoInput" style="display:none;" onchange="pbCutsheetAiPhoto(this)">
-          <button class="pb-btn ghost" id="cutsheetAiPhotoBtn" style="width:100%;" onclick="pbCutsheetAiPhotoPick()">Read a Photo of the Sheet (AI)</button>
-          <p class="pb-ai-privacy">For a paper or scanned sheet. Sent to Anthropic to be read; not stored by the app. Don’t use AI with confidential project info.</p>
-          <div class="pb-ai-status" id="cutsheetAiPhotoStatus" aria-live="polite"></div>
-        </div>
+        <div class="pb-ai-status" id="cutsheetAiStatus" aria-live="polite"></div>
         <div id="cutsheetDebugWrap" style="display:none; margin-top:10px; border-top:1px solid var(--paper-2); padding-top:10px;">
           <p class="pb-help" style="margin:0 0 6px 0;">Diagnostic: the first ~25 text pieces read from page 1. If the import looks wrong, screenshot this and send it with Report an App Problem (Account &amp; Settings).</p>
           <textarea id="cutsheetDebugBox" rows="10" readonly style="font-size:11px;"></textarea>
@@ -9371,7 +9353,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   var SKIP = '#screen-input, #screen-quickrun';
   var CTRL = 'input, select, textarea';
   var EXPLICIT = {
-    cutsheetPdfInput: 'Cutsheet PDF file (read on this phone)', cutsheetAiPhotoInput: 'Photo of a cutsheet (read with AI)',
+    cutsheetPdfInput: 'Cutsheet PDF or photo',
     cutsheetDebugBox: 'Text the phone pulled from page 1 of the PDF (diagnostic)', riPhotoPhoto: 'Photo for this report',
     tkPhotoInput: 'Ticket photo', cpMiscPhoto: 'Photo for this permit'
   };
@@ -11063,7 +11045,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.86 · 2026-11-02'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.87 · 2026-11-02'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -14559,23 +14541,49 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   window.pbReadCutsheetWithAI = function() {
     const statusEl = document.getElementById('cutsheetAiStatus');
-    if (!cutsheetPdfBase64) { pbAiShow(statusEl, 'warn', 'No PDF loaded.', 'Choose a PDF file above first.'); return; }
+    if (!cutsheetPdfBase64) { pbAiShow(statusEl, 'warn', 'No PDF loaded.', 'Add the cutsheet first.'); return; }
     if (!pbAiPlanOk()) { pbAiShow(statusEl, 'warn', 'AI not on your plan.', PB_AI_MSG.plan); return; }
     if (cutsheetPdfBase64.length > 14500000) { pbAiShow(statusEl, 'warn', 'Too big to send.', PB_AI_MSG.tooBig); return; }
-    const pdf = cutsheetPdfBase64, gen = pbCutsheetImportGen;
-    pbAiEnsurePrivacy(() => {
-      if (gen !== pbCutsheetImportGen || cutsheetPdfBase64 !== pdf) return; // another PDF was chosen while the privacy question was open
-      pbCutsheetAiRun({ pdf: { data: pdf } }, statusEl, document.getElementById('cutsheetAiReadBtn'), 'pdf');
-    });
+    // feat_cutone: "Read with the in-app AI?" is the only question on the cutsheet path: no "Before You Use AI" note
+    // here (owner, Nov 2). Every other AI feature still shows it once per phone.
+    pbCutsheetAiRun({ pdf: { data: cutsheetPdfBase64 } }, statusEl, null, 'pdf');
   };
-  window.pbCutsheetAiPhotoPick = function() {
-    const statusEl = document.getElementById('cutsheetAiPhotoStatus');
-    if (!pbAiPlanOk()) { pbAiShow(statusEl, 'warn', 'AI not on your plan.', PB_AI_MSG.plan); return; }
-    if (navigator.onLine === false) { pbAiShow(statusEl, 'warn', 'No signal.', PB_AI_MSG.offline); return; } /* feat_core33 K11: said before the camera opens */
-    pbAiEnsurePrivacy(() => { const inp = document.getElementById('cutsheetAiPhotoInput'); if (inp) inp.click(); });
+  // feat_cutone: a scanned PDF or a photo asks once, in the app's own dialog, before AI reads it. Without a paid
+  // plan, or with no signal, it says so instead (as the old AI buttons did) and nothing is asked or sent; only then is
+  // `why` (the phone couldn't read the PDF) shown. While asking, the file status is empty; Cancel leaves "Not read."
+  function pbCutsheetPdfStatus(text, plain) {
+    const el = document.getElementById('cutsheetPdfStatus'); if (!el) return;
+    el.textContent = text || ''; el.classList.toggle('pb-cs-plain', !!plain);
+  }
+  function pbCutsheetOfferAi(go, why) {
+    const statusEl = document.getElementById('cutsheetAiStatus');
+    const noAi = (title, msg) => { if (why) pbCutsheetPdfStatus(why); pbAiShow(statusEl, 'warn', title, msg); };
+    if (!pbAiPlanOk()) { noAi('AI not on your plan.', PB_AI_MSG.plan); return; }
+    if (navigator.onLine === false) { noAi('No signal.', PB_AI_MSG.offline); return; } /* feat_core33 K11 */
+    const gen = pbCutsheetImportGen;
+    pbCutsheetPdfStatus('');
+    if (!cutsheetRows.length && !cutsheetUnparsedLines.length) { const sm = document.getElementById('cutsheetParseSummary'); if (sm) sm.innerHTML = ''; } // not "…paste rows first" under the question
+    pbShowModal('Not recommended for confidential information.', [
+      { label: 'Cancel', onClick: () => { if (gen === pbCutsheetImportGen) pbCutsheetPdfStatus('Not read.', true); } },
+      { label: 'Read with AI', primary: true, onClick: () => { if (gen === pbCutsheetImportGen) go(); } }], 'Read with the in-app AI?');
+  }
+  // feat_cutone: the one "Add Cutsheet" input. A PDF goes to the on-phone reader (which asks about AI only when it
+  // can't read it); a photo can only be read by AI, so it asks straight away.
+  window.pbAddCutsheet = function(input) {
+    const file = input.files && input.files[0];
+    input.value = '';
+    if (!file) return;
+    const holder = { files: [file], value: '' };
+    const isPdf = /pdf/i.test(file.type || '') || /\.pdf$/i.test(file.name || '');
+    const isImage = /^image\//i.test(file.type || '') || /\.(jpe?g|png|heic|heif|webp|gif|bmp|tiff?)$/i.test(file.name || '');
+    pbAiShow(document.getElementById('cutsheetAiStatus'), '', '', '');
+    pbCutsheetPdfStatus('');
+    if (!isPdf && isImage) { pbCutsheetOfferAi(() => pbCutsheetAiPhoto(holder)); return; } // no "Before You Use AI" note on this path (owner, Nov 2)
+    if (!isPdf) { pbCutsheetPdfStatus('That file isn\u2019t a PDF or a photo. Add the cutsheet PDF or a photo of it.'); return; }
+    pbHandleCutsheetPDF(holder);
   };
   window.pbCutsheetAiPhoto = function(input) {
-    const statusEl = document.getElementById('cutsheetAiPhotoStatus');
+    const statusEl = document.getElementById('cutsheetAiStatus');
     const file = input.files && input.files[0];
     input.value = '';
     if (!file) return;
@@ -14585,11 +14593,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       let img;
       try { img = await pbAiPrepImage(file); } catch (e) { pbAiShow(statusEl, 'warn', 'Photo not read.', PB_AI_PHOTO_FAIL); return; }
       if (gen !== pbCutsheetImportGen) return;
-      pbCutsheetAiRun({ image: { mediaType: img.mediaType, data: img.data } }, statusEl, document.getElementById('cutsheetAiPhotoBtn'), 'photo', () => {
+      pbCutsheetAiRun({ image: { mediaType: img.mediaType, data: img.data } }, statusEl, null, 'photo', () => {
         // A photo is a new sheet: the old PDF (and anything read from it) is no longer this import's source.
         pbCutsheetImportGen++;
         cutsheetPdfBase64 = null;
-        const w = document.getElementById('cutsheetAiReadWrap'); if (w) w.style.display = 'none';
         const ps = document.getElementById('cutsheetPdfStatus'); if (ps) ps.textContent = '';
       });
     };
@@ -45153,8 +45160,6 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function resetCutsheetImportUI() {
     pbCutsheetImportGen++; // any in-flight PDF/AI-read response from before this reset is now stale
-    const aiBtn = document.getElementById('cutsheetAiReadBtn');
-    if (aiBtn) { aiBtn.disabled = false; aiBtn.textContent = 'Read with AI'; } // a new context must always start with a fresh, enabled button — an old in-flight request's own stale-context guard correctly skips re-enabling it (since that response no longer applies), but nothing else was resetting it for the NEW context either, leaving it stuck disabled with no request in flight to ever fix it
     resetCutsheetPasteBox();
     document.getElementById('cutsheetPdfStatus').textContent = '';
     document.getElementById('cutsheetDebugWrap').style.display = 'none';
@@ -45175,9 +45180,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     document.getElementById('cutsheetSegmentPicker').style.display = 'none';
     document.getElementById('cutsheetSegmentPicker').innerHTML = '';
     cutsheetSelectedSegment = null;
-    document.getElementById('cutsheetAiReadWrap').style.display = 'none';
-    pbAiShow(document.getElementById('cutsheetAiStatus'), '', '', ''); pbAiShow(document.getElementById('cutsheetAiPhotoStatus'), '', '', '');
-    { const b = document.getElementById('cutsheetAiPhotoBtn'); if (b) b.disabled = false; }
+    pbAiShow(document.getElementById('cutsheetAiStatus'), '', '', '');
+    document.getElementById('cutsheetPdfStatus').classList.remove('pb-cs-plain');
     cutsheetPdfBase64 = null;
     cutsheetAiRawText = null;
     document.getElementById('cutsheetRangeFrom').value = ''; // the last sheet's stake range is not this sheet's
@@ -45279,8 +45283,6 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const file = input.files[0];
     input.value = '';
     pbCutsheetImportGen++; // starting a new PDF read is itself a new import context — any earlier in-flight read is now stale
-    const aiBtnForNewPdf = document.getElementById('cutsheetAiReadBtn');
-    if (aiBtnForNewPdf) { aiBtnForNewPdf.disabled = false; aiBtnForNewPdf.textContent = 'Read with AI'; } // this context change doesn't go through resetCutsheetImportUI (that only runs on navigation) — uploading a new PDF while staying on the same screen is its own context change that needs the same reset
     // A new upload invalidates whatever was previously parsed, immediately —
     // not conditionally on this new upload later succeeding. If this PDF
     // turns out scanned, empty, or unreadable, the OLD sheet's rows must not
@@ -45310,7 +45312,6 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const myGen = pbCutsheetImportGen;
     const myManualGen = pbCutsheetManualParseGen; // captured right after clearing the box for this attempt — the user could start typing/parsing anytime between now and whenever this extraction actually finishes
     statusEl.textContent = 'Reading PDF\u2026';
-    document.getElementById('cutsheetAiReadWrap').style.display = 'none';
     try {
       const buf = await file.arrayBuffer();
       if (myGen !== pbCutsheetImportGen) return; // context moved on while reading the file itself
@@ -45368,24 +45369,27 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       }
       if (cutsheetPasteBoxEl) cutsheetPasteBoxEl.value = allLines.join('\n');
       if (allLines.length === 0) {
-        statusEl.textContent = 'PDF loaded (' + pdf.numPages + ' page(s)) but no extractable text was found on any page — it may be a scanned image, or this PDF just doesn\u2019t have a usable text layer. Try pasting the rows instead, or use AI reading below.';
-        document.getElementById('cutsheetAiReadWrap').style.display = '';
+        statusEl.textContent = '';
+        pbCutsheetOfferAi(pbReadCutsheetWithAI, 'The phone can\u2019t read this PDF (no text layer: it may be a scanned image). Paste the rows instead.');
       } else {
         statusEl.textContent = 'Extracted ' + allLines.length + ' line(s) from ' + pdf.numPages + ' page(s) \u2014 check the box below looks right, then Parse Rows.';
         pbParseCutsheet();
+        if (!cutsheetRows.length && !cutsheetXings.length && myGen === pbCutsheetImportGen) { // text, but no row the phone could read
+          pbCutsheetOfferAi(pbReadCutsheetWithAI, 'Extracted ' + allLines.length + ' line(s) from ' + pdf.numPages + ' page(s), but the phone couldn\u2019t read any cutsheet rows in them. Fix them in the box below.');
+        }
       }
     } catch (err) {
       if (myGen === pbCutsheetImportGen) {
         const bytesLoaded = !!cutsheetPdfBase64; // if file.arrayBuffer() itself failed, this is still null — nothing was ever sent anywhere, and there's nothing for AI to read
         statusEl.textContent = bytesLoaded
-          ? 'Couldn\u2019t read that PDF (' + (err && err.message ? err.message : 'unknown error') + '). It may be a scanned image without real text \u2014 try pasting the rows instead, or use AI reading below.'
+          ? 'Couldn\u2019t read that PDF (' + (err && err.message ? err.message : 'unknown error') + '). It may be a scanned image without real text \u2014 try pasting the rows instead.'
           : 'Couldn\u2019t read that PDF (' + (err && err.message ? err.message : 'unknown error') + '). Please select the file again, or paste the rows instead.';
         // Only offer AI reading if the PDF's bytes actually loaded — if
         // file.arrayBuffer() itself is what failed, cutsheetPdfBase64 is
         // still null (cleared above and never set), and there is nothing to
         // send to AI at all. If the failure happened later (PDF.js parsing),
         // the bytes are fine and AI reading remains a genuinely viable path.
-        if (bytesLoaded) document.getElementById('cutsheetAiReadWrap').style.display = '';
+        if (bytesLoaded) pbCutsheetOfferAi(pbReadCutsheetWithAI, statusEl.textContent);
       }
     }
   };
