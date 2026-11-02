@@ -11055,7 +11055,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.82 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.83 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -18108,7 +18108,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   window.pbSetReviewHubsVisible = function(show) {
     reviewShowAllHubs = show;
-    document.getElementById('reviewPointsWrap').innerHTML = renderReviewPointsHTML(lastCalc, reviewShowAllHubs);
+    document.getElementById('reviewPointsWrap').innerHTML = renderReviewPointsHTML(window.pbRsViewCalc ? window.pbRsViewCalc(lastCalc) : lastCalc, reviewShowAllHubs); /* feat_revfrom */
   };
   // Flips an already-built run's direction — Start becomes End and vice versa, and
   // every hub's station mirrors around the run's total distance. Each point's own
@@ -18508,19 +18508,20 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     document.getElementById('inputCapabilityNotes').innerHTML = calc.capabilityNotes.map(n => `<div class="pb-warn photo">${escapeHtml(n)}</div>`).join('');
     lastCalc = calc;
     reviewShowAllHubs = calc.points.filter(p => !(p.id === 'start' || p.id === 'end' || /^seg\d+(start|end)$/.test(p.id))).length <= 8; // feat_run33 (7): hubs shown unless there are many
-    document.getElementById('reviewSummaryGrid').innerHTML = summaryGridHTML(calc);
+    const rcalc = window.pbRsViewCalc ? window.pbRsViewCalc(calc) : calc; /* feat_revfrom */
+    document.getElementById('reviewSummaryGrid').innerHTML = summaryGridHTML(rcalc);
     const content = document.getElementById('reviewContent');
     let html = '';
     html += `<div class="pb-review-item"><span class="k">Rod Unit</span><br>${calc.rodUnit.charAt(0).toUpperCase()+calc.rodUnit.slice(1)}</div>`; /* feat_run33 (8): the HI is in the grid */
-    const realHubCount = calc.points.filter(p => !(p.id === 'start' || p.id === 'end' || /^seg\d+(start|end)$/.test(p.id))).length;
-    html += `<div class="pb-review-item"><span class="k">Run</span><br>${escapeHtml(calc.points[0].label)} → ${escapeHtml(calc.points[calc.points.length-1].label)} · ${escapeHtml(pbLayIntervalWords(calc))} · ${realHubCount === 0 ? 'no hubs' : realHubCount === 1 ? '1 hub' : realHubCount + ' hubs'}</div>`; /* feat_run33 (8): the distance is in the grid */
+    const realHubCount = rcalc.points.filter(p => !(p.id === 'start' || p.id === 'end' || /^seg\d+(start|end)$/.test(p.id))).length - (rcalc !== calc ? 1 : 0);
+    html += `<div class="pb-review-item"><span class="k">Run</span><br>${escapeHtml(rcalc !== calc ? (rcalc.points[0].label || 'Left off') + ' (' + fmt(rcalc._rsFrom, 1) + ' ft)' : calc.points[0].label)} → ${escapeHtml(calc.points[calc.points.length-1].label)} · ${escapeHtml(pbLayIntervalWords(calc))} · ${realHubCount === 0 ? 'no hubs' : realHubCount === 1 ? '1 hub' : realHubCount + ' hubs'}</div>`; /* feat_run33 (8): the distance is in the grid */
     const reviewRunStarts = [{ label: 'Run 1', point: calc.points[0] }];
     for (let n = 2; n <= MAX_SEG; n++) {
       const p = calc.points.find(pt => pt.id === 'seg' + n + 'start');
       if (p) reviewRunStarts.push({ label: 'Run ' + n, point: p });
     }
     const reviewMultiRun = reviewRunStarts.length > 1;
-    html += `<div id="reviewPointsWrap">${renderReviewPointsHTML(calc, reviewShowAllHubs)}</div>`;
+    html += `<div id="reviewPointsWrap">${renderReviewPointsHTML(rcalc, reviewShowAllHubs)}</div>`;
     const { maxDepth, maxPrefix, maxCut, maxExtra } = getMaxStakeCutDepth();
     if (maxDepth >= 5) {
       const depthWork = (maxExtra.wt || maxExtra.bed) ? ` (${maxCut.toFixed(2)} ft cut to invert${maxExtra.wt ? ' + ' + maxExtra.wt.toFixed(2) + ' ft pipe wall' : ''}${maxExtra.bed ? ' + ' + maxExtra.bed.toFixed(2) + ' ft bedding' : ''})` : '';
@@ -22184,7 +22185,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // feat_stophub (owner, Nov 1): a run continued from a stop between points gets a hub where it left off ("Left off"),
   // at the invert the run had there, so the setup starts from that point. Run 1 only; none when a point is already there.
   window.pbRsStopHub = function(entry) {
-    const stop = entry && entry.incomplete && entry.completedDistance !== null && entry.completedDistance !== undefined ? Number(entry.completedDistance) : NaN; if (!Number.isFinite(stop) || !(stop > 0.005)) return null;
+    const stop = entry && entry.incomplete && entry.completedDistance !== null && entry.completedDistance !== undefined ? Number(entry.completedDistance) : NaN;
+    window._pbRsStop = Number.isFinite(stop) && stop > 0.005 ? { ft: stop, from: entry.id } : null; /* feat_revfrom */
+    if (!Number.isFinite(stop) || !(stop > 0.005)) return null;
     const tot = numVal('totalDist'); if (tot === null || stop >= tot - 0.005) return null;
     if (getAllHubPrefixes().some(h => { const f = numVal(h + 'Station'); return f !== null && Math.abs(f - stop) <= 0.005; })) return null;
     const rows = (entry.intervalRows || []).filter(r => typeof r.stationFt === 'number' && typeof r.piFt === 'number' && Number.isFinite(r.piFt) && r.stationFt <= tot + 0.005 && !/^seg\d/.test(r.pointId || '')).sort((a, b) => a.stationFt - b.stationFt);
@@ -22200,6 +22203,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const next = Array.from(document.querySelectorAll('#hubsContainer > [data-hub-id]')).find(c => c !== card && (numVal(c.dataset.hubId + 'Station') || 0) > stop);
     if (next && card) next.parentNode.insertBefore(card, next); // in station order on the page
     return id;
+  };
+  // feat_revfrom (owner, Nov 1): Review of a continued run shows the run from where it left off to the end
+  // (distance, slopes, start reading/invert, bedding, points). Lock and Results keep the whole run.
+  window.pbRsViewCalc = function(calc) {
+    try {
+      const st = window._pbRsStop; if (!st || !calc || !Array.isArray(calc.points) || window._pbResumingFromEntryId !== st.from) return calc;
+      const k = calc.points.findIndex(p => p && typeof p.station === 'number' && Math.abs(p.station - st.ft) <= 0.005 && !/^seg\d/.test(p.id || ''));
+      if (k <= 0) return calc;
+      const from = calc.points[k].station;
+      return Object.assign({}, calc, { points: calc.points.slice(k), segments: (calc.segments || []).filter(s => s.from && s.from.station >= from - 0.005), totalDist: Math.round((calc.totalDist - from) * 1000) / 1000, _rsFrom: from });
+    } catch (e) { console.error(e); return calc; }
   };
   window.pbRsEarlyClear = function() {
     const sc = document.getElementById('screen-input'); if (!sc) return;
