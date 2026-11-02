@@ -11055,7 +11055,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.81 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.82 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -22167,6 +22167,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     else if (!pbNewRunGuardPassed && pbAskKeptLaterStats(entry)) return; // after the crew question this was already asked
     if (!pbNewRunGuardPassed && pbNewRunNeedsAnswer({}, () => pbNewRunAfterAnswer(() => { const j = runArchive.indexOf(entry); if (j !== -1) pbResumeIncompleteRun(j); }))) return; // crew-sweep2: ask first
     const additionalRunNums = pbLoadRunIntoForm(entry, { open: true }).additionalRunNums; /* feat_run33 (2) */
+    try { window.pbRsStopHub(entry); } catch (e) { console.error(e); } /* feat_stophub */
     window._pbResumingFromEntryId = entry.id;
     window._pbResumingFromLabel = pbResumedFromLabel(entry);
     try { setTimeout(() => window.pbRsEarlyFold(entry), 0); } catch (e) {} /* feat_resume2 */
@@ -22180,6 +22181,26 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // feat_resume2 (owner, Oct 31): a continued run's setup starts where it left off. The start point and the hubs before
   // the first point at or past the stop fold into one line ("N earlier points · Show"); the page opens at that point.
   // A stop in a later run of a multi-run record: as before. A new run (pbResetRunForm) unfolds them.
+  // feat_stophub (owner, Nov 1): a run continued from a stop between points gets a hub where it left off ("Left off"),
+  // at the invert the run had there, so the setup starts from that point. Run 1 only; none when a point is already there.
+  window.pbRsStopHub = function(entry) {
+    const stop = entry && entry.incomplete && entry.completedDistance !== null && entry.completedDistance !== undefined ? Number(entry.completedDistance) : NaN; if (!Number.isFinite(stop) || !(stop > 0.005)) return null;
+    const tot = numVal('totalDist'); if (tot === null || stop >= tot - 0.005) return null;
+    if (getAllHubPrefixes().some(h => { const f = numVal(h + 'Station'); return f !== null && Math.abs(f - stop) <= 0.005; })) return null;
+    const rows = (entry.intervalRows || []).filter(r => typeof r.stationFt === 'number' && typeof r.piFt === 'number' && Number.isFinite(r.piFt) && r.stationFt <= tot + 0.005 && !/^seg\d/.test(r.pointId || '')).sort((a, b) => a.stationFt - b.stationFt);
+    let lo = null, hi = null; rows.forEach(r => { if (r.stationFt <= stop + 0.005) lo = r; if (hi === null && r.stationFt >= stop - 0.005) hi = r; });
+    if (!lo || !hi) return null;
+    const pi = Math.abs(hi.stationFt - lo.stationFt) < 0.0005 ? lo.piFt : lo.piFt + (hi.piFt - lo.piFt) * (stop - lo.stationFt) / (hi.stationFt - lo.stationFt);
+    pbAddHub();
+    const id = getAllHubPrefixes().slice(-1)[0], card = document.querySelector('[data-hub-id="' + id + '"]');
+    document.getElementById(id + 'Station').value = String(Math.round(stop * 1000) / 1000);
+    const lab = document.getElementById(id + 'Label'); if (lab) lab.value = 'Left off';
+    try { if (typeof pbRsMode === 'function') pbRsMode(id, 'elev'); } catch (e) {}
+    setElevFieldValue(id + 'Elev', Math.round(pi * 10000) / 10000, isArch());
+    const next = Array.from(document.querySelectorAll('#hubsContainer > [data-hub-id]')).find(c => c !== card && (numVal(c.dataset.hubId + 'Station') || 0) > stop);
+    if (next && card) next.parentNode.insertBefore(card, next); // in station order on the page
+    return id;
+  };
   window.pbRsEarlyClear = function() {
     const sc = document.getElementById('screen-input'); if (!sc) return;
     sc.querySelectorAll('.pb-rs-early').forEach(x => x.classList.remove('pb-rs-early')); sc.classList.remove('pb-rs-early-open');
