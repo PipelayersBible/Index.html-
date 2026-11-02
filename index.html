@@ -10184,6 +10184,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         box.className = 'pb-rs-slope'; box.dataset.rsPair = key; box.dataset.rsRun = String(n);
         b.el.parentNode.insertBefore(box, b.el);
       }
+      box.classList.toggle('pb-rs-early', b.el.classList.contains('pb-rs-early')); /* feat_foldfix */
       const t = pbRsSlopeText(a, b);
       if (box.textContent !== t) box.textContent = t;
       if (t) { box.removeAttribute('aria-hidden'); box.setAttribute('aria-label', 'Slope ' + t.replace('−', 'minus ')); } else { box.setAttribute('aria-hidden', 'true'); box.removeAttribute('aria-label'); }
@@ -11054,7 +11055,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.78 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.79 · 2026-11-01'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -22195,7 +22196,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       pts.sort((a, b) => a.ft - b.ft); pts.push({ ft: tot, el: endSec });
       let t = pts.findIndex(q => q.ft >= stop - 0.005); if (t < 0) t = pts.length - 1;
       const early = pts.slice(0, t).map(q => q.el); if (!early.length) return;
-      early.forEach(el => el.classList.add('pb-rs-early'));
+      early.forEach(el => { el.classList.add('pb-rs-early'); const p = el.previousElementSibling; if (p && p.classList.contains('pb-rs-slope')) p.classList.add('pb-rs-early'); }); /* feat_foldfix: its slope pill too */
       const n = early.length, bar = document.createElement('button');
       bar.type = 'button'; bar.id = 'pbRsEarlyBar'; bar.className = 'pb-btn ghost pb-rs-earlybar'; bar.setAttribute('aria-expanded', 'false');
       const lab = () => { const open = sc.classList.contains('pb-rs-early-open'); bar.setAttribute('aria-expanded', String(open)); bar.innerHTML = '<span>' + escapeHtml(n + ' earlier point' + (n === 1 ? '' : 's') + ' (before where you left off)') + '</span><span class="pb-laid-sumact">' + (open ? 'Fold' : 'Show') + '</span>'; };
@@ -22207,6 +22208,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const tgt = pts[t].el; setTimeout(() => { try { tgt.scrollIntoView({ block: 'start' }); } catch (e) {} }, 60);
     } catch (e) { console.error(e); }
   };
+  // feat_foldfix (owner, Nov 1): Expand All shows the folded earlier points too
+  { const o = window.pbExpandAllHubs; if (typeof o === 'function') window.pbExpandAllHubs = function() { try { const sc = document.getElementById('screen-input'), b = document.getElementById('pbRsEarlyBar'); if (sc && b && !sc.classList.contains('pb-rs-early-open')) b.click(); } catch (e) {} return o.apply(this, arguments); }; }
   // a Lock that stops on a missing or wrong value must be able to show it: Lock opens the folded points first
   { const o = window.pbLock; if (typeof o === 'function') window.pbLock = function() { try { const sc = document.getElementById('screen-input'); if (sc && sc.querySelector('.pb-rs-early')) { sc.classList.add('pb-rs-early-open'); const b = document.getElementById('pbRsEarlyBar'); if (b) b.remove(); } } catch (e) {} return o.apply(this, arguments); }; }
   // feat_run33 (2): the run form rebuilt from a locked record: rod, distances, intervals, pipe, points and hubs (stake
