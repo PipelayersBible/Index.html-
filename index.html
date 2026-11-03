@@ -10877,7 +10877,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (row) row.style.display = fit ? '' : 'none';
   }
   function pbFitWord(type) { return (PB_FIT_TYPES.find(x => x[0] === type) || [null, 'Fitting'])[1]; }
-  function pbFitIdent(prefix) { const f = pbFitSnap(prefix); return f ? pbFitWord(f.type) : ''; }
+  function pbFitIdent(prefix) { const f = pbFitSnap(prefix); return f ? (f.type === 'other' && f.info ? f.info : pbFitWord(f.type)) : ''; } /* feat_cutfit: an "Other" fitting reads as what it is (Gate valve) */
   document.addEventListener('change', (ev) => { const el = ev.target; const m = el && el.id && /^(.+)FitOn$/.exec(el.id); if (!m || !pbFitIsHub(m[1])) return; const row = document.getElementById(m[1] + 'FitRow'); if (row) row.style.display = el.checked ? '' : 'none'; try { pbHubIdents(); } catch (e) {} });
   function pbFitOf(entry, r) { if (!r || !r.pointId || r.addedTime || !entry || !entry.pointInputs) return null; const p = entry.pointInputs[r.pointId]; return p && p.fit && typeof p.fit === 'object' ? p.fit : null; }
   function pbFitName(fit) { return pbFitWord(fit.type) + (fit.info ? ' \u00b7 ' + fit.info : ''); }
@@ -11052,7 +11052,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.90 · 2026-11-02'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.91 · 2026-11-02'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -45065,6 +45065,48 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     d = String(d || '');
     return /(^|[^A-Za-z0-9])(X-?ING|CROSSING)(?![A-Za-z0-9])/i.test(d) && !/\b(MH|CB|INLET|HW|FES|EW|JB|VAULT|CO|STR|TEE|AP|WYE|BEND)\b/i.test(d) && cutsheetRowIsPlausiblePipePoint({ station: 0, description: d });
   }
+  // feat_cutfit (owner, Nov 2): which fitting a cutsheet row names, as { type, info } for the hub it becomes, or null.
+  // Conservative: a row is a fitting only when it says so. Site rows (FG, TC, L/O, RIM, BM ...), structures (MH, CB, CO,
+  // INLET ...), crossings and service / lateral pipe rows are never fittings, nor is a lateral named with no fitting word
+  // ("LAT-22"). An AP (angle point) is a bend (owner); a deflection code alone ("1D30 RT") is not a fitting.
+  // info: what the row prints about it, short ("LAT-22, AP 1D30 RT", "45\u00b0", "8x6", "T1", "Gate valve").
+  function pbCutsheetFitOf(desc) {
+    const raw = String(desc || '').toUpperCase().replace(/\s+/g, ' ').trim();
+    if (!raw || !cutsheetRowIsPlausiblePipePoint({ station: 0, description: raw })) return null;
+    if (/(^|[^A-Z0-9])(X-?ING|CROSSING|CROSSES)(?![A-Z0-9])/.test(raw)) return null;
+    if (/\b(?:SS|SD|STM|SAN)?MH\b|\bMANHOLE|\b(CB|CATCH ?BASIN|INLET|DI|HW|HEADWALL|FES|EW|WW|JB|JUNCTION BOX|VAULT|VLT|CO|CLEAN ?OUT|STR|STRUCT|STRUCTURE|BOX|LID|COVER|VB|RISER|HYD|HYDRANT|FH|METER|PIT)\b|C\/O\b/.test(raw)) return null;
+    if (/\b(LATERAL|BRANCH|SVC|SERVICE|STUB)\b/.test(raw) && !/\b(WYE|TEE|BEND|ELL|ELBOW)\b/.test(raw)) return null;
+    const d = raw.replace(/^\d+(?:\.\d+)?\s*\/\s*[A-Z]+\b/, ' ').trim(); // the pipe's own "8/SS" tag is not a fitting's size
+    const bare = d.replace(/\b(IE|INV|INVERT|FL|IN|OUT)\b/g, ' ').replace(/\s+/g, ' ').trim();
+    const size = (/(?:^|[^0-9.\/])(\d{1,2})\s?[X\u00d7]\s?(\d{1,2})(?![0-9.])/.exec(d) || [])[0];
+    const sz = size ? size.replace(/^[^0-9]/, '').replace(/\s/g, '').replace(/[X\u00d7]/, 'x') : '';
+    const lat = (/\bLAT\s?-?\s?(\d{1,4}[A-Z]?)\b/.exec(d) || [])[1];
+    const defl = /\b(\d{1,2})D(\d{2})(?:'?(\d{2})"?)?(?:\s?(LT|RT)\b)?/.exec(d);
+    const deg = /(?:^|\s)(90|60|45|30|22\.5|22 1\/2|11\.25|11 1\/4|5\.625|5 5\/8)\s?(?:\u00b0|DEG\b|DEGREE\b)/.exec(d)
+      || /(?:^|\s)(22\.5|11\.25|5\.625)(?=\s|$)/.exec(d);
+    const frac = /(?:^|\s)(1\/4|1\/8|1\/16|1\/32)(?=\s)/.exec(d);
+    const plainDeg = /(?:^|\s)(90|60|45|30)(?=\s|$)/.exec(d);
+    const info = (...xs) => xs.filter(Boolean).join(', ');
+    const latI = lat ? 'LAT-' + lat : '';
+    const defI = defl ? defl[0].replace(/\s+/g, ' ').trim() : '';
+    const angI = deg ? deg[1].replace(' 1/2', '.5').replace(' 1/4', '.25').replace(' 5/8', '.625') + '\u00b0' : '';
+    const bendWord = /\b(BEND|BENDS|ELL|ELBOW|SWEEP)\b/.test(d);
+    if (/\bWYE\b/.test(d) || /(?:^|\s)Y(?=\s|$)/.test(d)) return { type: 'wye', info: info(latI, sz, angI || (plainDeg ? plainDeg[1] + '\u00b0' : ''), (/\bY-?\d{1,3}\b/.exec(d) || [])[0]) };
+    const tTag = (/\bT-?\d{1,3}\b/.exec(d) || [])[0];
+    if (/\bTEE\b/.test(d) || (/(?:^|\s)T(?=\s|$)/.test(d) && (sz || lat || /^T$/.test(bare)))) return { type: 'tee', info: info(latI, sz, tTag) };
+    if (/\bREDUCER\b|\bREDUCING\b/.test(d) || (/\bRED\b/.test(d) && (sz || d !== raw)) || (sz && sz.split('x')[0] !== sz.split('x')[1] && /^\d{1,2}\s?[X\u00d7]\s?\d{1,2}$/.test(bare.replace(/\bLAT\s?-?\s?\d{1,4}[A-Z]?\b/, '').trim()))) return { type: 'reducer', info: info(latI, sz) };
+    // Owner (Nov 2): an angle point is a bend ("AP", plus its angle or deflection when printed). A deflection code alone
+    // ("1D30 RT", no AP or bend word) is the slight angle taken up in the pipe joints: not a fitting.
+    const ap = /\bAP\b/.test(d);
+    const angB = angI || (frac && bendWord ? frac[1] : '') || ((bendWord || ap) && plainDeg ? plainDeg[1] + '\u00b0' : '');
+    if (bendWord || ap || deg) return { type: 'bend', info: info(latI, [ap ? 'AP' : '', angB, defI].filter(Boolean).join(' '), sz) };
+    if (/\b(CPLG|CPL|COUPLING|COUPLER|SLEEVE)\b/.test(d)) return { type: 'coupling', info: info(latI, sz, /\bSLEEVE\b/.test(d) ? 'Sleeve' : '') };
+    const named = /\b(GV|GATE VALVE)\b/.test(d) ? 'Gate valve' : /\b(BFV|BUTTERFLY VALVE)\b/.test(d) ? 'Butterfly valve' : /\bVALVE\b/.test(d) ? 'Valve'
+      : /\b(CAP|END CAP)\b/.test(d) ? 'Cap' : /\bPLUG\b/.test(d) ? 'Plug' : '';
+    if (named) return { type: 'other', info: info(named, latI, sz) };
+    return null;
+  }
+  try { window.pbCutsheetFitOf = pbCutsheetFitOf; } catch (e) {}
   function pbCutsheetXingUtil(d) {
     const found = new Set();
     String(d || '').toUpperCase().replace(/^\d+\/[A-Z]+\b/, ' ').split(/[\s,;()&+]+/).forEach(t => { const u = PB_CS_UTIL.find(([rx]) => rx.test(t)); if (u) found.add(u[1]); });
@@ -46699,7 +46741,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const hubId = hubIds[hubIds.length - 1];
       document.getElementById(hubId + 'Station').value = distOf(i).toFixed(2);
       applyToPrefix(hubId, checked[i]);
+      try { const fit = pbCutsheetFitOf(checked[i].description); if (fit) pbFitPut(hubId, fit); } catch (e) { console.error(e); } /* feat_cutfit: a row naming a fitting marks its hub */
     }
+    try { pbHubIdents(); } catch (e) {} /* feat_cutfit: collapsed hubs name their fitting at once */
     const xings = (() => { try { return pbCutsheetXingImport(checked, along); } catch (e) { console.error(e); return 0; } })(); /* feat_cutxing */
     let hubsShut = 0; // feat_cutxing: every run's hubs start collapsed after an import, whatever the count
     try {
