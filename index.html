@@ -3695,6 +3695,9 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp #screen-input .pb-unitbox { position: relative; }
 #pbApp#pbApp #screen-input .pb-unitbox > input { padding-right: 44px; width: 100%; }
 #pbApp #screen-input .pb-unit { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 15px; font-weight: 600; color: var(--pb-text-2); pointer-events: none; }
+#pbApp #screen-input .pb-pa-auto { position: absolute; right: 38px; top: 50%; transform: translateY(-50%); pointer-events: none; padding: 1px 6px; border-radius: 999px; font-size: 11px; font-weight: 650; letter-spacing: 0; text-transform: none; background: var(--pb-raised); border: 1px solid var(--pb-control); color: var(--pb-text-2); } /* feat_pipeauto */
+#pbApp #screen-input .pb-pa-auto[hidden] { display: none; }
+#pbApp#pbApp #screen-input .pb-unitbox > input.pb-pa-on { padding-right: 86px; }
 #pbApp #screen-input .pb-checkrow { min-height: 44px; margin-left: 0 !important; margin-right: 0 !important; }
 #pbApp #screen-input .pb-checkrow input[type="checkbox"] { width: 24px; height: 24px; flex: 0 0 auto; margin-top: 0 !important; accent-color: var(--pb-brand); }
 #pbApp #screen-input .pb-checkrow .pb-help { color: var(--pb-text-2); }
@@ -11235,6 +11238,97 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbFitLayAutoFill = pbFitLayAutoFill; window.PB_FIT_LAY_INDEX = PB_FIT_LAY_INDEX; window.pbFitLayLookup = pbFitLayLookup;
   window.pbFitDefaultLayFt = pbFitDefaultLayFt;
   // ==== end feat_fitlen ====
+  // ==== feat_pipeauto (owner, Nov 2): the pipe's wall thickness and laying length, filled in like a fitting's ====
+  // PB_PIPE_INDEX (from /home/claude/feat_fitdata/pipe_index.json): pipe type -> nominal size (the Pipe ID as crews call
+  // it) -> [wall in inches, laying length in ft or null]. Wall = (OD - ID)/2, invert to outside bottom, what runWT means
+  // (BOP = INV - wall); ductile iron's includes the cement lining. Variants: C900 DR18, DI the lowest standard class + its
+  // lining, solid-wall HDPE DR17, concrete wall B. Laying length = the index's common length, only where the index
+  // gives laying lengths (none for corrugated HDPE, clay, steel, Sch 40/80, butt-fused HDPE).
+  var PB_PIPE_INDEX = {
+    // PVC SDR 35: JM Eagle gravity sewer (D3034/F679)
+    'PVC SDR 35': { '4': [0.12, 14], '6': [0.18, 14], '8': [0.24, 14], '10': [0.3, 14], '12': [0.36, 14], '15': [0.437, 14], '18': [0.499, 14], '21': [0.588, 14], '24': [0.661, 14], '27': [0.745, 14], '30': [0.853, 14], '36': [1.021, 14], '42': [1.187, 14], '48': [1.355, 14] },
+    // PVC C900: Diamond Plastics catalog (DR18)
+    'PVC C900': { '4': [0.267, 20], '6': [0.383, 20], '8': [0.503, 20], '10': [0.617, 20], '12': [0.733, 20], '14': [0.85, 20], '16': [0.967, 20], '18': [1.083, 20], '20': [1.2, 20], '24': [1.433, 20], '30': [1.778, 20] },
+    // Ductile Iron: US Pipe / AMERICAN, lowest standard class + cement lining
+    'Ductile Iron': { '4': [0.312, 20], '6': [0.312, 20], '8': [0.312, 20], '10': [0.323, 20], '12': [0.343, 20], '14': [0.374, 20], '16': [0.394, 20], '18': [0.404, 20], '20': [0.424, 20], '24': [0.424, 20], '30': [0.465, 20], '36': [0.505, 20], '42': [0.535, 20], '48': [0.585, 20] },
+    // Solid-Wall HDPE: B36.10 IPS OD, F714 wall = OD/DR (DR17)
+    'Solid-Wall HDPE': { '4': [0.265, null], '6': [0.39, null], '8': [0.507, null], '10': [0.632, null], '12': [0.75, null], '14': [0.824, null], '16': [0.941, null], '18': [1.059, null], '20': [1.176, null], '24': [1.412, null] },
+    // Corrugated HDPE: prinsco_spec_revD
+    'Corrugated HDPE': { '4': [0.4, null], '6': [0.55, null], '8': [0.65, null], '10': [0.95, null], '12': [1.35, null], '15': [1.3, null], '18': [1.7, null], '24': [2.1, null], '30': [2.35, null], '36': [2.3, null], '42': [2.75, null], '48': [3.05, null], '60': [3.4, null] },
+    // Concrete: ASTM C76 wall B (Iowa DOT 1B-5)
+    'Concrete': { '12': [2, 8], '15': [2.25, 8], '18': [2.5, 8], '21': [2.75, 8], '24': [3, 8], '27': [3.25, 8], '30': [3.5, 8], '33': [3.75, 8], '36': [4, 8], '42': [4.5, 8], '48': [5, 8], '54': [5.5, 8], '60': [6, 8], '66': [6.5, 8], '72': [7, 8], '78': [7.5, 8], '84': [8, 8], '90': [8.5, 8], '96': [9, 8], '102': [9.5, 8], '108': [10, 8] },
+    // Vitrified Clay: Mission Clay band-seal, logan_pipe
+    'Vitrified Clay': { '4': [0.688, null], '6': [0.875, null], '8': [1.062, null], '10': [1.125, null], '12': [1.312, null], '15': [null, null], '18': [null, null], '21': [null, null], '24': [null, null] },
+    // Steel: ASME B36.10 Sch 40
+    'Steel': { '4': [0.237, null], '6': [0.28, null], '8': [0.322, null], '10': [0.365, null], '12': [0.406, null], '14': [0.438, null], '16': [0.5, null], '18': [0.562, null], '20': [0.594, null], '24': [0.688, null], '36': [0.75, null] },
+    // PVC Sch 40: ASTM D1785
+    'PVC Sch 40': { '1.5': [0.145, null], '2': [0.154, null], '2.5': [0.203, null], '3': [0.216, null], '4': [0.237, null], '5': [0.258, null], '6': [0.28, null], '8': [0.322, null], '10': [0.365, null], '12': [0.406, null], '14': [0.437, null], '16': [0.5, null], '18': [0.562, null] },
+    // PVC Sch 80: ASTM D1785
+    'PVC Sch 80': { '1.5': [0.2, null], '2': [0.218, null], '2.5': [0.276, null], '3': [0.3, null], '4': [0.337, null], '5': [0.375, null], '6': [0.432, null], '8': [0.5, null], '10': [0.593, null], '12': [0.687, null] }
+  };
+  var PB_PIA_AUTOFILL = true;
+  // The index's type for the run's Pipe type (the same rule as fittings): blank / Other -> PVC SDR 35.
+  function pbPiAType(pipeType) { const t = String(pipeType || ''); if (t === '' || t === 'Other') return 'PVC SDR 35'; return PB_PIPE_INDEX[t] ? t : null; }
+  // { wallFt (3 decimals), layFt } or null, for a pipe type and a size in inches. Sizes not in the table: null.
+  function pbPipeLookup(pipeType, sizeIn) {
+    const t = pbPiAType(pipeType), v = Number(sizeIn); if (!t || !(v > 0)) return null;
+    const row = PB_PIPE_INDEX[t][String(Math.round(v * 1000) / 1000)]; if (!row) return null;
+    const w = typeof row[0] === 'number' && row[0] > 0 ? Math.round(row[0] / 12 * 1000) / 1000 : null;
+    return { wallFt: w, layFt: typeof row[1] === 'number' && row[1] > 0 ? row[1] : null };
+  }
+  window.pbPipeLookup = pbPipeLookup;
+  // AUTO flag: the box holds exactly what the app put there (data-pb-auto = that value). Typing, or any other change of
+  // the value, makes it the person's. Saved with the record (pipeInfo[].wtAuto, pipeLayout.runs[n].lenAuto), drafts and
+  // the remembered pipe (lastWallAuto, lastLaying.lenAuto).
+  function pbPiAWallId(n) { return n === 1 ? 'runWT' : 'seg' + n + 'WT'; }
+  function pbPiALenId(n) { return pbLayIds(n).len; }
+  function pbPiAIds() { const out = []; for (let n = 1; n <= MAX_SEG; n++) out.push(pbPiAWallId(n), pbPiALenId(n)); return out; }
+  function pbPiAIsAuto(id) { const el = document.getElementById(id); return !!el && el.dataset.pbAuto !== undefined && String(el.value) !== '' && el.dataset.pbAuto === String(el.value); }
+  function pbPiAMark(id) {
+    const el = document.getElementById(id); if (!el) return;
+    let mk = document.getElementById(id + 'Auto');
+    if (!mk) { const box = el.closest('.pb-unitbox'); if (!box) return; box.insertAdjacentHTML('beforeend', '<span class="pb-pa-auto" id="' + id + 'Auto" hidden>auto</span>'); mk = document.getElementById(id + 'Auto'); }
+    const on = pbPiAIsAuto(id); if (mk.hidden === on) mk.hidden = !on;
+    el.classList.toggle('pb-pa-on', on);
+  }
+  function pbPiASetAuto(id, on) { const el = document.getElementById(id); if (!el) return; if (on && String(el.value) !== '') el.dataset.pbAuto = String(el.value); else delete el.dataset.pbAuto; pbPiAMark(id); }
+  function pbPiAMarks() { pbPiAIds().forEach(pbPiAMark); }
+  function pbPiAAutoIds() { return pbPiAIds().filter(pbPiAIsAuto); }
+  function pbPiAPutAuto(list) { const s = new Set(Array.isArray(list) ? list : []); pbPiAIds().forEach(id => pbPiASetAuto(id, s.has(id))); }
+  window.pbPiAIsAuto = pbPiAIsAuto;
+  document.addEventListener('input', (ev) => { const el = ev.target; if (el && el.id && ev.isTrusted !== false && pbPiAIds().includes(el.id)) pbPiASetAuto(el.id, false); }, true); // typed: the person's
+  // Fill one run: a blank or app-filled box gets the index's value; a typed one is never touched; no value clears an
+  // app-filled one. The "Use laying length for intervals" box is never changed.
+  function pbPiAFillRun(n) {
+    if (!PB_PIA_AUTOFILL) return;
+    if (n > 1 && !segIsActive(n)) return;
+    let sz = null; try { const f = getPointIdFt(n === 1 ? 'start' : 'seg' + n + 'start'); sz = f === null ? null : f * 12; } catch (e) { sz = null; }
+    let pt = ''; try { pt = pbFitLayPipeType(); } catch (e) { pt = ''; }
+    const r = sz === null ? null : pbPipeLookup(pt, sz);
+    let layChanged = false;
+    [[pbPiAWallId(n), r ? r.wallFt : null], [pbPiALenId(n), r ? r.layFt : null]].forEach(([id, v], k) => {
+      const el = document.getElementById(id); if (!el) return;
+      if (String(el.value).trim() !== '' && !pbPiAIsAuto(id)) { pbPiAMark(id); return; }
+      const nv = v === null ? '' : String(v);
+      if (String(el.value) !== nv) { el.value = nv; if (k === 1) layChanged = true; }
+      pbPiASetAuto(id, v !== null);
+    });
+    if (layChanged) { try { pbLayRefreshSetup(); } catch (e) {} }
+    try { pbRunSecSchedule(); } catch (e) {}
+  }
+  function pbPiAFillAll() { for (let n = 1; n <= MAX_SEG; n++) pbPiAFillRun(n); }
+  // What sets it off: a person's change to a run's Pipe ID (that run), the Pipe type or Stats details (every run).
+  // Resume, Edit Run Data, drafts and Reuse fill the form without events: a record is never recomputed.
+  function pbPiATrigger(ev) {
+    const id = ev && ev.target && ev.target.id; if (!id) return;
+    const m = /^(run|seg(\d+))Id(Sel|Other)$/.exec(id);
+    if (m) { pbPiAFillRun(m[2] ? parseInt(m[2], 10) : 1); return; }
+    if (id === 'statsType' || id === 'saEnableToggle') pbPiAFillAll();
+  }
+  document.addEventListener('input', (ev) => { try { pbPiATrigger(ev); } catch (e) { console.error(e); } });
+  document.addEventListener('change', (ev) => { try { pbPiATrigger(ev); } catch (e) { console.error(e); } });
+  const pbPiAWord = (on) => on ? ' (auto)' : '';
+  // ==== end feat_pipeauto ====
   // Review (before Lock): one line per crossing and fitting hub.
   function pbXingReviewHtml(calc) {
     const L = [], pts = calc && Array.isArray(calc.points) ? calc.points : [];
@@ -11267,7 +11361,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.92 · 2026-11-02'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.93 · 2026-11-02'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -13088,7 +13182,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const PB_MIGRATABLE_KEYS = ['runArchive', 'statsLog', 'activeConfinedSession', 'cachedSubscription',
     'lastEmergencyEmail', 'lastIdInches', 'lastReportRecipientEmail', 'lastRodUnit',
     'lastSaCostCode', 'lastSaCrew', 'lastSaEnabled', 'lastSaJobNumber', 'lastSaJobsite',
-    'lastSaNotes', 'lastSaPipelayer', 'lastStatsType', 'lastTrenchSoil', 'lastWallThickness'];
+    'lastSaNotes', 'lastSaPipelayer', 'lastStatsType', 'lastTrenchSoil', 'lastWallThickness', 'lastWallAuto'];
   async function pbMigrateToPerUserStorage(uid) {
     if (!uid || uid === 'shared') return; // nothing meaningful to migrate into a shared bucket
     // Global, not per-user — the old unprefixed data belongs to whoever was
@@ -13397,6 +13491,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // previous account's pipe never stays in the form.
     if (!keepRunForm) {
     document.getElementById('runWT').value = remember && wt ? wt : '';
+    pbPiASetAuto('runWT', !!(remember && wt && (await pbGet('lastWallAuto')) === 'yes')); /* feat_pipeauto: a remembered wall is typed unless the app had filled it */
     runIdSelEl.value = '';
     document.getElementById('runIdOther').value = '';
     if (remember && idIn) {
@@ -16608,7 +16703,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const ids = pbLayIds(n), u = document.getElementById(ids.use), d = document.getElementById(ids.div);
     if (!u) return { on: false, len: null, div: 'halves' };
     const len = numVal(ids.len);
-    return { on: !!u.checked, len: len, div: d && PB_LAY_DIVS[d.value] ? d.value : 'halves' };
+    const out = { on: !!u.checked, len: len, div: d && PB_LAY_DIVS[d.value] ? d.value : 'halves' };
+    if (len !== null && pbPiAIsAuto(ids.len)) out.lenAuto = true; /* feat_pipeauto: no key when typed */
+    return out;
   }
   function pbLaySetCfg(n, cfg) {
     const ids = pbLayIds(n);
@@ -16616,6 +16713,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (u) u.checked = !!(cfg && cfg.on);
     if (l) l.value = (cfg && cfg.len !== null && cfg.len !== undefined && Number.isFinite(cfg.len)) ? String(cfg.len) : '';
     if (d) d.value = (cfg && PB_LAY_DIVS[cfg.div]) ? cfg.div : 'halves';
+    pbPiASetAuto(ids.len, !!(cfg && cfg.lenAuto)); /* feat_pipeauto: an app-filled length stays app-filled (record, Resume, remembered) */
   }
   const pbLayRunWord = (n, multi) => multi || n > 1 ? 'Run ' + n : 'the run';
   const pbLayFt = x => fmt(x, 2) + ' ft';
@@ -16832,7 +16930,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     st.adj.forEach(a => { if (a && !known.has(a.run)) plan.issues.push({ id: a.id, text: 'The pipe-layout adjustment at ' + pbLayFt(a.off) + ' into Run ' + a.run + ' is kept but not applied: this run has no Run ' + a.run + ' now.' }); });
     plan.multi = multi;
     plan.record = { v: 1, rule: 2, runs: {}, adj: pbLayClone(st.adj), retained: pbLayClone(st.retained), keep: pbLayClone(st.keep) }; // bughunt Oct 19 (4): rule = the layout rule (pbLayRunMarks) the rows were placed by
-    runs.forEach(r => { const c = cfgs[r.n], iv = numVal(pbLayIds(r.n).iv); plan.record.runs[r.n] = { on: c.on, len: (c.len !== null && Number.isFinite(c.len)) ? c.len : null, div: c.div, iv: (iv !== null && Number.isFinite(iv)) ? iv : null }; plan.runs.find(x => x.n === r.n).iv = plan.record.runs[r.n].iv; });
+    runs.forEach(r => { const c = cfgs[r.n], iv = numVal(pbLayIds(r.n).iv); plan.record.runs[r.n] = { on: c.on, len: (c.len !== null && Number.isFinite(c.len)) ? c.len : null, div: c.div, iv: (iv !== null && Number.isFinite(iv)) ? iv : null }; if (c.lenAuto) plan.record.runs[r.n].lenAuto = true; /* feat_pipeauto */ plan.runs.find(x => x.n === r.n).iv = plan.record.runs[r.n].iv; });
     return plan;
   }
   // Replaces the interval stations of each run that uses laying length with its
@@ -16915,13 +17013,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbLayIntervalWords(calc) {
     const runs = calc.layout && calc.layout.runs ? calc.layout.runs.filter(r => r.cfg.on) : [];
     if (!runs.length) return 'interval ' + calc.interval + ' ft';
-    if (!calc.layout.multi) return 'rows by pipe laying length (' + fmt(runs[0].cfg.len, 2) + ' ft, ' + PB_LAY_DIV_WORDS[runs[0].cfg.div] + ')';
-    return 'rows: ' + calc.layout.runs.map(r => 'Run ' + r.n + ' ' + (r.cfg.on ? 'by pipe laying length ' + fmt(r.cfg.len, 2) + ' ft, ' + PB_LAY_DIV_WORDS[r.cfg.div] : 'interval ' + (r.iv !== null && r.iv !== undefined ? r.iv : '\u2014') + ' ft')).join('; ');
+    if (!calc.layout.multi) return 'rows by pipe laying length (' + fmt(runs[0].cfg.len, 2) + ' ft' + pbPiAWord(runs[0].cfg.lenAuto) + ', ' + PB_LAY_DIV_WORDS[runs[0].cfg.div] + ')';
+    return 'rows: ' + calc.layout.runs.map(r => 'Run ' + r.n + ' ' + (r.cfg.on ? 'by pipe laying length ' + fmt(r.cfg.len, 2) + ' ft' + pbPiAWord(r.cfg.lenAuto) + ', ' + PB_LAY_DIV_WORDS[r.cfg.div] : 'interval ' + (r.iv !== null && r.iv !== undefined ? r.iv : '\u2014') + ' ft')).join('; ');
   }
   function pbLayRunSecWords() {
     const c = pbLayCfg(1);
     if (!c.on) return null;
-    return c.len !== null ? 'laying length ' + c.len + ' ft, ' + PB_LAY_DIV_WORDS[c.div] : 'laying length not entered';
+    return c.len !== null ? 'laying length ' + c.len + ' ft' + pbPiAWord(c.lenAuto) + ', ' + PB_LAY_DIV_WORDS[c.div] : 'laying length not entered';
   }
   // ---- Run Setup > Pipe controls (one set per run, each run's own pipe) ----
   function pbLaySetupHTML(n) {
@@ -16971,11 +17069,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     let v = null;
     try { v = JSON.parse((await pbGet('lastLaying')) || 'null'); } catch (e) { v = null; }
     pbLayRemembered = (v && typeof v === 'object') ? { on: !!v.on, len: (typeof v.len === 'number' && Number.isFinite(v.len)) ? v.len : null, div: PB_LAY_DIVS[v.div] ? v.div : 'halves' } : null;
+    if (pbLayRemembered && v.lenAuto === true && pbLayRemembered.len !== null) pbLayRemembered.lenAuto = true; /* feat_pipeauto */
     return pbLayRemembered;
   }
   function pbLaySaveRemembered() {
     const c = pbLayCfg(1);
     pbLayRemembered = { on: c.on, len: (c.len !== null && Number.isFinite(c.len)) ? c.len : null, div: c.div };
+    if (c.lenAuto && pbLayRemembered.len !== null) pbLayRemembered.lenAuto = true; /* feat_pipeauto: an app-filled length is remembered as app-filled */
     pbSet('lastLaying', JSON.stringify(pbLayRemembered));
   }
   function pbLayResetForm() {
@@ -17067,7 +17167,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     starts.sort((a, b) => a.start - b.start || a.n - b.n);
     const L = entry.pipeLayout || {};
     return starts.map((s, i) => ({ n: s.n, start: s.start, dist: pbLayR6((i + 1 < starts.length ? starts[i + 1].start : entry.distance) - s.start),
-      cfg: (L.runs && L.runs[s.n]) ? { on: !!L.runs[s.n].on, len: L.runs[s.n].len, div: L.runs[s.n].div || 'halves', iv: L.runs[s.n].iv } : { on: false, len: null, div: 'halves' } }));
+      cfg: (L.runs && L.runs[s.n]) ? Object.assign({ on: !!L.runs[s.n].on, len: L.runs[s.n].len, div: L.runs[s.n].div || 'halves', iv: L.runs[s.n].iv }, L.runs[s.n].lenAuto ? { lenAuto: true } : {}) : { on: false, len: null, div: 'halves' } })); /* feat_pipeauto: lenAuto */
   }
   // A run's interval as recorded: in the layout record (S-A: set while the record is built), else segmentIntervals.
   function pbLayRunIv(entry, r) {
@@ -17094,7 +17194,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbLayEdit && pbLayEdit.entryId !== entry.id) { pbLayEdit = null; ['pbLayAdjPanel', 'pbLaySpacePanel'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; }); }
     const runs = pbLayEntryRuns(entry), multi = runs.length > 1;
     const sum = runs.map(r => '<div class="pb-lay-sumrow"><span class="pb-lay-sumk">' + (multi ? 'Run ' + r.n : 'Rows') + '</span> ' + (r.cfg.on && r.cfg.len
-      ? 'at ' + escapeHtml(PB_LAY_DIV_WORDS[r.cfg.div]) + ' of each ' + escapeHtml(fmt(r.cfg.len, 2)) + ' ft stick (pipe laying length)'
+      ? 'at ' + escapeHtml(PB_LAY_DIV_WORDS[r.cfg.div]) + ' of each ' + escapeHtml(fmt(r.cfg.len, 2)) + ' ft' + pbPiAWord(r.cfg.lenAuto) + ' stick (pipe laying length)'
       : 'every ' + escapeHtml(String(pbLayRunIv(entry, r) !== null ? pbLayRunIv(entry, r) : '\u2014')) + ' ft (interval)' + (r.cfg.len ? '; laying length ' + escapeHtml(fmt(r.cfg.len, 2)) + ' ft kept for later' : '')) + '</div>').join('');
     const anyOn = runs.some(r => r.cfg.on && r.cfg.len);
     const adj = (L.adj || []).slice().sort((a, b) => a.run - b.run || a.off - b.off);
@@ -17327,6 +17427,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!r) return;
     const len = numVal('pbLaySpaceLen');
     const cfg = { on: document.getElementById('pbLaySpaceUse').checked, len: len, div: document.getElementById('pbLaySpaceDiv').value };
+    if (r.cfg.lenAuto && len !== null && pbSameNum(len, r.cfg.len)) cfg.lenAuto = true; /* feat_pipeauto: the same app-filled length stays app-filled */
     if (cfg.on && (len === null || !Number.isFinite(len) || len <= 0)) { errEl.textContent = 'Enter a pipe laying length greater than zero.'; errEl.style.display = ''; return; }
     if (len !== null && (!Number.isFinite(len) || len <= 0)) { errEl.textContent = 'The pipe laying length must be greater than zero (or blank).'; errEl.style.display = ''; return; }
     const words = c => c.on && c.len ? 'laying length ' + pbLayFt(c.len) + ', ' + PB_LAY_DIV_WORDS[c.div] : 'interval' + (c.len ? ' (laying length ' + pbLayFt(c.len) + ' kept)' : '');
@@ -17466,7 +17567,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const L = entry.pipeLayout;
     if (!L || !pbLayInUse(entry)) return [];
     const runs = pbLayEntryRuns(entry), multi = runs.length > 1, lines = [];
-    runs.forEach(r => lines.push((multi ? 'Run ' + r.n + ': ' : '') + (r.cfg.on && r.cfg.len ? 'rows at ' + PB_LAY_DIV_WORDS[r.cfg.div] + ' of each ' + pbLayFt(r.cfg.len) + ' stick (pipe laying length; stations calculated, not measured)' : 'rows every ' + (pbLayRunIv(entry, r) !== null ? pbLayRunIv(entry, r) : '\u2014') + ' ft (interval)')));
+    runs.forEach(r => lines.push((multi ? 'Run ' + r.n + ': ' : '') + (r.cfg.on && r.cfg.len ? 'rows at ' + PB_LAY_DIV_WORDS[r.cfg.div] + ' of each ' + pbLayFt(r.cfg.len) + pbPiAWord(r.cfg.lenAuto) + ' stick (pipe laying length; stations calculated, not measured)' : 'rows every ' + (pbLayRunIv(entry, r) !== null ? pbLayRunIv(entry, r) : '\u2014') + ' ft (interval)')));
     (L.adj || []).filter(a => !(a && a.fit && (entry.intervalRows || []).some(x => pbFitOf(entry, x) && pbFitAdjOf(entry, x.pointId) === a))).forEach(a => { const r = runs.find(x => x.n === a.run); lines.push('Pipe-layout adjustment at ' + (r ? pbLayFt(r.start + a.off) : '\u2014') + (multi ? ' (Run ' + a.run + ')' : '') + ': ' + pbLayFt(a.installed) + ' installed, entered as ' + (a.method === 'cutoff' ? pbLayMethodWords(a) : 'the actual installed length') + (a.reason ? ' \u2014 ' + a.reason : '')); });
     return lines;
   }
@@ -18027,7 +18128,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     const multiRun = runStarts.length > 1;
     const pipeTiles = runStarts.map(r =>
-      `<div class="pb-summary-item"><div class="k">${multiRun ? r.label + ' \u2014 ' : ''}Wall Thickness</div><div class="v">${fmt(r.point.wt,3)} ft</div></div><div class="pb-summary-item"><div class="k">${multiRun ? r.label + ' \u2014 ' : ''}Pipe ID</div><div class="v">${r.point.idFt !== null ? fmt(r.point.idFt*12,2) : '\u2014'}"</div></div>`
+      `<div class="pb-summary-item"><div class="k">${multiRun ? r.label + ' \u2014 ' : ''}Wall Thickness</div><div class="v">${fmt(r.point.wt,3)} ft${pbPiAWord(pbPiAIsAuto(r.point.id === 'start' ? 'runWT' : r.point.id.replace(/start$/, 'WT')))}</div></div><div class="pb-summary-item"><div class="k">${multiRun ? r.label + ' \u2014 ' : ''}Pipe ID</div><div class="v">${r.point.idFt !== null ? fmt(r.point.idFt*12,2) : '\u2014'}"</div></div>`
     ).join('');
     const segSlopes = calc.segments.filter(s => s.to.station - s.from.station > 0).map(s => fmt(s.slopePct,2)+'%'); // grades only: a reducer junction is a step, not a section
     const multiSeg = segSlopes.length > 1;
@@ -18623,7 +18724,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const wt = pbRunSecTxt('runWT');
     const job = pbRunSecJob();
     set('runJobLine', job || 'Not entered');
-    set('runSecJobSum', [job || 'Job not entered', rod, idTxt, wt ? wt + ' ft wall' : 'wall thickness not entered'].join(sep));
+    set('runSecJobSum', [job || 'Job not entered', rod, idTxt, wt ? wt + ' ft wall' + pbPiAWord(pbPiAIsAuto('runWT')) : 'wall thickness not entered'].join(sep));
     const pts = [pbRunSecPoint('start', 'Start')];
     const hubs = document.querySelectorAll('#hubsContainer > [data-hub-id]').length;
     if (hubs) pts.push(hubs + (hubs === 1 ? ' hub' : ' hubs'));
@@ -18669,6 +18770,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         if (el.textContent !== txt) el.textContent = txt;
       });
     });
+    try { pbPiAMarks(); } catch (e) {} /* feat_pipeauto */
     try { pbFitLayHints(); } catch (e) {} /* feat_fitlen: the auto marker kept in step */
   }
   let pbRunSecTimer = null;
@@ -18807,10 +18909,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbGoto('review');
     if (document.getElementById('runRememberWtId').checked) {
       pbSet('lastWallThickness', String(getPointWT('run')));
+      pbSet('lastWallAuto', pbPiAIsAuto('runWT') ? 'yes' : ''); /* feat_pipeauto */
       const idSel = document.getElementById('runIdSel');
       pbSet('lastIdInches', idSel.value === 'other' ? String(numVal('runIdOther')) : idSel.value);
     } else {
       pbSet('lastWallThickness', '');
+      pbSet('lastWallAuto', ''); /* feat_pipeauto */
       pbSet('lastIdInches', '');
     }
   };
@@ -21468,7 +21572,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return (segSl.length > 1 ? `<div class="pb-summary-item" style="grid-column: 1 / -1;"><div class="k">Slope %</div><div class="v">${segSl.map(s => fmt(s.slopePct,2) + '%').join(' / ')}</div></div>`
       : `<div class="pb-summary-item"><div class="k">Slope</div><div class="v">${segSl.length ? fmt(segSl[0].slopePct,2) + '%' : entry.summary ? fmt(entry.summary.overallSlopePct,2) + '%' : '\u2014'}</div></div>`) +
       `<div class="pb-summary-item"><div class="k">Distance</div><div class="v">${fmt(entry.completedDistance !== undefined ? entry.completedDistance : entry.distance,1)} ft${entry.incomplete ? ' (incomplete)' : ''}</div></div>` +
-      pipeInfo.map(p => `<div class="pb-summary-item"><div class="k">${escapeHtml(p.label)} \u2014 Wall Thickness</div><div class="v">${p.wtFt !== null ? fmt(p.wtFt,3) + ' ft' : '\u2014'}</div></div><div class="pb-summary-item"><div class="k">${escapeHtml(p.label)} \u2014 Pipe ID</div><div class="v">${p.idIn !== null ? fmt(p.idIn,2) + '"' : '\u2014'}</div></div>`).join('');
+      pipeInfo.map(p => `<div class="pb-summary-item"><div class="k">${escapeHtml(p.label)} \u2014 Wall Thickness</div><div class="v">${p.wtFt !== null ? fmt(p.wtFt,3) + ' ft' + pbPiAWord(p.wtAuto) : '\u2014'}</div></div><div class="pb-summary-item"><div class="k">${escapeHtml(p.label)} \u2014 Pipe ID</div><div class="v">${p.idIn !== null ? fmt(p.idIn,2) + '"' : '\u2014'}</div></div>`).join('');
   }
   window.pbAddInterval = function() {
     const errEl = document.getElementById('addIntervalError');
@@ -22554,6 +22658,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const pipe1 = pipeForLabel(additionalRunNums.length ? 'Run 1' : 'Pipe');
     if (pipe1) {
       if (pipe1.wtFt !== null && pipe1.wtFt !== undefined) document.getElementById('runWT').value = pipe1.wtFt;
+      pbPiASetAuto('runWT', !!pipe1.wtAuto); /* feat_pipeauto: as recorded, never recomputed */
       if (pipe1.idIn !== null && pipe1.idIn !== undefined) {
         const idSel = document.getElementById('runIdSel');
         const match = PIPE_SIZES.find(s => String(s) === String(pipe1.idIn));
@@ -22632,6 +22737,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const pipeN = pipeForLabel('Run ' + n);
       if (pipeN) {
         if (pipeN.wtFt !== null && pipeN.wtFt !== undefined) document.getElementById('seg' + n + 'WT').value = pipeN.wtFt;
+        pbPiASetAuto('seg' + n + 'WT', !!pipeN.wtAuto); /* feat_pipeauto */
         if (pipeN.idIn !== null && pipeN.idIn !== undefined) {
           const idSelN = document.getElementById('seg' + n + 'IdSel');
           const matchN = PIPE_SIZES.find(s => String(s) === String(pipeN.idIn));
@@ -30810,7 +30916,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       lines.push('End invert: ' + entry.summary.endInv + (entry.summary.endInvElevFt !== null ? ' (' + fmt(entry.summary.endInvElevFt, 2) + ' ft elevation)' : ''));
       if (entry.summary.pipeInfo && entry.summary.pipeInfo.length) {
         entry.summary.pipeInfo.forEach(p => {
-          lines.push((p.label !== 'Pipe' ? p.label + ' pipe: ' : 'Pipe: ') + (p.wtFt !== null ? p.wtFt.toFixed(3) + ' ft WT' : 'WT missing') + ' / ' + (p.idIn !== null ? p.idIn.toFixed(2) + '" ID' : 'ID missing'));
+          lines.push((p.label !== 'Pipe' ? p.label + ' pipe: ' : 'Pipe: ') + (p.wtFt !== null ? p.wtFt.toFixed(3) + ' ft WT' + pbPiAWord(p.wtAuto) : 'WT missing') + ' / ' + (p.idIn !== null ? p.idIn.toFixed(2) + '" ID' : 'ID missing'));
           if (p.beddingFt !== null && p.beddingFt !== undefined) {
             lines.push('  Bedding: ' + p.beddingFt.toFixed(2) + ' ft thick' + (p.trenchWidthFt !== null && p.trenchWidthFt !== undefined ? ', ' + p.trenchWidthFt.toFixed(1) + ' ft trench width' : ''));
           }
@@ -31145,6 +31251,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           return runs.map(r => ({
             label: runs.length > 1 ? 'Run ' + r.n : 'Pipe',
             wtFt: r.point.wt,
+            ...(pbPiAIsAuto(r.n === 1 ? 'runWT' : 'seg' + r.n + 'WT') ? { wtAuto: true } : {}), /* feat_pipeauto: filled in by the app */
             idIn: r.point.idFt !== null ? r.point.idFt * 12 : null,
             beddingFt: (r.point.bedding !== null && r.point.bedding !== undefined) ? r.point.bedding : null,
             trenchWidthFt: (r.point.trenchWidth !== null && r.point.trenchWidth !== undefined) ? r.point.trenchWidth : null
@@ -43970,7 +44077,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const ownN = hist.filter(c => !c.sessionLabel).length, earlierN = hist.length - ownN;
     if (!e.incomplete) R.banner('LOCKED RECORD' + (e.runEndTime ? ': RUN ENDED' : '') + (ownN ? ' \u00b7 ' + ownN + (ownN === 1 ? ' CORRECTION' : ' CORRECTIONS') + ' AFTER LOCK' : '') + (earlierN ? ' \u00b7 ' + earlierN + ' FROM EARLIER SESSION' + (earlierN === 1 ? '' : 'S') : ''), hist.length || (e.warnings || []).length || e.depthFlagged ? 'warn' : 'ok', 'Locked ' + pbRptDt(e.lockTime) + (e.runEndTime ? ' \u00b7 ended ' + pbRptDt(e.runEndTime) : '') + ' \u00b7 ' + pbRfPdfSentShort(e)); /* feat_runflow P8 */
     const s = e.summary || null, pipe = s && s.pipeInfo && s.pipeInfo.length ? s.pipeInfo : [];
-    const pipeTxt = pipe.map(p => (p.label !== 'Pipe' ? p.label + ': ' : '') + (p.idIn !== null && p.idIn !== undefined ? p.idIn.toFixed(2) + '" ID' : 'ID not recorded') + ', ' + (p.wtFt !== null && p.wtFt !== undefined ? p.wtFt.toFixed(3) + "' wall" : 'wall not recorded')).join('; ');
+    const pipeTxt = pipe.map(p => (p.label !== 'Pipe' ? p.label + ': ' : '') + (p.idIn !== null && p.idIn !== undefined ? p.idIn.toFixed(2) + '" ID' : 'ID not recorded') + ', ' + (p.wtFt !== null && p.wtFt !== undefined ? p.wtFt.toFixed(3) + "' wall" + pbPiAWord(p.wtAuto) : 'wall not recorded')).join('; ');
     R.kv([
       ['Run', (e.startLabel || 'Start') + ' to ' + (e.endLabel || 'End')], ['Distance', pbDistanceText(e) + (hist.some(c => c.type !== 'hub' && c.type !== 'layout') ? ' (corrected; see history)' : '')],
       ['Overall slope', s ? (pbRptNum(s.overallSlopePct, 2) !== '\u2014' && s.overallSlopePct >= 0 ? '+' : '') + pbRptNum(s.overallSlopePct, 2) + '% (+ = rising toward end)' : null], ['Start / end invert', s ? (s.startInv !== undefined ? s.startInv : '\u2014') + ' / ' + (s.endInv !== undefined ? s.endInv : '\u2014') + ' ft' : null],
@@ -44028,7 +44135,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (e.endNote && e.endNote.text) { R.sub('Note at end'); R.para(e.endNote.text + ' (typed by hand' + (e.endNote.at ? ', ' + pbRptDt(e.endNote.at) : '') + ')', { size: 9.5 }); } // feat_runflow P9
     // --- pipe and grade
     R.section('grade', 'Pipe and grade', { keep: 40 });
-    if (pipe.length) R.table({ head: ['Pipe', 'Inside dia.', 'Wall', 'Bedding thickness', 'Trench width'], body: pipe.map(p => [p.label, p.idIn !== null && p.idIn !== undefined ? p.idIn.toFixed(2) + ' in' : '\u2014', p.wtFt !== null && p.wtFt !== undefined ? p.wtFt.toFixed(3) + ' ft' : '\u2014', p.beddingFt !== null && p.beddingFt !== undefined ? p.beddingFt.toFixed(2) + ' ft' : '\u2014', p.trenchWidthFt !== null && p.trenchWidthFt !== undefined ? p.trenchWidthFt.toFixed(1) + ' ft' : '\u2014']), columns: [{}, { halign: 'right' }, { halign: 'right' }, { halign: 'right' }, { halign: 'right' }] });
+    if (pipe.length) R.table({ head: ['Pipe', 'Inside dia.', 'Wall', 'Bedding thickness', 'Trench width'], body: pipe.map(p => [p.label, p.idIn !== null && p.idIn !== undefined ? p.idIn.toFixed(2) + ' in' : '\u2014', p.wtFt !== null && p.wtFt !== undefined ? p.wtFt.toFixed(3) + ' ft' + pbPiAWord(p.wtAuto) : '\u2014', p.beddingFt !== null && p.beddingFt !== undefined ? p.beddingFt.toFixed(2) + ' ft' : '\u2014', p.trenchWidthFt !== null && p.trenchWidthFt !== undefined ? p.trenchWidthFt.toFixed(1) + ' ft' : '\u2014']), columns: [{}, { halign: 'right' }, { halign: 'right' }, { halign: 'right' }, { halign: 'right' }] });
     R.kv([
       ['Overall slope', s ? (pbRptNum(s.overallSlopePct, 2) !== '\u2014' && s.overallSlopePct >= 0 ? '+' : '') + pbRptNum(s.overallSlopePct, 2) + '% (calculated)' : null], ['Cut/fill at stakes', pbCutFillText(pbCutFillStakesOf(e)) || (e.netCutFill !== null && e.netCutFill !== undefined ? 'no stake detail kept with this record' : 'no stakes on this run')],
       ['Est. backfill', e.volumeYd3 !== null && e.volumeYd3 !== undefined ? e.volumeYd3.toFixed(1) + ' cu yd (calculated estimate)' + pbVolumeScopeNote(e) + (e.volumeIncomplete ? ', partial: some stations excluded' : '') : (e.volumeIncomplete ? (e.volumeStopUnknown ? 'unavailable (ended early; not recalculated to the stop point)' : 'unavailable (missing data)') : 'not calculated')],
@@ -45637,6 +45744,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const pipe = entry.summary && entry.summary.pipeInfo && entry.summary.pipeInfo[0];
     if (pipe) {
       if (pipe.wtFt !== null && pipe.wtFt !== undefined) document.getElementById('runWT').value = pipe.wtFt;
+      pbPiASetAuto('runWT', !!pipe.wtAuto); /* feat_pipeauto: Reuse copies the flag with the value */
       if (pipe.idIn !== null && pipe.idIn !== undefined) {
         const idSel = document.getElementById('runIdSel');
         const match = PIPE_SIZES.find(s => String(s) === String(pipe.idIn));
@@ -49321,7 +49429,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       fromStep: Object.assign({}, window._pbSegStartFromStep || {}),
       startedAt: runLifecycleStartTime ? runLifecycleStartTime.getTime() : null,
       statsAt: statsRunStartTime ? statsRunStartTime.getTime() : null,
-      photoCount, cutsheet: cs && cs.aiText.length < 200000 ? cs : null, st: pbStDraftSnap() }; /* feat_results2: st */
+      photoCount, cutsheet: cs && cs.aiText.length < 200000 ? cs : null, st: pbStDraftSnap(), pa: pbPiAAutoIds() }; /* feat_results2: st; feat_pipeauto: pa */
   }
   function pbRdTyped(d) {
     const v = (f) => f && !f.pred ? (f.raw ? [f.raw.ft, f.raw.inch, f.raw.frac] : f.val) : null;
@@ -49415,6 +49523,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (id === 'runTurnAt' && typeof v === 'string') v = v.split(',').map(t => map[t] || t).join(',');
       if (el.type === 'checkbox' || el.type === 'radio') el.checked = !!v; else el.value = v;
     });
+    try { pbPiAPutAuto(d.pa); } catch (e) { console.error(e); } /* feat_pipeauto: app-filled wall / laying length as the draft had them */
     try { pbStDraftApply(d.st, map); } catch (e) { console.error(e); } /* feat_results2 */
     (d.pred || []).forEach(id => { try { setPredictedFillMarker(id, true); } catch (e) {} });
     if (typeof window.pbAfRestorePick === 'function') window.pbAfRestorePick(d.top ? d.top.saForemanPick : '', false); /* r15.57: the foreman the draft's box showed is the one the report goes to */
