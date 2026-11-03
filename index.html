@@ -3765,6 +3765,9 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp #screen-cutsheetImport #cutsheetRowTable input[type="checkbox"] { width: 24px; height: 24px; margin: 10px; accent-color: var(--pb-brand); }
 #pbApp #screen-cutsheetImport #cutsheetRowTable tr:has(input:checked) td { background: rgba(244,197,66,0.07); }
 #pbApp #screen-cutsheetImport #cutsheetRowTable .pb-answer-warn { white-space: normal; }
+#pbApp#pbApp #screen-cutsheetImport #cutsheetRowTable .pb-tag .pb-cs-rowtoggle { margin: -6px 0 -6px auto; min-height: 44px; min-width: 44px; flex: 0 0 auto; width: auto; white-space: nowrap; } /* feat_mesa */
+#pbApp#pbApp #screen-cutsheetImport #cutsheetRowTable .pb-cs-collapsed > .pb-tag { padding-bottom: 16px; }
+#pbApp#pbApp #screen-cutsheetImport #cutsheetRowTable .pb-body[hidden] { display: none; }
 /* flip question: the direction reads as part of the sentence */
 #pbApp#pbApp #screen-cutsheetImport #cutsheetFlipStatement strong { display: inline; font-size: inherit; margin: 0; }
 #pbApp#pbApp #screen-cutsheetImport #cutsheetFlipStatement .pb-cs-dir { text-transform: lowercase; }
@@ -8707,8 +8710,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         </div>
       </div>
     </div>
+    <details class="pb-cs-pastefold" id="cutsheetPasteFold"><summary>Paste rows instead</summary><!-- feat_pastefold (owner, Nov 2): the paste box is one tap away, not a card -->
     <div class="pb-section">
-      <div class="pb-tag">Or Paste Cutsheet Rows</div>
       <div class="pb-body">
         <details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>Example row format</span></summary><p class="pb-help" style="margin-top:0;">Example of the expected format — this is just a sample, not something already in the box below:</p>
         <p class="pb-help pb-b3-sample" style="margin:0 0 10px 0; font-family:'IBM Plex Mono',monospace; font-size:11px; opacity:0.75; white-space:pre-wrap;">20260&#9;0+00.00 L 20.00&#9;20/SD CL CB #4 TG&#9;2394.00&#9;C-6.09&#9;2400.09&#9;2291289.61&#9;6381670.85</p>
@@ -8727,6 +8730,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-btn-wrap" style="padding-top:6px;"><button class="pb-btn" onclick="pbParseCutsheetManual()">Parse Rows</button></div>
       </div>
     </div>
+    </details>
     <div id="cutsheetAiReview" style="display:none;" aria-live="polite"></div>
     <div id="cutsheetParseSummary"></div>
     <div id="cutsheetSegmentPicker" style="display:none; margin:14px 16px 0 16px;"></div>
@@ -9009,6 +9013,9 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp #screen-results .pb-rs-colopt[aria-pressed="true"] { border-color: var(--pb-brand-line); background: var(--pb-brand-soft); }
 #pbApp#pbApp #screen-results .pb-rs-colopt[aria-pressed="true"] .pb-rs-colnum { background: var(--pb-brand); border-color: var(--pb-brand); color: var(--pb-brand-ink); }
 #pbApp#pbApp #screen-results .pb-rs-cols { gap: 8px; }
+#pbApp #screen-cutsheetImport .pb-cs-pastefold > summary { display: flex; align-items: center; justify-content: center; min-height: 44px; margin: 4px 16px 0 16px; color: var(--pb-brand); font-weight: 600; cursor: pointer; list-style: none; }
+#pbApp #screen-cutsheetImport .pb-cs-pastefold > summary::-webkit-details-marker { display: none; }
+#pbApp #screen-cutsheetImport .pb-cs-pastefold[open] > summary { color: var(--pb-text-2); }
 /* feat_colrow (owner, Nov 1): the column picks fit on one row: number over name, equal widths */
 #pbApp#pbApp #screen-results .pb-rs-cols:not([hidden]) { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
 #pbApp#pbApp #screen-results .pb-rs-colopt { flex-direction: column; justify-content: center; gap: 4px; min-width: 0; min-height: 60px; padding: 6px 2px; border-radius: 14px; font-size: clamp(11px, 3.3vw, 13px); }
@@ -11045,7 +11052,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.89 · 2026-11-02'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.90 · 2026-11-02'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -14464,7 +14471,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   let pbCutsheetAiAck = null; // the parse whose AI rows were confirmed checked
   function pbCutsheetAiKey() { return String(cutsheetAiRawText) + '|' + pbCutsheetImportGen + '|' + pbCutsheetManualParseGen; }
   function pbCutsheetAiParseReply(text) {
-    const out = { rows: [], uncertain: [], unreadable: [], notes: [], refused: null };
+    const out = { rows: [], box: [], uncertain: [], unreadable: [], notes: [], metric: [], superseded: [], refused: null }; // feat_mesa: box = the rows and their ALIGNMENT lines, for the paste box
     String(text || '').replace(/\r/g, '').split('\n').forEach(l => {
       const t = l.trim();
       if (!t || /^```/.test(t)) return;
@@ -14472,8 +14479,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if ((m = t.match(/^NOT_A_CUTSHEET:?\s*(.*)$/i))) { out.refused = m[1] || 'it doesn’t look like a cutsheet'; return; }
       if ((m = t.match(/^UNCERTAIN:?\s*(.*)$/i))) { out.uncertain.push(m[1]); return; }
       if ((m = t.match(/^UNREADABLE:?\s*(.*)$/i))) { out.unreadable.push(m[1]); return; }
+      if ((m = t.match(/^METRIC:\s*(.*)$/i))) { out.metric.push(m[1].replace(/\s*:\s*in\s+met(?:re|er)s?\b.*$/i, '').trim() || m[1]); return; } /* feat_mesa */
+      if ((m = t.match(/^SUPERSEDED:\s*(.*)$/i))) { out.superseded.push(m[1]); return; }
+      if (/^ALIGNMENT:/i.test(t)) { out.box.push(t); return; } // (not a row: the parser starts that alignment's runs there)
       if ((m = t.match(/^NOTE:?\s*(.*)$/i))) { if (/no plan elevation column/i.test(m[1])) out.notes.push('The sheet has no plan elevation column: plan elevations were worked out from the stake elevation and cut/fill.'); return; } /* feat_ainote (owner, Nov 2) */
-      out.rows.push(t);
+      out.rows.push(t); out.box.push(t);
     });
     return out;
   }
@@ -14485,6 +14495,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + (rv.uncertain.length ? '<p class="pb-ai-flagnote"><strong>AI wasn’t sure about:</strong></p>' + li(rv.uncertain) : '')
       + (rv.unreadable.length ? '<p class="pb-ai-flagnote"><strong>AI couldn’t read these rows, so they aren’t in the list:</strong></p>' + li(rv.unreadable) : '')
       + (rv.notes.length ? '<p class="pb-ai-flagnote"><strong>Note:</strong></p>' + li(rv.notes) : '')
+      + (rv.metric && rv.metric.length ? '<p class="pb-ai-flagnote" id="cutsheetAiMetric"><strong>Not read (in metres):</strong></p>' + li(rv.metric) : '') /* feat_mesa */
+      + (rv.superseded && rv.superseded.length ? '<p class="pb-ai-flagnote" id="cutsheetAiSuperseded"><strong>Replaced by a later revision:</strong></p>' + li(rv.superseded) : '')
       + '</div>';
   }
   function pbCutsheetAiSync() {
@@ -14525,14 +14537,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     const res = pbCutsheetAiParseReply(r.text);
     if (res.refused && !res.rows.length) { pbAiShow(statusEl, 'warn', 'AI couldn’t read this as a cutsheet.', res.refused + '. Nothing here was changed.'); return; }
-    if (!res.rows.length) { pbAiShow(statusEl, 'warn', 'AI found no rows it could read for sure.', (res.unreadable.length ? 'It couldn’t read: ' + res.unreadable.join('; ') + '. ' : '') + 'Nothing here was changed. Try a clearer photo, or paste the rows.'); return; }
+    if (!res.rows.length) { pbAiShow(statusEl, 'warn', 'AI found no rows it could read for sure.', (res.metric.length ? 'Not read (in metres): ' + res.metric.join('; ') + '. ' : '') + (res.unreadable.length ? 'It couldn’t read: ' + res.unreadable.join('; ') + '. ' : '') + 'Nothing here was changed. Try a clearer photo, or paste the rows.'); return; }
     if (onAccept) onAccept();
     cutsheetAiRawText = r.text; // only once every check passed: this result is being applied
-    pbCutsheetAiReview = { text: r.text, rows: res.rows, uncertain: res.uncertain, unreadable: res.unreadable, notes: res.notes, truncated: !!r.truncated, kind };
+    pbCutsheetAiReview = { text: r.text, rows: res.rows, uncertain: res.uncertain, unreadable: res.unreadable, notes: res.notes, metric: res.metric, superseded: res.superseded, truncated: !!r.truncated, kind };
     pbCutsheetAiAck = null;
-    if (cutsheetPasteBoxEl) cutsheetPasteBoxEl.value = res.rows.join('\n');
+    if (cutsheetPasteBoxEl) cutsheetPasteBoxEl.value = res.box.join('\n'); // feat_mesa: with the ALIGNMENT lines, so a re-parse keeps the alignments
     pbParseCutsheet(); // the same parser, checks and questions as pasted rows (and pbCutsheetAiSync shows the doubts)
-    const flagged = res.uncertain.length + res.unreadable.length + (r.truncated ? 1 : 0);
+    const flagged = res.uncertain.length + res.unreadable.length + res.metric.length + res.superseded.length + (r.truncated ? 1 : 0);
     pbAiShow(statusEl, flagged ? 'warn' : 'ok', 'AI read ' + res.rows.length + ' row' + (res.rows.length === 1 ? '' : 's') + '.', flagged ? 'Some need checking — see the list below.' : 'Check every row against the sheet before importing.');
   }
   window.pbReadCutsheetWithAI = function() {
@@ -44875,6 +44887,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   let pbCutsheetImportGen = 0; // bumped whenever the import context changes (new PDF, reset) — lets a slow async PDF/AI-read response detect it's stale before applying results
   let pbCutsheetManualParseGen = 0; // bumped specifically when the user clicks Parse Rows themselves — separate from the import-context counter above, since manually re-parsing within the SAME context (same PDF, no reset) doesn't change that counter at all, but must still be able to invalidate a slower, still-in-flight AI response that would otherwise overwrite the newer manual correction it was based on
   let cutsheetUnparsedLines = [];
+  let cutsheetAlignNames = []; // feat_mesa: the alignments named by "ALIGNMENT: <name>" lines (index = row.align; 0 = rows before any)
+  let cutsheetRowsCollapsed = false; // feat_mesa: the rows list hidden by "Hide rows"; open again on every new file or parse
   let cutsheetXings = []; // feat_cutxing: utility crossing rows ({ stakeNum, station, description, util, inv, at, seg, group, checked }); never pipe points
   let cutsheetActiveGroup = 'all';
   // One printed row ends with its own "plan C/F stake N E" group. A line holding two
@@ -45080,8 +45094,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pts.forEach(r => { const k = String(r.segment), g = range[k] || (range[k] = [Infinity, -Infinity]); g[0] = Math.min(g[0], r.station); g[1] = Math.max(g[1], r.station); });
     cutsheetXings.forEach(x => {
       let prev = null, next = null;
-      for (let i = x.at - 1; i >= 0 && !prev; i--) if (pts.has(cutsheetRows[i])) prev = cutsheetRows[i];
-      for (let i = x.at; i < cutsheetRows.length && !next; i++) if (pts.has(cutsheetRows[i])) next = cutsheetRows[i];
+      const mine = r => pts.has(r) && (r.align || 0) === (x.align || 0); /* feat_mesa */
+      for (let i = x.at - 1; i >= 0 && !prev; i--) if (mine(cutsheetRows[i])) prev = cutsheetRows[i];
+      for (let i = x.at; i < cutsheetRows.length && !next; i++) if (mine(cutsheetRows[i])) next = cutsheetRows[i];
       const segs = Array.from(new Set([prev, next].filter(Boolean).map(r => String(r.segment)))).filter(k => x.station >= range[k][0] - 0.0005 && x.station <= range[k][1] + 0.0005);
       x.seg = segs.length === 1 ? segs[0] : null;
       x.group = (prev || next) ? (prev || next).lineTag : x.lineTag;
@@ -45118,6 +45133,32 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     });
     if (n) { try { pbRdSchedule(); } catch (e) {} }
     return n;
+  }
+  // feat_mesa: a run group whose rows are tagged to a pipe line ("10/SS ...") pre-checks only that line's rows: a row with
+  // no line tag (a wall, sign, sidewalk, tree, property corner...) or one on another kind of line ("24/SD TOP" in an SS
+  // run) is left for the person to check by hand. An untagged row that names an invert (IE / INV / FL) stays checked,
+  // unless it is a lateral or branch. The line's kind is the one most of the group's tagged rows are on (on a tie, every
+  // tagged row stays checked). A group with no tagged row is pre-checked exactly as before.
+  function pbCutsheetGroupKinds() {
+    const counts = {};
+    const add = (k, kind) => { const c = counts[k] || (counts[k] = {}); c[kind] = (c[kind] || 0) + 1; };
+    cutsheetRows.forEach(r => {
+      const m = /^\d+\/([A-Z]+)$/.exec(r.lineTag || '');
+      if (!m || !cutsheetRowIsPlausiblePipePoint(r) || r.segment === null || r.segment === undefined) return;
+      add(String(r.segment), m[1]);
+      if (r.sharedSeg !== null && r.sharedSeg !== undefined) add(String(r.sharedSeg), m[1]);
+    });
+    const out = {};
+    Object.keys(counts).forEach(k => { const ks = Object.keys(counts[k]).sort((a, b) => counts[k][b] - counts[k][a]); out[k] = { kind: ks.length === 1 || counts[k][ks[0]] > counts[k][ks[1]] ? ks[0] : null }; });
+    return out;
+  }
+  function pbCutsheetPreCheck(r, segKey, kinds) {
+    if (!cutsheetRowIsPlausiblePipePoint(r)) return false;
+    const g = kinds[String(segKey)];
+    if (!g) return true; // no tagged row in this group: as before
+    const m = /^\d+\/([A-Z]+)$/.exec(r.lineTag || '');
+    if (!m) return /\b(IE|INV|INVERT|FL)\b/i.test(r.description || '') && !/\b(LAT|LATERAL|BRANCH|SVC|SERVICE)\b/i.test(r.description || '');
+    return !g.kind || m[1] === g.kind;
   }
   function cutsheetRowIsPlausiblePipePoint(row) {
     if (row.station === null) return false;
@@ -45162,6 +45203,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     document.getElementById('cutsheetDebugBox').value = '';
     cutsheetRows = [];
     cutsheetUnparsedLines = []; cutsheetXings = [];
+    cutsheetAlignNames = []; cutsheetRowsCollapsed = false; /* feat_mesa */
     cutsheetActiveGroup = 'all';
     cutsheetBothWaysKey = null;
     document.getElementById('cutsheetParseSummary').innerHTML = '';
@@ -45300,6 +45342,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // actually invalidated by any of this.
     cutsheetRows = [];
     cutsheetUnparsedLines = []; cutsheetXings = [];
+    cutsheetAlignNames = []; cutsheetRowsCollapsed = false; /* feat_mesa */
     cutsheetActiveGroup = 'all';
     cutsheetPdfBase64 = null;
     cutsheetAiRawText = null;
@@ -45399,21 +45442,36 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const text = cutsheetPasteBoxEl ? cutsheetPasteBoxEl.value : '';
       cutsheetRows = [];
       cutsheetUnparsedLines = []; cutsheetXings = [];
+      cutsheetAlignNames = []; cutsheetRowsCollapsed = false; /* feat_mesa: every parse starts with the rows list open */
+      let align = 0; const alignIds = {};
       cutsheetRowsGen = pbCutsheetImportGen; // these rows belong to THIS import context — checked at import time so a stale set can never be imported against a context it didn't come from
       cutsheetRowsManualGen = pbCutsheetManualParseGen; // ALSO bound to the manual-edit generation at this exact moment — an edit made to the text AFTER this parse bumps pbCutsheetManualParseGen without touching pbCutsheetImportGen at all (the PDF/context hasn't changed, just the text), so checking only the import generation at import time would let a post-parse edit's OLD, already-parsed values still be imported even though the visible text now says something different
       const seenRows = new Set(), seenXings = new Set(); /* feat_csdup (owner, Nov 2): a row printed twice with the same values is read once */
-      const dupKey = r => [r.stakeNum, r.station, r.offsetSide, r.offsetDist, r.designPt, String(r.description || '').trim().replace(/\s+/g, ' ').toUpperCase(), r.planElev, r.cfType, r.cfVal, r.stakeElev].join('|');
+      const dupKey = r => [align, r.stakeNum, r.station, r.offsetSide, r.offsetDist, r.designPt, String(r.description || '').trim().replace(/\s+/g, ' ').toUpperCase(), r.planElev, r.cfType, r.cfVal, r.stakeElev].join('|');
       text.split('\n').flatMap(pbSplitJoinedCutsheetRows).forEach(line => {
         if (!line.trim()) return;
+        /* feat_mesa: the AI's marker lines are never rows. "ALIGNMENT: <name>" starts that alignment's rows (one name, one
+           alignment, wherever it is listed again); METRIC / SUPERSEDED lines are listed in the AI review box only. */
+        const mk = /^\s*(ALIGNMENT|METRIC|SUPERSEDED)\s*:\s*(.*)$/i.exec(line);
+        if (mk) {
+          if (mk[1].toUpperCase() === 'ALIGNMENT') {
+            const name = mk[2].trim().replace(/\s+/g, ' '), key = name.toUpperCase();
+            if (!cutsheetAlignNames.length) cutsheetAlignNames.push(''); // (0: rows listed before any ALIGNMENT line)
+            if (!(key in alignIds)) { alignIds[key] = cutsheetAlignNames.length; cutsheetAlignNames.push(name); }
+            align = alignIds[key];
+          }
+          return;
+        }
         const parsed = parseCutsheetLine(line);
         const xing = pbCutsheetXingRow(line, parsed); /* feat_cutxing */
-        if (xing) { const xk = line.trim().replace(/\s+/g, ' ').toUpperCase(); if (seenXings.has(xk)) return; seenXings.add(xk); xing.at = cutsheetRows.length; xing.checked = true; cutsheetXings.push(xing); return; }
-        if (parsed && (parsed.station !== null || parsed.designPt !== null)) { const k = dupKey(parsed); if (seenRows.has(k)) return; seenRows.add(k); parsed.checked = cutsheetRowIsPlausiblePipePoint(parsed); cutsheetRows.push(parsed); }
-        else cutsheetUnparsedLines.push(line.trim()); // no station and no point number: nothing to place it by
+        if (xing) { const xk = align + '|' + line.trim().replace(/\s+/g, ' ').toUpperCase(); if (seenXings.has(xk)) return; seenXings.add(xk); xing.at = cutsheetRows.length; xing.align = align; xing.checked = true; cutsheetXings.push(xing); return; }
+        if (parsed && (parsed.station !== null || parsed.designPt !== null)) { const k = dupKey(parsed); if (seenRows.has(k)) return; seenRows.add(k); parsed.align = align; parsed.checked = cutsheetRowIsPlausiblePipePoint(parsed); cutsheetRows.push(parsed); }
+        else { const t = line.trim(), rest = t.replace(/^\S+\s+-?\d+\+\d+(?:\.\d+)?/, ''); if (/\d\.\d/.test(rest)) cutsheetUnparsedLines.push(t); } // feat_notused (owner, Nov 2): a row with no elevation in it has no grade to use and isn't listed; one with numbers that don't fit is
       });
       cutsheetRows.forEach((r, i) => r.idx = i);
       cutsheetBothWaysKey = null;
       assignCutsheetSegments();
+      { const kinds = pbCutsheetGroupKinds(); cutsheetRows.forEach(r => { if (r.checked && r.segment !== null && r.segment !== undefined) r.checked = pbCutsheetPreCheck(r, r.segment, kinds); }); } /* feat_mesa */
       try { pbCutsheetXingPlace(); } catch (e) { console.error(e); cutsheetXings.forEach(x => { x.seg = null; }); } /* feat_cutxing */
       cutsheetActiveGroup = 'all';
       renderCutsheetResults();
@@ -45431,7 +45489,28 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // watching for the station resetting back to near zero after being well into a
   // prior run is a much sturdier signal of "this is genuinely a different line"
   // than any text in the description.
+  // feat_mesa: a sheet with more than one alignment ("ALIGNMENT:" lines) is split into runs one alignment at a time, so
+  // its runs never mix alignments; each alignment's runs get their own numbers after the previous alignment's. One
+  // alignment (every sheet without those lines) is split exactly as before.
   function assignCutsheetSegments() {
+    const all = cutsheetRows, ids = Array.from(new Set(all.map(r => r.align || 0)));
+    if (ids.length < 2) { assignCutsheetSegmentsOne(); return; }
+    let base = 0;
+    try {
+      ids.forEach(a => {
+        cutsheetRows = all.filter(r => (r.align || 0) === a);
+        assignCutsheetSegmentsOne();
+        let top = -1;
+        cutsheetRows.forEach(r => { if (r.segment !== null && r.segment !== undefined) top = Math.max(top, r.segment); });
+        cutsheetRows.forEach(r => {
+          if (r.segment !== null && r.segment !== undefined) r.segment += base;
+          if (r.sharedSeg !== null && r.sharedSeg !== undefined) r.sharedSeg += base;
+        });
+        base += top + 1;
+      });
+    } finally { cutsheetRows = all; }
+  }
+  function assignCutsheetSegmentsOne() {
     // A sheet can list a pipe low-to-high OR high-to-low (stakes are numbered in
     // the order they were shot). Arriving at ~0+00 is only a new pipe when the
     // pipe so far was climbing; a pipe listed high-to-low naturally ENDS there.
@@ -45867,6 +45946,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return byStation.map((r, i) => 'Sta. ' + r.station.toFixed(2) + ' — stake ' + r.stakeNum + ' (' + r.description + ')' + (keep.has(i) ? '' : '  ← OUT OF ORDER')).join('\n');
   }
   function computeCutsheetSegments() {
+    const manyAligns = new Set(cutsheetRows.map(r => r.align || 0)).size > 1; // feat_mesa
     const bySeg = {};
     cutsheetRows.forEach(r => {
       if (r.segment === null || r.segment === undefined) return;
@@ -45881,14 +45961,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       plausible.forEach(r => { tagCounts[r.lineTag] = (tagCounts[r.lineTag] || 0) + 1; });
       const dominantTag = Object.keys(tagCounts).sort((a,b) => tagCounts[b]-tagCounts[a])[0] || 'Mixed';
       return {
-        segment: segKey,
+        segment: segKey, align: rows[0].align || 0, alignName: manyAligns ? (cutsheetAlignNames[rows[0].align || 0] || '') : '', /* feat_mesa */
         stakeLo: Math.min(...stakeNums), stakeHi: Math.max(...stakeNums),
         plausibleCount: plausible.length,
         dominantTag,
         stationLo: stations.length ? Math.min(...stations) : null,
         stationHi: stations.length ? Math.max(...stations) : null
       };
-    }).sort((a,b) => a.stakeLo - b.stakeLo);
+    }).sort((a,b) => (a.align - b.align) || (a.stakeLo - b.stakeLo));
   }
   // Lists every real pipe run detected on the sheet (see assignCutsheetSegments) as
   // a single tap-to-select option, so the user picks which run they're doing today
@@ -45927,6 +46007,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const allA = inSeg(segs[n].segment), allB = inSeg(segs[n + 1].segment);
       const a = allA.filter(cutsheetRowIsPlausiblePipePoint), b = allB.filter(cutsheetRowIsPlausiblePipePoint);
       if (a.length < 2 || b.length < 2) continue;
+      if ((a[0].align || 0) !== (b[0].align || 0)) continue; // feat_mesa: two alignments are never one run
       if (!(a[a.length - 1].station > a[0].station + 2 && b[0].station > b[b.length - 1].station + 2)) continue; // low-to-high, then high-to-low
       const topA = Math.max(...a.map(r => r.station)), topB = Math.max(...b.map(r => r.station));
       const namesAt = (rows, top) => new Set(rows.filter(r => Math.abs(r.station - top) <= 5).map(r => pbCutsheetStructName(String(r.description || '').replace(/\b(TO|FROM|TOWARDS?)\b.*$/i, ''))).filter(Boolean)); // (not a structure it points to: "IE IN FROM MH-5")
@@ -46017,7 +46098,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       ${segs.map(s => {
         const selected = cutsheetSelectedSegment === s.segment;
         return `<button class="pb-btn ${selected ? '' : 'ghost'} pb-b3-pick" aria-pressed="${selected ? 'true' : 'false'}" style="width:100%; text-align:left; margin-bottom:8px; padding:12px; white-space:normal; ${selected ? 'border:2px solid var(--start-c);' : ''}" onclick="pbSelectCutsheetSegment('${s.segment}')">
-        ${selected ? '<span class="pb-chip ok">Selected</span> ' : ''}<strong>Stakes ${s.stakeLo}\u2013${s.stakeHi}</strong> \u2014 ${s.plausibleCount} points, mostly ${s.dominantTag}${s.stationLo !== null ? ' \u2014 ' + s.stationLo.toFixed(0) + ' to ' + s.stationHi.toFixed(0) + ' ft' : ''}
+        ${selected ? '<span class="pb-chip ok">Selected</span> ' : ''}${s.alignName ? escapeHtml(s.alignName) + ': ' : ''}<strong>Stakes ${s.stakeLo}\u2013${s.stakeHi}</strong> \u2014 ${s.plausibleCount} points, mostly ${s.dominantTag}${s.stationLo !== null ? ' \u2014 ' + s.stationLo.toFixed(0) + ' to ' + s.stationHi.toFixed(0) + ' ft' : ''}
       </button>`;
       }).join('')}
       ${pbCutsheetBothWaysPairs().map(p => {
@@ -46029,7 +46110,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     </div></div>`;
   }
   window.pbSelectCutsheetSegment = function(segKey) {
-    cutsheetRows.forEach(r => { r.checked = (String(r.segment) === segKey || (r.sharedSeg !== null && r.sharedSeg !== undefined && String(r.sharedSeg) === segKey)) && cutsheetRowIsPlausiblePipePoint(r); });
+    const kinds = pbCutsheetGroupKinds(); // feat_mesa: picking a run checks what its pre-check would
+    cutsheetRows.forEach(r => { r.checked = (String(r.segment) === segKey || (r.sharedSeg !== null && r.sharedSeg !== undefined && String(r.sharedSeg) === segKey)) && pbCutsheetPreCheck(r, segKey, kinds); });
     cutsheetSelectedSegment = segKey;
     cutsheetBothWaysKey = null;
     cutsheetFlipChoice = false;
@@ -46076,7 +46158,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     rangeBox.style.display = cutsheetRows.length ? '' : 'none';
     renderCutsheetSegmentPicker();
-    summary.innerHTML = `<p class="pb-help" style="margin:14px 16px 0 16px;">${cutsheetRows.length} row(s) parsed${cutsheetXings.length ? ', ' + cutsheetXings.length + (cutsheetXings.length === 1 ? ' crossing' : ' crossings') : ''}${cutsheetUnparsedLines.length ? ', ' + cutsheetUnparsedLines.length + ' couldn\u2019t be read (shown below)' : ''}. Pre-checked by a best guess \u2014 review before importing.</p>`;
+    summary.innerHTML = `<p class="pb-help" style="margin:14px 16px 0 16px;">${cutsheetRows.length} row(s) parsed${cutsheetXings.length ? ', ' + cutsheetXings.length + (cutsheetXings.length === 1 ? ' crossing' : ' crossings') : ''}${cutsheetUnparsedLines.length ? ', ' + cutsheetUnparsedLines.length + ' not used (below)' : ''}. Pre-checked by a best guess \u2014 review before importing.</p>`;
     const groups = cutsheetGroups();
     const tabs = document.getElementById('cutsheetGroupTabs');
     if (Object.keys(groups).length > 1) {
@@ -46090,7 +46172,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     const visible = cutsheetActiveGroup === 'all' ? cutsheetRows : cutsheetRows.filter(r => r.lineTag === cutsheetActiveGroup);
     const table = document.getElementById('cutsheetRowTable');
-    table.innerHTML = `<div class="pb-section"><div class="pb-tag">Rows${cutsheetActiveGroup !== 'all' ? ' — ' + escapeHtml(cutsheetActiveGroup) : ''}</div><div class="pb-body">
+    const nShown = visible.length; /* feat_mesa */
+    table.innerHTML = `<div class="pb-section${cutsheetRowsCollapsed ? ' pb-cs-collapsed' : ''}"><div class="pb-tag"><span>Rows${cutsheetActiveGroup !== 'all' ? ' — ' + escapeHtml(cutsheetActiveGroup) : ''}</span><button type="button" class="pb-btn ghost small pb-cs-rowtoggle" id="cutsheetRowsToggle" aria-expanded="${cutsheetRowsCollapsed ? 'false' : 'true'}" aria-controls="cutsheetRowsBody" onclick="pbCutsheetToggleRows()">${cutsheetRowsCollapsed ? 'Show rows (' + nShown + ')' : 'Hide rows'}</button></div><div class="pb-body" id="cutsheetRowsBody"${cutsheetRowsCollapsed ? ' hidden' : ''}>
       <div class="pb-table-wrap"><table class="pb-table"><thead><tr><th><span class="pb-sr">Import</span></th><th>Stake#</th><th>Sta.</th><th>Description</th><th>Cut/Fill</th><th>Stake Elev</th><th>Invert (ft)</th></tr></thead><tbody>
       ${visible.map(r => pbCutsheetXingRowsHTML(r.idx, visible) + `<tr>
         <td><input type="checkbox" ${r.checked ? 'checked' : ''} aria-label="${escapeHtml('Import stake ' + r.stakeNum + (r.station !== null ? ' at station ' + pbCutsheetStaText(r.station) : '') + (r.description ? ', ' + r.description : ''))}" onchange="pbToggleCutsheetRow(${r.idx})"></td>
@@ -46104,7 +46187,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       </tbody></table></div>
     </div></div>`;
     const unparsedEl = document.getElementById('cutsheetUnparsed');
-    unparsedEl.innerHTML = cutsheetUnparsedLines.length ? `<div class="pb-warn" style="margin-top:14px;"><strong>${cutsheetUnparsedLines.length} row(s) couldn\u2019t be read</strong>${cutsheetUnparsedLines.map(l => '<br>' + escapeHtml(l)).join('')}</div>` : '';
+    unparsedEl.innerHTML = cutsheetUnparsedLines.length ? `<details class="pb-more pb-cs-notused" style="margin:14px 16px 0 16px;"><summary><span>Not used (${cutsheetUnparsedLines.length})</span></summary><p class="pb-help" style="margin:6px 0 0 0;">${cutsheetUnparsedLines.map(l => escapeHtml(l)).join('<br>')}</p></details>` : ''; /* feat_notused: a quiet fold, not a red warning */
     const anyChecked = cutsheetRows.some(r => r.checked);
     document.getElementById('cutsheetImportBtnWrap').style.display = anyChecked ? '' : 'none';
     document.getElementById('cutsheetImportNote').style.display = anyChecked ? '' : 'none';
@@ -46209,6 +46292,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbSelectCutsheetGroup = function(tag) {
     cutsheetActiveGroup = tag;
     renderCutsheetResults();
+  };
+  window.pbCutsheetToggleRows = function() { /* feat_mesa */
+    cutsheetRowsCollapsed = !cutsheetRowsCollapsed;
+    renderCutsheetResults();
+    const b = document.getElementById('cutsheetRowsToggle'); if (b) b.focus();
   };
   window.pbToggleCutsheetRow = function(idx) {
     const row = cutsheetRows.find(r => r.idx === idx);
@@ -46324,7 +46412,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // (the sheet lists a stake twice, or two different things at one station).
     // The app cannot know which to use, so it refuses and names them.
     const byStation = new Map();
-    checked.forEach(r => { const k = (Math.round(r.station * 1000) / 1000).toFixed(3); if (!byStation.has(k)) byStation.set(k, []); byStation.get(k).push(r); });
+    checked.forEach(r => { const k = (r.align || 0) + '|' + (Math.round(r.station * 1000) / 1000).toFixed(3); if (!byStation.has(k)) byStation.set(k, []); byStation.get(k).push(r); }); /* feat_mesa: per alignment */
     // (only where the line goes on past the structure: rows on both sides of it; at the run's end the other invert is
     // another pipe's)
     const passesThrough = g => g.length > 1 && checked.some(r => r.station < g[0].station - 0.001) && checked.some(r => r.station > g[0].station + 0.001) ? pbCutsheetThroughRows(g) : null;
