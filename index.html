@@ -2821,6 +2821,10 @@ html.pb-cx #homeFmPulse #homeFmCrew { display: none !important; } /* the Company
 #pbApp .pb-docsrv-misses { margin-top: 10px; }
 #pbApp .pb-docsrv-misses[hidden] { display: none; }
 #pbApp .pb-docsrv-misses li { overflow-wrap: anywhere; }
+#pbApp .pb-docsrv-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+#pbApp .pb-docsrv-btns .pb-btn { flex: 1 1 140px; }
+#pbApp .pb-docsrv-ans-a { margin: 4px 0 8px 0; padding: 6px 8px; border-radius: 8px; background: var(--pb-surface); box-shadow: inset 0 0 0 1px var(--pb-divider); font-size: 13px; white-space: pre-line; overflow-wrap: anywhere; color: var(--pb-text-2); }
+#pbApp .pb-docsrv-fails li { margin-bottom: 6px; }
 #pbApp .pb-docs-row .tx { flex: 1 1 auto; min-width: 0; }
 #pbApp .pb-docs-row .name { display: block; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #pbApp .pb-docs-row .sub { display: block; font-size: 14px; color: var(--pb-text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2829,6 +2833,11 @@ html.pb-cx #homeFmPulse #homeFmCrew { display: none !important; } /* the Company
 #pbApp #pjDocsRow { margin: 12px 0 0 0; }
 #pbApp #pjDocsRow[hidden], #pbApp #docsAddWrap[hidden], #pbApp #docsJobsWrap[hidden] { display: none; }
 .pb-tool-row[data-dest="askDocs"] { --pb-tool-icon: var(--pb-icon-info); }
+/* ask_v2 follow-up: job-data citations as a small marker; tap shows its one-line source */
+#pbApp .pb-ai-jd { display: inline-block; margin: 0 1px 0 3px; padding: 0 5px; min-height: 0; height: 16px; border: 0; border-radius: 8px; vertical-align: 2px; font: 600 10px/16px var(--pb-font, system-ui); letter-spacing: .02em; text-transform: lowercase; color: var(--pb-text-2); background: var(--pb-raised-2, var(--pb-raised)); box-shadow: inset 0 0 0 1px var(--pb-divider); cursor: pointer; position: relative; }
+#pbApp .pb-ai-jd::after { content: ""; position: absolute; inset: -12px -6px; }
+#pbApp .pb-ai-jd[aria-expanded="true"] { color: var(--pb-text); box-shadow: inset 0 0 0 1px var(--pb-brand-line); }
+#pbApp .pb-ai-jd-pop { display: inline; margin: 0 2px 0 4px; padding: 1px 6px; border-radius: 6px; font-size: 12px; line-height: 1.6; color: var(--pb-text-2); background: var(--pb-raised-2, var(--pb-raised)); white-space: normal; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 #pbApp #docsRvList .pb-docs-row .sub { white-space: normal; overflow: visible; }
 #pbApp .pb-ai-history:empty { display: none; }
 #pbApp .pb-ai-thread .pb-ai-qa + .pb-ai-qa { margin-top: 8px; }
@@ -3198,7 +3207,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp #screen-constCalc .pb-cc-k.fn { background: var(--pb-raised); color: var(--pb-text-2); font-size: 19px; }
 #pbApp #screen-constCalc .pb-cc-k.op { background: var(--pb-raised); color: var(--pb-brand); font-size: 27px; }
 #pbApp #screen-constCalc .pb-cc-k.unit { background: var(--pb-brand-soft); border-color: var(--pb-brand-line); color: var(--pb-brand); font-size: 17px; }
-#pbApp #screen-constCalc .pb-cc-k.zero, #pbApp #screen-constCalc .pb-cc-k.eq { grid-column: span 2; }
+#pbApp #screen-constCalc .pb-cc-k.eq { grid-column: span 2; }
+#pbApp #screen-constCalc .pb-cc-k.unit.sp { font-size: 16px; }
 #pbApp #screen-constCalc .pb-cc-k.eq { background: var(--pb-brand); border-color: var(--pb-brand); color: var(--pb-brand-ink); font-size: 27px; }
 #pbApp #screen-constCalc .pb-cc-prec { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
 #pbApp #screen-constCalc .pb-cc-prec > span { flex: 0 0 auto; font-size: 14px; font-weight: 600; color: var(--pb-text-2); }
@@ -4914,11 +4924,15 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <p id="docsRvStatus" class="pb-docs-line" role="status" aria-live="polite"></p>
     <div id="docsRvList"></div>
     <section class="pb-docsrv-safety" id="docsRvSafety" aria-label="Safety check" hidden>
-      <div class="pb-btn-wrap" style="padding-left:0;padding-right:0;"><button type="button" class="pb-btn secondary" id="docsRvSafetyBtn" onclick="pbDocsRvSafety()">Run Safety Check</button></div>
+      <div class="pb-btn-row pb-docsrv-btns"><button type="button" class="pb-btn secondary" id="docsRvSafetyBtn" onclick="pbDocsRvSafety()">Run Safety Check</button><button type="button" class="pb-btn secondary" id="docsRvAnsBtn" onclick="pbDocsRvAns()">Run Answer Check</button></div>
       <div class="pb-ai-wait" id="docsRvSafetyWait" hidden style="margin-left:0;margin-right:0;"><span role="status" aria-live="polite"><span class="pb-ai-dot" aria-hidden="true"></span><span id="docsRvSafetyWaitT"></span></span><button type="button" class="pb-btn small ghost" id="docsRvSafetyCancel" onclick="pbDocsRvSafetyCancel()">Cancel</button></div>
       <p class="pb-docsrv-res" id="docsRvSafetyL1" role="status" aria-live="polite"></p>
       <p class="pb-docsrv-res2" id="docsRvSafetyL2"></p>
       <details class="pb-more pb-docsrv-misses" id="docsRvSafetyMisses" hidden><summary><span>Misses</span></summary><div id="docsRvSafetyMissList"></div></details>
+      <div class="pb-ai-wait" id="docsRvAnsWait" hidden style="margin-left:0;margin-right:0;"><span role="status" aria-live="polite"><span class="pb-ai-dot" aria-hidden="true"></span><span id="docsRvAnsWaitT"></span></span><button type="button" class="pb-btn small ghost" id="docsRvAnsCancel" onclick="pbDocsRvAnsCancel()">Cancel</button></div>
+      <p class="pb-docsrv-res" id="docsRvAnsL1" role="status" aria-live="polite"></p>
+      <p class="pb-docsrv-res2" id="docsRvAnsL2"></p>
+      <details class="pb-more pb-docsrv-misses" id="docsRvAnsFails" hidden><summary><span>Failures</span></summary><div id="docsRvAnsFailList"></div></details>
     </section>
   </div>
 
@@ -5855,7 +5869,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
       <div class="pb-body">
         <div class="pb-review-item" data-edu-id="benchmark-backsight"><span class="k">Benchmark + Backsight</span><br>HI = benchmark elevation + backsight reading.</div>
         <div class="pb-review-item" data-edu-id="calculate-from-stakes"><span class="k">Calculate from Stakes</span><br>HI = stake elevation + rod reading shot at that stake. Works from any stake with both values.</div>
-        <div class="pb-review-item" data-edu-id="hi-cross-check-tolerance"><span class="k">HI cross-check tolerance</span><br>When the points with a rod reading (stakes, or inverts with a reading), and a typed or benchmark HI, imply different HIs, the app flags it. More than 0.02 ft apart is a serious warning (likely a busted setup or a misread). Over 0.001 up to 0.02 ft is a milder "worth a second look" flag. It shows live in Run Setup and carries to Review and the final report until fixed.</div>
+        <div class="pb-review-item" data-edu-id="hi-cross-check-tolerance"><span class="k">HI cross-check tolerance</span><br>When the points with a rod reading (stakes, or inverts with a reading), and a typed or benchmark HI, imply different HIs, the app flags it (to 0.01 ft): up to 0.02 ft in yellow, 0.03 ft or more in red. With three or more, the ones that agree are used. Elevations worked out from shots use the lower HI; readings to lay to use the higher, so the pipe goes in at the lowest invert.</div>
         <div class="pb-review-item" data-edu-id="only-needed-for"><span class="k">Only needed for</span><br>Points entered as a typed Invert Elevation, and stakes with no rod reading. A run where every stake has its own rod reading never needs HI.</div>
         <div class="pb-review-item" data-edu-id="rod-reading-elevation-calculator"><span class="k">Rod Reading → Elevation calculator</span><br>Standalone tool (Calculators → Grade & Elevation) for the same HI math, outside of a run — shoot a known point, then convert any other reading to an elevation off that same HI.</div>
         <div class="pb-review-item" data-edu-id="don-t-know-the-elevation-only-the-reading"><span class="k">Don't know the elevation, only the reading?</span><br>In Run Setup, Invert Elevation mode has an optional "Rod reading at this invert" box (Engineer's/Architect's rod). Enter the reading instead of the elevation: the app works out Elevation = HI − reading, once the run's HI is set.</div>
@@ -8177,7 +8191,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
         <div class="pb-cc-main" id="ccMain" role="status" aria-live="polite">0</div>
         <div class="pb-cc-alt" id="ccAlt"></div>
       </div>
-      <div class="pb-cc-keys" id="ccKeys"><button type="button" class="pb-cc-k fn" data-k="C" aria-label="Clear all">C</button><button type="button" class="pb-cc-k fn" data-k="CE" aria-label="Clear entry">CE</button><button type="button" class="pb-cc-k fn" data-k="bs" aria-label="Backspace">&#9003;</button><button type="button" class="pb-cc-k unit" data-k="ft">Feet</button><button type="button" class="pb-cc-k op" data-k="/d" aria-label="Divide">&divide;</button><button type="button" class="pb-cc-k" data-k="7">7</button><button type="button" class="pb-cc-k" data-k="8">8</button><button type="button" class="pb-cc-k" data-k="9">9</button><button type="button" class="pb-cc-k unit" data-k="in">Inch</button><button type="button" class="pb-cc-k op" data-k="*" aria-label="Times">&times;</button><button type="button" class="pb-cc-k" data-k="4">4</button><button type="button" class="pb-cc-k" data-k="5">5</button><button type="button" class="pb-cc-k" data-k="6">6</button><button type="button" class="pb-cc-k unit" data-k="/" aria-label="Fraction">/</button><button type="button" class="pb-cc-k op" data-k="-" aria-label="Minus">&minus;</button><button type="button" class="pb-cc-k" data-k="1">1</button><button type="button" class="pb-cc-k" data-k="2">2</button><button type="button" class="pb-cc-k" data-k="3">3</button><button type="button" class="pb-cc-k fn" data-k="neg" aria-label="Change sign">&plusmn;</button><button type="button" class="pb-cc-k op" data-k="+" aria-label="Plus">+</button><button type="button" class="pb-cc-k zero" data-k="0">0</button><button type="button" class="pb-cc-k" data-k="." aria-label="Decimal point">.</button><button type="button" class="pb-cc-k eq" data-k="=" aria-label="Equals">=</button></div>
+      <div class="pb-cc-keys" id="ccKeys"><button type="button" class="pb-cc-k fn" data-k="C" aria-label="Clear all">C</button><button type="button" class="pb-cc-k fn" data-k="CE" aria-label="Clear entry">CE</button><button type="button" class="pb-cc-k fn" data-k="bs" aria-label="Backspace">&#9003;</button><button type="button" class="pb-cc-k unit" data-k="ft">Feet</button><button type="button" class="pb-cc-k op" data-k="/d" aria-label="Divide">&divide;</button><button type="button" class="pb-cc-k" data-k="7">7</button><button type="button" class="pb-cc-k" data-k="8">8</button><button type="button" class="pb-cc-k" data-k="9">9</button><button type="button" class="pb-cc-k unit" data-k="in">Inch</button><button type="button" class="pb-cc-k op" data-k="*" aria-label="Times">&times;</button><button type="button" class="pb-cc-k" data-k="4">4</button><button type="button" class="pb-cc-k" data-k="5">5</button><button type="button" class="pb-cc-k" data-k="6">6</button><button type="button" class="pb-cc-k unit" data-k="/" aria-label="Fraction">/</button><button type="button" class="pb-cc-k op" data-k="-" aria-label="Minus">&minus;</button><button type="button" class="pb-cc-k" data-k="1">1</button><button type="button" class="pb-cc-k" data-k="2">2</button><button type="button" class="pb-cc-k" data-k="3">3</button><button type="button" class="pb-cc-k fn" data-k="neg" aria-label="Change sign">&plusmn;</button><button type="button" class="pb-cc-k op" data-k="+" aria-label="Plus">+</button><button type="button" class="pb-cc-k" data-k="0">0</button><button type="button" class="pb-cc-k unit sp" data-k="sp" aria-label="Space">Space</button><button type="button" class="pb-cc-k" data-k="." aria-label="Decimal point">.</button><button type="button" class="pb-cc-k eq" data-k="=" aria-label="Equals">=</button></div>
       <div class="pb-toggle pb-cc-units" id="ccUnitToggle" role="group" aria-label="Show as">
         <button type="button" data-k="u:ftin" class="active">ft-in</button><button type="button" data-k="u:ft">ft</button><button type="button" data-k="u:in">in</button><button type="button" data-k="u:m">m</button><button type="button" data-k="u:mm">mm</button>
       </div>
@@ -9531,18 +9545,28 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
 #pbApp#pbApp #screen-input .pb-fit-auto { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; padding: 1px 6px; border-radius: 999px; font-size: 11px; font-weight: 650; letter-spacing: 0; text-transform: none; background: var(--pb-raised); border: 1px solid var(--pb-control); color: var(--pb-text-2); } /* feat_fitlen */
 #pbApp#pbApp #screen-input .pb-fit-auto[hidden] { display: none; }
 #pbApp#pbApp #screen-input .pb-fit-check > span { font-size: 15px; color: var(--pb-text); }
-#pbApp .pb-xing-warn { display: flex; gap: 8px; align-items: flex-start; margin: 2px 0 6px 0; padding: 8px 10px; border-radius: 8px; background: var(--pb-warn-soft); border-left: 4px solid var(--pb-warn); color: var(--pb-text); font-size: 14px; font-weight: 500; line-height: 1.35; text-transform: none; letter-spacing: 0; }
-#pbApp .pb-xing-warn > .pb-ic { flex: 0 0 auto; margin-top: 2px; color: var(--pb-warn); }
-#pbApp .pb-xing-warn strong { color: var(--pb-warn-text); font-weight: 700; }
-#pbApp .pb-xing-warn .pb-xing-clr { display: block; font-weight: 650; }
-#pbApp .pb-xing-warn.low { background: var(--pb-danger-soft); border-left-color: var(--pb-danger-line); }
-#pbApp .pb-xing-warn.low > .pb-ic, #pbApp .pb-xing-warn.low strong, #pbApp .pb-xing-warn.low .pb-xing-clr { color: var(--pb-danger-text); }
+/* xingrow (owner, Nov 4): a crossing is its own row on Results; a thin red edge on it and on the rows up to 20 ft before it */
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-xing-near:not([data-laid-strip]) > td:first-child { box-shadow: inset 3px 0 0 var(--pb-danger-line); }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-xing-near:not([data-laid-strip]):is(:focus-within, :has(+ tr.pb-noterow:not([style*="none"])), :has(+ tr.pb-noterow + tr.pb-noterow:not([style*="none"]))) > td:first-child { box-shadow: inset 4px 0 0 var(--pb-brand), inset 7px 0 0 var(--pb-danger-line); } /* fix98 4: the open-note / focus edge stays, the red edge beside it */
+#pbApp#pbApp #screen-results #resultsBody tr.pb-xingrow > td { background: transparent; vertical-align: middle; -webkit-user-select: none; user-select: none; }
+#pbApp#pbApp #screen-results #resultsBody tr.pb-xingrow > td:nth-child(2) { position: sticky; left: 0; z-index: 2; background-color: var(--pb-surface); text-align: right; }
+#pbApp#pbApp #screen-results #resultsTable.pb-rs-fit tbody tr.pb-xingrow > td:nth-child(2) { font-size: var(--pb-rs-fs, 13px); line-height: 1.15; }
+#pbApp#pbApp #screen-results #resultsBody tr.pb-xingrow > td.pb-xr-cell { text-align: left; white-space: normal; overflow-wrap: anywhere; font-size: 15px; line-height: 1.3; font-weight: 600; color: var(--pb-text); text-transform: none; letter-spacing: 0; }
+#pbApp #screen-results #resultsBody .pb-xr-clr { white-space: nowrap; color: var(--pb-text-2); }
+#pbApp #screen-results #resultsBody .pb-xr-clr.low { color: var(--pb-danger-text); font-weight: 700; }
 #pbApp .pb-fit-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 6px 0 2px 0; text-transform: none; letter-spacing: 0; }
 #pbApp .pb-fit-chip { font-size: 13px; font-weight: 650; padding: 3px 9px; border-radius: 999px; background: var(--pb-raised); border: 1px solid var(--pb-control); color: var(--pb-text); }
 #pbApp .pb-fit-q { font-size: 14px; font-weight: 650; color: var(--pb-text); }
 #pbApp .pb-fit-est { flex: 1 1 100%; font-size: 14px; font-weight: 600; color: var(--pb-text-2); }
 #pbApp .pb-fit-btns { display: flex; gap: 8px; }
 #pbApp .pb-fit-btns .pb-btn { min-height: 44px; min-width: 64px; }
+#pbApp .pb-fit-ans { font-size: 14px; font-weight: 650; color: var(--pb-text); } /* leftover */
+#pbApp .pb-fit-no { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 10px; }
+#pbApp .pb-fit-no .pb-fit-pc { display: flex; flex-direction: column; gap: 4px; margin: 0; font-size: 13px; font-weight: 600; color: var(--pb-text-2); text-transform: none; letter-spacing: 0; }
+#pbApp .pb-fit-no .pb-fit-pc input { width: 7.5em; min-height: 44px; margin: 0; }
+#pbApp .pb-fit-no .pb-fit-full { display: flex; align-items: center; gap: 8px; min-height: 44px; margin: 0; font-size: 14px; font-weight: 600; cursor: pointer; }
+#pbApp .pb-fit-no .pb-fit-err { flex: 1 1 100%; font-size: 13px; font-weight: 600; color: var(--pb-danger-text); }
+#pbApp .pb-fit-no .pb-fit-err:empty { display: none; }
 #pbApp .pb-fit-extra { margin: 10px 0; }
 #pbApp .pb-fit-extra input { width: 100%; box-sizing: border-box; font-size: 17px; }
 #pbApp .pb-fit-left { margin: 8px 0 0 0; font-size: 15px; font-weight: 650; color: var(--pb-text); }
@@ -11306,11 +11330,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const rows = entry.intervalRows || [], eps = 1e-6;
     return L.map(cx => {
       const run = cx ? runs.find(x => x.n === cx.run) || null : null;
-      const o = { cx: cx || {}, run, abs: run ? pbLayR3(run.start + cx.off) : null, inRun: false, our: null, pos: null, clrFt: null, low: false, warnIdx: -1, ahead: null };
+      const o = { cx: cx || {}, run, abs: run ? pbLayR3(run.start + cx.off) : null, inRun: false, our: null, pos: null, clrFt: null, low: false };
       if (!run || !Number.isFinite(cx.off)) return o;
       o.inRun = cx.off >= -eps && cx.off <= run.dist + 1e-3;
       if (!o.inRun) return o;
-      const startId = run.n === 1 ? 'start' : 'seg' + run.n + 'start';
       const own = rows.map((r, i) => ({ r, i })).filter(x => x.r && Number.isFinite(x.r.stationFt) && x.r.stationFt >= run.start - 1e-3 && x.r.stationFt <= run.start + run.dist + 1e-3 && (!x.r.pointId || !/^(seg\d+(start|end|hub\d+)|start|end|hub\d+)$/.test(x.r.pointId) || pbRunOfPointId(x.r.pointId) === run.n));
       let a = null, b = null; // our grade between the rows around the crossing
       own.forEach(x => { const r = x.r; if (!Number.isFinite(r.piFt)) return; if (r.stationFt <= o.abs + eps && (!a || r.stationFt >= a.stationFt)) a = r; if (r.stationFt >= o.abs - eps && (!b || r.stationFt < b.stationFt)) b = r; });
@@ -11326,31 +11349,47 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       }
       const min = typeof cx.minClrIn === 'number' ? cx.minClrIn : PB_XING_MIN_CLR;
       o.low = o.pos === 'conflict' || (o.clrFt !== null && o.clrFt * 12 < min - 1e-6);
-      // The warning row: the end of the stick before the crossing (laying length), else 20 ft before it.
-      let best = -1, bestSta = -Infinity;
-      if (run.cfg && run.cfg.on && run.cfg.len) {
-        own.forEach(x => { const k = String(x.r.layoutKind || ''); const j = /(^|,)(joint|adjstart|boundary)(,|$)/.test(k) || x.r.pointId === startId; if (j && !x.r.addedTime && x.r.stationFt < o.abs - 0.005 && x.r.stationFt >= bestSta) { best = x.i; bestSta = x.r.stationFt; } });
-      } else {
-        own.forEach(x => { if (!x.r.addedTime && x.r.stationFt <= o.abs - 20 + 0.005 && x.r.stationFt >= bestSta) { best = x.i; bestSta = x.r.stationFt; } });
-      }
-      if (best === -1) { const s = own.find(x => x.r.pointId === startId) || own[0]; if (s) { best = s.i; bestSta = s.r.stationFt; } }
-      o.warnIdx = best; o.ahead = best === -1 ? null : o.abs - bestSta;
       return o;
     });
   }
-  function pbXingWarnRows(entry) { const m = new Map(); try { pbXingInfo(entry).forEach(o => { if (o.warnIdx === -1) return; if (!m.has(o.warnIdx)) m.set(o.warnIdx, []); m.get(o.warnIdx).push(o); }); } catch (e) { console.error(e); } return m; }
-  function pbXingWhat(cx) { return [cx.util || 'Utility', typeof cx.odIn === 'number' ? fmt(cx.odIn, 2).replace(/\.?0+$/, '') + ' in OD' : ''].filter(Boolean).join(' \u00b7 '); }
+  // xingrow (owner, Nov 4): each crossing in the run is its own row at its distance. at: row index -> the crossings shown
+  // just before that row (the first row past the crossing); tail: past the last row; near: rows from 20 ft before a
+  // crossing up to it (red edge). A crossing past the end of its run gets no row (the reports still list it).
+  function pbXingRowPlan(entry) {
+    const P = { at: new Map(), tail: [], near: new Set() };
+    let info = []; try { info = pbXingInfo(entry); } catch (e) { console.error(e); return P; }
+    const rows = (entry && entry.intervalRows) || [], ok = (r) => r && typeof r.stationFt === 'number' && Number.isFinite(r.stationFt);
+    info.filter(o => o.inRun && o.abs !== null && o.run).sort((a, b) => a.abs - b.abs).forEach(o => {
+      const k = rows.findIndex(r => ok(r) && r.stationFt > o.abs + 0.0005);
+      if (k === -1) P.tail.push(o); else { if (!P.at.has(k)) P.at.set(k, []); P.at.get(k).push(o); }
+      const lo = o.run.start - 1e-3, hi = o.run.start + o.run.dist + 1e-3;
+      rows.forEach((r, i) => { if (ok(r) && r.stationFt >= lo && r.stationFt <= hi && r.stationFt >= o.abs - 20 - 0.0005 && r.stationFt <= o.abs + 0.0005) P.near.add(i); });
+    });
+    return P;
+  }
+  // "Water · 6 in" and, when known, "Clear 21.34 ft over" (or "Conflict")
+  function pbXingRowText(o) {
+    const c = o.cx || {};
+    const what = [c.util || 'Crossing', typeof c.odIn === 'number' ? fmt(c.odIn, 2).replace(/\.?0+$/, '') + ' in' : ''].filter(Boolean).join(' \u00b7 ');
+    const clr = o.pos === 'conflict' ? 'Conflict' : o.pos && o.clrFt !== null ? 'Clear ' + fmt(o.clrFt, 2) + ' ft ' + (o.pos === 'above' ? 'over' : 'under') : '';
+    return { what, clr, low: !!o.low };
+  }
+  function pbXingStaOf(staOf, o) { return staOf({ stationFt: o.abs, pointId: o.cx.run > 1 ? 'seg' + o.cx.run + 'x' : 'end' }); } // 'end' = run 1 for pbStRowStaFn
+  function pbXingRowTr(o, nData, staOf) {
+    const t = pbXingRowText(o), sta = pbXingStaOf(staOf, o), d = fmt(o.abs, 2);
+    const tr = document.createElement('tr'); tr.className = 'pb-xingrow pb-xing-near' + (sta ? ' pb-rs-hassta' : '');
+    tr.dataset.xingAt = String(o.abs);
+    tr.setAttribute('aria-label', 'Crossing at ' + d + ' ft' + (sta ? ', Sta ' + sta : '') + ', ' + t.what + (t.clr ? ', ' + t.clr : ''));
+    tr.innerHTML = '<td></td><td>' + escapeHtml(d) + (sta ? '<span class="pb-rs-sta2"><bdi dir="ltr">Sta ' + escapeHtml(sta) + '</bdi></span>' : '') + '</td>'
+      + '<td class="pb-xr-cell" colspan="' + Math.max(1, nData) + '"><span class="pb-sr">Crossing: </span>' + escapeHtml(t.what) + (t.clr ? ' \u00b7 <span class="pb-xr-clr' + (t.low ? ' low' : '') + '">' + escapeHtml(t.clr) + '</span>' : '') + '</td>';
+    return tr;
+  }
   function pbXingClrText(o, long) {
     if (!o.inRun) return 'past the end of the run';
     const ft = (x) => fmt(x, 2) + ' ft (' + fmt(x * 12, 1) + ' in)';
     if (o.pos === 'conflict') return 'CONFLICT: hits our pipe, ' + ft(-o.clrFt) + ' overlap';
     if (o.clrFt === null) return long ? 'clearance not known (elevations, wall or OD missing)' : 'Clearance \u2014';
     return (long ? 'clearance ' : 'Clearance ') + ft(o.clrFt) + ', ' + (o.pos === 'above' ? 'over' : 'under') + ' our pipe';
-  }
-  function pbXingStripHTML(list) {
-    return list.map(o => '<div class="pb-xing-warn' + (o.low ? ' low' : '') + '" role="note"><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-warn"/></svg><span>'
-      + '<strong>Crossing ahead</strong> ' + escapeHtml(pbXingWhat(o.cx) + ' at ' + fmt(o.abs, 2) + ' ft' + (o.ahead !== null && o.ahead > 0.005 ? ', ' + fmt(o.ahead, 2) + ' ft past this row' : ''))
-      + '<span class="pb-xing-clr">' + escapeHtml(pbXingClrText(o, false) + (o.low && o.pos !== 'conflict' ? ' \u2014 under ' + fmt(typeof o.cx.minClrIn === 'number' ? o.cx.minClrIn : PB_XING_MIN_CLR, 0) + ' in' : '')) + '</span></span></div>').join('');
   }
   function pbXingReportLines(entry) {
     return pbXingInfo(entry).map(o => { const c = o.cx, el = (k, v) => typeof v === 'number' ? k + ' ' + fmt(v, 3) : '';
@@ -11409,7 +11448,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     });
   }
   function pbFitRun(entry, pid) { try { return pbLayEntryRuns(entry).find(x => x.n === pbRunOfPointId(pid)) || null; } catch (e) { return null; } }
-  function pbFitAnswerWords(a) { return !a ? '' : a.cutoff > 0 ? 'leftover piece out of the fitting, ' + pbLayFt(typeof a.fitWant === 'number' ? a.fitWant : a.installed) + ' (' + pbLayFt(a.cutoff) + ' of a ' + pbLayFt(a.fullLen) + ' stick cut into the fitting)' : 'full stick out of the fitting'; }
+  function pbFitAnswerWords(a) { return !a ? '' : a.cutoff > 0 ? 'leftover piece out of the fitting, ' + pbLayFt(typeof a.fitWant === 'number' ? a.fitWant : a.installed) + ' (' + pbLayFt(a.cutoff) + ' of a ' + pbLayFt(a.fullLen) + ' stick cut into the fitting)' : pbFitIsPiece(a) ? 'piece out of the fitting, ' + pbLayFt(a.fitWant) : 'full stick out of the fitting'; }
+  // leftover: a "No" answer with a piece shorter than the stick (cutoff 0, fitWant < fullLen). Otherwise No = full stick.
+  function pbFitIsPiece(a) { return !!(a && a.fit && !(a.cutoff > 0) && typeof a.fitWant === 'number' && Number.isFinite(a.fullLen) && a.fitWant < a.fullLen - 1e-6); }
   // Owner (Oct 30): an ESTIMATE from the plan, shown before the crew decides, never forced. The cut to reach the fitting =
   // the fitting's distance - the last joint before it (rows as laid out); leftover = laying length - that cut.
   // { kind: 'ok', cut, left } | { kind: 'joint' } (falls on a joint: no cut needed) | { kind: 'none' } (no estimate).
@@ -11442,14 +11483,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbFitStripHTML(entry, r) {
     const fit = pbFitOf(entry, r); if (!fit) return '';
-    let h = '<div class="pb-fit-line"><span class="pb-fit-chip">' + escapeHtml(pbFitName(fit)) + '</span>';
+    let h = '<div class="pb-fit-line" data-fit-line="' + escapeHtml(r.pointId) + '"><span class="pb-fit-chip">' + escapeHtml(pbFitName(fit)) + '</span>';
     const run = entry.pipeLayout ? pbFitRun(entry, r.pointId) : null;
     if (run && run.cfg.on && run.cfg.len && entry.kind === 'run') {
       const a = pbFitAdjOf(entry, r.pointId), pid = escapeHtml(r.pointId);
-      if (!a) { const et = pbFitEstText(pbFitEstimate(entry, r, run), true); if (et) h += '<span class="pb-fit-est">' + escapeHtml(et) + '</span>'; }
-      if (!a) h += '<span class="pb-fit-q">Using the leftover piece out of the fitting?</span><span class="pb-fit-btns"><button type="button" class="pb-btn small" data-fit="' + pid + '" onclick="pbFitAnswer(this.dataset.fit, true)">Yes</button><button type="button" class="pb-btn ghost small" data-fit="' + pid + '" onclick="pbFitAnswer(this.dataset.fit, false)">No</button></span>';
+      const noOpen = pbFitNoOpen.has(pbFitNoKey(entry, r.pointId)); /* leftover */
+      if (!a && !noOpen) { const et = pbFitEstText(pbFitEstimate(entry, r, run), true); if (et) h += '<span class="pb-fit-est">' + escapeHtml(et) + '</span>'; }
+      if (noOpen) h += pbFitNoHTML(r.pointId, run.cfg.len, a); /* leftover */
+      else if (!a) h += '<span class="pb-fit-q">Using the leftover piece out of the fitting?</span><span class="pb-fit-btns"><button type="button" class="pb-btn small" data-fit="' + pid + '" onclick="pbFitAnswer(this.dataset.fit, true)">Yes</button><button type="button" class="pb-btn ghost small" data-fit="' + pid + '" onclick="pbFitAnswer(this.dataset.fit, false)">No</button></span>';
       else {
         if (Math.abs(run.start + a.off - r.stationFt) > 0.005) h += '<span class="pb-fit-q">The fitting moved: answer again.</span>';
+        if (!(a.cutoff > 0)) h += '<span class="pb-fit-ans">' + (pbFitIsPiece(a) ? 'Piece out: ' + escapeHtml(pbLayFt(a.fitWant)) : 'Full stick') + '</span>'; /* leftover */
         h += '<span class="pb-fit-btns"><button type="button" class="pb-btn ghost small" data-fit="' + pid + '" onclick="pbFitAsk(this.dataset.fit)">Edit</button><button type="button" class="pb-btn ghost small" data-fit="' + pid + '" onclick="pbFitUndo(this.dataset.fit)">Undo</button></span>';
       }
     }
@@ -11486,10 +11530,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (c.run.dist - c.off - h < 0.05) return 'There is no pipe after this fitting on this run.';
     return '';
   }
-  function pbFitCommit(pid, cut) {
+  function pbFitCommit(pid, cut, piece) {
     const c = pbFitCtx(pid); if (!c) { pbAlert('This run is no longer open, so nothing was changed.', 'Fitting Not Changed'); return; }
     const err = pbFitErr(c); if (err) { pbAlert(err, 'Fitting Not Changed'); return; }
-    const want = cut > 0 ? pbLayR6(c.L - cut) : c.L;
+    const want = cut > 0 ? pbLayR6(c.L - cut) : piece > 0 && piece < c.L - 1e-6 ? pbLayR6(piece) : c.L; // leftover: No with a piece shorter than the stick
     const adj = { id: c.had ? c.had.id : ('fit' + Date.now() + Math.floor(Math.random() * 1000)), run: c.run.n, off: c.off, method: 'cutoff', installed: want, cutoff: cut > 0 ? pbLayR6(cut) : 0, fullLen: c.L, fitWant: want, fit: pid, reason: '', time: Date.now() };
     const where = pbLayFt(c.r.stationFt) + ' (' + pbFitWord(c.fit.type) + (c.h > 0 ? ', ' + pbLayFt(c.h * 2) + ' laying length' : '') + ')'; /* feat_fitlen */
     const desc = 'Pipe layout: fitting at ' + where + ': ' + pbFitAnswerWords(adj) + (c.had ? ' (was ' + pbFitAnswerWords(c.had) + ')' : '') + '.';
@@ -11503,9 +11547,48 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       mutate: st => { st.adj = st.adj.filter(x => !(x && x.id === a.id)); if (run) pbFitClamp(st, run, pbFitSpansEntry(entry, run)); } });
   };
   window.pbFitAnswer = function (pid, yes) {
-    if (!yes) { if (!pbFitCtx(pid)) return; return pbFitCommit(pid, 0); }
+    if (!yes) { const c = pbFitCtx(pid); if (!c) return; pbFitNoOpen.add(pbFitNoKey(c.entry, pid)); pbFitRepaint(pid); const i = document.getElementById('pbFitPc-' + pid); if (i && !i.disabled) try { i.focus({ preventScroll: true }); } catch (e) {} return; } // leftover
     pbFitCutAsk(pid);
   };
+  // ==== leftover (owner, Nov 4): No asks the piece out of the fitting, or Full stick ====
+  const pbFitNoOpen = new Set(); // "entryId|pid": the field is open on that fitting's row
+  function pbFitNoKey(entry, pid) { return (entry && entry.id) + '|' + pid; }
+  function pbFitNoHTML(pid, L, a) {
+    const p = escapeHtml(pid), full = !!(a && !(a.cutoff > 0) && !pbFitIsPiece(a)), v = pbFitIsPiece(a) ? a.fitWant : full ? L : null;
+    return '<span class="pb-fit-no">'
+      + '<label class="pb-fit-pc" for="pbFitPc-' + p + '"><span>Piece out of the fitting (ft)</span><input type="number" class="pb-input" step="0.01" min="0" inputmode="decimal" enterkeyhint="done" autocomplete="off" id="pbFitPc-' + p + '" data-fit="' + p + '" data-len="' + L + '" value="' + (v === null ? '' : String(+Number(v).toFixed(3))) + '"' + (full ? ' disabled' : '') + ' oninput="pbFitPcUpd(this.dataset.fit, 0)" onkeydown="if (event.key === \'Enter\') { event.preventDefault(); pbFitPcSave(this.dataset.fit); }"></label>'
+      + '<label class="pb-checkrow pb-fit-full"><input type="checkbox" id="pbFitFull-' + p + '" data-fit="' + p + '"' + (full ? ' checked' : '') + ' onchange="pbFitPcUpd(this.dataset.fit, 1)"><span>Full stick</span></label>'
+      + '<span class="pb-fit-btns"><button type="button" class="pb-btn small" id="pbFitPcSave-' + p + '" data-fit="' + p + '" onclick="pbFitPcSave(this.dataset.fit)"' + (v === null ? ' disabled' : '') + '>Save</button><button type="button" class="pb-btn ghost small" data-fit="' + p + '" onclick="pbFitPcCancel(this.dataset.fit)">Cancel</button></span>'
+      + '<span class="pb-fit-err" id="pbFitPcErr-' + p + '" role="status"></span></span>';
+  }
+  function pbFitRepaint(pid) {
+    const entry = pbLayCurrentEntry(), r = entry && (entry.intervalRows || []).find(x => x.pointId === pid && !x.addedTime);
+    const el = Array.from(document.querySelectorAll('#resultsBody .pb-fit-line')).find(x => x.dataset.fitLine === pid);
+    if (entry && r && el) el.outerHTML = pbFitStripHTML(entry, r);
+  }
+  // the piece typed (null: blank or not valid), with the message shown
+  function pbFitPcVal(pid) {
+    const inp = document.getElementById('pbFitPc-' + pid), cb = document.getElementById('pbFitFull-' + pid); if (!inp || !cb) return { v: null, L: 0 };
+    const L = Number(inp.dataset.len); if (cb.checked) return { v: L, L, full: true };
+    const t = String(inp.value || '').trim(), v = t === '' ? NaN : Number(t), ok = Number.isFinite(v) && v > 0 && v <= L + 1e-9;
+    return { v: ok ? v : null, L, msg: t === '' || ok ? '' : 'More than 0, up to ' + fmt(L, 2) + ' ft' };
+  }
+  window.pbFitPcUpd = function (pid, fromBox) {
+    const inp = document.getElementById('pbFitPc-' + pid), cb = document.getElementById('pbFitFull-' + pid), go = document.getElementById('pbFitPcSave-' + pid), err = document.getElementById('pbFitPcErr-' + pid);
+    if (!inp || !cb) return;
+    if (fromBox === 1) { inp.disabled = cb.checked; if (cb.checked) inp.value = String(+Number(inp.dataset.len).toFixed(3)); else try { inp.focus({ preventScroll: true }); inp.select(); } catch (e) {} }
+    else if (cb.checked) { cb.checked = false; inp.disabled = false; } // typing a length unchecks Full stick
+    const r = pbFitPcVal(pid);
+    if (err) err.textContent = r.msg || '';
+    if (go) go.disabled = r.v === null;
+  };
+  window.pbFitPcSave = function (pid) {
+    const r = pbFitPcVal(pid); if (r.v === null) return;
+    const c = pbFitCtx(pid); if (!c) return;
+    pbFitNoOpen.delete(pbFitNoKey(c.entry, pid));
+    return pbFitCommit(pid, 0, r.full ? c.L : r.v);
+  };
+  window.pbFitPcCancel = function (pid) { const e = pbLayCurrentEntry(); pbFitNoOpen.delete(pbFitNoKey(e, pid)); pbFitRepaint(pid); };
   window.pbFitAsk = function (pid) {
     const c = pbFitCtx(pid); if (!c) return;
     const et = pbFitEstText(pbFitEstimate(c.entry, c.r, c.run), false);
@@ -11960,7 +12043,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.97 · 2026-11-03'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.98 · 2026-11-04'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -15068,30 +15151,137 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // and a rod reading — if two points imply different HIs, that's a real setup or
   // reading error. A tiny spread is normal float/rounding noise; up to 0.02 ft is
   // normal field tolerance but still worth flagging; more than that is a real problem.
+  // hidisc: the typed or benchmark HI as entered (no cross-check)
+  function pbHdSourceHi() {
+    const source = activeVal('hiToggle');
+    if (source === 'direct') return getElevVal('hiDirect');
+    if (source === 'bm') return (getElevVal('bmElev') !== null && getElevVal('bmBS') !== null) ? getElevVal('bmElev') + getElevVal('bmBS') : null;
+    return null;
+  }
+  const pbHdR = d => Math.round(Math.abs(d) * 100 + 1e-6) / 100; // hidisc: a discrepancy, to 0.01 ft
+  // hidisc: a short name for a reading in the card ("Stake 20724", "Typed HI")
+  function pbHdName(c) {
+    if (c.source) return c.source === 'direct' ? 'Typed HI' : 'Benchmark HI';
+    const m = /\(stake\s+([^,)]+)/i.exec(c.label || '');
+    return m ? 'Stake ' + m[1].trim() : (c.label || 'Hub');
+  }
   function computeHiCrossCheck() {
     const candidates = getStakeHICandidates();
     // A typed or benchmark HI drives every reading predicted from it, while a shot
     // stake keeps its own reading — if they disagree, one run lays to two different
     // HIs. Only compared once a real (field-entered) candidate exists to compare with.
     const hiSource = activeVal('hiToggle');
-    if (candidates.length && (hiSource === 'direct' || hiSource === 'bm')) {
-      const srcHi = computeHI();
-      if (srcHi !== null) candidates.push({ prefix: null, source: hiSource, label: hiSource === 'direct' ? 'Your typed HI' : 'Benchmark + backsight HI', hi: srcHi });
-    }
-    if (candidates.length < 2) return { candidates, maxDiff: 0, severity: 'none' };
+    const srcHi = (hiSource === 'direct' || hiSource === 'bm') ? pbHdSourceHi() : null;
+    if (candidates.length && srcHi !== null) candidates.push({ prefix: null, source: hiSource, label: hiSource === 'direct' ? 'Your typed HI' : 'Benchmark + backsight HI', hi: srcHi });
+    if (candidates.length < 2) { const one = candidates.length ? candidates[0].hi : srcHi; return { candidates, maxDiff: 0, disc: 0, severity: 'none', useHi: one, layHi: one, outliers: [], blocked: false }; }
     const his = candidates.map(c => c.hi);
     const maxDiff = Math.max(...his) - Math.min(...his);
-    let severity = 'none';
-    if (maxDiff > 0.02 + 1e-9) severity = 'serious';
-    else if (maxDiff > 0.001) severity = 'minor';
-    return { candidates, maxDiff, severity };
+    let disc = pbHdR(maxDiff);
+    // The two readings that agree best are taken as right; any other reading within 0.02 of both agrees too.
+    // fix98 3: HIs to 0.01 before comparing; two or more best pairs that are not the same HIs: no clear agreeing pair
+    const rv = x => Math.round(x * 100 + 1e-6) / 100;
+    let best = null, ties = [];
+    for (let i = 0; i < candidates.length; i++) for (let j = i + 1; j < candidates.length; j++) {
+      const d = Math.abs(candidates[i].hi - candidates[j].hi), r = pbHdR(rv(candidates[i].hi) - rv(candidates[j].hi)), pr = { a: candidates[i], b: candidates[j], d, r };
+      if (!best || r < best.r - 1e-9) { best = pr; ties = [pr]; } else if (Math.abs(r - best.r) < 1e-9) ties.push(pr);
+    }
+    const pairKey = t => [rv(t.a.hi), rv(t.b.hi)].sort((x, y) => x - y).join('/');
+    if (best && !ties.every(t => pairKey(t) === pairKey(best))) best = null;
+    let agree = candidates, outliers = [];
+    if (best && best.r <= 0.02) {
+      agree = candidates.filter(c => c === best.a || c === best.b || (pbHdR(c.hi - best.a.hi) <= 0.02 && pbHdR(c.hi - best.b.hi) <= 0.02));
+      outliers = candidates.filter(c => !agree.includes(c));
+    }
+    // The run uses the lowest HI of the readings that agree (the lowest overall when none do):
+    // invert elevation = HI - reading, so it gives the lowest invert elevations.
+    const useHi = Math.min(...agree.map(c => c.hi));
+    // hidisc 3: no two readings agree and they are more than 0.10 ft apart: Lock waits for a fixed or reshot hub, and
+    // meanwhile nothing lays deeper from a bad hub (readings to lay to use the lower HI too).
+    const blocked = !(best && best.r <= 0.02) && disc > 0.10 + 1e-9;
+    const layHi = blocked ? useHi : Math.max(...agree.map(c => c.hi)); // hidisc 2: readings to lay to use the higher HI (pipe at or below grade)
+    // A reading that is off: by how much it misses the nearest reading that agrees.
+    if (outliers.length) disc = Math.max(...outliers.map(o => Math.min(...agree.map(c => pbHdR(o.hi - c.hi)))));
+    const severity = disc === 0 ? 'none' : disc <= 0.02 ? 'minor' : 'serious';
+    return { candidates, maxDiff, disc, severity, useHi, layHi, agree, outliers, blocked };
   }
+  // hidisc 2: the HI a reading to lay to uses, for the run's HI (the lower): the higher HI of the readings that agree
+  function pbHdLayHi(hi) {
+    if (hi === null || hi === undefined) return hi;
+    const hc = computeHiCrossCheck();
+    return (hc.candidates.length >= 2 && typeof hc.layHi === 'number' && Math.abs(hc.useHi - hi) < 1e-9) ? hc.layHi : hi;
+  }
+  // hidisc 2: this point's elevation was worked out from the reading shot on it (elevation = HI - reading)
+  function pbHdElevFromShot(prefix) {
+    return isPredictedFillMarked(prefix + 'Elev') && getElevVal(prefix + 'ElevReading') !== null && !isPredictedFillMarked(prefix + 'ElevReading') && !pbSegStartStepDriven(prefix);
+  }
+  const PB_HD_BLOCK = 'Hubs disagree by more than 0.10 ft. Fix or reshoot before locking.'; // hidisc 3
+  // fix98 1: readings disagreed at Lock: one typed HI can't give the record's form back its rows (shots keep the
+  // lower HI, readings to lay to the higher), so the record keeps how the HI was given and the shots typed.
+  function pbHdSrcSnap(calc) {
+    const hc = computeHiCrossCheck();
+    if (hc.candidates.length < 2 || hc.severity === 'none') return null;
+    const m = activeVal('hiToggle');
+    const o = m === 'direct' ? { mode: m, hi: getElevVal('hiDirect') } : m === 'bm' ? { mode: m, bmElev: getElevVal('bmElev'), bmBS: getElevVal('bmBS') } : { mode: 'stakes' };
+    o.shots = {};
+    (calc.points || []).forEach(p => {
+      const id = p.id; if (!id || !document.getElementById(id + 'ModeToggle')) return;
+      const md = activeVal(id + 'ModeToggle');
+      if (md === 'stake') { const v = getElevVal(id + 'StakeReading'); if (v !== null && !isPredictedFillMarked(id + 'StakeReading')) o.shots[id] = { m: 'stake', v }; }
+      else if (md === 'elev' && !pbSegStartStepDriven(id)) { const v = getElevVal(id + 'ElevReading'); if (v !== null && !isPredictedFillMarked(id + 'ElevReading')) o.shots[id] = { m: 'elev', v, el: pbHdElevFromShot(id) ? 1 : 0 }; }
+    });
+    return o;
+  }
+  // fix98 1: the record's form: its shots and HI as they were at Lock (PFX: the record's point id -> the form's).
+  // True when the form gives back both recorded HIs; otherwise the shots come off again (the caller types the HI).
+  function pbHdRestoreSrc(entry, arch, pfx) {
+    const src = entry.hiSrc, num = v => typeof v === 'number' && isFinite(v);
+    if (!src || typeof src !== 'object' || !src.shots || typeof src.shots !== 'object') return false;
+    if (!(src.mode === 'stakes' || (src.mode === 'direct' && num(src.hi)) || (src.mode === 'bm' && num(src.bmElev) && num(src.bmBS)))) return false;
+    const hb = document.querySelector('#hiToggle button[data-val="' + src.mode + '"]'); if (!hb) return false;
+    const undo = [];
+    Object.keys(src.shots).forEach(pid => {
+      const sh = src.shots[pid], id = pfx[pid]; if (!id || !sh || !num(sh.v) || activeVal(id + 'ModeToggle') !== sh.m) return;
+      const f = id + (sh.m === 'stake' ? 'StakeReading' : 'ElevReading'); if (!document.getElementById(f) && !document.getElementById(f + '_ft')) return;
+      undo.push({ f, el: sh.m === 'elev' && sh.el ? id + 'Elev' : null, ev: getElevVal(id + 'Elev') });
+      setElevFieldValue(f, sh.v, arch); setPredictedFillMarker(f, false);
+      if (sh.m === 'elev' && sh.el) setPredictedFillMarker(id + 'Elev', true); // its elevation was worked out from this shot
+    });
+    if (src.mode === 'direct') setElevFieldValue('hiDirect', src.hi, arch);
+    if (src.mode === 'bm') { setElevFieldValue('bmElev', src.bmElev, arch); setElevFieldValue('bmBS', src.bmBS, arch); try { updateHiBmDerived(); } catch (e) {} }
+    hb.click(); // the HI's own boxes, then every elevation from a shot and every reading to lay to again
+    const hi = computeHI(), lay = hi === null ? null : pbHdLayHi(hi);
+    const eL = entry.hiLay !== null && entry.hiLay !== undefined ? entry.hiLay : entry.hi;
+    if (hi !== null && Math.abs(hi - entry.hi) < 1e-6 && lay !== null && Math.abs(lay - eL) < 1e-6) return true;
+    undo.forEach(u => { setOrClearElevField(u.f, null, arch); setPredictedFillMarker(u.f, false); if (u.el) { setPredictedFillMarker(u.el, false); setOrClearElevField(u.el, u.ev, arch); } });
+    return false;
+  }
+  // hidisc: the card's title and one line (Check Before Locking, the run form, the record)
+  function pbHdCard(hc) {
+    const heading = 'HI Discrepancy \u00b7 ' + hc.disc.toFixed(2) + ' ft';
+    if (hc.outliers.length) {
+      const names = hc.outliers.map(pbHdName);
+      return { heading, line: names.join(', ') + (names.length === 1 ? ' is' : ' are') + ' off. Using the ' + (hc.agree.length === 2 ? 'two' : hc.agree.length) + ' that agree.', btn: false };
+    }
+    if (hc.blocked) return { heading, line: PB_HD_BLOCK, btn: true }; // hidisc 3
+    if (hc.severity === 'minor') return { heading, line: 'The app uses the lowest invert elevation.', btn: false };
+    return { heading, line: 'Large discrepancy. Shoot another hub to confirm.', btn: true };
+  }
+  // hidisc: Shoot Another Hub: back to the run form, a new hub added and scrolled to
+  window.pbHdShootHub = function () {
+    if (!document.getElementById('screen-input').classList.contains('active')) pbGoto('input');
+    setTimeout(() => {
+      const sec = document.getElementById('runSecPoints'); if (sec && !sec.open) sec.open = true;
+      pbAddHub();
+      const card = [...document.querySelectorAll('#hubsContainer [data-hub-id]')].pop();
+      if (card) { card.scrollIntoView({ block: 'center' }); const f = card.querySelector('input'); if (f) try { f.focus({ preventScroll: true }); } catch (e) {} }
+    }, 150);
+  };
   function updateHiStakesDerived() {
     const el = document.getElementById('hiStakesDerived');
     if (!el) return;
     const { candidates, maxDiff, severity } = computeHiCrossCheck();
     if (!candidates.length) { el.textContent = 'No points with both a known elevation and a rod reading yet — that\u2019s what\u2019s needed to derive HI (a stake with a reading, or an Invert Elevation point with both fields filled in).'; return; }
-    const lowest = Math.min(...candidates.map(c => c.hi));
+    const lowest = computeHiCrossCheck().useHi; // hidisc: the HI the run uses
     let lines = candidates.map(c => escapeHtml(c.label) + ': elevation of instrument = ' + fmt(c.hi, 3) + ' ft');
     let html = lines.join('<br>');
     if (severity === 'serious') {
@@ -15109,17 +15299,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function updateHiCrossCheckBox() {
     const box = document.getElementById('hiCrossCheckBox');
     if (!box) return;
-    const { candidates, maxDiff, severity } = computeHiCrossCheck();
-    if (severity === 'none') { box.style.display = 'none'; box.innerHTML = ''; return; }
-    const usingStakes = activeVal('hiToggle') === 'stakes';
-    const lines = candidates.map(c => escapeHtml(c.label) + ': ' + fmt(c.hi, 3) + ' ft').join('<br>');
-    if (severity === 'serious') {
-      box.className = 'pb-inline-warn';
-      box.innerHTML = '<strong>HI Disagreement — Check For Error</strong>The provided elevations and rod readings imply HI values ' + maxDiff.toFixed(3) + ' ft apart.<br><br>' + lines + (usingStakes || candidates.some(c => c.source) ? '' : '<br><br><span style="opacity:.8;">(This run\u2019s HI is coming from a different source, so this discrepancy isn\u2019t affecting your calculations \u2014 but it should still be sorted out.)</span>');
-    } else {
-      box.className = 'pb-inline-warn minor';
-      box.innerHTML = '<strong>HI Discrepancy — Worth Checking</strong>The provided elevations and rod readings imply HI values ' + maxDiff.toFixed(3) + ' ft apart.<br><br>' + lines;
-    }
+    const hc = computeHiCrossCheck();
+    if (hc.severity === 'none') { box.style.display = 'none'; box.innerHTML = ''; return; }
+    const card = pbHdCard(hc); // hidisc
+    box.className = 'pb-inline-warn pb-hd-card' + (hc.severity === 'minor' ? ' minor' : '');
+    box.innerHTML = '<strong>' + escapeHtml(card.heading) + '</strong>' + escapeHtml(card.line) + (card.btn ? '<br><button type="button" class="pb-btn small" style="margin-top:8px;" onclick="pbHdShootHub()">Shoot Another Hub</button>' : '');
     box.style.display = '';
   }
 
@@ -16128,17 +16312,48 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     draw(); pbAiAskTick = setInterval(draw, 1000);
   }
   window.pbAiAskCancel = function() { if (pbAiAskCtl) { try { pbAiAskCtl.abort(); } catch (e) {} } };
+  // ask_v2 follow-up: the answer's text with its citation tags. [D1] (job data) -> a small "job" marker whose one-line
+  // source opens on tap; [3] (library / app page) stays; a tag with no matching source is removed (v2 answers only for
+  // plain numbers, since a v1 answer's [n] are the phone's own Education excerpts).
+  const pbAiJobRefs = (h) => { const m = new Map(); (h.more || []).forEach(x => { if (x && x.kind === 'data' && /^D\d+$/i.test(String(x.n))) m.set(String(x.n).toUpperCase(), String(x.title || x.tool || 'job data').slice(0, 80)); }); return m; };
+  function pbAiBodyHtml(h) {
+    const text = String(h.body || '(no answer text)'), jobs = pbAiJobRefs(h);
+    const known = new Set((h.sources || []).map(x => String(x.n)).concat((h.more || []).map(x => String(x && x.n))));
+    const used = new Set();
+    let out = '', last = 0;
+    const rx = /[ \t]?\[((?:D?\d{1,3})(?:\s*[,;]\s*D?\d{1,3})*)\]/gi;
+    for (const m of text.matchAll(rx)) {
+      out += escapeHtml(text.slice(last, m.index)); last = m.index + m[0].length;
+      const lead = /^[ \t]/.test(m[0]) ? m[0][0] : '';
+      const keep = [], marks = [];
+      m[1].split(/\s*[,;]\s*/).forEach(t => {
+        const k = t.toUpperCase();
+        if (/^D/.test(k)) { if (jobs.has(k) && !marks.includes(k)) marks.push(k); }   // unknown [Dn]: dropped
+        else if (!h.v || known.has(k)) keep.push(k);                                 // unknown [n] in a v2 answer: dropped
+      });
+      out += (keep.length || marks.length ? escapeHtml(lead) : '') + (keep.length ? '[' + escapeHtml(keep.join(', ')) + ']' : '')
+        + marks.map(k => { used.add(k); const line = 'From your job: ' + jobs.get(k); return '<button type="button" class="pb-ai-jd" aria-expanded="false" aria-label="' + escapeHtml(line) + '" data-line="' + escapeHtml(line) + '" onclick="pbAiJdTap(this)">job</button>'; }).join('');
+    }
+    h._jdUsed = used;
+    return out + escapeHtml(text.slice(last));
+  }
+  window.pbAiJdTap = function(b) {
+    const open = b.getAttribute('aria-expanded') === 'true', nx = b.nextElementSibling;
+    if (nx && nx.classList.contains('pb-ai-jd-pop')) nx.remove();
+    b.setAttribute('aria-expanded', String(!open));
+    if (!open) { const p = document.createElement('span'); p.className = 'pb-ai-jd-pop'; p.setAttribute('role', 'status'); p.textContent = b.dataset.line || ''; b.insertAdjacentElement('afterend', p); }
+  };
   function pbAiAskItemHtml(h, i) { // i: 0 is the newest card; only it carries the hint and the full label
     return '<article class="pb-section pb-ai-qa" id="aiAskItem' + i + '"><div class="pb-body">'
       + '<p class="pb-ai-q">' + escapeHtml(h.q) + '</p>'
       + (h.kind === 'emergency' ? '<div class="pb-ai-em"><button type="button" class="pb-emergency-btn pb-ai-em-btn" onclick="pbAiAskEmergency()">EMERGENCY · Call ' + escapeHtml(pbDialNumberNow()) + '</button><p class="pb-ai-hint">' + (confinedPermit ? 'Declares the emergency on the open permit and dials.' : 'No permit is open: this dials the emergency number.') + '</p></div>' : '')
       + (h.safety && !h.local ? '<div class="pb-alert danger pb-ai-safety"><strong>Safety rule.</strong> Follow your competent person and your site’s safety program — they decide on site. AI never decides whether a permit, entry or trench is a go.</div>' : '')
-      + (h.local ? '<div class="pb-alert danger pb-ai-local"><strong>' + (h.kind === 'emergency' ? 'Emergency' : 'Not an AI question') + '</strong><span class="pb-ai-a">' + escapeHtml(h.body) + '</span></div>' : '<div class="pb-ai-a">' + escapeHtml(h.body || '(no answer text)') + '</div>')
+      + (h.local ? '<div class="pb-alert danger pb-ai-local"><strong>' + (h.kind === 'emergency' ? 'Emergency' : 'Not an AI question') + '</strong><span class="pb-ai-a">' + escapeHtml(h.body) + '</span></div>' : '<div class="pb-ai-a">' + pbAiBodyHtml(h) + '</div>')
       + (!h.local && h.table ? pbAiTableHtml(h.table) : '') // ask_v2: office tables (escaped cells, scrolls inside its card)
       + (!h.local && h.chart ? pbAiChartHtml(h.chart) : '') // ask_v2: office analysis only
       + (h.truncated ? '<p class="pb-ai-flagnote">This answer was cut off.</p>' : '')
       + (h.sources.length ? '<div class="pb-ai-src"><span class="pb-ai-src-k">' + (h.local ? 'Read:' : 'From this app:') + '</span>' + h.sources.map(x => '<button type="button" class="pb-edu-link" data-article="' + escapeHtml(x.article) + '" data-anchor="' + escapeHtml(x.anchor || '') + '" onclick="pbAiOpenSource(this)">[' + escapeHtml(String(x.n)) + '] ' + escapeHtml(x.title) + '</button>').join('') + '</div>' : (h.local || i !== 0 || (h.more && h.more.length) ? '' : '<p class="pb-ai-hint">Not from this app’s Education pages.</p>'))
-      + (h.more && h.more.length ? '<div class="pb-ai-src">' + h.more.map(pbAiSourceChip).join('') + '</div>' : '')
+      + ((h.more || []).filter(x => !(x && x.kind === 'data' && h._jdUsed && h._jdUsed.has(String(x.n).toUpperCase()))).length ? '<div class="pb-ai-src">' + h.more.filter(x => !(x && x.kind === 'data' && h._jdUsed && h._jdUsed.has(String(x.n).toUpperCase()))).map(pbAiSourceChip).join('') + '</div>' : '')
       + '<p class="pb-ai-hint pb-ai-label">' + (h.local ? 'Answered by the app · no AI used' : '<span class="pb-ai-tag">AI</span>' + (i !== 0 ? '' : ' ' + (h.analysis ? 'analysis of your company’s numbers \u00b7 check before acting' : 'answer \u00b7 can be wrong'))) + '</p>'
       + '</div></article>';
   }
@@ -16659,7 +16874,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbDocsRvSafetyShow(o) {
     const l1 = pbDocsEl('docsRvSafetyL1'), l2 = pbDocsEl('docsRvSafetyL2'), mf = pbDocsEl('docsRvSafetyMisses'), ml = pbDocsEl('docsRvSafetyMissList'), btn = pbDocsEl('docsRvSafetyBtn'), w = pbDocsEl('docsRvSafetyWait'), wt = pbDocsEl('docsRvSafetyWaitT');
     if (pbDocsRvSafetyTick) { clearInterval(pbDocsRvSafetyTick); pbDocsRvSafetyTick = null; }
-    if (btn) btn.disabled = !!o.busy || navigator.onLine === false;
+    let ansBusy = false; try { ansBusy = !!(pbDocsRvAnsCtl || pbDocsRvAnsTick); } catch (e) {} // fix98 5: one check at a time
+    if (btn) btn.disabled = !!o.busy || ansBusy || navigator.onLine === false;
+    { const ab = pbDocsEl('docsRvAnsBtn'); if (ab && !ansBusy) ab.disabled = !!o.busy || navigator.onLine === false; }
     if (w) w.hidden = !o.busy;
     if (o.busy) { const t0 = Date.now(), draw = () => { const s = Math.floor((Date.now() - t0) / 1000); if (wt) wt.textContent = 'Checking… ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }; draw(); pbDocsRvSafetyTick = setInterval(draw, 1000); }
     if (l1) { l1.textContent = o.l1 || ''; l1.className = 'pb-docsrv-res' + (o.pass === true ? ' ok' : o.pass === false ? ' bad' : ''); }
@@ -16674,10 +16891,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   };
   window.pbDocsRvSafetyCancel = function() { if (pbDocsRvSafetyCtl) { try { pbDocsRvSafetyCtl.abort(); } catch (e) {} } };
   async function pbDocsRvSafetyRun(limit) {
-    if (pbDocsRvSafetyCtl) return;
+    if (pbDocsRvSafetyCtl || pbDocsRvAnsCtl || pbDocsRvAnsTick) return; // fix98 5
     const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null; pbDocsRvSafetyCtl = ctl || {};
     let canceled = false; if (ctl) ctl.signal.addEventListener('abort', () => { canceled = true; }, { once: true });
-    pbDocsRvSafetyShow({ busy: true });
+    pbDocsRvSafetyShow({ busy: true }); pbDocsRvAnsShow({}); // one result on screen at a time
     let st = 0, j = null, timedOut = false;
     const timer = setTimeout(() => { timedOut = true; try { if (ctl) ctl.abort(); } catch (e) {} }, window.__pbDocsRvSafetyMs || 120000); // (__pbDocsRvSafetyMs: tests only)
     try {
@@ -16703,6 +16920,77 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const m = j.misses && typeof j.misses === 'object' ? j.misses : {};
     const misses = PB_DOCSRV_SIDES.map(([, name, key]) => Array.isArray(m[key]) && m[key].length ? '<p class="pb-docsrv-pg">' + name + '</p><ul class="pb-ai-list">' + m[key].slice(0, 100).map(t => '<li>' + escapeHtml(String(t).slice(0, 500)) + '</li>').join('') + '</ul>' : '').join('');
     pbDocsRvSafetyShow({ pass: !!j.pass, l1, l2, misses });
+  }
+  // ---- Run Answer Check: about 150 fixed questions through the real Ask code with synthetic job data, graded on the server ----
+  let pbDocsRvAnsCtl = null, pbDocsRvAnsTick = null, pbDocsRvAnsStop = false;
+  function pbDocsRvAnsShow(o) {
+    const g = (id) => pbDocsEl(id), btn = g('docsRvAnsBtn'), w = g('docsRvAnsWait'), wt = g('docsRvAnsWaitT'), l1 = g('docsRvAnsL1'), l2 = g('docsRvAnsL2'), ff = g('docsRvAnsFails'), fl = g('docsRvAnsFailList');
+    const sfBusy = !!pbDocsRvSafetyCtl; // fix98 5: one check at a time
+    if (btn) btn.disabled = !!o.busy || sfBusy || navigator.onLine === false;
+    { const sb = g('docsRvSafetyBtn'); if (sb && !sfBusy) sb.disabled = !!o.busy || navigator.onLine === false; }
+    if (w) w.hidden = !o.busy;
+    if (l1) { l1.textContent = o.l1 || ''; l1.className = 'pb-docsrv-res' + (o.pass === true ? ' ok' : o.pass === false ? ' bad' : ''); }
+    if (l2) l2.textContent = o.l2 || '';
+    if (ff && fl) { ff.hidden = !o.fails; ff.open = false; fl.innerHTML = o.fails || ''; }
+    if (wt && o.busy) wt.textContent = o.prog || 'Checking…';
+  }
+  window.pbDocsRvAns = function() {
+    if (!pbDocsRvIsAdmin() || !pbAiSafetyCheckOk()) return;
+    if (navigator.onLine === false) { pbDocsRvAnsShow({ l1: 'No signal.' }); return; }
+    pbShowModal('Runs 150 test questions on the server, about 5 minutes and up to $5.', [{ label: 'Cancel' },
+      { label: 'Holdout Only', onClick: () => pbDocsRvAnsRun('holdout') }, { label: 'Run All', primary: true, onClick: () => pbDocsRvAnsRun('all') }], 'Run Answer Check');
+  };
+  window.pbDocsRvAnsCancel = function() { pbDocsRvAnsStop = true; if (pbDocsRvAnsCtl) { try { pbDocsRvAnsCtl.abort(); } catch (e) {} } };
+  async function pbDocsRvAnsCall(body, ms) { // one call: { st, j, timedOut }
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null; pbDocsRvAnsCtl = ctl;
+    let timedOut = false; const timer = setTimeout(() => { timedOut = true; try { if (ctl) ctl.abort(); } catch (e) {} }, window.__pbAnsMs || ms); // (__pbAnsMs: tests only)
+    try {
+      const token = await pbAiToken(); if (!token) return { st: 401 };
+      const res = await fetch(PB_AI_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'apikey': SUPABASE_PUBLISHABLE_KEY }, body: JSON.stringify(body), signal: ctl ? ctl.signal : undefined });
+      let j = null; try { j = await res.json(); } catch (e) { j = null; }
+      return { st: res.status, j, timedOut: false };
+    } catch (e) { return { st: 0, timedOut }; } finally { clearTimeout(timer); pbDocsRvAnsCtl = null; }
+  }
+  const pbDocsRvAnsErr = (r) => r.st === 401 ? 'Log in again.' : r.st === 403 ? 'Only the app owner can run it.' : r.st === 503 && r.j && r.j.error === 'not_configured' ? 'The AI isn’t set up on the server.' : 'Didn’t finish, try again.';
+  async function pbDocsRvAnsRun(split) {
+    if (pbDocsRvAnsCtl || pbDocsRvAnsTick || pbDocsRvSafetyCtl) return; // fix98 5
+    pbDocsRvAnsStop = false;
+    try { pbDocsRvSafetyShow({}); } catch (e) {} // one result on screen at a time
+    const t0 = Date.now(), results = [];
+    let from = 0, total = 0, batch = 0;
+    const clock = () => { const s = Math.floor((Date.now() - t0) / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+    const prog = () => (total ? 'Batch ' + Math.min(batch + 1, Math.ceil(total / 10)) + ' of ' + Math.ceil(total / 10) : 'Batch 1') + ' · ' + clock();
+    pbDocsRvAnsShow({ busy: true, prog: prog() });
+    pbDocsRvAnsTick = setInterval(() => { const wt = pbDocsEl('docsRvAnsWaitT'); if (wt && !/^Grading/.test(wt.textContent)) wt.textContent = prog(); }, 1000);
+    const end = (o) => { clearInterval(pbDocsRvAnsTick); pbDocsRvAnsTick = null; pbDocsRvAnsShow(o); };
+    while (from !== null) {
+      let r = await pbDocsRvAnsCall({ action: 'eval_answers', from, n: 10, split }, 150000);
+      if (!pbDocsRvAnsStop && (r.timedOut || r.st === 504)) r = await pbDocsRvAnsCall({ action: 'eval_answers', from, n: 10, split }, 150000); // a timeout: that batch once more
+      if (pbDocsRvAnsStop) { end({ l1: 'Canceled.' }); return; }
+      if (r.st !== 200 || !r.j || r.j.ok !== true || !Array.isArray(r.j.results)) { end({ l1: pbDocsRvAnsErr(r) }); return; }
+      total = Number(r.j.total) || total; batch++;
+      results.push(...r.j.results.slice(0, 50));
+      const nx = r.j.next; const was = from; from = nx === null || nx === undefined ? null : Number(nx);
+      if (from !== null && (!Number.isFinite(from) || from <= was || results.length >= 500)) from = null; // never loops
+      const wt = pbDocsEl('docsRvAnsWaitT'); if (wt) wt.textContent = prog();
+    }
+    { const wt = pbDocsEl('docsRvAnsWaitT'); if (wt) wt.textContent = 'Grading · ' + clock(); }
+    const sres = await pbDocsRvAnsCall({ action: 'eval_answers_summary', results: results.slice(0, 500) }, 60000);
+    if (pbDocsRvAnsStop) { end({ l1: 'Canceled.' }); return; }
+    const j = sres.j;
+    if (sres.st !== 200 || !j || j.ok !== true || !j.overall) { end({ l1: pbDocsRvAnsErr(sres) }); return; }
+    const rate = (x) => x && Number(x.n) ? (Number.isFinite(Number(x.rate)) ? Number(x.rate) : Number(x.pass) / Number(x.n)) : null;
+    const pct = (x) => rate(x) === null ? '–' : Math.round(rate(x) * 100) + '%';
+    const bar = Number(j.bar) || 0.9;
+    const pass = typeof j.pass === 'boolean' ? j.pass : (rate(j.overall) || 0) >= bar && (rate(j.holdout) === null || rate(j.holdout) >= bar);
+    const fails = Array.isArray(j.failures) ? j.failures.filter(f => f && typeof f === 'object') : [];
+    const l1 = (pass ? 'Passed' : 'Not passed') + ' · Overall ' + pct(j.overall) + ' · Holdout ' + pct(j.holdout) + (Number.isFinite(Number(j.usd)) ? ' · $' + Number(j.usd).toFixed(2) : '');
+    const nAll = Number(j.overall.n) || results.length, nFail = Math.max(fails.length, nAll - (Number(j.overall.pass) || 0));
+    const l2 = 'Failed: ' + nFail + ' of ' + nAll;
+    const kinds = [...new Set(fails.map(f => String(f.kind || 'other')))];
+    const html = kinds.map(k => { const fs = fails.filter(f => String(f.kind || 'other') === k);
+      return '<p class="pb-docsrv-pg">' + escapeHtml(k) + ' (' + fs.length + ')</p><ul class="pb-ai-list pb-docsrv-fails">' + fs.slice(0, 100).map(f => '<li><strong>' + escapeHtml(String(f.id || '').slice(0, 60)) + '</strong> · ' + escapeHtml(String(f.role || '').slice(0, 20)) + (f.holdout ? ' · holdout' : '') + (f.why ? ' · ' + escapeHtml(String(f.why).slice(0, 300)) : '') + (f.answer ? '<div class="pb-docsrv-ans-a">' + escapeHtml(String(f.answer).slice(0, 1200)) + '</div>' : '') + '</li>').join('') + '</ul>'; }).join('');
+    end({ pass, l1, l2, fails: html });
   }
 
   function pointFieldsHTML(prefix, arch) {
@@ -17174,8 +17462,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       // (safer) predicted invert for every point relying on a predicted
       // elevation — you can always add bedding to bring a too-low pipe up to
       // grade, but a dig based on too-high an estimate is a real problem.
-      return Math.min(...candidates.map(c => c.hi));
+      // hidisc: with 3+ readings, the lowest of the ones that agree (see computeHiCrossCheck).
+      return computeHiCrossCheck().useHi;
     }
+    // hidisc: a typed / benchmark HI that disagrees with shot hubs is one more reading: the same rule picks the HI.
+    if (pbHdSourceHi() !== null && getStakeHICandidates().length) return computeHiCrossCheck().useHi;
     if (source === 'direct') return getElevVal('hiDirect');
     return (getElevVal('bmElev') !== null && getElevVal('bmBS') !== null) ? getElevVal('bmElev') + getElevVal('bmBS') : null;
   }
@@ -17278,7 +17569,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (stakeShot !== null) return stakeShot;
       const elev = getElevVal(prefix+'Elev');
       if (elev === null || hi === null) return null;
-      return hi - elev;
+      return pbHdElevFromShot(prefix) ? hi - elev : pbHdLayHi(hi) - elev; // hidisc 2: a design elevation is laid to with the higher HI
     }
     const shot = getElevVal(prefix+'StakeReading'), cf = getElevVal(prefix+'CutFillVal');
     if (cf === null) return null;
@@ -17288,7 +17579,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (hi === null) return null;
     const truePI = getPointPI(prefix);
     if (truePI === null) return null;
-    return hi - truePI;
+    return pbHdLayHi(hi) - truePI; // hidisc 2: laid to with the higher HI
   }
   // A field the person is actively typing into can briefly report an empty or
   // partial value between keystrokes (clearing a selection before the new
@@ -17411,8 +17702,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       // but that's a different value from what this field predicts.
       // An inches typo (e.g. 14 in) is not an elevation to predict from.
       const se = pbArchInchBad(prefix+'StakeElev') === null ? getElevVal(prefix+'StakeElev') : null;
-      if (hi !== null && se !== null) {
-        setElevFieldValue(id, hi - se, isArch());
+      const lay = pbHdLayHi(hi); // hidisc 2: a reading to lay to uses the higher HI
+      if (lay !== null && se !== null && lay - se >= -1e-9) { // hidisc: never a reading below zero (out of reach from this setup)
+        setElevFieldValue(id, lay - se, isArch());
         setPredictedFillMarker(id, true);
       } else if (isMarked) {
         setOrClearElevField(id, null, isArch());
@@ -17438,8 +17730,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       }
       const hi = computeHI();
       const stakeShot = pbStakeShotReading(prefix); // the faded box shows the reading the run uses: a corrected stake hub's own shot
-      if (stakeShot !== null || hi !== null) {
-        setElevFieldValue(readingId, stakeShot !== null ? stakeShot : hi - elev, isArch());
+      const lay = pbHdLayHi(hi); // hidisc 2: a reading to lay to uses the higher HI
+      if (stakeShot !== null || (lay !== null && lay - elev >= -1e-9)) { // hidisc: never a reading below zero (out of reach from this setup)
+        setElevFieldValue(readingId, stakeShot !== null ? stakeShot : lay - elev, isArch());
         setPredictedFillMarker(readingId, true);
       } else if (readingIsMarked) {
         setOrClearElevField(readingId, null, isArch());
@@ -17483,7 +17776,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (pbSegStartStepDriven(prefix)) return false;
       // A typed invert reads HI minus the invert; a shot that disagrees (an HI warning) isn't that reading.
       const hi = computeHI(), elev = getElevVal(prefix+'Elev');
-      if (hi !== null && elev !== null && Math.abs(hi - elev - shot) > (isArch() ? 0.003 : 0.001) + 1e-9) return false; // Architect values round to 1/16"
+      if (hi !== null && elev !== null && Math.abs((pbHdElevFromShot(prefix) ? hi : pbHdLayHi(hi)) - elev - shot) > (isArch() ? 0.003 : 0.001) + 1e-9) return false; // Architect values round to 1/16"
       return true;
     }
     return false;
@@ -18107,7 +18400,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const what = pbLayFt(adj.installed) + ' installed' + (adj.method === 'cutoff' ? ' (' + pbLayMethodWords(adj) + ')' : '');
         if (adj.off < eps) push(0, 'adjstart', 'Pipe start', 'Adjusted first pipe starts here: ' + what, 'start');
         else {
-          let t = adj.fit ? 'Fitting: ' + (hOf(adj) > 0 ? 'pipe in to ' + pbLayFt(base + adj.off - hOf(adj)) + ', pipe out from ' + pbLayFt(base + s) + '; ' : '') + (adj.cutoff > 0 ? 'leftover piece out of it, ' + pbLayFt(adj.installed) : 'full stick out of it') : 'Layout boundary, adjusted pipe starts here: ' + what; /* feat_crossing, feat_fitlen */
+          let t = adj.fit ? 'Fitting: ' + (hOf(adj) > 0 ? 'pipe in to ' + pbLayFt(base + adj.off - hOf(adj)) + ', pipe out from ' + pbLayFt(base + s) + '; ' : '') + (adj.cutoff > 0 ? 'leftover piece out of it, ' + pbLayFt(adj.installed) : pbFitIsPiece(adj) ? 'piece out of it, ' + pbLayFt(adj.installed) : 'full stick out of it') : 'Layout boundary, adjusted pipe starts here: ' + what; /* feat_crossing, feat_fitlen */
           if (cut && !adj.fit) t += '. The stick from the joint at ' + pbLayFt(base + cut.from) + ' was cut to ' + pbLayFt(cut.len) + ' to meet it (laid out as a cut piece' + (cut.divided || D === 1 ? '' : ', too short to divide') + ')';
           push(adj.off, 'boundary', adj.fit ? 'Fitting' : 'Boundary', t); /* feat_crossing; feat_fitlen: on the fitting's own (center) row */
         }
@@ -18117,11 +18410,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       while (x < e - eps) {
         const isAdj = first && !!adj, len = isAdj ? adj.installed : L, end = x + len;
         if (end <= e + eps) {
-          const pre = isAdj ? (adj.fit ? (adj.cutoff > 0 ? 'Leftover piece' : 'Stick') + ' out of the fitting: ' : 'Adjusted pipe (' + pbLayFt(len) + ' installed): ') : ''; /* feat_crossing */
+          const pre = isAdj ? (adj.fit ? (adj.cutoff > 0 ? 'Leftover piece' : pbFitIsPiece(adj) ? 'Piece' : 'Stick') + ' out of the fitting: ' : 'Adjusted pipe (' + pbLayFt(len) + ' installed): ') : ''; /* feat_crossing */
           const divide = len / D >= PB_LAY_MIN_STEP - 1e-9;
           if (divide) for (let j = 1; j < D; j++) push(x + len * j / D, pbLayDivKind(j, D), pbLayDivShort(j, D), pre ? pre + pbLayDivName(j, D) : '');
           const jAt = Math.min(end, e);
-          push(jAt, 'joint', 'Joint', isAdj ? (adj.fit ? 'Joint at the end of the ' + (adj.cutoff > 0 ? 'leftover piece' : 'stick') + ' out of the fitting' : 'Joint at the end of the adjusted pipe') + (divide || D === 1 ? '' : ' (too short to divide: joint only)') : '', last && e - jAt < 0.05 ? 'end' : null);
+          push(jAt, 'joint', 'Joint', isAdj ? (adj.fit ? 'Joint at the end of the ' + (adj.cutoff > 0 ? 'leftover piece' : pbFitIsPiece(adj) ? 'piece' : 'stick') + ' out of the fitting' : 'Joint at the end of the adjusted pipe') + (divide || D === 1 ? '' : ' (too short to divide: joint only)') : '', last && e - jAt < 0.05 ? 'end' : null);
         } else {
           const rem = e - x;
           if (last) {
@@ -18970,6 +19263,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
 
     let hi = null;
     if (needsReading) hi = computeHI();
+    if (needsReading && computeHiCrossCheck().blocked) errors.push(PB_HD_BLOCK); // hidisc 3: the red card on the form has Shoot Another Hub
     pbErrTags.length = 0; // UX batch 1: which field each message below is about
     if (elevOutOfRange(hi)) errors.push(pbErrAt('HI (' + hi + ') has more than 5 digits before the decimal \u2014 check the benchmark elevation and backsight, or the direct HI entry, for a typo.', pbHiField()));
     // A point in Invert Elevation mode with a reading typed in (but no elevation)
@@ -19349,23 +19643,40 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // An invert above the instrument works out to a reading below zero: no rod can
     // show it (usually an HI typo). Interval rows lie between points, so the points cover them.
     if (needsReading) {
-      const above = points.filter(p => p.reading !== null && p.reading < -1e-9);
+      // hidisc: a point with no reading the crew typed is out of reach from this setup (a long imported cutsheet,
+      // a run ended early): one quiet line. Red only where a reading worked out from a typed one is below zero.
+      const typedAt = p => { const m = activeVal(p.id + 'ModeToggle');
+        if (m === 'stake') return getElevVal(p.id + 'StakeReading') !== null && !isPredictedFillMarked(p.id + 'StakeReading');
+        if (m === 'elev') return pbStakeShotReading(p.id) !== null || (getElevVal(p.id + 'ElevReading') !== null && !isPredictedFillMarked(p.id + 'ElevReading'));
+        return false; };
+      const topOfR = p => (p.wt !== null && p.idFt !== null) ? p.reading - (p.idFt + p.wt) : null;
+      // fix98 2b: a typed / benchmark HI (a typo there puts every reading below zero), or every point below zero: red, not out of reach
+      const hiSrcT = activeVal('hiToggle'), withR = points.filter(p => p.reading !== null);
+      const redAll = hiSrcT === 'direct' || hiSrcT === 'bm' || (withR.length > 0 && withR.every(p => p.reading < -1e-9));
+      const evid = p => redAll || typedAt(p);
+      const reach = points.filter(p => p.reading !== null && !evid(p) && (p.reading < -1e-9 || (topOfR(p) !== null && topOfR(p) < -1e-9)));
+      if (reach.length) {
+        const nums = reach.map(p => { const m = /\(stake\s+(\d+)\s*[,)]/i.exec(p.label || ''); return m ? parseInt(m[1], 10) : null; });
+        const run = nums.every(n => n !== null) && nums.slice().sort((a, b) => a - b).every((n, i, a) => i === 0 || n === a[i - 1] + 1);
+        const sorted = nums.slice().sort((a, b) => a - b);
+        const who = run ? (reach.length === 1 ? 'Stake ' + sorted[0] : 'Stakes ' + sorted[0] + '\u2013' + sorted[sorted.length - 1])
+          : nums.every(n => n !== null) ? 'Stakes ' + sorted.join(', ') : reach.map(p => p.label).join(', ');
+        capabilityNotes.push(who + ': out of reach from this setup.');
+      }
+      const above = points.filter(p => p.reading !== null && p.reading < -1e-9 && evid(p));
       const belowHeading = 'Reading Below Zero \u2014 Check The HI';
       if (above.length) warnings.push({ type: 'hi-serious', heading: belowHeading, text: above.map(p => 'Reading at ' + p.label + ' works out to ' + fmtReading(p.reading, rodUnit)).join('; ') + ' \u2014 below zero. Check the HI and these inverts, or set the instrument up higher.' });
       // The TOP reading is shown in every row too: with the crown above the instrument
       // (invert still below it) no rod set on the pipe's top can show it.
       const topOf = p => (p.wt !== null && p.idFt !== null) ? p.reading - (p.idFt + p.wt) : null;
-      const crownAbove = points.filter(p => p.reading !== null && p.reading >= -1e-9 && topOf(p) !== null && topOf(p) < -1e-9);
+      const crownAbove = points.filter(p => p.reading !== null && p.reading >= -1e-9 && topOf(p) !== null && topOf(p) < -1e-9 && evid(p)); // hidisc: untyped ones are in the out-of-reach line
       if (crownAbove.length) warnings.push({ type: 'hi-serious', heading: belowHeading, text: crownAbove.map(p => 'TOP reading at ' + p.label + ' works out to ' + fmtReading(topOf(p), rodUnit)).join('; ') + ' \u2014 below zero. Read INV or BOP there, check the HI, or set the instrument up higher.' });
     }
     const hiCheck = computeHiCrossCheck();
-    if (hiCheck.severity !== 'none') {
-      const hiLines = hiCheck.candidates.map(c => c.label + ': ' + fmt(c.hi, 3) + ' ft').join('; ');
-      if (hiCheck.severity === 'serious') {
-        warnings.push({ type: 'hi-serious', text: `The provided elevations and rod readings imply HI values (${hiLines}) ${fmt(hiCheck.maxDiff, 3)} ft apart.` });
-      } else {
-        warnings.push({ type: 'hi-minor', text: `The provided elevations and rod readings imply HI values (${hiLines}) ${fmt(hiCheck.maxDiff, 3)} ft apart.` });
-      }
+    if (hiCheck.severity !== 'none') { // hidisc: title + one line; the record keeps both as its text
+      const card = pbHdCard(hiCheck);
+      const hdHi = (needsReading && hi !== null && Math.abs(hiCheck.layHi - hiCheck.useHi) > 1e-9) ? 'HI used: ' + fmt(hiCheck.useHi, 2) + ' for elevations, ' + fmt(hiCheck.layHi, 2) + ' for readings to lay to' : ''; // hidisc 2
+      warnings.push({ type: hiCheck.severity === 'serious' ? 'hi-serious' : 'hi-minor', heading: card.heading, hdLine: card.line, hdBtn: card.btn, hdHi, text: card.heading + ': ' + card.line });
     }
     if (needsReading) {
       const allPrefixes = points.map(p => p.id);
@@ -19379,7 +19690,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       }
     }
 
-    return { errors: [], rodUnit, hi, totalDist, interval, points, segments, rows, warnings, needsReading, capabilityNotes, layout: layPlan };
+    const hiLayV = (needsReading && hi !== null) ? pbHdLayHi(hi) : null; // hidisc 2
+    return { errors: [], rodUnit, hi, hiLay: hiLayV !== null && Math.abs(hiLayV - hi) > 1e-9 ? hiLayV : null, totalDist, interval, points, segments, rows, warnings, needsReading, capabilityNotes, layout: layPlan };
   }
   // Standalone version of the interpolation buildCalc uses internally — reused after lock
   // to compute BOP/INV/TOP for a manually-added interval at any station.
@@ -19438,6 +19750,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return fmt(v, 2);
     }
     const v = field === 'bop' ? row.bopReading : field === 'top' ? row.topReading : field === 'sg' ? row.sgReading : row.invReading;
+    if (typeof v === 'number' && v < -1e-9) return '\u2014'; // fix98 2a: no rod shows a reading below zero
     return fmtReading(v, calc.rodUnit);
   }
   // For a start/hub/end point object (carries pi/reading at the invert only —
@@ -19451,6 +19764,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     const bopReading = wtOk ? point.reading + point.wt : null;
     const v = field === 'bop' ? bopReading : field === 'top' ? ((wtOk && idOk) ? point.reading - (point.idFt + point.wt) : null) : field === 'sg' ? ((wtOk && beddingOk) ? bopReading + point.bedding : null) : point.reading;
+    if (typeof v === 'number' && v < -1e-9) return '\u2014'; // fix98 2a: no rod shows a reading below zero
     return fmtReading(v, calc.rodUnit);
   }
 
@@ -20226,7 +20540,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const cls = (w.type === 'photo' || w.type === 'hi-minor') ? 'photo' : '';
         const heading = w.type === 'backflow' || w.type === 'backflow-all' ? 'Backflow Check'
           : w.type === 'photo' ? 'Photo Suggested'
-          : w.type === 'hi-minor' ? 'HI Discrepancy — Worth Checking'
+          : w.type === 'hi-minor' && !w.heading ? 'HI Discrepancy — Worth Checking'
           : w.type === 'same-station' ? 'Hubs At The Same Station'
           : w.heading ? w.heading
           : w.type === 'hi-serious' ? 'HI Disagreement — Check For Error'
@@ -20234,8 +20548,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const jumpBtn = (w.type === 'photo' && w.prefix) ? `<br><button class="pb-btn ghost small" style="margin-top:8px;" onclick="pbJumpToPointPhoto('${w.prefix}')">Go Add That Photo →</button>` : '';
         const anySegActive = [2,3,4,5].some(n => segHasData(n));
         const flipBtn = w.type === 'backflow-all' ? (anySegActive ? '<br><span style="font-size:12px; opacity:.75;">Flip isn\u2019t available with additional runs. Fix Start/End instead.</span>' : `<br><button class="pb-btn small" style="margin-top:8px;" onclick="pbFlipRunDirection()">Flip This Run</button>`) : '';
-        const wsp = w.type === 'backflow-all' ? ['Invert falls from Start to End.', String(w.text).replace(/\s*Would you like to flip the run\?\s*$/, '')] : pbRvSplit(String(w.text)); /* cleanup A: one line, details behind a tap */
-        html += `<div class="pb-warn ${cls} pb-rvw"><strong>${heading}</strong>${escapeHtml(wsp[0])}${jumpBtn}${flipBtn}${wsp[1] ? '<details class="pb-more pb-rvw-more"><summary><span>Details</span></summary><p class="pb-help">' + escapeHtml(wsp[1]) + '</p></details>' : ''}</div>`; // warning text embeds point labels, which can be user-entered
+        const hdBtn = w.hdBtn ? '<br><button class="pb-btn small" style="margin-top:8px;" onclick="pbHdShootHub()">Shoot Another Hub</button>' : ''; // hidisc
+        const wsp = w.hdLine ? [w.hdLine, ''] : w.type === 'backflow-all' ? ['Invert falls from Start to End.', String(w.text).replace(/\s*Would you like to flip the run\?\s*$/, '')] : pbRvSplit(String(w.text)); /* cleanup A: one line, details behind a tap */
+        html += `<div class="pb-warn ${cls} pb-rvw"><strong>${heading}</strong>${escapeHtml(wsp[0])}${w.hdHi ? '<div class="pb-hd-hi" style="font-size:12px; opacity:.8; margin-top:4px;">' + escapeHtml(w.hdHi) + '</div>' : ''}${jumpBtn}${flipBtn}${hdBtn}${wsp[1] ? '<details class="pb-more pb-rvw-more"><summary><span>Details</span></summary><p class="pb-help">' + escapeHtml(wsp[1]) + '</p></details>' : ''}</div>`; // warning text embeds point labels, which can be user-entered
       });
       // Capability notes (what can't be calculated, e.g. missing wall thickness or
       // pipe ID) go last — they're non-blocking, so they belong after anything that
@@ -21214,9 +21529,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     body.innerHTML = '';
     window._pbRowContexts = [];
     window._pbRowContextsEntryId = entry.id;
-    const pbXingW = pbXingWarnRows(entry); /* feat_crossing */
+    const pbXingP = pbXingRowPlan(entry); /* xingrow */
     const shownNotes = new Set(entry.intervalRows.map(r => pbConfirmedNoteFor(entry, r)).filter(Boolean));
     entry.intervalRows.forEach((r, idx) => {
+      (pbXingP.at.get(idx) || []).forEach(o => body.appendChild(pbXingRowTr(o, pbRsShown.length, pbRsStaOf))); /* xingrow: the crossings before this row */
       const staSubClass = r.label === 'start' ? 'start' : r.label === 'end' ? 'end' : r.label ? 'hub' : '';
       const rowClass = (idx % 2 === 1 ? 'pb-shade ' : '') + (r.label === 'start' ? 'pb-startrow ' : r.label === 'end' ? 'pb-endrow ' : r.label ? 'pb-hubrow ' : '');
       window._pbRowContexts.push({ station: r.stationFt, pointId: r.pointId, label: r.label || 'point', pi: r.piFt, bp: r.bpFt, trenchWidth: r.trenchWidthFt });
@@ -21229,18 +21545,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       // Label/added-time get their own full-width strip above the row, instead of
       // sharing the Sta. cell — long labels were forcing that column wide and
       // pushing BOP/INV/TOP off-screen.
-      if (r.label || r.addedTime || r.verified !== null || pbRsLayNote(r.layoutNote) || pbXingW.has(idx) || pbFitOf(entry, r)) {
+      if (r.label || r.addedTime || r.verified !== null || pbRsLayNote(r.layoutNote) || pbFitOf(entry, r)) {
         const labelTr = document.createElement('tr');
         labelTr.className = rowClass;
         labelTr.innerHTML = `<td colspan="${colCount}" style="text-align:left; white-space:normal; padding:7px 8px 3px 8px; border-top:2px solid var(--ink);">
           ${r.label ? `<span class="pb-sta-sub ${staSubClass}" style="display:inline; margin:0;">${escapeHtml(pbRowStripName(entry, r))}</span>` : ''}
-          ${pbXingW.has(idx) ? pbXingStripHTML(pbXingW.get(idx)) : ''}
+          ${r.verified === true ? `<span class="pb-chip ok" style="margin-left:8px;">field-verified</span>` : ''}
+          ${r.verified === false ? `<span class="pb-b3-predicted" style="margin-left:8px; font-size:13px; font-weight:600; color:var(--pb-text-2);">predicted, not field-verified</span>` : ''}
           ${pbRsLayNote(r.layoutNote) ? `<span class="pb-lay-note">${escapeHtml(pbRsLayNote(r.layoutNote))}</span>` : ''}
           ${pbFitStripHTML(entry, r)}
           ${r.addedTime ? `<span style="margin-left:8px; font-size:11px; font-weight:400; text-transform:none; letter-spacing:0; opacity:.7;">added ${new Date(r.addedTime).toLocaleTimeString()}</span>` : ''}
           ${r.addedTime && !pbIsStopRow(entry, r) ? `<button class="pb-remove" style="margin-left:8px;" onclick="pbRemoveManualInterval(${idx})">Remove</button>` : ''}
-          ${r.verified === true ? `<span class="pb-chip ok" style="margin-left:8px;">field-verified</span>` : ''}
-          ${r.verified === false ? `<span class="pb-b3-predicted" style="margin-left:8px; font-size:13px; font-weight:600; color:var(--pb-text-2);">predicted, not field-verified</span>` : ''}
         </td>`;
         labelTr.dataset.laidIdx = String(idx); labelTr.dataset.laidStrip = '1'; // batch 14 F
         body.appendChild(labelTr);
@@ -21248,6 +21563,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
 
       const tr = document.createElement('tr');
       tr.className = rowClass;
+      if (pbXingP.near.has(idx)) tr.classList.add('pb-xing-near'); /* xingrow */
       const pbRsSta = pbRsStaOf(r); if (pbRsSta) tr.classList.add('pb-rs-hassta'); /* feat_results2 */
       tr.innerHTML = `
         <td>
@@ -21300,6 +21616,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       body.appendChild(toolsTr);
       try { pbSlRowNotesInto(body, entry, idx, colCount); } catch (e) { console.error(e); } // batch 22 NOTES
     });
+    pbXingP.tail.forEach(o => body.appendChild(pbXingRowTr(o, pbRsShown.length, pbRsStaOf))); /* xingrow */
     entry.intervalRows.forEach((r, idx) => {
       const npId = 'note' + idx;
       const existingNote = pbConfirmedNoteFor(entry, r); // a note whose save is in flight is shown as NOT yet saved: editable, with its real drafts
@@ -22964,7 +23281,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbCalcDescribesEntry(calc, entry) {
     if (!calc || !calc.rows || !pbSameNum(calc.totalDist, entry.distance)) return false;
     const rows = (entry.intervalRows || []).filter(r => !r.addedTime);
-    if ((entry.rodUnit || null) !== (calc.rodUnit || null) || !pbSameNum(entry.hi, calc.hi)) return false;
+    { const eL = entry.hiLay !== null && entry.hiLay !== undefined ? entry.hiLay : entry.hi, cL = calc.hiLay !== null && calc.hiLay !== undefined ? calc.hiLay : calc.hi; // hidisc 2: both HIs (the record's own form holds its lay-to HI)
+      if ((entry.rodUnit || null) !== (calc.rodUnit || null) || !pbSameNum(eL, cL) || !(pbSameNum(entry.hi, calc.hi) || pbSameNum(calc.hi, cL))) return false; }
     // Same inverts are not enough: a re-reviewed wall thickness, pipe ID, HI or
     // trench width changes the BOP/TOP/readings a new row would get.
     return rows.length === calc.rows.length && rows.every((r, i) => { const c = calc.rows[i];
@@ -24046,7 +24364,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // the finished run keeps its depth check and cut/fill. The old stake rod
     // reading is NOT restored — the instrument has moved; a fresh shot (or the
     // new HI) sets it. The point's own label is restored too.
+    const pbHdPfx = {}; // fix98 1: the record's point id -> this form's
     const restorePointInputs = (prefix, r) => {
+      if (r && r.pointId) pbHdPfx[r.pointId] = prefix;
       try { pbStRestorePt(entry, prefix, r); } catch (e) { console.error(e); } /* feat_results2 */
       const rec = entry.pointInputs && r.pointId ? entry.pointInputs[r.pointId] : null;
       if (!rec || rec.mode !== 'stake') pbRsMode(prefix, 'elev'); /* feat_runsetup: points now start as Survey Stakes; a saved invert point stays one */
@@ -24194,7 +24514,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       // The record's own form, not a resume: its retained check points and HI come back too, and the form is marked as
       // the one that locked this record (same checks as right after Lock).
       const L = entry.pipeLayout; if (L && Array.isArray(L.retained)) window._pbLayout.retained = pbLayClone(L.retained); window._pbLayout.keep = pbLayKeepOf(entry);
-      if (entry.hi !== null && entry.hi !== undefined && entry.rodUnit !== 'lenker') { const hb = document.querySelector('#hiToggle button[data-val="direct"]'); if (hb) hb.click(); setElevFieldValue('hiDirect', entry.hi, arch); }
+      if (entry.hi !== null && entry.hi !== undefined && entry.rodUnit !== 'lenker' && !pbHdRestoreSrc(entry, arch, pbHdPfx)) { const hb = document.querySelector('#hiToggle button[data-val="direct"]'); if (hb) hb.click(); setElevFieldValue('hiDirect', entry.hiLay !== null && entry.hiLay !== undefined ? entry.hiLay : entry.hi, arch); } // hidisc 2: its readings were laid to the higher HI
       if (typeof window.pbAfRestorePick === 'function') window.pbAfRestorePick(entry, true); /* r15.57: the box shows the run's own foreman */
       pbFormFresh = false; pbFormEdited = null;
       pbLaySetOwner(entry.id);
@@ -24726,7 +25046,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbOpenRodElevCalc({
       arch: entry.rodUnit === 'architect',
       knownElevFt: ctx.pi,
-      knownReadingFt: entry.hi - ctx.pi,
+      knownReadingFt: (entry.hiLay !== null && entry.hiLay !== undefined ? entry.hiLay : entry.hi) - ctx.pi, // hidisc 2: a reading to lay to
       contextLabel: 'Station ' + fmt(ctx.station,1) + (ctx.label ? ' (' + ctx.label + ')' : '')
     });
   };
@@ -30236,6 +30556,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // last unit key used on that length (12' + 3 = 15'; 6" + 3 = 9"; 12' + 3" then + 3 = 3"). Beside an area it is square feet, a volume cubic feet.
   // A plain number given to a unit key (ft-in, ft, in, m, mm) is decimal feet: 0.35 then ft-in = 4-3/16" (a typed
   // fraction, inches). While an operator is pending a unit key only changes the display, never the operand.
+  // Space splits a whole number from its fraction: 2 Space 3/8 = 2-3/8" (inches, same as 2 Inch 3/8).
   (function() {
     const B = (x) => BigInt(x), Z = B(0), ONE = B(1), TWO = B(2), TEN = B(10);
     function CcErr(msg) { this.msg = msg; }
@@ -30301,13 +30622,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const d = a.dim - b.dim; if (d < 0) throw new CcErr('Can\u2019t divide ' + DIMN[a.dim] + ' by ' + DIMN[b.dim]);
       return { r: rDiv(a.r, b.r), dim: d, u: a.dim === 1 ? a.u : (b.dim === 1 ? b.u : (a.u || b.u)) };
     }
-    // ---- typed entry: tokens '0'-'9' '.' 'ft' 'in' '/' ----
+    // ---- typed entry: tokens '0'-'9' '.' 'ft' 'in' '/' 'sp' ----
     function scan(t) {
       const s = { buf: '', ft: null, inch: null, fn: null, fd: null, inFrac: false, inMark: false };
       t.forEach(k => {
         if (k === 'ft') { s.ft = s.buf; s.buf = ''; }
         else if (k === 'in') { if (s.inFrac) { s.fd = s.buf; s.inFrac = false; } else s.inch = s.buf; s.buf = ''; s.inMark = true; }
         else if (k === '/') { s.fn = s.buf; s.buf = ''; s.inFrac = true; }
+        else if (k === 'sp') { s.inch = s.buf; s.buf = ''; s.inMark = true; } /* 2 Space = 2 Inch */
         else s.buf += k;
       });
       return s;
@@ -30318,11 +30640,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (k === 'in') return num && (s.inFrac || (!s.inMark && s.fn === null)); /* 6" 3/8" closes with Inch too */
       if (k === '/') return num && !s.inFrac && s.fn === null && !closed && s.buf.indexOf('.') < 0;
       if (k === '.') return !s.inFrac && !s.inMark && s.fn === null && s.buf.indexOf('.') < 0;
+      if (k === 'sp') return num && !s.inFrac && !s.inMark && s.fn === null && s.buf.indexOf('.') < 0;
       return !closed && s.buf.replace('.', '').length < 9; // a digit
     }
     const INC = { incomplete: true };
     function entryVal(t, neg) {
       if (!t.length) return null;
+      if (t[t.length - 1] === 'sp') return INC; // 2 Space waits for its fraction
       const s = scan(t);
       let inch = s.inch, fd = s.fd;
       if (s.inFrac) { if (!s.buf) return INC; fd = s.buf; }
@@ -30340,7 +30664,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return { r, dim: 1, u: (inch !== null || s.fn !== null) ? 'in' : 'ft' };
     }
     function liveText(t, neg) { // as typed: 12' 6" 3/8
-      return (neg ? '-' : '') + t.map(k => (k === 'ft' ? '\' ' : k === 'in' ? '" ' : k)).join('').trim();
+      return (neg ? '-' : '') + t.map(k => (k === 'ft' ? '\' ' : k === 'in' ? '" ' : k === 'sp' ? ' ' : k)).join('').trim() + (t[t.length - 1] === 'sp' ? '\u00a0' : '');
     }
     function entryText(t, neg) { // tidy: 12' 6-3/8"
       const s = scan(t);
@@ -30425,7 +30749,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     function clearCalc() { st.acc = null; st.op = null; st.expr = []; st.t = []; st.neg = false; st.cur = null; st.lastExpr = ''; }
     function press(k) {
       st.err = '';
-      if (/^[0-9.]$/.test(k) || k === 'ft' || k === 'in' || k === '/') {
+      if (/^[0-9.]$/.test(k) || k === 'ft' || k === 'in' || k === '/' || k === 'sp') {
+        if (k === 'sp' && !canPress(st.t, k)) return true;
         if (!st.t.length && st.cur) { if (!st.op) { st.acc = null; st.expr = []; } st.cur = null; st.neg = false; st.lastExpr = ''; }
         if (k === '.' && (!st.t.length || /^(ft|in)$/.test(st.t[st.t.length - 1]))) { if (canPress(st.t, '.')) { st.t.push('0', '.'); return false; } return true; }
         if (!canPress(st.t, k)) return true;
@@ -32387,7 +32712,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     lines.push('');
     lines.push('Run: ' + entry.startLabel + ' \u2192 ' + entry.endLabel);
     lines.push('Distance: ' + pbDistanceText(entry));
-    lines.push('Rod unit: ' + entry.rodUnit + (entry.hi !== null && entry.hi !== undefined ? ' — HI ' + fmt(entry.hi, 3) + ' ft' : ''));
+    lines.push('Rod unit: ' + entry.rodUnit + (entry.hi !== null && entry.hi !== undefined ? ' — HI ' + fmt(entry.hi, 3) + ' ft' + (entry.hiLay !== null && entry.hiLay !== undefined ? ' for elevations, ' + fmt(entry.hiLay, 3) + ' ft for readings to lay to' : '') : ''));
     if (entry.summary) {
       lines.push('Overall slope: ' + (entry.summary.overallSlopePct >= 0 ? '+' : '') + entry.summary.overallSlopePct.toFixed(2) + '% (+ = rising toward end)');
       lines.push('Start invert: ' + entry.summary.startInv + (entry.summary.startInvElevFt !== null ? ' (' + fmt(entry.summary.startInvElevFt, 2) + ' ft elevation)' : ''));
@@ -32450,16 +32775,20 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const totalStakeCount = entry.intervalRows.filter(r => pbRowIsStake(entry, r)).length;
     if (totalStakeCount > 0) lines.push(verifiedCount + ' of ' + totalStakeCount + ' stake point(s) field-verified with an actual rod shot — the rest predicted from HI and design/cutsheet elevation.');
     const pbTxSta = pbStRowStaFn(entry); /* feat_results2 */
-    entry.intervalRows.forEach(r => {
+    const pbTxX = pbXingRowPlan(entry), pbTxXl = (o) => { const t = pbXingRowText(o), st = pbXingStaOf(pbTxSta, o); return fmt(o.abs, 2) + (st ? ' [Sta ' + st + ']' : '') + ' \u00d7 Crossing \u2014 ' + t.what + (t.clr ? ' \u00b7 ' + t.clr + (t.low && o.pos !== 'conflict' ? ' (under minimum)' : '') : ''); }; /* xingrow */
+    entry.intervalRows.forEach((r, pbTxI) => {
+      (pbTxX.at.get(pbTxI) || []).forEach(o => lines.push(pbTxXl(o))); /* xingrow */
       let l = r.station + (pbTxSta(r) ? ' [Sta ' + pbTxSta(r) + ']' : '') + (r.label ? ' (' + r.label + ')' : '') + ' — BOP ' + r.bop + (r.sgDisp ? ' · Subgrade ' + r.sgDisp : '') + ' · INV ' + r.inv + ' · TOP ' + r.top + (r.elevation !== null ? ' · Elevation ' + r.elevation : '');
       if (r.verified === true) l += ' [field-verified]';
       else if (r.verified === false) l += ' [predicted, not field-verified]';
       l += pbLayRowSuffix(r);
+      if (pbTxX.near.has(pbTxI)) l += ' \u00d7'; /* xingrow: within 20 ft before a crossing */
       if (r.addedTime) l += ' [added ' + new Date(r.addedTime).toLocaleString() + ']';
       if (r === pbStopRowOf(entry)) l += '  \u2190 RUN ENDED HERE';
       lines.push(l);
       if (r.photos && r.photos.length) lines.push('  ' + r.photos.length + ' photo(s) at this point (in PDF).');
     });
+    pbTxX.tail.forEach(o => lines.push(pbTxXl(o))); /* xingrow */
     if (entry.cutsheetAiText) {
       lines.push('');
       lines.push('--- AI-RECREATED CUTSHEET (used to build this run) ---');
@@ -32707,6 +33036,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       beddingVolumeIncomplete: beddingVolumeIncomplete,
       rodUnit: calc.rodUnit,
       hi: calc.hi,
+      hiLay: calc.hiLay !== null && calc.hiLay !== undefined ? calc.hiLay : null, // hidisc 2: the HI readings to lay to used, when it differs from hi
+      hiSrc: calc.rodUnit !== 'lenker' && calc.hi !== null && calc.hi !== undefined ? pbHdSrcSnap(calc) : null, // fix98 1: readings disagreed: how the HI was given and the shots (the record's form gives them back)
       warnings: (calc.warnings || []).map(w => ({ type: w.type, text: w.text })),
       // A zero-length section is a reducer junction: the invert STEPS at one
       // station; there is no grade. Its step is recorded so records can say so.
@@ -41397,6 +41728,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         }
       });
     });
+    body.querySelectorAll('tr.pb-xingrow').forEach(x => { /* xingrow */
+      let p = x.previousElementSibling, n = x.nextElementSibling;
+      while (p && p.classList.contains('pb-xingrow')) p = p.previousElementSibling;
+      while (n && n.classList.contains('pb-xingrow')) n = n.nextElementSibling;
+      x.classList.toggle('pb-laid-folded', !!(p && n && p.classList.contains('pb-laid-folded') && n.classList.contains('pb-laid-folded')));
+    });
     // one line per folded block (or per opened block, to fold it again)
     if (hide) blocks.forEach(b => {
       const first = (groups.get(b.start) || [])[0]; if (!first) return;
@@ -45071,6 +45408,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           const raw = d.cell.raw;
           if (d.section === 'body' && raw && typeof raw === 'object' && !Array.isArray(raw)) {
             if (raw._refs) raw._refs.forEach(k => { if (!R.refs[k]) R.refs[k] = pageNo(); });
+            if (raw._xbar) { doc.setFillColor(196, 45, 59); doc.rect(d.cell.x + 0.08, d.cell.y + 0.08, 0.9, Math.max(0, d.cell.height - 0.16), 'F'); } /* xingrow */
             if (raw._link) R.link(d.cell.x, d.cell.y, d.cell.width, d.cell.height, raw._link);
           }
         },
@@ -45660,7 +45998,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     R.kv([
       ['Jobsite', e.jobsite ? e.jobsite + ' (typed)' : null], ['Job number', e.jobNumber || null], ['Cost code', e.costCode || (e.whoFrom ? 'per category, from the job plan' : null)] /* feat_runflow P6 */, ['Pipe type (Stats)', e.statsType || 'not picked (run not tracked in Stats)'],
       ['Pipelayer', pbRfPdfWho(e, 'pipelayer')], ...pbRptFmRows(e), /* feat_runflow P6; feat_rptfm: the foreman by name */
-      ['Rod reading unit', e.rodUnit || null], ['Instrument height (HI)', e.hi !== null && e.hi !== undefined ? fmt(e.hi, 3) + ' ft (entered)' : 'not used']
+      ['Rod reading unit', e.rodUnit || null], ['Instrument height (HI)', e.hi !== null && e.hi !== undefined ? (e.hiLay !== null && e.hiLay !== undefined ? fmt(e.hi, 3) + ' ft for elevations, ' + fmt(e.hiLay, 3) + ' ft for readings to lay to' : fmt(e.hi, 3) + ' ft (entered)') : 'not used']
     ], { cols: 2 });
     if (e.notesField) { R.sub('Notes (as of lock)'); R.para(e.notesField + ' (typed by hand)', { size: 9.5 }); }
     if (e.endNote && e.endNote.text) { R.sub('Note at end'); R.para(e.endNote.text + ' (typed by hand' + (e.endNote.at ? ', ' + pbRptDt(e.endNote.at) : '') + ')', { size: 9.5 }); } // feat_runflow P9
@@ -45751,6 +46089,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       out.push(phs.length ? R.photoCell(phs, bits.join(' \u00b7 ')) : (bits.join(' \u00b7 ') || '\u2014'));
       return out;
     });
+    { const XP = pbXingRowPlan(e); /* xingrow: the crossing as its own row; a thin red bar on it and the rows 20 ft before it */
+      const xrow = (o) => { const t = pbXingRowText(o), st = pbXingStaOf(pbPdfSta, o);
+        const lead = [{ content: o.abs.toFixed(2), _bold: true, _xbar: true }].concat(pbPdfHasSta ? [st || '\u2014'] : []);
+        return lead.concat([{ content: 'Crossing: ' + t.what + (t.clr ? ' \u00b7 ' + t.clr + (t.low && o.pos !== 'conflict' ? ' (under minimum)' : '') : ''), colSpan: head.length - lead.length, _accent: t.low }]); };
+      XP.near.forEach(i => { if (body[i] && body[i][0] && typeof body[i][0] === 'object') body[i][0]._xbar = true; });
+      Array.from(XP.at.keys()).sort((a, b) => b - a).forEach(k => { const L = XP.at.get(k); body.splice(k, 0, ...L.map(xrow)); bandsOut.splice(k, 0, ...L.map(() => null)); });
+      XP.tail.forEach(o => { body.push(xrow(o)); bandsOut.push(null); }); }
     // fix_pdfrows: the fixed widths fit the page and leave the Notes column ~15 mm (was 198 mm of fixed widths on
     // 184 mm, so Notes broke one letter per line: a tall header and tall rows, and the table ran off the page).
     const numCols = {}; head.forEach((h, i) => { if (/^(BOP|Subgrade|INV|TOP|Elev\.)$/.test(h)) numCols[i] = { halign: 'right', cellWidth: h === 'Subgrade' ? 17 : h === 'Elev.' ? 15 : 14 }; });
