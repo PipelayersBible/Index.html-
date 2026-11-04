@@ -2753,6 +2753,96 @@ html.pb-cx #homeFmPulse #homeFmCrew { display: none !important; } /* the Company
 #pbApp .pb-ai-local .pb-ai-a { display: block; margin-top: 4px; }
 #pbApp #eduAskLink { margin: 10px 16px 0 16px; max-width: calc(100% - 32px); white-space: normal; overflow-wrap: anywhere; text-align: left; height: auto; } /* wraps at 320 px Extra Large */
 .pb-tool-row[data-dest="aiAsk"] { --pb-tool-icon: var(--pb-icon-info); }
+/* ask_v2 (app side): AI tag, tables, charts, the long-answer wait line, the Ask | Analyze switch, Documents */
+#pbApp .pb-ai-tag { display: inline-block; margin-right: 2px; padding: 1px 6px; border-radius: 6px; font-size: 12px; font-weight: 700; letter-spacing: .04em; line-height: 1.4; color: var(--pb-text); background: var(--pb-brand-soft); box-shadow: inset 0 0 0 1px var(--pb-brand-line); vertical-align: 1px; }
+#pbApp .pb-ai-tablewrap { margin-top: 10px; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 10px; box-shadow: inset 0 0 0 1px var(--pb-divider); }
+#pbApp .pb-ai-table { border-collapse: collapse; min-width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+#pbApp .pb-ai-table th, #pbApp .pb-ai-table td { padding: 6px 10px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--pb-divider); }
+#pbApp .pb-ai-table th { font-weight: 650; color: var(--pb-text-2); }
+#pbApp .pb-ai-table tr:last-child td { border-bottom: 0; }
+#pbApp .pb-ai-table .num { text-align: right; }
+#pbApp .pb-ai-chart { margin: 12px 0 0 0; }
+#pbApp .pb-ai-chart figcaption { font-size: 14px; font-weight: 650; margin-bottom: 4px; overflow-wrap: anywhere; }
+#pbApp .pb-ai-chart svg { display: block; width: 100%; height: auto; max-width: 480px; }
+#pbApp .pb-ai-chart svg text { font: 10px var(--pb-font, system-ui); fill: var(--pb-text-2); }
+#pbApp .pb-ai-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 4px; font-size: 13px; color: var(--pb-text-2); }
+#pbApp .pb-ai-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+#pbApp .pb-ai-chip { display: inline-flex; align-items: center; min-height: 32px; padding: 4px 10px; border-radius: var(--pb-r-pill, 999px); font-size: 13px; line-height: 1.3; color: var(--pb-text-2); background: var(--pb-raised); box-shadow: inset 0 0 0 1px var(--pb-divider); overflow-wrap: anywhere; text-decoration: none; }
+#pbApp a.pb-ai-chip { color: var(--pb-text); }
+#pbApp .pb-ai-wait { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 16px 0 16px; padding: 10px 12px; border-radius: 12px; background: var(--pb-raised); box-shadow: inset 0 0 0 1px var(--pb-divider); font-size: 15px; font-variant-numeric: tabular-nums; }
+#pbApp .pb-ai-wait[hidden] { display: none; }
+#pbApp .pb-ai-wait .pb-ai-dot { display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--pb-brand); animation: pbAiPulse 1.2s ease-in-out infinite; }
+@keyframes pbAiPulse { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { #pbApp .pb-ai-wait .pb-ai-dot { animation: none; } }
+#pbApp .pb-ai-mode { display: flex; gap: 0; margin: 10px 16px 0 16px; border-radius: var(--pb-r-ctl, 10px); box-shadow: inset 0 0 0 1px var(--pb-divider); overflow: hidden; }
+#pbApp .pb-ai-mode[hidden] { display: none; }
+#pbApp .pb-ai-mode button { flex: 1 1 0; min-height: 44px; border: 0; background: transparent; color: var(--pb-text-2); font: 600 15px var(--pb-font, system-ui); }
+#pbApp .pb-ai-mode button[aria-pressed="true"] { background: var(--pb-brand-soft); color: var(--pb-text); box-shadow: inset 0 0 0 1.5px var(--pb-brand-line); }
+#pbApp #aiAskLeft { margin: 6px 16px 0 16px; }
+#pbApp .pb-docs-wrap { padding: 0 var(--pb-gutter, 16px) 24px var(--pb-gutter, 16px); }
+#pbApp .pb-docs-line { margin: 12px 0 0 0; font-size: 15px; color: var(--pb-text-2); }
+#pbApp .pb-docs-line:empty { display: none; }
+#pbApp .pb-docs-form { margin-top: 12px; padding: 14px; border-radius: var(--pb-r-card, 14px); background: var(--pb-raised); box-shadow: inset 0 0 0 1px var(--pb-divider); }
+#pbApp .pb-docs-form[hidden] { display: none; }
+#pbApp .pb-docs-file { margin: 0 0 10px 0; font-weight: 650; overflow-wrap: anywhere; }
+#pbApp .pb-docs-area { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+#pbApp .pb-docs-area .pb-field { margin: 0; min-width: 0; }
+#pbApp .pb-docs-area input { width: 100%; }
+#pbApp .pb-docs-k { margin: 12px 0 6px 0; font-size: 14px; font-weight: 650; color: var(--pb-text-2); }
+#pbApp .pb-docs-jobs { display: flex; flex-wrap: wrap; gap: 6px; }
+#pbApp .pb-docs-jobs button { min-height: 36px; padding: 4px 12px; border-radius: var(--pb-r-pill, 999px); border: 0; background: var(--pb-surface); color: var(--pb-text-2); box-shadow: inset 0 0 0 1px var(--pb-divider); font: 600 14px var(--pb-font, system-ui); max-width: 100%; overflow-wrap: anywhere; }
+#pbApp .pb-docs-jobs button[aria-pressed="true"] { background: var(--pb-brand-soft); color: var(--pb-text); box-shadow: inset 0 0 0 1.5px var(--pb-brand-line); }
+#pbApp .pb-docs-note { margin: 12px 0 0 0; font-size: 13px; line-height: 1.4; color: var(--pb-text-2); }
+#pbApp .pb-docs-form .pb-btn-row { display: flex; gap: 8px; margin-top: 12px; }
+#pbApp .pb-docs-form .pb-btn-row .pb-btn { flex: 1 1 0; }
+#pbApp .pb-docs-list { margin-top: 14px; }
+#pbApp .pb-docs-item { border-bottom: 1px solid var(--pb-divider); }
+#pbApp .pb-docs-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 56px; padding: 8px 4px 8px 12px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; }
+#pbApp button.pb-docs-row .chev { flex: 0 0 auto; color: var(--pb-text-3); font-size: 22px; transition: transform var(--pb-fast, .15s); }
+#pbApp .pb-docs-item.open button.pb-docs-row .chev { transform: rotate(90deg); }
+#pbApp .pb-docs-panel { padding: 4px 12px 14px 12px; }
+#pbApp .pb-docs-panel .pb-btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+#pbApp .pb-docs-panel .pb-btn-row .pb-btn { flex: 1 1 120px; }
+#pbApp .pb-docs-panel .pb-docs-scope { margin: 6px 0 0 0; }
+#pbApp .pb-docsrv-split { display: grid; grid-template-columns: 1fr; gap: 8px; }
+@media (min-width: 720px) { #pbApp .pb-docsrv-split { grid-template-columns: 180px 1fr; } }
+#pbApp .pb-docsrv-file { display: flex; flex-direction: column; gap: 4px; }
+#pbApp .pb-docsrv-file .sub { font-size: 13px; color: var(--pb-text-2); }
+#pbApp .pb-docsrv-text { max-height: 320px; overflow: auto; padding: 8px 10px; border-radius: 10px; background: var(--pb-surface); box-shadow: inset 0 0 0 1px var(--pb-divider); }
+#pbApp .pb-docsrv-text pre { margin: 0 0 8px 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.45 ui-monospace, Menlo, monospace; color: var(--pb-text); }
+#pbApp .pb-docsrv-pg { margin: 6px 0 2px 0; font-size: 12px; font-weight: 650; color: var(--pb-text-2); }
+#pbApp #docsRvList, #pbApp #docsRvStatus, #pbApp #docsRvSafety { margin: 0 var(--pb-gutter, 16px); }
+#pbApp #docsRvSafety { margin-top: 20px; padding-top: 4px; border-top: 1px solid var(--pb-divider); }
+#pbApp .pb-docsrv-res { margin: 10px 0 0 0; font-size: 15px; font-weight: 650; overflow-wrap: anywhere; }
+#pbApp .pb-docsrv-res:empty, #pbApp .pb-docsrv-res2:empty { display: none; }
+#pbApp .pb-docsrv-res.ok { color: var(--pb-ok); }
+#pbApp .pb-docsrv-res.bad { color: var(--pb-danger-text); }
+#pbApp .pb-docsrv-res2 { margin: 4px 0 0 0; font-size: 14px; color: var(--pb-text-2); }
+#pbApp .pb-docsrv-misses { margin-top: 10px; }
+#pbApp .pb-docsrv-misses[hidden] { display: none; }
+#pbApp .pb-docsrv-misses li { overflow-wrap: anywhere; }
+#pbApp .pb-docs-row .tx { flex: 1 1 auto; min-width: 0; }
+#pbApp .pb-docs-row .name { display: block; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#pbApp .pb-docs-row .sub { display: block; font-size: 14px; color: var(--pb-text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#pbApp .pb-docs-row .sub b { font-weight: 650; color: var(--pb-text); }
+#pbApp .pb-docs-row .sub b.bad { color: var(--pb-danger-text); }
+#pbApp #pjDocsRow { margin: 12px 0 0 0; }
+#pbApp #pjDocsRow[hidden], #pbApp #docsAddWrap[hidden], #pbApp #docsJobsWrap[hidden] { display: none; }
+.pb-tool-row[data-dest="askDocs"] { --pb-tool-icon: var(--pb-icon-info); }
+#pbApp #docsRvList .pb-docs-row .sub { white-space: normal; overflow: visible; }
+#pbApp .pb-ai-history:empty { display: none; }
+#pbApp .pb-ai-thread .pb-ai-qa + .pb-ai-qa { margin-top: 8px; }
+#pbApp .pb-ai-prev { margin: 12px 16px 0 16px; }
+#pbApp .pb-ai-prev .pb-ai-thread { margin: 8px -16px 0 -16px; opacity: .85; }
+#pbApp .pb-ask-head-acts { display: inline-flex; gap: 8px; align-items: center; }
+#pbApp .pb-ask-head-acts [hidden] { display: none; }
+#pbApp #aiAskSheet #aiAskClearWrap { display: none !important; }
+#pbApp #docsRvSafety[hidden] { display: none; }
+#pbApp .pb-ai-qa { scroll-margin-top: 96px; scroll-margin-bottom: 16px; }
+#pbApp .pb-ai-prev .pb-ai-qa { opacity: .72; filter: saturate(.5); }
+#pbApp .pb-ai-prev .pb-ai-qa .pb-ai-a { font-size: 15px; }
+#pbApp .pb-ai-status.pb-ai-quota-only { padding: 0; background: none; box-shadow: none; }
+#pbApp .pb-ai-status.pb-ai-quota-only .pb-ai-quota { margin-top: 8px; }
 
 /* UX batch 2 (B7): hide the browser's number up/down arrows. On the narrow ft/in boxes they sat where a mouse or
    trackpad tap lands and stepped an empty box to -1 (found by hunt4/engine a/b). Phones never showed them. */
@@ -4702,6 +4792,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <div class="pb-w10-rows" role="group" aria-label="App support">
           <button type="button" class="pb-edu-row pb-tool-row" id="settingsReportProblemBtn" data-ic="warn" onclick="pbOpenAppProblem()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Report an App Problem</span><span class="sub">Goes to the app&rsquo;s owner, not your company</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
           <button type="button" class="pb-edu-row pb-tool-row" id="settingsAppProblemsBtn" data-ic="people" hidden onclick="pbOpenAppProblems()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">App problems</span><span class="sub">Reports from people using the app (app owner only)</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
+          <button type="button" class="pb-edu-row pb-tool-row" id="settingsDocsReviewBtn" data-ic="people" hidden onclick="pbOpenDocsReview()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Documents review</span><span class="sub">Shared documents to check (app owner only)</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
         </div>
         <div class="pb-w10-ver"><span class="k" id="settingsAppBuildLabel">App version</span><code id="settingsAppBuild" aria-labelledby="settingsAppBuildLabel" style="cursor:pointer; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;">r10</code><button type="button" class="pb-btn ghost small" id="settingsCopyBuildBtn" onclick="pbCopyAppVersion()">Copy app version</button></div>
         <p class="pb-help" id="settingsCopyBuildMsg" role="status" hidden></p>
@@ -4812,6 +4903,23 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div id="apInboxList"></div>
     <div class="pb-btn-wrap" id="apInboxMoreWrap" style="display:none;"><button type="button" class="pb-btn secondary" id="apInboxMoreBtn" onclick="pbSupInboxLoad(true)">Load Older</button></div>
     <div class="pb-btn-wrap"><button type="button" class="pb-btn secondary" id="apInboxRefreshBtn" onclick="pbSupInboxLoad(false)"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Refresh</button></div>
+  </div>
+
+  <!-- ask_v2: DOCUMENTS REVIEW (app owner only): what would be published (the server's text) next to the stored file -->
+  <div class="pb-screen" id="screen-docsReview">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>Settings</span><button type="button" class="pb-back" title="Back" aria-label="Back" onclick="pbDocsReviewBack()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
+      <h1 class="pb-title">Documents Review</h1>
+    </div>
+    <p id="docsRvStatus" class="pb-docs-line" role="status" aria-live="polite"></p>
+    <div id="docsRvList"></div>
+    <section class="pb-docsrv-safety" id="docsRvSafety" aria-label="Safety check" hidden>
+      <div class="pb-btn-wrap" style="padding-left:0;padding-right:0;"><button type="button" class="pb-btn secondary" id="docsRvSafetyBtn" onclick="pbDocsRvSafety()">Run Safety Check</button></div>
+      <div class="pb-ai-wait" id="docsRvSafetyWait" hidden style="margin-left:0;margin-right:0;"><span role="status" aria-live="polite"><span class="pb-ai-dot" aria-hidden="true"></span><span id="docsRvSafetyWaitT"></span></span><button type="button" class="pb-btn small ghost" id="docsRvSafetyCancel" onclick="pbDocsRvSafetyCancel()">Cancel</button></div>
+      <p class="pb-docsrv-res" id="docsRvSafetyL1" role="status" aria-live="polite"></p>
+      <p class="pb-docsrv-res2" id="docsRvSafetyL2"></p>
+      <details class="pb-more pb-docsrv-misses" id="docsRvSafetyMisses" hidden><summary><span>Misses</span></summary><div id="docsRvSafetyMissList"></div></details>
+    </section>
   </div>
 
   <!-- CALCULATOR HUB -->
@@ -5210,15 +5318,47 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
     </div>
     <div class="pb-ai-ctx" id="aiAskCtx" hidden><span>Asking about <strong id="aiAskCtxLabel"></strong></span><button type="button" class="pb-ai-ctx-x" onclick="pbAiAskClearCtx()" aria-label="Ask about any topic instead" title="Any topic"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><use href="#pb-i-x"/></svg></button></div>
     <div class="pb-alert warn pb-ai-ask-warn"><strong>AI answers can be wrong.</strong> For safety rules, follow your competent person and your site&rsquo;s safety program. AI never decides whether a permit or an entry is a go.</div>
+    <div id="aiAskHistory" class="pb-ai-history"></div>
     <div class="pb-field" style="margin:16px 16px 0 16px;">
       <label for="aiAskBox">Your question</label>
       <textarea id="aiAskBox" rows="3" maxlength="600" placeholder="e.g. What does 15/SD on a stake mean?"></textarea>
     </div>
-    <p class="pb-ai-privacy">Sent to Anthropic to be read; not stored by the app. Don’t use AI with confidential job info.</p>
+    <p class="pb-ai-privacy" id="aiAskPrivacy">Sent to Anthropic to be read; not stored by the app. Don’t use AI with confidential job info.</p>
+    <div class="pb-ai-mode" id="aiAskMode" role="group" aria-label="Answer type" hidden><button type="button" data-val="ask" aria-pressed="false" onclick="pbAiAskSetMode('ask')">Ask</button><button type="button" data-val="analysis" aria-pressed="false" onclick="pbAiAskSetMode('analysis')">Analyze</button></div>
+    <p class="pb-ai-hint" id="aiAskLeft" hidden></p>
     <div class="pb-btn-wrap"><button class="pb-btn" id="aiAskBtn" onclick="pbAiAsk()">Ask</button></div>
+    <div class="pb-ai-wait" id="aiAskWait" hidden><span role="status" aria-live="polite"><span class="pb-ai-dot" aria-hidden="true"></span><span id="aiAskWaitT">Asking…</span></span><button type="button" class="pb-btn small ghost" id="aiAskCancel" onclick="pbAiAskCancel()">Cancel</button></div>
     <div class="pb-ai-status" id="aiAskStatus" role="status" aria-live="polite"></div>
-    <div id="aiAskHistory"></div>
-    <div class="pb-btn-wrap" id="aiAskClearWrap" style="display:none;"><button class="pb-btn ghost" onclick="pbAiAskClear()">Clear These Answers</button></div>
+    <div class="pb-btn-wrap" id="aiAskClearWrap" style="display:none;"><button class="pb-btn ghost" onclick="pbAiAskNewChat()">New Chat</button></div>
+  </div>
+
+  <!-- ask_v2: DOCUMENTS (More > Documents, and a row on the job page). The office and foremen add them; individual plan: private. -->
+  <div class="pb-screen" id="screen-askDocs">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>More</span><button type="button" class="pb-back" title="Back" aria-label="Back" onclick="pbDocsBack()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
+      <h1 class="pb-title">Documents</h1>
+    </div>
+    <div class="pb-docs-wrap">
+      <p class="pb-docs-line" id="docsLine" role="status" aria-live="polite"></p>
+      <div class="pb-btn-wrap" id="docsAddWrap" hidden style="padding-left:0;padding-right:0;"><button type="button" class="pb-btn" id="docsAddBtn" onclick="pbDocsPick()">Add Document</button></div>
+      <input type="file" id="docsFile" accept="application/pdf,image/*" hidden onchange="pbDocsPicked(this)">
+      <div class="pb-docs-form" id="docsForm" hidden>
+        <p class="pb-docs-file" id="docsFileName"></p>
+        <div class="pb-field"><label for="docsTitle">Title</label><input type="text" id="docsTitle" maxlength="200" autocomplete="off"></div>
+        <p class="pb-docs-k">Area</p>
+        <div class="pb-docs-area">
+          <div class="pb-field"><label for="docsCity">City</label><input type="text" id="docsCity" maxlength="80" autocomplete="off"></div>
+          <div class="pb-field"><label for="docsCounty">County</label><input type="text" id="docsCounty" maxlength="80" autocomplete="off"></div>
+          <div class="pb-field"><label for="docsState">State</label><input type="text" id="docsState" maxlength="2" autocapitalize="characters" autocomplete="off"></div>
+          <div class="pb-field"><label for="docsAgency">Agency</label><input type="text" id="docsAgency" maxlength="120" autocomplete="off"></div>
+        </div>
+        <div id="docsJobsWrap" hidden><p class="pb-docs-k">Jobs</p><div class="pb-docs-jobs" id="docsJobs"></div></div>
+        <p class="pb-docs-note">Public codes and specs that are an exact copy of the publisher’s own file are shared as “added by a user” (text only, never your file). Company material, job details and paid standards stay company-only.</p>
+        <div class="pb-btn-row"><button type="button" class="pb-btn ghost" onclick="pbDocsCancel()">Cancel</button><button type="button" class="pb-btn" id="docsUploadBtn" onclick="pbDocsUpload()">Upload</button></div>
+      </div>
+      <div class="pb-ai-wait" id="docsWait" hidden style="margin-left:0;margin-right:0;"><span role="status" aria-live="polite"><span class="pb-ai-dot" aria-hidden="true"></span><span id="docsWaitT"></span></span></div>
+      <div class="pb-docs-list" id="docsList"></div>
+    </div>
   </div>
 
   <!-- MY SHORTCUTS: EDIT (UX batch 2, A5) -->
@@ -6964,6 +7104,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
       <div id="pjCxTabs" class="pbx-tabs" role="tablist" aria-label="Job sections" hidden></div>
       <p id="pjStatus" class="pb-rpt-status" role="status"></p>
       <div id="pjBody"></div>
+      <div class="pb-tools-group" id="pjDocsRow" hidden><button type="button" class="pb-edu-row pb-tool-row" data-dest="askDocs" id="pjDocsBtn" onclick="pbDocsOpenFromJob()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Documents</span><span class="sub">Specs for this job</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button></div>
       <div class="pb-btn-wrap"><button type="button" class="pb-btn secondary" id="pjRefreshBtn" onclick="pbProdJobLoad()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Refresh</button></div>
       </div>
     </div>
@@ -11819,7 +11960,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.96 · 2026-11-03'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.97 · 2026-11-03'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -15135,6 +15276,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const PB_AI_URL = SUPABASE_URL + '/functions/v1/ai';
   const PB_AI_TIMEOUT_MS = 120000;
   const PB_AI_PRIVACY_LINE = 'Sent to Anthropic to be read; not stored by the app.';
+  // ask_v2: the assistant's display name, used for the tab label, the sheet and screen titles and the privacy line.
+  // A final name is a one-line change here.
+  const PB_AI_NAME = 'Ask';
+  window.PB_AI_NAME = PB_AI_NAME;
+  (function pbAiNameApply() {
+    try {
+      const set = (sel, t) => { const el = document.querySelector(sel); if (el) el.textContent = t; };
+      set('#pbTabAsk .lb', PB_AI_NAME); set('#screen-aiAsk .pb-eyebrow > span', PB_AI_NAME); set('#screen-aiAsk .pb-title', PB_AI_NAME);
+    } catch (e) {}
+  })();
   const PB_AI_MSG = {
     plan: 'AI is part of the paid plans (Individual or Contractor). Your plan on this phone doesn’t include it.',
     offline: 'No signal. AI needs a connection — nothing was sent. Everything else in the app still works offline.',
@@ -15147,9 +15298,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     notYet: 'AI isn’t available yet. It’s being set up — try again later.',
     unavailable: 'AI isn’t available right now. Try again later.',
     timeout: 'The AI took too long. Check your signal and try again.',
+    canceled: 'Canceled.', // ask_v2
+    dailyAnalysis: (n) => 'You’ve used today’s ' + n + ' business analyses. It resets tomorrow.', // ask_v2
     network: 'Couldn’t reach the AI. Check your signal and try again.'
   };
   let pbAiQuota = null; // { left, limit } from the last answer, for "N of 20 left today"
+  let pbAiAnalysisLeft = null; // ask_v2: office analyses left today (their own allowance)
   function pbAiPlanOk() { return pbTierMeetsRequirement('individual'); } // individual or contractor, active
   function pbAiQuotaText() { return pbAiQuota ? pbAiQuota.left + ' of ' + pbAiQuota.limit + ' left today' : ''; }
   // A status line: kind is info / warn / ok / danger (the shared alert styles).
@@ -15165,23 +15319,31 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbAiEnsurePrivacy(go) {
     let ok = false; try { ok = localStorage.getItem('pbAiPrivacyAck') === '1'; } catch (e) {}
     if (ok) { go(); return; }
-    pbShowModal('AI features send what you choose (a cutsheet PDF, a photo, or your question) to Anthropic, the maker of Claude, to be read. ' + PB_AI_PRIVACY_LINE + ' The app keeps only a count of how many AI requests you used today.\n\nAI can misread numbers. Nothing it reads goes into a run until you have checked it and tapped to use it.',
+    pbShowModal('AI features send what you choose (a cutsheet PDF, a photo, or your question) to Anthropic, the maker of Claude, to be read. ' + PB_AI_PRIVACY_LINE + (pbAiV2Ok() ? ' For company users, ' + PB_AI_NAME + ' can look up your jobs’ production, dailies, delays, tickets and similar records you already have access to, to answer you.' : '') + ' The app keeps only a count of how many AI requests you used today.\n\nAI can misread numbers. Nothing it reads goes into a run until you have checked it and tapped to use it.',
       [{ label: 'Cancel' }, { label: 'Continue', primary: true, onClick: () => { try { localStorage.setItem('pbAiPrivacyAck', '1'); } catch (e) {} go(); } }], 'Before You Use AI');
   }
   // One request. Resolves { ok: true, text, truncated } or { ok: false, code, message }; never throws.
-  async function pbAiRequest(feature, payload) {
+  async function pbAiToken() { // the login token, or null (ask_v2: shared with Documents)
+    if (!sbClient) return null;
+    try {
+      const r = await Promise.race([sbClient.auth.getSession(), new Promise(res => setTimeout(() => res(null), 8000))]);
+      return r && !r.error && r.data && r.data.session ? r.data.session.access_token : null;
+    } catch (e) { return null; }
+  }
+  // opts (ask_v2): { timeoutMs, signal } - a longer wait for Ask, and Cancel. Resolves { ok, text, truncated, data }.
+  async function pbAiRequest(feature, payload, opts) {
     if (!pbAiPlanOk()) return { ok: false, code: 'plan', message: PB_AI_MSG.plan };
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return { ok: false, code: 'offline', message: PB_AI_MSG.offline };
     if (!sbClient) return { ok: false, code: 'no_client', message: PB_AI_MSG.noClient };
-    let token = null;
-    try {
-      const r = await Promise.race([sbClient.auth.getSession(), new Promise(res => setTimeout(() => res(null), 8000))]);
-      token = r && !r.error && r.data && r.data.session ? r.data.session.access_token : null;
-    } catch (e) { token = null; }
+    const ext = opts && opts.signal ? opts.signal : null;
+    const canceled = { ok: false, code: 'canceled', message: PB_AI_MSG.canceled };
+    const token = await pbAiToken();
+    if (ext && ext.aborted) return canceled;
     if (!token) return { ok: false, code: 'signed_out', message: PB_AI_MSG.signedOut };
     const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     let timedOut = false;
-    const timer = setTimeout(() => { timedOut = true; try { if (ctl) ctl.abort(); } catch (e) {} }, window.__pbAiTimeoutMs || PB_AI_TIMEOUT_MS); // (__pbAiTimeoutMs: tests only)
+    const timer = setTimeout(() => { timedOut = true; try { if (ctl) ctl.abort(); } catch (e) {} }, window.__pbAiTimeoutMs || (opts && opts.timeoutMs) || PB_AI_TIMEOUT_MS); // (__pbAiTimeoutMs: tests only)
+    if (ext) ext.addEventListener('abort', () => { try { if (ctl) ctl.abort(); } catch (e) {} }, { once: true });
     let res = null, j = null;
     try {
       res = await fetch(PB_AI_URL, {
@@ -15193,20 +15355,23 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       try { j = await res.json(); } catch (e) { j = null; }
     } catch (e) {
       clearTimeout(timer);
+      if (ext && ext.aborted) return canceled;
       if (timedOut || (e && e.name === 'AbortError')) return { ok: false, code: 'timeout', message: PB_AI_MSG.timeout };
       const off = typeof navigator !== 'undefined' && navigator.onLine === false;
       return { ok: false, code: off ? 'offline' : 'network', message: off ? PB_AI_MSG.offline : PB_AI_MSG.network };
     }
     clearTimeout(timer);
+    if (ext && ext.aborted) return canceled;
     if (timedOut) return { ok: false, code: 'timeout', message: PB_AI_MSG.timeout };
     const st = res.status, err = j && typeof j.error === 'string' ? j.error : '';
     if (st === 200 && j && j.ok && typeof j.text === 'string') {
       const limit = Number(j.limit), used = Number(j.used);
-      if (Number.isFinite(limit) && Number.isFinite(used)) pbAiQuota = { left: Math.max(0, limit - used), limit };
-      return { ok: true, text: j.text, truncated: !!j.truncated };
+      if (Number.isFinite(limit) && Number.isFinite(used)) { if (j.mode === 'analysis') pbAiAnalysisLeft = Math.max(0, limit - used); else pbAiQuota = { left: Math.max(0, limit - used), limit }; }
+      return { ok: true, text: j.text, truncated: !!j.truncated, data: j };
     }
     if (st === 401) return { ok: false, code: 'signed_out', message: PB_AI_MSG.signedOut };
     if (st === 403) return { ok: false, code: 'plan', message: PB_AI_MSG.plan };
+    if (st === 429 && j && j.mode === 'analysis') { const lim = Number(j.limit) || 15; pbAiAnalysisLeft = 0; return { ok: false, code: 'analysis_limit', message: PB_AI_MSG.dailyAnalysis(lim) }; } // ask_v2
     if (st === 429) { const lim = Number(j && j.limit) || (pbAiQuota && pbAiQuota.limit) || 20; pbAiQuota = { left: 0, limit: lim }; return { ok: false, code: 'daily_limit', message: PB_AI_MSG.daily(lim) }; }
     if (st === 413) return { ok: false, code: 'too_big', message: PB_AI_MSG.tooBig };
     if (st === 404) return { ok: false, code: 'not_available', message: PB_AI_MSG.notYet };
@@ -15609,6 +15774,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!el || !lb) return;
     el.hidden = !pbAiAskCtx;
     lb.textContent = pbAiAskCtx ? pbAiAskCtx.label : '';
+    try { pbAiAskModeSync(); } catch (e) {} // ask_v2
   }
   window.pbAiAskClearCtx = function() {
     pbAiAskCtx = null; pbAiAskCtxRender();
@@ -15621,7 +15787,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     sh = document.createElement('div');
     sh.id = 'aiAskSheet'; sh.className = 'pb-edu-sheet pb-ask-sheet';
     sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-modal', 'true'); sh.setAttribute('aria-labelledby', 'aiAskSheetTitle');
-    sh.innerHTML = '<div class="pb-edu-sheet-inner"><div class="pb-edu-sheet-head"><h2 id="aiAskSheetTitle">Ask</h2><button type="button" class="pb-btn small" id="aiAskSheetClose" onclick="pbAskSheetClose()">Close</button></div><div id="aiAskSheetBody"></div></div>';
+    sh.innerHTML = '<div class="pb-edu-sheet-inner"><div class="pb-edu-sheet-head"><h2 id="aiAskSheetTitle">' + escapeHtml(PB_AI_NAME) + '</h2><span class="pb-ask-head-acts"><button type="button" class="pb-btn small ghost" id="aiAskNewChat" onclick="pbAiAskNewChat()"' + (pbAiAskHistory.length ? '' : ' hidden') + '>New Chat</button><button type="button" class="pb-btn small" id="aiAskSheetClose" onclick="pbAskSheetClose()">Close</button></span></div><div id="aiAskSheetBody"></div></div>';
     ['touchstart', 'touchmove', 'touchend'].forEach(ev => sh.addEventListener(ev, e => e.stopPropagation(), { passive: true })); // no edge-swipe Back off the screen underneath
     sh.addEventListener('keydown', e => { if (e.key === 'Escape' && !pbModalIsOpen()) { e.preventDefault(); window.pbAskSheetClose(); } });
     document.addEventListener('keydown', function(e) {
@@ -15643,6 +15809,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (typeof window.pbEduCloseHelp === 'function') { try { window.pbEduCloseHelp(); } catch (e) {} }
     pbAiAskCtx = window.pbAskContextFor(pbCurrentScreen);
     pbAiAskCtxRender();
+    pbAiAskMaybeRoll(); // ask_v2: another topic or screen, or 30 minutes idle: a new thread
     const sh = pbAskSheetEl(), body = document.getElementById('aiAskSheetBody'), scr = document.getElementById('screen-aiAsk');
     if (scr) [...scr.children].forEach(ch => { if (!ch.classList.contains('pb-header')) body.appendChild(ch); });
     pbAskSheetOpener = document.activeElement;
@@ -15705,10 +15872,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbAiAskCtx) parts.splice(1, 0, 'ASKED FROM: the app’s ' + pbAiAskCtx.label + ' screens (the excerpts favour those pages; answer the question as asked).');
     if (!ex.length) parts.push('(none matched this question)');
     ex.forEach(x => parts.push('[' + x.n + '] (page: ' + x.page + ') ' + x.text + (x.caution ? ' (page note: ' + x.caution + ')' : '')));
-    const prev = pbAiAskHistory.slice(0, 2);
+    const prev = pbAiAskTurns(); // ask_v2: this thread's last turns, not other threads
     if (prev.length) {
       parts.push('', 'EARLIER IN THIS CONVERSATION (context only):');
-      prev.slice().reverse().forEach(h => { parts.push('Q: ' + h.q.slice(0, 300)); parts.push('A: ' + h.body.slice(0, 500)); });
+      prev.slice().reverse().forEach(h => { parts.push('Q: ' + h.q.slice(0, 300)); parts.push('A: ' + pbAiAskA(h.body)); });
     }
     return parts.join('\n');
   }
@@ -15771,18 +15938,227 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       body: 'The app’s AI never decides whether a space or trench is safe to enter. Stop and ask your entry supervisor / competent person.\n\nThe pages below explain the rules, but they don’t decide for your site.' };
     return null;
   }
-  function pbAiAskRender() {
-    const box = document.getElementById('aiAskHistory'); if (!box) return;
-    box.innerHTML = pbAiAskHistory.map((h, i) => '<article class="pb-section pb-ai-qa" id="aiAskItem' + i + '"><div class="pb-body">'
+  // ---- ask_v2: one conversation in the same box. Each question joins the current thread and goes with its last 4
+  // turns as history (v1 text and v2 field). The thread shows in order, like a chat, above the box. New Chat clears it;
+  // opening Ask from another topic or screen, or after 30 minutes idle, starts a new thread and folds the old one away.
+  const PB_AI_TURNS = 4, PB_AI_IDLE_MS = 30 * 60 * 1000, PB_AI_KEEP = 16;
+  let pbAiAskThread = { tid: 1, key: null, at: 0 }, pbAiAskTidN = 1;
+  const pbAiAskCur = () => pbAiAskHistory.filter(h => h.tid === pbAiAskThread.tid); // newest first
+  function pbAiAskTurns() { return pbAiAskCur().slice(0, PB_AI_TURNS); }
+  function pbAiAskA(body) { const s = String(body || '').replace(/\s+\n/g, '\n'); return s.length <= 500 ? s : s.slice(0, 240) + ' … ' + s.slice(-250); } // the end too: a question Ask asked back is usually last
+  function pbAiAskKeyNow() { return pbAiAskCtx ? 'ctx:' + pbAiAskCtx.label : 'scr:' + String(pbCurrentScreen || ''); }
+  function pbAiAskRoll() { if (pbAiAskCur().length) pbAiAskThread = { tid: ++pbAiAskTidN, key: null, at: 0 }; }
+  function pbAiAskMaybeRoll() { // on opening Ask
+    const key = pbAiAskKeyNow();
+    if (pbAiAskCur().length && ((pbAiAskThread.key && pbAiAskThread.key !== key) || (pbAiAskThread.at && Date.now() - pbAiAskThread.at > PB_AI_IDLE_MS))) { pbAiAskRoll(); pbAiAskRender(); }
+    if (!pbAiAskCur().length) pbAiAskThread.key = key;
+  }
+  const pbAiAskCleared = new Set(); // threads New Chat cleared: a late answer for one of them is dropped
+  function pbAiAskJoin(entry, tid0) { // a new question and its answer join the thread it was asked in
+    if (tid0 !== undefined && pbAiAskCleared.has(tid0)) return false;
+    if (tid0 === undefined || tid0 === pbAiAskThread.tid) {
+      if (pbAiAskThread.at && Date.now() - pbAiAskThread.at > PB_AI_IDLE_MS) pbAiAskRoll();
+      if (!pbAiAskCur().length && !pbAiAskThread.key) pbAiAskThread.key = pbAiAskKeyNow();
+      tid0 = pbAiAskThread.tid; pbAiAskThread.at = Date.now();
+    }
+    // a safety thread stays one: follow-up answers keep the safety banner
+    if (!entry.local && pbAiAskHistory.some(h => h.tid === tid0 && h.safety)) entry.safety = true;
+    entry.tid = tid0;
+    pbAiAskHistory.unshift(entry);
+    if (pbAiAskHistory.length > PB_AI_KEEP) pbAiAskHistory.length = PB_AI_KEEP;
+    return true;
+  }
+  window.pbAiAskNewChat = function() {
+    pbAiAskHistory.forEach(h => pbAiAskCleared.add(h.tid)); pbAiAskCleared.add(pbAiAskThread.tid);
+    if (pbAiAskCtl) { try { pbAiAskCtl.abort(); } catch (e) {} } // a question still on its way is dropped
+    pbAiAskHistory.length = 0; pbAiAskThread = { tid: ++pbAiAskTidN, key: pbAiAskKeyNow(), at: 0 }; pbAiAskPrevOpen = false;
+    pbAiAskRender(); pbAiShow(document.getElementById('aiAskStatus'), '', '', '');
+    const b = document.getElementById('aiAskBox'); if (b) { try { b.focus({ preventScroll: true }); } catch (e) {} }
+  };
+  let pbAiAskPrevOpen = false; // the Earlier chat fold keeps its open state across answers
+  function pbAiAskScrollToNewest(local) { // the newest card's top in view (the whole card when it fits)
+    const el = document.getElementById('aiAskItem0'); if (!el || !el.scrollIntoView) return;
+    const sh = document.getElementById('aiAskSheet'), inSheet = !!(sh && sh.classList.contains('open'));
+    const room = (inSheet ? sh.clientHeight : window.innerHeight) - 140;
+    const go = () => { try { if (el.isConnected) el.scrollIntoView({ block: !local && el.offsetHeight <= room ? 'nearest' : 'start' }); } catch (e) {} };
+    go(); setTimeout(go, 350); // again after the app's keyboard nudge (focusin scrolls a just-focused box to the middle after 300 ms)
+  }
+  function pbAiAskScrollToBox() {
+    const b = document.getElementById('aiAskBox'); if (!b || !b.scrollIntoView) return;
+    try { b.closest('.pb-field').scrollIntoView({ block: 'end' }); } catch (e) {}
+  }
+  window.__pbAiAskAge = (ms) => { pbAiAskThread.at -= ms; }; // tests only: age the thread
+  // ---- ask_v2 (app side): the v2 request and reply. The server may still be v1: then r.data has no v: 2 and the
+  // reply is read exactly as before (pbAiParseTeacher). The request carries the v1 text too, so a v1 server answers it.
+  let pbAiAskMode = 'auto'; // office only: 'auto' (no choice) | 'ask' | 'analysis'
+  let pbAiAskCtl = null, pbAiAskTick = null;
+  // v2-only controls (Ask | Analyze, analyses left, Run Safety Check) stay hidden until the server has answered a v2
+  // request: remembered for the session and for 10 minutes on this phone.
+  let pbAiV2Seen = false;
+  function pbAiV2Ok() { if (pbAiV2Seen) return true; try { const t = Number(localStorage.getItem('pbAiV2At')); return !!t && Date.now() - t < 600000; } catch (e) { return false; } }
+  function pbAiV2Mark() { pbAiV2Seen = true; try { localStorage.setItem('pbAiV2At', String(Date.now())); } catch (e) {} }
+  window.pbAiV2Ok = pbAiV2Ok;
+  // The new function is deployed but v2 is switched off (503 ask_v2_off): the app owner may run the safety check (the gate).
+  let pbAiV2Off = false;
+  function pbAiV2Deployed() { if (pbAiV2Off) return true; try { const t = Number(localStorage.getItem('pbAiV2OffAt')); return !!t && Date.now() - t < 600000; } catch (e) { return false; } }
+  function pbAiV2OffMark() { pbAiV2Off = true; try { localStorage.setItem('pbAiV2OffAt', String(Date.now())); } catch (e) {} }
+  const pbAiSafetyCheckOk = () => pbAiV2Ok() || pbAiV2Deployed(); // shown only to the app owner
+  window.pbAiSafetyCheckOk = () => pbAiSafetyCheckOk();
+  // Today's privacy line stays until the server has answered v2; then the job-data wording.
+  const PB_AI_PRIV_V1 = 'Sent to Anthropic to be read; not stored by the app. Don\u2019t use AI with confidential job info.';
+  const pbAiPrivV2 = () => PB_AI_NAME + ' reads the job data you can see in the app and sends it with your question to Anthropic; not stored by the app.';
+  function pbAiPrivacySync() { const el = document.getElementById('aiAskPrivacy'); if (el) { const t = pbAiV2Ok() ? pbAiPrivV2() : PB_AI_PRIV_V1; if (el.textContent !== t) el.textContent = t; } }
+  function pbAiAskQuotaLine(st) {
+    if (!st) return; const q = pbAiQuotaText();
+    if (!q) { pbAiShow(st, '', '', ''); return; }
+    st.className = 'pb-ai-status pb-ai-quota-only'; st.innerHTML = '<span class="pb-ai-quota">' + escapeHtml(q) + '</span>';
+  }
+  let pbAiAskV1Only = false; // the server said Ask v2 is switched off (503 ask_v2_off): v1 for the rest of the session
+  const PB_AI_ASK_TIMEOUT_MS = 150000; // an office analysis can run about 2 minutes on the server
+  function pbAskIsOffice() { try { return !!window.pbAcOffice(pbArchiveOwnerUid); } catch (e) { return false; } }
+  function pbAskCurrentJob() { try { const j = pbTkCurrentJob(); return j && j.number ? String(j.number).slice(0, 60) : ''; } catch (e) { return ''; } }
+  function pbAskRunSummary() { // the run on this phone (it may not be sent yet), at most 1.5 KB
+    try {
+      const shown = (id) => { const el = document.getElementById(id); return !!el && el.style.display !== 'none'; };
+      const e = (shown('resumeTile') || shown('resumeLastRunTile')) ? pbHomeLiveRunEntry() : null;
+      if (!e) return null;
+      const s = e.summary || {}, p = Array.isArray(s.pipeInfo) && s.pipeInfo[0] ? s.pipeInfo[0] : {};
+      const r2 = (n) => Number.isFinite(n) ? Math.round(n * 100) / 100 : null;
+      const dist = (Array.isArray(e.segments) ? e.segments : []).reduce((t, x) => t + (Number(x && x.distFt) || 0), 0);
+      const o = { job: String(e.jobNumber || '').slice(0, 60), from: String(e.startLabel || '').slice(0, 60), to: String(e.endLabel || '').slice(0, 60),
+        slopePct: Number.isFinite(s.overallSlopePct) ? Math.round(s.overallSlopePct * 10000) / 10000 : null,
+        pipe: Number.isFinite(p.idIn) ? r2(p.idIn) + ' in' : null, distanceFt: r2(dist) || null,
+        laidFt: Number.isFinite(e.stoppedAtStation) ? r2(e.stoppedAtStation) : null };
+      return JSON.stringify(o).length <= 1500 ? o : null;
+    } catch (err) { return null; }
+  }
+  function pbAiAskPayload(q, ex) {
+    return { v: 2, question: q,
+      excerpts: ex.map(x => ({ n: x.n, article: x.article, anchor: x.anchor, title: x.title, page: x.page, caution: x.caution, text: x.text })),
+      history: pbAiAskTurns().map(h => ({ q: String(h.q || '').slice(0, 300), a: pbAiAskA(h.body) })), // this thread's last turns, newest first
+      ctx: { label: pbAiAskCtx ? pbAiAskCtx.label : '', screen: pbAiAskCtx ? pbAiAskCtx.screen : pbCurrentScreen, job: pbAskCurrentJob(), run: pbAskRunSummary() },
+      mode: pbAskIsOffice() && pbAiV2Ok() ? pbAiAskMode : 'auto' };
+  }
+  const pbAiCell = (c) => c === null || c === undefined ? '' : typeof c === 'number' ? (Number.isFinite(c) ? String(Math.round(c * 100) / 100) : '') : String(c);
+  function pbAiTableOk(t) {
+    if (!t || !Array.isArray(t.columns) || !Array.isArray(t.rows) || !t.columns.length || t.columns.length > 8 || t.rows.length > 25) return null;
+    const cell = (c) => c === null || typeof c === 'number' || typeof c === 'string';
+    if (!t.rows.every(r => Array.isArray(r) && r.length === t.columns.length && r.every(cell))) return null;
+    return { columns: t.columns.map(c => String(c).slice(0, 40)), rows: t.rows.map(r => r.map(c => typeof c === 'string' ? c.slice(0, 60) : c)) };
+  }
+  function pbAiChartOk(c) {
+    if (!c || !['bar', 'line'].includes(c.type) || !Array.isArray(c.x) || !c.x.length || c.x.length > 24 || !Array.isArray(c.series) || !c.series.length || c.series.length > 4) return null;
+    if (!c.series.every(s => s && Array.isArray(s.values) && s.values.length === c.x.length && s.values.every(v => v === null || (typeof v === 'number' && Number.isFinite(v))))) return null;
+    return { type: c.type, title: String(c.title || '').slice(0, 80), unit: String(c.unit || '').slice(0, 12), x: c.x.map(x => String(x).slice(0, 20)), series: c.series.map(s => ({ name: String(s.name || '').slice(0, 30), values: s.values })) };
+  }
+  function pbAiTableHtml(t) {
+    const num = t.columns.map((_, i) => t.rows.length && t.rows.every(r => r[i] === null || typeof r[i] === 'number'));
+    return '<div class="pb-ai-tablewrap"><table class="pb-ai-table"><thead><tr>' + t.columns.map((c, i) => '<th' + (num[i] ? ' class="num"' : '') + '>' + escapeHtml(c) + '</th>').join('') + '</tr></thead><tbody>'
+      + t.rows.map(r => '<tr>' + r.map((c, i) => '<td' + (typeof c === 'number' ? ' class="num"' : '') + '>' + escapeHtml(pbAiCell(c)) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>';
+  }
+  // A bar or line chart drawn by the app (no library). Theme tokens only, so light and dark both work.
+  const PB_AI_CHART_COL = ['var(--pb-brand)', 'var(--pb-text-2)', 'var(--pb-ok)', 'var(--pb-danger)'];
+  function pbAiChartHtml(c) {
+    const W = 320, H = 180, L = 40, R = 8, T = 8, B = 24, pw = W - L - R, ph = H - T - B;
+    const vals = c.series.flatMap(s => s.values).filter(v => typeof v === 'number');
+    if (!vals.length) return '';
+    let lo = Math.min(0, ...vals), hi = Math.max(0, ...vals); if (hi === lo) hi = lo + 1;
+    const raw = (hi - lo) / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), step = [1, 2, 2.5, 5, 10].map(k => k * mag).find(s => s >= raw) || raw;
+    hi = Math.ceil(hi / step) * step; lo = Math.floor(lo / step) * step;
+    const n = c.x.length, bw = pw / n, y = (v) => +(T + ph - (v - lo) / (hi - lo) * ph).toFixed(1);
+    const fmt = (v) => Math.abs(v) >= 10000 ? Math.round(v / 1000) + 'k' : Math.abs(v) >= 1000 ? (Math.round(v / 100) / 10) + 'k' : String(Math.round(v * 100) / 100);
+    let g = '';
+    for (let v = lo, k = 0; v <= hi + step / 2 && k < 12; v += step, k++) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--pb-divider)" stroke-width="' + (v === 0 ? 1.2 : 0.6) + '"/><text x="' + (L - 4) + '" y="' + (y(v) + 3) + '" text-anchor="end">' + fmt(v) + '</text>';
+    const every = Math.ceil(n / 7);
+    c.x.forEach((x, i) => { if (i % every === 0) g += '<text x="' + (L + bw * (i + 0.5)).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle">' + escapeHtml(x.length > 8 ? x.slice(0, 7) + '…' : x) + '</text>'; });
+    c.series.forEach((s, k) => {
+      const col = PB_AI_CHART_COL[k];
+      if (c.type === 'line') {
+        let d = '', pen = false;
+        s.values.forEach((v, i) => { if (v === null) { pen = false; return; } d += (pen ? 'L' : 'M') + (L + bw * (i + 0.5)).toFixed(1) + ' ' + y(v); pen = true; });
+        g += '<path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+        if (n <= 12) s.values.forEach((v, i) => { if (v !== null) g += '<circle cx="' + (L + bw * (i + 0.5)).toFixed(1) + '" cy="' + y(v) + '" r="2.5" fill="' + col + '"/>'; });
+      } else {
+        const sw = bw * 0.76 / c.series.length;
+        s.values.forEach((v, i) => { if (v === null) return; const x0 = L + bw * i + bw * 0.12 + sw * k, top = y(Math.max(v, 0)), bot = y(Math.min(v, 0));
+          g += '<rect x="' + x0.toFixed(1) + '" y="' + top + '" width="' + Math.max(1, sw - 1).toFixed(1) + '" height="' + Math.max(0.5, bot - top).toFixed(1) + '" rx="1.5" fill="' + col + '"/>'; });
+      }
+    });
+    const cap = (c.title || '') + (c.unit ? ' (' + c.unit + ')' : '');
+    const legend = c.series.length > 1 ? '<div class="pb-ai-legend">' + c.series.map((s, k) => '<span><i style="background:' + PB_AI_CHART_COL[k] + '"></i>' + escapeHtml(s.name || 'Series ' + (k + 1)) + '</span>').join('') + '</div>' : '';
+    return '<figure class="pb-ai-chart">' + (cap ? '<figcaption>' + escapeHtml(cap) + '</figcaption>' : '') + '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + escapeHtml(cap || 'Chart') + '">' + g + '</svg>' + legend + '</figure>';
+  }
+  const PB_AI_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function pbAiSourceChip(s) {
+    const n = s.n !== undefined && s.n !== null ? '[' + String(s.n).slice(0, 4) + '] ' : '';
+    const title = String(s.title || '').slice(0, 120);
+    let text;
+    if (s.kind === 'data') text = 'Your job data: ' + title;
+    else if (s.kind === 'doc') {
+      const m = String(s.doc_date || '').match(/^(\d{4})-(\d{2})/);
+      text = n + title + (m ? ' · ' + PB_AI_MONTHS[Number(m[2]) - 1] + ' ' + m[1] : '') + ' · ' + String(s.label || 'added by a user').slice(0, 60) + (s.official ? ' · official copy' : '') + (s.conflict ? ' · conflicts with another document' : '');
+    } else text = n + title + (s.source && !s.verbatim ? ' · ' + String(s.source).slice(0, 60) : s.verbatim ? ' · OSHA text' : '');
+    const url = s.kind === 'kb' && /^https:\/\/[^\s"'<>]+$/.test(String(s.url || '')) ? String(s.url) : '';
+    return url ? '<a class="pb-ai-chip" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(text) + '</a>' : '<span class="pb-ai-chip">' + escapeHtml(text) + '</span>';
+  }
+  function pbAiFromV2(d, q) {
+    if (d.local) return { kind: d.kind === 'emergency' ? 'emergency' : 'gonogo', safety: true, local: true, body: String(d.text || ''), sources: [] };
+    const srcs = Array.isArray(d.sources) ? d.sources.filter(s => s && typeof s === 'object') : [];
+    const app = srcs.filter(s => s.kind === 'app_page' && s.article && PB_EDU_ARTICLES[s.article]).map(s => ({ n: s.n, article: String(s.article), anchor: String(s.anchor || ''), title: String(s.title || pbEduArticleTitle(s.article) || '') }));
+    const more = srcs.filter(s => s.kind === 'kb' || s.kind === 'doc' || s.kind === 'data');
+    const analysis = d.mode === 'analysis';
+    return { v: 2, body: String(d.text || '').trim(), safety: !!d.safety || d.type === 'safety' || PB_AI_SAFETY_RX.test(q), sources: app, more, analysis,
+      table: pbAiTableOk(d.table), chart: analysis && pbAskIsOffice() ? pbAiChartOk(d.chart) : null };
+  }
+  function pbAiAskModeSync() {
+    pbAiPrivacySync();
+    const m = document.getElementById('aiAskMode'), off = pbAskIsOffice() && pbAiV2Ok() && !pbAiAskV1Only;
+    if (m) { m.hidden = !off; m.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(off && b.dataset.val === pbAiAskMode))); }
+    const left = document.getElementById('aiAskLeft');
+    if (left) { left.hidden = !(off && pbAiAnalysisLeft !== null); left.textContent = off && pbAiAnalysisLeft !== null ? 'Analyses left today: ' + pbAiAnalysisLeft : ''; }
+  }
+  window.pbAiAskSetMode = function(v) { pbAiAskMode = pbAiAskMode === v ? 'auto' : v; pbAiAskModeSync(); };
+  function pbAiAskWait(on) {
+    const w = document.getElementById('aiAskWait'), t = document.getElementById('aiAskWaitT');
+    if (pbAiAskTick) { clearInterval(pbAiAskTick); pbAiAskTick = null; }
+    if (!w) return;
+    w.hidden = !on; if (!on) return;
+    const t0 = Date.now(), word = pbAskIsOffice() && pbAiV2Ok() && pbAiAskMode === 'analysis' ? 'Analyzing…' : 'Asking…';
+    const draw = () => { const s = Math.floor((Date.now() - t0) / 1000); if (t) t.textContent = s < 5 ? word : word + ' ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+    draw(); pbAiAskTick = setInterval(draw, 1000);
+  }
+  window.pbAiAskCancel = function() { if (pbAiAskCtl) { try { pbAiAskCtl.abort(); } catch (e) {} } };
+  function pbAiAskItemHtml(h, i) { // i: 0 is the newest card; only it carries the hint and the full label
+    return '<article class="pb-section pb-ai-qa" id="aiAskItem' + i + '"><div class="pb-body">'
       + '<p class="pb-ai-q">' + escapeHtml(h.q) + '</p>'
-      + (h.kind === 'emergency' ? '<div class="pb-ai-em"><button type="button" class="pb-emergency-btn pb-ai-em-btn" onclick="pbAiAskEmergency()">EMERGENCY \u00b7 Call ' + escapeHtml(pbDialNumberNow()) + '</button><p class="pb-ai-hint">' + (confinedPermit ? 'Declares the emergency on the open permit and dials.' : 'No permit is open: this dials the emergency number.') + '</p></div>' : '')
+      + (h.kind === 'emergency' ? '<div class="pb-ai-em"><button type="button" class="pb-emergency-btn pb-ai-em-btn" onclick="pbAiAskEmergency()">EMERGENCY · Call ' + escapeHtml(pbDialNumberNow()) + '</button><p class="pb-ai-hint">' + (confinedPermit ? 'Declares the emergency on the open permit and dials.' : 'No permit is open: this dials the emergency number.') + '</p></div>' : '')
       + (h.safety && !h.local ? '<div class="pb-alert danger pb-ai-safety"><strong>Safety rule.</strong> Follow your competent person and your site’s safety program — they decide on site. AI never decides whether a permit, entry or trench is a go.</div>' : '')
       + (h.local ? '<div class="pb-alert danger pb-ai-local"><strong>' + (h.kind === 'emergency' ? 'Emergency' : 'Not an AI question') + '</strong><span class="pb-ai-a">' + escapeHtml(h.body) + '</span></div>' : '<div class="pb-ai-a">' + escapeHtml(h.body || '(no answer text)') + '</div>')
+      + (!h.local && h.table ? pbAiTableHtml(h.table) : '') // ask_v2: office tables (escaped cells, scrolls inside its card)
+      + (!h.local && h.chart ? pbAiChartHtml(h.chart) : '') // ask_v2: office analysis only
       + (h.truncated ? '<p class="pb-ai-flagnote">This answer was cut off.</p>' : '')
-      + (h.sources.length ? '<div class="pb-ai-src"><span class="pb-ai-src-k">' + (h.local ? 'Read:' : 'From this app:') + '</span>' + h.sources.map(x => '<button type="button" class="pb-edu-link" data-article="' + escapeHtml(x.article) + '" data-anchor="' + escapeHtml(x.anchor || '') + '" onclick="pbAiOpenSource(this)">[' + x.n + '] ' + escapeHtml(x.title) + '</button>').join('') + '</div>' : '<p class="pb-ai-hint">Not from this app’s Education pages.</p>')
-      + '<p class="pb-ai-hint pb-ai-label">' + (h.local ? 'Answered by the app \u00b7 no AI used' : 'AI answer \u00b7 can be wrong') + '</p>'
-      + '</div></article>').join('');
-    const cw = document.getElementById('aiAskClearWrap'); if (cw) cw.style.display = pbAiAskHistory.length ? '' : 'none';
+      + (h.sources.length ? '<div class="pb-ai-src"><span class="pb-ai-src-k">' + (h.local ? 'Read:' : 'From this app:') + '</span>' + h.sources.map(x => '<button type="button" class="pb-edu-link" data-article="' + escapeHtml(x.article) + '" data-anchor="' + escapeHtml(x.anchor || '') + '" onclick="pbAiOpenSource(this)">[' + escapeHtml(String(x.n)) + '] ' + escapeHtml(x.title) + '</button>').join('') + '</div>' : (h.local || i !== 0 || (h.more && h.more.length) ? '' : '<p class="pb-ai-hint">Not from this app’s Education pages.</p>'))
+      + (h.more && h.more.length ? '<div class="pb-ai-src">' + h.more.map(pbAiSourceChip).join('') + '</div>' : '')
+      + '<p class="pb-ai-hint pb-ai-label">' + (h.local ? 'Answered by the app · no AI used' : '<span class="pb-ai-tag">AI</span>' + (i !== 0 ? '' : ' ' + (h.analysis ? 'analysis of your company’s numbers \u00b7 check before acting' : 'answer \u00b7 can be wrong'))) + '</p>'
+      + '</div></article>';
+  }
+  function pbAiAskRender() {
+    const box = document.getElementById('aiAskHistory'); if (!box) return;
+    pbAiAskModeSync();
+    // ask_v2: the current thread in order (oldest first, newest just above the box); earlier threads folded above it
+    const idx = new Map(pbAiAskHistory.map((h, i) => [h, i]));
+    const cur = pbAiAskCur().slice().reverse(), prevTids = [];
+    pbAiAskHistory.forEach(h => { if (h.tid !== pbAiAskThread.tid && !prevTids.includes(h.tid)) prevTids.push(h.tid); });
+    const thread = (list) => '<div class="pb-ai-thread">' + list.map(h => pbAiAskItemHtml(h, idx.get(h))).join('') + '</div>';
+    const prevHtml = prevTids.map(t => thread(pbAiAskHistory.filter(h => h.tid === t).reverse())).join('');
+    const nPrev = pbAiAskHistory.filter(h => h.tid !== pbAiAskThread.tid).length;
+    box.innerHTML = (nPrev ? '<details class="pb-more pb-ai-prev" id="aiAskPrev"' + (pbAiAskPrevOpen ? ' open' : '') + '><summary><span>Earlier chat</span></summary>' + prevHtml + '</details>' : '') + (cur.length ? thread(cur) : '');
+    const pv = document.getElementById('aiAskPrev'); if (pv) pv.addEventListener('toggle', () => { pbAiAskPrevOpen = pv.open; });
+    const has = pbAiAskHistory.length > 0;
+    const cw = document.getElementById('aiAskClearWrap'); if (cw) cw.style.display = has ? '' : 'none';
+    const nc = document.getElementById('aiAskNewChat'); if (nc) nc.hidden = !has;
+    const q = document.getElementById('aiAskBox');
+    if (q) { if (q.dataset.ph0 === undefined) q.dataset.ph0 = q.getAttribute('placeholder') || ''; q.setAttribute('placeholder', cur.length ? 'Ask a follow-up…' : q.dataset.ph0); }
   }
   window.pbAiOpenSource = function(btn) {
     if (!window.pbCanOpen('formulasHub', { explain: true })) return;
@@ -15793,6 +16169,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbOpenAiAsk = function() {
     if (!window.pbCanOpen('aiAsk', { explain: true })) return;
     pbAiAskCtx = null; pbAiAskCtxRender(); // batch 5: no screen context from Tools
+    pbAiAskMaybeRoll(); // ask_v2
     pbGoto('aiAsk');
   };
   window.pbAiAskBack = function() { if (pbHistory.length) pbGoBack(); else pbGoto('tools'); };
@@ -15800,33 +16177,533 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const box = document.getElementById('aiAskBox'), st = document.getElementById('aiAskStatus'), btn = document.getElementById('aiAskBtn');
     const q = box ? box.value.trim() : '';
     if (!q) { pbAiShow(st, 'warn', 'Type a question first.', ''); return; }
+    if (pbAiAskThread.at && Date.now() - pbAiAskThread.at > PB_AI_IDLE_MS && !pbAiAskBusy) { pbAiAskRoll(); pbAiAskRender(); } // 30 minutes idle: a new thread
     const local = pbAiAskLocal(q); // SF5: never sent; no plan, privacy or daily count involved
     if (local) {
-      pbAiAskHistory.unshift(Object.assign({ q, truncated: false }, local));
-      if (pbAiAskHistory.length > 6) pbAiAskHistory.length = 6;
+      pbAiAskJoin(Object.assign({ q, truncated: false }, local));
       if (box) box.value = '';
-      pbAiShow(st, local.kind === 'emergency' ? 'danger' : 'warn', local.kind === 'emergency' ? 'Emergency: see below.' : 'Answered by the app.', 'Nothing was sent to AI.');
+      pbAiShow(st, local.kind === 'emergency' ? 'danger' : 'warn', local.kind === 'emergency' ? 'Emergency: see above.' : 'Answered by the app.', 'Nothing was sent to AI.');
       pbAiAskRender();
-      const first = document.getElementById('aiAskItem0'); if (first && first.scrollIntoView) first.scrollIntoView({ block: 'nearest' });
+      pbAiAskScrollToNewest(true); // the card's top (the EMERGENCY button) in view
       return;
     }
     if (!pbAiPlanOk()) { pbAiShow(st, 'warn', 'AI not on your plan.', PB_AI_MSG.plan); return; }
     if (pbAiAskBusy) return;
     pbAiEnsurePrivacy(async () => {
-      const ex = pbAiEduExcerpts(q);
+      const tid0 = pbAiAskThread.tid; // the thread it was asked in
+      const prevQ = (pbAiAskTurns()[0] || {}).q || ''; // a follow-up like "120 ft, 5 days" finds its pages through the question before it
+      const ex = pbAiEduExcerpts(prevQ ? q + ' ' + prevQ : q);
       pbAiAskBusy = true; if (btn) btn.disabled = true;
-      pbAiShow(st, 'info', 'Asking…', '');
+      pbAiShow(st, '', '', ''); // ask_v2: the wait line (with Cancel) shows instead
+      const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      pbAiAskCtl = ctl; pbAiAskWait(true);
       let r;
-      try { r = await pbAiRequest('teacher', { text: pbAiAskMessage(q, ex) }); } finally { pbAiAskBusy = false; if (btn) btn.disabled = false; }
-      if (!r.ok) { pbAiShow(st, 'warn', 'No answer.', r.message + ' Your question is still in the box.'); return; }
-      const a = pbAiParseTeacher(r.text, ex, q);
-      pbAiAskHistory.unshift(Object.assign({ q, truncated: !!r.truncated }, a));
-      if (pbAiAskHistory.length > 6) pbAiAskHistory.length = 6;
+      // ask_v2: the v2 fields, plus the v1 text so a server not yet updated answers exactly as before
+      const opts = { timeoutMs: PB_AI_ASK_TIMEOUT_MS, signal: ctl ? ctl.signal : null }, v1 = () => pbAiRequest('teacher', { text: pbAiAskMessage(q, ex) }, opts);
+      try {
+        r = pbAiAskV1Only ? await v1() : await pbAiRequest('teacher', Object.assign({ text: pbAiAskMessage(q, ex) }, pbAiAskPayload(q, ex)), opts);
+        if (!r.ok && r.code === 'ask_v2_off') { pbAiAskV1Only = true; pbAiV2OffMark(); r = await v1(); } // not switched on yet: the same question, the v1 way
+      }
+      finally { pbAiAskBusy = false; pbAiAskCtl = null; pbAiAskWait(false); if (btn) btn.disabled = false; }
+      if (pbAiAskCleared.has(tid0)) { pbAiShow(st, '', '', ''); return; } // New Chat while it was on its way: dropped
+      if (!r.ok) { pbAiShow(st, r.code === 'canceled' ? 'info' : 'warn', r.message, ''); if (r.code === 'analysis_limit' && st) { const qe = st.querySelector('.pb-ai-quota'); if (qe) qe.remove(); } pbAiAskModeSync(); return; }
+      if (r.data && r.data.v === 2) pbAiV2Mark(); // the server answers v2: its controls can show
+      const a = r.data && r.data.v === 2 ? pbAiFromV2(r.data, q) : pbAiParseTeacher(r.text, ex, q);
+      if (!pbAiAskJoin(Object.assign({ q, truncated: !!r.truncated || !!(r.data && r.data.partial) }, a), tid0)) return;
       if (box && box.value.trim() === q) box.value = '';
-      pbAiShow(st, 'ok', 'Answered.', '');
-      pbAiAskRender();
+      pbAiAskQuotaLine(st); // the card says it was answered; the status keeps only "N of 20 left today"
+      pbAiAskRender(); pbAiAskScrollToNewest(false);
     });
   };
+
+  // ---- ask_v2: Documents (More › Documents, and a row on the job page) ----
+  // Company specs, codes and data sheets for Ask. The office and foremen add them (an individual plan gets a private
+  // library); the server decides what is shared. Changes after the upload (area, jobs, Share / Company only, Continue,
+  // Remove) are for the uploader or the office only (can_manage). Until the backend answers, no Documents row is shown
+  // anywhere (More, the job page, Settings for the app owner): the app checks quietly and shows them once it does.
+  const PB_DOCS_URL = SUPABASE_URL + '/functions/v1/docs';
+  const pbDocs = { ready: null, list: [], file: null, job: '', jobs: [], picked: new Set(), busy: false, open: null, resume: null, mem: new Map() };
+  const pbDocsEl = (id) => document.getElementById(id);
+  function pbDocsCanAdd() {
+    const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared' || !pbTierMeetsRequirement('individual')) return false;
+    try { if (window.pbAcOffice(uid) || pbLvIsForeman(uid)) return true; } catch (e) {}
+    const s = sbCachedSubscription; return !!(s && s.tier === 'individual' && !s.companyId);
+  }
+  window.pbDocsCanAdd = pbDocsCanAdd;
+  const pbDocsMissing = (m) => /Could not find the function|function .* does not exist|schema "pb_docs" does not exist|PGRST202/i.test(String(m || ''));
+  // one short line per refusal code (pb_docs_set_scope, set_jobs, set_area, resume, the docs function)
+  const PB_DOCS_CODES = {
+    'pb:not_yours': 'Only the person who added it or the office can change it.', not_yours: 'Only the person who added it or the office can change it.',
+    'pb:not_ready': 'It’s still being checked.', 'pb:not_public': 'Only public codes and specs matched to the publisher’s file can be shared.',
+    'pb:already_shared': 'It’s already in the shared library.', 'pb:share_blocked': 'Sharing is paused for your company.',
+    'pb:rate': 'That’s today’s sharing limit. Try again tomorrow.', 'pb:cost_cap': 'This month’s document budget is used up. It stays as it is.',
+    cost_cap: 'This month’s document budget is used up. It stays as it is.', 'pb:ai_pages_month': 'This month’s scanned pages are used up. It stays as it is.',
+    state: 'It’s already being checked.', no_text: 'No readable text in this document.',
+    'pb:shared_area_locked': 'Make it company-only to change its area.'
+  };
+  const pbDocsCode = (c, dflt) => PB_DOCS_CODES[String(c || '')] || dflt || 'That didn’t work. Try again.';
+  function pbDocsSay(t) { const el = pbDocsEl('docsLine'); if (el) el.textContent = t || ''; }
+  function pbDocsWait(t) { const w = pbDocsEl('docsWait'), x = pbDocsEl('docsWaitT'); if (w) w.hidden = !t; if (x) x.textContent = t || ''; }
+  async function pbDocsCall(body, ms) {
+    const token = await pbAiToken(); if (!token) return { status: 401, j: null };
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = setTimeout(() => { try { if (ctl) ctl.abort(); } catch (e) {} }, ms || 60000);
+    try {
+      const res = await fetch(PB_DOCS_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'apikey': SUPABASE_PUBLISHABLE_KEY }, body: JSON.stringify(body), signal: ctl ? ctl.signal : undefined });
+      let j = null; try { j = await res.json(); } catch (e) { j = null; }
+      return { status: res.status, j };
+    } catch (e) { return { status: 0, j: null }; } finally { clearTimeout(timer); }
+  }
+  // a docs-function answer that isn't a success, as one line
+  const pbDocsErr = (r, dflt) => r.status === 403 ? pbDocsCode('not_yours') : r.status === 0 ? 'No signal. Try again.'
+    : r.j && PB_DOCS_CODES[r.j.error] ? PB_DOCS_CODES[r.j.error] : r.j && typeof r.j.message === 'string' && r.j.message.length < 140 ? r.j.message : dflt || 'That didn’t work. Try again.';
+  // an RPC answer: { ok, data } or { line }
+  async function pbDocsRpc(fn, args, dflt) {
+    const r = await pbPermitRpc(fn, args, 20000);
+    if (r.error) return { line: /pb:not_yours/.test(r.error.message || '') ? pbDocsCode('pb:not_yours') : (navigator.onLine === false ? 'No signal.' : dflt || 'That didn’t work. Try again.') };
+    const d = r.data || {};
+    if (d.ok !== true && d.code === 'pb:shared_area_locked' && typeof d.message === 'string' && d.message.length < 140) return { line: d.message, data: d }; // show the server's own words
+    if (d.ok !== true) return { line: d.code ? pbDocsCode(d.code, typeof d.message === 'string' && d.message.length < 140 ? d.message : dflt) : typeof d.message === 'string' && d.message.length < 140 ? d.message : dflt || 'That didn’t work. Try again.', data: d };
+    return { ok: true, data: d };
+  }
+  // Is the backend there? The list RPC and the docs function both answer; a missing one: no Documents rows.
+  async function pbDocsCheck() {
+    const [m, p] = await Promise.all([pbPermitRpc('pb_docs_mine', {}, 15000), pbDocs.ready === true ? Promise.resolve({ status: 200 }) : pbDocsCall({ action: 'probe' }, 15000)]);
+    if ((m && m.error && pbDocsMissing(m.error.message)) || p.status === 404) { pbDocs.ready = false; return false; }
+    if (!m || m.error || !m.data || m.data.ok !== true || !Array.isArray(m.data.docs)) return null;
+    pbDocs.ready = true; pbDocs.list = m.data.docs.filter(d => d && d.id); return true;
+  }
+  window.pbDocsReady = () => pbDocs.ready === true;
+  // A quiet check (at most every 10 minutes, signed in, with signal); when the backend answers, the rows appear.
+  let pbDocsQuietAt = 0, pbDocsQuietBusy = false;
+  async function pbDocsQuiet() {
+    if (pbDocs.ready === true || pbDocsQuietBusy || Date.now() - pbDocsQuietAt < 600000) return;
+    if (!sbClient || !sbUser || sbUser.id !== pbArchiveOwnerUid || navigator.onLine === false) return;
+    if (!pbDocsCanAdd() && !pbDocsRvIsAdmin()) return;
+    pbDocsQuietBusy = true; pbDocsQuietAt = Date.now();
+    let ok = null; try { ok = await pbDocsCheck(); } catch (e) { ok = null; } finally { pbDocsQuietBusy = false; }
+    if (ok === null) pbDocsQuietAt = Date.now() - 540000; // no answer (signal): try again in a minute
+    if (ok !== true) return;
+    try { if (pbCurrentScreen === 'tools') window.pbRenderToolsTab(); } catch (e) {}
+    try { const r = pbDocsEl('pjDocsRow'); if (r && pbCurrentScreen === 'prodJob') r.hidden = !pbDocsCanAdd(); } catch (e) {}
+    try { if (typeof pbSupAdminRow === 'function') pbSupAdminRow(); } catch (e) {}
+  }
+  window.pbDocsQuiet = pbDocsQuiet;
+  function pbDocsStatus(d) {
+    if (d.state === 'live') return d.scope === 'shared' ? 'Shared' : 'Company only';
+    if (d.state === 'checking') return 'Checking';
+    if (d.state === 'uploading') return 'Not finished';
+    return 'Failed';
+  }
+  const pbDocsAreaObj = (a) => a && typeof a === 'object' ? a : {};
+  const pbDocsAreaJoin = (o) => [o.city, o.county, o.agency, o.state].filter(Boolean).join(', ');
+  const pbDocsAreaText = (d) => (typeof d.area === 'string' && d.area.trim()) ? d.area : pbDocsAreaJoin(pbDocsAreaObj(d.user_area && typeof d.user_area === 'object' ? d.user_area : d.area)); // the document's own area, else the uploader's tags
+  const pbDocsTitle = (d) => String(d.public_title || d.title || 'Document');
+  const pbDocsAreaHtml = (p, a) => '<div class="pb-docs-area">' + [['city', 'City', 80], ['county', 'County', 80], ['state', 'State', 2], ['agency', 'Agency', 120]].map(([f, l, n]) =>
+    '<div class="pb-field"><label for="' + p + f + '">' + l + '</label><input type="text" id="' + p + f + '" maxlength="' + n + '" autocomplete="off"' + (f === 'state' ? ' autocapitalize="characters"' : '') + ' value="' + escapeHtml(String(a[f] || '')) + '"></div>').join('') + '</div>';
+  const pbDocsAreaRead = (p) => { const v = (f) => { const el = pbDocsEl(p + f); return el ? el.value.trim() : ''; };
+    return { city: v('city').slice(0, 80), county: v('county').slice(0, 80), state: v('state').toUpperCase().slice(0, 2), agency: v('agency').slice(0, 120) }; };
+  const pbDocsAreaBad = (a) => a.state && !/^[A-Z]{2}$/.test(a.state);
+  function pbDocsPanelHtml(d) {
+    const id = escapeHtml(String(d.id)), live = d.state === 'live', company = !!(sbCachedSubscription && sbCachedSubscription.companyId);
+    let h = '<div class="pb-docs-panel" id="docsPanel">';
+    if (d.state === 'uploading') h += '<div class="pb-btn-row"><button type="button" class="pb-btn" id="docsContinueBtn" data-id="' + id + '" onclick="pbDocsContinue(this.dataset.id)">Continue</button></div>';
+    if (live) h += '<div class="pb-ai-mode pb-docs-scope" role="group" aria-label="Sharing"><button type="button" data-v="private" aria-pressed="' + (d.scope !== 'shared') + '" onclick="pbDocsScope(this.dataset.v)">Company only</button><button type="button" data-v="shared" aria-pressed="' + (d.scope === 'shared') + '" onclick="pbDocsScope(this.dataset.v)">Share</button></div>';
+    h += '<p class="pb-docs-k">Area</p>' + pbDocsAreaHtml('docsEdA', pbDocsAreaObj(d.user_area && typeof d.user_area === 'object' ? d.user_area : d.area && typeof d.area === 'object' ? d.area : {}));
+    if (company && d.scope !== 'shared') {
+      const keys = new Set((Array.isArray(d.jobs) ? d.jobs : []).map(j => String(j).trim().toLowerCase()));
+      const shown = (Array.isArray(d.jobs) ? d.jobs : []).concat(d._seen || []); // a job just unlinked stays on the list
+      let known = []; try { known = pbTkKnownJobs(); } catch (e) { known = []; }
+      shown.forEach(j => { if (!known.some(k => String(k.number).trim().toLowerCase() === String(j).trim().toLowerCase())) known.unshift({ number: String(j) }); });
+      if (known.length) h += '<p class="pb-docs-k">Jobs</p><div class="pb-docs-jobs" id="docsEdJobs">' + known.slice(0, 20).map(j => { const k = String(j.number).trim().toLowerCase(); return '<button type="button" aria-pressed="' + keys.has(k) + '" data-n="' + escapeHtml(String(j.number)) + '" onclick="this.setAttribute(\'aria-pressed\', String(this.getAttribute(\'aria-pressed\') !== \'true\'))">' + escapeHtml(String(j.number)) + '</button>'; }).join('') + '</div>';
+    }
+    h += '<div class="pb-btn-row"><button type="button" class="pb-btn ghost" id="docsRemoveBtn" data-id="' + id + '" onclick="pbDocsRemove(this.dataset.id)">Remove</button><button type="button" class="pb-btn secondary" id="docsSaveBtn" onclick="pbDocsSaveEdits()">Save</button></div>';
+    return h + '</div>';
+  }
+  function pbDocsRender() {
+    const can = pbDocsCanAdd(), list = pbDocsEl('docsList'), add = pbDocsEl('docsAddWrap');
+    if (add) add.hidden = !(pbDocs.ready === true && can) || !pbDocsEl('docsForm').hidden || pbDocs.busy;
+    if (!list) return;
+    if (pbDocs.ready !== true) { list.innerHTML = ''; return; }
+    list.innerHTML = pbDocs.list.map(d => {
+      const st = pbDocsStatus(d), title = pbDocsTitle(d), mine = d.can_manage === true, open = mine && pbDocs.open === String(d.id);
+      const jobs = Array.isArray(d.jobs) && d.jobs.length ? d.jobs.slice(0, 3).join(', ') : '';
+      const sub = [pbDocsAreaText(d), jobs].filter(Boolean).join(' · ');
+      const inner = '<span class="tx"><span class="name">' + escapeHtml(title) + '</span><span class="sub"><b' + (st === 'Failed' ? ' class="bad"' : '') + '>' + st + '</b>' + (sub ? ' · ' + escapeHtml(sub) : '') + '</span></span>';
+      return '<div class="pb-docs-item' + (open ? ' open' : '') + '" data-id="' + escapeHtml(String(d.id)) + '">' + (mine
+        ? '<button type="button" class="pb-docs-row" aria-expanded="' + open + '" data-id="' + escapeHtml(String(d.id)) + '" onclick="pbDocsToggle(this.dataset.id)">' + inner + '<span class="chev" aria-hidden="true">&rsaquo;</span></button>'
+        : '<div class="pb-docs-row">' + inner + '</div>') + (open ? pbDocsPanelHtml(d) : '') + '</div>';
+    }).join('');
+  }
+  window.pbDocsToggle = function(id) { pbDocs.open = pbDocs.open === String(id) ? null : String(id); pbDocsSay(''); pbDocsRender(); };
+  async function pbDocsLoad(keepLine) {
+    const uid = pbArchiveOwnerUid;
+    if (!sbClient || !sbUser || sbUser.id !== uid) { pbDocsSay('Log in to see documents.'); pbDocsRender(); return; }
+    if (navigator.onLine === false) { pbDocsSay('No signal.'); pbDocsRender(); return; }
+    if (pbDocs.ready !== true && !keepLine) pbDocsSay('Loading…');
+    const ok = await pbDocsCheck();
+    if (pbCurrentScreen !== 'askDocs' || pbArchiveOwnerUid !== uid) return;
+    if (!pbDocs.list.some(d => String(d.id) === pbDocs.open)) pbDocs.open = null;
+    if (ok === false) { pbDocsSay(''); pbDocsRender(); setTimeout(() => { if (pbCurrentScreen === 'askDocs') window.pbDocsBack(); }, 0); return; } // gone: no dead end
+    if (!keepLine || ok !== true) pbDocsSay(ok === null ? 'Couldn’t load. Try again.' : pbDocs.list.length || pbDocs.busy ? '' : pbDocsCanAdd() ? 'No documents yet.' : 'Foremen and the office add documents.');
+    pbDocsRender();
+  }
+  window.pbDocsLoad = pbDocsLoad; // tests, and a refresh after changes
+  window.pbDocsOpen = function(job) {
+    if (!window.pbCanOpen('askDocs', { explain: true })) return;
+    if (pbDocs.ready !== true) { pbDocsQuietAt = 0; pbDocsQuiet(); return; } // not there yet: no screen to open
+    pbDocs.job = typeof job === 'string' ? job : '';
+    if (!pbDocs.busy) window.pbDocsCancel(true);
+    pbGoto('askDocs');
+  };
+  window.pbDocsOpenFromJob = function() { window.pbDocsOpen(typeof pbPj === 'object' && pbPj && pbPj.job ? String(pbPj.job.job_number || '') : ''); };
+  window.pbDocsBack = function() { if (pbHistory.length) pbGoBack(); else pbGotoTab('tools'); };
+  window.pbScreenHooks = Array.isArray(window.pbScreenHooks) ? window.pbScreenHooks : [];
+  window.pbScreenHooks.push(function(name) {
+    if (name === 'askDocs') { pbDocsRender(); pbDocsLoad(); }
+    if (name === 'prodJob') setTimeout(() => { const r = pbDocsEl('pjDocsRow'); if (r) r.hidden = !(pbDocsCanAdd() && pbDocs.ready === true); pbDocsQuiet(); }, 0);
+    if (name === 'tools' || name === 'settings') setTimeout(pbDocsQuiet, 0);
+    if (name === 'docsReview') { pbDocsRvRender(); const sf = pbDocsEl('docsRvSafety'); if (sf) sf.hidden = !(pbDocsRvIsAdmin() && pbAiSafetyCheckOk()); const b = pbDocsEl('docsRvSafetyBtn'); if (b && !pbDocsRvSafetyCtl) b.disabled = navigator.onLine === false; } // never offered offline; only once the server answers v2
+  });
+  // ---- changes to one document (uploader or office) ----
+  const pbDocsCur = () => pbDocs.list.find(d => String(d.id) === pbDocs.open) || null;
+  window.pbDocsScope = async function(v) {
+    const d = pbDocsCur(); if (!d || pbDocs.busy) return;
+    if ((v === 'shared') === (d.scope === 'shared')) return;
+    pbDocsWait(v === 'shared' ? 'Sharing…' : 'Making it company-only…');
+    const r = await pbDocsRpc('pb_docs_set_scope', { p_doc: d.id, p_scope: v });
+    pbDocsWait('');
+    if (!r.ok) { pbDocsSay(r.line); return; }
+    d.scope = r.data.scope === 'shared' ? 'shared' : 'private';
+    pbDocsSay(d.scope === 'shared' ? 'Shared as “added by a user”.' : 'Company only.'); pbDocsRender();
+  };
+  window.pbDocsSaveEdits = async function() {
+    const d = pbDocsCur(); if (!d || pbDocs.busy) return;
+    const area = pbDocsAreaRead('docsEdA');
+    if (pbDocsAreaBad(area)) { pbDocsSay('State is two letters, like AZ.'); return; }
+    pbDocsWait('Saving…');
+    const a = await pbDocsRpc('pb_docs_set_area', { p_doc: d.id, p_area: area });
+    let line = a.ok ? '' : a.line;
+    if (a.ok) d.user_area = a.data.area && typeof a.data.area === 'object' ? a.data.area : area;
+    const box = pbDocsEl('docsEdJobs');
+    if (!line && box) {
+      const jobs = [...box.querySelectorAll('button[aria-pressed="true"]')].map(b => b.dataset.n).slice(0, 20);
+      const j = await pbDocsRpc('pb_docs_set_jobs', { p_doc: d.id, p_jobs: jobs }, 'Only company-only documents can be linked to jobs.');
+      if (j.ok) { d._seen = [...new Set((d._seen || []).concat(d.jobs || []))]; d.jobs = jobs; } else line = j.line;
+    }
+    pbDocsWait(''); pbDocsSay(line || 'Saved.'); if (!line) pbDocsRender();
+  };
+  // ---- adding one ----
+  function pbDocsAreaDefault(job) {
+    const a = { city: '', county: '', state: '', agency: '' };
+    try {
+      const k = job ? pbCxKnownJob(job) : null, addr = String((k && k.address) || '').trim();
+      const m = addr.match(/([^,]+),\s*([A-Za-z]{2})\b[^,]*$/);
+      if (m) { a.city = m[1].trim().slice(0, 80); a.state = m[2].toUpperCase(); return a; }
+    } catch (e) {}
+    try { const o = JSON.parse(localStorage.getItem('pbDocsArea') || 'null'); if (o && typeof o === 'object') ['city', 'county', 'state', 'agency'].forEach(f => { if (typeof o[f] === 'string') a[f] = o[f].slice(0, 120); }); } catch (e) {}
+    return a;
+  }
+  window.pbDocsPick = function() { pbDocs.resume = null; const f = pbDocsEl('docsFile'); if (f) { f.value = ''; f.click(); } };
+  const pbDocsIsPdf = (file) => file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+  window.pbDocsPicked = function(inp) {
+    const file = inp && inp.files && inp.files[0]; if (!file) return;
+    if (!pbDocsIsPdf(file) && !/^image\//.test(file.type)) { pbDocsSay('Use a PDF or a photo.'); return; }
+    if (file.size > 50 * 1024 * 1024) { pbDocsSay('That file is over 50 MB.'); return; }
+    if (pbDocs.resume) { const rs = pbDocs.resume; pbDocs.resume = null; pbDocsResumeWith(rs, file); return; } // Continue: the same file again
+    pbDocs.file = file;
+    const job = pbDocs.job || pbAskCurrentJob(), a = pbDocsAreaDefault(job);
+    pbDocsEl('docsFileName').textContent = file.name;
+    pbDocsEl('docsTitle').value = String(file.name || '').replace(/\.[a-z0-9]{2,5}$/i, '').replace(/[_]+/g, ' ').trim().slice(0, 200);
+    pbDocsEl('docsCity').value = a.city; pbDocsEl('docsCounty').value = a.county; pbDocsEl('docsState').value = a.state; pbDocsEl('docsAgency').value = a.agency;
+    let known = []; try { known = pbTkKnownJobs(); } catch (e) { known = []; }
+    const key = (n) => String(n || '').trim().toLowerCase();
+    if (job && !known.some(j => key(j.number) === key(job))) known.unshift({ number: job, site: '' });
+    known.sort((x, y) => (key(y.number) === key(job)) - (key(x.number) === key(job)));
+    pbDocs.jobs = known.slice(0, 12); pbDocs.picked = new Set(pbDocs.job ? [key(pbDocs.job)] : []);
+    pbDocsJobsDraw();
+    pbDocs.open = null; pbDocsEl('docsForm').hidden = false; pbDocsSay(''); pbDocsRender();
+  };
+  function pbDocsJobsDraw() {
+    const w = pbDocsEl('docsJobsWrap'), box = pbDocsEl('docsJobs'); if (!w || !box) return;
+    w.hidden = !pbDocs.jobs.length || !(sbCachedSubscription && sbCachedSubscription.companyId);
+    box.innerHTML = pbDocs.jobs.map(j => { const k = String(j.number).trim().toLowerCase(); return '<button type="button" aria-pressed="' + pbDocs.picked.has(k) + '" data-k="' + escapeHtml(k) + '" onclick="pbDocsJobTap(this)">' + escapeHtml(j.number) + '</button>'; }).join('');
+  }
+  window.pbDocsJobTap = function(b) { const k = b.dataset.k; if (pbDocs.picked.has(k)) pbDocs.picked.delete(k); else pbDocs.picked.add(k); b.setAttribute('aria-pressed', String(pbDocs.picked.has(k))); };
+  window.pbDocsCancel = function(quiet) {
+    const f = pbDocsEl('docsForm'); if (f) f.hidden = true;
+    pbDocs.file = null; if (!quiet) pbDocsSay(''); pbDocsRender();
+  };
+  const pbDocsHex = (buf) => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  async function pbDocsPdf(buf) { // page count and each page's text layer, read on the phone with the bundled pdf.js
+    if (!(await pbEnsurePdfjs())) return null;
+    try {
+      const pdf = await pdfjsLib.getDocument(Object.assign({ data: new Uint8Array(buf.slice(0)) }, PB_PV_PDFJS)).promise;
+      const texts = [];
+      for (let n = 1; n <= pdf.numPages && n <= 400; n++) {
+        const pg = await pdf.getPage(n), tc = await pg.getTextContent();
+        texts.push(tc.items.map(i => (i.str || '') + (i.hasEOL ? '\n' : ' ')).join('').replace(/[ \t]+/g, ' ').trim().slice(0, 40000));
+      }
+      return { pdf, pages: pdf.numPages, texts };
+    } catch (e) { console.warn('Document PDF not read on the phone', e); return null; }
+  }
+  async function pbDocsPageJpeg(pdf, n) {
+    const pg = await pdf.getPage(n), v1 = pg.getViewport({ scale: 1 }), k = 1600 / Math.max(v1.width, v1.height), vp = pg.getViewport({ scale: k });
+    const c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+    await pg.render({ canvasContext: g, viewport: vp }).promise;
+    const d = c.toDataURL('image/jpeg', 0.7); return d.slice(d.indexOf(',') + 1);
+  }
+  const pbDocsB64Bytes = (b64) => { const s = atob(b64), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; };
+  async function pbDocsPrep(file) { // the bytes that are uploaded (a photo becomes a 1,600 px JPEG) and the phone's PDF text
+    if (pbDocsIsPdf(file)) { const bytes = new Uint8Array(await file.arrayBuffer()); return { bytes, mime: 'application/pdf', pdf: true, read: await pbDocsPdf(bytes.buffer), photo: null }; }
+    const photo = await pbAiPrepImage(file, 1600);
+    return { bytes: pbDocsB64Bytes(photo.data), mime: 'image/jpeg', pdf: false, read: null, photo };
+  }
+  function pbDocsDone(c, line) {
+    pbDocs.busy = false; pbDocs.file = null; pbDocs.open = null; pbDocsWait(''); pbDocsSay(line);
+    if (c && (c.finished || !c.id)) { if (c.id) pbDocs.mem.delete(String(c.id)); try { if (c.read && c.read.pdf) c.read.pdf.destroy(); } catch (e) {} } // kept until finished, for Continue
+    if (pbCurrentScreen === 'askDocs') pbDocsLoad(true); else pbDocsRender();
+  }
+  // The steps after begin, from `step` on. c = { id, path, bucket, bytes, mime, pdf, read, photo, area, jobs, staged, ai, server }
+  // step: 'upload' | 'verify' | 'extract' | 'read_or_finish'. Used by a new upload and by Continue.
+  async function pbDocsSteps(c, step) {
+    const order = ['upload', 'verify', 'extract', 'read_or_finish'], at = (s) => order.indexOf(step) <= order.indexOf(s);
+    if (at('upload') && c.bytes) {
+      pbDocsWait('Uploading…');
+      let up = null; try { up = await sbClient.storage.from(c.bucket || 'ask-docs').upload(c.path, new Blob([c.bytes], { type: c.mime }), { contentType: c.mime, upsert: false }); } catch (e) { up = { error: e }; }
+      const exists = up && up.error && (/exist|duplicate/i.test(String(up.error.message || '')) || String(up.error.statusCode || '') === '409');
+      if (!up || (up.error && !(c.resumed && exists))) return 'Upload didn’t finish. Tap Continue to try again.';
+    }
+    let pages = Number(c.pages) || (c.read ? c.read.pages : 1);
+    if (at('verify')) {
+      const v = await pbDocsCall({ action: 'verify_file', doc_id: c.id }, 60000);
+      if (v.status === 404) { pbDocs.ready = false; return 'That didn\u2019t work. Try again.'; }
+      if (v.status !== 200 || !v.j || !v.j.ok) return pbDocsErr(v);
+      if (v.j.existing) { c.finished = true; return 'Already in the shared library: your copy was linked to it.'; }
+      pages = Number(v.j.pages) || pages;
+      if (c.area && Object.values(c.area).some(Boolean)) await pbDocsRpc('pb_docs_set_area', { p_doc: c.id, p_area: c.area }); // the area is kept even if finish never runs
+      if (c.jobs && c.jobs.length) await pbDocsRpc('pb_docs_set_jobs', { p_doc: c.id, p_jobs: c.jobs });
+    }
+    const staged = new Set(c.staged || []), aiRead = new Set(c.ai || []), server = new Set(c.server || []);
+    const scanned = [];
+    if (c.pdf && at('extract')) {
+      pbDocsWait('Reading text…');
+      const tp = c.read ? c.read.texts.map((t, i) => ({ n: i + 1, text: t })).filter(p => p.n <= pages && !staged.has(p.n) && p.text.replace(/\s/g, '').length >= 10) : [];
+      for (let i = 0; i < tp.length; i += 100) { const r = await pbDocsRpc('pb_docs_put_pages', { p_doc: c.id, p_pages: tp.slice(i, i + 100) }); if (!r.ok) break; tp.slice(i, i + 100).forEach(p => staged.add(p.n)); }
+      // the server's own text: the only text that can be shared, and the only text when the phone couldn't read the PDF
+      let from = 1; while (from <= pages && server.has(from)) from++;
+      if (pages <= 120 && from <= pages) for (let k = 0; from && k < 40; k++) { const x = await pbDocsCall({ action: 'extract', doc_id: c.id, from }, 60000); if (x.status !== 200 || !x.j || !x.j.ok || x.j.skipped) break; from = x.j.next || null; }
+    }
+    if (c.read) { for (let n = 1; n <= Math.min(pages, c.read.texts.length); n++) if (!staged.has(n) && !aiRead.has(n) && c.read.texts[n - 1].replace(/\s/g, '').length < 10) scanned.push(n); }
+    else if (c.photo && !aiRead.has(1)) scanned.push(1);
+    const readScans = async () => {
+      for (let i = 0; i < scanned.length; i += 2) { // 2 pages per call
+        pbDocsWait('Reading scanned pages ' + Math.min(i + 2, scanned.length) + ' / ' + scanned.length);
+        const imgs = [];
+        for (const n of scanned.slice(i, i + 2)) imgs.push({ n, data: c.photo ? c.photo.data : await pbDocsPageJpeg(c.read.pdf, n) });
+        const r = await pbDocsCall({ action: 'read_pages', doc_id: c.id, images: imgs }, 130000);
+        if (r.status === 429) return { stop: pbDocsErr(r) };      // the month's pages or budget: say so, keep the upload as is
+        if (r.status !== 200 || !r.j || !r.j.ok) return { note: pbDocsErr(r, 'Some scanned pages weren’t read.') };
+      }
+      return {};
+    };
+    const finish = async (note) => {
+      pbDocsWait('Checking…');
+      const f = await pbDocsCall({ action: 'finish', doc_id: c.id, area: c.area || {} }, 140000);
+      if (f.status === 200 && f.j && f.j.ok) { c.finished = true; return String(f.j.line || 'Added.').slice(0, 160); }
+      if (f.status === 409) c.finished = true; // finished before (or being checked): nothing to continue
+      return note || pbDocsErr(f);
+    };
+    if (scanned.length > 20) {
+      pbDocsWait('');
+      return await new Promise(res => pbShowModal('Read ' + scanned.length + ' scanned pages with AI?', [
+        { label: 'Skip', onClick: async () => res(await finish('')) },
+        { label: 'Read Pages', primary: true, onClick: async () => { const s = await readScans(); res(s.stop || await finish(s.note)); } }], 'Scanned Pages', async () => res(await finish(''))));
+    }
+    const s = scanned.length ? await readScans() : {};
+    return s.stop || await finish(s.note);
+  }
+  window.pbDocsUpload = async function() {
+    if (pbDocs.busy || !pbDocs.file) return;
+    const file = pbDocs.file, title = pbDocsEl('docsTitle').value.trim() || file.name;
+    const area = { city: pbDocsEl('docsCity').value.trim().slice(0, 80), county: pbDocsEl('docsCounty').value.trim().slice(0, 80), state: pbDocsEl('docsState').value.trim().toUpperCase().slice(0, 2), agency: pbDocsEl('docsAgency').value.trim().slice(0, 120) };
+    if (pbDocsAreaBad(area)) { pbDocsSay('State is two letters, like AZ.'); return; }
+    try { localStorage.setItem('pbDocsArea', JSON.stringify(area)); } catch (e) {}
+    const jobs = pbDocs.jobs.filter(j => pbDocs.picked.has(String(j.number).trim().toLowerCase())).map(j => String(j.number));
+    pbDocs.busy = true; pbDocsEl('docsForm').hidden = true; pbDocsSay(''); pbDocsRender();
+    let c = null;
+    try {
+      pbDocsWait('Preparing…');
+      try { c = await pbDocsPrep(file); } catch (e) { pbDocsDone(null, PB_AI_PHOTO_FAIL); return; }
+      const sha = pbDocsHex(await crypto.subtle.digest('SHA-256', c.bytes));
+      const b = await pbDocsRpc('pb_docs_begin', { p_sha256: sha, p_title: title.slice(0, 200), p_bytes: c.bytes.length, p_pages: c.read ? c.read.pages : 1, p_mime: c.mime }, 'Couldn’t add it. Try again.');
+      if (!b.ok) { pbDocsDone(c, b.line); return; }
+      if (b.data.existing) { pbDocsDone(c, 'Already in your library: ' + String(b.data.existing.title || title).slice(0, 80) + '.'); return; }
+      Object.assign(c, { id: b.data.doc_id, path: b.data.storage_path, bucket: b.data.bucket, area, jobs });
+      pbDocs.mem.set(String(c.id), c); // Continue in this session needs no new pick
+      pbDocsDone(c, await pbDocsSteps(c, 'upload'));
+    } catch (e) { console.error(e); pbDocsDone(c, 'That didn’t work. Tap Continue to try again.'); }
+  };
+  // Continue an unfinished upload: pb_docs_resume says where it stands (`next`).
+  window.pbDocsContinue = async function(id) {
+    if (pbDocs.busy) return;
+    pbDocs.busy = true; pbDocsWait('Continuing…'); pbDocsRender();
+    const r = await pbDocsRpc('pb_docs_resume', { p_doc: id });
+    if (!r.ok) { pbDocsDone(null, r.line); return; }
+    const rs = r.data;
+    if (rs.next === 'none') { pbDocsDone(null, 'Already done.'); return; }
+    if (rs.next === 'uploader_must_upload') { const row = pbDocs.list.find(x => String(x.id) === String(id)); pbDocsDone(null, 'Only ' + String((row && row.added_by) || 'the person who added it').slice(0, 60) + ' can finish this upload.'); return; }
+    const kept = pbDocs.mem.get(String(id));
+    if (kept) { pbDocsResumeGo(rs, kept); return; }
+    const needFile = rs.next === 'upload_then_verify';
+    if (!needFile) { pbDocsResumeGo(rs, { pdf: rs.mime === 'application/pdf', read: null, photo: null, bytes: null }); return; } // the server has the file: its text, then finish
+    pbDocs.busy = false; pbDocsWait(''); pbDocsSay('Pick the same file to continue.');
+    pbDocs.resume = rs; const f = pbDocsEl('docsFile'); if (f) { f.value = ''; f.click(); }
+  };
+  async function pbDocsResumeWith(rs, file) {
+    pbDocs.busy = true; pbDocsWait('Preparing…'); pbDocsRender();
+    let c = null; try { c = await pbDocsPrep(file); } catch (e) { pbDocsDone(null, PB_AI_PHOTO_FAIL); return; }
+    if (c.mime !== rs.mime) { pbDocsDone(c, 'That isn’t the same file.'); return; }
+    pbDocsResumeGo(rs, c);
+  }
+  async function pbDocsResumeGo(rs, c) {
+    Object.assign(c, { id: rs.doc_id, path: rs.storage_path, bucket: 'ask-docs', pages: rs.pages, resumed: true, area: pbDocsAreaObj(rs.area), jobs: [],
+      staged: rs.staged_pages || [], ai: rs.ai_read_pages || [], server: rs.server_pages || [] });
+    try { pbDocsDone(c, await pbDocsSteps(c, rs.next === 'upload_then_verify' ? (c.bytes ? 'upload' : 'verify') : rs.next === 'extract' ? 'extract' : 'read_or_finish')); }
+    catch (e) { console.error(e); pbDocsDone(c, 'That didn’t work. Tap Continue to try again.'); }
+  }
+  window.pbDocsRemove = function(id) {
+    const d = pbDocs.list.find(x => String(x.id) === String(id)); if (!d) return;
+    pbConfirm('Remove “' + pbDocsTitle(d).slice(0, 80) + '”?', async () => {
+      pbDocsWait('Removing…');
+      const r = await pbDocsCall({ action: 'remove', doc_id: d.id }, 30000);
+      pbDocsWait('');
+      if (r.status === 200 && r.j && r.j.ok) { pbDocs.list = pbDocs.list.filter(x => x !== d); pbDocs.open = null; pbDocs.mem.delete(String(d.id)); pbDocsSay('Removed.'); pbDocsRender(); }
+      else pbDocsSay(pbDocsErr(r, 'Couldn’t remove it. Try again.'));
+    }, 'Remove Document');
+  };
+  // ---- app owner (pb_support admin): shared documents review. What would be published is the server's text, shown
+  // next to the stored file. ----
+  const pbDocsRv = { rows: [], blocked: [], open: null, doc: null, msg: '' };
+  function pbDocsRvIsAdmin() { return pbDocsRvIsAdmin0(); }
+  const pbDocsRvIsAdmin0 = () => !!(sbUser && pbSupAdminState.uid === sbUser.id && pbSupAdminState.admin === true);
+  window.pbOpenDocsReview = function() { // the shared documents list once docs answers; the safety check alone after ask_v2_off
+    if (pbDocs.ready !== true && !pbAiSafetyCheckOk()) return;
+    if (!pbDocsRvIsAdmin()) { pbAlert('This list is only for the app’s owner.', 'Documents Review'); return; }
+    pbGoto('docsReview'); if (pbDocs.ready === true) pbDocsRvLoad(); else { pbDocsRv.rows = []; pbDocsRv.blocked = []; pbDocsRv.msg = ''; pbDocsRvRender(); }
+  };
+  window.pbDocsReviewBack = function() { if (pbHistory.length) pbGoBack(); else window.pbOpenSettings(); };
+  async function pbDocsRvLoad() {
+    pbDocsRv.msg = 'Loading…'; pbDocsRvRender();
+    const r = await pbPermitRpc('pb_docs_admin_queue', { p_all: false }, 20000);
+    if (r.error || !r.data || r.data.ok !== true) { pbDocsRv.msg = /not_admin/.test(String(r.error && r.error.message)) ? 'This list is only for the app’s owner.' : 'Couldn’t load. Try again.'; pbDocsRvRender(); return; }
+    pbDocsRv.rows = (r.data.docs || []).filter(x => x && x.id); pbDocsRv.blocked = (r.data.blocked || []).filter(x => x && x.owner_key);
+    pbDocsRv.msg = pbDocsRv.rows.length || pbDocsRv.blocked.length ? '' : 'Nothing to review.'; pbDocsRvRender();
+  }
+  window.pbDocsRvOpen = async function(id) {
+    if (pbDocsRv.open === id) { pbDocsRv.open = null; pbDocsRv.doc = null; pbDocsRvRender(); return; }
+    pbDocsRv.open = id; pbDocsRv.doc = null; pbDocsRv.msg = ''; pbDocsRvRender();
+    const r = await pbPermitRpc('pb_docs_admin_doc', { p_doc: id }, 20000);
+    if (pbDocsRv.open !== id) return;
+    pbDocsRv.doc = r.error || !r.data || r.data.ok !== true ? { err: 'Couldn’t load the text.' } : r.data;
+    pbDocsRvRender();
+  };
+  window.pbDocsRvFile = async function() {
+    const d = pbDocsRv.doc; if (!d || !d.storage_path) return;
+    let u = null; try { const r = await sbClient.storage.from('ask-docs').createSignedUrl(d.storage_path, 300); u = r && r.data && r.data.signedUrl; } catch (e) { u = null; }
+    if (u) window.open(u, '_blank', 'noopener'); else { pbDocsRv.msg = 'Couldn’t open the file.'; pbDocsRvRender(); }
+  };
+  window.pbDocsRvAct = function(what, id, target) {
+    const row = pbDocsRv.rows.find(x => String(x.id) === String(id)), name = row ? pbDocsTitle(row).slice(0, 60) : '';
+    const ask = { keep: ['Keep “' + name + '” as it is?', 'Keep'], approve_share: ['Share “' + name + '” with everyone?', 'Share'], remove: ['Remove “' + name + '”? It counts as a strike.', 'Remove'],
+      remove_uploader: ['Remove everything this uploader added? It counts as a strike.', 'Remove All'], restore_company: ['Restore sharing for this company?', 'Restore'] }[what];
+    if (!ask) return;
+    pbShowModal(ask[0], [{ label: 'Cancel' }, { label: ask[1], primary: true, danger: /^remove/.test(what), onClick: async () => {
+      const r = await pbPermitRpc('pb_docs_admin_act', { p_what: what, p_doc: id || null, p_target: target || null, p_note: null, p_public_title: null }, 30000);
+      const ok = !r.error && r.data && r.data.ok === true;
+      if (ok && /^remove/.test(what)) await pbDocsCall({ action: 'purge' }, 30000); // the stored files go too
+      pbDocsRv.open = null; pbDocsRv.doc = null;
+      await pbDocsRvLoad();
+      pbDocsRv.msg = ok ? 'Done.' : r.data && r.data.code === 'pb:server_text_incomplete' ? 'The server hasn’t read every page; it can’t be shared.' : r.data && r.data.code === 'pb:needs_public_title' ? 'It needs a printed title before it can be shared.' : 'That didn’t work. Try again.';
+      pbDocsRvRender();
+    } }], 'Documents Review');
+  };
+  function pbDocsRvRender() {
+    const st = pbDocsEl('docsRvStatus'), box = pbDocsEl('docsRvList'); if (!box) return;
+    if (st) st.textContent = pbDocsRv.msg || '';
+    const one = (x) => {
+      const open = pbDocsRv.open === String(x.id), d = open ? pbDocsRv.doc : null, chk = x.check && typeof x.check === 'object' ? x.check.summary || '' : '';
+      const meta = [pbDocsAreaText(x), x.publisher, x.doc_date, x.company || 'Individual', 'Strikes ' + (Number(x.strikes) || 0)].filter(Boolean).join(' · ');
+      let h = '<div class="pb-docs-item' + (open ? ' open' : '') + '"><button type="button" class="pb-docs-row" aria-expanded="' + open + '" data-id="' + escapeHtml(String(x.id)) + '" onclick="pbDocsRvOpen(this.dataset.id)"><span class="tx"><span class="name">' + escapeHtml(pbDocsTitle(x)) + '</span><span class="sub"><b>' + escapeHtml(x.review === 'queued' ? 'To review' : x.scope === 'shared' ? 'Shared' : 'Company only') + '</b> · ' + escapeHtml(meta) + '</span>' + (chk ? '<span class="sub">' + escapeHtml(String(chk).slice(0, 160)) + '</span>' : '') + '</span><span class="chev" aria-hidden="true">&rsaquo;</span></button>';
+      if (open) {
+        h += '<div class="pb-docs-panel">';
+        if (!d) h += '<p class="pb-docs-line">Loading…</p>';
+        else if (d.err) h += '<p class="pb-docs-line">' + escapeHtml(d.err) + '</p>';
+        else {
+          const pages = Array.isArray(d.server_pages) && d.server_pages.length ? d.server_pages : (Array.isArray(d.published_chunks) ? d.published_chunks.map(c => ({ n: c.pages, text: c.text })) : []);
+          h += '<div class="pb-docsrv-split"><div class="pb-docsrv-file"><button type="button" class="pb-btn secondary small" id="docsRvFileBtn" onclick="pbDocsRvFile()">Open File</button><span class="sub">' + escapeHtml(String(d.mime || '')) + (d.doc && d.doc.pages ? ' · ' + escapeHtml(String(d.doc.pages)) + ' pages' : '') + '</span></div>'
+            + '<div class="pb-docsrv-text" id="docsRvText" tabindex="0" aria-label="Text that would be published">' + (pages.length ? pages.map(p => '<p class="pb-docsrv-pg">Page ' + escapeHtml(String(p.n)) + '</p><pre>' + escapeHtml(String(p.text || '')) + '</pre>').join('') : '<p class="pb-docs-line">No server text.</p>') + '</div></div>'
+            + (d.server_complete === false && x.scope !== 'shared' ? '<p class="pb-docs-line">The server hasn’t read every page.</p>' : '');
+        }
+        const b = (w, l, cls) => '<button type="button" class="pb-btn ' + (cls || 'secondary') + ' small" data-w="' + w + '" data-id="' + escapeHtml(String(x.id)) + '" onclick="pbDocsRvAct(this.dataset.w, this.dataset.id)">' + l + '</button>';
+        h += '<div class="pb-btn-row pb-docsrv-acts">' + b('keep', 'Keep') + (x.scope !== 'shared' ? b('approve_share', 'Approve Sharing') : '') + b('remove', 'Remove', 'ghost') + b('remove_uploader', 'Remove All From Uploader', 'ghost') + '</div></div>';
+      }
+      return h + '</div>';
+    };
+    box.innerHTML = pbDocsRv.rows.map(one).join('') + (pbDocsRv.blocked.length ? '<h2 class="pb-docs-k">Sharing paused</h2>' + pbDocsRv.blocked.map(b => '<div class="pb-docs-row"><span class="tx"><span class="name">' + escapeHtml(String(b.owner_key).slice(0, 40)) + '</span></span><button type="button" class="pb-btn secondary small" data-t="' + escapeHtml(String(b.owner_key)) + '" onclick="pbDocsRvAct(\'restore_company\', null, this.dataset.t)">Restore Sharing</button></div>').join('') : '');
+  }
+  // ---- app owner: Run Safety Check (the server's go/no-go classifier check, the gate before Ask v2 is switched on) ----
+  const PB_DOCSRV_SIDES = [['dangerous_caught', 'Dangerous', 'dangerous'], ['injection_caught', 'Injection', 'injection'], ['spanish_caught', 'Spanish', 'spanish'], ['ordinary_kept', 'Ordinary', 'ordinary'], ['questions_caught', 'Questions', 'questions']];
+  let pbDocsRvSafetyCtl = null, pbDocsRvSafetyTick = null;
+  function pbDocsRvSafetyShow(o) {
+    const l1 = pbDocsEl('docsRvSafetyL1'), l2 = pbDocsEl('docsRvSafetyL2'), mf = pbDocsEl('docsRvSafetyMisses'), ml = pbDocsEl('docsRvSafetyMissList'), btn = pbDocsEl('docsRvSafetyBtn'), w = pbDocsEl('docsRvSafetyWait'), wt = pbDocsEl('docsRvSafetyWaitT');
+    if (pbDocsRvSafetyTick) { clearInterval(pbDocsRvSafetyTick); pbDocsRvSafetyTick = null; }
+    if (btn) btn.disabled = !!o.busy || navigator.onLine === false;
+    if (w) w.hidden = !o.busy;
+    if (o.busy) { const t0 = Date.now(), draw = () => { const s = Math.floor((Date.now() - t0) / 1000); if (wt) wt.textContent = 'Checking… ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }; draw(); pbDocsRvSafetyTick = setInterval(draw, 1000); }
+    if (l1) { l1.textContent = o.l1 || ''; l1.className = 'pb-docsrv-res' + (o.pass === true ? ' ok' : o.pass === false ? ' bad' : ''); }
+    if (l2) l2.textContent = o.l2 || '';
+    if (mf && ml) { mf.hidden = !o.misses; mf.open = false; ml.innerHTML = o.misses || ''; }
+  }
+  window.pbDocsRvSafety = function() {
+    if (!pbDocsRvIsAdmin() || !pbAiSafetyCheckOk()) return;
+    if (navigator.onLine === false) { pbDocsRvSafetyShow({ l1: 'No signal.' }); return; }
+    pbShowModal('Runs about 150 checks on the server. Takes up to a minute and costs about 3 cents.', [{ label: 'Cancel' },
+      { label: 'Quick Check', onClick: () => pbDocsRvSafetyRun(3) }, { label: 'Run', primary: true, onClick: () => pbDocsRvSafetyRun(0) }], 'Run Safety Check');
+  };
+  window.pbDocsRvSafetyCancel = function() { if (pbDocsRvSafetyCtl) { try { pbDocsRvSafetyCtl.abort(); } catch (e) {} } };
+  async function pbDocsRvSafetyRun(limit) {
+    if (pbDocsRvSafetyCtl) return;
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null; pbDocsRvSafetyCtl = ctl || {};
+    let canceled = false; if (ctl) ctl.signal.addEventListener('abort', () => { canceled = true; }, { once: true });
+    pbDocsRvSafetyShow({ busy: true });
+    let st = 0, j = null, timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; try { if (ctl) ctl.abort(); } catch (e) {} }, window.__pbDocsRvSafetyMs || 120000); // (__pbDocsRvSafetyMs: tests only)
+    try {
+      const token = await pbAiToken();
+      if (!token) st = 401;
+      else {
+        const res = await fetch(PB_AI_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'apikey': SUPABASE_PUBLISHABLE_KEY },
+          body: JSON.stringify(limit ? { action: 'eval_gonogo', limit } : { action: 'eval_gonogo' }), signal: ctl ? ctl.signal : undefined });
+        st = res.status; try { j = await res.json(); } catch (e) { j = null; }
+      }
+    } catch (e) { st = 0; }
+    clearTimeout(timer); pbDocsRvSafetyCtl = null;
+    if (canceled && !timedOut) { pbDocsRvSafetyShow({ l1: 'Canceled.' }); return; }
+    if (st !== 200 || !j || j.ok !== true || !j.sides) {
+      pbDocsRvSafetyShow({ l1: st === 401 ? 'Log in again.' : st === 403 ? 'Only the app owner can run it.' : st === 503 && j && j.error === 'not_configured' ? 'The AI isn’t set up on the server.' : 'Didn’t finish, try again.' });
+      return;
+    }
+    const pct = (s) => { const r = Number.isFinite(Number(s.rate)) ? Number(s.rate) : (Number(s.n) ? Number(s.ok) / Number(s.n) : 0); return Math.round(r * 100) + '%'; };
+    const sides = PB_DOCSRV_SIDES.filter(([k]) => j.sides[k] && typeof j.sides[k] === 'object');
+    const failedCases = sides.reduce((t, [k]) => t + Math.max(0, (Number(j.sides[k].n) || 0) - (Number(j.sides[k].ok) || 0)), 0);
+    const l1 = (j.pass ? 'Passed' : 'Not passed') + ' · ' + sides.map(([k, name]) => name + ' ' + pct(j.sides[k])).join(' · ');
+    const l2 = 'Failed cases: ' + failedCases + (Number(j.failed) ? ' · Failed calls: ' + Number(j.failed) : '') + (Number.isFinite(Number(j.usd)) ? ' · $' + Number(j.usd).toFixed(2) : '');
+    const m = j.misses && typeof j.misses === 'object' ? j.misses : {};
+    const misses = PB_DOCSRV_SIDES.map(([, name, key]) => Array.isArray(m[key]) && m[key].length ? '<p class="pb-docsrv-pg">' + name + '</p><ul class="pb-ai-list">' + m[key].slice(0, 100).map(t => '<li>' + escapeHtml(String(t).slice(0, 500)) + '</li>').join('') + '</ul>' : '').join('');
+    pbDocsRvSafetyShow({ pass: !!j.pass, l1, l2, misses });
+  }
 
   function pointFieldsHTML(prefix, arch) {
     const st = pbRsStakeFirst(prefix); /* feat_runsetup: Survey Stake first, and the default */
@@ -32178,8 +33055,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // batch 4 (R1): Ask, on the Tools tab under Education & Reference; paid plans (like every Tools route, checked by pbCanOpen).
   PB_DESTINATIONS.push({ id: 'aiAsk', label: 'Ask a Question (AI)', sub: 'Plain answers from this app’s Education pages', cat: 'reference', gate: 'aiAsk', screen: 'aiAsk', words: 'ask ai question teacher explain learn help chat', open: () => pbOpenAiAsk() });
   if (!PB_INDIVIDUAL_SCREENS.includes('aiAsk')) PB_INDIVIDUAL_SCREENS.push('aiAsk');
+  PB_DESTINATIONS.push({ id: 'askDocs', label: 'Documents', sub: 'Specs, codes and data sheets', cat: 'reference', gate: 'askDocs', screen: 'askDocs', words: 'documents docs specs specifications codes standards data sheet manufacturer pdf upload library agency city county state', open: () => window.pbDocsOpen() }); /* ask_v2 */
+  if (!PB_INDIVIDUAL_SCREENS.includes('askDocs')) PB_INDIVIDUAL_SCREENS.push('askDocs');
   PB_DESTINATIONS.push({ id: 'talks', label: 'Toolbox Talks', sub: 'Safety talks for the crew', cat: 'reference', gate: 'formulasHub', screen: 'talks', words: 'toolbox talk talks tailgate safety meeting crew huddle osha weekly monday tool box', open: () => window.pbOpenTalks() }); /* feat_talks */
   PB_SCREEN_TABS.aiAsk = 'ask';
+  PB_SCREEN_TABS.askDocs = 'tools'; PB_SCREEN_TABS.docsReview = 'home'; // ask_v2
   PB_SCREEN_TABS.companyPermits = 'reports'; PB_SCREEN_TABS.tickets = 'reports'; PB_SCREEN_TABS.ticketForm = 'reports'; PB_SCREEN_TABS.ticketsDashboard = 'reports'; PB_CONTRACTOR_SCREENS.push('tickets', 'ticketForm', 'ticketsDashboard'); // batch 7: field tickets // batch 6b // batch 5: the Ask screen belongs to the Ask tab
   const PB_DEST = Object.fromEntries(PB_DESTINATIONS.map(d => [d.id, d]));
   const PB_DEST_BY_SCREEN = Object.fromEntries(PB_DESTINATIONS.map(d => [d.screen, d.id]));
@@ -32237,7 +33117,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // UX batch 3 (T1): the Calculators tab (calcHub, ids kept from A5: toolsSearchBox / toolsList) lists and
   // searches the calculators; the Tools tab (screen-tools) lists the other tools and searches everything.
   const pbToolsDests = () => PB_DESTINATIONS.filter(d => pbDestTab(d) === 'calculators');
-  const pbToolsAllDests = () => PB_DESTINATIONS.filter(d => pbDestTab(d) !== null || window.pbCanOpen(d.gate)); // batch 10 (W, F21): Reports items too, when the plan opens them
+  const pbToolsAllDests = () => PB_DESTINATIONS.filter(d => (pbDestTab(d) !== null || window.pbCanOpen(d.gate)) && (d.id !== 'askDocs' || (pbDocsCanAdd() && window.pbDocsReady()))); // ask_v2: Documents only once its backend answers // batch 10 (W, F21): Reports items too, when the plan opens them
   const pbGroupHTML = (name, ds) => ds.length ? '<section class="pb-edu-block" aria-label="' + escapeHtml(name) + '"><h2 class="pb-edu-h">' + escapeHtml(name) + '</h2><div class="pb-tools-group">' + ds.map(d => pbDestRowHTML(d)).join('') + '</div></section>' : '';
   // feat_core33 K6: a category button scrolls to that heading on the Calculators tab (under the sticky header).
   window.pbCalcCatJump = function(name) {
@@ -32252,7 +33132,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbRenderToolsTab() {
     const box = document.getElementById('toolsAllList'); if (!box) return;
-    box.innerHTML = PB_TOOLS_TAB_CATS.map(([cat, name]) => pbGroupHTML(name, PB_DESTINATIONS.filter(d => pbDestTab(d) === 'tools' && d.cat === cat && d.id !== 'aiAsk'))).join('') /* feat_core33 K7: Ask is the tab below (search still finds it) */
+    box.innerHTML = PB_TOOLS_TAB_CATS.map(([cat, name]) => pbGroupHTML(name, PB_DESTINATIONS.filter(d => pbDestTab(d) === 'tools' && d.cat === cat && d.id !== 'aiAsk' && (d.id !== 'askDocs' || (pbDocsCanAdd() && window.pbDocsReady()))))).join('') /* feat_core33 K7: Ask is the tab below (search still finds it) */
       + '<section class="pb-edu-block pb-tools-solo" aria-label="Home shortcuts"><div class="pb-tools-group">' /* feat_core33 K7: no heading over one row */
       + '<button type="button" class="pb-edu-row pb-tool-row" id="toolsEditShortcuts" data-ic="star" onclick="pbOpenShortcutsEdit()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Edit Home shortcuts</span><span class="sub">Pick the tools shown on Home</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>'
       + '</div></section>';
@@ -32413,7 +33293,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbShortcutsEditRenderAdd = function() {
     const box = document.getElementById('scEditAdd'); if (!box) return;
     const q = (document.getElementById('scEditSearch') || {}).value || '';
-    const left = pbDestSearch(q, PB_DESTINATIONS.filter(d => !pbScDraft.includes(d.id)));
+    const left = pbDestSearch(q, PB_DESTINATIONS.filter(d => !pbScDraft.includes(d.id) && (d.id !== 'askDocs' || window.pbDocsReady()))); // ask_v2
     const catName = (d) => (PB_DEST_CATS.find(c => c[0] === d.cat) || [])[1];
     box.innerHTML = left.length ? left.map(d => {
       const lock = pbDestLockReason(d);
@@ -35022,6 +35902,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbSupAdminRow() {
     const row = document.getElementById('settingsAppProblemsBtn'); if (!row) return;
     row.hidden = !(sbUser && pbSupAdminState.uid === sbUser.id && pbSupAdminState.admin === true);
+    const dr = document.getElementById('settingsDocsReviewBtn'); if (dr) dr.hidden = row.hidden || !(window.pbDocsReady() || window.pbAiSafetyCheckOk()); // ask_v2: once docs answers, or the safety check is due
   }
   async function pbSupCheckAdmin() {
     const uid = sbUser && sbUser.id;
