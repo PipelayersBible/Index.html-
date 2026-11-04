@@ -4951,8 +4951,8 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
     if (e.value !== v) { e.value = v; if (v) e.dataset.pbAuto = v; else delete e.dataset.pbAuto; e.dispatchEvent(new Event('input', { bubbles: true })); touched.delete(id); }
     markAuto(id);
   }
-  document.addEventListener('input', (ev) => { const e = ev.target; if (!e || (e.id !== 'pwOD' && e.id !== 'pwWall')) return; if (ev.isTrusted) delete e.dataset.pbAuto; markAuto(e.id); }, true); // typed: the person's
-  // fix95: real outside diameters (in) by nominal size, for Pipe Weight's auto OD. Same sources as the app's pipe index
+  document.addEventListener('input', (ev) => { const e = ev.target; if (!e || (e.id !== 'pwID' && e.id !== 'pwWall')) return; if (ev.isTrusted) delete e.dataset.pbAuto; markAuto(e.id); }, true); // typed: the person's
+  // fix95 + fix96_pw: real outside diameters (in) by nominal size, for Pipe Weight's true inside diameter (OD - 2 walls). Same sources as the app's pipe index
   // (feat_fitdata/pipe_index.json, its _sources):
   //  DIOD: AWWA C151 ductile iron ODs (US Pipe "Ductile Iron Pipe Design" Table 2 = AMERICAN Fastite dimensions); C900
   //        is made in DI ODs (Diamond Plastics catalog 11-20-2024). Also ASTM F714 DIPS HDPE.
@@ -4983,6 +4983,17 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
     else if (t === 'Concrete') return wFt > 0 ? r3(d + 2 * wFt * 12) : '';
     return od ? r3(od) : '';
   }
+  // fix96_pw: { v, how } for Pipe Weight's inside diameter. A standard OD for the type and size: true ID = OD - 2 x wall.
+  // Corrugated HDPE: Prinsco sizes are the inside diameter. No table (concrete, clay, other, a size not listed): the run's
+  // Pipe ID as entered (for RCP that is the true ID).
+  function pipeTrueID(type, idIn, wFt) {
+    const t = String(type || ''), d = Math.round(Number(idIn) * 1000) / 1000, r3 = (x) => String(Math.round(x * 1000) / 1000);
+    if (!(d > 0)) return { v: '', how: '' };
+    const label = t || 'PVC SDR 35';
+    if (t === 'Corrugated HDPE' && CORR[d]) return { v: r3(d), how: 'true ID for ' + label };
+    if (t !== 'Concrete' && wFt > 0) { const od = Number(pipeOD(t, d, wFt)), tid = od - 2 * wFt * 12; if (od > 0 && tid > 0) return { v: r3(tid), how: 'true ID for ' + label }; }
+    return { v: r3(d), how: 'from run' };
+  }
   const DEFAULTS = {
     manningCalc(p) {
       once('manDia', p.dia, (v) => fillInput('manDia', v));
@@ -4992,11 +5003,13 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
     pipeWeightCalc(p) {
       const k = typeKey(p.type);
       once('pwMaterialSel', k, (v) => fillSelect('pwMaterialSel', (o) => typeKey(o.textContent.split(/\s[—-]\s|\s~/)[0]) === v));
-      // calclive (#6) + fix95: wall (in) = the run's wall (ft) x 12. OD (in) = the real OD for the run's pipe type and
-      // size (Run Setup's Pipe ID is the nominal size); RCP = ID + 2 walls. No table for the type or size, or no run wall: OD is left.
+      // calclive (#6) + fix96_pw: inside diameter (in) = the true ID for the run's pipe (pipeTrueID); wall (in) = the run's wall
+      // (ft) x 12. Only for a run that has its pipe set up (a wall): a fresh phone's default size is not filled.
       const wFt = Number(val('runWT')), idIn = Number(p.dia), r3 = (x) => String(Math.round(x * 1000) / 1000);
       autoFill('pwWall', wFt > 0 ? r3(wFt * 12) : '');
-      autoFill('pwOD', wFt > 0 ? pipeOD($('runPipeType') ? val('runPipeType') : p.type, idIn, wFt) : ''); // only for a run that has its pipe set up (a wall)
+      const tid = wFt > 0 ? pipeTrueID($('runPipeType') ? val('runPipeType') : p.type, idIn, wFt) : { v: '', how: '' };
+      autoFill('pwID', tid.v);
+      const mk = $('pwIDAuto'); if (mk && isAuto($('pwID'))) { mk.title = tid.how; mk.setAttribute('aria-label', 'auto, ' + tid.how); }
     },
     bedShadeCalc(p) {
       once('bsW0', p.tw, (v) => fillInput('bsW0', v));
@@ -7909,7 +7922,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
       <div class="pb-body">
         <p class="pb-help" style="margin-top:0;">Plain wall only; bells and lining not counted. For a lift plan, use the manufacturer’s weight.</p>
         <div class="pb-row">
-          <div class="pb-field"><label>Outside diameter (in)</label><div class="pb-calc-autobox"><input type="number" enterkeyhint="next" step="0.01" id="pwOD" inputmode="decimal"><span class="pb-pa-auto" id="pwODAuto" hidden>auto</span></div></div>
+          <div class="pb-field"><label>Inside diameter (in)</label><div class="pb-calc-autobox"><input type="number" enterkeyhint="next" step="0.01" id="pwID" inputmode="decimal"><span class="pb-pa-auto" id="pwIDAuto" hidden>auto</span></div></div>
           <div class="pb-field"><label>Wall thickness (in)</label><div class="pb-calc-autobox"><input type="number" enterkeyhint="next" step="0.01" id="pwWall" inputmode="decimal"><span class="pb-pa-auto" id="pwWallAuto" hidden>auto</span></div></div>
         </div>
         <div class="pb-field"><label>Length (ft)</label><input type="number" enterkeyhint="next" step="0.1" id="pwLength" inputmode="decimal"></div>
@@ -11806,7 +11819,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.95 · 2026-11-03'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.96 · 2026-11-03'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -29227,21 +29240,20 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     document.getElementById('pwCorrugatedWarn').style.display = val === 'corrugated' ? '' : 'none';
   };
   window.pbCalcPipeWeight = function() {
-    const od = numVal('pwOD'), wall = numVal('pwWall'), len = numVal('pwLength');
+    const id = numVal('pwID'), wall = numVal('pwWall'), len = numVal('pwLength'); // fix96_pw: inside diameter, as the owner asked
     const sel = document.getElementById('pwMaterialSel');
     const isCorrugated = sel.value === 'corrugated';
     const density = sel.value === 'other' ? numVal('pwOther') : (isCorrugated ? 59 : parseFloat(sel.value));
     const resultEl = document.getElementById('pipeWeightResult');
-    if (od === null || wall === null || len === null || od <= 0 || wall <= 0 || len <= 0) { resultEl.textContent = 'Enter valid OD, wall thickness, and length, all greater than zero.'; return; }
+    if (id === null || wall === null || len === null || id <= 0 || wall <= 0 || len <= 0) { resultEl.textContent = 'Enter valid inside diameter, wall thickness, and length, all greater than zero.'; return; }
     if (density === null || density <= 0) { resultEl.textContent = 'Enter a valid material density greater than zero.'; return; }
-    const id = od - 2 * wall;
-    if (id <= 0) { resultEl.textContent = 'Wall thickness is too large for that OD — check the numbers.'; return; }
+    const od = id + 2 * wall; // fix96_pw: worked out, never entered
     const odFt = od / 12, idFt = id / 12;
     const crossAreaFt2 = (Math.PI / 4) * (odFt * odFt - idFt * idFt);
     const volumeFt3 = crossAreaFt2 * len;
     const totalWeight = volumeFt3 * density;
     const perFoot = totalWeight / len;
-    if (!Number.isFinite(totalWeight) || !Number.isFinite(perFoot)) { resultEl.textContent = 'Those values are outside what this calculator can compute (the result is not a finite number). Check the OD and wall thickness (inches) and the length (feet) for a typo.'; return; }
+    if (!Number.isFinite(totalWeight) || !Number.isFinite(perFoot)) { resultEl.textContent = 'Those values are outside what this calculator can compute (the result is not a finite number). Check the inside diameter and wall thickness (inches) and the length (feet) for a typo.'; return; }
     let html = `<div class="pb-answer-box"><div class="pb-answer-label">Total Segment Weight</div><div class="pb-answer-val">${totalWeight.toFixed(0)} lb</div></div>
       <div class="pb-answer-box"><div class="pb-answer-label">Weight per Foot</div><div class="pb-answer-val">${perFoot.toFixed(1)} lb/ft</div></div>`;
     if (isCorrugated) html += `<div class="pb-answer-sub pb-answer-warn" style="margin-top:6px;">This treats the corrugated wall as solid, which overstates the real weight — use the manufacturer's published number for anything that matters.</div>`;
@@ -30160,7 +30172,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if ((m = /^The curve distance from the corner needs to be farther out than (\S+) ft/.exec(t))) return 'Corner to curve must be more than ' + m[1] + ' ft.';
     if (/^That depth is too small next to the lift thickness/.test(t)) return 'Too shallow for one lift. Check depth (ft) and lift (in).';
     if ((m = /^That combination works out to (\S+) lifts/.exec(t))) return 'That works out to ' + m[1] + ' lifts. Check for a typo.';
-    if (/^Wall thickness is too large for that OD/.test(t)) return 'Wall is too thick for that OD. Check both.';
+    if (/^Enter valid inside diameter, wall thickness, and length/.test(t)) return 'ID, wall and length must be greater than zero.';
     if (/^Enter a valid edge length, angle/.test(t)) return 'Enter edge length, curve distance and angle 1–179°.';
     if (/^Rim elevation should be higher than the invert/.test(t)) return 'Rim must be higher than the invert. Check both.';
     const dash = t.split(/ [\u2014\u2013] /), tail = dash[1] && /^check /i.test(dash[1]) ? ' ' + dash[1].charAt(0).toUpperCase() + dash[1].slice(1).replace(/\.$/, '') + '.' : '';
