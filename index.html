@@ -2732,6 +2732,12 @@ html.pb-cx #homeFmPulse #homeFmCrew { display: none !important; } /* the Company
 #pbApp .pb-ai-rev-head { margin: 0 0 8px 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 16px; }
 #pbApp .pb-ai-flag input, #pbApp .pb-ai-flag select { border-color: var(--pb-warn, #E0A030) !important; }
 #pbApp .pb-ai-flagnote { margin: 6px 0 0 0; font-size: 14px; line-height: 1.4; color: var(--pb-warn-text, #F2C46B); }
+/* r15.99 streamed answers: a caret while words arrive; Retry after a drop */
+#pbApp .pb-ai-qa.pb-ai-live .pb-ai-a::after { content: ""; display: inline-block; width: 7px; height: 1em; margin-left: 2px; vertical-align: -2px; border-radius: 1px; background: var(--pb-text-2); opacity: .55; animation: pbAiCaret 1s steps(2, start) infinite; }
+@keyframes pbAiCaret { to { visibility: hidden; } }
+@media (prefers-reduced-motion: reduce) { #pbApp .pb-ai-qa.pb-ai-live .pb-ai-a::after { animation: none; } }
+#pbApp .pb-ai-retry { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+#pbApp .pb-ai-retry .pb-ai-flagnote { margin: 0; flex: 1 1 160px; }
 #pbApp .pb-ai-hint { margin: 6px 0 0 0; font-size: 14px; line-height: 1.4; color: var(--pb-text-2); overflow-wrap: anywhere; }
 #pbApp .pb-ai-list { margin: 4px 0 0 0; padding-left: 20px; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
 #pbApp .pb-ai-review .pb-btn-row { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
@@ -9546,8 +9552,8 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
 #pbApp#pbApp #screen-input .pb-fit-auto[hidden] { display: none; }
 #pbApp#pbApp #screen-input .pb-fit-check > span { font-size: 15px; color: var(--pb-text); }
 /* xingrow (owner, Nov 4): a crossing is its own row on Results; a thin red edge on it and on the rows up to 20 ft before it */
-#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-xing-near:not([data-laid-strip]) > td:first-child { box-shadow: inset 3px 0 0 var(--pb-danger-line); }
-#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-xing-near:not([data-laid-strip]):is(:focus-within, :has(+ tr.pb-noterow:not([style*="none"])), :has(+ tr.pb-noterow + tr.pb-noterow:not([style*="none"]))) > td:first-child { box-shadow: inset 4px 0 0 var(--pb-brand), inset 7px 0 0 var(--pb-danger-line); } /* fix98 4: the open-note / focus edge stays, the red edge beside it */
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-xing-near:not([data-laid-strip]):not(.pb-laid) > td:first-child { box-shadow: inset 3px 0 0 var(--pb-danger-line); }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-xing-near:not([data-laid-strip]):not(.pb-laid):is(:focus-within, :has(+ tr.pb-noterow:not([style*="none"])), :has(+ tr.pb-noterow + tr.pb-noterow:not([style*="none"]))) > td:first-child { box-shadow: inset 4px 0 0 var(--pb-brand), inset 7px 0 0 var(--pb-danger-line); } /* fix98 4: the open-note / focus edge stays, the red edge beside it */
 #pbApp#pbApp #screen-results #resultsBody tr.pb-xingrow > td { background: transparent; vertical-align: middle; -webkit-user-select: none; user-select: none; }
 #pbApp#pbApp #screen-results #resultsBody tr.pb-xingrow > td:nth-child(2) { position: sticky; left: 0; z-index: 2; background-color: var(--pb-surface); text-align: right; }
 #pbApp#pbApp #screen-results #resultsTable.pb-rs-fit tbody tr.pb-xingrow > td:nth-child(2) { font-size: var(--pb-rs-fs, 13px); line-height: 1.15; }
@@ -9571,6 +9577,39 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
 #pbApp .pb-fit-extra input { width: 100%; box-sizing: border-box; font-size: 17px; }
 #pbApp .pb-fit-left { margin: 8px 0 0 0; font-size: 15px; font-weight: 650; color: var(--pb-text); }
 #pbApp .pb-fit-left.bad { color: var(--pb-danger-text); }
+/* fitcard (owner, Nov 4): the fitting card on Results and its row, one unit */
+#pbApp .pb-fit-line.pb-fitcard { display: flex; flex-direction: column; align-items: stretch; gap: 6px; margin: 0 0 4px 0; }
+#pbApp .pb-fitcard .pb-fit-head { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+#pbApp#pbApp .pb-fitcard .pb-fit-title { display: block; flex: 1 1 auto; min-width: 0; margin: 0; font-size: 16px; line-height: 1.25; font-weight: 700; text-transform: none; letter-spacing: 0; color: var(--pb-text); overflow-wrap: anywhere; }
+#pbApp .pb-fitcard .pb-fit-at { flex: 0 0 auto; margin-left: auto; font-size: 15px; line-height: 1.25; font-weight: 700; color: var(--pb-text); white-space: nowrap; font-variant-numeric: tabular-nums; }
+#pbApp .pb-fitcard .pb-fit-at .pb-fit-sta { font-weight: 600; color: var(--pb-text-2); }
+#pbApp .pb-fitcard .pb-fit-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: -3px; font-size: 13px; line-height: 1.3; font-weight: 500; color: var(--pb-text-3); }
+#pbApp .pb-fitcard .pb-fit-raw { min-width: 0; overflow-wrap: anywhere; }
+#pbApp .pb-fitcard .pb-fit-vtag { flex: 0 0 auto; padding: 0 7px; border-radius: var(--pb-r-pill, 999px); border: 1px solid var(--pb-divider); font-size: 12px; line-height: 18px; font-weight: 600; color: var(--pb-text-3); white-space: nowrap; }
+#pbApp .pb-fitcard .pb-fit-vtag.ok { border-color: var(--pb-ok); color: var(--pb-ok); }
+#pbApp .pb-fitcard .pb-fit-facts { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; font-size: 13px; line-height: 1.35; font-weight: 600; color: var(--pb-text-2); font-variant-numeric: tabular-nums; }
+#pbApp .pb-fitcard .pb-fit-facts .pb-fit-dot { color: var(--pb-text-3); }
+#pbApp .pb-fitcard .pb-fit-facts .pb-fit-v { color: var(--pb-text); }
+#pbApp .pb-fitcard .pb-fit-auto { padding: 0 6px; border-radius: var(--pb-r-pill, 999px); background: var(--pb-raised-2, var(--pb-raised)); border: 1px solid var(--pb-control); font-size: 11px; line-height: 16px; font-weight: 650; color: var(--pb-text-2); }
+#pbApp .pb-fitcard .pb-fit-ask { display: flex; align-items: center; gap: 8px 10px; min-width: 0; }
+#pbApp .pb-fitcard .pb-fit-ask .pb-fit-q, #pbApp .pb-fitcard .pb-fit-ask .pb-fit-ans { flex: 1 1 auto; min-width: 0; font-size: 14px; line-height: 1.3; }
+#pbApp .pb-fitcard .pb-fit-ask .pb-fit-btns { flex: 0 0 auto; margin-left: auto; }
+#pbApp#pbApp .pb-fitcard .pb-fit-ask .pb-fit-btns .pb-btn { min-width: 52px; padding-left: 12px; padding-right: 12px; }
+#pbApp .pb-fitcard > .pb-fit-q { font-size: 14px; color: var(--pb-warn-text, var(--pb-text)); }
+#pbApp #screen-results #resultsBody .pb-fit-rtag { display: block; margin-top: 1px; max-width: 7em; margin-left: auto; overflow: hidden; text-overflow: ellipsis; font-size: 11px; line-height: 1.2; font-weight: 700; color: var(--pb-info); white-space: nowrap; text-transform: none; letter-spacing: 0; }
+#pbApp #screen-results #resultsTable.pb-zoom .pb-fit-rtag { font-size: 13px; }
+/* the shared left edge: blue on the card and its row; Next / open note: gold instead; near a crossing (not laid): red beside it. At most two stripes. */
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitstrip[data-laid-strip] > td { box-shadow: inset 0 1px 0 var(--pb-divider), inset 3px 0 0 var(--pb-info); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitrow:not([data-laid-strip]) > td:first-child { box-shadow: inset 3px 0 0 var(--pb-info); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitrow:not([data-laid-strip]):is(.pb-laid-next, :focus-within, :has(+ tr.pb-noterow:not([style*="none"])), :has(+ tr.pb-noterow + tr.pb-noterow:not([style*="none"]))) > td:first-child { box-shadow: inset 4px 0 0 var(--pb-brand); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitrow.pb-xing-near:not([data-laid-strip]):not(.pb-laid) > td:first-child { box-shadow: inset 3px 0 0 var(--pb-info), inset 6px 0 0 var(--pb-danger-line); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitrow.pb-xing-near:not([data-laid-strip]):not(.pb-laid):is(.pb-laid-next, :focus-within, :has(+ tr.pb-noterow:not([style*="none"])), :has(+ tr.pb-noterow + tr.pb-noterow:not([style*="none"]))) > td:first-child { box-shadow: inset 4px 0 0 var(--pb-brand), inset 7px 0 0 var(--pb-danger-line); }
+/* fitcard v2 (owner): the fitting's row is Next: the card wears the same gold as its row, one gold block (no line between) */
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitstrip.pb-laid-nextstrip[data-laid-strip] > td { background-color: var(--pb-surface) !important; background-image: linear-gradient(var(--pb-brand-soft), var(--pb-brand-soft)) !important; box-shadow: inset 4px 0 0 var(--pb-brand), inset 0 2px 0 var(--pb-brand-line); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitrow.pb-laid-next:not([data-laid-strip]) > td { border-top-color: transparent; }
+/* fitcard v3 (owner): the row's red crossing stripe runs on up through its card, same place and width */
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitstrip[data-laid-strip]:has(+ tr.pb-fitrow.pb-xing-near:not(.pb-laid)) > td { box-shadow: inset 3px 0 0 var(--pb-info), inset 6px 0 0 var(--pb-danger-line), inset 0 1px 0 var(--pb-divider); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitstrip.pb-laid-nextstrip[data-laid-strip]:has(+ tr.pb-fitrow.pb-xing-near:not(.pb-laid)) > td { box-shadow: inset 4px 0 0 var(--pb-brand), inset 7px 0 0 var(--pb-danger-line), inset 0 2px 0 var(--pb-brand-line); }
 #pbApp .pb-rvw .pb-rvw-more { margin: 6px 0 0 0; } #pbApp .pb-rvw .pb-rvw-more > summary { min-height: 44px; display: flex; align-items: center; font-weight: 600; cursor: pointer; } #pbApp .pb-rvw .pb-rvw-more > p { margin: 0; } /* cleanup A */
 #pbApp .pb-xing-rv { margin: 0 16px 12px 16px; padding: 8px 12px; border-left: 4px solid var(--pb-warn); border-radius: 8px; background: var(--pb-raised); }
 #pbApp .pb-xing-rvl { font-size: 14px; line-height: 1.4; color: var(--pb-text); padding: 2px 0; overflow-wrap: anywhere; }
@@ -11481,23 +11520,54 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (est.kind !== 'ok') return '';
     return short ? '\u2248 ' + fmt(est.left, 1) + ' ft leftover (estimate)' : 'Estimated leftover \u2248 ' + fmt(est.left, 1) + ' ft (from the plan: ' + fmt(est.cut, 2) + ' ft cut to reach the fitting).';
   }
+  // fitcard: the fitting's own name ("Wye · LAT-11"; an Other with a name is that name) and its short tag on the row
+  function pbFitTitle(fit) { const w = pbFitWord(fit.type), i = String(fit.info || '').trim(); return fit.type === 'other' && i ? i : w + (i ? ' \u00b7 ' + i : ''); }
+  function pbFitTag(fit) { const i = String(fit.info || '').trim(); return fit.type === 'other' && i ? i : pbFitWord(fit.type); }
+  // fitcard: the point's typed / imported text, less what the title already says ("8/SS LAT-11 WYE (stake 20707)" -> "8/SS · stake 20707")
+  // only the shown type word (or its cutsheet short form) as the LAST word, where a cutsheet puts it ("10X8 RED", "45 BEND"),
+  // and the shown name as whole words in a row ("LAT-11"); the same words anywhere else are kept ("RED PAINT" stays)
+  const PB_FIT_ALIAS = { wye: ['wye', 'wy'], tee: ['tee'], bend: ['bend', 'bnd', 'elbow', 'ell'], reducer: ['reducer', 'red', 'redr'], coupling: ['coupling', 'cplg', 'coup'], other: [] };
+  function pbFitRawExtra(label, fit) {
+    let t = String(label || '').trim(); if (!t) return '';
+    let stake = ''; const m = /\(\s*(stake [^)]*?)\s*\)\s*$/i.exec(t); if (m) { stake = m[1]; t = t.slice(0, m.index).trim(); }
+    const norm = (x) => String(x).toLowerCase().replace(/^[\s,.;:()]+|[\s,.;:()]+$/g, '');
+    let toks = t.split(/\s+/).filter(Boolean);
+    const info = String(fit.info || '').split(/[\s,;]+/).map(norm).filter(Boolean);
+    if (info.length) for (let k = 0; k + info.length <= toks.length; k++) { if (info.every((w, j) => norm(toks[k + j]) === w)) { toks.splice(k, info.length); break; } }
+    const words = fit.type === 'other' ? [] : [fit.type, pbFitWord(fit.type)].concat(PB_FIT_ALIAS[fit.type] || []).map(norm);
+    if (toks.length > 1 && words.indexOf(norm(toks[toks.length - 1])) !== -1) toks.pop();
+    else if (toks.length === 1 && words.indexOf(norm(toks[0])) !== -1) toks = [];
+    const keep = toks.join(' ').replace(/^[\s,;\u00b7-]+|[\s,;\u00b7-]+$/g, '');
+    return [/^hub( ?\d+)?$/i.test(keep) ? '' : keep, stake].filter(Boolean).join(' \u00b7 '); // a default "Hub" / "Hub 2" name adds nothing: the station says where
+  }
+  window.__pbFitRawExtra = pbFitRawExtra; /* fitcard: tests */
   function pbFitStripHTML(entry, r) {
     const fit = pbFitOf(entry, r); if (!fit) return '';
-    let h = '<div class="pb-fit-line" data-fit-line="' + escapeHtml(r.pointId) + '"><span class="pb-fit-chip">' + escapeHtml(pbFitName(fit)) + '</span>';
+    let sta = ''; try { sta = pbStRowStaFn(entry)(r) || ''; } catch (e) {}
+    const raw = pbFitRawExtra(r.label && r.label !== 'start' && r.label !== 'end' ? r.label : '', fit);
+    const vt = r.verified === true ? '<span class="pb-fit-vtag ok">Verified</span>' : r.verified === false ? '<span class="pb-fit-vtag">Predicted</span>' : '';
+    let h = '<div class="pb-fit-line pb-fitcard" data-fit-line="' + escapeHtml(r.pointId) + '">'
+      + '<div class="pb-fit-head"><span class="pb-sta-sub hub pb-fit-title">' + escapeHtml(pbFitTitle(fit)) + '</span>'
+      + '<span class="pb-fit-at"><bdi dir="ltr">' + escapeHtml(String(r.station)) + (sta ? '<span class="pb-fit-sta"> \u00b7 Sta ' + escapeHtml(sta) + '</span>' : '') + '</bdi></span></div>'
+      + (raw || vt ? '<div class="pb-fit-sub">' + (raw ? '<span class="pb-fit-raw">' + escapeHtml(raw) + '</span>' : '') + vt + '</div>' : '');
+    const facts = [];
+    if (pbFitLay(fit) > 0) facts.push('<span>Laying length <span class="pb-fit-v">' + escapeHtml(fmt(fit.layFt, 2)) + ' ft</span></span>' + (fit.layAuto ? '<span class="pb-fit-auto">auto</span>' : ''));
     const run = entry.pipeLayout ? pbFitRun(entry, r.pointId) : null;
+    let ask = '';
     if (run && run.cfg.on && run.cfg.len && entry.kind === 'run') {
       const a = pbFitAdjOf(entry, r.pointId), pid = escapeHtml(r.pointId);
       const noOpen = pbFitNoOpen.has(pbFitNoKey(entry, r.pointId)); /* leftover */
-      if (!a && !noOpen) { const et = pbFitEstText(pbFitEstimate(entry, r, run), true); if (et) h += '<span class="pb-fit-est">' + escapeHtml(et) + '</span>'; }
-      if (noOpen) h += pbFitNoHTML(r.pointId, run.cfg.len, a); /* leftover */
-      else if (!a) h += '<span class="pb-fit-q">Using the leftover piece out of the fitting?</span><span class="pb-fit-btns"><button type="button" class="pb-btn small" data-fit="' + pid + '" onclick="pbFitAnswer(this.dataset.fit, true)">Yes</button><button type="button" class="pb-btn ghost small" data-fit="' + pid + '" onclick="pbFitAnswer(this.dataset.fit, false)">No</button></span>';
+      if (!a && !noOpen) { const est = pbFitEstimate(entry, r, run); if (est.kind === 'ok') facts.push('<span class="pb-fit-lo">Leftover <span class="pb-fit-v">\u2248 ' + escapeHtml(fmt(est.left, 1)) + ' ft</span></span>'); else if (est.kind === 'joint') facts.push('<span class="pb-fit-lo">On a joint, no cut</span>'); }
+      if (noOpen) ask = pbFitNoHTML(r.pointId, run.cfg.len, a); /* leftover */
+      else if (!a) ask = '<div class="pb-fit-ask"><span class="pb-fit-q">Use leftover after fitting?</span><span class="pb-fit-btns"><button type="button" class="pb-btn small" data-fit="' + pid + '" onclick="pbFitAnswer(this.dataset.fit, true)">Yes</button><button type="button" class="pb-btn ghost small" data-fit="' + pid + '" onclick="pbFitAnswer(this.dataset.fit, false)">No</button></span></div>';
       else {
-        if (Math.abs(run.start + a.off - r.stationFt) > 0.005) h += '<span class="pb-fit-q">The fitting moved: answer again.</span>';
-        if (!(a.cutoff > 0)) h += '<span class="pb-fit-ans">' + (pbFitIsPiece(a) ? 'Piece out: ' + escapeHtml(pbLayFt(a.fitWant)) : 'Full stick') + '</span>'; /* leftover */
-        h += '<span class="pb-fit-btns"><button type="button" class="pb-btn ghost small" data-fit="' + pid + '" onclick="pbFitAsk(this.dataset.fit)">Edit</button><button type="button" class="pb-btn ghost small" data-fit="' + pid + '" onclick="pbFitUndo(this.dataset.fit)">Undo</button></span>';
+        if (Math.abs(run.start + a.off - r.stationFt) > 0.005) ask += '<span class="pb-fit-q">The fitting moved: answer again.</span>';
+        ask += '<div class="pb-fit-ask">' + (!(a.cutoff > 0) ? '<span class="pb-fit-ans">' + (pbFitIsPiece(a) ? 'Piece out: ' + escapeHtml(pbLayFt(a.fitWant)) : 'Full stick') + '</span>' : '') /* leftover */
+          + '<span class="pb-fit-btns"><button type="button" class="pb-btn ghost small" data-fit="' + pid + '" onclick="pbFitAsk(this.dataset.fit)">Edit</button><button type="button" class="pb-btn ghost small" data-fit="' + pid + '" onclick="pbFitUndo(this.dataset.fit)">Undo</button></span></div>';
       }
     }
-    return h + '</div>';
+    if (facts.length) h += '<div class="pb-fit-facts">' + facts.join('<span class="pb-fit-dot" aria-hidden="true">\u00b7</span>') + '</div>';
+    return h + ask + '</div>';
   }
   // The fitting on the open run, its run and its station in that run (null: nothing to ask there).
   function pbFitCtx(pid) {
@@ -11591,8 +11661,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbFitPcCancel = function (pid) { const e = pbLayCurrentEntry(); pbFitNoOpen.delete(pbFitNoKey(e, pid)); pbFitRepaint(pid); };
   window.pbFitAsk = function (pid) {
     const c = pbFitCtx(pid); if (!c) return;
-    const et = pbFitEstText(pbFitEstimate(c.entry, c.r, c.run), false);
-    pbShowModal('Using the leftover piece out of the fitting?' + (et ? '\n' + et : ''), [{ label: 'Cancel' }, { label: 'No', onClick: () => pbFitAnswer(pid, false) }, { label: 'Yes', primary: true, onClick: () => pbFitCutAsk(pid) }], pbFitWord(c.fit.type) + ' at ' + pbLayFt(c.r.stationFt));
+    const est = pbFitEstimate(c.entry, c.r, c.run), et = est.kind === 'ok' ? 'Leftover \u2248 ' + fmt(est.left, 1) + ' ft' : est.kind === 'joint' ? 'On a joint, no cut' : ''; /* fitcard: the card's words */
+    pbShowModal('Use leftover after fitting?' + (et ? '\n' + et : ''), [{ label: 'Cancel' }, { label: 'No', onClick: () => pbFitAnswer(pid, false) }, { label: 'Yes', primary: true, onClick: () => pbFitCutAsk(pid) }], (() => { let sta = ''; try { sta = pbStRowStaFn(c.entry)(c.r) || ''; } catch (e) {} return pbFitTitle(c.fit) + ' \u00b7 ' + c.r.station + (sta ? ' \u00b7 Sta ' + sta : ''); })()); /* fitcard */
   };
   function pbFitCutAsk(pid) {
     const c = pbFitCtx(pid); if (!c) return;
@@ -12043,7 +12113,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.98 · 2026-11-04'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r15.99 · 2026-11-04'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -15484,7 +15554,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     timeout: 'The AI took too long. Check your signal and try again.',
     canceled: 'Canceled.', // ask_v2
     dailyAnalysis: (n) => 'You’ve used today’s ' + n + ' business analyses. It resets tomorrow.', // ask_v2
-    network: 'Couldn’t reach the AI. Check your signal and try again.'
+    network: 'Couldn’t reach the AI. Check your signal and try again.',
+    dropped: 'Connection lost before the answer finished.' // r15.99
   };
   let pbAiQuota = null; // { left, limit } from the last answer, for "N of 20 left today"
   let pbAiAnalysisLeft = null; // ask_v2: office analyses left today (their own allowance)
@@ -15514,7 +15585,33 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return r && !r.error && r.data && r.data.session ? r.data.session.access_token : null;
     } catch (e) { return null; }
   }
+  // r15.99: reads the ai function's event stream. Calls onEvent(name, data) for delta / reset / status; resolves
+  // { final } (the same JSON a non-streamed answer has), { error } (with its status), or {} when the stream ended early.
+  async function pbAiReadStream(res, onEvent) {
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let buf = '';
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (value) buf += dec.decode(value, { stream: true });
+      if (done) buf += dec.decode() + '\n\n'; // the last event may come without its blank line
+      buf = buf.replace(/\r\n?/g, '\n');     // CRLF framing too
+      let k;
+      while ((k = buf.indexOf('\n\n')) !== -1) {
+        const raw = buf.slice(0, k); buf = buf.slice(k + 2);
+        let ev = '', data = '';
+        raw.split('\n').forEach(l => { if (l.indexOf('event:') === 0) ev = l.slice(6).trim(); else if (l.indexOf('data:') === 0) data += l.slice(5).trim(); });
+        if (!ev || !data) continue;
+        let d = null; try { d = JSON.parse(data); } catch (e) { continue; }
+        if (ev === 'final') { try { reader.cancel(); } catch (e) {} return { final: d }; }
+        if (ev === 'error') { try { reader.cancel(); } catch (e) {} return { error: d }; }
+        try { onEvent(ev, d); } catch (e) {}
+      }
+      if (done) return {};
+    }
+  }
+  const pbAiCanStream = () => { try { return typeof ReadableStream !== 'undefined' && typeof TextDecoder !== 'undefined' && typeof Response !== 'undefined' && 'body' in Response.prototype; } catch (e) { return false; } };
   // opts (ask_v2): { timeoutMs, signal } - a longer wait for Ask, and Cancel. Resolves { ok, text, truncated, data }.
+  // r15.99: opts.onStream(event, data) - ask for a streamed answer (see pbAiReadStream).
   async function pbAiRequest(feature, payload, opts) {
     if (!pbAiPlanOk()) return { ok: false, code: 'plan', message: PB_AI_MSG.plan };
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return { ok: false, code: 'offline', message: PB_AI_MSG.offline };
@@ -15529,17 +15626,27 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const timer = setTimeout(() => { timedOut = true; try { if (ctl) ctl.abort(); } catch (e) {} }, window.__pbAiTimeoutMs || (opts && opts.timeoutMs) || PB_AI_TIMEOUT_MS); // (__pbAiTimeoutMs: tests only)
     if (ext) ext.addEventListener('abort', () => { try { if (ctl) ctl.abort(); } catch (e) {} }, { once: true });
     let res = null, j = null;
+    const onStream = opts && typeof opts.onStream === 'function' ? opts.onStream : null; // r15.99
+    let streamSt = 0, streamed = false, dropped = false;
     try {
       res = await fetch(PB_AI_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'apikey': SUPABASE_PUBLISHABLE_KEY },
-        body: JSON.stringify(Object.assign({ feature }, payload)),
+        body: JSON.stringify(Object.assign({ feature }, payload, onStream ? { stream: true } : {})),
         signal: ctl ? ctl.signal : undefined
       });
-      try { j = await res.json(); } catch (e) { j = null; }
+      const ct = (res.headers && res.headers.get && res.headers.get('content-type')) || '';
+      if (onStream && /event-stream/i.test(ct) && res.body && res.body.getReader) {
+        streamed = true;
+        const sr = await pbAiReadStream(res, onStream);
+        if (sr.final && sr.final.ok === true) j = sr.final;
+        else if (sr.final || sr.error) { j = sr.final || sr.error; streamSt = Number(j.status) || 502; if (typeof j.error !== 'string') j.error = 'ai_failed'; } // a final without ok: the usual error line
+        else dropped = true;
+      } else { try { j = await res.json(); } catch (e) { j = null; } }
     } catch (e) {
       clearTimeout(timer);
       if (ext && ext.aborted) return canceled;
+      if (streamed && !timedOut) return { ok: false, code: 'dropped', message: PB_AI_MSG.dropped }; // r15.99: cut off mid-answer
       if (timedOut || (e && e.name === 'AbortError')) return { ok: false, code: 'timeout', message: PB_AI_MSG.timeout };
       const off = typeof navigator !== 'undefined' && navigator.onLine === false;
       return { ok: false, code: off ? 'offline' : 'network', message: off ? PB_AI_MSG.offline : PB_AI_MSG.network };
@@ -15547,7 +15654,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     clearTimeout(timer);
     if (ext && ext.aborted) return canceled;
     if (timedOut) return { ok: false, code: 'timeout', message: PB_AI_MSG.timeout };
-    const st = res.status, err = j && typeof j.error === 'string' ? j.error : '';
+    if (dropped) return { ok: false, code: 'dropped', message: PB_AI_MSG.dropped };
+    const st = streamSt || res.status, err = j && typeof j.error === 'string' ? j.error : '';
     if (st === 200 && j && j.ok && typeof j.text === 'string') {
       const limit = Number(j.limit), used = Number(j.used);
       if (Number.isFinite(limit) && Number.isFinite(used)) { if (j.mode === 'analysis') pbAiAnalysisLeft = Math.max(0, limit - used); else pbAiQuota = { left: Math.max(0, limit - used), limit }; }
@@ -16128,7 +16236,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const PB_AI_TURNS = 4, PB_AI_IDLE_MS = 30 * 60 * 1000, PB_AI_KEEP = 16;
   let pbAiAskThread = { tid: 1, key: null, at: 0 }, pbAiAskTidN = 1;
   const pbAiAskCur = () => pbAiAskHistory.filter(h => h.tid === pbAiAskThread.tid); // newest first
-  function pbAiAskTurns() { return pbAiAskCur().slice(0, PB_AI_TURNS); }
+  function pbAiAskTurns() { return pbAiAskCur().filter(h => !h.streaming && !h.failed).slice(0, PB_AI_TURNS); } // r15.99: no partial answers
   function pbAiAskA(body) { const s = String(body || '').replace(/\s+\n/g, '\n'); return s.length <= 500 ? s : s.slice(0, 240) + ' … ' + s.slice(-250); } // the end too: a question Ask asked back is usually last
   function pbAiAskKeyNow() { return pbAiAskCtx ? 'ctx:' + pbAiAskCtx.label : 'scr:' + String(pbCurrentScreen || ''); }
   function pbAiAskRoll() { if (pbAiAskCur().length) pbAiAskThread = { tid: ++pbAiAskTidN, key: null, at: 0 }; }
@@ -16302,13 +16410,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (left) { left.hidden = !(off && pbAiAnalysisLeft !== null); left.textContent = off && pbAiAnalysisLeft !== null ? 'Analyses left today: ' + pbAiAnalysisLeft : ''; }
   }
   window.pbAiAskSetMode = function(v) { pbAiAskMode = pbAiAskMode === v ? 'auto' : v; pbAiAskModeSync(); };
+  let pbAiAskWord = null, pbAiAskWaitDraw = null; // r15.99: 'Writing…' / 'Checking…' while a streamed answer comes in
+  function pbAiAskWaitWord(w) { pbAiAskWord = w; if (pbAiAskWaitDraw) pbAiAskWaitDraw(); }
   function pbAiAskWait(on) {
     const w = document.getElementById('aiAskWait'), t = document.getElementById('aiAskWaitT');
     if (pbAiAskTick) { clearInterval(pbAiAskTick); pbAiAskTick = null; }
     if (!w) return;
     w.hidden = !on; if (!on) return;
-    const t0 = Date.now(), word = pbAskIsOffice() && pbAiV2Ok() && pbAiAskMode === 'analysis' ? 'Analyzing…' : 'Asking…';
-    const draw = () => { const s = Math.floor((Date.now() - t0) / 1000); if (t) t.textContent = s < 5 ? word : word + ' ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+    const t0 = Date.now(), word0 = pbAskIsOffice() && pbAiV2Ok() && pbAiAskMode === 'analysis' ? 'Analyzing…' : 'Asking…';
+    pbAiAskWord = null; pbAiAskWaitDraw = null;
+    const draw = () => { const word = pbAiAskWord || word0, s = Math.floor((Date.now() - t0) / 1000); if (t) t.textContent = s < 5 ? word : word + ' ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+    pbAiAskWaitDraw = draw;
     draw(); pbAiAskTick = setInterval(draw, 1000);
   }
   window.pbAiAskCancel = function() { if (pbAiAskCtl) { try { pbAiAskCtl.abort(); } catch (e) {} } };
@@ -16317,7 +16429,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // plain numbers, since a v1 answer's [n] are the phone's own Education excerpts).
   const pbAiJobRefs = (h) => { const m = new Map(); (h.more || []).forEach(x => { if (x && x.kind === 'data' && /^D\d+$/i.test(String(x.n))) m.set(String(x.n).toUpperCase(), String(x.title || x.tool || 'job data').slice(0, 80)); }); return m; };
   function pbAiBodyHtml(h) {
-    const text = String(h.body || '(no answer text)'), jobs = pbAiJobRefs(h);
+    const text = String(h.body || (h.streaming || h.failed ? '' : '(no answer text)')), jobs = pbAiJobRefs(h); // r15.99
     const known = new Set((h.sources || []).map(x => String(x.n)).concat((h.more || []).map(x => String(x && x.n))));
     const used = new Set();
     let out = '', last = 0;
@@ -16344,7 +16456,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!open) { const p = document.createElement('span'); p.className = 'pb-ai-jd-pop'; p.setAttribute('role', 'status'); p.textContent = b.dataset.line || ''; b.insertAdjacentElement('afterend', p); }
   };
   function pbAiAskItemHtml(h, i) { // i: 0 is the newest card; only it carries the hint and the full label
-    return '<article class="pb-section pb-ai-qa" id="aiAskItem' + i + '"><div class="pb-body">'
+    return '<article class="pb-section pb-ai-qa' + (h.streaming ? ' pb-ai-live' : '') + '" id="aiAskItem' + i + '"><div class="pb-body">'
       + '<p class="pb-ai-q">' + escapeHtml(h.q) + '</p>'
       + (h.kind === 'emergency' ? '<div class="pb-ai-em"><button type="button" class="pb-emergency-btn pb-ai-em-btn" onclick="pbAiAskEmergency()">EMERGENCY · Call ' + escapeHtml(pbDialNumberNow()) + '</button><p class="pb-ai-hint">' + (confinedPermit ? 'Declares the emergency on the open permit and dials.' : 'No permit is open: this dials the emergency number.') + '</p></div>' : '')
       + (h.safety && !h.local ? '<div class="pb-alert danger pb-ai-safety"><strong>Safety rule.</strong> Follow your competent person and your site’s safety program — they decide on site. AI never decides whether a permit, entry or trench is a go.</div>' : '')
@@ -16352,9 +16464,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + (!h.local && h.table ? pbAiTableHtml(h.table) : '') // ask_v2: office tables (escaped cells, scrolls inside its card)
       + (!h.local && h.chart ? pbAiChartHtml(h.chart) : '') // ask_v2: office analysis only
       + (h.truncated ? '<p class="pb-ai-flagnote">This answer was cut off.</p>' : '')
-      + (h.sources.length ? '<div class="pb-ai-src"><span class="pb-ai-src-k">' + (h.local ? 'Read:' : 'From this app:') + '</span>' + h.sources.map(x => '<button type="button" class="pb-edu-link" data-article="' + escapeHtml(x.article) + '" data-anchor="' + escapeHtml(x.anchor || '') + '" onclick="pbAiOpenSource(this)">[' + escapeHtml(String(x.n)) + '] ' + escapeHtml(x.title) + '</button>').join('') + '</div>' : (h.local || i !== 0 || (h.more && h.more.length) ? '' : '<p class="pb-ai-hint">Not from this app’s Education pages.</p>'))
+      + (h.note && !h.streaming ? '<p class="pb-ai-flagnote">' + escapeHtml(String(h.note).slice(0, 120)) + '</p>' : '') // r15.99: the check changed what was shown
+      + (h.failed ? '<div class="pb-ai-retry"><p class="pb-ai-flagnote">Not finished. ' + escapeHtml(h.failed) + '</p>' + (h.tid === pbAiAskThread.tid ? '<button type="button" class="pb-btn small secondary" onclick="pbAiAskRetry(' + i + ')">Retry</button>' : '') + '</div>' : '')
+      + (h.streaming || h.failed ? '' : h.sources.length ? '<div class="pb-ai-src"><span class="pb-ai-src-k">' + (h.local ? 'Read:' : 'From this app:') + '</span>' + h.sources.map(x => '<button type="button" class="pb-edu-link" data-article="' + escapeHtml(x.article) + '" data-anchor="' + escapeHtml(x.anchor || '') + '" onclick="pbAiOpenSource(this)">[' + escapeHtml(String(x.n)) + '] ' + escapeHtml(x.title) + '</button>').join('') + '</div>' : (h.local || i !== 0 || (h.more && h.more.length) ? '' : '<p class="pb-ai-hint">Not from this app’s Education pages.</p>'))
       + ((h.more || []).filter(x => !(x && x.kind === 'data' && h._jdUsed && h._jdUsed.has(String(x.n).toUpperCase()))).length ? '<div class="pb-ai-src">' + h.more.filter(x => !(x && x.kind === 'data' && h._jdUsed && h._jdUsed.has(String(x.n).toUpperCase()))).map(pbAiSourceChip).join('') + '</div>' : '')
-      + '<p class="pb-ai-hint pb-ai-label">' + (h.local ? 'Answered by the app · no AI used' : '<span class="pb-ai-tag">AI</span>' + (i !== 0 ? '' : ' ' + (h.analysis ? 'analysis of your company’s numbers \u00b7 check before acting' : 'answer \u00b7 can be wrong'))) + '</p>'
+      + (h.streaming || h.failed ? '<p class="pb-ai-hint pb-ai-label"><span class="pb-ai-tag">AI</span> ' + (h.failed ? 'no checked answer' : 'writing… checked when done') + '</p>' : '<p class="pb-ai-hint pb-ai-label">' + (h.local ? 'Answered by the app · no AI used' : '<span class="pb-ai-tag">AI</span>' + (i !== 0 ? '' : ' ' + (h.analysis ? 'analysis of your company’s numbers \u00b7 check before acting' : 'answer \u00b7 can be wrong'))) + '</p>')
       + '</div></article>';
   }
   function pbAiAskRender() {
@@ -16380,6 +16494,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (window.pbAskSheetOpen()) { window.pbAskSheetClose(); window.pbEduHelp(btn.dataset.anchor ? btn.dataset.article + '/' + btn.dataset.anchor : btn.dataset.article); return; } // batch 5
     pbEduOpen(btn.dataset.article, btn.dataset.anchor);
   };
+  window.pbAiAskRetry = function(i) { // r15.99: the same question again, in its own conversation; the box is left alone
+    const h = pbAiAskHistory[i]; if (!h || !h.failed || pbAiAskBusy || h.tid !== pbAiAskThread.tid) return;
+    window.pbAiAsk(h.q, h);
+  };
+  // r15.99: redraw only the streamed card's text (once per frame), not the whole thread
+  let pbAiAskLiveRaf = 0;
+  function pbAiAskLiveDraw(h) {
+    if (pbAiAskLiveRaf) return;
+    const go = () => { pbAiAskLiveRaf = 0; const i = pbAiAskHistory.indexOf(h); if (i < 0) return; document.querySelectorAll('[id="aiAskItem' + i + '"] .pb-ai-a').forEach(el => { el.innerHTML = pbAiBodyHtml(h); }); };
+    pbAiAskLiveRaf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame(go) : setTimeout(go, 16);
+  }
   window.pbAiAskClear = function() { pbAiAskHistory.length = 0; pbAiAskRender(); pbAiShow(document.getElementById('aiAskStatus'), '', '', ''); };
   window.pbOpenAiAsk = function() {
     if (!window.pbCanOpen('aiAsk', { explain: true })) return;
@@ -16388,9 +16513,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbGoto('aiAsk');
   };
   window.pbAiAskBack = function() { if (pbHistory.length) pbGoBack(); else pbGoto('tools'); };
-  window.pbAiAsk = function() {
+  window.pbAiAsk = function(retryQ, retryEntry) { // r15.99: retryQ / retryEntry from Retry
     const box = document.getElementById('aiAskBox'), st = document.getElementById('aiAskStatus'), btn = document.getElementById('aiAskBtn');
-    const q = box ? box.value.trim() : '';
+    const q = typeof retryQ === 'string' ? retryQ : box ? box.value.trim() : '';
     if (!q) { pbAiShow(st, 'warn', 'Type a question first.', ''); return; }
     if (pbAiAskThread.at && Date.now() - pbAiAskThread.at > PB_AI_IDLE_MS && !pbAiAskBusy) { pbAiAskRoll(); pbAiAskRender(); } // 30 minutes idle: a new thread
     const local = pbAiAskLocal(q); // SF5: never sent; no plan, privacy or daily count involved
@@ -16409,22 +16534,46 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const prevQ = (pbAiAskTurns()[0] || {}).q || ''; // a follow-up like "120 ft, 5 days" finds its pages through the question before it
       const ex = pbAiEduExcerpts(prevQ ? q + ' ' + prevQ : q);
       pbAiAskBusy = true; if (btn) btn.disabled = true;
+      if (retryEntry) { const ri = pbAiAskHistory.indexOf(retryEntry); if (ri >= 0) { pbAiAskHistory.splice(ri, 1); pbAiAskRender(); } } // r15.99: the unfinished card goes once the new request starts
       pbAiShow(st, '', '', ''); // ask_v2: the wait line (with Cancel) shows instead
       const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
       pbAiAskCtl = ctl; pbAiAskWait(true);
       let r;
       // ask_v2: the v2 fields, plus the v1 text so a server not yet updated answers exactly as before
       const opts = { timeoutMs: PB_AI_ASK_TIMEOUT_MS, signal: ctl ? ctl.signal : null }, v1 = () => pbAiRequest('teacher', { text: pbAiAskMessage(q, ex) }, opts);
+      // r15.99: words as they come. The card joins the thread at the first words; the checked answer finishes it.
+      let live = null;
+      const onStream = (ev, d) => {
+        if (pbAiAskCleared.has(tid0)) return;
+        if (ev === 'delta' && d && typeof d.t === 'string') {
+          if (!live) {
+            live = { q, v: 2, body: '', streaming: true, safety: PB_AI_SAFETY_RX.test(q), sources: [], more: [], truncated: false };
+            if (!pbAiAskJoin(live, tid0)) { live = null; return; }
+            live.body = d.t; pbAiAskRender(); pbAiAskScrollToNewest(false); pbAiAskWaitWord('Writing…'); return;
+          }
+          live.body += d.t; pbAiAskLiveDraw(live);
+        } else if (ev === 'reset') { pbAiAskWaitWord(null); if (live) { live.body = ''; pbAiAskLiveDraw(live); } } // back to the first wait line
+        else if (ev === 'status' && d && d.s === 'checking') pbAiAskWaitWord('Checking…');
+      };
+      const opts2 = Object.assign({}, opts, pbAiCanStream() ? { onStream } : {});
       try {
-        r = pbAiAskV1Only ? await v1() : await pbAiRequest('teacher', Object.assign({ text: pbAiAskMessage(q, ex) }, pbAiAskPayload(q, ex)), opts);
+        r = pbAiAskV1Only ? await v1() : await pbAiRequest('teacher', Object.assign({ text: pbAiAskMessage(q, ex) }, pbAiAskPayload(q, ex)), opts2);
         if (!r.ok && r.code === 'ask_v2_off') { pbAiAskV1Only = true; pbAiV2OffMark(); r = await v1(); } // not switched on yet: the same question, the v1 way
       }
       finally { pbAiAskBusy = false; pbAiAskCtl = null; pbAiAskWait(false); if (btn) btn.disabled = false; }
       if (pbAiAskCleared.has(tid0)) { pbAiShow(st, '', '', ''); return; } // New Chat while it was on its way: dropped
+      if (live && !r.ok) { // r15.99: words were shown, then no checked answer came
+        const li = pbAiAskHistory.indexOf(live);
+        if (r.code === 'canceled') { if (li >= 0) pbAiAskHistory.splice(li, 1); }
+        else { live.streaming = false; live.body = ''; live.failed = r.message; } // unchecked words never stay on screen
+        pbAiAskRender();
+      }
       if (!r.ok) { pbAiShow(st, r.code === 'canceled' ? 'info' : 'warn', r.message, ''); if (r.code === 'analysis_limit' && st) { const qe = st.querySelector('.pb-ai-quota'); if (qe) qe.remove(); } pbAiAskModeSync(); return; }
       if (r.data && r.data.v === 2) pbAiV2Mark(); // the server answers v2: its controls can show
       const a = r.data && r.data.v === 2 ? pbAiFromV2(r.data, q) : pbAiParseTeacher(r.text, ex, q);
-      if (!pbAiAskJoin(Object.assign({ q, truncated: !!r.truncated || !!(r.data && r.data.partial) }, a), tid0)) return;
+      const done = Object.assign({ q, truncated: !!r.truncated || !!(r.data && r.data.partial) }, a, { note: r.data && typeof r.data.stream_note === 'string' ? r.data.stream_note : '' });
+      if (live && pbAiAskHistory.indexOf(live) >= 0) { delete live.streaming; Object.assign(live, done); } // the streamed card becomes the checked answer
+      else if (!pbAiAskJoin(done, tid0)) return;
       if (box && box.value.trim() === q) box.value = '';
       pbAiAskQuotaLine(st); // the card says it was answered; the status keeps only "N of 20 left today"
       pbAiAskRender(); pbAiAskScrollToNewest(false);
@@ -21545,13 +21694,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       // Label/added-time get their own full-width strip above the row, instead of
       // sharing the Sta. cell — long labels were forcing that column wide and
       // pushing BOP/INV/TOP off-screen.
-      if (r.label || r.addedTime || r.verified !== null || pbRsLayNote(r.layoutNote) || pbFitOf(entry, r)) {
+      const pbFitR = pbFitOf(entry, r); /* fitcard */
+      if (r.label || r.addedTime || r.verified !== null || pbRsLayNote(r.layoutNote) || pbFitR) {
         const labelTr = document.createElement('tr');
-        labelTr.className = rowClass;
+        labelTr.className = rowClass + (pbFitR ? 'pb-fitstrip' : '');
         labelTr.innerHTML = `<td colspan="${colCount}" style="text-align:left; white-space:normal; padding:7px 8px 3px 8px; border-top:2px solid var(--ink);">
-          ${r.label ? `<span class="pb-sta-sub ${staSubClass}" style="display:inline; margin:0;">${escapeHtml(pbRowStripName(entry, r))}</span>` : ''}
-          ${r.verified === true ? `<span class="pb-chip ok" style="margin-left:8px;">field-verified</span>` : ''}
-          ${r.verified === false ? `<span class="pb-b3-predicted" style="margin-left:8px; font-size:13px; font-weight:600; color:var(--pb-text-2);">predicted, not field-verified</span>` : ''}
+          ${r.label && !pbFitR ? `<span class="pb-sta-sub ${staSubClass}" style="display:inline; margin:0;">${escapeHtml(pbRowStripName(entry, r))}</span>` : ''}
+          ${r.verified === true && !pbFitR ? `<span class="pb-chip ok" style="margin-left:8px;">field-verified</span>` : ''}
+          ${r.verified === false && !pbFitR ? `<span class="pb-b3-predicted" style="margin-left:8px; font-size:13px; font-weight:600; color:var(--pb-text-2);">predicted, not field-verified</span>` : ''}
           ${pbRsLayNote(r.layoutNote) ? `<span class="pb-lay-note">${escapeHtml(pbRsLayNote(r.layoutNote))}</span>` : ''}
           ${pbFitStripHTML(entry, r)}
           ${r.addedTime ? `<span style="margin-left:8px; font-size:11px; font-weight:400; text-transform:none; letter-spacing:0; opacity:.7;">added ${new Date(r.addedTime).toLocaleTimeString()}</span>` : ''}
@@ -21564,12 +21714,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const tr = document.createElement('tr');
       tr.className = rowClass;
       if (pbXingP.near.has(idx)) tr.classList.add('pb-xing-near'); /* xingrow */
+      if (pbFitR) tr.classList.add('pb-fitrow'); /* fitcard */
       const pbRsSta = pbRsStaOf(r); if (pbRsSta) tr.classList.add('pb-rs-hassta'); /* feat_results2 */
       tr.innerHTML = `
         <td>
           <button type="button" aria-label="Distance ${escapeHtml(r.station)}${r.label ? ' (' + escapeHtml(pbRowStripName(entry, r)) + ')' : ''} actions" aria-haspopup="dialog" data-gs-key="${escapeHtml(pbLaidKey(r))}" class="pb-notebtn pb-gsdots ${(existingNote && (existingNote.text || existingNote.photoCount)) || (entry.fieldNotes || []).some(n => !n.pointId && !n.displaced && n.station === r.station && !shownNotes.has(n)) ? 'has-note' : ''}" onclick="pbGsRowMenu(this, ${idx})"><span aria-hidden="true">⋯</span></button>
         </td>
-        <td>${escapeHtml(r.station)}${r.layoutShort ? `<span class="pb-lay-sta"><span class="pb-lay-stal">${escapeHtml(r.layoutShort)}${r.layoutExact ? ' \u00b7 ' + escapeHtml(r.layoutExact) : ''}</span></span>` : ''}${pbRsSta ? `<span class="pb-rs-sta2"><bdi dir="ltr">Sta ${escapeHtml(pbRsSta)}</bdi></span>` : ''}</td>
+        <td>${escapeHtml(r.station)}${pbFitR ? `<span class="pb-fit-rtag">${escapeHtml(pbFitTag(pbFitR))}</span>` : ''}${r.layoutShort ? `<span class="pb-lay-sta"><span class="pb-lay-stal">${escapeHtml(r.layoutShort)}${r.layoutExact ? ' \u00b7 ' + escapeHtml(r.layoutExact) : ''}</span></span>` : ''}${pbRsSta ? `<span class="pb-rs-sta2"><bdi dir="ltr">Sta ${escapeHtml(pbRsSta)}</bdi></span>` : ''}</td>
         ${pbRsShown.map(k => pbRsCellFor(r, k, idx)).join('')}
       `;
       tr.dataset.laidIdx = String(idx); // batch 14 F
