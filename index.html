@@ -2738,6 +2738,17 @@ html.pb-cx #homeFmPulse #homeFmCrew { display: none !important; } /* the Company
 @media (prefers-reduced-motion: reduce) { #pbApp .pb-ai-qa.pb-ai-live .pb-ai-a::after { animation: none; } }
 #pbApp .pb-ai-retry { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
 #pbApp .pb-ai-retry .pb-ai-flagnote { margin: 0; flex: 1 1 160px; }
+/* gap loop: "Not right" under a finished answer */
+#pbApp .pb-ai-nr { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+#pbApp .pb-ai-nr-btn { min-height: 36px; margin: 0 0 0 -4px; padding: 6px 4px; border: 0; background: none; font: inherit; font-size: 14px; color: var(--pb-text-2); text-decoration: underline; text-decoration-color: var(--pb-divider); text-underline-offset: 3px; cursor: pointer; }
+#pbApp .pb-ai-nr-btn:hover, #pbApp .pb-ai-nr-btn:focus-visible { color: var(--pb-text); }
+#pbApp .pb-ai-nr.open { flex-direction: column; align-items: stretch; gap: 8px; margin-top: 8px; }
+#pbApp .pb-ai-nr .pb-input { width: 100%; box-sizing: border-box; min-height: 44px; padding: 9px 12px; }
+#pbApp .pb-ai-nr-acts { display: flex; gap: 8px; justify-content: flex-end; }
+#pbApp .pb-ai-nr-acts .pb-btn { flex: 0 0 auto; }
+#pbApp .pb-ai-nr-done, #pbApp .pb-ai-nr-err { margin: 0; font-size: 14px; line-height: 1.4; color: var(--pb-text-2); }
+#pbApp .pb-ai-nr-err { color: var(--pb-warn-text, #F2C46B); flex: 1 1 160px; }
+#pbApp #docsRvHzList li { overflow-wrap: anywhere; }
 #pbApp .pb-ai-hint { margin: 6px 0 0 0; font-size: 14px; line-height: 1.4; color: var(--pb-text-2); overflow-wrap: anywhere; }
 #pbApp .pb-ai-list { margin: 4px 0 0 0; padding-left: 20px; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
 #pbApp .pb-ai-review .pb-btn-row { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
@@ -3961,11 +3972,11 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp #screen-results #resultsTable tr.pb-shade td { background: transparent; }
 #pbApp#pbApp #screen-results #resultsTable tr.pb-hubrow td { background: rgba(208,142,42,0.10); }
 #pbApp#pbApp #screen-results #resultsTable tr.pb-startrow td { background: rgba(63,174,110,0.10); }
-#pbApp#pbApp #screen-results #resultsTable tr.pb-endrow td { background: rgba(194,71,78,0.12); }
+#pbApp#pbApp #screen-results #resultsTable tr.pb-endrow td { background: rgba(140,194,255,0.10); } /* hubedge: End is blue */
 #pbApp#pbApp #screen-results #resultsTable td[colspan] { border-top-color: var(--pb-divider) !important; }
 #pbApp#pbApp #screen-results #resultsTable tr:is(:focus-within, :has(+ tr.pb-noterow:not([style*="none"])), :has(+ tr.pb-noterow + tr.pb-noterow:not([style*="none"]))) > td { background: var(--pb-brand-soft); }
-#pbApp#pbApp #screen-results #resultsTable tr:is(:focus-within, :has(+ tr.pb-noterow:not([style*="none"])), :has(+ tr.pb-noterow + tr.pb-noterow:not([style*="none"]))) > td:first-child { box-shadow: inset 4px 0 0 var(--pb-brand); }
-#pbApp#pbApp #screen-results #resultsTable tr.pb-noterow:not([style*="none"]) > td { background: var(--pb-raised); box-shadow: inset 4px 0 0 var(--pb-brand); border-top-color: transparent; padding: 12px; }
+#pbApp#pbApp #screen-results #resultsTable tr:is(:focus-within, :has(+ tr.pb-noterow:not([style*="none"])), :has(+ tr.pb-noterow + tr.pb-noterow:not([style*="none"]))) > td:first-child { box-shadow: inset 6px 0 0 var(--pb-brand); }
+#pbApp#pbApp #screen-results #resultsTable tr.pb-noterow:not([style*="none"]) > td { background: var(--pb-raised); box-shadow: inset 6px 0 0 var(--pb-brand); border-top-color: transparent; padding: 12px; }
 #pbApp#pbApp #screen-results #resultsTable .pb-notebtn { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; font-size: 20px; padding: 0; }
 #pbApp#pbApp #screen-results #resultsTable .pb-notebtn .pb-ic { width: 20px; height: 20px; }
 #pbApp#pbApp #screen-results #resultsTable tr.pb-noterow textarea { margin-bottom: 8px; }
@@ -4930,7 +4941,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <p id="docsRvStatus" class="pb-docs-line" role="status" aria-live="polite"></p>
     <div id="docsRvList"></div>
     <section class="pb-docsrv-safety" id="docsRvSafety" aria-label="Safety check" hidden>
-      <div class="pb-btn-row pb-docsrv-btns"><button type="button" class="pb-btn secondary" id="docsRvSafetyBtn" onclick="pbDocsRvSafety()">Run Safety Check</button><button type="button" class="pb-btn secondary" id="docsRvAnsBtn" onclick="pbDocsRvAns()">Run Answer Check</button></div>
+      <div class="pb-btn-row pb-docsrv-btns"><button type="button" class="pb-btn secondary" id="docsRvSafetyBtn" onclick="pbDocsRvSafety()">Run Safety Check</button><button type="button" class="pb-btn secondary" id="docsRvAnsBtn" onclick="pbDocsRvAns()">Run Answer Check</button><button type="button" class="pb-btn secondary" id="docsRvHzBtn" onclick="pbDocsRvHz()">Run Hazard Check</button></div>
       <div class="pb-ai-wait" id="docsRvSafetyWait" hidden style="margin-left:0;margin-right:0;"><span role="status" aria-live="polite"><span class="pb-ai-dot" aria-hidden="true"></span><span id="docsRvSafetyWaitT"></span></span><button type="button" class="pb-btn small ghost" id="docsRvSafetyCancel" onclick="pbDocsRvSafetyCancel()">Cancel</button></div>
       <p class="pb-docsrv-res" id="docsRvSafetyL1" role="status" aria-live="polite"></p>
       <p class="pb-docsrv-res2" id="docsRvSafetyL2"></p>
@@ -4939,6 +4950,10 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <p class="pb-docsrv-res" id="docsRvAnsL1" role="status" aria-live="polite"></p>
       <p class="pb-docsrv-res2" id="docsRvAnsL2"></p>
       <details class="pb-more pb-docsrv-misses" id="docsRvAnsFails" hidden><summary><span>Failures</span></summary><div id="docsRvAnsFailList"></div></details>
+      <div class="pb-ai-wait" id="docsRvHzWait" hidden style="margin-left:0;margin-right:0;"><span role="status" aria-live="polite"><span class="pb-ai-dot" aria-hidden="true"></span><span id="docsRvHzWaitT"></span></span><button type="button" class="pb-btn small ghost" id="docsRvHzCancel" onclick="pbDocsRvHzCancel()">Cancel</button></div>
+      <p class="pb-docsrv-res" id="docsRvHzL1" role="status" aria-live="polite"></p>
+      <p class="pb-docsrv-res2" id="docsRvHzL2"></p>
+      <details class="pb-more pb-docsrv-misses" id="docsRvHzFold" hidden><summary><span>Cleared hazard items</span></summary><div id="docsRvHzList"></div></details>
     </section>
   </div>
 
@@ -7641,6 +7656,19 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
   #pbApp .pb-tk-usew { position: relative; }
   #pbApp .pb-tk-usew .pb-tk-auto { position: absolute; right: 38px; top: 50%; transform: translateY(-50%); pointer-events: none; padding: 1px 6px; border-radius: 999px; font-size: 11px; font-weight: 650; background: var(--pb-raised); border: 1px solid var(--pb-control); color: var(--pb-text-2); }
   #pbApp .pb-tk-usew .pb-tk-auto[hidden] { display: none; }
+  /* feat_dailyflow: Next, the run report's Daily Report button, the hours' auto pill and Auto (reset) */
+  #pbApp .dx-next { margin: 16px 0 0; }
+  #pbApp .dx-next[hidden] { display: none; }
+  #pbApp .dx-next .pb-rpt-status:empty { display: none; }
+  #pbApp .dx-next .pb-btn, #pbApp .pb-btn.dx-bigdaily { width: 100%; min-height: 56px; margin: 0; font-size: 17px; box-sizing: border-box; }
+  #pbApp .pb-btn.dx-bigdaily { display: flex; flex-wrap: wrap; gap: 0 6px; margin-top: 12px; }
+  #pbApp .dx-bd-s { font-weight: 550; opacity: .82; }
+  #pbApp .dx-bd-s[hidden] { display: none; }
+  #pbApp .pbd-signwrap > .dx-narr { margin: 0 0 12px; }
+  #pbApp .df-auto { display: inline-flex; align-items: center; align-self: center; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 650; line-height: 1.45; background: var(--pb-raised); border: 1px solid var(--pb-control); color: var(--pb-text-2); }
+  #pbApp .df-reset { -webkit-appearance: none; appearance: none; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; margin: 0; padding: 0 12px 0 9px; border: 1px solid var(--pb-control); border-radius: 22px; background: transparent; color: var(--pb-text-2); font: inherit; font-size: 14px; font-variant-numeric: tabular-nums; cursor: pointer; }
+  #pbApp .df-reset .pb-ic { width: 16px; height: 16px; flex: 0 0 auto; }
+  #pbApp .df-reset:focus-visible { outline: none; box-shadow: var(--pb-ring); }
   </style>
   <!-- batch 23 DAILY: the foreman's DAILY REPORT -->
   <div class="pb-screen" id="screen-dailyReport">
@@ -7656,8 +7684,8 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
       <p id="drFillFor" class="dr-fill" hidden></p><!-- roles95: the office fills in a daily the foreman didn't sign -->
       <p id="drStatus" class="pb-rpt-status" role="status"></p>
       <div class="dx-tabs" id="dxTabs" role="tablist" aria-label="Daily report" hidden><!-- feat_dailyx: Notes / Report -->
-        <button type="button" role="tab" class="dx-tabb" id="dxTabNotes" aria-selected="true" aria-controls="drDiary" onclick="pbDxTab('notes')" onkeydown="pbDxTabKey(event)">Notes <span class="dx-tabn" id="dxTabNotesN"></span></button>
-        <button type="button" role="tab" class="dx-tabb" id="dxTabReport" aria-selected="false" aria-controls="drBody" tabindex="-1" onclick="pbDxTab('report')" onkeydown="pbDxTabKey(event)">Report</button>
+        <button type="button" role="tab" class="dx-tabb" id="dxTabNotes" aria-selected="true" aria-controls="drDiary" onclick="pbDxTab('notes')" onkeydown="pbDxTabKey(event)">Narrative <span class="dx-tabn" id="dxTabNotesN"></span></button>
+        <button type="button" role="tab" class="dx-tabb" id="dxTabReport" aria-selected="false" aria-controls="drBody" tabindex="-1" onclick="pbDxTab('report')" onkeydown="pbDxTabKey(event)">Hours &amp; Sign</button>
       </div>
       <div id="drDiary" class="dx-diary" role="tabpanel" aria-labelledby="dxTabNotes" hidden><!-- feat_dailyx: the narrative and the notes, on top -->
         <div class="pb-field dx-narr"><label for="drNarrative">Narrative of the day</label><textarea id="drNarrative" rows="3" maxlength="20000" oninput="pbDlyDraftSoon();pbDxGrow(this)" placeholder="Work done, delays, visitors"></textarea></div>
@@ -7671,13 +7699,14 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
       <div id="drBody"></div>
       <div id="drPlus" class="dp-wrap" hidden></div><!-- feat_dailyplus -->
       <div id="drAttachWrap" class="da-wrap" hidden></div><!-- feat_dailyattach -->
+      <div id="dxNextWrap" class="dx-next" hidden><p class="pb-rpt-status" id="dxNextMsg" role="status"></p><button type="button" class="pb-btn" id="dxNextBtn" onclick="pbDxNext()">Next: Hours &amp; Sign</button></div><!-- feat_dailyflow -->
       <div id="drSignWrap" class="pbd-card pbd-signwrap" hidden>
         <div class="pb-field"><label for="drName">Your full name</label><input type="text" id="drName" maxlength="120" autocomplete="name" oninput="pbDlyDraftSoon()"></div>
         <p class="pbd-dim">Drawn signature (optional)</p>
         <canvas id="drSig" class="pbd-sig" width="600" height="180" aria-label="Signature pad: draw with a finger (optional)"></canvas>
         <div class="pb-btn-row"><button type="button" class="pb-btn ghost small" id="drSigClear" onclick="pbDlySigClear()">Clear Signature</button></div>
         <p id="drSignStatus" class="pb-rpt-status" role="status"></p>
-        <div class="pb-btn-wrap dx-signbtns"><button type="button" class="pb-btn" id="drSignBtn" onclick="pbDlySign()">Sign Report</button><button type="button" class="pb-btn ghost" id="drSaveLater" onclick="pbDxSaveLater()">Save for Later</button></div>
+        <div class="pb-btn-wrap dx-signbtns"><button type="button" class="pb-btn" id="drSignBtn" onclick="pbDlySign()">Sign &amp; Send</button><button type="button" class="pb-btn ghost" id="drSaveLater" onclick="pbDxSaveLater()">Save for Later</button></div>
       </div>
     </div>
   </div>
@@ -9267,8 +9296,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
   }
   #pbApp#pbApp #screen-results #resultsBody tr.pb-laid.pb-laid-folded,
   #pbApp#pbApp #screen-results #resultsBody tr.pb-laid-folded { display: none !important; }
-  #pbApp#pbApp #screen-results #resultsBody tr.pb-laid-next:not([data-laid-strip]) > td:first-child,
-  #pbApp#pbApp #screen-results #resultsBody tr.pb-laid-nextstrip > td:first-child { box-shadow: inset 4px 0 0 var(--pb-brand); }
+  /* hubedge (owner, Nov 5): Next has no left edge of its own; its gold background marks it */
   #pbApp#pbApp #screen-results #resultsBody tr.pb-laid-next > td { border-top-color: var(--pb-brand-line); }
   /* a row with a tag lines its numbers up at the top, so the tag sits in the empty space under them */
   #pbApp#pbApp #screen-results #resultsBody tr:is(.pb-laid, .pb-laid-next):not([data-laid-strip]) > td { vertical-align: top; }
@@ -9305,14 +9333,24 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
   #pbApp #screen-results #resultsBody tr.pb-laid-armedundo:not([data-laid-strip]) > td:nth-child(2)::before { content: "Release: undo"; color: var(--pb-text); }
   /* r14.2 (TABBAR2): section labels (Start, Lateral, End ...) are headers of the rows BELOW them: a neutral band
      with a gap and a divider above, a down chevron, the name in text colour, the rest muted. Never gold, never striped. */
-  #pbApp#pbApp #screen-results #resultsTable tr[data-laid-strip] > td { background-color: var(--pb-raised) !important; background-image: none !important; border-top: 10px solid var(--pb-surface) !important; box-shadow: inset 0 1px 0 var(--pb-divider), inset 3px 0 0 var(--pb-text-3); padding-top: 8px !important; }
-  #pbApp#pbApp #screen-results #resultsBody tr.pb-laid-nextstrip[data-laid-strip] > td:first-child { box-shadow: inset 0 1px 0 var(--pb-divider), inset 3px 0 0 var(--pb-text-3); }
+  #pbApp#pbApp #screen-results #resultsTable tr[data-laid-strip] > td { background-color: var(--pb-raised) !important; background-image: none !important; border-top: 10px solid var(--pb-surface) !important; box-shadow: inset 0 1px 0 var(--pb-divider), inset 5px 0 0 var(--pb-text-3); padding-top: 8px !important; }
+  #pbApp#pbApp #screen-results #resultsBody tr.pb-laid-nextstrip[data-laid-strip] > td:first-child { box-shadow: inset 0 1px 0 var(--pb-divider), inset 5px 0 0 var(--pb-text-3); }
   #pbApp#pbApp #screen-results #resultsTable tr[data-laid-strip] .pb-sta-sub { color: var(--pb-text) !important; }
   #pbApp#pbApp #screen-results #resultsTable tr[data-laid-strip] .pb-sta-sub::before { content: "\25BE"; display: inline-block; margin-right: 6px; color: var(--pb-text-3); }
   #pbApp#pbApp #screen-results #resultsTable tr[data-laid-strip] .pb-b3-predicted { color: var(--pb-text-3) !important; font-weight: 500 !important; }
   /* the labelled row under its header: no tint of its own, the header's left bracket carries on down */
   #pbApp#pbApp #screen-results #resultsTable tr:is(.pb-hubrow, .pb-startrow, .pb-endrow):not([data-laid-strip]):not(.pb-laid):not(.pb-laid-next):not(.pb-laid-armed):not(.pb-laid-armedundo) > td { background-color: transparent; border-top-color: transparent; }
-  #pbApp#pbApp #screen-results #resultsTable tr:is(.pb-hubrow, .pb-startrow, .pb-endrow):not([data-laid-strip]):not(.pb-laid-next) > td:first-child { box-shadow: inset 3px 0 0 var(--pb-text-3); }
+  #pbApp#pbApp #screen-results #resultsTable tr:is(.pb-hubrow, .pb-startrow, .pb-endrow):not([data-laid-strip]) > td:first-child { box-shadow: inset 5px 0 0 var(--pb-text-3); }
+  /* hubedge: hub points wear Run Setup's hub yellow (#screen-input --hub-c = var(--pb-brand)) on the row and its header */
+  /* hubedge (2): Start and End too, as on Run Setup: Start #3FAE6E, End --end-c (blue, the same values feat_resume sets
+     is the fitting's old blue --pb-info; fittings move to orange --pb-warn) */
+  #pbApp #screen-results { --end-c: var(--pb-info); --pb-fit-c: var(--pb-warn); } /* owner (final): End blue (the old fitting blue), fittings orange */
+  #pbApp #screen-results #resultsBody tr.pb-hubrow { --pb-rs-edge: var(--pb-brand); }
+  #pbApp #screen-results #resultsBody tr.pb-startrow { --pb-rs-edge: #3FAE6E; }
+  #pbApp #screen-results #resultsBody tr.pb-endrow { --pb-rs-edge: var(--end-c); }
+  #pbApp#pbApp #screen-results #resultsTable tr:is(.pb-hubrow, .pb-startrow, .pb-endrow):not([data-laid-strip]) > td:first-child { box-shadow: inset 5px 0 0 var(--pb-rs-edge); }
+  #pbApp#pbApp #screen-results #resultsTable tr:is(.pb-hubrow, .pb-startrow, .pb-endrow)[data-laid-strip] > td { box-shadow: inset 0 1px 0 var(--pb-divider), inset 5px 0 0 var(--pb-rs-edge); }
+  #pbApp#pbApp #screen-results #resultsBody tr:is(.pb-hubrow, .pb-startrow, .pb-endrow).pb-laid-nextstrip[data-laid-strip] > td:first-child { box-shadow: inset 0 1px 0 var(--pb-divider), inset 5px 0 0 var(--pb-rs-edge); }
   /* Next: gold edge, gold tint and a gold bottom line, on its own row only */
   #pbApp#pbApp #screen-results #resultsBody tr.pb-laid-next:not([data-laid-strip]):not(.pb-laid-armed) > td { background-color: var(--pb-brand-soft); border-bottom: 2px solid var(--pb-brand-line); }
   #pbApp#pbApp #screen-results #resultsTable tr.pb-laid-next[data-laid-idx]:not([data-laid-strip]):not(.pb-laid-armed) > td:nth-child(2) { background-color: var(--pb-surface); background-image: linear-gradient(var(--pb-brand-soft), var(--pb-brand-soft)); }
@@ -9551,9 +9589,42 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
 #pbApp#pbApp #screen-input .pb-fit-auto { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; padding: 1px 6px; border-radius: 999px; font-size: 11px; font-weight: 650; letter-spacing: 0; text-transform: none; background: var(--pb-raised); border: 1px solid var(--pb-control); color: var(--pb-text-2); } /* feat_fitlen */
 #pbApp#pbApp #screen-input .pb-fit-auto[hidden] { display: none; }
 #pbApp#pbApp #screen-input .pb-fit-check > span { font-size: 15px; color: var(--pb-text); }
+/* feat_resume (owner, Nov 5): crossings among the hubs, folding like them, red; their own add row; End Point blue */
+#pbApp#pbApp #screen-input .pb-xing-card { border-left-color: var(--pb-danger-line); }
+#pbApp#pbApp #screen-input .pb-xing-card > .pb-tag::before { background: var(--pb-danger-line); }
+#pbApp#pbApp #screen-input .pb-xing-card .pb-xing-ident { cursor: pointer; display: flex; align-items: center; min-height: 44px; padding-top: 0; padding-bottom: 0; box-sizing: border-box; }
+#pbApp#pbApp #screen-input .pb-xing-card > .pb-tag .pb-xing-fold { margin-left: auto; padding: 0 6px; min-width: 44px; min-height: 48px; background: none; border: none; cursor: pointer; font-family: var(--pb-font); font-size: 14px; font-weight: 600; color: var(--pb-text-2); }
+#pbApp#pbApp #screen-input .pb-xing-card > .pb-tag .pb-xing-fold + .pb-remove { margin-left: 12px; }
+#pbApp#pbApp #screen-input .pb-xing-card.pb-xing-shut > .pb-tag { padding-bottom: 4px; }
+#pbApp#pbApp.pb-text-big #screen-input .pb-xing-card > .pb-tag .pb-xing-name { flex: 1 1 auto; }
+#pbApp#pbApp.pb-text-big #screen-input .pb-xing-card > .pb-tag button { order: 4; }
+#pbApp#pbApp #screen-input .pb-hubgrp.pb-xing-grp { grid-template-rows: auto auto auto auto auto auto; }
+#pbApp#pbApp #screen-input .pb-hubgrp.pb-xing-grp > .pb-hubgrp-head { grid-row: 1; }
+#pbApp#pbApp #screen-input .pb-hubgrp.pb-xing-grp > [id^="hubBulkToggleWrap"] { grid-row: 2; }
+#pbApp#pbApp #screen-input .pb-hubgrp.pb-xing-grp > [id^="hubsContainer"] { grid-row: 3; }
+#pbApp#pbApp #screen-input .pb-hubgrp.pb-xing-grp > .pb-xing-list { grid-row: 4; }
+#pbApp#pbApp #screen-input .pb-hubgrp.pb-xing-grp::before { content: ""; grid-row: 5 / 6; grid-column: 1 / -1; margin: 4px 16px 12px 16px; border: 1px solid var(--pb-divider); border-radius: 14px; background: var(--pb-surface); pointer-events: none; }
+#pbApp#pbApp #screen-input .pb-hubgrp.pb-xing-grp > .pb-section.pb-add-hub-section { grid-row: 5; margin: 16px 6px 24px 28px; }
+#pbApp#pbApp #screen-input .pb-hubgrp.pb-xing-grp > .pb-section.pb-add-xing-section { grid-row: 5; margin: 16px 28px 24px 6px; border-left-color: var(--pb-danger-line); }
+#pbApp#pbApp.pb-text-big #screen-input .pb-hubgrp.pb-xing-grp::before { grid-row: 5 / 7; }
+#pbApp#pbApp.pb-text-big #screen-input .pb-hubgrp.pb-xing-grp > .pb-section.pb-add-hub-section { grid-row: 5; margin: 16px 28px 8px 28px; }
+#pbApp#pbApp.pb-text-big #screen-input .pb-hubgrp.pb-xing-grp > .pb-section.pb-add-xing-section { grid-row: 6; margin: 0 28px 24px 28px; }
+@media (max-width: 359px) {
+  #pbApp#pbApp #screen-input .pb-hubgrp.pb-xing-grp::before { grid-row: 5 / 7; }
+  #pbApp#pbApp #screen-input .pb-hubgrp.pb-xing-grp > .pb-section.pb-add-hub-section { grid-row: 5; margin: 16px 28px 8px 28px; }
+  #pbApp#pbApp #screen-input .pb-hubgrp.pb-xing-grp > .pb-section.pb-add-xing-section { grid-row: 6; margin: 0 28px 24px 28px; }
+}
+#pbApp #screen-input { --end-c: var(--pb-info); }
+#pbApp #screen-input { --pb-fit-c: var(--pb-warn); }
+#pbApp#pbApp #screen-input .pb-hub-card.pb-hub-fit { border-left-color: var(--pb-fit-c); }
+#pbApp#pbApp #screen-input .pb-hub-card.pb-hub-fit > .pb-tag::before { background: var(--pb-fit-c); }
+#pbApp#pbApp #screen-input .pb-section.pb-pt.end > .pb-tag::before { box-shadow: 0 0 0 3px color-mix(in srgb, var(--pb-info) 28%, transparent); }
+#pbApp#pbApp #screen-input .pb-rp-line { margin: 4px 0 10px 0; font-size: 14px; line-height: 1.35; color: var(--pb-text-2); }
+#pbApp#pbApp #screen-input .pb-rp-line.reach { color: var(--pb-warn-text); }
+#pbApp#pbApp #screen-input .pb-rp-line strong { color: var(--pb-text); font-weight: 700; }
 /* xingrow (owner, Nov 4): a crossing is its own row on Results; a thin red edge on it and on the rows up to 20 ft before it */
-#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-xing-near:not([data-laid-strip]):not(.pb-laid) > td:first-child { box-shadow: inset 3px 0 0 var(--pb-danger-line); }
-#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-xing-near:not([data-laid-strip]):not(.pb-laid):is(:focus-within, :has(+ tr.pb-noterow:not([style*="none"])), :has(+ tr.pb-noterow + tr.pb-noterow:not([style*="none"]))) > td:first-child { box-shadow: inset 4px 0 0 var(--pb-brand), inset 7px 0 0 var(--pb-danger-line); } /* fix98 4: the open-note / focus edge stays, the red edge beside it */
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-xing-near:not([data-laid-strip]):not(.pb-laid) > td:first-child { box-shadow: inset 5px 0 0 var(--pb-danger-line); }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-xing-near:not([data-laid-strip]):not(.pb-laid):is(:focus-within, :has(+ tr.pb-noterow:not([style*="none"])), :has(+ tr.pb-noterow + tr.pb-noterow:not([style*="none"]))) > td:first-child { box-shadow: inset 6px 0 0 var(--pb-brand), inset 10px 0 0 var(--pb-danger-line); } /* fix98 4: the open-note / focus edge stays, the red edge beside it */
 #pbApp#pbApp #screen-results #resultsBody tr.pb-xingrow > td { background: transparent; vertical-align: middle; -webkit-user-select: none; user-select: none; }
 #pbApp#pbApp #screen-results #resultsBody tr.pb-xingrow > td:nth-child(2) { position: sticky; left: 0; z-index: 2; background-color: var(--pb-surface); text-align: right; }
 #pbApp#pbApp #screen-results #resultsTable.pb-rs-fit tbody tr.pb-xingrow > td:nth-child(2) { font-size: var(--pb-rs-fs, 13px); line-height: 1.15; }
@@ -9584,7 +9655,12 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
 #pbApp .pb-fitcard .pb-fit-at { flex: 0 0 auto; margin-left: auto; font-size: 15px; line-height: 1.25; font-weight: 700; color: var(--pb-text); white-space: nowrap; font-variant-numeric: tabular-nums; }
 #pbApp .pb-fitcard .pb-fit-at .pb-fit-sta { font-weight: 600; color: var(--pb-text-2); }
 #pbApp .pb-fitcard .pb-fit-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: -3px; font-size: 13px; line-height: 1.3; font-weight: 500; color: var(--pb-text-3); }
-#pbApp .pb-fitcard .pb-fit-raw { min-width: 0; overflow-wrap: anywhere; }
+#pbApp .pb-fitcard .pb-fit-raw { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#pbApp .pb-fitcard .pb-fit-sub { flex-wrap: nowrap; min-width: 0; overflow: hidden; }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr[data-laid-strip] > td { padding-left: 15px !important; } /* hubedge 2: room for the thicker stripes */
+#pbApp #screen-results #resultsBody .pb-rs-hd { display: flex; align-items: baseline; gap: 8px; width: 0; min-width: 100%; max-width: 100%; white-space: nowrap; overflow: hidden; }
+#pbApp#pbApp #screen-results #resultsBody .pb-rs-hd > .pb-sta-sub { display: block !important; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#pbApp #screen-results #resultsBody .pb-rs-hdinfo { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 13px; line-height: 1.3; font-weight: 500; color: var(--pb-text-3); text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
 #pbApp .pb-fitcard .pb-fit-vtag { flex: 0 0 auto; padding: 0 7px; border-radius: var(--pb-r-pill, 999px); border: 1px solid var(--pb-divider); font-size: 12px; line-height: 18px; font-weight: 600; color: var(--pb-text-3); white-space: nowrap; }
 #pbApp .pb-fitcard .pb-fit-vtag.ok { border-color: var(--pb-ok); color: var(--pb-ok); }
 #pbApp .pb-fitcard .pb-fit-facts { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; font-size: 13px; line-height: 1.35; font-weight: 600; color: var(--pb-text-2); font-variant-numeric: tabular-nums; }
@@ -9596,20 +9672,28 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
 #pbApp .pb-fitcard .pb-fit-ask .pb-fit-btns { flex: 0 0 auto; margin-left: auto; }
 #pbApp#pbApp .pb-fitcard .pb-fit-ask .pb-fit-btns .pb-btn { min-width: 52px; padding-left: 12px; padding-right: 12px; }
 #pbApp .pb-fitcard > .pb-fit-q { font-size: 14px; color: var(--pb-warn-text, var(--pb-text)); }
-#pbApp #screen-results #resultsBody .pb-fit-rtag { display: block; margin-top: 1px; max-width: 7em; margin-left: auto; overflow: hidden; text-overflow: ellipsis; font-size: 11px; line-height: 1.2; font-weight: 700; color: var(--pb-info); white-space: nowrap; text-transform: none; letter-spacing: 0; }
+#pbApp #screen-results #resultsBody .pb-fit-rtag { display: block; margin-top: 1px; max-width: 7em; margin-left: auto; overflow: hidden; text-overflow: ellipsis; font-size: 11px; line-height: 1.2; font-weight: 700; color: var(--pb-fit-c, var(--pb-warn)); white-space: nowrap; text-transform: none; letter-spacing: 0; }
 #pbApp #screen-results #resultsTable.pb-zoom .pb-fit-rtag { font-size: 13px; }
-/* the shared left edge: blue on the card and its row; Next / open note: gold instead; near a crossing (not laid): red beside it. At most two stripes. */
-#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitstrip[data-laid-strip] > td { box-shadow: inset 0 1px 0 var(--pb-divider), inset 3px 0 0 var(--pb-info); }
-#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitrow:not([data-laid-strip]) > td:first-child { box-shadow: inset 3px 0 0 var(--pb-info); }
-#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitrow:not([data-laid-strip]):is(.pb-laid-next, :focus-within, :has(+ tr.pb-noterow:not([style*="none"])), :has(+ tr.pb-noterow + tr.pb-noterow:not([style*="none"]))) > td:first-child { box-shadow: inset 4px 0 0 var(--pb-brand); }
-#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitrow.pb-xing-near:not([data-laid-strip]):not(.pb-laid) > td:first-child { box-shadow: inset 3px 0 0 var(--pb-info), inset 6px 0 0 var(--pb-danger-line); }
-#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitrow.pb-xing-near:not([data-laid-strip]):not(.pb-laid):is(.pb-laid-next, :focus-within, :has(+ tr.pb-noterow:not([style*="none"])), :has(+ tr.pb-noterow + tr.pb-noterow:not([style*="none"]))) > td:first-child { box-shadow: inset 4px 0 0 var(--pb-brand), inset 7px 0 0 var(--pb-danger-line); }
+/* the shared left edge: orange (hubedge; was blue) on the card and its row; Next / open note: gold instead; near a crossing (not laid): red beside it. At most two stripes. */
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitstrip[data-laid-strip] > td { box-shadow: inset 0 1px 0 var(--pb-divider), inset 5px 0 0 var(--pb-fit-c); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitrow:not([data-laid-strip]) > td:first-child { box-shadow: inset 5px 0 0 var(--pb-fit-c); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitrow:not([data-laid-strip]):is(:focus-within, :has(+ tr.pb-noterow:not([style*="none"])), :has(+ tr.pb-noterow + tr.pb-noterow:not([style*="none"]))) > td:first-child { box-shadow: inset 6px 0 0 var(--pb-brand); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitrow.pb-xing-near:not([data-laid-strip]):not(.pb-laid) > td:first-child { box-shadow: inset 5px 0 0 var(--pb-fit-c), inset 9px 0 0 var(--pb-danger-line); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitrow.pb-xing-near:not([data-laid-strip]):not(.pb-laid):is(:focus-within, :has(+ tr.pb-noterow:not([style*="none"])), :has(+ tr.pb-noterow + tr.pb-noterow:not([style*="none"]))) > td:first-child { box-shadow: inset 6px 0 0 var(--pb-brand), inset 10px 0 0 var(--pb-danger-line); }
 /* fitcard v2 (owner): the fitting's row is Next: the card wears the same gold as its row, one gold block (no line between) */
-#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitstrip.pb-laid-nextstrip[data-laid-strip] > td { background-color: var(--pb-surface) !important; background-image: linear-gradient(var(--pb-brand-soft), var(--pb-brand-soft)) !important; box-shadow: inset 4px 0 0 var(--pb-brand), inset 0 2px 0 var(--pb-brand-line); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitstrip.pb-laid-nextstrip[data-laid-strip] > td { background-color: var(--pb-surface) !important; background-image: linear-gradient(var(--pb-brand-soft), var(--pb-brand-soft)) !important; box-shadow: inset 5px 0 0 var(--pb-fit-c), inset 0 2px 0 var(--pb-brand-line); } /* hubedge: blue stays on Next */
 #pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitrow.pb-laid-next:not([data-laid-strip]) > td { border-top-color: transparent; }
 /* fitcard v3 (owner): the row's red crossing stripe runs on up through its card, same place and width */
-#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitstrip[data-laid-strip]:has(+ tr.pb-fitrow.pb-xing-near:not(.pb-laid)) > td { box-shadow: inset 3px 0 0 var(--pb-info), inset 6px 0 0 var(--pb-danger-line), inset 0 1px 0 var(--pb-divider); }
-#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitstrip.pb-laid-nextstrip[data-laid-strip]:has(+ tr.pb-fitrow.pb-xing-near:not(.pb-laid)) > td { box-shadow: inset 4px 0 0 var(--pb-brand), inset 7px 0 0 var(--pb-danger-line), inset 0 2px 0 var(--pb-brand-line); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitstrip[data-laid-strip]:has(+ tr.pb-fitrow.pb-xing-near:not(.pb-laid)) > td { box-shadow: inset 5px 0 0 var(--pb-fit-c), inset 9px 0 0 var(--pb-danger-line), inset 0 1px 0 var(--pb-divider); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitstrip.pb-laid-nextstrip[data-laid-strip]:has(+ tr.pb-fitrow.pb-xing-near:not(.pb-laid)) > td { box-shadow: inset 5px 0 0 var(--pb-fit-c), inset 9px 0 0 var(--pb-danger-line), inset 0 2px 0 var(--pb-brand-line); }
+/* hubedge 2: a labelled row that is Next: its header wears the row's gold, one block, no line between */
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr:is(.pb-hubrow, .pb-startrow, .pb-endrow).pb-laid-nextstrip[data-laid-strip] > td { background-color: var(--pb-surface) !important; background-image: linear-gradient(var(--pb-brand-soft), var(--pb-brand-soft)) !important; box-shadow: inset 0 2px 0 var(--pb-brand-line), inset 5px 0 0 var(--pb-rs-edge); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr:is(.pb-hubrow, .pb-startrow, .pb-endrow).pb-laid-nextstrip[data-laid-strip]:has(+ tr.pb-xing-near:not(.pb-laid)) > td { box-shadow: inset 0 2px 0 var(--pb-brand-line), inset 5px 0 0 var(--pb-rs-edge), inset 9px 0 0 var(--pb-danger-line); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr:is(.pb-hubrow, .pb-startrow, .pb-endrow).pb-laid-next:not([data-laid-strip]) > td { border-top-color: transparent; }
+/* hubedge: a hub / Start / End near a crossing (not laid): its own colour, then red, on the row and up through its header */
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr:is(.pb-hubrow, .pb-startrow, .pb-endrow).pb-xing-near:not(.pb-fitrow):not([data-laid-strip]):not(.pb-laid) > td:first-child { box-shadow: inset 5px 0 0 var(--pb-rs-edge), inset 9px 0 0 var(--pb-danger-line); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr:is(.pb-hubrow, .pb-startrow, .pb-endrow).pb-xing-near:not(.pb-fitrow):not([data-laid-strip]):not(.pb-laid):is(:focus-within, :has(+ tr.pb-noterow:not([style*="none"])), :has(+ tr.pb-noterow + tr.pb-noterow:not([style*="none"]))) > td:first-child { box-shadow: inset 6px 0 0 var(--pb-brand), inset 10px 0 0 var(--pb-danger-line); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr:is(.pb-hubrow, .pb-startrow, .pb-endrow):not(.pb-fitstrip)[data-laid-strip]:has(+ tr.pb-xing-near:not(.pb-laid)) > td { box-shadow: inset 0 1px 0 var(--pb-divider), inset 5px 0 0 var(--pb-rs-edge), inset 9px 0 0 var(--pb-danger-line); }
 #pbApp .pb-rvw .pb-rvw-more { margin: 6px 0 0 0; } #pbApp .pb-rvw .pb-rvw-more > summary { min-height: 44px; display: flex; align-items: center; font-weight: 600; cursor: pointer; } #pbApp .pb-rvw .pb-rvw-more > p { margin: 0; } /* cleanup A */
 #pbApp .pb-xing-rv { margin: 0 16px 12px 16px; padding: 8px 12px; border-left: 4px solid var(--pb-warn); border-radius: 8px; background: var(--pb-raised); }
 #pbApp .pb-xing-rvl { font-size: 14px; line-height: 1.4; color: var(--pb-text); padding: 2px 0; overflow-wrap: anywhere; }
@@ -11234,7 +11318,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbXingCardHTML(id) {
     const fld = (k, lab, attrs) => '<div class="pb-field"><label for="' + id + k + '">' + lab + '</label><input id="' + id + k + '" data-xing-f="' + k + '" ' + attrs + '></div>';
     const num = (step, more) => 'type="number" enterkeyhint="next" inputmode="decimal" step="' + step + '"' + (more ? ' ' + more : '');
-    return '<div class="pb-tag"><span class="pb-xing-name">Crossing</span><span class="pb-xing-ident"></span><button type="button" class="pb-remove" onclick="pbXingRemove(\'' + id + '\')">Remove</button></div>'
+    return '<div class="pb-tag"><span class="pb-xing-name">Crossing</span><span class="pb-xing-ident" role="button" tabindex="0" onclick="pbXingToggle(\'' + id + '\')" onkeydown="if (event.key === \'Enter\' || event.key === \' \') { event.preventDefault(); pbXingToggle(\'' + id + '\'); }"></span><button type="button" class="pb-xing-fold" aria-expanded="true" onclick="pbXingToggle(\'' + id + '\')">Collapse</button><button type="button" class="pb-remove" onclick="pbXingRemove(\'' + id + '\')">Remove</button></div>'
       + '<div class="pb-body">'
       + '<div class="pb-xing-g2">' + fld('Sta', 'Station (ft)', 'type="text" enterkeyhint="next" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" maxlength="20" placeholder="e.g. 1+50"')
       + fld('Util', 'Utility', 'type="text" enterkeyhint="next" autocomplete="off" maxlength="60" list="pbXingUtilList" placeholder="e.g. Water"') + '</div>'
@@ -11243,7 +11327,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<div class="pb-xing-g2 pb-xing-r4">' + fld('Top', 'TOP (ft)', num('0.001')) + fld('Clr', 'Min. clearance (in)', num('0.5', 'value="' + PB_XING_MIN_CLR + '"')) + '</div>'
       + '</div>';
   }
-  function pbXingCards(n) { return Array.from(document.querySelectorAll('#xingContainer' + n + ' > .pb-xing-card')); }
+  function pbXingCards(n) { return Array.from(document.querySelectorAll('#screen-input .pb-xing-card[data-xing-run="' + n + '"]')); } /* feat_resume 3: among the hubs */
   function pbXingRunsOnForm() { const a = [1]; for (let n = 2; n <= MAX_SEG; n++) if (segIsActive(n)) a.push(n); return a; }
   function pbXingIdent(card) {
     const id = card.dataset.xingId, el = card.querySelector('.pb-xing-ident'); if (!el) return;
@@ -11295,6 +11379,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     card.innerHTML = pbXingCardHTML(id);
     box.appendChild(card);
     if (s) pbXingPut(card, s); else { pbXingIdent(card); try { pbRdSchedule(); } catch (e) {} }
+    try { window.pbXingOrder(n); } catch (e) { console.error(e); } /* feat_resume 3 */
     return id;
   };
   window.pbXingRemove = function (id, ok) {
@@ -11306,7 +11391,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   };
   function pbXingSnapAll() { const out = []; for (let n = 1; n <= MAX_SEG; n++) pbXingCards(n).forEach(c => out.push(pbXingSnap(c))); return out; }
   function pbXingApplyAll(list) { (Array.isArray(list) ? list : []).forEach(s => { if (s && s.v && (s.run === 1 || segIsActive(s.run))) pbXingAdd(s.run, s); }); }
-  function pbXingClearRun(n) { const b = document.getElementById('xingContainer' + n); if (b) b.innerHTML = ''; }
+  function pbXingClearRun(n) { const b = document.getElementById('xingContainer' + n); if (b) b.innerHTML = ''; pbXingCards(n).forEach(c => c.remove()); } /* feat_resume 3 */
   // Flip (Run 1): a crossing's station is measured from the other end too.
   function pbXingFlip(total) {
     pbXingCards(1).forEach(c => { const id = c.dataset.xingId, el = document.getElementById(id + 'Sta'), v = pbXingParseSta(el ? el.value : ''); if (el && v !== null && Number.isFinite(v)) { el.value = String(pbLayR3(total - v)); pbXingIdent(c); } });
@@ -11344,8 +11429,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!c || !(c.run === 1 || segIsActive(c.run))) return;
       const s = (x) => x === null || x === undefined ? '' : String(x);
       const src = PB_XING_ELEV.indexOf(c.src) !== -1 ? c.src : null;
-      pbXingAdd(c.run, { run: c.run, v: { Sta: s(c.off), Util: c.util || '', Od: s(c.odIn), Wall: s(c.wallFt), Inv: s(c.inv), Bop: s(c.bop), Top: s(c.top), Clr: s(typeof c.minClrIn === 'number' ? c.minClrIn : PB_XING_MIN_CLR) }, auto: Array.isArray(c.auto) ? c.auto.filter(k => PB_XING_ELEV.indexOf(k) !== -1) : src ? PB_XING_ELEV.filter(k => k !== src) : [], src });
+      const xid = pbXingAdd(c.run, { run: c.run, v: { Sta: s(c.off), Util: c.util || '', Od: s(c.odIn), Wall: s(c.wallFt), Inv: s(c.inv), Bop: s(c.bop), Top: s(c.top), Clr: s(typeof c.minClrIn === 'number' ? c.minClrIn : PB_XING_MIN_CLR) }, auto: Array.isArray(c.auto) ? c.auto.filter(k => PB_XING_ELEV.indexOf(k) !== -1) : src ? PB_XING_ELEV.filter(k => k !== src) : [], src });
+      if (xid) { try { window.pbXingToggle(xid, false); } catch (e) {} } /* feat_resume 2: the record's crossings start collapsed */
     });
+    try { window.pbRsxProblems(); } catch (e) {}
   }
   // Run Setup: the crossings list after each run's hubs, and "+ Add Crossing" next to "+ Add Hub".
   function pbXingInject() {
@@ -11538,18 +11625,38 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (toks.length > 1 && words.indexOf(norm(toks[toks.length - 1])) !== -1) toks.pop();
     else if (toks.length === 1 && words.indexOf(norm(toks[0])) !== -1) toks = [];
     const keep = toks.join(' ').replace(/^[\s,;\u00b7-]+|[\s,;\u00b7-]+$/g, '');
-    return [/^hub( ?\d+)?$/i.test(keep) ? '' : keep, stake].filter(Boolean).join(' \u00b7 '); // a default "Hub" / "Hub 2" name adds nothing: the station says where
+    const k2 = /^hub( ?\d+)?$/i.test(keep) ? '' : keep, num = stake.replace(/^stake\s+/i, ''); // a default "Hub" / "Hub 2" name adds nothing: the station says where
+    return num ? (k2 ? k2 + ' (' + num + ')' : '(' + num + ')') : k2; /* hubedge 2: the stake number without "stake" */
   }
   window.__pbFitRawExtra = pbFitRawExtra; /* fitcard: tests */
+  // hubedge 2: "8/SS PIPE (stake 20713)" -> "8/SS PIPE (20713)"
+  function pbRsNoStakeWord(t) { return String(t || '').replace(/\(\s*stake\s+([^)]*?)\s*\)/gi, '($1)'); }
+  // the rod reading taken at the point in the field, the one that verifies it (kept at Lock as pointInputs[id].shot: a
+  // stake point's shot on its stake; an invert point's own fresh shot, else the shot on the stake it was corrected from).
+  // null: not shot (predicted), or a record locked before r15.100 (it never kept the reading).
+  function pbRsShotOf(entry, r) {
+    if (!r || r.verified !== true || !r.pointId || r.addedTime || !entry || !entry.pointInputs) return null;
+    const p = entry.pointInputs[r.pointId]; return p && typeof p.shot === 'number' && isFinite(p.shot) ? p.shot : null;
+  }
+  // the facts a point carries, short: "Stake 99.50 · C 2.00 · Shot 7.06" (an invert point: its shot only, its invert is on the row)
+  function pbRsPointInfo(entry, r) {
+    if (!r || !r.pointId || r.addedTime || !entry || !entry.pointInputs) return '';
+    const p = entry.pointInputs[r.pointId]; if (!p) return '';
+    const n = (v) => typeof v === 'number' && isFinite(v) ? v : null, out = [];
+    const g = p.mode === 'stake' ? { se: n(p.stakeElev), cf: n(p.cutFillVal), fill: p.cutFill === 'fill' } : p.stakeGround ? { se: n(p.stakeGround.stakeElev), cf: n(p.stakeGround.cutFillVal), fill: p.stakeGround.cutFill === 'fill' } : null;
+    if (g && g.se !== null) out.push('Stake ' + fmt(g.se, 2)); if (g && g.cf !== null) out.push((g.fill ? 'F ' : 'C ') + fmt(g.cf, 2));
+    const sh = pbRsShotOf(entry, r); if (sh !== null) out.push('Shot ' + fmtReading(sh, entry.rodUnit)); else if (r.verified === true) out.push('Shot'); /* fix100 */
+    return out.join(' \u00b7 ');
+  }
   function pbFitStripHTML(entry, r) {
     const fit = pbFitOf(entry, r); if (!fit) return '';
     let sta = ''; try { sta = pbStRowStaFn(entry)(r) || ''; } catch (e) {}
     const raw = pbFitRawExtra(r.label && r.label !== 'start' && r.label !== 'end' ? r.label : '', fit);
-    const vt = r.verified === true ? '<span class="pb-fit-vtag ok">Verified</span>' : r.verified === false ? '<span class="pb-fit-vtag">Predicted</span>' : '';
+    const vt = '', pinfo = pbRsPointInfo(entry, r); /* hubedge 2: no Predicted / Verified tag; the point's facts instead */
     let h = '<div class="pb-fit-line pb-fitcard" data-fit-line="' + escapeHtml(r.pointId) + '">'
       + '<div class="pb-fit-head"><span class="pb-sta-sub hub pb-fit-title">' + escapeHtml(pbFitTitle(fit)) + '</span>'
       + '<span class="pb-fit-at"><bdi dir="ltr">' + escapeHtml(String(r.station)) + (sta ? '<span class="pb-fit-sta"> \u00b7 Sta ' + escapeHtml(sta) + '</span>' : '') + '</bdi></span></div>'
-      + (raw || vt ? '<div class="pb-fit-sub">' + (raw ? '<span class="pb-fit-raw">' + escapeHtml(raw) + '</span>' : '') + vt + '</div>' : '');
+      + (raw || pinfo ? '<div class="pb-fit-sub"><span class="pb-fit-raw">' + escapeHtml([raw, pinfo].filter(Boolean).join(' \u00b7 ')) + '</span></div>' : '');
     const facts = [];
     if (pbFitLay(fit) > 0) facts.push('<span>Laying length <span class="pb-fit-v">' + escapeHtml(fmt(fit.layFt, 2)) + ' ft</span></span>' + (fit.layAuto ? '<span class="pb-fit-auto">auto</span>' : ''));
     const run = entry.pipeLayout ? pbFitRun(entry, r.pointId) : null;
@@ -12113,7 +12220,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r15.99 · 2026-11-04'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.00 · 2026-11-05'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -14455,7 +14562,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       pbConfirm('This cutsheet isn’t imported. Leaving clears it. Leave anyway?', () => { pbCutsheetLeaveOk = true; try { pbGoto(name, isBack); } finally { pbCutsheetLeaveOk = false; } }, 'Cutsheet Not Imported', { no: 'Stay', yes: 'Leave and Clear Import' });
       return;
     }
-    const leavingRunBuilder = pbCurrentScreen === 'input' || pbCurrentScreen === 'review' || pbCurrentScreen === 'cutsheetImport';
+    // feat_resume 8: a calculator, Ask or Education opened from inside the run (Review's Check Trench Sloping Calculator,
+    // the form's help links) is a side trip, not leaving: no question; the form stays as it is and Back returns to it.
+    // Leaving that side trip for anywhere else asks then, the same as leaving the run.
+    const pbRsxBuild = (x) => x === 'input' || x === 'review' || x === 'cutsheetImport';
+    const pbRsxTrip = (x) => /^(askDocs|formulasHub|eduLesson|ref[A-Z][A-Za-z]*|[a-z][A-Za-z]*Calc)$/.test(String(x || ''));
+    const pbRsxFromRun = pbRsxBuild(pbCurrentScreen) || (!!window._pbRunDetour && pbRsxTrip(pbCurrentScreen));
+    const pbRsxSideTrip = pbRsxFromRun && pbRsxTrip(name) && !window._pbTabNav; // a tab in the tab bar is leaving the run, as before
+    const leavingRunBuilder = pbRsxFromRun && !pbRsxSideTrip;
     if (!skipUnsavedCheck && leavingRunBuilder && name !== 'input' && name !== 'review' && name !== 'cutsheetImport' && window._pbResumingFromEntryId && window._pbResumeFormKey && pbFormStateKey() === window._pbResumeFormKey && hasUnsavedRunData() && !pbFormIsSavedLockedRun()) {
       // feat_run33 (9): a resume with nothing new typed: the earlier session is saved, nothing here is lost
       pbConfirm('Nothing new has been typed. The earlier session is saved in Records. Leave?', () => { pbFormEditsLeft(); pbGoto(name, isBack, true); }, 'Leave the Resume?', { no: 'Keep Editing', yes: 'Leave' });
@@ -14487,6 +14601,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         }
       }
     }
+    window._pbRunDetour = !pbRsxBuild(name) && pbRsxSideTrip; /* feat_resume 8 */
     if (lockedBackTarget) { pbHistory = []; name = 'home'; }
     if (stepsBack) { pbHistory.pop(); } else if (name !== pbCurrentScreen) { pbHistory.push(pbCurrentScreen); }
     if (name === 'cutsheetImport' && typeof resetCutsheetImportUI === 'function' && !pbShellKeepOnEntry('cutsheetImport')) resetCutsheetImportUI(); // UX batch 2 (A1): rows left by a red line stay
@@ -16399,7 +16514,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const app = srcs.filter(s => s.kind === 'app_page' && s.article && PB_EDU_ARTICLES[s.article]).map(s => ({ n: s.n, article: String(s.article), anchor: String(s.anchor || ''), title: String(s.title || pbEduArticleTitle(s.article) || '') }));
     const more = srcs.filter(s => s.kind === 'kb' || s.kind === 'doc' || s.kind === 'data');
     const analysis = d.mode === 'analysis';
-    return { v: 2, body: String(d.text || '').trim(), safety: !!d.safety || d.type === 'safety' || PB_AI_SAFETY_RX.test(q), sources: app, more, analysis,
+    const fb = typeof d.answer_id === 'string' && /^[A-Za-z0-9_-]{20,12000}\.[A-Za-z0-9_-]{43}$/.test(d.answer_id) ? d.answer_id : ''; // gap loop: "Not right"
+    return { v: 2, fb, body: String(d.text || '').trim(), safety: !!d.safety || d.type === 'safety' || PB_AI_SAFETY_RX.test(q), sources: app, more, analysis,
       table: pbAiTableOk(d.table), chart: analysis && pbAskIsOffice() ? pbAiChartOk(d.chart) : null };
   }
   function pbAiAskModeSync() {
@@ -16469,8 +16585,60 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + (h.streaming || h.failed ? '' : h.sources.length ? '<div class="pb-ai-src"><span class="pb-ai-src-k">' + (h.local ? 'Read:' : 'From this app:') + '</span>' + h.sources.map(x => '<button type="button" class="pb-edu-link" data-article="' + escapeHtml(x.article) + '" data-anchor="' + escapeHtml(x.anchor || '') + '" onclick="pbAiOpenSource(this)">[' + escapeHtml(String(x.n)) + '] ' + escapeHtml(x.title) + '</button>').join('') + '</div>' : (h.local || i !== 0 || (h.more && h.more.length) ? '' : '<p class="pb-ai-hint">Not from this app’s Education pages.</p>'))
       + ((h.more || []).filter(x => !(x && x.kind === 'data' && h._jdUsed && h._jdUsed.has(String(x.n).toUpperCase()))).length ? '<div class="pb-ai-src">' + h.more.filter(x => !(x && x.kind === 'data' && h._jdUsed && h._jdUsed.has(String(x.n).toUpperCase()))).map(pbAiSourceChip).join('') + '</div>' : '')
       + (h.streaming || h.failed ? '<p class="pb-ai-hint pb-ai-label"><span class="pb-ai-tag">AI</span> ' + (h.failed ? 'no checked answer' : 'writing… checked when done') + '</p>' : '<p class="pb-ai-hint pb-ai-label">' + (h.local ? 'Answered by the app · no AI used' : '<span class="pb-ai-tag">AI</span>' + (i !== 0 ? '' : ' ' + (h.analysis ? 'analysis of your company’s numbers \u00b7 check before acting' : 'answer \u00b7 can be wrong'))) + '</p>')
+      + pbAiNrHtml(h)
       + '</div></article>';
   }
+  // gap loop: "Not right". h.nr: '' | 'ask' | 'sending' | 'sent' | 'err' (h.nrMsg, h.nrRetry); h.nrNote keeps the typed line.
+  let pbAiNrSeq = 0;
+  function pbAiNrHtml(h) {
+    if (!h || !h.fb || h.local || h.streaming || h.failed) return '';
+    if (!h.nrId) h.nrId = ++pbAiNrSeq;
+    const id = h.nrId, st = h.nr || '';
+    if (st === 'sent') return '<div class="pb-ai-nr" data-nr="' + id + '"><p class="pb-ai-nr-done" role="status">Thanks — sent.</p></div>';
+    if (st === 'err') return '<div class="pb-ai-nr" data-nr="' + id + '"><p class="pb-ai-nr-err" role="status">' + escapeHtml(h.nrMsg || 'Couldn’t send.') + '</p>'
+      + (h.nrRetry ? '<button type="button" class="pb-btn small secondary" onclick="pbAiNr(' + id + ',\'send\')">Retry</button>' : '') + '</div>';
+    if (st === 'ask' || st === 'sending') {
+      const busy = st === 'sending' ? ' disabled' : '';
+      return '<div class="pb-ai-nr open" data-nr="' + id + '"><input type="text" class="pb-input" id="aiNrIn' + id + '" maxlength="200" enterkeyhint="send" autocomplete="off" placeholder="What was wrong? (optional)" aria-label="What was wrong? (optional)" value="' + escapeHtml(h.nrNote || '') + '"' + busy
+        + ' oninput="pbAiNrNote(' + id + ',this.value)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();pbAiNr(' + id + ',\'send\')}else if(event.key===\'Escape\'){pbAiNr(' + id + ',\'cancel\')}">'
+        + '<div class="pb-ai-nr-acts"><button type="button" class="pb-btn small ghost" onclick="pbAiNr(' + id + ',\'cancel\')"' + busy + '>Cancel</button><button type="button" class="pb-btn small" onclick="pbAiNr(' + id + ',\'send\')"' + busy + '>' + (busy ? 'Sending…' : 'Send') + '</button></div></div>';
+    }
+    return '<div class="pb-ai-nr" data-nr="' + id + '"><button type="button" class="pb-ai-nr-btn" onclick="pbAiNr(' + id + ',\'open\')">Not right</button></div>';
+  }
+  const pbAiNrFind = (id) => pbAiAskHistory.find(h => h && h.nrId === id) || null;
+  function pbAiNrDraw(h, focus) {
+    document.querySelectorAll('[data-nr="' + h.nrId + '"]').forEach(el => { el.outerHTML = pbAiNrHtml(h); });
+    if (focus) { const ins = document.querySelectorAll('[id="aiNrIn' + h.nrId + '"]'); const vis = [...ins].find(x => x.offsetParent !== null) || ins[0]; if (vis) { try { vis.focus({ preventScroll: true }); } catch (e) {} } }
+  }
+  window.pbAiNrNote = function(id, v) { const h = pbAiNrFind(id); if (h) h.nrNote = String(v || '').slice(0, 200); };
+  window.pbAiNr = async function(id, act) {
+    const h = pbAiNrFind(id); if (!h || !h.fb || h.nr === 'sent' || h.nr === 'sending') return;
+    if (act === 'open') { h.nr = 'ask'; pbAiNrDraw(h, true); return; }
+    if (act === 'cancel') { h.nr = ''; pbAiNrDraw(h); return; }
+    if (act !== 'send') return;
+    if (navigator.onLine === false) { h.nr = 'err'; h.nrMsg = 'No signal. Try again when you have one.'; h.nrRetry = true; pbAiNrDraw(h); return; }
+    h.nr = 'sending'; pbAiNrDraw(h);
+    let st = 0, j = null;
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = setTimeout(() => { try { if (ctl) ctl.abort(); } catch (e) {} }, window.__pbNrMs || 20000); // (__pbNrMs: tests only)
+    try {
+      const token = await pbAiToken();
+      if (!token) st = 401;
+      else {
+        const note = String(h.nrNote || '').trim().slice(0, 200);
+        const res = await fetch(PB_AI_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'apikey': SUPABASE_PUBLISHABLE_KEY },
+          body: JSON.stringify(note ? { action: 'feedback', answer_id: h.fb, note } : { action: 'feedback', answer_id: h.fb }), signal: ctl ? ctl.signal : undefined });
+        st = res.status; try { j = await res.json(); } catch (e) { j = null; }
+      }
+    } catch (e) { st = 0; }
+    clearTimeout(timer);
+    if (st === 200 && j && j.ok === true) { h.nr = 'sent'; h.nrNote = ''; pbAiNrDraw(h); return; }
+    h.nr = 'err';
+    h.nrRetry = !(st === 410 || st === 403 || st === 429 || st === 400);
+    h.nrMsg = st === 410 ? 'Too old to send.' : st === 429 ? 'That’s the limit for today.' : st === 401 ? 'Log in again, then retry.' : st === 403 || st === 400 ? 'Couldn’t send this one.' : 'Couldn’t send. Check your signal.';
+    if (st === 401) h.nrRetry = true;
+    pbAiNrDraw(h);
+  };
   function pbAiAskRender() {
     const box = document.getElementById('aiAskHistory'); if (!box) return;
     pbAiAskModeSync();
@@ -16727,7 +16895,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (name === 'askDocs') { pbDocsRender(); pbDocsLoad(); }
     if (name === 'prodJob') setTimeout(() => { const r = pbDocsEl('pjDocsRow'); if (r) r.hidden = !(pbDocsCanAdd() && pbDocs.ready === true); pbDocsQuiet(); }, 0);
     if (name === 'tools' || name === 'settings') setTimeout(pbDocsQuiet, 0);
-    if (name === 'docsReview') { pbDocsRvRender(); const sf = pbDocsEl('docsRvSafety'); if (sf) sf.hidden = !(pbDocsRvIsAdmin() && pbAiSafetyCheckOk()); const b = pbDocsEl('docsRvSafetyBtn'); if (b && !pbDocsRvSafetyCtl) b.disabled = navigator.onLine === false; } // never offered offline; only once the server answers v2
+    if (name === 'docsReview') { pbDocsRvRender(); const sf = pbDocsEl('docsRvSafety'); if (sf) sf.hidden = !(pbDocsRvIsAdmin() && pbAiSafetyCheckOk()); const b = pbDocsEl('docsRvSafetyBtn'); if (b && !pbDocsRvSafetyCtl) b.disabled = navigator.onLine === false; pbDocsRvBtnSync(false); } // never offered offline; only once the server answers v2
   });
   // ---- changes to one document (uploader or office) ----
   const pbDocsCur = () => pbDocs.list.find(d => String(d.id) === pbDocs.open) || null;
@@ -17031,6 +17199,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (l1) { l1.textContent = o.l1 || ''; l1.className = 'pb-docsrv-res' + (o.pass === true ? ' ok' : o.pass === false ? ' bad' : ''); }
     if (l2) l2.textContent = o.l2 || '';
     if (mf && ml) { mf.hidden = !o.misses; mf.open = false; ml.innerHTML = o.misses || ''; }
+    pbDocsRvBtnSync(o.busy);
+  }
+  // gap loop: Run Safety / Answer / Hazard Check: while any one runs, all three are disabled (and never offline)
+  function pbDocsRvBtnSync(busyNow) {
+    let busy = !!busyNow; try { busy = busy || !!(pbDocsRvSafetyCtl || pbDocsRvAnsCtl || pbDocsRvAnsTick || pbDocsRvHzCtl); } catch (e) {}
+    ['docsRvSafetyBtn', 'docsRvAnsBtn', 'docsRvHzBtn'].forEach(k => { const b = pbDocsEl(k); if (b) b.disabled = busy || navigator.onLine === false; });
   }
   window.pbDocsRvSafety = function() {
     if (!pbDocsRvIsAdmin() || !pbAiSafetyCheckOk()) return;
@@ -17040,10 +17214,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   };
   window.pbDocsRvSafetyCancel = function() { if (pbDocsRvSafetyCtl) { try { pbDocsRvSafetyCtl.abort(); } catch (e) {} } };
   async function pbDocsRvSafetyRun(limit) {
-    if (pbDocsRvSafetyCtl || pbDocsRvAnsCtl || pbDocsRvAnsTick) return; // fix98 5
+    if (pbDocsRvSafetyCtl || pbDocsRvAnsCtl || pbDocsRvAnsTick || pbDocsRvHzCtl) return; // fix98 5 (+ hazard check)
     const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null; pbDocsRvSafetyCtl = ctl || {};
     let canceled = false; if (ctl) ctl.signal.addEventListener('abort', () => { canceled = true; }, { once: true });
-    pbDocsRvSafetyShow({ busy: true }); pbDocsRvAnsShow({}); // one result on screen at a time
+    pbDocsRvSafetyShow({ busy: true }); pbDocsRvAnsShow({}); pbDocsRvHzShow({}); pbDocsRvBtnSync(true); // one result on screen at a time
     let st = 0, j = null, timedOut = false;
     const timer = setTimeout(() => { timedOut = true; try { if (ctl) ctl.abort(); } catch (e) {} }, window.__pbDocsRvSafetyMs || 120000); // (__pbDocsRvSafetyMs: tests only)
     try {
@@ -17070,6 +17244,58 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const misses = PB_DOCSRV_SIDES.map(([, name, key]) => Array.isArray(m[key]) && m[key].length ? '<p class="pb-docsrv-pg">' + name + '</p><ul class="pb-ai-list">' + m[key].slice(0, 100).map(t => '<li>' + escapeHtml(String(t).slice(0, 500)) + '</li>').join('') + '</ul>' : '').join('');
     pbDocsRvSafetyShow({ pass: !!j.pass, l1, l2, misses });
   }
+  // ---- Run Hazard Check: the streaming gate's classifier over ~200 held-out cases (DEPLOY speed release step 3b) ----
+  const PB_DOCSRV_HZ = [['slang_hazard', 'Slang'], ['decision', 'Decision'], ['tricky_hazard', 'Tricky'], ['ordinary_pipe', 'Ordinary'], ['tricky_ordinary', 'Tricky ordinary'], ['ordinary_gonogo', 'Teaching']];
+  let pbDocsRvHzCtl = null, pbDocsRvHzTick = null;
+  function pbDocsRvHzShow(o) {
+    const g = (id) => pbDocsEl(id), w = g('docsRvHzWait'), wt = g('docsRvHzWaitT'), l1 = g('docsRvHzL1'), l2 = g('docsRvHzL2'), ff = g('docsRvHzFold'), fl = g('docsRvHzList');
+    if (pbDocsRvHzTick) { clearInterval(pbDocsRvHzTick); pbDocsRvHzTick = null; }
+    if (w) w.hidden = !o.busy;
+    if (o.busy) { const t0 = Date.now(), draw = () => { const s = Math.floor((Date.now() - t0) / 1000); if (wt) wt.textContent = 'Checking… ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }; draw(); pbDocsRvHzTick = setInterval(draw, 1000); }
+    if (l1) { l1.textContent = o.l1 || ''; l1.className = 'pb-docsrv-res' + (o.pass === true ? ' ok' : o.pass === false ? ' bad' : ''); }
+    if (l2) l2.textContent = o.l2 || '';
+    if (ff && fl) { ff.hidden = !o.list; ff.open = false; fl.innerHTML = o.list || ''; }
+    pbDocsRvBtnSync(o.busy);
+  }
+  window.pbDocsRvHz = function() {
+    if (!pbDocsRvIsAdmin() || !pbAiSafetyCheckOk()) return;
+    if (navigator.onLine === false) { pbDocsRvHzShow({ l1: 'No signal.' }); return; }
+    pbShowModal('Runs about 200 checks on the server. Takes under a minute and costs about 2 cents.', [{ label: 'Cancel' },
+      { label: 'Quick Check', onClick: () => pbDocsRvHzRun(3) }, { label: 'Run', primary: true, onClick: () => pbDocsRvHzRun(0) }], 'Run Hazard Check');
+  };
+  window.pbDocsRvHzCancel = function() { if (pbDocsRvHzCtl && pbDocsRvHzCtl.abort) { try { pbDocsRvHzCtl.abort(); } catch (e) {} } };
+  async function pbDocsRvHzRun(limit) {
+    if (pbDocsRvHzCtl || pbDocsRvSafetyCtl || pbDocsRvAnsCtl || pbDocsRvAnsTick) return;
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null; pbDocsRvHzCtl = ctl || {};
+    let canceled = false; if (ctl) ctl.signal.addEventListener('abort', () => { canceled = true; }, { once: true });
+    try { pbDocsRvSafetyShow({}); pbDocsRvAnsShow({}); } catch (e) {} // one result on screen at a time
+    pbDocsRvHzShow({ busy: true });
+    let st = 0, j = null, timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; try { if (ctl) ctl.abort(); } catch (e) {} }, window.__pbDocsRvHzMs || 120000); // (__pbDocsRvHzMs: tests only)
+    try {
+      const token = await pbAiToken();
+      if (!token) st = 401;
+      else {
+        const res = await fetch(PB_AI_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'apikey': SUPABASE_PUBLISHABLE_KEY },
+          body: JSON.stringify(limit ? { action: 'eval_hazard', limit } : { action: 'eval_hazard' }), signal: ctl ? ctl.signal : undefined });
+        st = res.status; try { j = await res.json(); } catch (e) { j = null; }
+      }
+    } catch (e) { st = 0; }
+    clearTimeout(timer); pbDocsRvHzCtl = null;
+    if (canceled && !timedOut) { pbDocsRvHzShow({ l1: 'Canceled.' }); return; }
+    if (st !== 200 || !j || j.ok !== true || !j.groups || typeof j.groups !== 'object' || !j.critical) {
+      pbDocsRvHzShow({ l1: st === 401 ? 'Log in again.' : st === 403 ? 'Only the app owner can run it.' : st === 503 && j && j.error === 'not_configured' ? 'The AI isn’t set up on the server.' : 'Didn’t finish, try again.' });
+      return;
+    }
+    const cleared = Array.isArray(j.critical.cleared_by_classifier) ? j.critical.cleared_by_classifier.map(String) : [];
+    const leaks = new Set(Array.isArray(j.critical.stream_leaks) ? j.critical.stream_leaks.map(String) : []);
+    const pct = (g) => { const r = Number.isFinite(Number(g.rate)) ? Number(g.rate) : (Number(g.n) ? Number(g.ok) / Number(g.n) : 0); return Math.round(r * 100) + '%'; };
+    const groups = PB_DOCSRV_HZ.filter(([k]) => j.groups[k] && typeof j.groups[k] === 'object');
+    const l1 = (j.pass ? 'Passed' : 'Not passed') + ' · ' + cleared.length + ' hazard item' + (cleared.length === 1 ? '' : 's') + ' cleared';
+    const l2 = groups.map(([k, name]) => name + ' ' + pct(j.groups[k])).join(' · ') + (Number(j.failed) ? ' · Failed calls: ' + Number(j.failed) : '') + (Number.isFinite(Number(j.usd)) ? ' · $' + Number(j.usd).toFixed(2) : '');
+    const list = cleared.length ? '<ul class="pb-ai-list" id="docsRvHzUl">' + cleared.slice(0, 200).map(t => '<li>' + escapeHtml(t.slice(0, 500)) + (leaks.has(t) ? ' <strong>· would stream</strong>' : '') + '</li>').join('') + '</ul>' : '';
+    pbDocsRvHzShow({ pass: !!j.pass, l1, l2, list });
+  }
   // ---- Run Answer Check: about 150 fixed questions through the real Ask code with synthetic job data, graded on the server ----
   let pbDocsRvAnsCtl = null, pbDocsRvAnsTick = null, pbDocsRvAnsStop = false;
   function pbDocsRvAnsShow(o) {
@@ -17082,6 +17308,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (l2) l2.textContent = o.l2 || '';
     if (ff && fl) { ff.hidden = !o.fails; ff.open = false; fl.innerHTML = o.fails || ''; }
     if (wt && o.busy) wt.textContent = o.prog || 'Checking…';
+    pbDocsRvBtnSync(o.busy);
   }
   window.pbDocsRvAns = function() {
     if (!pbDocsRvIsAdmin() || !pbAiSafetyCheckOk()) return;
@@ -17102,9 +17329,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   const pbDocsRvAnsErr = (r) => r.st === 401 ? 'Log in again.' : r.st === 403 ? 'Only the app owner can run it.' : r.st === 503 && r.j && r.j.error === 'not_configured' ? 'The AI isn’t set up on the server.' : 'Didn’t finish, try again.';
   async function pbDocsRvAnsRun(split) {
-    if (pbDocsRvAnsCtl || pbDocsRvAnsTick || pbDocsRvSafetyCtl) return; // fix98 5
+    if (pbDocsRvAnsCtl || pbDocsRvAnsTick || pbDocsRvSafetyCtl || pbDocsRvHzCtl) return; // fix98 5 (+ hazard check)
     pbDocsRvAnsStop = false;
-    try { pbDocsRvSafetyShow({}); } catch (e) {} // one result on screen at a time
+    try { pbDocsRvSafetyShow({}); pbDocsRvHzShow({}); } catch (e) {} // one result on screen at a time
     const t0 = Date.now(), results = [];
     let from = 0, total = 0, batch = 0;
     const clock = () => { const s = Math.floor((Date.now() - t0) / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
@@ -17836,7 +18063,40 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // real value over it, the faded marker clears via the input listener below and it
   // becomes a normal, verified entry. Only ever touches a field that's empty or
   // still carries its own marker — never overwrites something the person typed.
-  function refreshPredictedReadingFill(prefix) {
+  function refreshPredictedReadingFill(prefix) { try { pbRpFill(prefix); } finally { try { pbRpLine(prefix); } catch (e) { console.error(e); } } }
+  // feat_resume 1: a stake whose top is above the instrument has no stake reading (never a negative one), but its invert
+  // still has a reading to lay to: say so and give it. Invert above the instrument too: the quiet out-of-reach line.
+  function pbRpLine(prefix) {
+    const tog = document.getElementById(prefix + 'ModeToggle');
+    const mode = tog && tog.querySelector('button.active') ? activeVal(prefix + 'ModeToggle') : null;
+    const anchor = mode ? document.getElementById(prefix + (mode === 'stake' ? 'StakeDerived' : 'ElevDerived')) : null;
+    let ln = document.getElementById(prefix + 'RpLine'), txt = '', cls = '', num = '';
+    const rod = document.getElementById('rodToggle') ? activeVal('rodToggle') : '';
+    if (anchor && rod && rod !== 'lenker') {
+      const hi = computeHI(), lay = pbHdLayHi(hi), fromShots = activeVal('hiToggle') === 'stakes';
+      if (lay !== null && lay !== undefined) {
+        if (mode === 'stake') {
+          const typed = getElevVal(prefix + 'StakeReading') !== null && !isPredictedFillMarked(prefix + 'StakeReading');
+          const se = pbArchInchBad(prefix + 'StakeElev') === null ? getElevVal(prefix + 'StakeElev') : null;
+          if (!typed && se !== null && lay - se < -1e-9) {
+            const r = getPointReading(prefix, hi);
+            if (r !== null && r >= -1e-9) { txt = 'Stake top is above the instrument. Lay to ' + fmtReading(r, rod) + ' at the invert.'; num = fmtReading(r, rod); cls = 'lay'; }
+            else if (r !== null && fromShots) { txt = 'Out of reach from this setup.'; cls = 'reach'; }
+          }
+        } else if (mode === 'elev' && fromShots) {
+          const typed = getElevVal(prefix + 'ElevReading') !== null && !isPredictedFillMarked(prefix + 'ElevReading');
+          const elev = pbArchInchBad(prefix + 'Elev') === null ? getElevVal(prefix + 'Elev') : null;
+          if (!typed && pbStakeShotReading(prefix) === null && elev !== null && lay - elev < -1e-9) { txt = 'Out of reach from this setup.'; cls = 'reach'; }
+        }
+      }
+    }
+    if (!txt) { if (ln) ln.remove(); return; }
+    if (!ln) { ln = document.createElement('div'); ln.id = prefix + 'RpLine'; }
+    if (anchor.nextElementSibling !== ln) anchor.insertAdjacentElement('afterend', ln);
+    ln.className = 'pb-rp-line ' + cls;
+    if (ln.textContent !== txt) { if (num) { ln.textContent = ''; const i = txt.indexOf(num); ln.append(txt.slice(0, i)); const st = document.createElement('strong'); st.textContent = num; ln.append(st, txt.slice(i + num.length)); } else ln.textContent = txt; }
+  }
+  function pbRpFill(prefix) {
     const mode = activeVal(prefix+'ModeToggle');
     if (mode === 'stake') {
       const id = prefix+'StakeReading';
@@ -19828,15 +20088,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       warnings.push({ type: hiCheck.severity === 'serious' ? 'hi-serious' : 'hi-minor', heading: card.heading, hdLine: card.line, hdBtn: card.btn, hdHi, text: card.heading + ': ' + card.line });
     }
     if (needsReading) {
-      const allPrefixes = points.map(p => p.id);
-      const stakePrefixes = allPrefixes.filter(p => activeVal(p+'ModeToggle') === 'stake' || pbStakeGroundFor(p)); // a corrected stake hub is still a stake
-      const verifiedPrefixes = stakePrefixes.filter(pointReadingIsVerified);
-      if (stakePrefixes.length > 0 && verifiedPrefixes.length < 2) {
-        const verifiedLabels = verifiedPrefixes.map(p => getPointLabel(p, p==='start'?'Start':p==='end'?'End':'Hub'));
-        warnings.push({ type: 'unverified', heading: 'Stakes Not Field-Checked', text: verifiedPrefixes.length === stakePrefixes.length
-          ? `Only one stake shot (${verifiedLabels.join(', ')}). Shoot a second to check the HI.`
-          : `Only ${verifiedPrefixes.length} of ${stakePrefixes.length} stake point(s) field-shot${verifiedLabels.length ? ' (' + verifiedLabels.join(', ') + ')' : ''}. Shoot at least 2 before relying on this run.` });
-      }
+      // feat_resume 7 (owner, Nov 5): what matters is that the HI stands on one real field shot of this setup (the start,
+      // the Left off point, any hub, or a benchmark and backsight). Fittings, crossings and hubs not dug to yet are never
+      // "missing shots". A typed HI with no shot anywhere: one quiet line.
+      const hiSrc7 = activeVal('hiToggle');
+      const shot7 = hiSrc7 === 'bm' || getStakeHICandidates().length > 0 || points.some(p => { try { return pointReadingIsVerified(p.id); } catch (e) { return false; } });
+      if (!shot7) capabilityNotes.push('HI not checked on a stake. Shoot one to confirm.');
     }
 
     const hiLayV = (needsReading && hi !== null) ? pbHdLayHi(hi) : null; // hidisc 2
@@ -20465,6 +20722,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!el) return;
     const card = el.closest('[data-hub-id]');
     if (card) { const body = card.querySelector('.pb-body'); if (body && body.style.display === 'none') pbToggleHubCollapse(card.dataset.hubId); }
+    { const xc = el.closest('.pb-xing-card'); if (xc) { try { window.pbXingToggle(xc.dataset.xingId, true); } catch (e) {} } } /* feat_resume 4 */
     for (let d = el.closest('details'); d; d = d.parentElement && d.parentElement.closest('details')) d.open = true;
     const box = el.closest('.pb-field') || el;
     box.scrollIntoView({ block: 'center' });
@@ -20566,7 +20824,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const sta = pbStIdentSta(id), lab = pbRunSecTxt(id + 'Label'); /* feat_results2: the station when entered as one */
         const name = 'Hub ' + (i + 1);
         if (nm && nm.textContent !== name) nm.textContent = name;
-        const txt = [sta !== '' ? 'Sta ' + sta : 'Station not entered', pbFitIdent(id), lab].filter(Boolean).join(' \u00b7 '); /* feat_crossing: a fitting says which */
+        const txt = [sta !== '' ? 'Sta ' + sta : 'Station not entered', pbFitIdent(id), lab].filter(Boolean).join(' \u00b7 ');
+        { const fo = document.getElementById(id + 'FitOn'); card.classList.toggle('pb-hub-fit', !!(fo && fo.checked)); } /* feat_resume 9 */ /* feat_crossing: a fitting says which */
         if (el.textContent !== txt) el.textContent = txt;
       });
     });
@@ -21699,9 +21958,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const labelTr = document.createElement('tr');
         labelTr.className = rowClass + (pbFitR ? 'pb-fitstrip' : '');
         labelTr.innerHTML = `<td colspan="${colCount}" style="text-align:left; white-space:normal; padding:7px 8px 3px 8px; border-top:2px solid var(--ink);">
-          ${r.label && !pbFitR ? `<span class="pb-sta-sub ${staSubClass}" style="display:inline; margin:0;">${escapeHtml(pbRowStripName(entry, r))}</span>` : ''}
-          ${r.verified === true && !pbFitR ? `<span class="pb-chip ok" style="margin-left:8px;">field-verified</span>` : ''}
-          ${r.verified === false && !pbFitR ? `<span class="pb-b3-predicted" style="margin-left:8px; font-size:13px; font-weight:600; color:var(--pb-text-2);">predicted, not field-verified</span>` : ''}
+          ${r.label && !pbFitR ? `<span class="pb-rs-hd"><span class="pb-sta-sub ${staSubClass}" style="margin:0;">${escapeHtml(pbRsNoStakeWord(pbRowStripName(entry, r)))}</span>${pbRsPointInfo(entry, r) ? `<span class="pb-rs-hdinfo">${escapeHtml(pbRsPointInfo(entry, r))}</span>` : ''}</span>` : ''}${!r.label && !pbFitR && pbRsPointInfo(entry, r) ? `<span class="pb-rs-hd"><span class="pb-rs-hdinfo">${escapeHtml(pbRsPointInfo(entry, r))}</span></span>` : ''}
           ${pbRsLayNote(r.layoutNote) ? `<span class="pb-lay-note">${escapeHtml(pbRsLayNote(r.layoutNote))}</span>` : ''}
           ${pbFitStripHTML(entry, r)}
           ${r.addedTime ? `<span style="margin-left:8px; font-size:11px; font-weight:400; text-transform:none; letter-spacing:0; opacity:.7;">added ${new Date(r.addedTime).toLocaleTimeString()}</span>` : ''}
@@ -24361,10 +24618,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     else if (!pbNewRunGuardPassed && pbAskKeptLaterStats(entry)) return; // after the crew question this was already asked
     if (!pbNewRunGuardPassed && pbNewRunNeedsAnswer({}, () => pbNewRunAfterAnswer(() => { const j = runArchive.indexOf(entry); if (j !== -1) pbResumeIncompleteRun(j); }))) return; // crew-sweep2: ask first
     const additionalRunNums = pbLoadRunIntoForm(entry, { open: true }).additionalRunNums; /* feat_run33 (2) */
-    try { window.pbRsStopHub(entry); } catch (e) { console.error(e); } /* feat_stophub */
+    const pbRsxLo = (() => { try { return window.pbRsStopHub(entry); } catch (e) { console.error(e); return null; } })(); /* feat_stophub */
     window._pbResumingFromEntryId = entry.id;
     window._pbResumingFromLabel = pbResumedFromLabel(entry);
     try { setTimeout(() => window.pbRsEarlyFold(entry), 0); } catch (e) {} /* feat_resume2 */
+    try { setTimeout(() => window.pbRsxResumeFold(entry, pbRsxLo), 0); } catch (e) {} /* feat_resume 2 */
     window._pbResumeFormKey = pbFormStateKey(); /* feat_run33 (9): the form as Resume left it (nothing new typed yet) */
     pbAlert((entry.rodUnit === 'lenker'
       ? 'Elevations are pre-filled from the earlier run' + (entry.stoppedAtStation ? ' \u2014 ' + entry.stoppedAtStation + ' is where you left off' : '') + '. Check them, then Lock to continue it.'
@@ -24397,6 +24655,125 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (next && card) next.parentNode.insertBefore(card, next); // in station order on the page
     return id;
   };
+  // ==== feat_resume (owner, Nov 5) ====
+  // 4. a crossing card folds like a hub card (want: true open, false shut, undefined toggle)
+  window.pbXingToggle = function(id, want) {
+    const card = document.querySelector('#screen-input .pb-xing-card[data-xing-id="' + id + '"]'); if (!card) return;
+    const body = card.querySelector(':scope > .pb-body'); if (!body) return;
+    const open = body.style.display !== 'none', next = want === undefined ? !open : !!want;
+    if (next === open) return;
+    body.style.display = next ? '' : 'none';
+    card.classList.toggle('pb-xing-shut', !next);
+    const b = card.querySelector(':scope > .pb-tag .pb-xing-fold'); if (b) { b.textContent = next ? 'Collapse' : 'Expand'; b.setAttribute('aria-expanded', String(next)); }
+  };
+  // 3. a crossing's distance from its run's start (a 12+45 station counts from the Start's station, as Lock does)
+  function pbRsxXDist(c) {
+    const n = Number(c.dataset.xingRun) || 1, t = pbXingVal(c.dataset.xingId + 'Sta'); if (!t) return null;
+    if (/\+/.test(t)) { let st = null; try { st = pbStStart(n); } catch (e) { st = null; } if (st) { const v = pbStParse(t); return typeof v === 'number' && Number.isFinite(v) ? Math.abs(v - st.v) : null; } }
+    const v = pbXingParseSta(t); return typeof v === 'number' && Number.isFinite(v) ? v : null;
+  }
+  // 3. crossings among the hubs: before the first hub past them (and its slope pill); none past: after the last hub;
+  // no station yet: at the end. Hubs keep their order. Nothing moves when it is already in place.
+  window.pbXingOrder = function(only) {
+    const runs = only ? [only] : pbXingRunsOnForm();
+    runs.forEach(n => {
+      const host = document.getElementById(n === 1 ? 'hubsContainer' : 'hubsContainer' + n); if (!host) return;
+      const xs = pbXingCards(n); if (!xs.length) return;
+      const units = []; let pend = [];
+      Array.from(host.children).forEach(k => { if (k.classList.contains('pb-xing-card')) return; pend.push(k); if (k.matches('[data-hub-id]')) { units.push({ hub: k, els: pend }); pend = []; } });
+      const xd = xs.map((c, i) => ({ c, i, d: pbRsxXDist(c) }));
+      xd.sort((a, b) => ((a.d === null) - (b.d === null)) || (a.d !== null && b.d !== null ? a.d - b.d : 0) || a.i - b.i);
+      const before = new Map(), end = [];
+      xd.forEach(x => {
+        const u = x.d === null ? null : units.find(u => { const f = numVal(u.hub.dataset.hubId + 'Station'); return f !== null && f > x.d + 1e-6; });
+        if (u) { if (!before.has(u)) before.set(u, []); before.get(u).push(x.c); } else end.push(x.c);
+      });
+      // past the last hub: the crossings list right under the hubs (where + Add Crossing puts a new one)
+      const tailBox = document.getElementById('xingContainer' + n) || host;
+      const want = [];
+      units.forEach(u => { (before.get(u) || []).forEach(c => want.push(c)); u.els.forEach(e => want.push(e)); });
+      pend.forEach(e => want.push(e));
+      const wantT = tailBox === host ? want.concat(end) : end, wantH = tailBox === host ? wantT : want;
+      const same = (box, w) => { const cur = Array.from(box.children); return cur.length === w.length && cur.every((e, i) => e === w[i]); };
+      if (same(host, wantH) && (tailBox === host || same(tailBox, wantT))) return;
+      const ae = document.activeElement;
+      wantH.forEach(e => host.appendChild(e));
+      if (tailBox !== host) wantT.forEach(e => tailBox.appendChild(e));
+      if (ae && ae !== document.body && document.activeElement !== ae && document.contains(ae)) { try { ae.focus({ preventScroll: true }); } catch (e) {} }
+    });
+    try { pbRsxEarlyX(); } catch (e) {}
+  };
+  let pbRsxOrderT = null;
+  function pbRsxOrderSoon() { clearTimeout(pbRsxOrderT); pbRsxOrderT = setTimeout(() => { try { window.pbXingOrder(); } catch (e) { console.error(e); } }, 150); }
+  ['change', 'click'].forEach(t => document.addEventListener(t, (ev) => { const tg = ev.target; if (tg && tg.closest && tg.closest('#screen-input') && document.querySelector('#screen-input .pb-xing-card')) pbRsxOrderSoon(); }, true));
+  ['pbAddHub', 'pbAddHub2', 'pbAddHubN', 'pbRemoveHub'].forEach(k => { const o = window[k]; if (typeof o === 'function') window[k] = function() { const r = o.apply(this, arguments); try { if (document.querySelector('#screen-input .pb-xing-card')) window.pbXingOrder(); } catch (e) { console.error(e); } return r; }; });
+  { const o = window.pbGotoTab; if (typeof o === 'function') window.pbGotoTab = function() { window._pbTabNav = true; try { return o.apply(this, arguments); } finally { window._pbTabNav = false; } }; } // feat_resume 8
+  // Collapse All / Expand All: that run's crossings too
+  [['pbCollapseAllHubs', 1, false], ['pbExpandAllHubs', 1, true], ['pbCollapseAllHubs2', 2, false], ['pbExpandAllHubs2', 2, true], ['pbCollapseAllHubsN', 0, false], ['pbExpandAllHubsN', 0, true]].forEach(([k, n, open]) => {
+    const o = window[k]; if (typeof o !== 'function') return;
+    window[k] = function(m) { const r = o.apply(this, arguments); try { pbXingCards(n || m).forEach(c => window.pbXingToggle(c.dataset.xingId, open)); } catch (e) {} return r; };
+  });
+  // a continued run: crossings before where it left off fold away with the earlier points
+  function pbRsxEarlyX() {
+    const sc = document.getElementById('screen-input'), st = window._pbRsStop;
+    pbXingCards(1).forEach(c => { const d = st && sc && document.getElementById('pbRsEarlyBar') ? pbRsxXDist(c) : null; c.classList.toggle('pb-rs-early', d !== null && d < st.ft - 0.005); });
+  }
+  // 2. a card the person folded or opened keeps that; a problem that was not showing when they did opens it again
+  function pbRsxCardOf(el) { return el && el.closest ? el.closest('#screen-input .pb-hub-card, #screen-input .pb-xing-card') : null; }
+  function pbRsxProbSig(card, hd) {
+    const sig = [];
+    const body = card.querySelector(':scope > .pb-body');
+    const shown = (w) => { if (w.hidden || !String(w.textContent || '').trim()) return false; for (let e = w; e && e !== card; e = e.parentElement) { if (e !== body && (e.hidden || (e.style && e.style.display === 'none'))) return false; } return true; };
+    card.querySelectorAll('[aria-invalid="true"]').forEach(e => sig.push('bad:' + (e.id || '')));
+    card.querySelectorAll('.pb-field-err, .pb-inline-warn, .pb-warn').forEach(w => { if (shown(w)) sig.push('w:' + String(w.textContent).trim().slice(0, 60)); });
+    if (card.dataset.hubId && hd && hd.has(card.dataset.hubId)) sig.push('hi');
+    if (card.dataset.xingId) { const t = pbXingVal(card.dataset.xingId + 'Sta'), any = ['Util', 'Od', 'Wall', 'Inv', 'Bop', 'Top'].some(k => pbXingVal(card.dataset.xingId + k) !== ''); if ((t || any) && pbRsxXDist(card) === null) sig.push('sta'); }
+    return sig.join('|');
+  }
+  window.pbRsxProblems = function() {
+    const sc = document.getElementById('screen-input'); if (!sc) return;
+    let hd = new Set();
+    try { const h = computeHiCrossCheck(); if (h && h.severity !== 'none') (h.outliers && h.outliers.length ? h.outliers : h.candidates).forEach(c => { if (c && c.prefix) hd.add(c.prefix); }); } catch (e) {}
+    sc.querySelectorAll('.pb-hub-card[data-hub-id], .pb-xing-card[data-xing-id]').forEach(card => {
+      const body = card.querySelector(':scope > .pb-body'); if (!body || body.style.display !== 'none') return;
+      const sig = pbRsxProbSig(card, hd); if (!sig || sig === card.dataset.pbFoldSig) return;
+      if (card.dataset.hubId) pbToggleHubCollapse(card.dataset.hubId); else window.pbXingToggle(card.dataset.xingId, true);
+    });
+  };
+  function pbRsxUserFold(ev) {
+    const tg = ev.target; if (!tg || !tg.closest) return;
+    if (ev.type === 'keydown' && ev.key !== 'Enter' && ev.key !== ' ') return;
+    const hit = tg.closest('.pb-hub-card > .pb-tag button[onclick^="pbToggleHubCollapse"], .pb-hub-card .pb-hub-ident, .pb-hub-card .pb-hub-summary, .pb-xing-card .pb-xing-fold, .pb-xing-card .pb-xing-ident');
+    const card = hit && pbRsxCardOf(hit); if (!card) return;
+    let hd = new Set(); try { const h = computeHiCrossCheck(); if (h && h.severity !== 'none') (h.outliers && h.outliers.length ? h.outliers : h.candidates).forEach(c => { if (c && c.prefix) hd.add(c.prefix); }); } catch (e) {}
+    card.dataset.pbFoldSig = pbRsxProbSig(card, hd); // what was showing when they chose
+  }
+  document.addEventListener('click', pbRsxUserFold, true); document.addEventListener('keydown', pbRsxUserFold, true);
+  { const o = window.pbReview; if (typeof o === 'function') window.pbReview = function() { const r = o.apply(this, arguments); setTimeout(() => { try { window.pbRsxProblems(); } catch (e) {} }, 60); return r; }; } // a Review that stops on a hub opens it
+  let pbRsxProbT = null;
+  ['input', 'change', 'click'].forEach(t => document.addEventListener(t, (ev) => { const tg = ev.target; if (!tg || !tg.closest || !tg.closest('#screen-input')) return; clearTimeout(pbRsxProbT); pbRsxProbT = setTimeout(() => { try { window.pbRsxProblems(); } catch (e) { console.error(e); } }, 700); }, true));
+  // 2. Resume: every hub collapsed but today's starting hub (the Left off hub, the hub at the stop, or the last hub
+  // before it); Start and End stay open. Crossings collapsed. Problems open.
+  window.pbRsxResumeFold = function(entry, loId) {
+    const st = window._pbRsStop && window._pbRsStop.from === (entry && entry.id) ? window._pbRsStop.ft : null;
+    let keep = loId || null;
+    if (!keep && st !== null) {
+      let best = null, bestF = -Infinity;
+      getAllHubPrefixes().forEach(h => { const f = numVal(h + 'Station'); if (f !== null && f <= st + 0.005 && f > bestF) { best = h; bestF = f; } });
+      keep = best;
+    }
+    document.querySelectorAll('#screen-input .pb-hub-card[data-hub-id]').forEach(card => {
+      const id = card.dataset.hubId, body = card.querySelector('.pb-body'); if (!body) return;
+      const open = body.style.display !== 'none';
+      if ((id === keep) !== open) pbToggleHubCollapse(id);
+      delete card.dataset.pbFoldSig;
+    });
+    document.querySelectorAll('#screen-input .pb-xing-card[data-xing-id]').forEach(c => { window.pbXingToggle(c.dataset.xingId, false); delete c.dataset.pbFoldSig; });
+    try { window.pbXingOrder(); } catch (e) { console.error(e); }
+    window.pbRsxProblems();
+    try { if (window._pbResumeFormKey !== undefined) window._pbResumeFormKey = pbFormStateKey(); } catch (e) {} /* fix100: the order the fold left is the untouched form */
+  };
+  // ==== end feat_resume ====
   // feat_revfrom (owner, Nov 1): Review of a continued run shows the run from where it left off to the end
   // (distance, slopes, start reading/invert, bedding, points). Lock and Results keep the whole run.
   window.pbRsViewCalc = function(calc) {
@@ -25751,6 +26128,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (savedOkFlag && confinedPermit && confinedPermit.sessionId === mySession) { const pb = document.getElementById('permitSaveStatusBanner'); if (pb) pb.style.display = 'none'; }
     if (savedOkFlag && confinedEmergencySavePending && confinedEmergencySavePending.sessionId === mySession && mySeq > confinedEmergencySavePending.failedSeq) pbClearEmergencySavePending();
     if (savedOkFlag) { try { pbEmPushSoon(); } catch (e) {} } /* feat_emlink: an open emergency reaches the responder page within seconds */
+    if (savedOkFlag) { try { pbOpenBkSoon(); } catch (e) {} } /* permit_open: the server copy of the open permit follows within ~6 s */
     return savedOkFlag;
   }
   // Before any load (another account logging in, a retry): the live reminders,
@@ -32924,7 +33302,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbLayReportLines(entry).forEach(x => lines.push(x));
     const verifiedCount = entry.intervalRows.filter(r => r.verified === true && pbRowIsStake(entry, r)).length;
     const totalStakeCount = entry.intervalRows.filter(r => pbRowIsStake(entry, r)).length;
-    if (totalStakeCount > 0) lines.push(verifiedCount + ' of ' + totalStakeCount + ' stake point(s) field-verified with an actual rod shot — the rest predicted from HI and design/cutsheet elevation.');
+    { const shotN = entry.intervalRows.filter(r => r.verified === true).length; /* feat_resume 7: the HI's field shot, not a stake count */
+      if (totalStakeCount > 0 || shotN > 0) lines.push(shotN > 0 ? shotN + ' point(s) shot in the field; the rest predicted from HI and design/cutsheet elevation.' : 'HI not checked on a stake; every reading predicted from HI and design/cutsheet elevation.'); void verifiedCount; }
     const pbTxSta = pbStRowStaFn(entry); /* feat_results2 */
     const pbTxX = pbXingRowPlan(entry), pbTxXl = (o) => { const t = pbXingRowText(o), st = pbXingStaOf(pbTxSta, o); return fmt(o.abs, 2) + (st ? ' [Sta ' + st + ']' : '') + ' \u00d7 Crossing \u2014 ' + t.what + (t.clr ? ' \u00b7 ' + t.clr + (t.low && o.pos !== 'conflict' ? ' (under minimum)' : '') : ''); }; /* xingrow */
     entry.intervalRows.forEach((r, pbTxI) => {
@@ -33151,6 +33530,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (ground) rec.stakeGround = { stakeElev: ground.stakeElev, cutFill: ground.cutFillMode, cutFillVal: ground.cutFillVal }; // a corrected stake hub: Resume keeps its stake ground
       const fit = pbFitSnap(id); if (fit) rec.fit = fit; // feat_crossing: a fitting hub (no key otherwise)
       if (pbStMode(id) === 'sta') rec.staMode = 'sta'; // feat_results2: entered as a station (no key otherwise)
+      try { if (pointReadingIsVerified(id)) { const sg = rec.mode === 'elev' ? pbStakeGroundFor(id) : null; /* hubedge 2: the Shot column */
+        const v = rec.mode === 'stake' ? getElevVal(id + 'StakeReading') : sg && sg.shot !== null && sg.shot !== undefined && !pbFreshShotAtStakeHub(id) ? sg.shot : getElevVal(id + 'ElevReading');
+        if (typeof v === 'number' && isFinite(v)) rec.shot = v; } } catch (e) {}
       out[id] = rec;
     });
     return out;
@@ -37806,6 +38188,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.addEventListener('online', () => setTimeout(() => { if (confinedPermit) pbOpenBackupTick(); }, 4000));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && confinedPermit) setTimeout(pbOpenBackupTick, 3000); });
   window.__pbOpenBackupTick = pbOpenBackupTick;
+  // permit_open: a saved change (air reading, check in/out, comm check, emergency) is sent ~6 s later instead of on the
+  // next 30 s pass. One timer at a time (a burst of changes = one upload); only a timer, so no save or button waits on it.
+  let pbOpenBkT = null;
+  function pbOpenBkSoon() {
+    if (pbOpenBkT || !confinedPermit) return;
+    pbOpenBkT = setTimeout(function fire() {
+      pbOpenBkT = null;
+      try { if (!confinedPermit) return; if (pbOpenBk.busy) { pbOpenBkT = setTimeout(fire, 3000); return; } pbOpenBackupTick(); } catch (e) {}
+    }, 6000);
+  }
+  window.__pbOpenBkSoon = pbOpenBkSoon;
   // ==== feat_emlink: ending a responder link (pb_em_link_end) and the faster upload during an emergency ====
   // Ends are kept per account (<uid>:emLinkEnds = [{ k, cid, why, at, tries?, nextAt?, done?, refused?, err? }]) and sent
   // when that account is signed in with signal. done = the server confirmed it; refused = the server said no (the code is
@@ -42908,6 +43301,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // a crew production push opens My production at "My crew now"
   window.pbPushRoutes = window.pbPushRoutes && typeof window.pbPushRoutes === 'object' ? window.pbPushRoutes : {};
   window.pbPushRoutes['/prod/crew'] = () => { window.pbOpenProdMine(); setTimeout(() => { const s = pbProdEl('pmLive'); if (s && s.scrollIntoView) s.scrollIntoView({ block: 'start' }); }, 600); };
+  // sb105: the EMERGENCY push. The office (not also a foreman) -> Company production's live board; a foreman -> his crew's live permits
+  window.pbPushRoutes['/permits/live'] = async () => {
+    const uid = pbArchiveOwnerUid; let mgr = false;
+    try { mgr = !!(await pbProdIsManager(uid)) && !(typeof pbLvIsForeman === 'function' && pbLvIsForeman(uid)); } catch (e) { mgr = false; }
+    if (!mgr) { window.pbPushRoutes['/prod/crew'](); return; }
+    await window.pbOpenProdDashboard();
+    setTimeout(() => { const s = pbProdEl('pdLive'); if (s && s.scrollIntoView) s.scrollIntoView({ block: 'start' }); }, 600);
+  };
+  // sb105: the failed-inspection push. A foreman -> his inspections & tests; the office -> the company's list
+  window.pbPushRoutes['/insp'] = () => { const uid = pbArchiveOwnerUid; if (typeof pbLvIsForeman === 'function' && pbLvIsForeman(uid)) window.pbOpenInspMine(); else window.pbOpenInspCompany(); };
   // ================= end batch 14 F board / crew push =================
   // ================= batch 17 END: a run left open, picked up later (owner, Oct 19) =================
   // "A resumed run the next day should ask the end footage point and what time it ended. Also can we put a push
@@ -46038,7 +46441,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (r.layoutKind) return 'Layout (calc.)';
     return 'Calculated';
   }
-  const PB_RPT_SRC_LEGEND = 'Source: Stake / Invert = a point entered on the run form (Stake = a stake elevation with cut/fill; Invert = an invert elevation). The app does not record, point by point, whether a point was typed, filled from a cutsheet import or read by AI: that source is not recorded for any point. Calculated = worked out by the app between points, not measured. Layout (calc.) = a joint or mid-point placed from the pipe laying length, calculated, not measured. Added = a point added after the run was locked. Verified: Yes (shot) = checked with an actual rod shot; Predicted = from HI and the design or cutsheet elevation.';
+  const PB_RPT_SRC_LEGEND = 'Source: Stake / Invert = a point entered on the run form (Stake = a stake elevation with cut/fill; Invert = an invert elevation). The app does not record, point by point, whether a point was typed, filled from a cutsheet import or read by AI: that source is not recorded for any point. Calculated = worked out by the app between points, not measured. Layout (calc.) = a joint or mid-point placed from the pipe laying length, calculated, not measured. Added = a point added after the run was locked.'; /* hubedge 2: the Shot column says it (its own sentence, only when it is printed) */
   function pbRptRunMeta(e, fp) {
     const changes = (e.correctionHistory || []).length + (Array.isArray(e.endTimeChanges) ? e.endTimeChanges.length : 0);
     return {
@@ -46208,7 +46611,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       };
     }
     const pbPdfSta = pbStRowStaFn(e), pbPdfHasSta = rows.some(r => !!pbPdfSta(r)); /* feat_results2 */
-    const head = ['Dist.'].concat(pbPdfHasSta ? ['Station'] : [], ['Point']).concat(['BOP']).concat(showSg ? ['Subgrade'] : []).concat(['INV', 'TOP']).concat(showElev ? ['Elev.'] : []).concat(showVer ? ['Verified'] : []).concat(laid ? [laidHead] : []).concat(['Source', 'Notes']);
+    const head = ['Dist.'].concat(pbPdfHasSta ? ['Station'] : [], ['Point']).concat(['BOP']).concat(showSg ? ['Subgrade'] : []).concat(['INV', 'TOP']).concat(showElev ? ['Elev.'] : []).concat(showVer ? ['Shot'] : []).concat(laid ? [laidHead] : []).concat(['Source', 'Notes']);
     const bandsOut = [];
     const body = rows.map(r => {
       const name = pbRptRowName(e, r), bits = [];
@@ -46234,7 +46637,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (showSg) out.push(r.sgDisp || '\u2014');
       out.push({ content: r.inv, _bold: true }, r.top);
       if (showElev) out.push(r.elevation === null || r.elevation === undefined ? '\u2014' : r.elevation);
-      if (showVer) out.push(r.verified === true ? 'Yes (shot)' : r.verified === false ? 'Predicted' : '\u2014');
+      if (showVer) { const sh = pbRsShotOf(e, r); out.push(sh !== null ? fmtReading(sh, e.rodUnit) : (r.verified === true ? 'Yes' : '')); } /* fix100 */ /* hubedge 2: the rod reading taken there in the field; blank = predicted from the HI */
       if (laid) out.push(laidCell(r));
       out.push(pbRptRowSource(e, r));
       out.push(phs.length ? R.photoCell(phs, bits.join(' \u00b7 ')) : (bits.join(' \u00b7 ') || '\u2014'));
@@ -46252,13 +46655,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const numCols = {}; head.forEach((h, i) => { if (/^(BOP|Subgrade|INV|TOP|Elev\.)$/.test(h)) numCols[i] = { halign: 'right', cellWidth: h === 'Subgrade' ? 17 : h === 'Elev.' ? 15 : 14 }; });
     numCols[0] = { cellWidth: 14, halign: 'right' }; if (pbPdfHasSta) numCols[1] = { cellWidth: 17, halign: 'right', fontSize: 7.5 }; numCols[head.indexOf('Point')] = { cellWidth: pbPdfHasSta ? 14 : 17 }; /* feat_results2 */
     numCols[head.indexOf('Source')] = { cellWidth: 17.5 };
-    if (showVer) numCols[head.indexOf('Verified')] = { cellWidth: 16 };
+    if (showVer) numCols[head.indexOf('Shot')] = { cellWidth: 11, halign: 'right' };
     if (laid) numCols[head.indexOf(laidHead)] = { cellWidth: 28, fontSize: 7.5 };
     { const fixedW = Object.keys(numCols).reduce((a, k) => a + (numCols[k].cellWidth || 0), 0), room = G.CW - 14;
       if (fixedW > room) Object.keys(numCols).forEach(k => { if (numCols[k].cellWidth) numCols[k].cellWidth = Math.floor(numCols[k].cellWidth * room / fixedW * 10) / 10; }); }
     R.table({ head, body, columnStyles: numCols, fontSize: 8.5, rowNotes: bandsOut });
     if (foot.length) foot.forEach((t, i) => R.para('[' + (i + 1) + '] ' + t, { size: 9, after: 0.6 }));
-    R.para(PB_RPT_SRC_LEGEND + (e.cutsheetAiText ? ' This run was built with an AI-read cutsheet (see the AI-recreated cutsheet section); which points came from it is not recorded.' : '') + (laid ? ' Laid = when the row was marked laid on the phone (phone time; the year and time zone are in the column heading when all marks share them). One swipe marks several rows at once: they share one time; the first row of the swipe says "N-row swipe" and the stations it marked, and the others say "(swipe)"; "not marked" = never marked laid.' : ''), { size: 9, color: G.MUTED, keep: true, lead: 'Grade sheet legend (the table is on the previous page)' });
+    R.para(PB_RPT_SRC_LEGEND + (showVer ? ' Shot = the rod reading taken at that point in the field, the one that checks the HI (Yes = shot there, reading not saved on runs locked before r16.00); blank = not shot there, the readings at that point are predicted from the HI.' : '') + (e.cutsheetAiText ? ' This run was built with an AI-read cutsheet (see the AI-recreated cutsheet section); which points came from it is not recorded.' : '') + (laid ? ' Laid = when the row was marked laid on the phone (phone time; the year and time zone are in the column heading when all marks share them). One swipe marks several rows at once: they share one time; the first row of the swipe says "N-row swipe" and the stations it marked, and the others say "(swipe)"; "not marked" = never marked laid.' : ''), { size: 9, color: G.MUTED, keep: true, lead: 'Grade sheet legend (the table is on the previous page)' });
     if (laid) {
       R.section('laid', 'Laid progress', { keep: 30, intro: 'Rows marked laid on the grade sheet, as recorded on the phone (device time). Rows marked together share one time. An undo removes the marks from that row on; it is kept here.' });
       const rowsLaid = rows.filter(r => typeof laid.marks[pbRptLaidKey(r)] === 'number');
@@ -49241,6 +49644,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       pbCollapseAllHubs(); hubsShut += getAllHubPrefixes().length;
       if (segIsActive(2)) { pbCollapseAllHubs2(); hubsShut += getAllHub2Prefixes().length; }
       for (let n = 3; n <= MAX_SEG; n++) if (segIsActive(n)) { pbCollapseAllHubsN(n); hubsShut += getAllHubPrefixesForSeg(n).length; }
+      try { window.pbXingOrder(); pbXingCards(1).forEach(c => window.pbXingToggle(c.dataset.xingId, false)); setTimeout(() => { try { window.pbRsxProblems(); } catch (e) {} }, 400); } catch (e) { console.error(e); } /* feat_resume 2/3 */
     } catch (e) { console.error(e); }
     // Where the run turns: the two tops' points, first reached first, so each side's grade is checked its own way.
     if (along && tops) {
@@ -51653,7 +52057,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return 'Not saved yet — kept only until the app is closed or a new run is started';
   }
   function pbRdLeaveText() {
-    const base = 'Leave without saving? What you’ve entered for this run is NOT saved. It stays on the run form for now, but it is lost when another run is started or the app is closed.';
+    const base = 'Leave without saving? This run’s entries will be lost.'; /* feat_resume 8 (owner): one line */
     if (pbRd.state === 'full' && !pbRd.formSaved()) return 'Leave without saving? ' + pbRdFullWords() + ' It stays on the run form for now, but it is lost when another run is started or the app is closed.';
     if (pbRd.formUid === null || pbRd.formUid !== pbRd.account()) return base;
     if (pbRd.formSaved()) return 'This run is not locked. Its draft is saved on this phone (' + pbDraftWhen(pbRd.savedAt) + ') and stays in your drafts on Home and Run Setup. ' + PB_DRAFT_PHOTO_NOTE;
@@ -55878,7 +56282,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbDlyMineFor(V.job, V.date).some(r => r.state !== 'discarded' && r.state !== 'replaced') && !V.amend) { say('This day already has a signed report. Add an amendment instead.'); return; }
     const name = pbDlyEl('drName').value.trim().replace(/\s+/g, ' '), narrative = pbDlyEl('drNarrative').value.trim();
     if (name.length < 2) { window.pbDxTab('report'); say('Type your full name to sign.'); return; }
-    if (!narrative) { say('Write the narrative of the day first.'); window.pbDxTab('notes'); { const m = pbDlyEl('dxNoteMsg'); if (m) m.textContent = 'Write your narrative of the day before signing.'; const n = pbDlyEl('drNarrative'); if (n) try { n.focus(); } catch (e) {} } return; } /* feat_dailyx */
+    if (!narrative) { say('Write the narrative first.'); pbDfFlowPaint(); { const n = pbDlyEl('drNarrative'); if (n) try { n.focus(); if (n.scrollIntoView) n.scrollIntoView({ block: 'center' }); } catch (e) {} } return; } /* feat_dailyflow: the narrative comes into the sign card (no trip back) */
     { const dpw = pbDpBlock(); if (dpw) { say(dpw); return; } } // feat_dailyplus
     { const daw = pbDaBlock(); if (daw) { say(daw); return; } } // feat_dailyattach
     let reason = null; if (V.amend) { reason = ((pbDlyEl('drAmendReason') || {}).value || '').trim(); if (!reason) { say('Give the reason for the amendment.'); return; } }
@@ -56164,7 +56568,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const L = (eq ? C.equipment : C.people).filter(p => p && !p.first_in && Number(p.hours) > 0);
     let h = L.length ? '<p class="pbd-dim" id="' + (eq ? 'dxEqRuns' : 'dxCrewRuns') + '">' + escapeHtml('On runs: ' + L.map(p => p.name + ' ' + pbDpH(p.hours)).join(' · ')) + '</p>' : '';
     const open = (eq ? C.equipment : C.people).filter(p => p && p.open).length;
-    if (open) h += '<p class="pbd-why" id="' + (eq ? 'dxEqOpen' : 'dxCrewOpen') + '">' + escapeHtml(open + (open === 1 ? ' is' : ' are') + ' still checked in on the Crew log (not counted).') + '</p>';
+    if (open && !pbDfOpenShown(eq)) h += '<p class="pbd-why" id="' + (eq ? 'dxEqOpen' : 'dxCrewOpen') + '">' + escapeHtml(open + ' still checked in') + '</p>'; /* feat_dailyflow: shown on the row when it is there */
     return h;
   }
   function pbDxCrewCard(d, cs, ids) {
@@ -56352,7 +56756,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbDxDailyForRun = function() {
     const O = pbRoFor(pbArchiveOwnerUid), x = O && O.open; if (!x) return;
     const t = x.start_at || x.locked_at || x.ended_at || x.sent_at || Date.now();
-    window.pbOpenDailyReportFor(x.job_number || '', pbFmDay(typeof t === 'string' ? Date.parse(t) : t), 'report'); // from a run he approves: the Report tab
+    window.pbOpenDailyReportFor(x.job_number || '', pbFmDay(typeof t === 'string' ? Date.parse(t) : t), 'notes'); // feat_dailyflow: the narrative first, from a run he approves too
   };
   // Save for Later: everything typed is on the phone already; this writes what is still waiting, then goes back
   window.pbDxSaveLater = async function() {
@@ -56377,7 +56781,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbDx.narrK = null;
   }
   { const o = window.pbDlyDraftSoon; window.pbDlyDraftSoon = function() { pbDx.narrK = pbDlyKey(pbDlyView.job) + '|' + pbDlyView.date; return o.apply(this, arguments); }; }
-  window.pbDxBack = function() { pbBackOr(function() { pbOpenArchive(); }); };
+  window.pbDxBack = function() { if (pbDx.tab === 'report' && pbDxOn()) { window.pbDxTab('notes'); return; } pbBackOr(function() { pbOpenArchive(); }); }; // feat_dailyflow: Hours & Sign goes back to the narrative
   // ---- Home: past days with crew work and no daily report (14 days; the server's list, plus this phone's own runs) ----
   async function pbDxMissLoad(force) {
     const uid = pbArchiveOwnerUid, M = pbDx.miss;
@@ -56428,6 +56832,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     scr.classList.toggle('dx-on-notes', on && pbDx.tab !== 'report'); scr.classList.toggle('dx-on-report', on && pbDx.tab === 'report');
     [['dxTabNotes', 'notes'], ['dxTabReport', 'report']].forEach(([id, k]) => { const b = pbDlyEl(id); if (b) { const sel = pbDx.tab === k ? 'true' : 'false'; if (b.getAttribute('aria-selected') !== sel) b.setAttribute('aria-selected', sel); b.tabIndex = pbDx.tab === k ? 0 : -1; } });
     const n = pbDlyEl('dxTabNotesN'); if (n) { const d = pbDp.uid === pbArchiveOwnerUid && pbDp.drafts && pbDlyView.job ? pbDpDraft() : null, c = d ? pbDxNotes(d).length + pbDxPhotos(d).length : 0, t = c ? String(c) : ''; if (n.textContent !== t) n.textContent = t; }
+    try { pbDfFlowPaint(); } catch (e) { console.error(e); } /* feat_dailyflow */
   }
   window.pbDxTabKey = function(ev) { if (ev && (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft')) { ev.preventDefault(); window.pbDxTab(pbDx.tab === 'report' ? 'notes' : 'report'); const b = pbDlyEl(pbDx.tab === 'report' ? 'dxTabReport' : 'dxTabNotes'); if (b) b.focus(); } };
 
@@ -56681,7 +57086,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // OFFICE (company account, managers, PMs): a Home tile, the review list (the company list screen, kind 'delays'), a line on
   // the job's Overview. "Mark reviewed" / "T&M ticket sent" are kept on this phone and sent when there is signal.
   const PB_DP_KINDS = [['delay', 'Delay'], ['standby', 'Standby'], ['extra', 'Extra work']];
-  const PB_DP_REASONS = [['weather', 'Weather'], ['utility', 'Utility conflict'], ['inspector', 'Waiting on inspector'], ['materials', 'Waiting on materials'], ['design', 'Design change'], ['owner_extra', 'Owner-directed'], ['other', 'Other']];
+  const PB_DP_REASONS = [['weather', 'Weather'], ['utility', 'Utility conflict'], ['inspector', 'Waiting on inspector'], ['materials', 'Waiting on materials'], ['design', 'Design change'], ['owner_extra', 'Owner-directed'], ['equipment', 'Equipment down'] /* sb105 */, ['other', 'Other']];
   const PB_DP_DRAFT = 'dailyPlusDraft', PB_DP_PHOTOS = 'dailyPlusPhotos', PB_DP_SEND = 'dailyPlusSend', PB_DP_PLANS = 'dailyPlusPlans', PB_DP_MAXPH = 6, PB_DP_DAYS = 30;
   const pbDpKindName = (k) => (PB_DP_KINDS.find(x => x[0] === k) || [k, 'Delay'])[1];
   const pbDpReasonName = (k) => (PB_DP_REASONS.find(x => x[0] === k) || [k, 'Other'])[1];
@@ -57310,7 +57715,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   //    the office's copy has it; in the PDF a line in Runs and the full detail right after the attached run report.
   let pbDf = { fm: null };
   const pbDfK = () => pbDlyKey(pbDlyView.job) + '|' + pbDlyView.date;
-  const pbDfHs = (h) => h > 0 ? String(Math.round(Math.min(24, h) * 100) / 100) : '';
+  const pbDfHs = (h) => h > 0 ? String(Math.round(Math.min(24, h) * 4) / 4) : ''; // feat_dailyflow: quarter hours
   const pbDfNm = (s, n) => pbDpCut(String(s == null ? '' : s).trim().replace(/\s+/g, ' '), n || 80);
   // the job's plan for names: categories (pbLvPlans) and equipment (the plan kept for the daily)
   function pbDfPlan() {
@@ -57414,7 +57819,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     (rec && Array.isArray(rec.crewLog) ? rec.crewLog : []).forEach(p => {
       if (!p) return; const nm = pbDfNm(p.name); if (!nm || nm.toLowerCase() === 'not named') return;
       const eq = p.type === 'Equipment', k = (eq ? 'e:' : 'p:') + pbDpNk(nm) + (eq && p.rental ? '|r' : ''), iv = pbDfIv(p.log);
-      const L = put(k, { eq, name: nm, rental: eq && !!p.rental }); L.iv.push.apply(L.iv, iv); runH[k] = (runH[k] || 0) + pbDfIvH(iv);
+      const L = put(k, { eq, name: nm, rental: eq && !!p.rental }); pbDfOpen(L, p.log, rec, iv); /* feat_dailyflow */ L.iv.push.apply(L.iv, iv); runH[k] = (runH[k] || 0) + pbDfIvH(iv);
     });
     const more = {}; // hours from elsewhere on this run, per piece
     const bump = (k, o, h) => { if (!(h > 0)) return; if (!more[k]) more[k] = { o, sl: 0, fm: 0 }; more[k][o.src] += h; };
@@ -57429,13 +57834,19 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (runH[k] !== undefined) return k; if (runH[k + '|r'] !== undefined) return k + '|r';
       const un = o.unit_no ? String(o.unit_no).replace(/^#/, '').toLowerCase() : ''; if (un) { const re = new RegExp('(^|[^0-9a-z])#?' + un.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '($|[^0-9a-z])'); const hit = Object.keys(runH).find(x => x.indexOf('e:') === 0 && re.test(x.slice(2))); if (hit) return hit; }
       return out[k] ? k : out[k + '|r'] ? k + '|r' : k; };
+    const dnK = {}; // feat_dailyflow: this run's machine down hours (Run Notes breakdowns not marked Not a Delay; the production form's Down h), per piece
+    { const dn = {}, nd = pbDfNd(), add = (k, o, f, h) => { if (!(h > 0)) return; const g = dn[k] || (dn[k] = { o, sl: 0, fm: 0 }); g[f] += h; };
+      try { if (rec && typeof pbSlItems === 'function') pbSlItems(rec).forEach(x => { if (x.type !== 'equip' || x.d.breakdown !== 'yes' || nd.has(String(x.id))) return; const nm = pbDfNm(x.d.machine); if (nm) add('e:' + pbDpNk(nm), {}, 'sl', Number(x.d.down) || 0); }); } catch (e) {}
+      try { if (fm) (Array.isArray(fm.items) ? fm.items : []).forEach(i => { const m = i && /^_ed_(.+)$/.exec(String(i.key)); if (!m || m[1] === 'other' || i.qty == null) return; const ek = '_eq_' + m[1], pq = (plan.equipment || []).find(q => q && q.key === m[1]) || (plan.equipment || []).find(q => q && '_' + q.key === ek), nm = pq ? pbDpEqName(pq) : pbProdCatName(ek, plan); if (!nm || nm === 'Equipment') return; add('e:' + pbDpNk(nm), pq ? { unit_no: pq.unit_no || null } : {}, 'fm', Number(i.qty) || 0); }); } catch (e) {}
+      Object.keys(dn).forEach(k0 => { const k = logKey(k0, dn[k0].o), h = Math.max(dn[k0].sl, dn[k0].fm); dnK[k] = (dnK[k] || 0) + h; if (out[k]) out[k].dnH = (out[k].dnH || 0) + h; }); }
     const merged = {}; Object.keys(more).forEach(k0 => { const m = more[k0], k = logKey(k0, m.o); const g = merged[k] || (merged[k] = { o: m.o, sl: 0, fm: 0 }); g.sl += m.sl; g.fm += m.fm; if (m.o.key && !g.o.key) g.o = m.o; });
     Object.keys(merged).forEach(k => { const m = merged[k], L = put(k, { eq: true, name: m.o.name, rental: !!m.o.rental }); if (m.o.key && !L.key) { L.key = m.o.key; L.unit_no = m.o.unit_no; if (runH[k] === undefined) L.name = m.o.name; }
-      const x = Math.max(0, Math.max(m.sl, m.fm) - (runH[k] || 0)); if (x > 0) L.ex.push({ x, s: isFinite(rs) ? rs : null, e: isFinite(re) ? re : (isFinite(rs) ? rs : null) }); });
+      const x = Math.max(0, Math.max(m.sl, m.fm) - Math.max(0, (runH[k] || 0) - (dnK[k] || 0))); /* feat_dailyflow: against its time less down time */ if (x > 0) L.ex.push({ x, s: isFinite(rs) ? rs : null, e: isFinite(re) ? re : (isFinite(rs) ? rs : null) }); });
   }
   // every run of the day: { people: [...], equip: [...] } or null while nothing is known
-  function pbDfLines() {
+  function pbDfLines(dArg) {
     const job = pbDlyView.job, date = pbDlyView.date; if (!job || !date) return null;
+    const dd = dArg || (() => { try { return pbDpDraft(); } catch (e) { return null; } })(); pbDfDd = dd; /* feat_dailyflow: his Broke Down marks, Not a Delay */
     const out = {}, plan = pbDfPlan(); let n = 0;
     try { // his own runs on this phone (the ones the report pulls in) with his production entry on each
       const co = pbDly.st && pbDly.st.co, st = pbProd.uid === pbArchiveOwnerUid ? pbProd.st : null;
@@ -57446,7 +57857,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     try { // his crew's run reports from the server, with his side
       pbDxCrewDay().runs.forEach(x => { const g = pbDa.recs.get('run:' + x.id), row = pbDfFmOf(x); if (!(g && g.rec) && !(row && row.fm)) return; pbDfFromRun(g && g.rec ? g.rec : null, row && row.fm ? row.fm : null, plan, out); n++; });
     } catch (e) { console.error(e); }
-    if (!n) return null;
+    if (!n) { pbDf.last = null; return null; }
     const ids = pbDpCrewIds(), crew = pbLv && pbLv.uid === pbArchiveOwnerUid && pbLv.data && Array.isArray(pbLv.data.crew) ? pbLv.data.crew : [];
     const act = pbCeActive(pbArchiveOwnerUid) || [];
     const people = [], equip = [];
@@ -57454,11 +57865,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const A = (L.ex || []).slice().sort((a, b) => (a.s === null ? Infinity : a.s) - (b.s === null ? Infinity : b.s)); let tot = 0, g = null;
       A.forEach(r => { if (g && r.s !== null && g.e !== null && r.s < g.e) { g.x = Math.max(g.x, r.x); g.e = Math.max(g.e, r.e === null ? r.s : r.e); } else { if (g) tot += g.x; g = Object.assign({}, r); } });
       return tot + (g ? g.x : 0) + (L.extra || 0); };
-    Object.keys(out).forEach(k => { const L = out[k], h = pbDfHs(pbDfIvH(L.iv) + exOf(L));
-      if (!L.eq) { const m = crew.find(c => c && c.id && c.name && pbDpNk(c.name) === pbDpNk(L.name)); people.push({ k, name: L.name, user_id: m && (!ids || ids.has(m.id)) ? m.id : null, hours: h }); return; }
+    Object.keys(out).forEach(k => { const L = out[k], h = L.eq ? '' : pbDfHs(pbDfIvH(L.iv) + exOf(L)), mk = (o) => Object.assign(o, L.open ? { open: true } : {}, L.openNc && !L.open ? { openNc: true } : {}); /* feat_dailyflow */
+      if (!L.eq) { const m = crew.find(c => c && c.id && c.name && pbDpNk(c.name) === pbDpNk(L.name)); people.push(mk({ k, name: L.name, user_id: m && (!ids || ids.has(m.id)) ? m.id : null, hours: h })); return; }
       const q = { k, name: L.name, unit_no: L.unit_no || null, key: L.key || null, rental: !!L.rental, hours: h };
       if (!q.rental) { const a = act.find(z => pbDpNk(pbDpEqName(z)) === pbDpNk(pbDpEqName(q)) || pbDpNk(pbDpEqName(z)) === pbDpNk(q.name)); if (a) { q.co_id = a.id; q.name = a.name; q.unit_no = a.unit_no || null; if (a.cost_code) q.cost_code = a.cost_code; } }
-      equip.push(q); });
+      { const mh = pbDfMachH(L, q, dd) + exOf(L); q.hours = mh > 0 ? pbDfHs(mh) : (pbDfIvH(L.iv) + exOf(L) > 0 ? '0' : ''); } equip.push(mk(q)); }); /* fix100: down all day = 0 */ /* feat_dailyflow: less down time */
+    pbDf.last = { k: pbDfK(), R: { people, equip } };
     return { people, equip };
   }
   const pbDfCk = (p) => 'p:' + pbDpNk(p.name);
@@ -57466,7 +57878,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // into the draft; true when it changed
   function pbDfApply(d) {
     if (!d || pbDlyView.amend) return false;
-    const R = pbDfLines(); if (!R || (!R.people.length && !R.equip.length)) return false;
+    const R = pbDfLines(d); if (!R || (!R.people.length && !R.equip.length)) return false;
     let ch = false; const gone = Array.isArray(d.rfGone) ? d.rfGone : [];
     if (d.from && (d.from.kind === 'prev' || d.from.was === 'prev') && !d.from.edited && !pbDp.hT) { // review 4 (1): not while his typing waits to be kept // the day's runs win over the previous report's list, each list when its run data first shows (review 3, 2)
       if (R.people.length && !d.from.runC) { /* feat_crew8: the previous report's people stay; the runs add to them */ d.from = Object.assign({}, d.from, { runC: true }); ch = true; }
@@ -57490,7 +57902,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (ch && pbDp.drafts && d.k) { d.at = Date.now(); pbDp.drafts[d.k] = d; pbDpSave(['d']).catch(() => {}); }
     return ch;
   }
-  const pbDfTag = (x) => x && x.rf && !x.rfEdited ? '<span class="dp-sub dp-rf">from runs</span>' : '';
+  const pbDfTag = (x) => pbDfAutoTag(x); // feat_dailyflow: the auto pill, Still in, Auto (reset)
   // his changes: the hours (kept as typed, never overwritten) and a removed line (not added back)
   const pbDfMine = (d) => { if (d && d.from && !d.from.edited) d.from = Object.assign({}, d.from, { edited: true }); }; // review 4 (1): his typing counts as his change at once
   { const o = window.pbDxCrewHours; window.pbDxCrewHours = function(i, v) { const d = pbDpDraft(), p = d && d.crew[i]; const r = o.apply(this, arguments); pbDfMine(d);
@@ -57797,6 +58209,96 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     await pbDpTouch(d); pbDxTog('dpEvents', true);
     window.pbDpFormOpen(d.events.indexOf(e));
   };
+  // ================= feat_dailyflow (owner, Nov 4): Narrative, then Hours & Sign; signing sends; hours from the lists =================
+  var pbDfDd = null; // the draft pbDfLines works for (his Broke Down marks and Not a Delay choices)
+  const pbDfNd = () => new Set(pbDfDd && Array.isArray(pbDfDd.notDelay) ? pbDfDd.notDelay.map(String) : []);
+  // an open check-in: up to the run's end, else (a report for today) now; otherwise not counted. Marked on the line.
+  function pbDfOpen(L, log, rec, iv) {
+    const te = rec ? rec.runEndTime : null, re = typeof te === 'number' ? te : te ? new Date(te).getTime() : NaN;
+    try { if (!pbLogHasOpenCheckIn(log)) return; } catch (e) { return; }
+    let a = null;
+    (Array.isArray(log) ? log : []).filter(l => l && typeof l.time === 'number' && isFinite(l.time) && typeof l.action === 'string').slice().sort((x, y) => x.time - y.time)
+      .forEach(l => { if (l.action === 'Checked In') { if (a === null) a = l.time; } else if (l.action.indexOf('Checked Out') === 0) a = null; });
+    if (a === null) return;
+    const cut = isFinite(re) ? re : pbDlyView.date === pbFmToday() ? Date.now() : NaN;
+    if (isFinite(cut) && cut > a) { iv.push([a, cut]); L.open = true; } else L.openNc = true;
+  }
+  function pbDfIvCut(iv, W) { const out = []; iv.forEach(([a, b]) => { if (b <= W[0] || a >= W[1]) { out.push([a, b]); return; } if (a < W[0]) out.push([a, W[0]]); if (b > W[1]) out.push([W[1], b]); }); return out; }
+  // the daily's Broke Down mark on this piece: [down from, + its hours] (no hours yet: to the end)
+  function pbDfDnWin(q, d) {
+    if (!d || !Array.isArray(d.equip)) return null;
+    const x = d.equip.find(y => y && y.down && y.down.at && (pbDfEk(y) === q.k || pbDfEk(y) === pbDfEk(q) || (q.co_id && y.co_id === q.co_id) || (q.key && y.key === q.key))); if (!x) return null;
+    const e = (Array.isArray(d.events) ? d.events : []).find(v => v && v.dn === pbDpEqKey(x)); let H = 0; try { H = e ? pbDpNum(pbP95H(d, e)) : 0; } catch (z) { H = 0; }
+    const a = Number(x.down.at); return isFinite(a) ? [a, H > 0 ? a + H * 3600000 : Infinity] : null;
+  }
+  // a machine's logged time less its down time (the down hours are on the report as lost time already)
+  function pbDfMachH(L, q, d) { const W = pbDfDnWin(q, d); return W ? pbDfIvH(pbDfIvCut(L.iv, W)) : Math.max(0, pbDfIvH(L.iv) - (L.dnH || 0)); }
+  // the lists' line for a row of the draft (null: the lists say nothing of it)
+  function pbDfFind(x, eq) {
+    const R = !pbDlyView.amend && pbDf.last && pbDf.last.k === pbDfK() ? pbDf.last.R : null; if (!R || !x) return null;
+    if (!eq) return R.people.find(L => pbDfCk(x) === L.k || (L.user_id && x.user_id === L.user_id)) || null;
+    return R.equip.find(L => pbDfEk(x) === L.k || pbDfEk(x) === pbDfEk(L) || (L.co_id && x.co_id === L.co_id) || (L.key && x.key === L.key)) || null;
+  }
+  const pbDfResetHtml = (x, eq, i, L) => '<button type="button" class="df-reset" id="dfReset' + (eq ? 'E' : 'C') + '_' + i + '" aria-label="' + escapeHtml('Back to auto, ' + L.hours + ' h, ' + (eq ? pbDpEqName(x) : x.name)) + '" onclick="pbDfReset(' + (eq ? 1 : 0) + ',' + i + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Auto ' + escapeHtml(L.hours) + ' h</button>';
+  const pbDfOver = (x) => !!x && (x.rfEdited || (!x.rf && x.hours !== undefined && x.hours !== null));
+  function pbDfAutoTag(x) {
+    const d = pbDpDraft(); if (!d || !x) return '';
+    const eq = d.equip.includes(x), i = eq ? d.equip.indexOf(x) : d.crew.indexOf(x), L = pbDfFind(x, eq);
+    const still = L && (L.open || L.openNc) ? '<span class="dp-sub df-open">' + (eq ? 'Still running' : 'Still in') + (L.open ? '' : ' · not counted') + '</span>' : '';
+    if (x.rf && !x.rfEdited) return '<span class="df-auto dp-rf">auto</span>' + still;
+    return (L && L.hours !== '' && i >= 0 && pbDfOver(x) ? pbDfResetHtml(x, eq, i, L) : '') + still;
+  }
+  function pbDfOpenShown(eq) { const d = pbDpDraft(); return !!(d && (eq ? d.equip : d.crew).some(x => { const L = pbDfFind(x, eq); return L && (L.open || L.openNc); })); }
+  window.pbDfReset = async function(eq, i) {
+    const d = pbDpDraft(), x = d && (eq ? d.equip[i] : d.crew[i]); if (!x) return;
+    const L = pbDfFind(x, !!eq); if (!L) return;
+    x.rf = true; delete x.rfEdited; x.rfH = L.hours; if (L.hours === '') delete x.hours; else x.hours = L.hours;
+    clearTimeout(pbDp.hT); pbDp.hT = null;
+    await pbDpTouch(d); pbDpRender();
+  };
+  // typing a value: the pill goes, Auto shows (no redraw under his thumb)
+  function pbDfOverPaint(eq, i) {
+    const d = pbDpDraft(), x = d && (eq ? d.equip[i] : d.crew[i]); if (!pbDfOver(x)) return;
+    const row = pbDlyEl((eq ? 'dpEq_' : 'dpCrew_') + i), tx = row && row.querySelector('.dp-eqtx'); if (!tx) return;
+    tx.querySelectorAll('.df-auto').forEach(e => e.remove());
+    const L = pbDfFind(x, eq); if (L && L.hours !== '' && !tx.querySelector('.df-reset')) { const s = tx.querySelector('.df-open'); if (s) s.insertAdjacentHTML('beforebegin', pbDfResetHtml(x, eq, i, L)); else tx.insertAdjacentHTML('beforeend', pbDfResetHtml(x, eq, i, L)); }
+  }
+  ['pbDxCrewHours', 'pbCeHours'].forEach(fn => { const o = window[fn]; window[fn] = function(i, v) { const out = o.apply(this, arguments); try { pbDfOverPaint(fn === 'pbCeHours', i); } catch (e) { console.error(e); } return out; }; });
+  // signing: the hours as of now (an open check-in), shown before the confirm
+  { const o = window.pbDlySign; window.pbDlySign = function() { try { const d = pbDlyView.snap && !pbDp.form ? pbDpDraft() : null; if (d && pbDfApply(d)) pbDpRender(); } catch (e) { console.error(e); } return o.apply(this, arguments); }; }
+  // ---- the two steps ----
+  function pbDfFlowPaint() {
+    const on = pbDxOn(), nw = pbDlyEl('dxNextWrap'), show = on && pbDx.tab !== 'report';
+    if (nw && nw.hidden === show) nw.hidden = !show;
+    const f = document.querySelector('#screen-dailyReport .dx-narr'), sw = pbDlyEl('drSignWrap'), dia = pbDlyEl('drDiary'), n = pbDlyEl('drNarrative'); if (!f || !sw || !dia) return;
+    const inSign = f.parentNode === sw;
+    if (on && pbDx.tab === 'report') { if (!inSign && n && !n.value.trim()) sw.insertBefore(f, sw.firstChild); } // no narrative yet: it is written right where he signs
+    else if (inSign) dia.insertBefore(f, dia.firstChild);
+  }
+  window.pbDxNext = function() {
+    const n = pbDlyEl('drNarrative'), m = pbDlyEl('dxNextMsg');
+    if (!n || !n.value.trim()) { if (m) m.textContent = 'Write the narrative first.'; if (n) try { n.focus(); } catch (e) {} return; }
+    if (m) m.textContent = '';
+    try { clearTimeout(pbDlyDraftT); pbDlyDraftSave().catch(() => {}); window.pbCeHoursKeep(); } catch (e) { console.error(e); }
+    window.pbDxTab('report'); try { window.scrollTo(0, 0); } catch (e) {}
+  };
+  // ---- the run report: Daily Report, big, with the day's state ----
+  async function pbDfRunDailyState(job, date) {
+    const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared' || !job || !date) return '';
+    const k = pbDlyKey(job) + '|' + date, st = await pbDlyLoad(uid).catch(() => null);
+    if (st && st.reports.some(r => r && r.state !== 'discarded' && r.state !== 'replaced' && r.workDate === date && pbDlyKey(r.jobNumber) === pbDlyKey(job))) return 'Signed';
+    const o = await pbDlyDraftRead(uid), dr = o && o[k]; if (dr && String(dr.narr || '').trim()) return 'Ready to sign';
+    const d = pbDp.uid === uid && pbDp.drafts ? pbDp.drafts[k] : null; if (d && (pbDxNotes(d).length || pbDxPhotos(d).length)) return 'Started';
+    return 'Not started';
+  }
+  function pbDfRunDailyHtml(x) {
+    const t = x.start_at || x.locked_at || x.ended_at || x.sent_at || Date.now(), job = x.job_number || '', date = pbFmDay(typeof t === 'string' ? Date.parse(t) : t), k = pbDlyKey(job) + '|' + date;
+    pbDf.rd = pbDf.rd || {}; const st = pbDf.rd[k] || '';
+    setTimeout(() => { pbDfRunDailyState(job, date).then(s => { pbDf.rd[k] = s; const el = document.getElementById('dxRunDailySt'); if (el && el.dataset.k === k) { const v = s ? '· ' + s : ''; if (el.textContent !== v) el.textContent = v; if (el.hidden !== !s) el.hidden = !s; } }).catch(() => {}); }, 0);
+    return '<button type="button" class="pb-btn dx-bigdaily" id="dxRunDaily" onclick="pbDxDailyForRun()"><span class="dx-bd-l">Daily Report</span><span class="dx-bd-s" id="dxRunDailySt" data-k="' + escapeHtml(k) + '"' + (st ? '' : ' hidden') + '>' + escapeHtml(st ? '· ' + st : '') + '</span></button>';
+  }
+  window.__debugDailyFlow = () => ({ lines: () => pbDfLines(), last: () => pbDf.last, state: (j, d) => pbDfRunDailyState(j, d), draft: () => pbDpDraft() });
+  // ================= end feat_dailyflow =================
   window.__debugP95 = () => ({ rows: () => pbP95Rows(pbDpDraft()), view: () => pbDlyView, off: () => pbP95Off, runLost: (id) => { const e = id && typeof id === 'object' ? id : (runArchive || []).find(x => x && String(x.id) === String(id)); return e ? pbSlTotals(e).lostH : null; } });
   // ================= end proc95 (daily) =================
   window.__debugDailyFill = () => ({ rf: pbDf, lines: () => pbDfLines(), snapRun: (x) => pbDfSnapRun(x), load: (f) => pbDfFmLoad(f) });
@@ -59646,9 +60148,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // r15.2.1 (owner): reviewing is ONE step for the foreman: his production for the run (the PM's tracking data) on top,
     // Approve Report; the report's PDF is there to open when he needs it (rarely). The office sees the PDF first.
     const approve = canProd ? '<section id="cxRunApprove" style="margin-top:4px"><h3 class="pbx-h2">Production for this run</h3><style>#cxRunProdBox .pbp-btns2{display:none}</style><div id="cxRunProdBox"' + (x.reviewed_at ? ' class="pbx-rf-late"' : '') /* feat_runflow P8: once approved, the form keeps its own Save */ + '>' + window.pbRrProdBox(x) + '</div>'
-        + (x.reviewed_at || window.pbRrAqHas(x.id) ? '<p class="pbx-note" id="cxRunApproved">' + pbCxCheck() + pbCxE(x.reviewed_at ? ' Approved ' + pbRoWhen({ locked_at: x.reviewed_at }) : ' Approved on this phone · it sends when there’s signal') + '</p>' /* feat_rrflow 6 */ + (typeof pbLvIsForeman === 'function' && pbLvIsForeman(pbArchiveOwnerUid) ? '<div class="pbx-btnrow"><button type="button" class="pb-btn secondary small" id="dxRunDaily" onclick="pbDxDailyForRun()">Daily Report</button></div>' : '') /* feat_dailyx */ : '<p class="pb-warn pbp-manmsg" id="cxRunApproveErr" role="alert" style="display:none"></p><button type="button" class="pb-btn" id="cxRunApproveBtn" onclick="pbRrApprove()">Approve Report</button>') + '</section>' : '';
+        + (x.reviewed_at || window.pbRrAqHas(x.id) ? '<p class="pbx-note" id="cxRunApproved">' + pbCxCheck() + pbCxE(x.reviewed_at ? ' Approved ' + pbRoWhen({ locked_at: x.reviewed_at }) : ' Approved on this phone · it sends when there’s signal') + '</p>' /* feat_rrflow 6 */ + (typeof pbLvIsForeman === 'function' && pbLvIsForeman(pbArchiveOwnerUid) ? pbDfRunDailyHtml(x) /* feat_dailyflow */ : '') /* feat_dailyx */ : '<p class="pb-warn pbp-manmsg" id="cxRunApproveErr" role="alert" style="display:none"></p><button type="button" class="pb-btn" id="cxRunApproveBtn" onclick="pbRrApprove()">Approve Report</button>') + '</section>' : '';
     // feat_pdfview (owner, Oct 24): the report is read on the PDF viewer screen (View Run Report); Download / Share / the text are there
-    const pdf = '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn small" id="cxRunView" onclick="pbRrView()">View Run Report</button></div>'
+    const pdf = '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="' + (approve.indexOf('id="dxRunDaily"') >= 0 ? 'pb-btn secondary small' : 'pb-btn small') /* feat_dailyflow: one primary */ + '" id="cxRunView" onclick="pbRrView()">View Run Report</button></div>'
       /* feat_runflow P5: the photo count is in the summary block (cxRunSum) */;
     if (canProd) {
       h += approve + pbRrSetupHtml(O, x) + '<section id="cxRunReport" style="margin-top:14px">' + pdf + '</section>' + pbRrSendBackHtml(O, x, true) /* r15.48 access */
