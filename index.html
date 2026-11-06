@@ -12316,7 +12316,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.02 · 2026-11-05'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.03 · 2026-11-05'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -42137,6 +42137,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const ended = !!(entry && (entry.completed || entry.incomplete));
     return { avg, sticks, ms, lastOwn: ended ? null : S.lastOwn, ended };
   }
+  // fix_foldcount (owner, Nov 5): the folded bars count pipes and fittings, not rows (no pipe layout on the run: rows)
+  function pbLaidFoldCount(entry, S, a, b) {
+    const noLay = !S.rows.some(r => r && r.layoutKind && /(^|,)(joint|mid|q1|q3|finalend)(,|$)/.test(String(r.layoutKind)));
+    let pipes = 0, fits = 0; for (let i = a; i <= b; i++) { const r = S.rows[i]; if (!r) continue; if (!noLay && PB_LS_STICK.test(String(r.layoutKind || ''))) pipes++; try { if (pbFitOf(entry, r)) fits++; } catch (e) {} }
+    if (noLay) { const n = b - a + 1; return n + ' row' + (n === 1 ? '' : 's') + ' laid'; }
+    const parts = []; if (pipes || !fits) parts.push(pipes + ' pipe' + (pipes === 1 ? '' : 's')); if (fits) parts.push(fits + ' fitting' + (fits === 1 ? '' : 's'));
+    return parts.join(' \u00b7 ') + ' installed';
+  }
   // "45s", "21m 32s", "1h 05m"; words for screen readers
   function pbLsDur(ms) {
     const s = Math.max(0, Math.round(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, x = s % 60, p = (n) => String(n).padStart(2, '0');
@@ -42527,7 +42535,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const tr = document.createElement('tr'); tr.className = 'pb-laid-sum'; tr.dataset.start = String(b.start);
       const td = document.createElement('td'); td.colSpan = (first.parentNode && first.parentNode.parentNode && first.parentNode.parentNode.tHead && first.parentNode.parentNode.tHead.rows[0]) ? first.parentNode.parentNode.tHead.rows[0].cells.length : 5;
       td.innerHTML = '<button type="button" class="pb-laid-sumbtn" aria-expanded="' + open + '" onclick="pbLaidExpand(' + b.start + ')"><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-ok"/></svg><span>'
-        + escapeHtml(n + ' row' + (n === 1 ? '' : 's') + ' laid (' + S.rows[b.start].station + ' to ' + S.rows[b.end].station + ')') + '</span><span class="pb-laid-sumact">' + (open ? 'Fold' : 'Show') + '</span></button>';
+        + escapeHtml(pbLaidFoldCount(entry, S, b.start, b.end) + ' (' + S.rows[b.start].station + ' to ' + S.rows[b.end].station + ')') + '</span><span class="pb-laid-sumact">' + (open ? 'Fold' : 'Show') + '</span></button>';
       tr.appendChild(td); first.parentNode.insertBefore(tr, first);
     });
     if (eEnd >= 0) { const first = (groups.get(0) || [])[0]; if (first) { // feat_resumefold
@@ -42535,7 +42543,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const tr = document.createElement('tr'); tr.className = 'pb-laid-sum pb-laid-sumearly'; tr.dataset.start = '-1';
       const td = document.createElement('td'); td.colSpan = (first.parentNode && first.parentNode.parentNode && first.parentNode.parentNode.tHead && first.parentNode.parentNode.tHead.rows[0]) ? first.parentNode.parentNode.tHead.rows[0].cells.length : 5;
       td.innerHTML = '<button type="button" class="pb-laid-sumbtn" aria-expanded="' + open + '" onclick="pbLaidExpand(-1)"><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-ok"/></svg><span>'
-        + escapeHtml(n + ' row' + (n === 1 ? '' : 's') + ' from the earlier session (' + S.rows[0].station + ' to ' + S.rows[eEnd].station + ')') + '</span><span class="pb-laid-sumact">' + (open ? 'Fold' : 'Show') + '</span></button>';
+        + escapeHtml(pbLaidFoldCount(entry, S, 0, eEnd).replace(/ (installed|laid)$/, '') + ' from the earlier session (' + S.rows[0].station + ' to ' + S.rows[eEnd].station + ')') + '</span><span class="pb-laid-sumact">' + (open ? 'Fold' : 'Show') + '</span></button>';
       tr.appendChild(td); first.parentNode.insertBefore(tr, first); } }
     try { pbLaidStatsPaint(entry, S); } catch (e) { console.error(e); } /* feat_laidstats: the 2-row block (the Home line keeps pbLaidProgressText) */
     const hb = pbProdEl('laidHideBtn'); if (hb) { hb.hidden = !S.n && !hide; hb.setAttribute('aria-pressed', String(hide)); hb.lastChild.textContent = hide ? 'Show laid' : 'Hide laid'; hb.setAttribute('aria-label', hide ? 'Show laid rows' : 'Hide laid rows'); } /* feat_results2 (9): short labels, one toolbar row */
