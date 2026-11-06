@@ -12316,7 +12316,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.03 · 2026-11-05'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.04 · 2026-11-05'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -24269,6 +24269,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const at = (x) => { const v = x === null || x === undefined ? NaN : new Date(x).getTime(); if (isFinite(v) && v > t && v <= upTo) t = v; };
     (entry.fieldNotes || []).forEach(n => n && at(n.time));
     (entry.intervalRows || []).forEach(r => r && r.addedTime && at(r.addedTime));
+    try { Object.values(pbLaidMarks(entry)).forEach(v => { if (typeof v === 'number' && isFinite(v) && v > t && v <= Date.now()) t = v; }); } catch (e) {} /* fix_stopq: a pipe marked laid is work on the run, whenever it was */
     return t;
   }
   function pbEndTimeEarlyText(entry) {
@@ -24322,7 +24323,22 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!last || Date.now() - last <= PB_STOP_GAP_MS) return false;
     const d0 = new Date(last);
     return pbAskStopTime({ title: 'When Did Work Stop?', what: 'work stopped', nothing: 'Nothing was ended.', lastOf: () => pbRunLastActivity(entry, true), go,
-      text: 'This run is still open \u2014 its last recorded activity (Lock or crew check-in/out) was ' + d0.toLocaleString() + '. Ending it now would count the time since then as work.\n\nWhen did work stop on this run? That time becomes the run\u2019s end time, and anyone still checked in is checked out at that time.' });
+      preset: pbStopPreset(entry), text: pbStopText(entry) }); /* fix_stopq (owner, Nov 5): plain wording, time filled in */
+  }
+  function pbStopLast(entry) { // the last thing done on the run, and what it was
+    let t = 0, what = '';
+    const see = (v, w) => { const x = v === null || v === undefined ? NaN : (typeof v === 'number' ? v : new Date(v).getTime()); if (isFinite(x) && x > t && x <= Date.now()) { t = x; what = w; } };
+    see(entry.lockTime, 'run locked');
+    (entry.crewLog || []).forEach(p => (p.log || []).forEach(ev => ev && see(ev.time, ev.type === 'out' ? 'crew check-out' : 'crew check-in')));
+    try { Object.values(pbLaidMarks(entry)).forEach(v => see(v, 'pipe marked laid')); } catch (e) {}
+    (entry.fieldNotes || []).forEach(n => n && see(n.time, 'note saved'));
+    return { t, what };
+  }
+  function pbStopPreset(entry) { const L = pbStopLast(entry), floor = pbRunLastActivity(entry, true); return L.t ? Math.max(L.t, floor) : undefined; }
+  function pbStopText(entry) {
+    const L = pbStopLast(entry), d = new Date(L.t), today = new Date().toDateString() === d.toDateString();
+    const when = L.t ? (today ? 'today ' : d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) + ', ') + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : '';
+    return (L.t ? 'Last activity: ' + when + ' (' + L.what + ').\n\n' : '') + 'When did the crew stop working? The run ends then, and anyone still checked in is checked out then.';
   }
   // Check Out for someone checked in more than PB_STOP_GAP_MS ago on a run still open: their hours would run on
   // to the tap, so they are asked when that person stopped. True when the question is shown.
