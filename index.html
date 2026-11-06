@@ -2720,6 +2720,19 @@ html.pb-cx #homeFmPulse #homeFmCrew { display: none !important; } /* the Company
 @media (prefers-reduced-motion: reduce) { #pbApp#pbApp #crashReportsToggle::before, #pbApp#pbApp #crashReportsToggle::after { transition: none; } }
 /* R1 batch 4: AI features (cutsheet reading, stake photo, Ask) */
 #pbApp .pb-ai-privacy { font-size: 14px; line-height: 1.4; color: var(--pb-text-2); margin: 8px 0 0 0; }
+/* v20: photos with an Ask question */
+#pbApp .pb-ai-photos { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 16px 0 16px; }
+#pbApp .pb-ai-photo-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+#pbApp .pb-ai-photo-btn .pb-ic { width: 20px; height: 20px; }
+#pbApp .pb-ai-thumbs { display: flex; gap: 8px; flex-wrap: wrap; }
+#pbApp .pb-ai-thumb { position: relative; width: 56px; height: 56px; border-radius: 8px; overflow: hidden; border: 1px solid var(--pb-divider); background: var(--pb-surface); flex: 0 0 auto; }
+#pbApp .pb-ai-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+#pbApp .pb-ai-thumb-x { position: absolute; top: 0; right: 0; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 0 0 0 8px; background: rgba(0, 0, 0, 0.62); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+#pbApp .pb-ai-thumb-x .pb-ic { width: 16px; height: 16px; }
+#pbApp .pb-ai-thumb-x::after { content: ''; position: absolute; top: 0; right: 0; bottom: -12px; left: -12px; } /* 44 px touch target */
+#pbApp .pb-ai-qphotos { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 6px 0; }
+#pbApp .pb-ai-qphotos img { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1px solid var(--pb-divider); }
+#pbApp #aiAskSheetBody .pb-ai-photos { margin-left: 16px; margin-right: 16px; }
 #pbApp .pb-ai-status:empty { display: none; }
 #pbApp .pb-ai-status { margin-top: 10px; font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; }
 #pbApp .pb-ai-status .pb-ai-quota { display: block; margin-top: 4px; font-size: 14px; color: var(--pb-text-2); font-variant-numeric: tabular-nums; }
@@ -2770,7 +2783,7 @@ html.pb-cx #homeFmPulse #homeFmCrew { display: none !important; } /* the Company
 #pbApp .pb-ai-local .pb-ai-a { display: block; margin-top: 4px; }
 #pbApp #eduAskLink { margin: 10px 16px 0 16px; max-width: calc(100% - 32px); white-space: normal; overflow-wrap: anywhere; text-align: left; height: auto; } /* wraps at 320 px Extra Large */
 .pb-tool-row[data-dest="aiAsk"] { --pb-tool-icon: var(--pb-icon-info); }
-/* ask_v2 (app side): AI tag, tables, charts, the long-answer wait line, the Ask | Analyze switch, Documents */
+/* ask_v2 (app side): AI tag, tables, charts, the long-answer wait line, Documents */
 #pbApp .pb-ai-tag { display: inline-block; margin-right: 2px; padding: 1px 6px; border-radius: 6px; font-size: 12px; font-weight: 700; letter-spacing: .04em; line-height: 1.4; color: var(--pb-text); background: var(--pb-brand-soft); box-shadow: inset 0 0 0 1px var(--pb-brand-line); vertical-align: 1px; }
 #pbApp .pb-ai-tablewrap { margin-top: 10px; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 10px; box-shadow: inset 0 0 0 1px var(--pb-divider); }
 #pbApp .pb-ai-table { border-collapse: collapse; min-width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
@@ -5358,9 +5371,8 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
       <label for="aiAskBox">Your question</label>
       <textarea id="aiAskBox" rows="3" maxlength="600" placeholder="e.g. What does 15/SD on a stake mean?"></textarea>
     </div>
+    <div class="pb-ai-photos" id="aiAskPhotoRow"><button type="button" class="pb-btn small secondary pb-ai-photo-btn" id="aiAskPhotoBtn" onclick="pbAiAskPickPhoto()"><svg class="pb-ic" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Photo</span></button><input type="file" accept="image/*" multiple id="aiAskPhotoInput" aria-label="Add a photo to your question" style="display:none;" onchange="pbAiAskPhotoPicked(this)"><div class="pb-ai-thumbs" id="aiAskThumbs" aria-live="polite"></div></div>
     <p class="pb-ai-privacy" id="aiAskPrivacy">Sent to Anthropic to be read; not stored by the app. Don’t use AI with confidential job info.</p>
-    <div class="pb-ai-mode" id="aiAskMode" role="group" aria-label="Answer type" hidden><button type="button" data-val="ask" aria-pressed="false" onclick="pbAiAskSetMode('ask')">Ask</button><button type="button" data-val="analysis" aria-pressed="false" onclick="pbAiAskSetMode('analysis')">Analyze</button></div>
-    <p class="pb-ai-hint" id="aiAskLeft" hidden></p>
     <div class="pb-btn-wrap"><button class="pb-btn" id="aiAskBtn" onclick="pbAiAsk()">Ask</button></div>
     <div class="pb-ai-wait" id="aiAskWait" hidden><span role="status" aria-live="polite"><span class="pb-ai-dot" aria-hidden="true"></span><span id="aiAskWaitT">Asking…</span></span><button type="button" class="pb-btn small ghost" id="aiAskCancel" onclick="pbAiAskCancel()">Cancel</button></div>
     <div class="pb-ai-status" id="aiAskStatus" role="status" aria-live="polite"></div>
@@ -9624,6 +9636,21 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
 #pbApp#pbApp #screen-input .pb-xing-card.pb-xing-shut > .pb-tag { padding-bottom: 4px; }
 #pbApp#pbApp.pb-text-big #screen-input .pb-xing-card > .pb-tag .pb-xing-name { flex: 1 1 auto; }
 #pbApp#pbApp.pb-text-big #screen-input .pb-xing-card > .pb-tag button { order: 4; }
+#pbApp#pbApp #screen-input .pb-xing-card > .pb-xing-live { display: flex; align-items: baseline; gap: 8px; margin: 0; padding: 2px 14px 12px 14px; font-size: 14px; font-weight: 600; line-height: 1.35; color: var(--pb-text-2); font-variant-numeric: tabular-nums; } /* feat_xingalert */
+#pbApp#pbApp #screen-input .pb-xing-card > .pb-xing-live[hidden] { display: none; }
+#pbApp#pbApp #screen-input .pb-xing-card > .pb-xing-live.low { color: var(--pb-warn-text); }
+#pbApp#pbApp #screen-input .pb-xing-card > .pb-xing-live.low::before { content: ""; flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--pb-warn); transform: translateY(-1px); }
+#pbApp#pbApp #screen-input .pb-xing-card > .pb-xing-live.low.hit { color: var(--pb-danger-text); } /* fix_xingyellow */
+#pbApp#pbApp #screen-input .pb-xing-card > .pb-xing-live.low.hit::before { background: var(--pb-danger-line); }
+#pbApp#pbApp #screen-input .pb-xing-card.pb-xing-flash { outline: 3px solid var(--pb-danger-line); outline-offset: 3px; }
+#pbApp .pb-xing-rvw { position: relative; cursor: pointer; padding-right: 36px; }
+#pbApp .pb-xing-rvw.hit { border-left-width: 6px; }
+#pbApp .pb-xing-rvw .pb-xing-go { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 22px; line-height: 1; color: var(--pb-danger-text); }
+#pbApp .pb-xing-rvw:focus-visible { outline: 3px solid var(--pb-danger-line); outline-offset: 2px; }
+#pbApp#pbApp .pb-xing-rvw:not(.hit) { background: var(--pb-warn-soft); border-left-color: var(--pb-warn); --pb-alert-icon: var(--pb-icon-warn); } /* fix_xingyellow: under minimum = caution */
+#pbApp#pbApp .pb-xing-rvw:not(.hit)::before { color: var(--pb-warn); }
+#pbApp#pbApp .pb-xing-rvw:not(.hit) .pb-xing-go { color: var(--pb-warn-text); }
+#pbApp#pbApp .pb-xing-rvw:not(.hit):focus-visible { outline-color: var(--pb-warn); }
 #pbApp#pbApp #screen-input .pb-hubgrp.pb-xing-grp { grid-template-rows: auto auto auto auto auto auto; }
 #pbApp#pbApp #screen-input .pb-hubgrp.pb-xing-grp > .pb-hubgrp-head { grid-row: 1; }
 #pbApp#pbApp #screen-input .pb-hubgrp.pb-xing-grp > [id^="hubBulkToggleWrap"] { grid-row: 2; }
@@ -11393,7 +11420,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<div class="pb-xing-g2">' + fld('Od', 'Size OD (in)', num('0.01', 'placeholder="e.g. 8.63"')) + fld('Wall', 'Wall (ft)', num('0.001', 'placeholder="e.g. 0.03"')) + '</div>'
       + '<div class="pb-xing-g2">' + fld('Inv', 'INV (ft)', num('0.001')) + fld('Bop', 'BOP (ft)', num('0.001')) + '</div>'
       + '<div class="pb-xing-g2 pb-xing-r4">' + fld('Top', 'TOP (ft)', num('0.001')) + fld('Clr', 'Min. clearance (in)', num('0.5', 'value="' + PB_XING_MIN_CLR + '"')) + '</div>'
-      + '</div>';
+      + '</div>'
+      + '<div class="pb-xing-live" role="status" hidden></div>'; /* feat_xingalert */
   }
   function pbXingCards(n) { return Array.from(document.querySelectorAll('#screen-input .pb-xing-card[data-xing-run="' + n + '"]')); } /* feat_resume 3: among the hubs */
   function pbXingRunsOnForm() { const a = [1]; for (let n = 2; n <= MAX_SEG; n++) if (segIsActive(n)) a.push(n); return a; }
@@ -11449,6 +11477,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     box.appendChild(card);
     if (s) pbXingPut(card, s); else { pbXingIdent(card); try { pbRdSchedule(); } catch (e) {} }
     try { window.pbXingOrder(n); } catch (e) { console.error(e); } /* feat_resume 3 */
+    try { pbXingLiveSoon(); } catch (e) {} /* feat_xingalert */
     return id;
   };
   window.pbXingRemove = function (id, ok) {
@@ -12295,6 +12324,86 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pts.forEach(p => { const f = p && pbFitIsHub(p.id) ? pbFitSnap(p.id) : null; if (f) L.push('Fitting at ' + fmt(p.station, 2) + ' ft' + rn(pbRunOfPointId(p.id)) + ' \u00b7 ' + pbFitName(f)); });
     return L.length ? '<div class="pb-xing-rv">' + L.map(t => '<div class="pb-xing-rvl">' + escapeHtml(t) + '</div>').join('') + '</div>' : '';
   }
+  // ==== feat_xingalert (owner, Nov 5): a crossing that hits our pipe or is under its minimum clearance, on Run
+  // Setup (each card, live) and on Check Before Locking (one item each, tap = that card). Never blocks Lock.
+  function pbPipeInfoOfCalc(calc) {
+    const runs = [{ n: 1, point: calc.points[0] }];
+    for (let n = 2; n <= MAX_SEG; n++) {
+      const p = calc.points.find(pt => pt.id === 'seg' + n + 'start');
+      if (p) runs.push({ n, point: p });
+    }
+    return runs.map(r => ({
+      label: runs.length > 1 ? 'Run ' + r.n : 'Pipe',
+      wtFt: r.point.wt,
+      ...(pbPiAIsAuto(r.n === 1 ? 'runWT' : 'seg' + r.n + 'WT') ? { wtAuto: true } : {}), /* feat_pipeauto: filled in by the app */
+      idIn: r.point.idFt !== null ? r.point.idFt * 12 : null,
+      beddingFt: (r.point.bedding !== null && r.point.bedding !== undefined) ? r.point.bedding : null,
+      trenchWidthFt: (r.point.trenchWidth !== null && r.point.trenchWidth !== undefined) ? r.point.trenchWidth : null
+    }));
+  }
+  // What pbXingInfo reads of the record Lock would make from this calc: the same rows, pipe and crossings.
+  function pbXingCalcEntry(calc) {
+    return { distance: calc.totalDist, crossings: Array.isArray(calc.crossings) ? calc.crossings : [], summary: { pipeInfo: pbPipeInfoOfCalc(calc) },
+      intervalRows: (calc.rows || []).map(r => ({ stationFt: r.station, pointId: r.hubId, piFt: r.pi, addedTime: null })) };
+  }
+  function pbXingMinFt(c) { return (c && typeof c.minClrIn === 'number' ? c.minClrIn : PB_XING_MIN_CLR) / 12; }
+  function pbXingSide(o) { return o.pos === 'above' ? 'over' : 'under'; }
+  // the card's line: null when it can't be worked out (an elevation, the wall / OD, or the run's grade missing)
+  function pbXingAlertLine(o) {
+    if (!o || !o.inRun || !o.pos || (o.pos !== 'conflict' && o.clrFt === null)) return null;
+    if (o.pos === 'conflict') return { low: true, hit: true, text: 'Conflict: our pipe hits it (' + fmt(-o.clrFt, 2) + ' ft overlap)' };
+    if (o.low) return { low: true, text: fmt(o.clrFt, 2) + ' ft ' + pbXingSide(o) + ' our pipe, minimum ' + fmt(pbXingMinFt(o.cx), 2) + ' ft' };
+    return { low: false, text: 'Clear ' + fmt(o.clrFt, 2) + ' ft ' + pbXingSide(o) + ' our pipe' };
+  }
+  // the form as Review would read it, crossings checked; nothing on screen changes (the field-error tags are kept)
+  function pbXingFormInfo() {
+    const keep = pbErrTags.slice();
+    try { const calc = buildCalc(); return calc && Array.isArray(calc.rows) && calc.rows.length ? pbXingInfo(pbXingCalcEntry(calc)) : []; }
+    catch (e) { return []; }
+    finally { pbErrTags.length = 0; keep.forEach(t => pbErrTags.push(t)); }
+  }
+  function pbXingLiveNow() {
+    const cards = Array.from(document.querySelectorAll('#screen-input .pb-xing-card')); if (!cards.length) return;
+    const info = pbXingFormInfo();
+    cards.forEach(card => {
+      let el = card.querySelector(':scope > .pb-xing-live');
+      if (!el) { el = document.createElement('div'); el.className = 'pb-xing-live'; el.setAttribute('role', 'status'); el.hidden = true; card.appendChild(el); }
+      const k = card.dataset.xingKey, o = k ? info.find(x => x && x.cx && x.cx.key === k) : null, L = pbXingAlertLine(o);
+      const t = L ? L.text : '';
+      if (el.textContent !== t) el.textContent = t;
+      el.hidden = !L; el.classList.toggle('low', !!(L && L.low)); el.classList.toggle('hit', !!(L && L.hit)); /* fix_xingyellow: under minimum yellow, conflict red */
+      card.classList.toggle('pb-xing-low', !!(L && L.low)); card.classList.toggle('pb-xing-hit', !!(L && L.hit));
+    });
+  }
+  var pbXingLiveT = null;
+  function pbXingLiveSoon() { clearTimeout(pbXingLiveT); pbXingLiveT = setTimeout(() => { pbXingLiveT = null; try { pbXingLiveNow(); } catch (e) { console.error(e); } }, 350); }
+  window.pbXingLiveNow = pbXingLiveNow;
+  ['input', 'change', 'click'].forEach(t => document.addEventListener(t, (ev) => { const tg = ev.target; if (tg && tg.closest && tg.closest('#screen-input') && document.querySelector('#screen-input .pb-xing-card')) pbXingLiveSoon(); }, true)); // grade, HI, pipe, hubs, the crossing itself
+  (window.pbScreenHooks = Array.isArray(window.pbScreenHooks) ? window.pbScreenHooks : []).push(function (name) { if (name === 'input' && document.querySelector('#screen-input .pb-xing-card')) pbXingLiveSoon(); });
+  // Check Before Locking: one item per crossing that hits our pipe (first) or is under its minimum
+  function pbXingReviewWarns(calc) {
+    let info = []; try { info = pbXingInfo(pbXingCalcEntry(calc)); } catch (e) { console.error(e); return []; }
+    const multi = (calc.points || []).some(p => p && /^seg\d+start$/.test(p.id));
+    return info.filter(o => o && o.inRun && o.low && o.pos).map(o => {
+      const c = o.cx, u = String(c.util || '').trim(), who = (u ? u.charAt(0).toUpperCase() + u.slice(1) + ' crossing' : 'Crossing') + ' at ' + fmt(o.abs, 2) + ' ft' + (multi ? ' (Run ' + c.run + ')' : '');
+      return { hit: o.pos === 'conflict', key: c.key || '', text: who + ': ' + (o.pos === 'conflict' ? 'conflict, our pipe hits it.' : fmt(o.clrFt, 2) + ' ft ' + pbXingSide(o) + ' our pipe (min ' + fmt(pbXingMinFt(c), 2) + ' ft).') };
+    }).sort((a, b) => (b.hit - a.hit));
+  }
+  function pbXingReviewWarnHtml(ws) {
+    return ws.map(w => '<div class="pb-warn pb-rvw pb-xing-rvw' + (w.hit ? ' hit' : '') + '" role="button" tabindex="0" data-xing-go="' + escapeHtml(w.key) + '" onclick="pbXingGoCard(this.dataset.xingGo)" onkeydown="if (event.key === \'Enter\' || event.key === \' \') { event.preventDefault(); this.click(); }"><strong>' + (w.hit ? 'Crossing Conflict' : 'Crossing Under Minimum') + '</strong><span class="pb-xing-rvt">' + escapeHtml(w.text) + '</span><span class="pb-xing-go" aria-hidden="true">\u203a</span></div>').join('');
+  }
+  window.pbXingGoCard = function (key) {
+    pbGoto('input');
+    setTimeout(() => {
+      const card = Array.from(document.querySelectorAll('#screen-input .pb-xing-card')).find(c => c.dataset.xingKey === String(key)); if (!card) return;
+      for (let d = card.closest('details'); d; d = d.parentElement && d.parentElement.closest('details')) d.open = true;
+      try { window.pbXingToggle(card.dataset.xingId, true); } catch (e) {}
+      card.scrollIntoView({ block: 'center' });
+      card.classList.add('pb-xing-flash'); setTimeout(() => card.classList.remove('pb-xing-flash'), 2500);
+      pbXingLiveSoon();
+    }, 200);
+  };
+  // ==== end feat_xingalert ====
   // ==== end feat_crossing module ====
   // Switches on the bundled pdf.js the first time a cutsheet PDF is uploaded.
   // The library and its worker sit in the file as inert text; the worker is
@@ -12316,7 +12425,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.04 · 2026-11-05'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.05 · 2026-11-06'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -15758,7 +15867,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     offline: 'No signal. AI needs a connection — nothing was sent. Everything else in the app still works offline.',
     noClient: 'Can’t reach the login service right now, so AI can’t be used. Check your signal and try again.',
     signedOut: 'Log in to use AI. You’re signed out on this phone, or your login has expired.',
-    daily: (n) => 'You’ve used today’s ' + n + ' AI requests. It resets tomorrow.',
+    daily: () => 'You’ve hit today’s limit. It resets tomorrow.', // v20: one line, whichever allowance ran out
     tooBig: 'That file is too big to send. Try a smaller photo, or a PDF with fewer pages.',
     busy: 'The AI is busy right now. Try again in a minute.',
     failed: 'The AI couldn’t read that. Try again, or with a clearer photo.',
@@ -15766,12 +15875,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     unavailable: 'AI isn’t available right now. Try again later.',
     timeout: 'The AI took too long. Check your signal and try again.',
     canceled: 'Canceled.', // ask_v2
-    dailyAnalysis: (n) => 'You’ve used today’s ' + n + ' business analyses. It resets tomorrow.', // ask_v2
+    incomplete: 'Couldn’t finish looking that up. Try again.', // v20: Ask could not finish its job-data lookup
     network: 'Couldn’t reach the AI. Check your signal and try again.',
     dropped: 'Connection lost before the answer finished.' // r15.99
   };
   let pbAiQuota = null; // { left, limit } from the last answer, for "N of 20 left today"
-  let pbAiAnalysisLeft = null; // ask_v2: office analyses left today (their own allowance)
   function pbAiPlanOk() { return pbTierMeetsRequirement('individual'); } // individual or contractor, active
   function pbAiQuotaText() { return pbAiQuota ? pbAiQuota.left + ' of ' + pbAiQuota.limit + ' left today' : ''; }
   // A status line: kind is info / warn / ok / danger (the shared alert styles).
@@ -15871,16 +15979,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const st = streamSt || res.status, err = j && typeof j.error === 'string' ? j.error : '';
     if (st === 200 && j && j.ok && typeof j.text === 'string') {
       const limit = Number(j.limit), used = Number(j.used);
-      if (Number.isFinite(limit) && Number.isFinite(used)) { if (j.mode === 'analysis') pbAiAnalysisLeft = Math.max(0, limit - used); else pbAiQuota = { left: Math.max(0, limit - used), limit }; }
+      if (Number.isFinite(limit) && Number.isFinite(used) && j.mode !== 'analysis') pbAiQuota = { left: Math.max(0, limit - used), limit }; // v20: one count, the general one
       return { ok: true, text: j.text, truncated: !!j.truncated, data: j };
     }
     if (st === 401) return { ok: false, code: 'signed_out', message: PB_AI_MSG.signedOut };
     if (st === 403) return { ok: false, code: 'plan', message: PB_AI_MSG.plan };
-    if (st === 429 && j && j.mode === 'analysis') { const lim = Number(j.limit) || 15; pbAiAnalysisLeft = 0; return { ok: false, code: 'analysis_limit', message: PB_AI_MSG.dailyAnalysis(lim) }; } // ask_v2
-    if (st === 429) { const lim = Number(j && j.limit) || (pbAiQuota && pbAiQuota.limit) || 20; pbAiQuota = { left: 0, limit: lim }; return { ok: false, code: 'daily_limit', message: PB_AI_MSG.daily(lim) }; }
+    if (st === 429) { const lim = Number(j && j.limit) || (pbAiQuota && pbAiQuota.limit) || 20; if (!(j && j.mode === 'analysis')) pbAiQuota = { left: 0, limit: lim }; return { ok: false, code: 'daily_limit', message: PB_AI_MSG.daily(lim) }; }
     if (st === 413) return { ok: false, code: 'too_big', message: PB_AI_MSG.tooBig };
     if (st === 404) return { ok: false, code: 'not_available', message: PB_AI_MSG.notYet };
-    if (st === 502) return { ok: false, code: err || 'ai_failed', message: err === 'ai_busy' ? PB_AI_MSG.busy : PB_AI_MSG.failed };
+    if (st === 502) return { ok: false, code: err || 'ai_failed', message: err === 'ai_busy' ? PB_AI_MSG.busy : err === 'ai_incomplete' ? PB_AI_MSG.incomplete : PB_AI_MSG.failed };
     if (st === 503) return { ok: false, code: err || 'unavailable', message: err === 'not_configured' ? PB_AI_MSG.notYet : PB_AI_MSG.unavailable };
     if (st === 504) return { ok: false, code: 'timeout', message: PB_AI_MSG.timeout };
     if (st === 400 && j && typeof j.message === 'string') return { ok: false, code: err || 'bad_request', message: 'The AI couldn’t take that: ' + j.message };
@@ -16473,7 +16580,58 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbAiAskHistory.length > PB_AI_KEEP) pbAiAskHistory.length = PB_AI_KEEP;
     return true;
   }
+  // v20 photos: the next question's photos (pending) and the chat's earlier ones (on their cards, memory only)
+  const PB_AI_PHOTOS_MAX = 3, PB_AI_PHOTO_PX = 1568, PB_AI_PHOTO_B64_MAX = 1400000;
+  let pbAiAskPhotos = []; // [{ media_type, data, thumb }]
+  let pbAiAskPhotoBusy = false, pbAiAskPhotoGen = 0; // review: one pick at a time; a New Chat drops a photo still being prepared
+  async function pbAiAskPrepPhoto(file) { // redrawn: pixels only (no EXIF / GPS), long side <= 1568 px, JPEG 0.8
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('decode')); i.src = url; });
+      const w = img.naturalWidth, h = img.naturalHeight; if (!w || !h) throw new Error('decode');
+      const draw = (px) => { const k = Math.min(1, px / Math.max(w, h)), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+        const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height); return c; };
+      const c = draw(PB_AI_PHOTO_PX); let q = 0.8, d = c.toDataURL('image/jpeg', q);
+      while (d.length > PB_AI_PHOTO_B64_MAX && q > 0.4) { q -= 0.1; d = c.toDataURL('image/jpeg', q); }
+      if (d.length > PB_AI_PHOTO_B64_MAX + 23 || d.indexOf('data:image/jpeg;base64,') !== 0) throw new Error('size');
+      const t = draw(112), th = t.toDataURL('image/jpeg', 0.6); c.width = c.height = t.width = t.height = 0; // review: free the canvases (iOS canvas memory)
+      return { media_type: 'image/jpeg', data: d.slice(d.indexOf(',') + 1), thumb: th };
+    } finally { URL.revokeObjectURL(url); }
+  }
+  function pbAiAskThumbsRender() {
+    const el = document.getElementById('aiAskThumbs'); if (!el) return;
+    el.innerHTML = pbAiAskPhotos.map((p, k) => '<span class="pb-ai-thumb"><img src="' + escapeHtml(p.thumb) + '" alt="Photo ' + (k + 1) + '"><button type="button" class="pb-ai-thumb-x" aria-label="Remove photo ' + (k + 1) + '" onclick="pbAiAskPhotoRemove(' + k + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-x"/></svg></button></span>').join('');
+    const b = document.getElementById('aiAskPhotoBtn'); if (b) b.disabled = pbAiAskPhotoBusy || pbAiAskPhotos.length >= PB_AI_PHOTOS_MAX;
+  }
+  window.pbAiAskPickPhoto = function() {
+    if (pbAiAskPhotoBusy) return;
+    if (pbAiAskPhotos.length >= PB_AI_PHOTOS_MAX) { pbAiShow(document.getElementById('aiAskStatus'), 'warn', 'Up to 3 photos per question.', ''); return; }
+    const i = document.getElementById('aiAskPhotoInput'); if (i) { i.value = ''; i.click(); }
+  };
+  window.pbAiAskPhotoPicked = async function(inp) {
+    const st = document.getElementById('aiAskStatus'), files = [...((inp && inp.files) || [])]; if (inp) inp.value = '';
+    if (!files.length || pbAiAskPhotoBusy) return;
+    let over = false, bad = false; const gen = pbAiAskPhotoGen;
+    pbAiAskPhotoBusy = true; pbAiAskThumbsRender(); pbAiShow(st, 'info', 'Preparing photo…', '');
+    try {
+      for (const f of files) {
+        if (pbAiAskPhotos.length >= PB_AI_PHOTOS_MAX) { over = true; break; }
+        let p = null; try { p = await pbAiAskPrepPhoto(f); } catch (e) { bad = true; }
+        if (gen !== pbAiAskPhotoGen) return; // New Chat meanwhile: dropped
+        if (p) { if (pbAiAskPhotos.length < PB_AI_PHOTOS_MAX) pbAiAskPhotos.push(p); else over = true; }
+      }
+    } finally { pbAiAskPhotoBusy = false; pbAiAskThumbsRender(); }
+    if (bad) pbAiShow(st, 'warn', PB_AI_PHOTO_FAIL, ''); else if (over) pbAiShow(st, 'warn', 'Up to 3 photos per question.', ''); else pbAiShow(st, '', '', '');
+  };
+  window.pbAiAskPhotoRemove = function(k) { pbAiAskPhotos.splice(k, 1); pbAiAskThumbsRender(); const b = document.getElementById('aiAskPhotoBtn'); if (b && !b.disabled) { try { b.focus({ preventScroll: true }); } catch (e) {} } };
+  // The photos sent with a question: this question's (turn 0), then the chat's earlier ones (turn = questions back), 3 at most
+  function pbAiAskImages() {
+    const out = pbAiAskPhotos.slice(0, PB_AI_PHOTOS_MAX).map(p => ({ media_type: p.media_type, data: p.data, turn: 0 }));
+    pbAiAskTurns().forEach((h, k) => (h.photos || []).forEach(p => { if (p.data && out.length < PB_AI_PHOTOS_MAX) out.push({ media_type: p.media_type, data: p.data, turn: k + 1 }); }));
+    return out;
+  }
   window.pbAiAskNewChat = function() {
+    pbAiAskPhotos = []; pbAiAskPhotoGen++; pbAiAskPhotoBusy = false; pbAiAskThumbsRender(); // v20: a new chat starts without photos
     pbAiAskHistory.forEach(h => pbAiAskCleared.add(h.tid)); pbAiAskCleared.add(pbAiAskThread.tid);
     if (pbAiAskCtl) { try { pbAiAskCtl.abort(); } catch (e) {} } // a question still on its way is dropped
     pbAiAskHistory.length = 0; pbAiAskThread = { tid: ++pbAiAskTidN, key: pbAiAskKeyNow(), at: 0 }; pbAiAskPrevOpen = false;
@@ -16495,9 +16653,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.__pbAiAskAge = (ms) => { pbAiAskThread.at -= ms; }; // tests only: age the thread
   // ---- ask_v2 (app side): the v2 request and reply. The server may still be v1: then r.data has no v: 2 and the
   // reply is read exactly as before (pbAiParseTeacher). The request carries the v1 text too, so a v1 server answers it.
-  let pbAiAskMode = 'auto'; // office only: 'auto' (no choice) | 'ask' | 'analysis'
   let pbAiAskCtl = null, pbAiAskTick = null;
-  // v2-only controls (Ask | Analyze, analyses left, Run Safety Check) stay hidden until the server has answered a v2
+  // v2-only controls (Run Safety Check, the job-data privacy line) stay hidden until the server has answered a v2
   // request: remembered for the session and for 10 minutes on this phone.
   let pbAiV2Seen = false;
   function pbAiV2Ok() { if (pbAiV2Seen) return true; try { const t = Number(localStorage.getItem('pbAiV2At')); return !!t && Date.now() - t < 600000; } catch (e) { return false; } }
@@ -16537,12 +16694,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return JSON.stringify(o).length <= 1500 ? o : null;
     } catch (err) { return null; }
   }
-  function pbAiAskPayload(q, ex) {
-    return { v: 2, question: q,
+  function pbAiAskPayload(q, ex, images) {
+    return { v: 2, question: q, ...(images && images.length ? { images } : {}),
       excerpts: ex.map(x => ({ n: x.n, article: x.article, anchor: x.anchor, title: x.title, page: x.page, caution: x.caution, text: x.text })),
       history: pbAiAskTurns().map(h => ({ q: String(h.q || '').slice(0, 300), a: pbAiAskA(h.body) })), // this thread's last turns, newest first
       ctx: { label: pbAiAskCtx ? pbAiAskCtx.label : '', screen: pbAiAskCtx ? pbAiAskCtx.screen : pbCurrentScreen, job: pbAskCurrentJob(), run: pbAskRunSummary() },
-      mode: pbAskIsOffice() && pbAiV2Ok() ? pbAiAskMode : 'auto' };
+      mode: 'auto' }; // v20: the server decides Ask or analysis from the question
   }
   const pbAiCell = (c) => c === null || c === undefined ? '' : typeof c === 'number' ? (Number.isFinite(c) ? String(Math.round(c * 100) / 100) : '') : String(c);
   function pbAiTableOk(t) {
@@ -16613,17 +16770,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const more = srcs.filter(s => s.kind === 'kb' || s.kind === 'doc' || s.kind === 'data');
     const analysis = d.mode === 'analysis';
     const fb = typeof d.answer_id === 'string' && /^[A-Za-z0-9_-]{20,12000}\.[A-Za-z0-9_-]{43}$/.test(d.answer_id) ? d.answer_id : ''; // gap loop: "Not right"
-    return { v: 2, fb, body: String(d.text || '').trim(), safety: !!d.safety || d.type === 'safety' || PB_AI_SAFETY_RX.test(q), sources: app, more, analysis,
+    const noHint = d.data === true || d.type === 'refusal' || d.type === 'data' || analysis || more.some(s => s.kind === 'data'); // v20: job data or off-topic: no Education-pages line
+    return { v: 2, fb, noHint, body: String(d.text || '').trim(), safety: !!d.safety || d.type === 'safety' || PB_AI_SAFETY_RX.test(q), sources: app, more, analysis,
       table: pbAiTableOk(d.table), chart: analysis && pbAskIsOffice() ? pbAiChartOk(d.chart) : null };
   }
-  function pbAiAskModeSync() {
-    pbAiPrivacySync();
-    const m = document.getElementById('aiAskMode'), off = pbAskIsOffice() && pbAiV2Ok() && !pbAiAskV1Only;
-    if (m) { m.hidden = !off; m.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(off && b.dataset.val === pbAiAskMode))); }
-    const left = document.getElementById('aiAskLeft');
-    if (left) { left.hidden = !(off && pbAiAnalysisLeft !== null); left.textContent = off && pbAiAnalysisLeft !== null ? 'Analyses left today: ' + pbAiAnalysisLeft : ''; }
-  }
-  window.pbAiAskSetMode = function(v) { pbAiAskMode = pbAiAskMode === v ? 'auto' : v; pbAiAskModeSync(); };
+  function pbAiAskModeSync() { pbAiPrivacySync(); } // v20: no Ask | Analyze switch; only the privacy line follows v2
   let pbAiAskWord = null, pbAiAskWaitDraw = null; // r15.99: 'Writing…' / 'Checking…' while a streamed answer comes in
   function pbAiAskWaitWord(w) { pbAiAskWord = w; if (pbAiAskWaitDraw) pbAiAskWaitDraw(); }
   function pbAiAskWait(on) {
@@ -16631,7 +16782,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbAiAskTick) { clearInterval(pbAiAskTick); pbAiAskTick = null; }
     if (!w) return;
     w.hidden = !on; if (!on) return;
-    const t0 = Date.now(), word0 = pbAskIsOffice() && pbAiV2Ok() && pbAiAskMode === 'analysis' ? 'Analyzing…' : 'Asking…';
+    const t0 = Date.now(), word0 = 'Asking…';
     pbAiAskWord = null; pbAiAskWaitDraw = null;
     const draw = () => { const word = pbAiAskWord || word0, s = Math.floor((Date.now() - t0) / 1000); if (t) t.textContent = s < 5 ? word : word + ' ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
     pbAiAskWaitDraw = draw;
@@ -16669,9 +16820,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     b.setAttribute('aria-expanded', String(!open));
     if (!open) { const p = document.createElement('span'); p.className = 'pb-ai-jd-pop'; p.setAttribute('role', 'status'); p.textContent = b.dataset.line || ''; b.insertAdjacentElement('afterend', p); }
   };
+  // v20: the source chips under an answer, each shown once (two lookups with the same title were listed twice)
+  function pbAiChipsOnce(h) { const seen = new Set(); return (h.more || []).filter(x => !(x && x.kind === 'data' && h._jdUsed && h._jdUsed.has(String(x.n).toUpperCase()))).map(pbAiSourceChip).filter(c => !seen.has(c) && seen.add(c)); }
   function pbAiAskItemHtml(h, i) { // i: 0 is the newest card; only it carries the hint and the full label
     return '<article class="pb-section pb-ai-qa' + (h.streaming ? ' pb-ai-live' : '') + '" id="aiAskItem' + i + '"><div class="pb-body">'
       + '<p class="pb-ai-q">' + escapeHtml(h.q) + '</p>'
+      + (h.photos && h.photos.length ? '<div class="pb-ai-qphotos">' + h.photos.map((p, k) => '<img src="' + escapeHtml(p.thumb) + '" alt="Photo ' + (k + 1) + ' sent with this question">').join('') + '</div>' : '')
       + (h.kind === 'emergency' ? '<div class="pb-ai-em"><button type="button" class="pb-emergency-btn pb-ai-em-btn" onclick="pbAiAskEmergency()">EMERGENCY · Call ' + escapeHtml(pbDialNumberNow()) + '</button><p class="pb-ai-hint">' + (confinedPermit ? 'Declares the emergency on the open permit and dials.' : 'No permit is open: this dials the emergency number.') + '</p></div>' : '')
       + (h.safety && !h.local ? '<div class="pb-alert danger pb-ai-safety"><strong>Safety rule.</strong> Follow your competent person and your site’s safety program — they decide on site. AI never decides whether a permit, entry or trench is a go.</div>' : '')
       + (h.local ? '<div class="pb-alert danger pb-ai-local"><strong>' + (h.kind === 'emergency' ? 'Emergency' : 'Not an AI question') + '</strong><span class="pb-ai-a">' + escapeHtml(h.body) + '</span></div>' : '<div class="pb-ai-a">' + pbAiBodyHtml(h) + '</div>')
@@ -16680,8 +16834,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + (h.truncated ? '<p class="pb-ai-flagnote">This answer was cut off.</p>' : '')
       + (h.note && !h.streaming ? '<p class="pb-ai-flagnote">' + escapeHtml(String(h.note).slice(0, 120)) + '</p>' : '') // r15.99: the check changed what was shown
       + (h.failed ? '<div class="pb-ai-retry"><p class="pb-ai-flagnote">Not finished. ' + escapeHtml(h.failed) + '</p>' + (h.tid === pbAiAskThread.tid ? '<button type="button" class="pb-btn small secondary" onclick="pbAiAskRetry(' + i + ')">Retry</button>' : '') + '</div>' : '')
-      + (h.streaming || h.failed ? '' : h.sources.length ? '<div class="pb-ai-src"><span class="pb-ai-src-k">' + (h.local ? 'Read:' : 'From this app:') + '</span>' + h.sources.map(x => '<button type="button" class="pb-edu-link" data-article="' + escapeHtml(x.article) + '" data-anchor="' + escapeHtml(x.anchor || '') + '" onclick="pbAiOpenSource(this)">[' + escapeHtml(String(x.n)) + '] ' + escapeHtml(x.title) + '</button>').join('') + '</div>' : (h.local || i !== 0 || (h.more && h.more.length) ? '' : '<p class="pb-ai-hint">Not from this app’s Education pages.</p>'))
-      + ((h.more || []).filter(x => !(x && x.kind === 'data' && h._jdUsed && h._jdUsed.has(String(x.n).toUpperCase()))).length ? '<div class="pb-ai-src">' + h.more.filter(x => !(x && x.kind === 'data' && h._jdUsed && h._jdUsed.has(String(x.n).toUpperCase()))).map(pbAiSourceChip).join('') + '</div>' : '')
+      + (h.streaming || h.failed ? '' : h.sources.length ? '<div class="pb-ai-src"><span class="pb-ai-src-k">' + (h.local ? 'Read:' : 'From this app:') + '</span>' + h.sources.map(x => '<button type="button" class="pb-edu-link" data-article="' + escapeHtml(x.article) + '" data-anchor="' + escapeHtml(x.anchor || '') + '" onclick="pbAiOpenSource(this)">[' + escapeHtml(String(x.n)) + '] ' + escapeHtml(x.title) + '</button>').join('') + '</div>' : (h.local || h.noHint || i !== 0 || (h.more && h.more.length) ? '' : '<p class="pb-ai-hint">Not from this app’s Education pages.</p>'))
+      + (pbAiChipsOnce(h).length ? '<div class="pb-ai-src">' + pbAiChipsOnce(h).join('') + '</div>' : '')
       + (h.streaming || h.failed ? '<p class="pb-ai-hint pb-ai-label"><span class="pb-ai-tag">AI</span> ' + (h.failed ? 'no checked answer' : 'writing… checked when done') + '</p>' : '<p class="pb-ai-hint pb-ai-label">' + (h.local ? 'Answered by the app · no AI used' : '<span class="pb-ai-tag">AI</span>' + (i !== 0 ? '' : ' ' + (h.analysis ? 'analysis of your company’s numbers \u00b7 check before acting' : 'answer \u00b7 can be wrong'))) + '</p>')
       + pbAiNrHtml(h)
       + '</div></article>';
@@ -16740,6 +16894,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbAiAskRender() {
     const box = document.getElementById('aiAskHistory'); if (!box) return;
     pbAiAskModeSync();
+    pbAiAskHistory.forEach(h => { if (h.tid !== pbAiAskThread.tid && h.photos) h.photos.forEach(p => { p.data = null; }); }); // v20: photos stay with their own chat only
     // ask_v2: the current thread in order (oldest first, newest just above the box); earlier threads folded above it
     const idx = new Map(pbAiAskHistory.map((h, i) => [h, i]));
     const cur = pbAiAskCur().slice().reverse(), prevTids = [];
@@ -16795,6 +16950,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     if (!pbAiPlanOk()) { pbAiShow(st, 'warn', 'AI not on your plan.', PB_AI_MSG.plan); return; }
     if (pbAiAskBusy) return;
+    if (pbAiAskPhotoBusy) { pbAiShow(st, 'info', 'Preparing photo…', 'Ask again in a moment.'); return; } // review: never sent without the photo being added
+    const sentPhotos = pbAiAskPhotos.slice(0, PB_AI_PHOTOS_MAX), imgs = pbAiAskImages(); // v20
+    if (sentPhotos.length && pbAiAskV1Only) { pbAiShow(st, 'warn', 'Photos aren’t available in Ask yet.', 'Remove the photo to ask without it.'); return; }
     pbAiEnsurePrivacy(async () => {
       const tid0 = pbAiAskThread.tid; // the thread it was asked in
       const prevQ = (pbAiAskTurns()[0] || {}).q || ''; // a follow-up like "120 ft, 5 days" finds its pages through the question before it
@@ -16823,8 +16981,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       };
       const opts2 = Object.assign({}, opts, pbAiCanStream() ? { onStream } : {});
       try {
-        r = pbAiAskV1Only ? await v1() : await pbAiRequest('teacher', Object.assign({ text: pbAiAskMessage(q, ex) }, pbAiAskPayload(q, ex)), opts2);
-        if (!r.ok && r.code === 'ask_v2_off') { pbAiAskV1Only = true; pbAiV2OffMark(); r = await v1(); } // not switched on yet: the same question, the v1 way
+        r = pbAiAskV1Only ? await v1() : await pbAiRequest('teacher', Object.assign({ text: pbAiAskMessage(q, ex) }, pbAiAskPayload(q, ex, imgs)), opts2);
+        if (!r.ok && r.code === 'ask_v2_off') { pbAiAskV1Only = true; pbAiV2OffMark(); r = sentPhotos.length ? { ok: false, code: 'photo_v1', message: 'Photos aren’t available in Ask yet. Remove the photo to ask without it.' } : await v1(); } // not switched on yet: the same question, the v1 way (never without its photos)
       }
       finally { pbAiAskBusy = false; pbAiAskCtl = null; pbAiAskWait(false); if (btn) btn.disabled = false; }
       if (pbAiAskCleared.has(tid0)) { pbAiShow(st, '', '', ''); return; } // New Chat while it was on its way: dropped
@@ -16834,13 +16992,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         else { live.streaming = false; live.body = ''; live.failed = r.message; } // unchecked words never stay on screen
         pbAiAskRender();
       }
-      if (!r.ok) { pbAiShow(st, r.code === 'canceled' ? 'info' : 'warn', r.message, ''); if (r.code === 'analysis_limit' && st) { const qe = st.querySelector('.pb-ai-quota'); if (qe) qe.remove(); } pbAiAskModeSync(); return; }
+      if (!r.ok) { pbAiShow(st, r.code === 'canceled' ? 'info' : 'warn', r.message, ''); if (r.code === 'daily_limit' && st) { const qe = st.querySelector('.pb-ai-quota'); if (qe) qe.remove(); } pbAiAskModeSync(); return; }
       if (r.data && r.data.v === 2) pbAiV2Mark(); // the server answers v2: its controls can show
       const a = r.data && r.data.v === 2 ? pbAiFromV2(r.data, q) : pbAiParseTeacher(r.text, ex, q);
-      const done = Object.assign({ q, truncated: !!r.truncated || !!(r.data && r.data.partial) }, a, { note: r.data && typeof r.data.stream_note === 'string' ? r.data.stream_note : '' });
+      const done = Object.assign({ q, truncated: !!r.truncated || !!(r.data && r.data.partial) }, a, { note: r.data && typeof r.data.stream_note === 'string' ? r.data.stream_note : '' }, sentPhotos.length ? { photos: sentPhotos } : {});
       if (live && pbAiAskHistory.indexOf(live) >= 0) { delete live.streaming; Object.assign(live, done); } // the streamed card becomes the checked answer
       else if (!pbAiAskJoin(done, tid0)) return;
       if (box && box.value.trim() === q) box.value = '';
+      if (sentPhotos.length) { pbAiAskPhotos = pbAiAskPhotos.filter(p => !sentPhotos.includes(p)); pbAiAskThumbsRender(); } // sent: they now belong to the card
       pbAiAskQuotaLine(st); // the card says it was answered; the status keeps only "N of 20 left today"
       pbAiAskRender(); pbAiAskScrollToNewest(false);
     });
@@ -21040,9 +21199,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const depthWork = (maxExtra.wt || maxExtra.bed) ? ` (${maxCut.toFixed(2)} ft cut to invert${maxExtra.wt ? ' + ' + maxExtra.wt.toFixed(2) + ' ft pipe wall' : ''}${maxExtra.bed ? ' + ' + maxExtra.bed.toFixed(2) + ' ft bedding' : ''})` : '';
       html += `<div class="pb-warn photo"><strong>Deep Trench — Check Sloping</strong>Trench bottom up to ${maxDepth.toFixed(1)} ft. Over 5 ft, OSHA requires sloping, benching or shoring unless in stable rock (1926.652(a)(1)).<br><button class="pb-btn small" style="margin-top:8px;" onclick="pbOpenTrenchCalc('review', ${maxDepth}, '${maxPrefix}')">Check Trench Sloping Calculator</button><details class="pb-more pb-rvw-more"><summary><span>Details</span></summary><p class="pb-help">Based on stake cut data, the trench bottom may be as deep as ${maxDepth.toFixed(1)} ft at one point${depthWork}. OSHA requires "an adequate protective system" (sloping, benching or shoring) unless the excavation is "made entirely in stable rock" (1926.652(a)(1)).</p></details></div>`;
     }
-    if (calc.warnings.length === 0 && calc.capabilityNotes.length === 0 && maxDepth < 5) { // a deep trench is a warning
+    const xingWarns = pbXingReviewWarns(calc); /* feat_xingalert */
+    if (calc.warnings.length === 0 && calc.capabilityNotes.length === 0 && maxDepth < 5 && !xingWarns.length) { // a deep trench is a warning
       html += `<div class="pb-clean">No warnings — data looks clean.</div>`;
     } else {
+      html += pbXingReviewWarnHtml(xingWarns); /* feat_xingalert: first, never blocks Lock */
       calc.warnings.forEach(w => {
         const cls = (w.type === 'photo' || w.type === 'hi-minor') ? 'photo' : '';
         const heading = w.type === 'backflow' || w.type === 'backflow-all' ? 'Backflow Check'
@@ -30208,14 +30369,26 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const PB_EM_HOST = 'e.pipelayersbible.com/';
   const PB_EM_LINK = PB_EM_HOST + '?'; // the query form: GitHub Pages serves it from index.html with HTTP 200 (a path /<code> is a 404 page)
   const PB_EM_ALPHA = '0123456789abcdefghjkmnpqrstvwxyz';
-  const PB_EM_RE = /^[0-9a-hjkmnp-tv-z]{12}$/;
+  const PB_EM_RE = /^[0-9a-hjkmnp-tv-z]{12,13}$/; /* feat_security S2: 12 = a code from r15.58 or older, 13 = r15.59 (made from a secret) */
   const PB_EM_LIFE_MS = 3 * 86400000; // the server's rule: 3 days after the later of closeout and the last emergency's end
   function pbEmLinkOk(x) { return !!x && typeof x === 'object' && typeof x.k === 'string' && PB_EM_RE.test(x.k); }
+  // feat_security S2: s = 26 random characters (130 bits; never shown, texted or printed); the code = 13 characters from
+  // sha256 applied 10,000 more times to sha256('pb-em:' + s) (each byte & 31). 13 characters is the mark: every older code
+  // is 12. The server (pb_safety.em_derive) files a 13-character code only with its secret, so a code read from a text
+  // can't be taken over (finding some secret for a code is a 2^65 x 10,000 search). Made once, at lock.
+  function pbEmFrom(hex, n) { let o = ''; for (let i = 0; i < n; i++) o += PB_EM_ALPHA[parseInt(hex.substr(2 * i, 2), 16) & 31]; return o; }
+  function pbEmStretch(sec) {
+    let hex = pbSha256Text('pb-em:' + sec); const b = new Uint8Array(32);
+    for (let r = 0; r < 10000; r++) { for (let i = 0; i < 32; i++) b[i] = parseInt(hex.substr(2 * i, 2), 16); hex = pbSha256Bytes(b); }
+    return hex;
+  }
+  function pbEmDerive(sec) { return pbEmFrom(pbEmStretch(sec), 13); }
   function pbEmNewLink() {
     try {
-      const b = new Uint8Array(12); window.crypto.getRandomValues(b);
-      const k = Array.from(b, x => PB_EM_ALPHA[x & 31]).join('');
-      return PB_EM_RE.test(k) ? { k, at: Date.now() } : null;
+      const b = new Uint8Array(26); window.crypto.getRandomValues(b);
+      const s = Array.from(b, x => PB_EM_ALPHA[x & 31]).join('');
+      const k = pbEmDerive(s);
+      return PB_EM_RE.test(k) ? { k, at: Date.now(), s } : null;
     } catch (e) { return null; } // never Math.random
   }
   // Two tabs that each gave an older permit a code: both keep the earlier one, so they agree.
@@ -30223,12 +30396,27 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!pbEmLinkOk(b)) return a;
     if (!pbEmLinkOk(a)) return b;
     if (a.k === b.k) return a;
+    if (a.was === b.k) return a; /* feat_security S2: a code made to replace one the server gave another permit wins over it */
+    if (b.was === a.k) return b;
     const ta = Number(a.at) || Infinity, tb = Number(b.at) || Infinity;
     return ta < tb || (ta === tb && a.k < b.k) ? a : b;
   }
-  const pbEmShown = (k) => PB_EM_LINK + String(k).toUpperCase().match(/.{1,4}/g).join('-'); // for reading aloud: ?7K3M-9Q2X-HW4P
+  // feat_security S2: the server keeps a code for the permit that filed it first and refuses it for any other permit
+  // (pb_em_view answers 'conflict' to this account; asked right after the code's first upload). The open permit gets a new
+  // code at once, saved with the permit and uploaded by the next pass; texts sent from now on carry it.
+  function pbEmReplaceTaken(k) {
+    try {
+      if (!confinedPermit || !pbEmLinkOk(confinedPermit.emLink) || confinedPermit.emLink.k !== k) return false;
+      const nl = pbEmNewLink(); if (!nl) return false;
+      nl.was = k; confinedPermit.emLink = nl;
+      pbEmSrv[k] = { status: 'conflict', at: Date.now(), busy: false };
+      Promise.resolve().then(() => saveActiveConfinedSession()).catch(() => {}).then(() => { try { pbTxRender(); } catch (e) {} });
+      return true;
+    } catch (e) { return false; }
+  }
+  const pbEmShown = (k) => PB_EM_LINK + String(k).toUpperCase().replace(/^(.{4})(.{4})(.+)$/, '$1-$2-$3'); // for reading aloud: ?7K3M-9Q2X-HW4P (feat_security: a 13-character code reads 4-4-5, ?7K3M-9Q2X-HW4PX)
   const pbEmUrl = (k) => 'https://' + PB_EM_LINK + k;
-  // THE link in the text: 35 characters, no https:// (Messages on iPhone and Android make a bare .com address a link, the
+  // THE link in the text: 35 characters (36 with an r15.59 13-character code), no https:// (Messages on iPhone and Android make a bare .com address a link, the
   // ?query included; Android adds http:// itself).
   function pbTxLink(f) { return f && typeof f.em === 'string' && PB_EM_RE.test(f.em) ? PB_EM_LINK + f.em : ''; }
   // N5: a code is left out of the panel and the text once sharing was stopped (or a stop is waiting to be sent), the link
@@ -30244,6 +30432,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       pbPermitRpc('pb_em_view', { p_token: k }, 15000).then(r => {
         const before = c ? c.status : null, st = !r.error && r.data && typeof r.data.status === 'string' ? r.data.status : before;
         pbEmSrv[k] = { status: st, at: Date.now(), busy: false };
+        if (st === 'conflict' && pbEmReplaceTaken(k)) return; /* feat_security S2 */
         if (st !== before) { try { pbTxRender(); } catch (e) {} }
       }, () => { pbEmSrv[k] = { status: c ? c.status : null, at: Date.now(), busy: false }; });
     } catch (e) {}
@@ -30747,7 +30936,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         rescue: confinedPermit.rescue, emergContactNum: confinedPermit.emergContactNum, emergContactName: confinedPermit.emergContactName,
         comms: confinedPermit.comms, supervisor: confinedPermit.supervisor, supervisorInitials: confinedPermit.supervisorInitials, attendant: confinedPermit.attendant,
         landmarks: confinedPermit.landmarks,
-        ...(pbEmLinkOk(confinedPermit.emLink) ? { emLink: { k: confinedPermit.emLink.k, at: confinedPermit.emLink.at } } : {}), /* feat_emlink: pb_permit_backup carries it */
+        ...(pbEmLinkOk(confinedPermit.emLink) ? { emLink: Object.assign({ k: confinedPermit.emLink.k, at: confinedPermit.emLink.at }, typeof confinedPermit.emLink.s === 'string' ? { s: confinedPermit.emLink.s } : {}) } : {}), /* feat_emlink: pb_permit_backup carries it; feat_security S2: with its secret */
         eqPPE: confinedPermit.eqPPE, eqTest: confinedPermit.eqTest, eqComm: confinedPermit.eqComm,
         eqAlarm: confinedPermit.eqAlarm, eqRescue: confinedPermit.eqRescue, eqNotes: confinedPermit.eqNotes,
         addlPermits: confinedPermit.addlPermits,
@@ -33729,21 +33918,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         // Every run present gets its own entry — bedding/trench width folded in
         // here directly rather than kept as separate seg2-only fields, so this
         // works the same regardless of how many additional runs exist.
-        pipeInfo: (() => {
-          const runs = [{ n: 1, point: calc.points[0] }];
-          for (let n = 2; n <= MAX_SEG; n++) {
-            const p = calc.points.find(pt => pt.id === 'seg' + n + 'start');
-            if (p) runs.push({ n, point: p });
-          }
-          return runs.map(r => ({
-            label: runs.length > 1 ? 'Run ' + r.n : 'Pipe',
-            wtFt: r.point.wt,
-            ...(pbPiAIsAuto(r.n === 1 ? 'runWT' : 'seg' + r.n + 'WT') ? { wtAuto: true } : {}), /* feat_pipeauto: filled in by the app */
-            idIn: r.point.idFt !== null ? r.point.idFt * 12 : null,
-            beddingFt: (r.point.bedding !== null && r.point.bedding !== undefined) ? r.point.bedding : null,
-            trenchWidthFt: (r.point.trenchWidth !== null && r.point.trenchWidth !== undefined) ? r.point.trenchWidth : null
-          }));
-        })()
+        pipeInfo: pbPipeInfoOfCalc(calc) /* feat_xingalert: one function, also read by the crossing check before Lock */
       },
       // What was typed for each real point that the rows below can't carry:
       // its label and, for a Survey Stake point, the stake elevation and
@@ -35942,6 +36117,20 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (savedName) document.getElementById('riReporterName').value = savedName;
     pbGoto('reportIssue', false, true);
   };
+  // feat_security S3: the first-version tables (runs, management_reports, photos) are written through capped RPCs
+  // (pb_legacy_*: the caller's own rows, size and per-day limits). A server without them yet, or a client without rpc:
+  // the direct write, exactly as before. Answers { data, error } like the direct write.
+  async function pbLegacyWrite(fn, args, ms, direct) {
+    if (sbClient && typeof sbClient.rpc === 'function') {
+      const r = await pbPermitRpc(fn, args, ms), e = r && r.error, msg = String((e && e.message) || '');
+      const missing = !!e && (e.code === 'PGRST202' || e.code === '42883' || /Could not find the function|does not exist|^no client$/i.test(msg));
+      if (!missing) {
+        if (e) return { data: null, error: e };
+        return r.data && typeof r.data === 'object' && r.data.ok === true ? { data: r.data, error: null } : { data: null, error: { message: 'pb:server' } };
+      }
+    }
+    return await direct();
+  }
   async function pbSyncRunToSupabase(entry) {
     if (!sbClient || !sbUser) return 'not-applicable'; // not signed in — local save already succeeded, nothing more to do, and this is not a failure to retry
     // The run is uploaded with the session of the account whose Records holds it,
@@ -35969,7 +36158,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // Another tab may have signed in as another account: its session would file this run under it. Owed instead.
     if (!(await pbLiveSessionIs(ownerId)) || !sameOwner()) return 'not-applicable';
     try {
-      const { data, error } = await sbClient.from('runs').upsert({
+      const pbLegacyRow = ({
         // client_run_id: a stable, client-generated id included specifically
         // so the server CAN de-duplicate retried inserts once it has a
         // unique constraint on this column — see the honest caveat below.
@@ -36013,7 +36202,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         // previous plain insert for duplicate-prevention purposes: the
         // client-side groundwork (a stable id sent with every attempt) is
         // now in place, but the actual guarantee is not yet active.
-      }, { onConflict: 'client_run_id' }).select('id').single();
+      });
+      const { data, error } = await pbLegacyWrite('pb_legacy_run_put', { p_run: pbLegacyRow, p_expect_uid: ownerId }, 60000,
+        () => sbClient.from('runs').upsert(pbLegacyRow, { onConflict: 'client_run_id' }).select('id').single()); /* feat_security S3 */
       if (error) { console.error('Supabase run sync failed (local copy is unaffected):', error.message); pbNoteCloudFail(entry, navigator.onLine === false ? 'offline' : 'rejected', error.message); return 'failed'; }
       entry.supabaseId = data.id; // saved locally so a future step (editing/correcting) can target the right row instead of creating a duplicate
       saveRunArchive();
@@ -36130,14 +36321,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const sameOwner = () => !!sbUser && sbUser.id === ownerId;
       // The login service's session must be this account's own (another tab may have signed in): owed otherwise.
       if (!(await pbLiveSessionIs(ownerId)) || !sameOwner()) { await oweUpload(); return; }
-      const { data, error } = await sbClient.from('management_reports').insert({
+      const pbLegacyRep = ({
         category: entry.category,
         description: entry.description,
         anonymous: entry.anonymous,
         reporter_name: entry.anonymous ? null : (entry.reporterName || null),
         recipient_email: entry.recipientEmail,
         sent: false
-      }).select().single();
+      });
+      const { data, error } = await pbLegacyWrite('pb_legacy_report_put', { p_report: pbLegacyRep, p_expect_uid: ownerId }, 30000,
+        () => sbClient.from('management_reports').insert(pbLegacyRep).select().single()); /* feat_security S3 */
       if (error) { console.error('Supabase insert (management_reports) failed:', error.message); await oweUpload(); return; }
       entry.managementReportSupabaseId = data.id;
       delete entry.managementReportCloudOwed;
@@ -36155,7 +36348,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           const { error: upErr } = await sbClient.storage.from('run-photos').upload(path, blob, { contentType: 'image/jpeg' });
           if (upErr) { console.error('Supabase photo upload failed:', upErr.message); continue; }
           if (!sameOwner() || !(await pbLiveSessionIs(ownerId))) { console.error('Account changed before this report\u2019s photo was linked \u2014 stopped.'); return; }
-          await sbClient.from('photos').insert({ management_report_id: data.id, storage_path: path });
+          await pbLegacyWrite('pb_legacy_photo_add', { p_report_id: data.id, p_storage_path: path, p_expect_uid: ownerId }, 20000,
+            () => sbClient.from('photos').insert({ management_report_id: data.id, storage_path: path })); /* feat_security S3 */
         } catch (e) { console.error('Supabase photo upload threw:', e.message); }
       }
     } catch (e) {
@@ -37980,7 +38174,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!sbUser || sbUser.id !== uid) return;
     const stNow = document.getElementById('inboxStatus');
     if (!c.ok) {
-      if (stNow) stNow.textContent = c.kind === 'offline' ? 'No connection — the inbox needs signal.' : c.kind === 'nobackend' ? 'The inbox isn’t switched on yet.' : c.code === 'not_manager' ? 'This account isn’t set up as management for a company.' : 'The inbox couldn’t be loaded just now. Try again.';
+      if (stNow) stNow.textContent = c.kind === 'offline' ? 'No connection — the inbox needs signal.' : c.kind === 'nobackend' ? 'The inbox isn’t switched on yet.' : c.code === 'company_inactive' ? 'Your company’s account isn’t active right now, so the inbox is closed.' : c.code === 'not_manager' ? 'This account isn’t set up as management for a company.' : 'The inbox couldn’t be loaded just now. Try again.';
       return;
     }
     pbInboxData = (r.data && Array.isArray(r.data.reports)) ? r.data : { reports: [] }; pbInboxUid = uid;
@@ -38282,7 +38476,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         timeouts = 0;
         const prev = st[x.cid] || {};
         st[x.cid] = { h: x.h, at: Date.now(), v: r.data && typeof r.data.version === 'number' ? r.data.version : (prev.v || null) };
-        try { const xp = x.rec && x.rec.permit; if (xp && xp.emLink) pbEmFiledMark(uid, xp.emLink.k); } catch (e) {} /* r15.56 */
+        try { const xp = x.rec && x.rec.permit; if (xp && xp.emLink) { if (!pbEmChecked.has(xp.emLink.k)) pbEmTakenCheck(xp.emLink.k, x.cid, false); /* feat_security S2 */ pbEmFiledMark(uid, xp.emLink.k); } } catch (e) {} /* r15.56 */
         changed = true;
       }
       if (changed && same()) await pbPermitBkSave(uid, st);
@@ -38306,6 +38500,23 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (o && typeof o === 'object') { const r = {}; Object.keys(o).forEach(k => { if (k === 'photos' || k === 'miscPhotos' || k === 'saveRev') return; r[k] = pbOpenSnapStrip(o[k], (depth || 0) + 1); }); return r; }
     return typeof o === 'string' && o.length > 20000 ? o.slice(0, 20000) : o;
   }
+  // feat_security S2: right after a code's first upload, ask the server whether another permit already had it
+  // (pb_em_taken, exact for this permit). Taken: the open permit gets a new code at once; a closed record's link is
+  // left out of its texts (as for 'conflict'). An older server without pb_em_taken: pb_em_view (its 'conflict').
+  const pbEmChecked = new Set(); // codes the server has answered for (this page)
+  function pbEmTakenCheck(k, cid, open) {
+    const clear = () => pbEmChecked.add(k);
+    try {
+      pbPermitRpc('pb_em_taken', { p_token: k, p_client_permit_id: cid }, 15000).then(r => {
+        const e = r && r.error, msg = String((e && e.message) || '');
+        if (e && (e.code === 'PGRST202' || /Could not find the function|does not exist/i.test(msg))) { delete pbEmSrv[k]; pbEmSrvCheck(k); clear(); return; }
+        if (e || !r.data) return; // no answer: asked again after the next upload
+        clear();
+        if (r.data.taken !== true) return;
+        if (!(open && pbEmReplaceTaken(k))) { pbEmSrv[k] = { status: 'conflict', at: Date.now(), busy: false }; try { pbTxRender(); } catch (x) {} }
+      }, () => {});
+    } catch (e) {}
+  }
   async function pbOpenBackupTick() {
     if (pbOpenBk.busy || Date.now() < pbOpenBk.until) return;
     try {
@@ -38324,7 +38535,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (pbOpenBk.uid === uid && pbOpenBk.sid === sid && pbOpenBk.hash === h) return;
       if (!(await pbLiveSessionIs(uid)) || !sbUser || sbUser.id !== uid || !confinedPermit || confinedPermit.sessionId !== sid) return;
       const r = await pbPermitRpc('pb_permit_open_put', { p_client_permit_id: 'cps-' + String(sid).slice(0, 90), p_snapshot: snap, p_expect_uid: uid }, 30000);
-      if (!r.error && r.data && r.data.ok === true) { pbOpenBk.uid = uid; pbOpenBk.sid = sid; pbOpenBk.hash = h; if (d.permit.emLink) pbEmFiledMark(uid, d.permit.emLink.k); /* r15.56 */ return; }
+      if (!r.error && r.data && r.data.ok === true) { pbOpenBk.uid = uid; pbOpenBk.sid = sid; pbOpenBk.hash = h; if (d.permit.emLink) { const fk = d.permit.emLink.k; if (!pbEmChecked.has(fk)) pbEmTakenCheck(fk, 'cps-' + String(sid).slice(0, 90), true); /* feat_security S2: asked after each upload until the server answers */ pbEmFiledMark(uid, fk); } /* r15.56 */ return; }
       const msg = String((r.error && r.error.message) || ''), code = (msg.match(/pb:\w+/) || [''])[0];
       if (code || /update_app|does not exist|Could not find/i.test(msg)) pbOpenBk.until = Date.now() + (pbEmergencyOpen() ? 60000 : 10 * 60000); /* feat_emlink: 1 min while an emergency is open */ // refused or not installed on the server yet: try again later
     } catch (e) {} finally { pbOpenBk.busy = false; }
@@ -38430,7 +38641,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     let k = null, sid = null;
     try { const d = JSON.parse(raw); if (d && d.permit && pbEmLinkOk(d.permit.emLink) && d.permit.sessionId) { k = d.permit.emLink.k; sid = d.permit.sessionId; } } catch (e) {}
     if (!k) {
-      const s = String(raw || ''), m = /"emLink"\s*:\s*\{\s*"k"\s*:\s*"([0-9a-hjkmnp-tv-z]{12})"/.exec(s), n = /"permit"\s*:\s*\{\s*"sessionId"\s*:\s*(\d{6,16})/.exec(s);
+      const s = String(raw || ''), m = /"emLink"\s*:\s*\{\s*"k"\s*:\s*"([0-9a-hjkmnp-tv-z]{12,13})"/.exec(s), n = /"permit"\s*:\s*\{\s*"sessionId"\s*:\s*(\d{6,16})/.exec(s);
       if (m && n) { k = m[1]; sid = n[1]; }
     }
     if (k && sid) pbEmEndQueue(uid, k, 'cps-' + String(sid).slice(0, 90), 'released');
@@ -45047,7 +45258,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!mine()) return Promise.resolve();
     if (!sbClient || !sbUser || sbUser.id !== owner) { owe(); return Promise.resolve(); }
     const want = !!e.sent;
-    return pbLiveSessionIs(owner).then(ok => { if (!ok) throw new Error('the login service holds another account\u2019s session'); return sbClient.from('management_reports').update({ sent: want }).eq('id', e.managementReportSupabaseId); })
+    return pbLiveSessionIs(owner).then(ok => { if (!ok) throw new Error('the login service holds another account\u2019s session'); return pbLegacyWrite('pb_legacy_report_sent', { p_id: e.managementReportSupabaseId, p_sent: want, p_expect_uid: owner }, 20000, () => sbClient.from('management_reports').update({ sent: want }).eq('id', e.managementReportSupabaseId)); /* feat_security S3 */ })
       .then(({ error }) => {
         if (error) { console.error('Supabase management_reports sent-status update failed:', error.message); owe(); return; }
         if (e.managementReportSentOwed && !!e.sent === want && mine()) { delete e.managementReportSentOwed; saveRunArchive(); }
@@ -46598,7 +46809,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return v;
     };
     // Photos are replaced by their hash while the copy is made, so the (large) image text is never copied.
-    return walk(JSON.parse(JSON.stringify(e, (k, v) => (typeof v === 'string' && /^data:image\//.test(v)) ? 'sha256:' + pbPhotoSha(v) : v)), true);
+    return walk(JSON.parse(JSON.stringify(e, function (k, v) { if (k === 's' && this && typeof this.k === 'string' && PB_EM_RE.test(this.k)) return undefined; /* feat_security S2: the link's secret never leaves the phone in an export or a fingerprint */ return (typeof v === 'string' && /^data:image\//.test(v)) ? 'sha256:' + pbPhotoSha(v) : v; })), true);
   }
   function pbRptCanonicalText(e) { return pbJsonbText(pbRptCanonical(e)); }
   let pbRptFpMemo = null; // only while one PDF is being made: every layout pass prints the same fingerprint
@@ -46609,10 +46820,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return fp;
   }
   const pbRptRev = (fp) => fp ? 'rev ' + fp.slice(0, 8) : 'rev not computed';
+  function pbEmMaskSecret(t) { return String(t).replace(/("emLink"\s*:\s*\{[^{}]*?"s"\s*:\s*")[0-9a-z]{20,40}(")/g, '$1(kept on the phone)$2'); } window.pbEmMaskSecret = pbEmMaskSecret; /* fix_emsecret: the link secret never leaves the phone in an export or a print */
   // "Export record data (JSON)": the exact text that is hashed, so anyone can recompute the fingerprint.
   window.pbExportRecordJSON = function(i) {
     const e = runArchive[i]; if (!e) return;
-    let text = ''; try { text = pbRptCanonicalText(e); } catch (x) { pbAlert('The record data couldn\u2019t be written out. The record itself is unchanged.', 'Not Exported'); return; }
+    let text = ''; try { text = pbEmMaskSecret(pbRptCanonicalText(e)); } catch (x) { pbAlert('The record data couldn\u2019t be written out. The record itself is unchanged.', 'Not Exported'); return; }
     const anon = e.kind === 'report' && e.anonymous;
     const name = anon ? 'report-anonymous-record.json' : 'record-' + e.kind + '-' + e.id + '.json';
     if (window.__debugJsonSink) { window.__debugJsonSink(name, text); return; } // TEST-ONLY hook (absent in use)
@@ -47584,6 +47796,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbRptTitle(R, 'Record data', 'This record could not be laid out as a full report, so its stored data is printed as recorded.');
     R.banner('LAID OUT AS DATA ONLY', 'warn', 'The app could not read every part of this record in the usual way' + (anon ? '' : ' (' + String(err || '').slice(0, 160) + ')') + '. Nothing was changed.');
     let text = ''; try { text = pbRptCanonicalText(e); } catch (x) { try { text = JSON.stringify(e); } catch (y) { text = 'not readable'; } }
+    try { text = window.pbEmMaskSecret(text); } catch (x) {}
     R.section('data', 'Stored data (the text the fingerprint is made from)', { keep: 20 });
     R.para(text.replace(/, "/g, ',\n"'), { size: 8, lh: 3.6 });
     try { pbRptIntegrity(R, e || {}, fp); } catch (x) {}
