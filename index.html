@@ -9335,7 +9335,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
   /* feat_laidstats: labels over values, no lines; one line per row at 360 px */
   #pbApp #screen-results .pb-lstats { display: grid; grid-auto-flow: column; grid-auto-columns: auto; justify-content: space-between; column-gap: 10px; margin: 2px var(--pb-gutter, 16px) 10px; padding: 0; }
   #pbApp #screen-results .pb-lstats[hidden] { display: none; }
-  #pbApp #screen-results .pb-lstat { display: flex; flex-direction: column; gap: 1px; min-width: 0; margin: 0; }
+  #pbApp #screen-results .pb-lstat { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1px; min-width: 0; margin: 0; }
   #pbApp #screen-results .pb-lstat > dt { margin: 0; font-size: 12px; font-weight: 500; line-height: 1.3; color: var(--pb-text-3); white-space: nowrap; }
   #pbApp #screen-results .pb-lstat > dd { margin: 0; font-size: 17px; font-weight: 700; line-height: 1.25; color: var(--pb-text); white-space: nowrap; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
   #pbApp #screen-results .pb-lstat-of { font-size: 13px; font-weight: 600; color: var(--pb-text-2); letter-spacing: 0; }
@@ -12316,7 +12316,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.01 · 2026-11-05'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.02 · 2026-11-05'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -42163,7 +42163,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!entry || !S || !S.n) { pbLsStop(); el.hidden = true; el.textContent = ''; delete el.dataset.entryId; delete el.dataset.lastOwn; return; }
     const T = pbLaidStats(entry, S), ft = '<span class="pb-sr"> ft</span>';
     const col = (k, label, dd, live) => '<div class="pb-lstat" data-k="' + k + '"><dt>' + label + '</dt><dd data-k="' + k + '"' + (live ? ' aria-live="off"' : '') + '>' + dd + '</dd></div>';
-    el.innerHTML = col('laid', 'Pipe laid', escapeHtml(pbProdQtyText(S.laidFt)) + '<span class="pb-lstat-of"> of ' + escapeHtml(pbProdQtyText(S.total)) + '</span>' + ft)
+    el.innerHTML = col('laid', 'Pipe laid', escapeHtml(pbProdQtyText(S.laidFt)) + '<span class="pb-lstat-of"><span aria-hidden="true"> / </span><span class="pb-sr"> of </span>' + escapeHtml(pbProdQtyText(S.total)) + '</span>' + ft)
       + (S.earlierFt > 0 ? col('ses', 'This session', escapeHtml(pbProdQtyText(S.sessionFt)) + ft) : '')
       + col('avg', 'Avg. time', pbLsDd(T.avg))
       + col('cur', 'Current time', pbLsDd(T.lastOwn === null ? null : Math.max(0, Date.now() - T.lastOwn)), true);
