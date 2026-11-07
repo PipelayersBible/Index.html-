@@ -10975,7 +10975,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // ---- 3. Interval follows the laying length and Divide (19.5 ft: halves 9.75, quarters 4.875, joints 19.5) ----
   function pbRsIvVal(c) { const D = PB_LAY_DIVS[c.div] || 2; return c && c.on && c.len !== null && c.len > 0 ? Math.round(c.len / D * 10000) / 10000 : null; }
   var pbRsIvHold = 0; /* feat_ivfix: > 0 while a record's own settings are put back on the form */
-  function pbRsIvLocked() { let k = false; try { k = pbLastLockedEntryId !== null && pbLastLockedFormGen === pbFormGen; } catch (e) { k = false; try { console.warn('pbRsIvLocked', e); } catch (e2) {} } return pbRsIvHold > 0 || k; }
+  function pbRsIvLocked() { let k = false; try { k = pbLastLockedEntryId !== null && pbLastLockedFormGen === pbFormGen; } catch (e) { k = false; /* before the run code has loaded: nothing locked yet */ } return pbRsIvHold > 0 || k; }
   function pbRsIvAuto(n, c, iv) {
     if (iv && pbRsIvLocked()) { delete iv.dataset.rsAuto; delete iv.dataset.rsPrev; return; } /* feat_ivfix: a locked run keeps its locked interval */
     const v = pbRsIvVal(c); if (!iv || document.activeElement === iv) return;
@@ -12609,7 +12609,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.09 · 2026-11-06'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.10 · 2026-11-07'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -24757,9 +24757,21 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     runLifecycleStartTime = null;
     return true; // nothing to end — not a failure
   }
+  const pbEndLaidAsked = new Set();
+  const pbLaidFtText = (v) => String(+(+v).toFixed(1));
   window.pbEndRun = async function(shorterOk, endAt, crewAt) { // endAt: from "When Did Work Stop?" (ms, or null = now); crewAt: person -> entered check-out
     const entry = getCurrentArchiveEntry(); // the run this click was about, fixed now
     if (!entry) { pbRunGoneAlert(); return; } // never a silent "ended"
+    if (shorterOk !== true && endAt === undefined && !pbEndLaidAsked.has(entry.id) && !window.__pbNoEndLaidAsk) { /* r16.10: laid marks say part of the run isn't laid */
+      let S = null; try { S = pbLaidSummary(entry); } catch (e) { S = null; }
+      if (S && S.n > 0 && S.total > 0 && S.laidFt < S.total - 0.05) {
+        pbShowModal(pbLaidFtText(S.laidFt) + ' of ' + pbLaidFtText(S.total) + ' ft is marked laid. End the run as complete?', [
+          { label: 'Go Back', primary: true },
+          { label: 'End Run', onClick: () => { pbEndLaidAsked.add(entry.id); if (pbSameRunStillOpen(entry)()) pbEndRun(); } }
+        ], 'Not All Marked Laid');
+        return;
+      }
+    }
     { const prev = shorterOk !== true && !entry.completed && !entry.incomplete && !pbShorterAnswered.has(entry.id + '|' + Math.round(entry.distance * 1000)) ? pbResumedStopPast(entry.resumedFromId, entry.distance) : null;
       if (prev) { pbConfirm(pbShorterRunText(prev, entry.distance, 'End the run at ' + entry.distance.toFixed(1) + ' ft anyway?'), () => { pbShorterAnswered.add(entry.id + '|' + Math.round(entry.distance * 1000)); if (pbSameRunStillOpen(entry)()) pbEndRun(true); }, 'Shorter Than the Last Stop'); return; } }
     const still = pbSameRunStillOpen(entry); // each answer below goes on only for this run, on this account
@@ -43306,7 +43318,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     } else if (free && wasPrefill) { // the marks were undone: take the suggestion back out
       pbLaidPrefillMore(entry, null); /* prodfill */
       el.value = ''; delete el.dataset.pbLaidPrefill; if (pbForemanShown && pbForemanShown.id === entry.id && pbForemanShown.vals) pbForemanShown.vals.fpPipeInstalled = ''; hint.hidden = true;
-    } else { if (!wasPrefill || saved) delete el.dataset.pbLaidPrefill; hint.hidden = true; }
+    } else { if (!wasPrefill || saved) delete el.dataset.pbLaidPrefill; hint.hidden = true;
+      pbLaidPrefillMore(entry, pbEaP || (S.n && S.sessionFt > 0) ? String(+(pbEaP ? pbEaP.ft : S.sessionFt).toFixed(1)) : null); /* bug hunt B01: their own guard keeps a typed or saved box */ }
   }
   // ---- live status of the run (offline-first, per account) ----
   const PB_LIVE_Q_KEY = 'liveStatusQ';
