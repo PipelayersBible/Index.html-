@@ -1,0 +1,3 @@
+const boot=require('./boot');(async()=>{const {b,p}=await boot('http://localhost:8813/',{init:require('./pm'),wait:4000});
+await p.evaluate(()=>window.pbOpenProdJob(0));await p.waitForTimeout(2500);await p.evaluate(()=>window.scrollTo(0,600));await p.waitForTimeout(800);
+console.log(await p.evaluate(()=>{const h=document.querySelector('#screen-prodJob > .pb-header').getBoundingClientRect(),t=document.getElementById('pjCxTabs').getBoundingClientRect();return {hdrBottom:h.bottom,tabsTop:t.top,var:getComputedStyle(document.getElementById('screen-prodJob')).getPropertyValue('--pb-pj-hdr'),scrollY}}));await b.close();})();

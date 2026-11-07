@@ -1,0 +1,17 @@
+const boot=require('./boot'),mkrun=require('./mkrun'),R=require('./resume');(async()=>{const url=process.argv[2];let {b,p}=await boot(url);
+await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1200);
+await p.evaluate(()=>{const lr=[...document.querySelectorAll('#screen-input button')].find(b=>b.textContent.trim()==="Engineer's Rod");lr&&lr.click();});
+const f=async(id,v)=>p.evaluate(([id,v])=>{const e=document.getElementById(id);e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));},[id,String(v)]);
+await f('runBedding',0.5);await f('runTrenchWidth',3);await f('runWT',0.08);
+await p.evaluate(()=>{const e=document.getElementById('runIdSel');e.value=[...e.options].find(o=>o.text.trim()==='8"').value;e.dispatchEvent(new Event('change',{bubbles:true}));});
+await f('startStakeElev',100);await f('startCutFillVal',5);await f('startStakeReading',4.8);
+await f('endStakeElev',99);await f('endCutFillVal',5);await f('endStakeReading',5.8);await f('totalDist',100);await f('interval',10);
+await p.evaluate(()=>window.pbAddHub());await p.waitForTimeout(300);
+const hid=await p.evaluate(()=>[...document.querySelectorAll('#hubsContainer > [data-hub-id]')].map(c=>c.dataset.hubId)[0]);
+await p.evaluate((h)=>{const b=[...document.querySelectorAll('[data-hub-id="'+h+'"] button')].find(x=>/Invert Elevation/.test(x.textContent));b&&b.click();},hid);
+await f(hid+'Station',50);await f(hid+'Elev',94.5);
+await p.getByText('Review & Calculate',{exact:true}).click();await p.waitForTimeout(1500);await R.modal(p);
+await mkrun.lock(p);await R.modal(p);
+await p.evaluate(()=>{const t=document.querySelector('#resultsBody').closest('table');t.scrollIntoView({block:'start'});window.scrollBy(0,-120);});await p.waitForTimeout(400);
+await p.evaluate(()=>{const r=document.querySelector('#resultsBody tr.pb-hubrow')||document.querySelectorAll('#resultsBody tr[data-laid-idx]')[5];r.scrollIntoView({block:'center'});});await p.waitForTimeout(300);
+await p.screenshot({path:'hub_'+(process.env.DARK?'dark':'light')+'.png'});console.log(p.errs);await b.close();})();

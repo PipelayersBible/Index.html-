@@ -6736,7 +6736,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
       <h1 class="pb-title">Records</h1>
     </div>
     <div id="archiveTopActions" class="rec-top"><!-- feat_records: only when something waits -->
-      <button type="button" class="rec-banner" id="archiveJobsBtn" hidden onclick="pbReportsOpenJobs()"><span class="rec-banner-ic" aria-hidden="true"></span><span class="name" id="archiveJobsName">Not sent yet</span><span class="chev" aria-hidden="true"></span></button>
+      <button type="button" class="rec-banner" id="archiveJobsBtn" hidden onclick="pbReportsOpenJobs()"><span class="rec-banner-ic" aria-hidden="true"></span><span class="name" id="archiveJobsName">Not sent</span><span class="chev" aria-hidden="true"></span></button>
       <button type="button" class="rec-banner rec-banner-lock" id="archiveOpenPermitsBtn" hidden onclick="pbOpenUnfinishedPermits()"><span class="rec-banner-ic" aria-hidden="true"></span><span class="name" id="archiveOpenPermitsName">Unfinished permit</span><span class="chev" aria-hidden="true"></span></button>
     </div>
     <div id="archiveResumeSection" style="display:none;"></div>
@@ -8098,7 +8098,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
     </div>
     <div id="jobsListView">
       <!-- UX batch 2 (B5, style): heading with a compact Add Job; one sentence, the rest behind Help -->
-      <div class="pb-jobs-headrow"><h2 class="pb-jobs-heading" id="jobsListHeading">Not sent yet</h2><button type="button" class="pb-btn secondary small" id="jobsAddBtn" onclick="pbJobsShowAdd(true)"><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Job</button></div>
+      <div class="pb-jobs-headrow"><h2 class="pb-jobs-heading" id="jobsListHeading">Not sent</h2><button type="button" class="pb-btn secondary small" id="jobsAddBtn" onclick="pbJobsShowAdd(true)"><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Job</button></div>
       <div class="pb-warn" id="jobsLoadWarn" style="display:none; margin:12px 16px 0 16px;"><strong>Your added jobs couldn&rsquo;t be read</strong>Jobs from your records still show below. Adding a job is turned off for now so the saved list isn&rsquo;t overwritten. Reload the app to try again.</div>
       <div class="pb-section" id="jobsAddForm" style="display:none;">
         <div class="pb-tag">Add a job</div>
@@ -10504,6 +10504,20 @@ html.pb-light #pbApp { --pb-xing-bg: #FBE1E3; }
 /* tabs: stay at the top while the panel scrolls */
 #pbApp .pbx-tabs { position: sticky; top: 0; z-index: 6; display: flex; gap: 4px; margin: 12px -16px 0 -16px; padding: 8px 16px; overflow-x: auto; scrollbar-width: none; background: var(--pb-canvas); box-shadow: 0 1px 0 var(--pb-divider); }
 #pbApp .pbx-tabs::-webkit-scrollbar { display: none; }
+/* feat_r1613 (owner, Nov 7): no Menu column; the distance is the row's menu button (outlined, with a caret) */
+#pbApp #screen-results #resultsTable thead th.pb-menuth, #pbApp #screen-results #resultsTable tr > td:first-child:not([colspan]):has(> .pb-gsdots), #pbApp #screen-results #resultsTable tr > td:first-child:not([colspan]):empty { display: none; }
+#pbApp #screen-results #resultsTable td.pb-distcell { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+#pbApp #screen-results #resultsTable .pb-distbtn { position: relative; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 10px; border: 1.5px solid var(--pb-divider, #c9c2b0); border-radius: 10px; background: var(--pb-raised, #fff); line-height: 1.15; }
+#pbApp #screen-results #resultsTable .pb-distbtn::after { content: ""; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid currentColor; opacity: 0.6; }
+#pbApp #screen-results #resultsTable td.pb-distcell:active .pb-distbtn { background: var(--pb-raised-2, #eee); }
+#pbApp #screen-results #resultsTable td.pb-distcell:focus-visible { outline: 2px solid var(--pb-brand, #f5c400); outline-offset: -2px; }
+#pbApp #screen-results #resultsTable tr:has(.pb-gsdots.has-note) .pb-distbtn::before { content: ""; position: absolute; top: -4px; right: -4px; width: 9px; height: 9px; border-radius: 50%; background: var(--pb-brand, #f5c400); }
+#pbApp#pbApp#pbApp #screen-results #resultsTable tr:is(:focus-within, :has(+ tr.pb-noterow:not([style*="none"])), :has(+ tr.pb-noterow + tr.pb-noterow:not([style*="none"]))) > td.pb-distcell { box-shadow: inset 6px 0 0 var(--pb-brand); }
+#pbApp#pbApp#pbApp #screen-results #resultsTable tr:is(.pb-hubrow, .pb-startrow, .pb-endrow):not([data-laid-strip]) > td.pb-distcell { box-shadow: inset 5px 0 0 var(--pb-rs-edge, var(--pb-text-3)); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-xing-near:not([data-laid-strip]):not(.pb-laid) > td.pb-distcell { box-shadow: inset 5px 0 0 var(--pb-danger-line); }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-xing-near:not([data-laid-strip]):not(.pb-laid):is(:focus-within, :has(+ tr.pb-noterow:not([style*="none"])), :has(+ tr.pb-noterow + tr.pb-noterow:not([style*="none"]))) > td.pb-distcell { box-shadow: inset 6px 0 0 var(--pb-brand), inset 10px 0 0 var(--pb-danger-line); }
+
+#pbApp #screen-prodJob .pbx-tabs { top: var(--pb-pj-hdr, 0px); } /* feat_r1613: the job page's tabs stick under its header, never over it */
 #pbApp .pbx-tab { -webkit-appearance: none; appearance: none; flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin: 0; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: var(--pb-text-2); font: inherit; font-size: 15px; font-weight: 650; cursor: pointer; white-space: nowrap; position: relative; }
 #pbApp .pbx-tab:hover { color: var(--pb-text); }
 #pbApp .pbx-tab[aria-selected="true"] { background: var(--pb-raised-2); color: var(--pb-text); }
@@ -11760,7 +11774,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const tr = document.createElement('tr'); tr.className = 'pb-xingrow pb-xing-near' + (sta ? ' pb-rs-hassta' : '');
     tr.dataset.xingAt = String(o.abs);
     tr.setAttribute('aria-label', 'Crossing at ' + d + ' ft' + (sta ? ', Sta ' + sta : '') + ', ' + t.what + (t.clr ? ', ' + t.clr : ''));
-    tr.innerHTML = '<td>' + (xr ? '<button type="button" class="pb-notebtn pb-gsdots pb-xr-dots' + (xr.has ? ' has-note' : '') + '" data-xr-idx="' + xr.idx + '" aria-haspopup="dialog" aria-label="Crossing at ' + escapeHtml(d) + ' ft actions" onclick="pbXrMenu(this)"><span aria-hidden="true">\u22ef</span></button>' : '') + '</td><td>' + escapeHtml(d) + (sta ? '<span class="pb-rs-sta2"><bdi dir="ltr">Sta ' + escapeHtml(sta) + '</bdi></span>' : '') + '</td>'
+    tr.innerHTML = '<td>' + (xr ? '<button type="button" class="pb-notebtn pb-gsdots pb-xr-dots' + (xr.has ? ' has-note' : '') + '" data-xr-idx="' + xr.idx + '" aria-haspopup="dialog" aria-label="Crossing at ' + escapeHtml(d) + ' ft actions" onclick="pbXrMenu(this)"><span aria-hidden="true">\u22ef</span></button>' : '') + '</td>' + (xr ? '<td class="pb-distcell" role="button" tabindex="0" aria-label="Crossing at ' + escapeHtml(d) + ' ft actions" aria-haspopup="dialog"><span class="pb-distbtn">' + escapeHtml(d) + '</span>' : '<td>' + escapeHtml(d)) + (sta ? '<span class="pb-rs-sta2"><bdi dir="ltr">Sta ' + escapeHtml(sta) + '</bdi></span>' : '') + '</td>'
       + '<td class="pb-xr-cell" colspan="' + Math.max(1, nData) + '"><span class="pb-sr">Crossing: </span>' + escapeHtml(t.what) + (t.clr ? ' \u00b7 <span class="pb-xr-clr' + (t.low ? ' low' : '') + '">' + escapeHtml(t.clr) + '</span>' : '') + '</td>';
     return tr;
   }
@@ -12609,7 +12623,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.12 · 2026-11-07'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.13 · 2026-11-07'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -22091,6 +22105,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     try { const items = pbSlItems(e), ok = items.filter(x => pbSlItemState(e, x).k === 'ok').length; return ok + ' of ' + items.length + ' entr' + (items.length === 1 ? 'y' : 'ies') + ' confirmed by the company server, as known to this phone (sent as entries on their own, not as production quantities).'; } catch (err) { return 'not known'; }
   }
   // ---- the grade row's note (a visible strip under the row; it folds with the row when laid rows are hidden) ----
+  (function () { // feat_r1613: the distance opens the row's menu
+    const open = (ev) => { const td = ev.target && ev.target.closest && ev.target.closest('#resultsBody td.pb-distcell'); if (!td) return false; const b = td.parentElement && td.parentElement.querySelector('.pb-gsdots'); if (!b) return false; b.click(); return true; };
+    document.addEventListener('click', (ev) => { open(ev); });
+    document.addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && open(ev)) ev.preventDefault(); });
+  })();
   function pbSlRowNotesInto(body, e, idx, colCount) {
     const list = pbSlForRow(e, idx); if (!list.length) return;
     const all = pbSlItems(e);
@@ -22547,7 +22566,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const showSgCol = entry.intervalRows.some(r => r.sgDisp !== undefined && r.sgDisp !== null && r.sgDisp !== '\u2014' && r.sgDisp !== '');
     const pbRsShown = pbRsColsShown(showSgCol, showElevCol); /* feat_results2: the columns picked, in the order picked */
     pbRsColsPaint(showSgCol, showElevCol);
-    head.innerHTML = `<th>Menu</th><th>Dist.</th>` + pbRsShown.map(k => '<th>' + PB_RS_COLS[k] + '</th>').join(''); /* feat_results2: the distance from the run's start */
+    head.innerHTML = `<th class="pb-menuth">Menu</th><th>Dist.</th>` + pbRsShown.map(k => '<th>' + PB_RS_COLS[k] + '</th>').join(''); /* feat_results2: the distance from the run's start */
     const colCount = 2 + pbRsShown.length;
     const pbRsStaOf = pbStRowStaFn(entry); /* feat_results2: a run with stations */
     const body = document.getElementById('resultsBody');
@@ -22627,7 +22646,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         <td>
           <button type="button" aria-label="Distance ${escapeHtml(r.station)}${r.label ? ' (' + escapeHtml(pbRowStripName(entry, r)) + ')' : ''} actions" aria-haspopup="dialog" data-gs-key="${escapeHtml(pbLaidKey(r))}" class="pb-notebtn pb-gsdots ${(existingNote && (existingNote.text || existingNote.photoCount)) || (entry.fieldNotes || []).some(n => !n.pointId && !n.displaced && n.station === r.station && !shownNotes.has(n)) ? 'has-note' : ''}" onclick="pbGsRowMenu(this, ${idx})"><span aria-hidden="true">⋯</span></button>
         </td>
-        <td>${escapeHtml(r.station)}${pbFitR ? `<span class="pb-fit-rtag">${escapeHtml(pbFitTag(pbFitR))}</span>` : ''}${r.layoutShort ? `<span class="pb-lay-sta"><span class="pb-lay-stal">${escapeHtml(r.layoutShort)}${r.layoutExact ? ' \u00b7 ' + escapeHtml(r.layoutExact) : ''}</span></span>` : ''}${pbRsSta ? `<span class="pb-rs-sta2"><bdi dir="ltr">Sta ${escapeHtml(pbRsSta)}</bdi></span>` : ''}</td>
+        <td class="pb-distcell" role="button" tabindex="0" aria-label="Distance ${escapeHtml(r.station)} actions" aria-haspopup="dialog"><span class="pb-distbtn">${escapeHtml(r.station)}</span>${pbFitR ? `<span class="pb-fit-rtag">${escapeHtml(pbFitTag(pbFitR))}</span>` : ''}${r.layoutShort ? `<span class="pb-lay-sta"><span class="pb-lay-stal">${escapeHtml(r.layoutShort)}${r.layoutExact ? ' \u00b7 ' + escapeHtml(r.layoutExact) : ''}</span></span>` : ''}${pbRsSta ? `<span class="pb-rs-sta2"><bdi dir="ltr">Sta ${escapeHtml(pbRsSta)}</bdi></span>` : ''}</td>
         ${pbRsShown.map(k => pbRsCellFor(r, k, idx)).join('')}
       `;
       tr.dataset.laidIdx = String(idx); // batch 14 F
@@ -37202,7 +37221,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     switch (e.delivery) {
       case 'sent': return { cls: 'ok', chip: 'Sent', words: 'Sent — your company’s management has it in the app.' + (e.anonymous ? ' They see it as Anonymous, with only the hour it was sent, and it shows in their inbox at the top of the next hour.' : ''), bad: false };
       case 'held': return { cls: 'notsent', chip: 'Not sent', words: 'Saved only — nothing was sent yet.', bad: true };
-      case 'nobackend': return { cls: 'notsent', chip: 'Not sent yet', words: 'Reports can’t be sent yet — saved on this phone. Sending reports through the app isn’t switched on yet; it goes by itself once it is.', bad: true };
+      case 'nobackend': return { cls: 'notsent', chip: 'Not sent', words: 'Reports can’t be sent yet — saved on this phone. Sending reports through the app isn’t switched on yet; it goes by itself once it is.', bad: true };
       case 'refused': return { cls: 'pb-rr-bad', chip: 'Not sent', words: 'Not sent — ' + pbReportRefusedWords(e.deliveryWhy) + ' It’s kept on this phone.', bad: true };
       default: {
         const w = e.deliveryWhy;
@@ -37212,7 +37231,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           : w === 'signin' ? 'Sign in to this account with signal and it goes by itself.'
           : w === 'busy' ? 'The server is busy; it tries again by itself in a few minutes.'
           : w ? 'The server couldn’t be reached; it tries again by itself.' : 'Sending…';
-        return { cls: 'notsent', chip: 'Not sent yet', words: 'Saved on this phone — not sent yet. ' + tail, bad: true };
+        return { cls: 'notsent', chip: 'Not sent', words: 'Saved on this phone — not sent yet. ' + tail, bad: true };
       }
     }
   }
@@ -37401,7 +37420,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       : w === 'quota' ? 'The daily limit (20 a day) was reached; it goes by itself later.'
       : w === 'nobackend' ? 'App problem reports aren’t switched on yet; it goes by itself once they are.'
       : w ? 'The server couldn’t be reached; it tries again by itself.' : 'Sending…';
-    return { chip: 'Not sent yet', cls: 'notsent', words: 'Saved on this phone — not sent yet. ' + tail };
+    return { chip: 'Not sent', cls: 'notsent', words: 'Saved on this phone — not sent yet. ' + tail };
   }
   let pbSupBusy = null, pbSupTimer = null;
   let pbSupAdminState = { uid: null, admin: false };
@@ -41088,6 +41107,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pl.innerHTML = L === null ? '' : '<h3 class="pb-h2 pbp-h3">Crew pairings</h3>'
       + (L.length ? '<ul class="pbp-who" id="pdLinkList">' + L.map(x => '<li><span class="pbp-whoname">' + escapeHtml(x.foreman || 'A foreman') + '</span><span class="pbp-dim">' + escapeHtml((x.pipelayer || 'A pipelayer') + (x.since ? ' · since ' + pbProdDayText(String(x.since).slice(0, 10)) : '')) + '</span></li>').join('') + '</ul>' : '<p class="pbp-dim pbp-none">No pairings yet.</p>');
   };
+  (function () { // feat_r1613: the job page header's height, for its sticky tabs
+    const h = document.querySelector('#screen-prodJob > .pb-header'), scr = document.getElementById('screen-prodJob');
+    if (!h || !scr || typeof ResizeObserver !== 'function') return;
+    const set = () => { const st = getComputedStyle(h); scr.style.setProperty('--pb-pj-hdr', (st.position === 'sticky' || st.position === 'fixed' ? Math.max(0, Math.round(h.getBoundingClientRect().height + (parseFloat(st.top) || 0))) : 0) + 'px'); };
+    try { new ResizeObserver(set).observe(h, { box: 'border-box' }); } catch (e) {} h.addEventListener('transitionend', set); set();
+  })();
   // ---- JOB DETAIL: the job's hub (per-category table, today / 7 days, who reported, tickets, plan editor) ----
   const pbPjNew = (uid) => ({ uid, job: null, data: null, at: 0, cached: false, tickets: null, busy: false, msg: '', gen: 0, edit: null });
   let pbPj = pbPjNew(null);
@@ -46363,7 +46388,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return;
     }
     const unsentJobs = pbCanOpen('archive') ? jobs.filter(j => pbJobUnsent(j) > 0) : jobs; // feat_nav159b: Jobs Not Sent
-    const hd = document.getElementById('jobsListHeading'); if (hd) hd.textContent = pbJobsAll ? 'All jobs on this phone' : 'Not sent yet';
+    const hd = document.getElementById('jobsListHeading'); if (hd) hd.textContent = pbJobsAll ? 'All jobs on this phone' : 'Not sent';
     const tog = '<div class="pb-btn-wrap" style="padding-top:10px;"><button type="button" class="pb-btn ghost small" id="jobsAllToggle" onclick="pbJobsShowAll(' + (pbJobsAll ? 'false' : 'true') + ')">' + (pbJobsAll ? 'Only Jobs Not Sent' : 'Show All Jobs (' + jobs.length + ')') + '</button></div>';
     const shown = pbJobsAll ? jobs : unsentJobs;
     if (!shown.length) { el.innerHTML = '<div class="pb-job-empty" id="jobsNoneUnsent">Everything on this phone has been sent.</div>' + tog; return; }
@@ -57819,7 +57844,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbDxCrewKey = pbDxCrewKey;
   function pbDxCrewRunsHtml() {
     const C = pbDxCrewDay(); if (!C.runs.length && !C.why) return '';
-    return (C.runs.length ? '<p class="dx-sub">Crew run reports (' + C.runs.length + ')</p><ul class="pbd-list" id="dxCrewRuns">' + C.runs.map(x => '<li><strong>' + escapeHtml(x.who || 'A crew member') + '</strong> · ' + escapeHtml([x.start_label, x.end_label].filter(Boolean).join(' to ') || x.label || 'Run') + '<br><span class="pbd-dim">' + escapeHtml(x.sent ? 'Sent' : 'Not sent yet') + '</span>' + pbDfRunLine(x) + '</li>').join('') + '</ul>' : '')
+    return (C.runs.length ? '<p class="dx-sub">Crew run reports (' + C.runs.length + ')</p><ul class="pbd-list" id="dxCrewRuns">' + C.runs.map(x => '<li><strong>' + escapeHtml(x.who || 'A crew member') + '</strong> · ' + escapeHtml([x.start_label, x.end_label].filter(Boolean).join(' to ') || x.label || 'Run') + '<br><span class="pbd-dim">' + escapeHtml(x.sent ? 'Sent' : 'Not sent') + '</span>' + pbDfRunLine(x) + '</li>').join('') + '</ul>' : '')
       + (C.why && !C.runs.length ? '<p class="pbd-dim" id="dxCrewRunsWhy">' + escapeHtml(C.why) + '</p>' : '');
   }
   function pbDxCrewPermitsHtml() {
@@ -58162,7 +58187,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const C = S && S.crew_reports; if (!C) return;
     if (which === 'runs' && Array.isArray(C.runs) && C.runs.length) {
       R.sub('Crew run reports (' + C.runs.length + ')');
-      R.table({ head: ['Who', 'Run', 'Status'], columns: [{ cellWidth: 44 }, {}, { cellWidth: 30 }], fontSize: 8.6, body: C.runs.map(x => [x.who || '—', x.label || '—', x.sent ? 'Sent' : 'Not sent yet']).map((row, i) => { const f = C.runs[i] && C.runs[i].fm; if (f) row[1] = row[1] + '\nForeman: ' + pbDfSumLine(f, true); return row; }) }); /* feat_dailyfill */
+      R.table({ head: ['Who', 'Run', 'Status'], columns: [{ cellWidth: 44 }, {}, { cellWidth: 30 }], fontSize: 8.6, body: C.runs.map(x => [x.who || '—', x.label || '—', x.sent ? 'Sent' : 'Not sent']).map((row, i) => { const f = C.runs[i] && C.runs[i].fm; if (f) row[1] = row[1] + '\nForeman: ' + pbDfSumLine(f, true); return row; }) }); /* feat_dailyfill */
       R.para('Source: ' + C.source, { size: 8.5, color: PB_RPT.MUTED, after: 2.5 });
     }
     if (which === 'permits' && Array.isArray(C.permits) && C.permits.length) {
@@ -58901,7 +58926,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (rv.state === 'approved') return 'Approved' + by + (rv.at ? ' ' + pbDlyTimeIn(rv.at) : '');
     if (rv.state === 'sent_back') return 'Sent back' + by + (rv.note ? ': “' + rv.note + '”' : '');
     if (rv.state === 'waiting') return 'Not reviewed yet';
-    return 'Not sent yet';
+    return 'Not sent';
   }
   function pbDfSumLine(f, pdf) { // f: the snapshot's fm (see pbDfSnapRun); pdf: said of "the foreman", not "you"
     if (!f) return '';
@@ -64718,17 +64743,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbUnsentWarm(uid);
     const g = pbUnsentGroups(uid); if (!g.length) return null;
     const bad = g.reduce((a, x) => a + x.bad, 0), ch = g.find(x => x.key === 'choice');
-    return { id: 'unsent', info: true, html: '<span class="t">Not sent yet</span>' + escapeHtml(g.map(x => x.short).join(' · ') + '.' + (ch ? ' Tap to choose.' : bad ? ' ' + bad + ' can’t go as ' + (bad === 1 ? 'it is' : 'they are') + '.' : ''))
+    return { id: 'unsent', info: true, html: '<span class="t">Not sent</span>' + escapeHtml(g.map(x => x.short).join(' · ') + '.' + (ch ? ' Tap to choose.' : bad ? ' ' + bad + ' can’t go as ' + (bad === 1 ? 'it is' : 'they are') + '.' : ''))
       + (ch ? '<button type="button" class="pb-btn small" id="homeUnsentChoose" onclick="pbUnsentChoose()">Choose</button>' : '') + '<button type="button" class="pb-btn ghost small" id="homeUnsentBtn" onclick="pbUnsentOpen()">See What’s Waiting</button>' };
   };
   window.pbUnsentChoose = function() { pbUnsentShowChoice();
   };
   window.pbUnsentOpen = function() {
     const uid = pbArchiveOwnerUid, g = pbUnsentGroups(uid);
-    if (!g.length) { pbAlert('Everything has reached your company.', 'Not Sent Yet'); pbUnsentHomeSoon(); return; }
+    if (!g.length) { pbAlert('Everything has reached your company.', 'Not Sent'); pbUnsentHomeSoon(); return; }
     const seen = new Set(), btns = [];
     g.forEach(x => { if (seen.has(x.btn) || btns.length >= 4) return; seen.add(x.btn); btns.push({ label: x.btn, onClick: x.open }); });
-    pbShowModal('On this phone only, not at your company yet:\n\n\u2022 ' + g.map(x => x.text).join('\n\u2022 ') + '\n\n' + (g.some(x => x.key === 'choice') ? 'One that needs your choice goes only once you choose (tap Choose). ' : '') + (navigator.onLine === false ? 'No signal now: they go on their own when there is.' : 'They go on their own. One that wasn’t accepted says why where it is.'), btns.concat([{ label: 'Close', primary: true }]), 'Not Sent Yet');
+    pbShowModal('On this phone only, not at your company yet:\n\n\u2022 ' + g.map(x => x.text).join('\n\u2022 ') + '\n\n' + (g.some(x => x.key === 'choice') ? 'One that needs your choice goes only once you choose (tap Choose). ' : '') + (navigator.onLine === false ? 'No signal now: they go on their own when there is.' : 'They go on their own. One that wasn’t accepted says why where it is.'), btns.concat([{ label: 'Close', primary: true }]), 'Not Sent');
   };
   const pbLocServerRows = (key) => { const J = pbLoc.st && pbLoc.st.jobs[key]; return J && Array.isArray(J.locates) ? J.locates.filter(l => l && l.id) : null; };
   const pbLocPend = (q) => q && (q.state === 'waiting' || q.state === 'refused');
@@ -67918,7 +67943,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         pbAp.pend = { id: card.id.slice(14), at: pbApNow(), uid };
         setTimeout(() => { // a card whose button opens a dialog with its list (Not sent yet)
           const P = pbAp.pend, t = document.getElementById('pbModalTitle');
-          if (P && P.id === 'unsent' && pbApNow() - P.at < 2000 && pbModalIsOpen() && t && t.textContent === 'Not Sent Yet') { pbAp.pend = null; pbAp.cur = { id: P.id, modal: true, title: t.textContent, uid: P.uid }; pbApPaint(); }
+          if (P && P.id === 'unsent' && pbApNow() - P.at < 2000 && pbModalIsOpen() && t && t.textContent === 'Not Sent') { pbAp.pend = null; pbAp.cur = { id: P.id, modal: true, title: t.textContent, uid: P.uid }; pbApPaint(); }
         }, 0);
         return;
       }

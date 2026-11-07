@@ -1,0 +1,16 @@
+import sys
+src,out=sys.argv[1],sys.argv[2]; s=open(src,encoding='utf-8').read()
+def rep(a,b,n=1):
+    global s; c=s.count(a); assert c==n,(c,a[:70]); s=s.replace(a,b)
+rep('id="archiveJobsName">Not sent yet<','id="archiveJobsName">Not sent<')
+rep('id="jobsListHeading">Not sent yet<','id="jobsListHeading">Not sent<')
+rep("? 'All jobs on this phone' : 'Not sent yet';","? 'All jobs on this phone' : 'Not sent';")
+rep("chip: 'Not sent yet'","chip: 'Not sent'",3)
+rep("escapeHtml(x.sent ? 'Sent' : 'Not sent yet')","escapeHtml(x.sent ? 'Sent' : 'Not sent')")
+rep("x.label || '—', x.sent ? 'Sent' : 'Not sent yet']","x.label || '—', x.sent ? 'Sent' : 'Not sent']")
+rep("    return 'Not sent yet'; \n","    return 'Not sent'; \n") if s.count("    return 'Not sent yet'; \n")==1 else rep("    return 'Not sent yet';","    return 'Not sent';")
+rep("""html: '<span class="t">Not sent yet</span>'""","""html: '<span class="t">Not sent</span>'""")
+rep("'Everything has reached your company.', 'Not Sent Yet')","'Everything has reached your company.', 'Not Sent')")
+rep("btns.concat([{ label: 'Close', primary: true }]), 'Not Sent Yet')","btns.concat([{ label: 'Close', primary: true }]), 'Not Sent')")
+rep("t.textContent === 'Not Sent Yet')","t.textContent === 'Not Sent')")
+open(out,'w',encoding='utf-8').write(s); print('ok')
