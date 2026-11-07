@@ -4776,8 +4776,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <button type="button" class="pbx-link" id="homeCxNewRec" aria-haspopup="dialog" style="display:none;" onclick="pbNewSheetOpen()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>New record</button><!-- feat_records -->
         <button type="button" class="pbx-link" id="homeCxDash" onclick="pbCohOpen('prod')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-chart"/></svg>Company production</button>
         <button type="button" class="pbx-link" id="archiveTicketsDashBtn" style="display:none;" onclick="pbRecFromHome('tkdash')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-layers"/></svg>Company tickets</button>
+        <button type="button" class="pbx-link" id="homeCxProdMine" style="display:none;" onclick="pbOpenProdMine()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-jobs"/></svg>My production</button><!-- nav95; owner Nov 6: beside Company tickets -->
         <button type="button" class="pbx-link" id="archiveInspCoBtn" style="display:none;" onclick="pbRecFromHome('inspco')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-clipboard"/></svg>Company inspections &amp; tests</button>
-        <button type="button" class="pbx-link" id="homeCxProdMine" style="display:none;" onclick="pbOpenProdMine()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-jobs"/></svg>My production</button><!-- nav95 -->
         <button type="button" class="pbx-link" id="homeCxInspMine" style="display:none;" onclick="pbOpenInspMine()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-clipboard"/></svg>My inspections &amp; tests</button>
       </div>
       <button type="button" class="pb-home-tile pb-coh-row" id="homeCoTools" aria-expanded="false" aria-controls="homeStart homeShortcuts" onclick="pbCohToggleTools()"><span class="pb-coh-ic" aria-hidden="true"></span><span class="tx"><span class="name">Field tools</span><span class="sub" id="homeCoToolsSub">New run, Quick Run, permits, shortcuts</span></span><span class="chev" aria-hidden="true"></span></button>
@@ -7786,6 +7786,15 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
   #pbApp .eh-w { position: relative; display: block; min-width: 0; }
   #pbApp #dpEquip .eh3 input.dp-eqh { width: 100%; padding: 0 20px 0 6px; }
   #pbApp .eh-w .dp-eqhu { position: absolute; right: 7px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 13px; }
+  #pbApp .pb-hs { -webkit-appearance: none; appearance: none; flex: 0 0 auto; width: 34px; min-height: 44px; margin: 0; padding: 0; border: 1px solid var(--pb-control); border-radius: var(--pb-r-ctl, 10px); background: var(--pb-raised); color: var(--pb-text); font-size: 20px; font-weight: 600; line-height: 1; cursor: pointer; touch-action: manipulation; }
+  #pbApp .pb-hs:active { background: var(--pb-raised-2, var(--pb-raised)); }
+  #pbApp .pb-hs:focus-visible { outline: none; box-shadow: var(--pb-ring); }
+  #pbApp #dpCrew .dp-eqhw { gap: 4px; }
+  #pbApp #dpCrew input.dp-eqh { width: 52px; padding: 0 4px; text-align: center; }
+  #pbApp .eh-w { display: flex !important; gap: 2px; align-items: stretch; }
+  #pbApp .eh-w .pb-hs { width: 24px; font-size: 17px; }
+  #pbApp #dpEquip .eh3 { gap: 5px; padding-right: 0; }
+  #pbApp #dpEquip .eh3 input.dp-eqh { flex: 1 1 0; width: auto !important; padding: 0 1px !important; text-align: center; font-size: 16px; letter-spacing: -0.4px; }
   #pbApp .eh-err { flex: 1 0 100%; margin: -4px 12px 8px 0; font-size: 13px; color: var(--pb-danger, #c0392b); }
   </style>
   <!-- batch 23 DAILY: the foreman's DAILY REPORT -->
@@ -10254,6 +10263,7 @@ html.pb-light #pbApp { --pb-xing-bg: #FBE1E3; }
 .pbx-pair { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: inherit; }
 .pbx-pair > :only-child { grid-column: 1 / -1; }
 #pbApp.pb-text-big .pbx-pair { grid-template-columns: minmax(0, 1fr); }
+#pbApp .pbx-dr-prod { color: var(--pb-text); font-weight: 600; }
 @media (max-width: 359px) { #pbApp .pbx-pair { grid-template-columns: minmax(0, 1fr); } }
 #pbApp :is(.pbx-now, .pbx-act) { -webkit-appearance: none; appearance: none; position: relative; margin: 0; font: inherit; color: var(--pb-text); text-align: left; cursor: pointer; background: var(--pb-surface); border: 1px solid var(--pbx-line); border-radius: var(--pb-r-card, 14px); box-shadow: var(--pb-elev-1); min-width: 0; }
 #pbApp :is(.pbx-now, .pbx-act):hover { border-color: var(--pbx-line-2); }
@@ -10437,6 +10447,10 @@ html.pb-light #pbApp { --pb-xing-bg: #FBE1E3; }
 #pbApp .pbx-doc-ic { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: var(--pb-raised-2); color: var(--pb-text-2); }
 #pbApp .pbx-tag { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 7px; border-radius: 999px; font-size: 12.5px; font-weight: 650; line-height: 1.4; background: var(--pb-raised-2); color: var(--pb-text); }
 #pbApp .pbx-tag .pb-ic { width: 14px; height: 14px; }
+#pbApp #cxRunSetup .rs-row { margin: 0; padding: 7px 0; border-bottom: 1px solid var(--pb-hairline, rgba(127,127,127,.18)); }
+#pbApp #cxRunSetup .rs-row .pbx-tag { font-size: 11px; padding: 1px 7px; margin-left: 4px; font-weight: 600; vertical-align: 1px; }
+#pbApp #cxRunSetup .rs-btns { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+#pbApp #cxRunSetup .rs-btns .pb-btn { flex: 1 1 0; }
 #pbApp .pbx-tag.warn { background: var(--pb-warn-soft); color: var(--pb-warn-text); }
 #pbApp .pbx-tag.emerg { background: var(--pb-danger); color: var(--pb-danger-ink); }
 #pbApp .pbx-mini { display: block; height: 6px; max-width: 240px; border-radius: 3px; background: var(--pbx-track); overflow: hidden; margin: 2px 0; }
@@ -11638,6 +11652,18 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   // ---- Results: where each crossing is, our pipe there, the clearance, and the row that warns of it ----
   function pbXingPipeOf(entry, n) { const pi = (entry.summary && entry.summary.pipeInfo) || []; return pi.find(p => p && p.label === 'Run ' + n) || (n === 1 ? pi.find(p => p && p.label === 'Pipe') : null) || null; }
+  /* xing22: which pipe must be on top. 'utilAbove': the crossing is water over our sewer/storm pipe; 'oursAbove': our water
+     main over the crossing's sewer/storm/recycled line; null: no Title 22 rule (gas, electric, telecom, water/water ...) */
+  const PB_X22_WATER = /\b(water|potable|domestic|dw|fire ?(line|service))\b/i, PB_X22_NOT = /\b(storm|waste|recycled|reclaimed|grey|gray|raw)\s*-?\s*water\b/i, PB_X22_SEW = /sewer|\bss\b|\bsd\b|storm|sanitary|waste ?water|recycled|reclaimed|force ?main|\bfm\b|lateral/i;
+  function pbXingT22(entry, cx) {
+    const u = String((cx && cx.util) || ''); if (!u) return null;
+    const pt = String((entry && (entry.pipeType || entry.statsType)) || ''), oursWater = /C9(00|09)|\bDR ?1[48]\b|ductile|\bDIP\b|water|copper|blue ?brute/i.test(pt);
+    const uWater = PB_X22_WATER.test(u) && !PB_X22_NOT.test(u), uSew = PB_X22_SEW.test(u) || PB_X22_NOT.test(u);
+    if (!oursWater && uWater) return 'utilAbove';
+    if (oursWater && uSew) return 'oursAbove';
+    return null;
+  }
+  function pbXingT22Text(o) { return o.t22 === 'utilAbove' ? 'Title 22: water must cross at least 1 ft above the sewer. This water line is below your pipe.' : 'Title 22: water must cross at least 1 ft above the ' + pbXingUtil(o.cx) + '. Your water pipe is below it.'; }
   function pbXingInfo(entry) {
     const L = entry && Array.isArray(entry.crossings) ? entry.crossings : [];
     if (!L.length) return [];
@@ -11662,8 +11688,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         else if (cb !== null && ct !== null && ob !== null && ot !== null) { o.pos = 'conflict'; o.clrFt = -(Math.min(ot, ct) - Math.max(ob, cb)); }
         else if (ob !== null && ot !== null && ((cb !== null && cb > ob && cb < ot) || (ct !== null && ct > ob && ct < ot))) { o.pos = 'conflict'; o.clrFt = -(Math.min(ot, ct !== null ? ct : ot) - Math.max(ob, cb !== null ? cb : ob)); } /* review: one elevation inside our pipe is a hit whatever the other is */
       }
-      const min = typeof cx.minClrIn === 'number' ? cx.minClrIn : PB_XING_MIN_CLR;
-      o.low = o.pos === 'conflict' || (o.clrFt !== null && o.clrFt * 12 < min - 1e-6);
+      let min = typeof cx.minClrIn === 'number' ? cx.minClrIn : PB_XING_MIN_CLR;
+      const t22 = pbXingT22(entry, cx); /* xing22 */
+      if (t22) { min = Math.max(min, 12); if (o.pos === (t22 === 'utilAbove' ? 'below' : 'above')) o.t22 = t22; }
+      o.low = o.pos === 'conflict' || !!o.t22 || (o.clrFt !== null && o.clrFt * 12 < min - 1e-6);
       return o;
     });
   }
@@ -12469,7 +12497,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   // What pbXingInfo reads of the record Lock would make from this calc: the same rows, pipe and crossings.
   function pbXingCalcEntry(calc) {
-    return { distance: calc.totalDist, crossings: Array.isArray(calc.crossings) ? calc.crossings : [], summary: { pipeInfo: pbPipeInfoOfCalc(calc) },
+    return { distance: calc.totalDist, pipeType: (document.getElementById('runPipeType') || {}).value || '', crossings: Array.isArray(calc.crossings) ? calc.crossings : [], summary: { pipeInfo: pbPipeInfoOfCalc(calc) },
       intervalRows: (calc.rows || []).map(r => ({ stationFt: r.station, pointId: r.hubId, piFt: r.pi, addedTime: null })) };
   }
   function pbXingMinFt(c) { return (c && typeof c.minClrIn === 'number' ? c.minClrIn : PB_XING_MIN_CLR) / 12; }
@@ -12482,6 +12510,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbXingAlertLine(o) {
     if (!o || !o.inRun || !o.pos || (o.pos !== 'conflict' && o.clrFt === null)) return null;
     if (o.pos === 'conflict') return { low: true, hit: true, text: 'Conflict: your pipe hits the ' + pbXingUtil(o.cx) + ' (' + fmt(-o.clrFt, 2) + ' ft overlap)' };
+    if (o.t22) return { low: true, text: pbXingT22Text(o) + ' (' + pbXingGap(o) + ')' }; /* xing22 */
     if (o.low) return { low: true, text: pbXingCap(pbXingGap(o)) + ' (min ' + fmt(pbXingMinFt(o.cx), 2) + ' ft)' };
     return { low: false, text: 'Clear: ' + pbXingGap(o) };
   }
@@ -12531,11 +12560,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const multi = (calc.points || []).some(p => p && /^seg\d+start$/.test(p.id));
     return info.filter(o => o && o.inRun && o.low && o.pos).map(o => {
       const c = o.cx, u = String(c.util || '').trim(), who = (u ? u.charAt(0).toUpperCase() + u.slice(1) + ' crossing' : 'Crossing') + ' at ' + fmt(o.abs, 2) + ' ft' + (multi ? ' (Run ' + c.run + ')' : '');
-      return { hit: o.pos === 'conflict', key: c.key || '', text: who + ': ' + (o.pos === 'conflict' ? 'your pipe hits the ' + pbXingUtil(c) + ' (' + fmt(-o.clrFt, 2) + ' ft overlap).' : pbXingGap(o) + ' (min ' + fmt(pbXingMinFt(c), 2) + ' ft).') };
+      return { hit: o.pos === 'conflict', key: c.key || '', text: who + ': ' + (o.pos === 'conflict' ? 'your pipe hits the ' + pbXingUtil(c) + ' (' + fmt(-o.clrFt, 2) + ' ft overlap).' : o.t22 ? pbXingT22Text(o) : pbXingGap(o) + ' (min ' + fmt(pbXingMinFt(c), 2) + ' ft).'), t22: !!o.t22 };
     }).sort((a, b) => (b.hit - a.hit));
   }
   function pbXingReviewWarnHtml(ws) {
-    return ws.map(w => '<div class="pb-warn pb-rvw pb-xing-rvw' + (w.hit ? ' hit' : '') + '" role="button" tabindex="0" data-xing-go="' + escapeHtml(w.key) + '" onclick="pbXingGoCard(this.dataset.xingGo)" onkeydown="if (event.key === \'Enter\' || event.key === \' \') { event.preventDefault(); this.click(); }"><strong>' + (w.hit ? 'Crossing Conflict' : 'Crossing Under Minimum') + '</strong><span class="pb-xing-rvt">' + escapeHtml(w.text) + '</span><span class="pb-xing-go" aria-hidden="true">\u203a</span></div>').join('');
+    return ws.map(w => '<div class="pb-warn pb-rvw pb-xing-rvw' + (w.hit ? ' hit' : '') + '" role="button" tabindex="0" data-xing-go="' + escapeHtml(w.key) + '" onclick="pbXingGoCard(this.dataset.xingGo)" onkeydown="if (event.key === \'Enter\' || event.key === \' \') { event.preventDefault(); this.click(); }"><strong>' + (w.hit ? 'Crossing Conflict' : w.t22 ? 'Water Below Sewer' : 'Crossing Under Minimum') + '</strong><span class="pb-xing-rvt">' + escapeHtml(w.text) + '</span><span class="pb-xing-go" aria-hidden="true">\u203a</span></div>').join('');
   }
   window.pbXingGoCard = function (key) {
     pbGoto('input');
@@ -12570,7 +12599,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.07 · 2026-11-06'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.08 · 2026-11-06'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -43688,10 +43717,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const stt = x ? pbLvStateOf(x) : { k: 'ok', label: 'Synced: counts for the company' };
       const theirs = run.theirs === 'covered' || (x && x.theirs === 'covered') ? escapeHtml((p.name || 'The pipelayer') + '’s own numbers for this run are marked as covered by yours (not counted twice).')
         : run.theirs === 'counted' || run.theirs === 'claimed' ? escapeHtml((p.name || 'The pipelayer') + '’s own numbers for this run already counted before yours, so yours may not be accepted.')
-        : escapeHtml('When ' + (p.name || 'the pipelayer') + '’s own numbers for this run arrive, they’re marked as covered by yours.');
+        : ''; /* r16.08 cleanup: nothing to say until it matters */
       return '<div class="pbp-liveprod"><span class="pbp-dim">Your production for this run</span><span class="pbp-eq">' + escapeHtml(pbCrewQty(items, pbLvPlanObj(run.job_number || (run.status && run.status.jobNumber)))) + '</span>' + pbRolesHoursHtml(items, pbLvPlanObj(run.job_number || (run.status && run.status.jobNumber))) /* batch 29 ROLES */ + pbFmRentLine(x && x.rec) /* feat_foreman 11 */
         + '<span class="pb-chip ' + (stt.k === 'ok' ? 'ok' : stt.k === 'refused' ? 'notsent' : 'notsent') + ' pbp-state">' + escapeHtml(stt.label) + '</span>'
-        + (stt.k === 'ok' ? '<span class="pbp-dim">' + theirs + '</span>' : '')
+        + (stt.k === 'ok' && theirs ? '<span class="pbp-dim">' + theirs + '</span>' : '')
         + (x && x.chg && !x.chg.seen && !x.conflict ? '<span class="pb-note pbp-chg" id="pmLiveChg' + pi + '_' + ri + '" style="display:flex;align-items:center;gap:10px;margin:6px 0"><span style="flex:1;min-width:0">' + escapeHtml(pbChgText(x.chg.by, x.chg.items || x.items, x.chg.was, pbLvPlanObj(run.job_number || (run.status && run.status.jobNumber)))) + '</span>' + pbCrewBtn('pmLiveChgOk' + pi + '_' + ri, 'OK', 'pbLvChgSeen(' + pi + ', ' + ri + ')', 'ghost') + '</span>' : '') /* r15.57 B1 */
         + (stt.k === 'unsaved' ? pbCrewBtn('pmLiveRetry' + pi, 'Try Saving Again', 'pbLvRetrySave()', '') : '') /* r15.57 B2 */
         + '<span class="pbp-eact">' + pbCrewBtn('pmLiveEdit' + pi, 'Change Production', 'pbLvFormOpen(' + pi + ', ' + ri + ')', 'ghost') + (typeof window.pbRrCrewBtn === 'function' ? window.pbRrCrewBtn(p, run, 'pmLiveRpt' + pi + '_' + ri) : '') + '</span></div>';
@@ -43785,7 +43814,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // the plan's own names, units (pbProdFieldUnit) and cost codes on the rows (true when a row changed)
   function pbProdPlanLabels(cats, rows, o) {
     let ch = false; const nm = (o && o.name) || ((k) => k), C = (Array.isArray(cats) ? cats : []).filter(c => c && typeof c === 'object');
-    rows.forEach(r => { if (!PB_PROD_RUN_KEYS.has(r.key)) return; const c = C.find(x => x.key === r.key), u = pbProdFieldUnit(r, c); if (u !== r.unit) { r.unit = u; if (!c) delete r.label; ch = true; if (r.pre != null && r.qty === r.pre && !r.typed && !/^(LF|FT|FEET)$/i.test(String(u).trim())) { r.qty = ''; r.pre = null; r.preText = null; } } });
+    rows.forEach(r => { if (!PB_PROD_RUN_KEYS.has(r.key)) return; const c = C.find(x => x.key === r.key), u = pbProdFieldUnit(r, c); if (u !== r.unit) { r.unit = u; if (!c) delete r.label; ch = true; if (r.pre != null && r.qty === r.pre && !r.typed && !/^LF$/i.test(String(u).trim())) { r.qty = ''; r.pre = null; r.preText = null; } } });
     C.forEach(c => { const r = rows.find(x => x.key === c.key); if (!r) return; const lab = (c.name || nm(r.key)) + (r.unit ? ' (' + r.unit + ')' : '') + (c.cost_code ? ' · ' + c.cost_code : ''); if (r.label !== lab) { r.label = lab; ch = true; } });
     return ch;
   }
@@ -54198,13 +54227,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbMatServerMissing = (r) => /Could not find the function|function .* does not exist/i.test(String((r && r.error && r.error.message) || ''));
   // What a material's numbers say, in words (never colour alone).
   function pbMatState(m) {
-    const f = (m && m.fig) || {}, used = f.used === null || f.used === undefined ? null : Number(f.used), wait = Number(f.waiting) || 0, ord = Number(f.ordered) || 0;
-    const exp = m.expected === null || m.expected === undefined ? null : Number(m.expected), pct = Number(m.alert_pct) || 80;
+    const f = (m && m.fig) || {}, used = f.used === null || f.used === undefined ? null : Number(f.used), wait = Number(f.waiting) || 0, exp = m.expected === null || m.expected === undefined ? null : Number(m.expected);
+    const ordTyped = Number(f.ordered) || 0, ordAssumed = !ordTyped && used !== null && used + wait > 0 && exp !== null && exp > 0, ord = ordAssumed ? exp : ordTyped, pct = Number(m.alert_pct) || 80; /* matassume */
     const need = { needs_width: 'Needs trench width', needs_thickness: 'Needs bedding thickness', needs_density: 'Needs a density', needs_shading_thickness: 'Needs shading thickness', needs_od: 'Needs pipe OD', width_under_od: 'Trench narrower than the pipe', split_unknown: 'Shares footage', needs_each: 'Needs a length each' }[f.status] || null; // r15.23: needs_each
     const mu = !!(m && m.muted === true), reached = !mu && used !== null && ord > 0 && used + wait >= ord * pct / 100; // feat_itemalerts: silenced
-    return { used, wait, ord, exp, pct, need, reached, muted: mu, over: !mu && used !== null && exp !== null && exp > 0 && used > exp, est: !!f.estimate, share: ord > 0 && used !== null ? (used + wait) / ord : null };
+    return { used, wait, ord, exp, pct, need, reached, muted: mu, over: !mu && used !== null && exp !== null && exp > 0 && used > exp, est: !!f.estimate, share: ord > 0 && used !== null ? (used + wait) / ord : null, ordAssumed, ordShown: ordTyped };
   }
-  function pbMatShareText(s) { return s.share !== null && s.share >= 1 ? 'All of what’s ordered used' : (s.share !== null ? Math.floor(s.share * 100) : s.pct) + '% of ordered used'; } // feat_company32 C4: the real share (used + waiting), never the alert line
+  function pbMatShareText(s) { const w = s.ordAssumed ? 'expected' : 'ordered'; return s.share !== null && s.share >= 1 ? 'All of what’s ' + w + ' used' : (s.share !== null ? Math.floor(s.share * 100) : s.pct) + '% of ' + w + ' used'; } /* matassume: nothing ordered typed in: the expected amount */ // feat_company32 C4: the real share (used + waiting), never the alert line
   function pbMatChips(m, s) {
     let h = '';
     if (s.need) h += m && m.fig && m.fig.status === 'split_unknown' ? '<button type="button" class="pb-chip notsent pbm-chip" style="cursor:pointer;font:inherit" onclick="event.stopPropagation(); pbMatFixShare(\'' + m.id + '\')" aria-label="Shares footage: pick its own item">' + escapeHtml(s.need) + ' ›</button> '
@@ -54219,17 +54248,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   // "120 / 150 / 400 yd³" (used / ordered / expected), and "+12 waiting".
   function pbMatNums(m, s) {
-    return '<span class="pbm-nums"><span class="pbm-used">' + (s.est && s.used !== null ? '≈ ' : '') + escapeHtml(pbMatFmt(s.used, m.unit)) + '</span> / <span class="pbm-ord">' + escapeHtml(s.ord ? pbMatFmt(s.ord, m.unit) : '—')
+    return '<span class="pbm-nums"><span class="pbm-used">' + (s.est && s.used !== null ? '≈ ' : '') + escapeHtml(pbMatFmt(s.used, m.unit)) + '</span> / <span class="pbm-ord">' + escapeHtml(s.ordShown ? pbMatFmt(s.ordShown, m.unit) : '—')
       + '</span> / <span class="pbm-exp">' + escapeHtml(pbMatFmt(s.exp, m.unit)) + '</span> ' + escapeHtml(m.unit || '') + '</span>'
       + (s.wait > 0 ? ' <span class="pbm-wait">+' + escapeHtml(pbMatFmt(s.wait, m.unit)) + ' waiting</span>' : '');
   }
   // The bar: the track is the expected total (or what's ordered), solid = used, striped = waiting, a tick = ordered.
   function pbMatBar(m, s) {
-    const top = Math.max(s.exp || 0, s.ord || 0, (s.used || 0) + s.wait);
+    const top = Math.max(s.exp || 0, s.ordShown || 0, (s.used || 0) + s.wait);
     if (!(top > 0) || s.used === null) return '';
     const p = (x) => Math.max(0, Math.min(100, x / top * 100)).toFixed(1) + '%';
     return '<span class="pbm-bar" aria-hidden="true"><span class="pbm-bused" style="width:' + p(s.used) + '"></span><span class="pbm-bwait" style="left:' + p(s.used) + ';width:' + p(s.wait) + '"></span>'
-      + (s.ord > 0 ? '<span class="pbm-bord" style="left:' + p(s.ord) + '"></span>' : '') + '</span>';
+      + (s.ordShown > 0 ? '<span class="pbm-bord" style="left:' + p(s.ordShown) + '"></span>' : '') + '</span>';
   }
   // r15.4: the LF items of the job plan a material can count from (Pipe Installed first)
   function pbMatFootCats() {
@@ -54414,7 +54443,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbMatGroups(list) { const by = new Map(); list.forEach(m => { const k = String(m.name || '').trim().toLowerCase(); if (!by.has(k)) by.set(k, []); by.get(k).push(m); }); return [...by.values()]; }
   function pbMatGroupHtml(g) {
     const unit = g[0].unit, same = g.every(m => m.unit === unit), sum = (f) => g.reduce((a, m) => { const v = f(pbMatState(m)); return a === null || v === null || v === undefined ? (a === null ? null : a) : a + Number(v); }, 0);
-    const used = g.every(m => pbMatState(m).used !== null) ? sum(s => s.used) : null, ord = sum(s => s.ord || 0), exp = sum(s => s.exp || 0);
+    const used = g.every(m => pbMatState(m).used !== null) ? sum(s => s.used) : null, ord = sum(s => s.ordShown || 0), exp = sum(s => s.exp || 0);
     return '<li class="pbm-group" id="pjMatG_' + escapeHtml(g[0].id) + '" style="list-style:none;margin:0 0 12px;padding:10px 12px;border:1px solid var(--pb-divider);border-radius:12px">'
       + '<span class="pbm-line1"><span class="pbm-name">' + escapeHtml(g[0].name) + '</span><span class="pbm-chips"><span class="pb-chip pbm-chip">' + g.length + ' cost codes</span></span></span>'
       + (same ? '<span class="pbm-line2"><span class="pbm-nums">Total, all cost codes: ' + escapeHtml((used === null ? '—' : pbMatFmt(used, unit)) + ' / ' + (ord ? pbMatFmt(ord, unit) : '—') + ' / ' + pbMatFmt(exp, unit) + ' ' + unit) + '</span></span>' : '')
@@ -54921,7 +54950,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     list.filter(m => m && !m.archived).forEach(m => {
       const s = pbMatState(m), u = m.unit || '', f = (x) => x === null || x === undefined ? '—' : pbMatFmt(Number(x), u);
       const row = { name: m.name, alert: !!(s.reached || s.over), alertText: s.over ? 'Over expected' : s.reached ? pbMatShareText(s) : '',
-        amounts: (s.est && s.used !== null ? '≈ ' : '') + f(s.used) + ' / ' + (s.ord ? f(s.ord) : '—') + ' / ' + (s.exp === null || s.exp === undefined ? '—' : pbMatFmt(s.exp, u)) + ' ' + u }; // feat_office A11: as the Materials tab writes them
+        amounts: (s.est && s.used !== null ? '≈ ' : '') + f(s.used) + ' / ' + (s.ordShown ? f(s.ordShown) : '—') + ' / ' + (s.exp === null || s.exp === undefined ? '—' : pbMatFmt(s.exp, u)) + ' ' + u }; // feat_office A11: as the Materials tab writes them
       const k = pbMatItemOf(m); count++;
       if (k && keys.includes(k)) (by[k] = by[k] || []).push(row); else loose.push(row);
     });
@@ -57345,7 +57374,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const nm = pbDpEqName(q), v = pbDxHvC(q, true); /* feat_dailyx: the Crew log's hours until he types */
     const d = pbDpDraft(), V = pbEhVals(q, d); /* feat_eqhrs */
     const box = (k, id, lab, val, mark, inp, bad) => '<div class="eh-b" data-eh="' + k + '"><div class="eh-l"><label for="' + id + '">' + lab + '</label><span class="eh-x" id="ehX' + k + '_' + i + '">' + mark + '</span></div>'
-      + '<span class="eh-w"><input type="text" class="dp-eqh' + (bad ? ' dp-bad' : '') + '" id="' + id + '" inputmode="decimal" autocomplete="off" maxlength="5" enterkeyhint="done" placeholder="0" aria-label="' + escapeHtml(lab + ' hours, ' + nm) + '" value="' + escapeHtml(val) + '" oninput="' + inp + '" onfocus="try{this.select()}catch(e){}" onblur="pbCeHoursKeep()"><span class="dp-eqhu" aria-hidden="true">h</span></span></div>';
+      + '<span class="eh-w"><button type="button" class="pb-hs" tabindex="-1" aria-label="' + escapeHtml('Less, ' + lab + ' hours, ' + nm) + '" onclick="pbHStep(this,-1)">\u2212</button><input type="text" class="dp-eqh' + (bad ? ' dp-bad' : '') + '" id="' + id + '" inputmode="decimal" autocomplete="off" maxlength="5" enterkeyhint="done" placeholder="0" aria-label="' + escapeHtml(lab + ' hours, ' + nm) + '" value="' + escapeHtml(val) + '" oninput="' + inp + '" onfocus="try{this.select()}catch(e){}" onblur="pbCeHoursKeep()"><button type="button" class="pb-hs" tabindex="-1" aria-label="' + escapeHtml('More, ' + lab + ' hours, ' + nm) + '" onclick="pbHStep(this,1)">+</button></span></div>';
     return '<li class="dp-item dp-eqrow eh-row" id="dpEq_' + i + '"><span class="dp-eqtx"><span class="dp-nm">' + escapeHtml(nm) + '</span>' + (q.rental ? '<span class="dp-sub">Rental</span>' : '') + pbDfTag(q).replace(PB_EH_PILL, '') + pbP95DnLine(q) /* proc95 */ + '</span>' /* feat_dailyfill */
       + pbP95DnBtn(q, i) /* proc95 */ + '<button type="button" class="dp-x" id="dpEqX_' + i + '" aria-label="' + escapeHtml('Remove ' + nm) + '" onclick="pbDpRemove(\'Eq\',' + i + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-x"/></svg></button>'
       + '<div class="eh3" id="eh3_' + i + '">' + box('R', 'dpEqH_' + i, 'Running', v, pbEhRunAuto(q, d) ? PB_EH_PILL : '', 'pbCeHours(' + i + ',this.value)', V.run.bad || V.over)
@@ -57422,15 +57451,37 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // what the box shows: what he typed (even blank), else the Crew log's hours
   const pbDxHv = (q, eq) => q.hours !== undefined && q.hours !== null ? String(q.hours) : (() => { const h = pbDxLogH(eq ? pbDpEqName(q) : q.name, eq) || (eq ? pbDxLogH(q.name, true) : 0); return h > 0 ? String(h) : ''; })();
   // ---- Crew today: a row per person with an hours box ----
-  const pbDxHvC = (p, eq) => { const v = pbDxHv(p, !!eq); return v === '' && (p.hours === undefined || p.hours === null) ? (eq ? pbEhDefRun(p) : '8') : v; }; // feat_crew8: a full day unless he changes it; feat_eqhrs: 0 on a day the runs log machines, else 8 less its Broke Down hours
+  /* r16.08 (owner): runs logged over 8 h today: that's the day (first start to last end, to the half hour) */
+  function pbDxRunSpanH() {
+    const V = pbDlyView; if (!V || !V.date) return 0; let a = Infinity, b = -Infinity;
+    const tm = (v) => typeof v === 'number' ? v : typeof v === 'string' && v ? Date.parse(v) : NaN;
+    const add = (s, e) => { s = tm(s); e = tm(e); if (!isFinite(s) || !isFinite(e) || e <= s || e - s > 20 * 3600000) return; if (s < a) a = s; if (e > b) b = e; };
+    try { const S = V.snap; (S && S.runs && Array.isArray(S.runs.items) ? S.runs.items : []).forEach(r => { if (r && !r.crew_run) add(r.start, r.end); }); } catch (e) {}
+    try { if (pbLv && pbLv.uid === pbArchiveOwnerUid && pbLv.data && Array.isArray(pbLv.data.crew)) pbLv.data.crew.forEach(c => (c && Array.isArray(c.runs) ? c.runs : []).forEach(r => { const st = (r && r.status) || {};
+      if (pbDlyKey(r.job_number || st.jobNumber) !== pbDlyKey(V.job) || String(r.work_date || st.workDate || '') !== String(V.date)) return; add(st.startedAt, st.endedAt); })); } catch (e) {}
+    try { (V.fill ? pbP95OffRuns() : []).forEach(x => { const R = x && x.rec; if (R) add(R.runStartTime, R.runEndTime); }); } catch (e) {}
+    try { const D = pbDa && pbDa.day; if (D && D.data && D.k === pbDlyKey(V.job) + '|' + V.date) D.data.runs.forEach(m => { const R = m && pbDa.recs.get('run:' + m.id), rec = R && R.rec; if (rec) add(rec.runStartTime, rec.runEndTime); }); } catch (e) {} /* the crew's sent run reports */
+    return b > a ? (b - a) / 3600000 : 0;
+  }
+  function pbDxDayDef() { const h = pbDxRunSpanH(); return h > 8 ? String(Math.min(16, Math.round(h * 2) / 2)) : '8'; }
+  window.pbDxDayDef = pbDxDayDef;
+  const pbDxHvC = (p, eq) => { const v = pbDxHv(p, !!eq); return v === '' && (p.hours === undefined || p.hours === null) ? (eq ? pbEhDefRun(p) : pbDxDayDef()) : v; }; // feat_crew8: a full day unless he changes it; feat_eqhrs: 0 on a day the runs log machines, else 8 less its Broke Down hours
   function pbDxCrewRow(p, i, ids) {
     const tag = pbDpCrewTag(p, ids), v = pbDxHvC(p);
     return '<li class="dp-item dp-eqrow" id="dpCrew_' + i + '"><span class="dp-eqtx"><span class="dp-nm">' + escapeHtml(p.name) + '</span>' + (tag ? '<span class="dp-sub">' + escapeHtml(tag) + '</span>' : '') + pbDfTag(p) + '</span>' /* feat_dailyfill */
-      + '<span class="dp-eqhw"><input type="text" class="dp-eqh" id="dpCrewH_' + i + '" inputmode="decimal" autocomplete="off" maxlength="5" enterkeyhint="done" placeholder="0" aria-label="' + escapeHtml('Hours, ' + p.name) + '" value="' + escapeHtml(v) + '" oninput="pbDxCrewHours(' + i + ',this.value)" onfocus="try{this.select()}catch(e){}" onblur="pbCeHoursKeep()"><span class="dp-eqhu" aria-hidden="true">h</span></span>'
+      + '<span class="dp-eqhw"><button type="button" class="pb-hs" tabindex="-1" aria-label="' + escapeHtml('Less, ' + p.name) + '" onclick="pbHStep(this,-1)">\u2212</button><input type="text" class="dp-eqh" id="dpCrewH_' + i + '" inputmode="decimal" autocomplete="off" maxlength="5" enterkeyhint="done" placeholder="0" aria-label="' + escapeHtml('Hours, ' + p.name) + '" value="' + escapeHtml(v) + '" oninput="pbDxCrewHours(' + i + ',this.value)" onfocus="try{this.select()}catch(e){}" onblur="pbCeHoursKeep()"><button type="button" class="pb-hs" tabindex="-1" aria-label="' + escapeHtml('More, ' + p.name) + '" onclick="pbHStep(this,1)">+</button></span>'
       + '<button type="button" class="dp-x" id="dpCrewX_' + i + '" aria-label="' + escapeHtml('Remove ' + p.name) + '" onclick="pbDpRemove(\'Crew\',' + i + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-x"/></svg></button></li>';
   }
   const pbDxCrewSum = (d) => Math.round(d.crew.reduce((s, p) => s + (pbCeHrs(pbDxHvC(p)).n || 0), 0) * 100) / 100;
   const pbDxCrewHead = (d) => { const n = d.crew.length, s = pbDxCrewSum(d); return '· ' + (n ? pbDpPeople(n) + (s > 0 ? ' · ' + pbDpH(s) : '') : 'nobody listed'); };
+  /* r16.08 (owner): − / + beside an hours box, half an hour a tap (0 to 24) */
+  window.pbHStep = function(b, dir) {
+    const w = b && b.parentElement, el = w && w.querySelector('input'); if (!el) return;
+    const n = parseFloat(String(el.value || el.placeholder || '0').replace(',', '.')), cur = isFinite(n) ? n : 0;
+    const nx = Math.max(0, Math.min(24, (dir > 0 ? Math.floor(cur * 2 + 1e-9) + 1 : Math.ceil(cur * 2 - 1e-9) - 1) / 2));
+    el.value = String(nx); el.dispatchEvent(new Event('input', { bubbles: true }));
+    const id = el.id; setTimeout(() => { try { pbCeHoursKeep(); } catch (e) {} const n2 = document.getElementById(id); if (n2) { const bb = n2.parentElement && n2.parentElement.querySelector('.pb-hs[onclick*="' + (dir > 0 ? ',1)' : ',-1)') + '"]'); if (bb && document.activeElement !== bb) try { bb.focus({ preventScroll: true }); } catch (e) {} } }, 0);
+  };
   window.pbDxCrewHours = function(i, v) {
     const d = pbDpDraft(); if (!d || !d.crew[i]) return;
     d.crew[i].hours = String(v || '').slice(0, 5);
@@ -59219,10 +59270,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbEhAnyRun(d) {
     try { return !!d && Array.isArray(d.equip) && d.equip.some(x => { if (!x) return false; const L = pbDfFind(x, true); return (L && L.hours !== '') || pbDxLogH(pbDpEqName(x), true) > 0 || pbDxLogH(x.name, true) > 0; }); } catch (e) { return false; }
   }
-  function pbEhDefRun(q) { let d = null; try { d = pbDpDraft(); } catch (e) { d = null; } if (pbEhAnyRun(d)) return '0'; const h = pbEhMarkH(q, d); return h > 0 ? pbEhQ(8 - h) : '8'; }
+  function pbEhDefRun(q) { let d = null; try { d = pbDpDraft(); } catch (e) { d = null; } if (pbEhAnyRun(d)) return '0'; const day = Number(pbDxDayDef()), h = pbEhMarkH(q, d); return h > 0 ? pbEhQ(Math.max(0, day - h)) : String(day); }
   // the Running pill: filled from the runs, or the 0 of a machine nobody ran today
   function pbEhRunAuto(q, d) { return !!q && ((q.rf && !q.rfEdited) || (!pbEhHas(q.hours) && pbDxHv(q, true) === '' && pbEhAnyRun(d))); }
-  function pbEhDay(d) { let m = 0; try { (d && Array.isArray(d.crew) ? d.crew : []).forEach(p => { const n = pbCeHrs(pbDxHvC(p)).n; if (n > m) m = n; }); } catch (e) {} return m > 0 ? Math.min(24, m) : 8; }
+  function pbEhDay(d) { let m = 0; try { (d && Array.isArray(d.crew) ? d.crew : []).forEach(p => { const n = pbCeHrs(pbDxHvC(p)).n; if (n > m) m = n; }); } catch (e) {} return m > 0 ? Math.min(24, m) : Number(pbDxDayDef()); }
   function pbEhLegacyAuto(s, q) { /* fix1 */
     try { if (typeof q.hours !== 'number') return false; let m = 0; (s.crew_today && Array.isArray(s.crew_today.people) ? s.crew_today.people : []).forEach(p => { if (p && typeof p.hours === 'number' && p.hours > m) m = p.hours; });
       const day = m > 0 ? Math.min(24, m) : 8; return Number(pbEhQ(Math.max(0, day - q.hours - (typeof q.down_h === 'number' ? q.down_h : 0)))) === q.idle_h; } catch (e) { return false; }
@@ -60742,14 +60793,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     const act = (id, icon, n, label, sub, hot, on) => '<button type="button" class="pbx-act' + (hot ? ' hot' : '') + '" id="' + id + '" onclick="' + on + '">'
       + '<span class="pbx-act-ic">' + pbCxIc(icon) + '</span><span class="pbx-num">' + pbCxE(n) + '</span><span class="pbx-lbl">' + pbCxE(label) + '</span><span class="pbx-sub">' + pbCxE(sub) + '</span></button>';
-    const inbox = I ? act('homeCxInbox', 'reports', I.n, I.n === 1 ? 'Unread report' : 'Unread reports', I.n ? 'Management inbox' : 'Inbox is read', I.n > 0, 'pbCxOpenInbox()')
-      : act('homeCxInbox', 'reports', '–', 'Unread reports', 'Inbox loads with signal', false, 'pbCxOpenInbox()');
+    const inbox = I ? act('homeCxInbox', 'reports', I.n, 'Management inbox', I.n ? I.n + ' unread' : 'All read', I.n > 0, 'pbCxOpenInbox()')
+      : act('homeCxInbox', 'reports', '–', 'Management inbox', 'Loads with signal', false, 'pbCxOpenInbox()');
     const mat = A ? act('homeCxMat', 'cube', A.list.length, A.list.length === 1 ? 'Material alert' : 'Material alerts', A.list.length ? 'Near or over what’s ordered' : 'Nothing near its order', A.list.length > 0, 'pbCxOpenList(\'mat\')')
       : act('homeCxMat', 'cube', '–', 'Material alerts', 'Loads with signal', false, 'pbCxOpenList(\'mat\')');
     const wait = jobs && !W.known && !W.total ? act('homeCxWait', 'clock', '–', 'Waiting on foremen', window.pbRrMsg(uid) || (pbCxOnline() ? 'Loading…' : 'Loads with signal'), false, 'pbCxOpenList(\'wait\')') /* feat_office A2 */
       : jobs ? act('homeCxWait', 'clock', W.total, 'Waiting on foremen', W.total ? [W.runs ? pbCxN(W.runs, 'run') : '', W.edits ? pbCxN(W.edits, 'edit') : ''].filter(Boolean).join(' · ') : 'Nothing waiting', W.total > 0, 'pbCxOpenList(\'wait\')')
       : act('homeCxWait', 'clock', '–', 'Waiting on foremen', 'Loads with signal', false, 'pbCxOpenList(\'wait\')');
-    const pair = (typeof window.pbRrTile === 'function' ? window.pbRrTile(uid) : '') + (typeof window.pbDpTile === 'function' ? window.pbDpTile(uid) : ''); // feat_dailyplus
+    const pair = (window.__pbLegacyRrTile && typeof window.pbRrTile === 'function' ? window.pbRrTile(uid) : window.pbDrTile(uid)) /* feat_drtile (owner, Nov 6): the PM's glance is the daily report; run reports come up when something is wrong (Waiting on foremen) */ + (typeof window.pbDpTile === 'function' ? window.pbDpTile(uid) : ''); // feat_dailyplus
     return now + inbox + mat + wait + (pair ? '<div class="pbx-pair">' + pair + '</div>' : ''); // feat_pair (owner Nov 1): run reports and delays side by side
   }
   window.pbCxRender = function() {
@@ -60840,7 +60891,71 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }, 1500);
 
   // ---- the filtered lists: Live now, Material alerts, Waiting on foremen ----
-  const PB_CX_LISTS = { live: 'Live now', mat: 'Material alerts', wait: 'Waiting on foremen', runs: 'Run reports', crewreports: 'Run reports to approve', delays: 'Delays & extra work' }; // feat_dailyplus: delays
+  const PB_CX_LISTS = { live: 'Live now', mat: 'Material alerts', wait: 'Waiting on foremen', runs: 'Run reports', crewreports: 'Run reports to approve', delays: 'Delays & extra work', dailies: 'Daily reports' }; // feat_dailyplus: delays; feat_drtile: dailies
+  // ================= feat_drtile (owner, Nov 6): "New daily reports" on the office's Home =================
+  // "A PM doesn't want to look at run reports unless something goes wrong. They just care about a quick glance at a daily
+  // report to get an idea of production." The jobs' signed daily reports (pb_daily_list, the latest version of each day,
+  // the last 14 days); new = not opened on this phone yet (a re-signed / amended one is new again). Each row: the job and day,
+  // the foreman, crew, and the day's production; tap = the report (its PDF).
+  let pbDr = { uid: null, list: null, at: 0, busy: false, seen: null, snaps: new Map(), msg: '' };
+  function pbDrFor(uid) { if (pbDr.uid !== uid) { pbDr = { uid, list: null, at: 0, busy: false, seen: null, snaps: new Map(), msg: '' }; pbGetFor(uid, 'drSeen').then(raw => { let a = []; try { a = JSON.parse(raw || '[]'); } catch (e) {} if (pbDr.uid === uid) { pbDr.seen = new Set(Array.isArray(a) ? a.map(String) : []); pbDrPaint(); } }).catch(() => { if (pbDr.uid === uid) pbDr.seen = new Set(); }); } return pbDr; }
+  function pbDrPaint() { try { if (pbCurrentScreen === 'cxList' && pbCx.list === 'dailies') pbCxListRender(); else window.pbCxRender(); } catch (e) {} }
+  const pbDrNew = (O, r) => !!O.seen && !O.seen.has(String(r.id));
+  async function pbDrLoad(uid, force) {
+    const O = pbDrFor(uid); if (O.busy || (!force && O.at && Date.now() - O.at < 120000)) return;
+    const D = pbCxDash(uid), jobs = D ? D.data.jobs.filter(j => j && typeof j === 'object' && String(j.job_number || '').trim()) : null; if (!jobs) return;
+    if (!(await pbDlyCanAsk(uid))) return;
+    O.busy = true; const cut = Date.now() - 14 * 86400000;
+    try {
+      const res = await Promise.all(jobs.slice(0, 25).map(j => pbPermitRpc('pb_daily_list', { p_job_number: String(j.job_number).trim(), p_limit: 20, p_expect_uid: uid }, 30000).catch(() => null)));
+      if (pbDr !== O) return;
+      const all = []; let ok = 0;
+      res.forEach(r => { if (r && !r.error && r.data && Array.isArray(r.data.reports)) { ok++; r.data.reports.forEach(x => { if (x && x.id && x.latest !== false && Date.parse(String(x.work_date) + 'T12:00:00') >= cut) all.push(x); }); } });
+      if (!ok && res.length) { O.msg = 'Couldn’t load the daily reports.'; return; }
+      all.sort((a, b) => (a.work_date < b.work_date ? 1 : a.work_date > b.work_date ? -1 : String(b.received_at).localeCompare(String(a.received_at))));
+      O.list = all.slice(0, 60); O.at = Date.now(); O.msg = '';
+      for (const x of O.list.slice(0, 12)) { // the day's production, from the signed report
+        if (O.snaps.has(x.id)) continue;
+        const g = await pbPermitRpc('pb_daily_get', { p_report_id: x.id, p_expect_uid: uid }, 30000).catch(() => null); if (pbDr !== O) return;
+        if (g && g.data && g.data.ok && g.data.snapshot) O.snaps.set(x.id, pbDrSum(g.data.snapshot));
+      }
+    } finally { O.busy = false; pbDrPaint(); }
+  }
+  function pbDrSum(S) {
+    const T = S && S.runs && S.runs.totals && typeof S.runs.totals === 'object' ? S.runs.totals : {};
+    const prod = Object.keys(T).filter(k => T[k] && Number(T[k].qty) > 0).map(k => (T[k].name || pbProdCatName(k, null)) + ' ' + pbProdQtyText(Number(T[k].qty)) + (T[k].unit ? ' ' + T[k].unit : ''));
+    const P = S && S.crew_today && Array.isArray(S.crew_today.people) ? S.crew_today.people : [], h = Math.round(P.reduce((t, p) => t + (Number(p && p.hours) || 0), 0) * 10) / 10;
+    const E = S && S.equipment_today && Array.isArray(S.equipment_today.pieces || S.equipment_today.items) ? (S.equipment_today.pieces || S.equipment_today.items).length : 0;
+    return { prod, crew: P.length ? P.length + (P.length === 1 ? ' person' : ' people') + (h > 0 ? ' · ' + pbProdQtyText(h) + ' h' : '') : '', eq: E ? E + (E === 1 ? ' piece' : ' pieces') : '' };
+  }
+  window.pbDrTile = function(uid) {
+    const O = pbDrFor(uid); pbDrLoad(uid).catch(() => {});
+    const L = O.list, nNew = L ? L.filter(r => pbDrNew(O, r)).length : 0;
+    const sub = !L ? (pbCxOnline() ? 'Loading…' : 'Loads with signal') : !L.length ? 'None in the last 2 weeks' : nNew ? (nNew === 1 ? 'Job ' + L.find(r => pbDrNew(O, r)).job_number + ' · ' + pbDxShort(L.find(r => pbDrNew(O, r)).work_date) : 'To look over') : 'All looked at';
+    return '<button type="button" class="pbx-act pbx-dr-tile' + (nNew ? ' hot' : '') + '" id="homeCxDailies" onclick="pbCxOpenList(\'dailies\')">'
+      + '<span class="pbx-act-ic">' + pbCxIc('clipboard') + '</span><span class="pbx-num" id="homeCxDailiesN">' + (L ? nNew : '–') + '</span><span class="pbx-lbl">' + (nNew === 1 ? 'New daily report' : 'New daily reports') + '</span><span class="pbx-sub" id="homeCxDailiesSub">' + pbCxE(sub) + '</span></button>';
+  };
+  window.pbDrListHtml = function(uid) {
+    const O = pbDrFor(uid); pbDrLoad(uid).catch(() => {});
+    const L = O.list; if (!L) return { h: '<p class="pbx-none" id="cxDrNone">' + pbCxE(O.msg || (pbCxOnline() ? 'Loading…' : 'Daily reports load with signal.')) + '</p>', s: '' };
+    if (!L.length) return { h: '<p class="pbx-none" id="cxDrEmpty">No daily reports in the last 2 weeks.</p>', s: '' };
+    const row = (r, i) => { const S = O.snaps.get(r.id), nw = pbDrNew(O, r);
+      return '<button type="button" class="pbx-row' + (nw ? ' pbx-dr-new' : '') + '" id="cxDr' + i + '" data-id="' + pbCxE(r.id) + '" onclick="pbDrOpen(this.dataset.id)"><span class="pbx-row-tx">'
+        + '<span class="pbx-row-h">' + pbCxE(pbProdJobLabel(r.job_number) + ' · ' + pbDxShort(r.work_date)) + (nw ? ' <span class="pbx-tag warn">New</span>' : '') + (r.supersedes ? ' <span class="pbx-tag">Amended</span>' : '') + '</span>'
+        + '<span class="pbx-row-s">' + pbCxE([r.foreman || r.signed_name, S ? S.crew : (r.headcount ? r.headcount + ' people' : ''), S ? S.eq : ''].filter(Boolean).join(' · ')) + '</span>'
+        + (S ? '<span class="pbx-row-s pbx-dr-prod">' + pbCxE(S.prod.length ? S.prod.join(' · ') : 'No production entered') + '</span>' : '')
+        + '</span><span class="pbx-chev" aria-hidden="true">' + pbCxIc('chevron-right') + '</span></button>'; };
+    const N = L.filter(r => pbDrNew(O, r)), R = L.filter(r => !pbDrNew(O, r));
+    return { h: (N.length ? '<h2 class="pbx-h2">' + pbCxE('New (' + N.length + ')') + '</h2><div class="pbx-rows" id="cxDrNew">' + N.map(row).join('') + '</div>' : '')
+      + (R.length ? '<h2 class="pbx-h2">' + pbCxE(N.length ? 'Earlier' : 'Last 2 weeks') + '</h2><div class="pbx-rows" id="cxDrOld">' + R.map((r, i) => row(r, N.length + i)).join('') + '</div>' : ''), s: O.busy ? 'Loading…' : '' };
+  };
+  window.pbDrOpen = function(id) {
+    const uid = pbArchiveOwnerUid, O = pbDrFor(uid);
+    if (O.seen && !O.seen.has(String(id))) { O.seen.add(String(id)); pbSetFor(uid, 'drSeen', JSON.stringify(Array.from(O.seen).slice(-500))).catch(() => {}); }
+    pbDrPaint(); return window.pbDlyServerPdf(id);
+  };
+  window.__pbDrState = () => pbDr; // tests
+  window.addEventListener('online', () => { try { if (pbDr.uid) pbDrLoad(pbDr.uid, true).catch(() => {}); } catch (e) {} });
   window.pbCxOpenList = function(kind) {
     if (!PB_CX_LISTS[kind] || !pbCx.on) return;
     if (!pbCanOpen('prodDashboard', { explain: true })) return;
@@ -60906,6 +61021,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const o = kind === 'runs' ? window.pbRrListHtml(uid) : window.pbRfListHtml(uid); h = o.h; s = o.s;
       if (o.keep && rrPrev === o.keep) { body.dataset.rrKeep = o.keep; if (st && st.textContent !== s) st.textContent = s; return; } // r15.2.2: a report on screen is only re-drawn when it changes
       body.dataset.rrKeep = o.keep || '';
+    } else if (kind === 'dailies') { const o = window.pbDrListHtml(uid); h = o.h; s = o.s; // feat_drtile
     } else if (kind === 'delays') { // feat_dailyplus
       const o = window.pbDpListHtml(uid); h = o.h; s = o.s;
     } else if (kind === 'wait') {
@@ -61140,8 +61256,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const canProd = !!(x.can_review && x.pid && x.sref && typeof pbLvIsForeman === 'function' && pbLvIsForeman(pbArchiveOwnerUid));
     // r15.2.1 (owner): reviewing is ONE step for the foreman: his production for the run (the PM's tracking data) on top,
     // Approve Report; the report's PDF is there to open when he needs it (rarely). The office sees the PDF first.
-    const approve = canProd ? '<section id="cxRunApprove" style="margin-top:4px"><h3 class="pbx-h2">Production for this run</h3><style>#cxRunProdBox .pbp-btns2{display:none}</style><div id="cxRunProdBox"' + (x.reviewed_at ? ' class="pbx-rf-late"' : '') /* feat_runflow P8: once approved, the form keeps its own Save */ + '>' + window.pbRrProdBox(x) + '</div>'
+    const approve = canProd ? '<section id="cxRunApprove" style="margin-top:4px"><h3 class="pbx-h2">Production for this run</h3><style>#cxRunProdBox .pbp-btns2{display:none}#cxRunProdBox .pbp-liveprod>.pbp-dim:first-child,#cxRunProdBox [id^="cxRunLiveRpt"],#cxRunProdBox [id^="pmLiveRpt"]{display:none}</style><div id="cxRunProdBox"' + (x.reviewed_at ? ' class="pbx-rf-late"' : '') /* feat_runflow P8: once approved, the form keeps its own Save */ + '>' + window.pbRrProdBox(x) + '</div>'
         + (x.reviewed_at || window.pbRrAqHas(x.id) ? '<p class="pbx-note" id="cxRunApproved">' + pbCxCheck() + pbCxE(x.reviewed_at ? ' Approved ' + pbRoWhen({ locked_at: x.reviewed_at }) : ' Approved on this phone · it sends when there’s signal') + '</p>' /* feat_rrflow 6 */ + (typeof pbLvIsForeman === 'function' && pbLvIsForeman(pbArchiveOwnerUid) ? pbDfRunDailyHtml(x) /* feat_dailyflow */ : '') /* feat_dailyx */ : '<p class="pb-warn pbp-manmsg" id="cxRunApproveErr" role="alert" style="display:none"></p><button type="button" class="pb-btn" id="cxRunApproveBtn" onclick="pbRrApprove()">Approve Report</button>') + '</section>' : '';
+    if (approve.indexOf('id="cxRunApproved"') >= 0) h = h.replace(new RegExp('(<p class="pbx-note" id="cxRun' + 'Sent">[^<]*?) · Approved(</p>)'), '$1$2'); /* r16.08 cleanup */
     // feat_pdfview (owner, Oct 24): the report is read on the PDF viewer screen (View Run Report); Download / Share / the text are there
     const pdf = '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="' + (approve.indexOf('id="dxRunDaily"') >= 0 ? 'pb-btn secondary small' : 'pb-btn small') /* feat_dailyflow: one primary */ + '" id="cxRunView" onclick="pbRrView()">View Run Report</button></div>'
       /* feat_runflow P5: the photo count is in the summary block (cxRunSum) */;
@@ -61171,9 +61288,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const E = S.effective, parts = pbRsParts(S), F = O.se, office = side === 'intended';
     const tag = (path, key, unit) => { const o = pbRsOver(S, path); let t = ''; if (o.f !== undefined) t = ' <span class="pbx-tag">Foreman</span>'; else if (o.i !== undefined) t = ' <span class="pbx-tag">PM</span>';
       if (o.f !== undefined && o.i !== undefined && JSON.stringify(o.f) !== JSON.stringify(o.i)) t += '<br><span class="pbx-note">' + escapeHtml('PM intended: ' + pbRsVal(key, o.i, unit)) + '</span>';
-      if (!office && o.f !== undefined) t += ' <button type="button" class="pb-btn ghost small" onclick="pbRrSetupUndo(' + escapeHtml(JSON.stringify(path.join('.'))) + ')">Undo My Change</button>';
+      if (!office && o.f !== undefined) mineP.push(path.join('.')); /* r16.08 cleanup: one Undo for all his changes */
       return t; };
-    const row = (label, val, path, key, unit) => '<div class="pbx-row-s" style="margin:2px 0"><strong>' + escapeHtml(label) + ':</strong> ' + escapeHtml(pbRsVal(key, val, unit)) + tag(path, key, unit) + '</div>';
+    const mineP = [];
+    const row = (label, val, path, key, unit) => '<div class="pbx-row-s rs-row"><strong>' + escapeHtml(label) + ':</strong> ' + escapeHtml(pbRsVal(key, val, unit)) + tag(path, key, unit) + '</div>';
     let h = '<section id="cxRunSetup" style="margin:8px 0 12px"><h3 class="pbx-h2">Run setup</h3>';
     if (!F) {
       h += row('Job', E.job_number, ['job_number'], 'job_number') + row('Jobsite', E.jobsite, ['jobsite'], 'jobsite');
@@ -61181,9 +61299,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         PB_RS_PICKS.forEach(([k, lab]) => { h += row(lab, p[k], [n, k], k); });
         PB_RS_NUMS.forEach(([k, lab, unit]) => { h += row(lab, p[k], [n, k], k, unit); }); });
       const who = [S.intended_by_name ? 'PM: ' + S.intended_by_name : '', S.field_by_name ? 'Foreman: ' + S.field_by_name : ''].filter(Boolean).join(' · ');
-      h += (who ? '<p class="pbx-note" id="cxRunSetupWho">' + escapeHtml('Changed after the run. ' + who + '. The report below is as the crew sent it.') + '</p>' : '')
-        + '<p class="pbx-note">' + escapeHtml(office ? 'Your changes are the intended setup. The foreman’s field changes win.' : 'Your changes are the field setup. They win over the office’s.') + '</p>'
-        + '<div class="pb-save-offer-btns"><button type="button" class="pb-btn ghost small" id="cxRunSetupEdit" onclick="pbRrSetupOpen()">Change Setup</button></div>';
+      h += (who && office ? '<p class="pbx-note" id="cxRunSetupWho">' + escapeHtml('Changed after the run · ' + who) + '</p>' : '')
+        + '<div class="pb-save-offer-btns rs-btns"><button type="button" class="pb-btn ghost small" id="cxRunSetupEdit" onclick="pbRrSetupOpen()">Change Setup</button>'
+        + (mineP.length ? '<button type="button" class="pb-btn ghost small" id="cxRunSetupUndo" onclick="pbRrSetupUndo(' + escapeHtml(JSON.stringify(mineP)) + ')">Undo My Changes</button>' : '') + '</div>';
       return h + '</section>';
     }
     const mats = Array.isArray(S.materials) ? S.materials : [];
@@ -61251,7 +61369,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   };
   window.pbRrSetupUndo = async function(path) {
     const O = pbRoFor(pbArchiveOwnerUid), x = O.open; if (!x || pbRrSetupSide(O, x) !== 'field') return;
-    const err = await pbRrSetupSend(O, x, { clear: [String(path)] });
+    const err = await pbRrSetupSend(O, x, { clear: (Array.isArray(path) ? path : [path]).map(String) });
     if (pbRo !== O || O.open !== x) return;
     if (err) pbAlert(err, 'Not Saved');
     pbCxListRender();
@@ -66552,7 +66670,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     let fm = false, off = false;
     try { fm = pbLvIsForeman(uid); } catch (e) {}
     try { off = !!window.pbAcOffice(uid); } catch (e) {}
-    return { foreman: fm, office: off };
+    return { foreman: fm || off /* feat_ttoffice: PMs, supers and the company account give talks too */, office: off, field: fm };
   }
   // ---- the queue moves on ----
   function pbTtGivenMap(st) { const m = new Map(); Object.values(st.recs).forEach(r => { if (!r || r.voided) return; const p = m.get(r.talk_id); if (!p || r.given_on > p) m.set(r.talk_id, r.given_on); }); return m; }
@@ -66666,7 +66784,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // ---- Home: "Toolbox talk today: <title>" on a due day, until one is given ----
   function pbTtHomeHtml() {
     const uid = pbArchiveOwnerUid, st = pbTt.uid === uid ? pbTt.st : null;
-    if (!st || !pbTtRole(uid).foreman) return ''; /* the role this phone holds: works with no signal too */
+    if (!st || !pbTtRole(uid).field) return ''; /* the role this phone holds: works with no signal too; feat_ttoffice: the weekly plan's card is the foreman's */
     /* roles95: a foreman who is also a listed manager (Company Home) keeps the card, like his crew cards and daily buttons */
     const d = pbTtToday(); if (!pbTtDue(st.plan, d) || pbTtGivenOn(st, d).length) return '';
     const nx = pbTtNext(st), t = nx && pbTtTalk(nx.id);
@@ -66691,7 +66809,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       .map(r => { const names = r.attendees.map(x => x.name).join(', '); return { time: r.given_at || null, text: r.title, title: r.title, where: names || null, attendees: names || null }; });
   };
   // ---- Tools › Toolbox Talks ----
-  function pbTtViews(role) { return role.foreman ? [['plan', 'Plan'], ['lib', 'Library'], ['given', 'Given']] : role.office ? [['lib', 'Library'], ['given', 'Given']] : [['lib', 'Library']]; }
+  function pbTtViews(role) { return role.field ? [['plan', 'Plan'], ['lib', 'Library'], ['given', 'Given']] : role.office ? [['lib', 'Library'], ['given', 'Given']] : [['lib', 'Library']]; }
   window.pbOpenTalks = async function(view) {
     if (!window.pbCanOpen('formulasHub', { explain: true })) return;
     const uid = pbArchiveOwnerUid;
