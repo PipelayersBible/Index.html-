@@ -7795,6 +7795,15 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
   #pbApp .eh-w .pb-hs { width: 24px; font-size: 17px; }
   #pbApp #dpEquip .eh3 { gap: 5px; padding-right: 0; }
   #pbApp #dpEquip .eh3 input.dp-eqh { flex: 1 1 0; width: auto !important; padding: 0 1px !important; text-align: center; font-size: 16px; letter-spacing: -0.4px; }
+  #pbApp .pb-sl-startnow { margin: 4px 0 10px; font-size: 15px; font-weight: 600; color: var(--pb-text-2); }
+  #pbApp .pb-sl-pause { position: fixed; left: 0; right: 0; top: 0; bottom: var(--pb-tb-h, 72px); z-index: 44; display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: color-mix(in srgb, var(--pb-bg, #08090B) 94%, transparent); }
+  #pbApp .pb-sl-pause[hidden] { display: none; }
+  #pbApp .pb-sl-pcard { width: 100%; max-width: 380px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 28px 20px 18px; border-radius: 18px; background: var(--pb-raised); border: 2px solid var(--pb-brand); }
+  #pbApp .pb-sl-pcard h2 { margin: 0; font-size: 26px; }
+  #pbApp .pb-sl-pic .pb-ic { width: 40px; height: 40px; color: var(--pb-brand); }
+  #pbApp .pb-sl-preason { margin: 0; font-size: 19px; font-weight: 650; }
+  #pbApp .pb-sl-ptime { margin: 0 0 8px; font-size: 16px; color: var(--pb-text-2); font-variant-numeric: tabular-nums; }
+  #pbApp .pb-sl-pcard .pb-btn:not(.small) { width: 100%; min-height: 56px; font-size: 19px; }
   #pbApp .eh-err { flex: 1 0 100%; margin: -4px 12px 8px 0; font-size: 13px; color: var(--pb-danger, #c0392b); }
   </style>
   <!-- batch 23 DAILY: the foreman's DAILY REPORT -->
@@ -10276,7 +10285,8 @@ html.pb-light #pbApp { --pb-xing-bg: #FBE1E3; }
 #pbApp .pbx-now-empty { grid-column: 1 / -1; font-size: 15px; color: var(--pb-text-2); }
 #pbApp .pbx-num { font-size: 30px; font-weight: 750; line-height: 1.05; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--pb-text); }
 #pbApp .pbx-now .pbx-num { font-size: 36px; }
-#pbApp .pbx-lbl { font-size: 14px; font-weight: 600; line-height: 1.25; color: var(--pb-text); }
+#pbApp .pbx-lbl { font-size: 14px; font-weight: 600; line-height: 1.25; color: var(--pb-text); overflow-wrap: normal; word-break: normal; hyphens: manual; }
+#pbApp .pbx-act .pbx-lbl { letter-spacing: -0.2px; }
 #pbApp .pbx-sub { font-size: 12.5px; line-height: 1.3; color: var(--pb-text-2); }
 #pbApp .pbx-now .pbx-sub { grid-column: 1 / -1; margin-top: 2px; }
 #pbApp .pbx-now.emerg { background: var(--pb-danger-soft); border-color: var(--pb-danger-line); }
@@ -12599,7 +12609,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.08 · 2026-11-06'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.09 · 2026-11-06'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -22118,7 +22128,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const d = (x && x.d) || {}, T = PB_SL_TYPES[type], h = [];
     h.push('<h3 class="pb-sl-formh">' + pbSlIcon(type) + escapeHtml(x ? 'Edit ' + T.label.toLowerCase() : T.label) + '</h3>');
     if (x) h.push('<p class="pb-help">The earlier version stays in this entry’s history.</p>');
-    if (type === 'delay') {
+    if (type === 'delay' && !x) { /* feat_delaypause: a new delay starts now and pauses the run */
+      h.push('<div class="pb-field"><label for="pbSlReason">Reason</label>' + pbSlSelect('pbSlReason', PB_SL_DELAY, d.reason, 'Pick a reason') + '</div>');
+      h.push('<p class="pb-sl-startnow" id="pbSlStartNow">Starts now · the run pauses until you end it</p>');
+    } else if (type === 'delay') {
       h.push('<div class="pb-field"><label for="pbSlReason">Reason</label>' + pbSlSelect('pbSlReason', PB_SL_DELAY, d.reason, 'Pick a reason') + '</div>');
       h.push('<div class="pb-row"><div class="pb-field"><label for="pbSlStart">Start</label><input type="datetime-local" id="pbSlStart" value="' + pbSlLocalInput(d.start) + '" data-ms="' + (typeof d.start === 'number' ? d.start : '') + '"></div>'
         + '<div class="pb-field"><label for="pbSlEnd">End</label><input type="datetime-local" id="pbSlEnd" value="' + pbSlLocalInput(d.end) + '" data-ms="' + (typeof d.end === 'number' ? d.end : '') + '"></div></div>');
@@ -22150,7 +22163,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + '<input type="file" accept="image/*" capture="environment" id="pbSlPhoto" style="display:none;" onchange="pbSlPhotoPicked(this)">'
         + '<button type="button" class="pb-btn ghost small" onclick="document.getElementById(\'pbSlPhoto\').click()">+ Add Photo</button></div>');
     }
-    h.push('<div class="pb-btn-row"><button type="button" class="pb-btn ghost" onclick="pbSlCancel()">Cancel</button><button type="button" class="pb-btn" id="pbSlSaveBtn" onclick="pbSlSave()">' + (x ? 'Save Changes' : 'Save Entry') + '</button></div>');
+    h.push('<div class="pb-btn-row"><button type="button" class="pb-btn ghost" onclick="pbSlCancel()">Cancel</button><button type="button" class="pb-btn" id="pbSlSaveBtn" onclick="pbSlSave()">' + (x ? 'Save Changes' : type === 'delay' ? 'Start Delay' : 'Save Entry') + '</button></div>');
     return h.join('');
   }
   function pbSlPhotoList() {
@@ -22265,6 +22278,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!F || !entry || F.uid !== pbArchiveOwnerUid || !runArchive.includes(entry)) { pbAlert('Its run isn’t open any more. Nothing was saved.', 'Not Saved'); return false; }
     if (F.saving) return false; // a repeated tap
     if (F.pending) { pbAlert('A photo is still being added. Wait a moment and tap Save again.', 'Photo Still Processing'); return false; }
+    if (F.type === 'delay' && !F.editId) return pbSlPauseStart(F, entry); /* feat_delaypause */
     const r = pbSlRead(entry, F.type); if (r.err) { pbAlert(r.err + ' Nothing was saved.', 'Check This Entry'); return false; }
     F.saving = true; const btn = document.getElementById('pbSlSaveBtn'); if (btn) btn.disabled = true;
     const photos = F.photos.slice(), who = pbSlWho(), now = Date.now(), tz = pbSlTz();
@@ -22298,6 +22312,82 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     try { if (res === 'ok' && sbUser) pbProdSyncSoon(3000); } catch (err) { console.error(err); } // the entry's own stream goes in the next sync pass
     return res === 'ok';
   };
+  // ---- feat_delaypause: a delay pauses the run; ending it saves the delay with its start, end and hours ----
+  async function pbSlPauseSet(entry, fn) { // fn(entry) changes the entry; saved, or put back
+    return pbRunOnEntry(entry, async () => {
+      if (!runArchive.includes(entry)) return 'gone';
+      const prior = JSON.stringify({ p: entry.slPause === undefined ? null : entry.slPause, l: entry.siteLog === undefined ? null : entry.siteLog });
+      const r = fn(entry); if (r) return r;
+      const tok = markEntryModified(entry);
+      const ok = await saveRunArchive();
+      if (!ok) { const P = JSON.parse(prior); if (P.p === null) delete entry.slPause; else entry.slPause = P.p; if (P.l === null) delete entry.siteLog; else entry.siteLog = P.l; pbRevertModification(entry, tok); return 'failed'; }
+      return 'ok';
+    });
+  }
+  async function pbSlPauseStart(F, entry) {
+    const reason = pbSlVal('pbSlReason'); if (!reason) { pbAlert('Pick the reason for the delay.', 'Check This Entry'); return false; }
+    if (entry.slPause) { pbSlClose(); pbSlPausePaint(true); return false; }
+    const note = pbSlVal('pbSlNote').slice(0, 1000), who = pbSlWho();
+    F.saving = true; const btn = document.getElementById('pbSlSaveBtn'); if (btn) btn.disabled = true;
+    let res; try { res = await pbSlPauseSet(entry, (e) => { e.slPause = { reason, note, start: Date.now(), tz: pbSlTz(), by: who.by }; }); }
+    finally { F.saving = false; if (btn) btn.disabled = false; }
+    if (res === 'gone') { pbAlert('Its run isn’t open any more. Nothing was saved.', 'Not Saved'); return false; }
+    if (res !== 'ok') return false;
+    if (pbSlF === F) pbSlClose();
+    pbSlPausePaint(true); try { pbRenderShell(); } catch (e) {}
+    return true;
+  }
+  window.pbSlPauseEnd = async function() {
+    const entry = getCurrentArchiveEntry(); if (!entry || !entry.slPause) { pbSlPausePaint(true); return; }
+    const b = document.getElementById('pbSlPauseEnd'); if (b) { if (b.disabled) return; b.disabled = true; }
+    const now = Date.now(), tz = pbSlTz(), who = pbSlWho(); let saved = null;
+    const res = await pbSlPauseSet(entry, (e) => {
+      const p = e.slPause; if (!p) return 'same';
+      const end = Math.max(now, p.start + 60000), hours = Math.max(0.01, +((end - p.start) / 3600000).toFixed(2));
+      const L = e.siteLog && typeof e.siteLog === 'object' && Array.isArray(e.siteLog.items) ? e.siteLog : (e.siteLog = { v: 1, items: [] });
+      saved = { reason: p.reason, start: p.start, end, hours, hoursSrc: 'times', note: p.note || '' };
+      L.items.push({ id: 'sl-' + now.toString(36) + '-' + Math.random().toString(36).slice(2, 8), type: 'delay', at: now, tz, by: who.by, byEmail: who.byEmail, co: pbSlHeldCompany(), d: saved, photos: [], history: [] });
+      delete e.slPause;
+    });
+    if (b) b.disabled = false;
+    pbSlPausePaint(true); try { pbRenderShell(); } catch (e) {}
+    if (res !== 'ok') return;
+    if (getCurrentArchiveEntry() === entry && pbCurrentScreen === 'results') renderResultsTable(entry);
+    const live = document.getElementById('pbSlLive'); if (live && saved) live.textContent = 'Delay saved: ' + pbSlH(saved.hours) + ' h (' + pbSlOpt(PB_SL_DELAY, saved.reason)[1] + ').';
+    try { if (sbUser) pbProdSyncSoon(3000); } catch (err) { console.error(err); }
+  };
+  window.pbSlPauseCancel = function() {
+    const entry = getCurrentArchiveEntry(); if (!entry || !entry.slPause) return;
+    pbConfirm('Started by mistake? It’s taken off and nothing is saved.', async () => { await pbSlPauseSet(entry, (e) => { delete e.slPause; }); pbSlPausePaint(true); try { pbRenderShell(); } catch (er) {} }, 'Cancel Delay', { no: 'Keep It', yes: 'Cancel Delay' });
+  };
+  function pbSlPauseMin(p) { return Math.max(0, Math.floor((Date.now() - p.start) / 60000)); }
+  function pbSlPauseAge(p) { const m = pbSlPauseMin(p); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') + ' min'; }
+  let pbSlPauseKey = '';
+  function pbSlPausePaint(force) {
+    const e = pbCurrentScreen === 'results' ? getCurrentArchiveEntry() : null, p = e && e.kind === 'run' ? e.slPause : null;
+    let el = document.getElementById('pbSlPause');
+    if (!p) { if (el && !el.hidden) { el.hidden = true; document.documentElement.classList.remove('pb-run-paused'); } pbSlPauseKey = ''; return; }
+    const scr = document.getElementById('screen-results'); if (!scr) return;
+    if (!el) { el = document.createElement('div'); el.id = 'pbSlPause'; el.className = 'pb-sl-pause'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'pbSlPauseH'); scr.appendChild(el); }
+    const key = e.id + '|' + p.start + '|' + pbSlPauseMin(p);
+    if (force || key !== pbSlPauseKey || el.hidden) {
+      pbSlPauseKey = key;
+      const t = new Date(p.start), at = t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      el.innerHTML = '<div class="pb-sl-pcard"><span class="pb-sl-pic">' + pbSlIcon('delay') + '</span><h2 id="pbSlPauseH">Run paused</h2>'
+        + '<p class="pb-sl-preason">' + escapeHtml(pbSlOpt(PB_SL_DELAY, p.reason)[1]) + '</p>'
+        + '<p class="pb-sl-ptime" id="pbSlPauseTime">Since ' + escapeHtml(at) + ' · ' + escapeHtml(pbSlPauseAge(p)) + '</p>'
+        + '<button type="button" class="pb-btn" id="pbSlPauseEnd" onclick="pbSlPauseEnd()">End Delay</button>'
+        + '<button type="button" class="pb-btn ghost small" id="pbSlPauseCancel" onclick="pbSlPauseCancel()">Cancel Delay</button></div>';
+    }
+    if (el.hidden) el.hidden = false;
+    document.documentElement.classList.add('pb-run-paused');
+  }
+  window.pbSlPausePaint = pbSlPausePaint;
+  setInterval(() => { try { pbSlPausePaint(false); } catch (e) {} }, 1000);
+  (window.pbActiveBarProviders = Array.isArray(window.pbActiveBarProviders) ? window.pbActiveBarProviders : []).push(() => {
+    const e = getCurrentArchiveEntry(); if (!e || e.kind !== 'run' || !e.slPause) return null;
+    return { id: 'slPause', text: 'Run paused · Delay · ' + pbSlPauseAge(e.slPause), go: 'End', warn: true, screen: 'results', onClick: () => { try { window.pbResumeLastRunResults(); } catch (er) { pbGoto('results'); } } };
+  });
   function pbSlRender(e) {
     const list = document.getElementById('pbSlList'), tot = document.getElementById('pbSlTotals'), ps = document.getElementById('pbSlProd'); if (!list) return;
     if (pbSlF && (!e || pbSlF.entryId !== e.id || pbSlF.uid !== pbArchiveOwnerUid)) pbSlClose(); // another run or account: the form doesn't follow
@@ -40285,7 +40375,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   ];
   const PB_PROD_HOURS_KEY = '_manhours';
   function pbProdNumOrNull(v) { if (v === null || v === undefined || v === '') return null; const n = typeof v === 'number' ? v : Number(String(v).replace(/,/g, '').trim()); return Number.isFinite(n) ? n : null; }
-  function pbProdUnitKey(u) { return String(u == null ? '' : u).trim().toLowerCase(); }
+  function pbProdUnitKey(u) { const k = String(u == null ? '' : u).trim().toLowerCase().replace(/\.$/, ''); return /^(lf|l\.f|ft|feet|foot|lin\.? ?ft|linear (feet|ft))$/.test(k) ? 'lf' : k; } /* office review F-06: FT / feet = LF */
   // plan: { categories: [{ key, name, unit, planned, weight, hours }], budget_hours } or null (no plan saved: the six defaults)
   // sums: [{ key, unit, done, today, week, n }] as the server returns them (one row per category and unit)
   function pbProdJobView(plan, sums) {
@@ -46212,7 +46302,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const tog = '<div class="pb-btn-wrap" style="padding-top:10px;"><button type="button" class="pb-btn ghost small" id="jobsAllToggle" onclick="pbJobsShowAll(' + (pbJobsAll ? 'false' : 'true') + ')">' + (pbJobsAll ? 'Only Jobs Not Sent' : 'Show All Jobs (' + jobs.length + ')') + '</button></div>';
     const shown = pbJobsAll ? jobs : unsentJobs;
     if (!shown.length) { el.innerHTML = '<div class="pb-job-empty" id="jobsNoneUnsent">Everything on this phone has been sent.</div>' + tog; return; }
-    el.innerHTML = tog + shown.map(j => '<button type="button" class="pb-job-row" data-key="' + escapeHtml(j.key) + '" onclick="pbJobsOpen(this.dataset.key)"><span class="pb-job-ic" aria-hidden="true"></span><span class="pb-job-main"><span class="pb-job-name" style="display:block;">' + escapeHtml(pbJobTitle(j)) + '</span><span class="pb-job-sub" style="display:block;">' + escapeHtml(pbJobSubtitle(j)) + '</span><span class="pb-job-count" style="display:block;">' + escapeHtml(pbJobCountLine(j)) + '</span></span><span class="pb-job-go" aria-hidden="true">&rsaquo;</span></button>').join('');
+    el.innerHTML = (!pbJobsAll && shown.length === jobs.length ? '' : tog) /* vis F44: no "Show All Jobs" when all are shown */ + shown.map(j => '<button type="button" class="pb-job-row" data-key="' + escapeHtml(j.key) + '" onclick="pbJobsOpen(this.dataset.key)"><span class="pb-job-ic" aria-hidden="true"></span><span class="pb-job-main"><span class="pb-job-name" style="display:block;">' + escapeHtml(pbJobTitle(j)) + '</span><span class="pb-job-sub" style="display:block;">' + escapeHtml(pbJobSubtitle(j)) + '</span><span class="pb-job-count" style="display:block;">' + escapeHtml(pbJobCountLine(j)) + '</span></span><span class="pb-job-go" aria-hidden="true">&rsaquo;</span></button>').join('');
   }
   window.pbRenderJobs = pbRenderJobs;
   // Leaving Jobs with a typed, unsaved job asks first, whichever way it is left (a tab, the header
@@ -55907,7 +55997,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   async function pbDlyCanAsk(uid) { return !!(sbClient && typeof sbClient.rpc === 'function' && sbUser && sbUser.id === uid && navigator.onLine !== false && (await pbLiveSessionIs(uid))); }
   const pbDlyMissing = (r) => /Could not find the function|function .* does not exist|schema "pb_daily" does not exist/i.test(String((r && r.error && r.error.message) || ''));
   const PB_DLY_WORDS = {
-    'pb:not_company_account': 'Only the company account, a manager or a PM can do that.', 'pb:not_foreman': 'Only a foreman of this company can do that.', 'pb:already_signed': 'The foreman signed this day already.', /* roles95 */
+    'pb:not_company_account': 'Only the company account, a manager or a PM can do that.', 'pb:not_foreman': 'Only a foreman of this company can do that.', 'pb:office_filled': 'The office already filled in this day’s report for you.', 'pb:already_signed': 'The foreman signed this day already.', /* roles95 */
     'pb:not_assigned': 'This item is assigned to another foreman. The office can reassign it to you.', 'pb:item_done': 'This item was already checked off.',
     'pb:item_canceled': 'The office canceled this item.', 'pb:changed': 'Someone changed this item since you opened it. It has been reloaded.',
     'pb:need_reason': 'Give a reason for canceling it.', 'pb:need_detail': 'Describe what kind of item "Other" is.', 'pb:need_where': 'Give a station (or a range) or a place.',
@@ -60911,7 +61001,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (pbDr !== O) return;
       const all = []; let ok = 0;
       res.forEach(r => { if (r && !r.error && r.data && Array.isArray(r.data.reports)) { ok++; r.data.reports.forEach(x => { if (x && x.id && x.latest !== false && Date.parse(String(x.work_date) + 'T12:00:00') >= cut) all.push(x); }); } });
-      if (!ok && res.length) { O.msg = 'Couldn’t load the daily reports.'; return; }
+      if (!ok && res.length) { O.msg = 'Couldn’t load the daily reports.'; O.at = Date.now(); return; } /* office review F-11: wait before asking again */
       all.sort((a, b) => (a.work_date < b.work_date ? 1 : a.work_date > b.work_date ? -1 : String(b.received_at).localeCompare(String(a.received_at))));
       O.list = all.slice(0, 60); O.at = Date.now(); O.msg = '';
       for (const x of O.list.slice(0, 12)) { // the day's production, from the signed report
@@ -60931,7 +61021,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbDrTile = function(uid) {
     const O = pbDrFor(uid); pbDrLoad(uid).catch(() => {});
     const L = O.list, nNew = L ? L.filter(r => pbDrNew(O, r)).length : 0;
-    const sub = !L ? (pbCxOnline() ? 'Loading…' : 'Loads with signal') : !L.length ? 'None in the last 2 weeks' : nNew ? (nNew === 1 ? 'Job ' + L.find(r => pbDrNew(O, r)).job_number + ' · ' + pbDxShort(L.find(r => pbDrNew(O, r)).work_date) : 'To look over') : 'All looked at';
+    const sub = !L ? (O.msg ? 'Couldn’t load' : pbCxOnline() ? 'Loading…' : 'Loads with signal') : !L.length ? 'None in the last 2 weeks' : nNew ? (nNew === 1 ? 'Job ' + L.find(r => pbDrNew(O, r)).job_number + ' · ' + pbDxShort(L.find(r => pbDrNew(O, r)).work_date) : 'To look over') : 'All looked at';
     return '<button type="button" class="pbx-act pbx-dr-tile' + (nNew ? ' hot' : '') + '" id="homeCxDailies" onclick="pbCxOpenList(\'dailies\')">'
       + '<span class="pbx-act-ic">' + pbCxIc('clipboard') + '</span><span class="pbx-num" id="homeCxDailiesN">' + (L ? nNew : '–') + '</span><span class="pbx-lbl">' + (nNew === 1 ? 'New daily report' : 'New daily reports') + '</span><span class="pbx-sub" id="homeCxDailiesSub">' + pbCxE(sub) + '</span></button>';
   };
@@ -60951,8 +61041,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   };
   window.pbDrOpen = function(id) {
     const uid = pbArchiveOwnerUid, O = pbDrFor(uid);
-    if (O.seen && !O.seen.has(String(id))) { O.seen.add(String(id)); pbSetFor(uid, 'drSeen', JSON.stringify(Array.from(O.seen).slice(-500))).catch(() => {}); }
-    pbDrPaint(); return window.pbDlyServerPdf(id);
+    const mark = () => { if (O.seen && !O.seen.has(String(id))) { O.seen.add(String(id)); pbSetFor(uid, 'drSeen', JSON.stringify(Array.from(O.seen).slice(-500))).catch(() => {}); } pbDrPaint(); };
+    return Promise.resolve(window.pbDlyServerPdf(id)).then((r) => { if (r !== false) mark(); return r; }, (e) => { console.error(e); }); /* office review F-07: looked at once it opened */
   };
   window.__pbDrState = () => pbDr; // tests
   window.addEventListener('online', () => { try { if (pbDr.uid) pbDrLoad(pbDr.uid, true).catch(() => {}); } catch (e) {} });
