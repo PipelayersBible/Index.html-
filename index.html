@@ -62,6 +62,7 @@
     cur = OK[p] === 1 ? p : 'dark';
     var light = isLight(cur), i, ms, bs, on;
     if (light) de.classList.add('pb-light'); else de.classList.remove('pb-light');
+    try { de.style.backgroundColor = light ? '#EEF0F3' : '#08090B'; } catch (e) {} /* r16.07: no white screen while the page loads */
     de.setAttribute('data-pb-theme', cur);
     ms = document.querySelectorAll('meta[name="theme-color"]');
     for (i = 0; i < ms.length; i++) ms[i].setAttribute('content', light ? COLORS.light : COLORS.dark);
@@ -1156,6 +1157,16 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
 .pb-app.pb-text-big pre, .pb-app.pb-text-big .pb-review-item { overflow-wrap: anywhere; }
 .pb-app.pb-text-big input:not([type="checkbox"]):not([type="radio"]), .pb-app.pb-text-big select, .pb-app.pb-text-big textarea { max-width: 100%; min-width: 0; }
 .pb-app input[type="checkbox"], .pb-app input[type="radio"] { flex-shrink: 0; } /* stay square inside flex labels */
+#pbApp .pb-jump-end { position: fixed; right: 16px; bottom: calc(16px + var(--pb-shell-h, 0px) / var(--pb-text-zoom, 1)); z-index: 40; width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 0; border: 1px solid var(--pb-border, rgba(255,255,255,.14)); background: var(--pb-surface-2, #1B1F26); color: var(--pb-accent, #F5C542); box-shadow: 0 6px 18px rgba(0,0,0,.4); cursor: pointer; } /* feat_jumpend */
+#pbApp .pb-jump-end[hidden] { display: none; }
+#pbApp #screen-input .pb-help.pb-nostake { margin: 6px 0 10px; color: var(--pb-warn-text, #F5C542); font-weight: 600; }
+#pbApp .pb-jump-end:active { transform: scale(.94); }
+#pbApp .pb-screen:not(.active) .pb-jump-end { display: none; }
+#pbApp .pb-home-fmprog { margin: 0 16px 8px; } #pbApp .pb-home-fmprog .pb-home-sec { margin-left: 0; }
+#pbApp .pb-home-fmprog .pb-fmhp-job { display: block; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; margin: 0 0 10px; }
+#pbApp .pb-home-fmprog .pb-fmhp-when { margin: 0 0 8px; font-size: 12.5px; }
+#pbApp #cpEmergencyPanel { scroll-margin-top: calc(72px + env(safe-area-inset-top, 0px)); } /* review1 */
+#pbApp #screen-results #resultsBody .pb-fit-vbtn { min-height: 44px; } #pbApp #screen-results #resultsBody .pb-fit-undo { width: 44px; height: 44px; } /* review1: 44 px targets */
 #pbCopyToast { zoom: var(--pb-text-zoom, 1); } /* the toast sits on body, outside #pbApp */
 /* every size: field controls big enough to hit */
 #pbModalDialog input[type="date"], #pbModalDialog input[type="time"], #pbModalDialog input[type="datetime-local"] { min-height: 44px !important; }
@@ -2730,6 +2741,79 @@ html.pb-cx #homeFmPulse #homeFmCrew { display: none !important; } /* the Company
 #pbApp .pb-ai-thumb-x { position: absolute; top: 0; right: 0; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 0 0 0 8px; background: rgba(0, 0, 0, 0.62); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 #pbApp .pb-ai-thumb-x .pb-ic { width: 16px; height: 16px; }
 #pbApp .pb-ai-thumb-x::after { content: ''; position: absolute; top: 0; right: 0; bottom: -12px; left: -12px; } /* 44 px touch target */
+/* feat_askui: the note folded to one line; the question box at the bottom of the Ask sheet */
+#pbApp details.pb-ai-ask-warn { margin: 8px 16px 0 16px; font-size: 0.875em; color: var(--pb-text-dim, inherit); }
+#pbApp details.pb-ai-ask-warn > summary { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; cursor: pointer; list-style: none; }
+#pbApp details.pb-ai-ask-warn > summary::-webkit-details-marker { display: none; }
+#pbApp details.pb-ai-ask-warn > summary .pb-ic { width: 16px; height: 16px; color: var(--pb-warn); }
+#pbApp details.pb-ai-ask-warn > p { margin: 0 0 8px; }
+#pbApp .pb-ai-compose { position: sticky; bottom: calc(var(--pb-shell-h, 0px) / var(--pb-text-zoom, 1)); z-index: 3; margin-top: 16px; padding: 10px 16px calc(10px + max(0px, env(safe-area-inset-bottom, 0px) - var(--pb-ab-h, 0px))); background: var(--pb-canvas, var(--asphalt)); border-top: 1px solid var(--pb-border); }
+#pbApp .pb-edu-sheet.open #aiAskSheetBody .pb-ai-compose { bottom: calc((var(--pb-tb-h, 0px) + var(--pb-ab-h, 0px)) / var(--pb-text-zoom, 1)); }
+#pbApp #aiAskSheet.open .pb-edu-sheet-inner { padding-bottom: calc(40px + (var(--pb-tb-h, 0px) + var(--pb-ab-h, 0px)) / var(--pb-text-zoom, 1)); }
+#pbApp #aiAskSheet.open .pb-edu-sheet-inner { min-height: 100%; box-sizing: border-box; display: flex; flex-direction: column; }
+#pbApp #aiAskSheet.open #aiAskSheetBody { flex: 1 0 auto; display: flex; flex-direction: column; }
+#pbApp #aiAskSheet.open #aiAskSheetBody > .pb-ai-compose { margin-top: auto; }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-hubfold:not(.pb-laid-next) { display: none; }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-hubstrip { cursor: pointer; }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-hubstrip > td { padding-top: 12px !important; padding-bottom: 12px !important; }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-hubstrip .pb-rs-hd > .pb-sta-sub { font-size: 16px; }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-hubstrip .pb-rs-hdinfo { font-size: 14.5px; }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-fitstrip .pb-fit-title { font-size: 18px; font-weight: 800; }
+#pbApp #screen-results #resultsBody .pb-fit-vbtn { appearance: none; display: inline-flex; align-items: center; min-height: 36px; min-width: 64px; margin: 3px 0 3px 6px; padding: 0 10px; border: 1.5px solid var(--pb-border-strong, #5A6472); border-radius: 8px; background: var(--pb-canvas, #08090B); font: inherit; font-weight: 700; color: var(--pb-text); cursor: pointer; box-shadow: inset 0 1px 2px rgba(0,0,0,.35); }
+#pbApp #screen-results #resultsBody .pb-fit-vbtn:active, #pbApp #screen-results #resultsBody .pb-fit-vbtn:focus-visible { border-color: var(--pb-brand, #F5C542); outline: none; }
+:where(html.pb-light) #pbApp #screen-results #resultsBody .pb-fit-vbtn { background: #FFFFFF; border-color: #9AA3AF; box-shadow: inset 0 1px 2px rgba(0,0,0,.08); }
+#pbApp #screen-results #resultsBody .pb-fit-nums { display: grid; grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr); column-gap: 8px; align-items: end; margin: 6px 0 2px; }
+#pbApp #screen-results #resultsBody .pb-fit-mid { display: flex; justify-content: center; align-items: center; min-height: 40px; }
+#pbApp #screen-results #resultsBody .pb-fit-cell { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; text-align: center; column-gap: 6px; row-gap: 3px; min-width: 0; }
+#pbApp #screen-results #resultsBody .pb-fit-cell > span:not(.pb-fit-auto) { display: contents; }
+#pbApp #screen-results #resultsBody .pb-fit-k { flex: 0 0 100%; font-size: 12.5px; font-weight: 600; color: var(--pb-text-2); }
+#pbApp #screen-results #resultsBody .pb-fit-cell .pb-fit-vbtn { margin: 0; }
+#pbApp #screen-results #resultsBody .pb-fit-mid .pb-fit-undo { margin: 0; }
+#pbApp #screen-results #resultsBody .pb-fit-vbtn .pb-fit-auto { margin-left: 6px; font-weight: 600; white-space: nowrap; }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-hubstrip.pb-fitstrip .pb-fit-head { flex-wrap: wrap; row-gap: 2px; }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-hubstrip.pb-fitstrip .pb-fit-title { flex: 1 1 100%; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-hubstrip.pb-fitstrip .pb-fit-at { flex: 1 1 100%; text-align: left; font-size: 13px; font-weight: 600; color: var(--pb-text-2); }
+#pbApp #screen-results #resultsBody .pb-fit-undo { appearance: none; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; margin-left: 8px; padding: 0; border: 1px solid var(--pb-border, rgba(255,255,255,.16)); border-radius: 10px; background: transparent; color: var(--pb-text-2); cursor: pointer; }
+#pbApp #screen-results #resultsBody .pb-fit-undo:active { color: var(--pb-brand, #F5C542); border-color: var(--pb-brand, #F5C542); }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-hubstrip.pb-fitstrip:not(.pb-hubopen) :is(.pb-fit-sub, .pb-fit-facts, .pb-fit-ask:not(.pb-fit-pending)) { display: none; }
+#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-hubstrip.pb-fitstrip > td { padding-left: 10px !important; padding-right: 10px !important; }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-hubstrip.pb-fitstrip .pb-fit-head { padding-right: 96px; min-height: 34px; align-items: center; }
+#pbApp#pbApp #screen-results #resultsBody tr.pb-hubstrip.pb-fitstrip .pb-fold-pill { top: 10px; transform: none; }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-hubstrip.pb-fitstrip .pb-lay-note { display: block; padding-right: 96px; }
+#pbApp#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-hubstrip.pb-fitstrip + tr.pb-fitrow > td { border-top-width: 0 !important; }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-hubstrip.pb-fitstrip:not(.pb-hubopen) .pb-lay-note { display: none; }
+#pbApp#pbApp#pbApp #screen-results #resultsTable tr.pb-hubstrip .pb-sta-sub::before { content: none; }
+#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-hubstrip > td { position: relative; padding-left: 92px !important; padding-right: 92px !important; }
+#pbApp #screen-results #resultsBody .pb-fold-pill { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1.5px solid var(--pb-brand, #F5C542); color: var(--pb-brand, #F5C542); background: rgba(245,197,66,0.10); font-size: 14px; font-weight: 700; line-height: 1; white-space: nowrap; }
+#pbApp #screen-results #resultsBody .pb-fold-pill svg { transition: transform .15s; }
+#pbApp#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-hubstrip + tr[data-laid-idx]:not([data-laid-strip]):not(.pb-laid):not(.pb-laid-next):not(.pb-laid-armed):not(.pb-laid-armedundo) > td { background-color: #20252C !important; border-top-width: 0 !important; } /* owner: the hub's row matches its title row; no seam in the edge */
+:where(html.pb-light) #pbApp#pbApp#pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-hubstrip + tr[data-laid-idx]:not([data-laid-strip]):not(.pb-laid):not(.pb-laid-next):not(.pb-laid-armed):not(.pb-laid-armedundo) > td { background-color: #F4F6F8 !important; border-top-width: 0 !important; }
+#pbApp #screen-results #resultsBody tr.pb-hubopen .pb-fold-pill svg { transform: rotate(180deg); }
+#pbApp #screen-results #resultsBody tr.pb-hubstrip:not(.pb-hubopen) .pb-fold-h, #pbApp #screen-results #resultsBody tr.pb-hubopen .pb-fold-s { display: none; }
+:where(html.pb-light) #pbApp #screen-results #resultsBody .pb-fold-pill { color: #7A5300; border-color: #B7860B; background: rgba(183,134,11,0.10); }
+html.pb-ask-open .pb-tabbar { z-index: 46; } /* r16.07: over the Ask sheet (45) only; under dialogs (50) */
+#pbApp #aiAskSheetBody .pb-ai-compose textarea { min-height: 52px; max-height: 160px; }
+#pbApp #aiAskSheetBody .pb-ai-compose .pb-ai-photos, #pbApp #aiAskSheetBody .pb-ai-compose .pb-ai-privacy, #pbApp #aiAskSheetBody .pb-ai-compose #aiAskStatus { margin-left: 0; margin-right: 0; }
+#pbApp .pb-ai-compose { display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; }
+#pbApp .pb-ai-compose > * { flex: 1 1 100%; }
+#pbApp #aiAskSheetBody .pb-ai-compose > .pb-ai-photos { flex: 0 1 auto; min-width: 0; flex-wrap: wrap; margin: 8px 0 0; order: 2; }
+#pbApp .pb-ai-compose > .pb-btn-wrap { flex: 1 1 0; padding: 0; margin: 8px 0 0; order: 3; }
+#pbApp .pb-ai-compose > .pb-btn-wrap .pb-btn { width: 100%; }
+
+#pbApp .pb-ai-compose > .pb-ai-wait, #pbApp #aiAskSheetBody .pb-ai-compose > #aiAskStatus { order: 4; }
+#pbApp .pb-ai-compose > .pb-ai-photos .pb-ai-thumbs:empty { display: none; }
+#pbApp .pb-ai-thumb-pg { position: absolute; left: 4px; bottom: 4px; font-size: 11px; font-weight: 700; padding: 0 4px; border-radius: 4px; background: rgba(0, 0, 0, 0.65); color: #fff; }
+/* feat_takeoff */
+#pbApp .pb-ai-prop { margin: 12px 0 4px; padding: 12px; border: 1px solid var(--pb-border); border-radius: 12px; background: var(--pb-surface-2, transparent); }
+#pbApp .pb-ai-prop-h, #pbApp .pbm-tk-h { font-weight: 700; margin: 0 0 6px; }
+#pbApp .pb-ai-prop-l, #pbApp .pbm-tk-l { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 8px; }
+#pbApp .pb-ai-prop-l li { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; }
+#pbApp .pb-ai-prop-q { font-weight: 700; text-align: right; }
+#pbApp .pb-ai-prop-b { grid-column: 1 / -1; font-size: 0.875em; color: var(--pb-text-dim, inherit); opacity: 0.85; }
+#pbApp .pbm-tk { margin: 8px 0 12px; padding: 12px; border: 1px solid var(--pb-border); border-left: 4px solid var(--pb-accent, #F2C230); border-radius: 12px; }
+#pbApp .pbm-tk-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
+#pbApp .pbm-tk-row .pbp-dim { grid-column: 1; }
+#pbApp .pbm-tk-row > .pb-btn, #pbApp .pbm-tk-row > .pb-chip { grid-column: 2; grid-row: 1 / span 2; min-height: 44px; }
 #pbApp .pb-ai-qphotos { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 6px 0; }
 #pbApp .pb-ai-qphotos img { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1px solid var(--pb-divider); }
 #pbApp #aiAskSheetBody .pb-ai-photos { margin-left: 16px; margin-right: 16px; }
@@ -4068,8 +4152,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp#pbApp #screen-results #resultsTable td:first-child > .pb-gsdots:active { background: var(--pb-raised-2); }
 #pbApp#pbApp#pbApp #screen-results #resultsTable:not(.pb-zoom) td:first-child:has(> .pb-gsdots) { padding-top: 2px; padding-bottom: 2px; }
 /* the table box fills the room between the sticky header and the bottom bars (it was 62vh: 8 rows; now 11 at 390 x 844) */
-#pbApp#pbApp #screen-results #resultsMainContent > .pb-table-wrap { max-height: max(62vh, calc(100vh / var(--pb-zoom, 1) - var(--pb-shell-h, 0px) / var(--pb-text-zoom, 1) - 80px)); }
-@supports (height: 100svh) { #pbApp#pbApp #screen-results #resultsMainContent > .pb-table-wrap { max-height: max(62svh, calc(100svh / var(--pb-zoom, 1) - var(--pb-shell-h, 0px) / var(--pb-text-zoom, 1) - 80px)); } }
+#pbApp#pbApp #screen-results #resultsMainContent > .pb-table-wrap { max-height: max(50vh, calc(100vh / var(--pb-zoom, 1) - var(--pb-shell-h, 0px) / var(--pb-text-zoom, 1) - 240px)); } /* r16.07: two rows shorter */
+@supports (height: 100svh) { #pbApp#pbApp #screen-results #resultsMainContent > .pb-table-wrap { max-height: max(50svh, calc(100svh / var(--pb-zoom, 1) - var(--pb-shell-h, 0px) / var(--pb-text-zoom, 1) - 240px)); } }
 #pbApp#pbApp #pbModalDialog.pb-gs-sheet #pbModalButtons > .pb-btn.pb-gs-act { justify-content: flex-start; text-align: left; gap: 10px; min-height: 52px; }
 #pbApp#pbApp #pbModalDialog.pb-gs-sheet #pbModalButtons > .pb-btn[data-gs-act="close"] { justify-content: center; background: transparent; border: 1px solid var(--pb-control); }
 #pbApp#pbApp #pbModalDialog.pb-gs-sheet #pbModalMessage { font-variant-numeric: tabular-nums; color: var(--pb-text-2); }
@@ -5365,17 +5449,19 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
       <h1 class="pb-title">Ask</h1>
     </div>
     <div class="pb-ai-ctx" id="aiAskCtx" hidden><span>Asking about <strong id="aiAskCtxLabel"></strong></span><button type="button" class="pb-ai-ctx-x" onclick="pbAiAskClearCtx()" aria-label="Ask about any topic instead" title="Any topic"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><use href="#pb-i-x"/></svg></button></div>
-    <div class="pb-alert warn pb-ai-ask-warn"><strong>AI answers can be wrong.</strong> For safety rules, follow your competent person and your site&rsquo;s safety program. AI never decides whether a permit or an entry is a go.</div>
+    <details class="pb-ai-ask-warn" id="aiAskWarn"><summary><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>AI answers can be wrong</span></summary><p>For safety rules, follow your competent person and your site&rsquo;s safety program. AI never decides whether a permit or an entry is a go.</p></details>
     <div id="aiAskHistory" class="pb-ai-history"></div>
-    <div class="pb-field" style="margin:16px 16px 0 16px;">
-      <label for="aiAskBox">Your question</label>
-      <textarea id="aiAskBox" rows="3" maxlength="600" placeholder="e.g. What does 15/SD on a stake mean?"></textarea>
+    <div class="pb-ai-compose" id="aiAskCompose">
+    <div class="pb-field" style="margin:0;">
+      <label for="aiAskBox" class="pb-sr">Your question</label>
+      <textarea id="aiAskBox" rows="2" maxlength="600" placeholder="e.g. What does 15/SD on a stake mean?"></textarea>
     </div>
-    <div class="pb-ai-photos" id="aiAskPhotoRow"><button type="button" class="pb-btn small secondary pb-ai-photo-btn" id="aiAskPhotoBtn" onclick="pbAiAskPickPhoto()"><svg class="pb-ic" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Photo</span></button><input type="file" accept="image/*" multiple id="aiAskPhotoInput" aria-label="Add a photo to your question" style="display:none;" onchange="pbAiAskPhotoPicked(this)"><div class="pb-ai-thumbs" id="aiAskThumbs" aria-live="polite"></div></div>
-    <p class="pb-ai-privacy" id="aiAskPrivacy">Sent to Anthropic to be read; not stored by the app. Don’t use AI with confidential job info.</p>
+    <div class="pb-ai-photos" id="aiAskPhotoRow"><button type="button" class="pb-btn small secondary pb-ai-photo-btn" id="aiAskPhotoBtn" onclick="pbAiAskPickPhoto()"><svg class="pb-ic" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg><span>Attach</span></button><input type="file" accept="image/*,application/pdf" multiple id="aiAskPhotoInput" aria-label="Attach photos or a PDF to your question" style="display:none;" onchange="pbAiAskPhotoPicked(this)"><div class="pb-ai-thumbs" id="aiAskThumbs" aria-live="polite"></div></div>
     <div class="pb-btn-wrap"><button class="pb-btn" id="aiAskBtn" onclick="pbAiAsk()">Ask</button></div>
     <div class="pb-ai-wait" id="aiAskWait" hidden><span role="status" aria-live="polite"><span class="pb-ai-dot" aria-hidden="true"></span><span id="aiAskWaitT">Asking…</span></span><button type="button" class="pb-btn small ghost" id="aiAskCancel" onclick="pbAiAskCancel()">Cancel</button></div>
     <div class="pb-ai-status" id="aiAskStatus" role="status" aria-live="polite"></div>
+    </div>
+    <p class="pb-ai-privacy" id="aiAskPrivacy">Sent to Anthropic to be read; not stored by the app. Don’t use AI with confidential job info.</p>
     <div class="pb-btn-wrap" id="aiAskClearWrap" style="display:none;"><button class="pb-btn ghost" onclick="pbAiAskNewChat()">New Chat</button></div>
   </div>
 
@@ -7331,7 +7417,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
   #pbApp .rpf-foot { display: flex; gap: 8px; padding: 16px; }
   #pbApp .rpf-foot .pb-btn { flex: 1 1 0; min-height: 48px; }
   /* the sheet */
-  #pbApp .rpf-sheet { position: fixed; inset: 0; z-index: 45; display: flex; align-items: flex-end; justify-content: center; }
+  #pbApp .rpf-sheet { position: fixed; inset: 0; z-index: 47; display: flex; align-items: flex-end; justify-content: center; }
   #pbApp .rpf-sheet[hidden] { display: none; }
   #pbApp .rpf-sheet-bg { position: absolute; inset: 0; background: rgba(4,5,6,0.72); border: 0; padding: 0; margin: 0; cursor: pointer; }
   #pbApp .rpf-sheet-card { position: relative; width: 100%; max-width: 560px; max-height: 86vh; display: flex; flex-direction: column; background: var(--pb-raised); border-top: 1px solid var(--pb-divider); border-radius: 18px 18px 0 0; box-shadow: 0 -12px 32px rgba(0,0,0,.45); padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -7634,6 +7720,9 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
   #pbApp .pbloc-err { margin: 8px 0; }
   #pbApp .pbloc-btns .pb-btn { min-height: 48px; }
   #pbApp .pbloc-closed { margin-top: 16px; }
+  #pbApp .pbloc-log { margin-top: 8px; } #pbApp .pbloc-log > summary { min-height: 44px; display: flex; align-items: center; color: var(--pb-text-dim); }
+  #pbApp .pbloc-log ol { list-style: none; margin: 0; padding: 0; } #pbApp .pbloc-log li { padding: 8px 0; border-top: 1px solid var(--pb-divider); font-size: .9em; }
+  #pbApp .pbloc-log .k { font-weight: 600; } #pbApp .pbloc-log .w { color: var(--pb-text-dim); display: block; }
   #pbApp .pbloc-closed > summary { min-height: 44px; display: flex; align-items: center; }
   #pbApp .pbloc-fmbtn { display: flex; align-items: center; justify-content: flex-start; gap: 8px; width: 100%; min-height: 44px; margin: 10px 0 0; text-align: left; }
   #pbApp .pbloc-fmbtn.amber { color: var(--pb-warn-text); }
@@ -8811,6 +8900,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
   </div>
 
   <div class="pb-screen" id="screen-input">
+  <button type="button" class="pb-jump-end" id="pbJumpEnd" aria-label="Go to the bottom" hidden onclick="pbJumpEnd()"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <div class="pb-header">
       <p class="pb-eyebrow"><span>NEW RUN</span><button class="pb-back" title="Home" onclick="pbGoto('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11L12 3l9 8"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></button></p>
       <h1 class="pb-title">Run Setup</h1>
@@ -10958,6 +11048,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
   })();
   // ---- 11. No "assumed final cut piece" text (runs locked before this release still carry it) ----
+  function pbRsLayNoteStrip(r, fit) { const t = pbRsLayNote(r && r.layoutNote); return fit ? t.split('. ').filter(x => !/^Fitting: /.test(x)).join('. ').trim() : t; } /* fitcard2: the fitting's card says it */
   function pbRsLayNote(note) {
     if (!note) return '';
     return String(note).split('. ').filter(x => !/^(Assumed final cut piece \(|End of the assumed final cut piece \()/.test(x)).join('. ').trim();
@@ -11755,6 +11846,19 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   window.__pbFitRawExtra = pbFitRawExtra; /* fitcard: tests */
   // hubedge 2: "8/SS PIPE (stake 20713)" -> "8/SS PIPE (20713)"
+  /* r16.07 hubfold (owner, Nov 6): a labelled hub (not Start / End, a fitting or an added point) shows its title strip only;
+     the strip opens its row. Opened ones are kept for this run while the app is open. The next row to lay always shows. */
+  const pbRsHubOpenSet = new Set();
+  function pbRsHubFoldable(r, fit) { return !!(r && !r.addedTime && (fit || (r.label && r.label !== 'start' && r.label !== 'end'))); } /* fitfold: fittings too */
+  function pbRsHubIsOpen(entry, idx) { return !!window.__pbNoFold || (!!entry && pbRsHubOpenSet.has(String(entry.id) + ':' + idx)); } /* __pbNoFold: older tests see every row */
+  window.pbRsHubToggle = function(idx, ev) {
+    if (ev && ev.target && ev.target.closest && ev.target.closest('button, a, input, select, textarea, label')) return; // a fitting's own buttons do their own thing
+    const e = getCurrentArchiveEntry(), body = document.getElementById('resultsBody'); if (!e || !body) return;
+    const strip = body.querySelector('tr[data-laid-strip][data-laid-idx="' + idx + '"].pb-hubstrip'), row = body.querySelector('tr[data-laid-idx="' + idx + '"]:not([data-laid-strip])'); if (!strip) return;
+    const k = String(e.id) + ':' + idx, open = !pbRsHubOpenSet.has(k);
+    if (open) pbRsHubOpenSet.add(k); else pbRsHubOpenSet.delete(k);
+    strip.classList.toggle('pb-hubopen', open); strip.setAttribute('aria-expanded', String(open)); if (row) row.classList.toggle('pb-hubfold', !open);
+  };
   function pbRsNoStakeWord(t) { return String(t || '').replace(/\(\s*stake\s+([^)]*?)\s*\)/gi, '($1)'); }
   // the rod reading taken at the point in the field, the one that verifies it (kept at Lock as pointInputs[id].shot: a
   // stake point's shot on its stake; an invert point's own fresh shot, else the shot on the stake it was corrected from).
@@ -11773,6 +11877,25 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const sh = pbRsShotOf(entry, r); if (sh !== null) out.push('Shot ' + fmtReading(sh, entry.rodUnit)); else if (r.verified === true) out.push('Shot'); /* fix100 */
     return out.join(' \u00b7 ');
   }
+  function pbFitVBtn(pid, fn, text, label) { return '<button type="button" class="pb-fit-vbtn" data-fit="' + escapeHtml(pid) + '" aria-label="' + escapeHtml(label + ': ' + text) + '" onclick="' + fn + '(this.dataset.fit)">' + escapeHtml(text) + '</button>'; }
+  // owner, Nov 6: the laying length changed on Results, like any other change to the locked run's layout (kept in its history)
+  window.pbFitLayEdit = function (pid) {
+    const entry = pbLayCurrentEntry(), r = entry && (entry.intervalRows || []).find(x => x.pointId === pid && !x.addedTime), fit = r ? pbFitOf(entry, r) : null; if (!entry || !r || !fit) return;
+    const was = pbFitLay(fit) > 0 ? fit.layFt : null; let typed = was === null ? '' : String(+Number(was).toFixed(3)); // the box is gone by the time Apply runs
+    pbShowModal('In feet, pipe end to pipe end.', [{ label: 'Cancel' }, { label: 'Apply', primary: true, onClick: () => {
+      const t = String(typed || '').trim(), v = t === '' ? 0 : Number(t);
+      if (!(Number.isFinite(v) && v >= 0 && v < 50)) { pbAlert('The laying length is in feet: 0 or more, under 50.', 'Not Changed'); return; }
+      if (was !== null && Math.abs(v - was) < 0.0005 && !fit.layAuto) return;
+      let el = null, old = null; // the box is found once the record is on the form (pbLayCommit puts it back after a restart)
+      const run = pbFitRun(entry, pid), at = pbLayFt(run ? run.start + (r.stationFt - run.start) : r.stationFt);
+      pbLayCommit(entry, { errId: null, action: 'fitlay', run: run ? run.n : 1, desc: 'Pipe layout: fitting at ' + at + ' (' + pbFitWord(fit.type) + '): laying length ' + (was === null ? 'none' : fmt(was, 2) + ' ft') + ' \u2192 ' + (v > 0 ? fmt(v, 2) + ' ft' : 'none') + '.', reason: '',
+        mutate: () => { el = document.getElementById(pid + 'FitLay'); if (!el) return; old = { v: el.value, a: el.dataset.pbAuto }; el.value = v > 0 ? String(v) : ''; delete el.dataset.pbAuto; el.classList.remove('pb-auto'); } }).then(ok => { if (!ok && el && old) { el.value = old.v; if (old.a) el.dataset.pbAuto = old.a; } });
+    } }], 'Laying Length');
+    const msg = document.getElementById('pbModalMessage');
+    if (msg) msg.insertAdjacentHTML('afterend', '<div class="pb-modal-extra pb-fit-extra"><input type="number" class="pb-input" inputmode="decimal" step="0.01" min="0" enterkeyhint="done" id="pbFitLayIn" aria-label="Laying length (ft)" value="' + (was === null ? '' : String(+Number(was).toFixed(3))) + '"></div>');
+    { const i = document.getElementById('pbFitLayIn'); if (i) { i.addEventListener('input', () => { typed = i.value; }); i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); const go = Array.from(document.querySelectorAll('#pbModalButtons button')).find(b => b.textContent === 'Apply'); if (go) go.click(); } }); } }
+    setTimeout(() => { const i = document.getElementById('pbFitLayIn'); if (i) try { i.focus(); i.select(); } catch (e) {} }, 60);
+  };
   function pbFitStripHTML(entry, r) {
     const fit = pbFitOf(entry, r); if (!fit) return '';
     let sta = ''; try { sta = pbStRowStaFn(entry)(r) || ''; } catch (e) {}
@@ -11782,23 +11905,27 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<div class="pb-fit-head"><span class="pb-sta-sub hub pb-fit-title">' + escapeHtml(pbFitTitle(fit)) + '</span>'
       + '<span class="pb-fit-at"><bdi dir="ltr">' + escapeHtml(String(r.station)) + (sta ? '<span class="pb-fit-sta"> \u00b7 Sta ' + escapeHtml(sta) + '</span>' : '') + '</bdi></span></div>'
       + (raw || pinfo ? '<div class="pb-fit-sub"><span class="pb-fit-raw">' + escapeHtml([raw, pinfo].filter(Boolean).join(' \u00b7 ')) + '</span></div>' : '');
-    const facts = [];
-    if (pbFitLay(fit) > 0) facts.push('<span>Laying length <span class="pb-fit-v">' + escapeHtml(fmt(fit.layFt, 2)) + ' ft</span></span>' + (fit.layAuto ? '<span class="pb-fit-auto">auto</span>' : ''));
+    const facts = []; let lo = '', undo = ''; /* fitcard2: the leftover gets its own line under the laying length */
+    if (!(pbFitLay(fit) > 0) && entry.kind === 'run') facts.push('<span><span class="pb-fit-k">Laying length</span>' + pbFitVBtn(r.pointId, 'pbFitLayEdit', 'Add', 'Add the laying length') + '</span>');
+    if (pbFitLay(fit) > 0) facts.push('<span><span class="pb-fit-k">Laying length</span>' + pbFitVBtn(r.pointId, 'pbFitLayEdit', fmt(fit.layFt, 2) + ' ft', 'Change the laying length').replace('</button>', fit.layAuto ? '<span class="pb-fit-auto">auto</span></button>' : '</button>') + '</span>');
     const run = entry.pipeLayout ? pbFitRun(entry, r.pointId) : null;
     let ask = '';
     if (run && run.cfg.on && run.cfg.len && entry.kind === 'run') {
       const a = pbFitAdjOf(entry, r.pointId), pid = escapeHtml(r.pointId);
       const noOpen = pbFitNoOpen.has(pbFitNoKey(entry, r.pointId)); /* leftover */
-      if (!a && !noOpen) { const est = pbFitEstimate(entry, r, run); if (est.kind === 'ok') facts.push('<span class="pb-fit-lo">Leftover <span class="pb-fit-v">\u2248 ' + escapeHtml(fmt(est.left, 1)) + ' ft</span></span>'); else if (est.kind === 'joint') facts.push('<span class="pb-fit-lo">On a joint, no cut</span>'); }
+      if (!a && !noOpen) { const est = pbFitEstimate(entry, r, run); if (est.kind === 'ok') lo = '<span class="pb-fit-lo"><span class="pb-fit-k">Estimated leftover</span>' + pbFitVBtn(r.pointId, 'pbFitAsk', fmt(est.left, 2) + ' ft', 'Change the leftover') + '</span>'; else if (est.kind === 'joint') lo = '<span class="pb-fit-lo"><span class="pb-fit-k">Leftover</span><span class="pb-fit-v">On a joint, no cut</span></span>'; }
       if (noOpen) ask = pbFitNoHTML(r.pointId, run.cfg.len, a); /* leftover */
-      else if (!a) ask = '<div class="pb-fit-ask"><span class="pb-fit-q">Use leftover after fitting?</span><span class="pb-fit-btns"><button type="button" class="pb-btn small" data-fit="' + pid + '" onclick="pbFitAnswer(this.dataset.fit, true)">Yes</button><button type="button" class="pb-btn ghost small" data-fit="' + pid + '" onclick="pbFitAnswer(this.dataset.fit, false)">No</button></span></div>';
+      else if (!a) ask = '<div class="pb-fit-ask pb-fit-pending"><span class="pb-fit-q">Use leftover after fitting?</span><span class="pb-fit-btns"><button type="button" class="pb-btn small" data-fit="' + pid + '" onclick="pbFitAnswer(this.dataset.fit, true)">Yes</button><button type="button" class="pb-btn ghost small" data-fit="' + pid + '" onclick="pbFitAnswer(this.dataset.fit, false)">No</button></span></div>';
       else {
         if (Math.abs(run.start + a.off - r.stationFt) > 0.005) ask += '<span class="pb-fit-q">The fitting moved: answer again.</span>';
-        ask += '<div class="pb-fit-ask">' + (!(a.cutoff > 0) ? '<span class="pb-fit-ans">' + (pbFitIsPiece(a) ? 'Piece out: ' + escapeHtml(pbLayFt(a.fitWant)) : 'Full stick') + '</span>' : '') /* leftover */
-          + '<span class="pb-fit-btns"><button type="button" class="pb-btn ghost small" data-fit="' + pid + '" onclick="pbFitAsk(this.dataset.fit)">Edit</button><button type="button" class="pb-btn ghost small" data-fit="' + pid + '" onclick="pbFitUndo(this.dataset.fit)">Undo</button></span></div>';
+        if (!(a.cutoff > 0)) lo = '<span class="pb-fit-lo"><span class="pb-fit-k">' + (pbFitIsPiece(a) ? 'Piece out' : 'Out of the fitting') + '</span>' + pbFitVBtn(r.pointId, 'pbFitAsk', pbFitIsPiece(a) ? pbLayFt(a.fitWant) : 'Full stick', 'Change the leftover') + '</span>'; /* the piece as typed */
+        undo = '<button type="button" class="pb-fit-undo" data-fit="' + pid + '" aria-label="Undo the leftover answer" title="Undo" onclick="pbFitUndo(this.dataset.fit)"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M9 14L4 9l5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'; /* fitcard2: next to the leftover */
       }
     }
-    if (facts.length) h += '<div class="pb-fit-facts">' + facts.join('<span class="pb-fit-dot" aria-hidden="true">\u00b7</span>') + '</div>';
+    if (!lo) { const m = /(leftover piece|piece) out of it, ([0-9.,]+ ft)/.exec(String(r.layoutNote || '')), fl = /full stick out of it/.test(String(r.layoutNote || ''));
+      const can = !!pbFitCtx(r.pointId);
+      if (m) lo = '<span class="pb-fit-lo"><span class="pb-fit-k">' + (m[1] === 'piece' ? 'Piece out' : 'Estimated leftover') + '</span>' + (can ? pbFitVBtn(r.pointId, 'pbFitAsk', m[2], 'Change the leftover') : '<span class="pb-fit-v">' + escapeHtml(m[2]) + '</span>') + '</span>'; else if (fl) lo = '<span class="pb-fit-lo"><span class="pb-fit-k">Out of the fitting</span>' + (can ? pbFitVBtn(r.pointId, 'pbFitAsk', 'Full stick', 'Change the leftover') : '<span class="pb-fit-v">Full stick</span>') + '</span>'; }
+    if (facts.length || lo || undo) h += '<div class="pb-fit-nums"><div class="pb-fit-cell">' + facts.join('') + '</div><div class="pb-fit-mid">' + undo + '</div><div class="pb-fit-cell pb-fit-loline">' + (lo || (undo ? '<span class="pb-fit-lo"><span class="pb-fit-k">Leftover</span></span>' : '')) + '</div></div>';
     return h + ask + '</div>';
   }
   // The fitting on the open run, its run and its station in that run (null: nothing to ask there).
@@ -11893,7 +12020,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbFitPcCancel = function (pid) { const e = pbLayCurrentEntry(); pbFitNoOpen.delete(pbFitNoKey(e, pid)); pbFitRepaint(pid); };
   window.pbFitAsk = function (pid) {
     const c = pbFitCtx(pid); if (!c) return;
-    const est = pbFitEstimate(c.entry, c.r, c.run), et = est.kind === 'ok' ? 'Leftover \u2248 ' + fmt(est.left, 1) + ' ft' : est.kind === 'joint' ? 'On a joint, no cut' : ''; /* fitcard: the card's words */
+    const est = pbFitEstimate(c.entry, c.r, c.run), et = est.kind === 'ok' ? 'Estimated leftover ' + fmt(est.left, 2) + ' ft' : est.kind === 'joint' ? 'On a joint, no cut' : ''; /* fitcard: the card's words */
     pbShowModal('Use leftover after fitting?' + (et ? '\n' + et : ''), [{ label: 'Cancel' }, { label: 'No', onClick: () => pbFitAnswer(pid, false) }, { label: 'Yes', primary: true, onClick: () => pbFitCutAsk(pid) }], (() => { let sta = ''; try { sta = pbStRowStaFn(c.entry)(c.r) || ''; } catch (e) {} return pbFitTitle(c.fit) + ' \u00b7 ' + c.r.station + (sta ? ' \u00b7 Sta ' + sta : ''); })()); /* fitcard */
   };
   function pbFitCutAsk(pid) {
@@ -12321,7 +12448,6 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     (calc && Array.isArray(calc.crossings) ? calc.crossings : []).forEach(c => {
       L.push('Crossing at ' + fmt(startOf(c.run) + c.off, 2) + ' ft' + rn(c.run) + ' \u00b7 ' + [c.util || 'utility', typeof c.odIn === 'number' ? fmt(c.odIn, 2).replace(/\.?0+$/, '') + ' in OD' : '', typeof c.bop === 'number' ? 'BOP ' + fmt(c.bop, 3) : typeof c.inv === 'number' ? 'INV ' + fmt(c.inv, 3) : typeof c.top === 'number' ? 'TOP ' + fmt(c.top, 3) : ''].filter(Boolean).join(' \u00b7 '));
     });
-    pts.forEach(p => { const f = p && pbFitIsHub(p.id) ? pbFitSnap(p.id) : null; if (f) L.push('Fitting at ' + fmt(p.station, 2) + ' ft' + rn(pbRunOfPointId(p.id)) + ' \u00b7 ' + pbFitName(f)); });
     return L.length ? '<div class="pb-xing-rv">' + L.map(t => '<div class="pb-xing-rvl">' + escapeHtml(t) + '</div>').join('') + '</div>' : '';
   }
   // ==== feat_xingalert (owner, Nov 5): a crossing that hits our pipe or is under its minimum clearance, on Run
@@ -12348,12 +12474,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbXingMinFt(c) { return (c && typeof c.minClrIn === 'number' ? c.minClrIn : PB_XING_MIN_CLR) / 12; }
   function pbXingSide(o) { return o.pos === 'above' ? 'over' : 'under'; }
+  /* feat_xingwords (owner, Nov 6): 'Bottom of the water will be 0.21 ft above the top of your pipe' */
+  function pbXingUtil(c) { const u = String((c && c.util) || '').trim().toLowerCase(); return u || 'utility'; }
+  function pbXingGap(o) { const u = pbXingUtil(o.cx); return o.pos === 'above' ? 'bottom of the ' + u + ' will be ' + fmt(o.clrFt, 2) + ' ft above the top of your pipe' : 'top of the ' + u + ' will be ' + fmt(o.clrFt, 2) + ' ft below the bottom of your pipe'; }
+  const pbXingCap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
   // the card's line: null when it can't be worked out (an elevation, the wall / OD, or the run's grade missing)
   function pbXingAlertLine(o) {
     if (!o || !o.inRun || !o.pos || (o.pos !== 'conflict' && o.clrFt === null)) return null;
-    if (o.pos === 'conflict') return { low: true, hit: true, text: 'Conflict: our pipe hits it (' + fmt(-o.clrFt, 2) + ' ft overlap)' };
-    if (o.low) return { low: true, text: fmt(o.clrFt, 2) + ' ft ' + pbXingSide(o) + ' our pipe, minimum ' + fmt(pbXingMinFt(o.cx), 2) + ' ft' };
-    return { low: false, text: 'Clear ' + fmt(o.clrFt, 2) + ' ft ' + pbXingSide(o) + ' our pipe' };
+    if (o.pos === 'conflict') return { low: true, hit: true, text: 'Conflict: your pipe hits the ' + pbXingUtil(o.cx) + ' (' + fmt(-o.clrFt, 2) + ' ft overlap)' };
+    if (o.low) return { low: true, text: pbXingCap(pbXingGap(o)) + ' (min ' + fmt(pbXingMinFt(o.cx), 2) + ' ft)' };
+    return { low: false, text: 'Clear: ' + pbXingGap(o) };
   }
   // the form as Review would read it, crossings checked; nothing on screen changes (the field-error tags are kept)
   function pbXingFormInfo() {
@@ -12376,6 +12506,21 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     });
   }
   var pbXingLiveT = null;
+  /* feat_jumpend: shown on Run Setup while more than a screen is below; hidden while typing (the keyboard is up) */
+  function pbJumpEndNow() {
+    const b = document.getElementById('pbJumpEnd'), s = document.getElementById('screen-input'); if (!b || !s) return;
+    const se = document.scrollingElement || document.documentElement, left = se.scrollHeight - (window.scrollY + window.innerHeight);
+    const a = document.activeElement, typing = !!(a && a.matches && a.matches('input:not([type=button]):not([type=checkbox]):not([type=radio]), textarea, select'));
+    const show = s.classList.contains('active') && !typing && left > window.innerHeight * 0.8;
+    if (b.hidden === show) b.hidden = !show;
+  }
+  let pbJumpEndRaf = 0; const pbJumpEndSoon = () => { if (!pbJumpEndRaf) pbJumpEndRaf = requestAnimationFrame(() => { pbJumpEndRaf = 0; try { pbJumpEndNow(); } catch (e) {} }); };
+  window.addEventListener('scroll', pbJumpEndSoon, { passive: true }); window.addEventListener('resize', pbJumpEndSoon);
+  document.addEventListener('focusin', pbJumpEndSoon); document.addEventListener('focusout', () => setTimeout(pbJumpEndSoon, 50));
+  document.addEventListener('click', () => setTimeout(pbJumpEndSoon, 400), true); // a section opened or a point was added
+  (window.pbScreenHooks = Array.isArray(window.pbScreenHooks) ? window.pbScreenHooks : []).push(function () { setTimeout(pbJumpEndSoon, 300); });
+  window.pbJumpEnd = function () { const se = document.scrollingElement || document.documentElement; window.scrollTo({ top: se.scrollHeight, behavior: 'smooth' }); };
+  window.pbJumpEndNow = pbJumpEndNow;
   function pbXingLiveSoon() { clearTimeout(pbXingLiveT); pbXingLiveT = setTimeout(() => { pbXingLiveT = null; try { pbXingLiveNow(); } catch (e) { console.error(e); } }, 350); }
   window.pbXingLiveNow = pbXingLiveNow;
   ['input', 'change', 'click'].forEach(t => document.addEventListener(t, (ev) => { const tg = ev.target; if (tg && tg.closest && tg.closest('#screen-input') && document.querySelector('#screen-input .pb-xing-card')) pbXingLiveSoon(); }, true)); // grade, HI, pipe, hubs, the crossing itself
@@ -12386,7 +12531,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const multi = (calc.points || []).some(p => p && /^seg\d+start$/.test(p.id));
     return info.filter(o => o && o.inRun && o.low && o.pos).map(o => {
       const c = o.cx, u = String(c.util || '').trim(), who = (u ? u.charAt(0).toUpperCase() + u.slice(1) + ' crossing' : 'Crossing') + ' at ' + fmt(o.abs, 2) + ' ft' + (multi ? ' (Run ' + c.run + ')' : '');
-      return { hit: o.pos === 'conflict', key: c.key || '', text: who + ': ' + (o.pos === 'conflict' ? 'conflict, our pipe hits it.' : fmt(o.clrFt, 2) + ' ft ' + pbXingSide(o) + ' our pipe (min ' + fmt(pbXingMinFt(c), 2) + ' ft).') };
+      return { hit: o.pos === 'conflict', key: c.key || '', text: who + ': ' + (o.pos === 'conflict' ? 'your pipe hits the ' + pbXingUtil(c) + ' (' + fmt(-o.clrFt, 2) + ' ft overlap).' : pbXingGap(o) + ' (min ' + fmt(pbXingMinFt(c), 2) + ' ft).') };
     }).sort((a, b) => (b.hit - a.hit));
   }
   function pbXingReviewWarnHtml(ws) {
@@ -12425,7 +12570,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.05 · 2026-11-06'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.07 · 2026-11-06'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -14849,6 +14994,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!root) return false;
     if (!window.pbCanOpen(pbTabGateName(tab), { explain: true })) return false;
     if (tab === 'ask') return window.pbAskFromTab(); // batch 5: over the current screen, nothing navigates
+    if (typeof window.pbAskSheetOpen === 'function' && window.pbAskSheetOpen()) { try { window.pbAskSheetClose(); } catch (e) {} } // r16.07: a tab tapped on Ask leaves Ask
     pbTabMovePending = { root };
     if (root === 'archive') window.pbOpenArchive(); // its filters are filled, then pbGoto('archive')
     else pbGoto(root);
@@ -15031,6 +15177,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbShellPadFrozen = (pbShellKb || pbShellSheet) ? Math.max(pbShellPadFrozen, total) : total;
     document.documentElement.style.setProperty('--pb-shell-h', pbShellPadFrozen + 'px');
     document.documentElement.style.setProperty('--pb-ab-h', Math.ceil(ab.hidden ? 0 : ab.getBoundingClientRect().height) + 'px');
+    document.documentElement.style.setProperty('--pb-tb-h', Math.ceil(tbH) + 'px'); /* r16.07: the tabs' height (0 when hidden) */
   }
   window.pbRenderShell = function() {
     const tb = document.getElementById('pbTabBar'), ab = document.getElementById('pbActiveBar');
@@ -15040,11 +15187,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const signIn = screen === 'login' || screen === 'setPassword';
     // Tabs: shown on every screen, forms too (D1); hidden while typing and on the sign-in screens.
     const sheet = document.getElementById('eduHelpSheet');
-    pbShellSheet = (!!sheet && sheet.classList.contains('open')) || (typeof window.pbAskSheetOpen === 'function' && window.pbAskSheetOpen());
+    const pbAskOn = typeof window.pbAskSheetOpen === 'function' && window.pbAskSheetOpen(); /* r16.07 */
+    pbShellSheet = (!!sheet && sheet.classList.contains('open')) || pbAskOn;
+    document.documentElement.classList.toggle('pb-ask-open', !!pbAskOn);
     if (pbShellKb && typeof window.__pbShellKbLive === 'function' && !window.__pbShellKbLive()) pbShellKb = false; // feat_planfill: the field is gone or hidden (no focusout on iOS)
-    tb.hidden = signIn || pbShellKb || pbShellSheet; // under the help sheet the tabs are covered anyway; the active bar sits above it
+    tb.hidden = signIn || pbShellKb || (!!sheet && sheet.classList.contains('open')); // under the help sheet the tabs are covered anyway; on Ask they stay (r16.07)
     pbShellWrapOpeners();
     let current = null; try { current = window.pbScreenTab(screen); } catch (e) {}
+    if (pbAskOn) current = 'ask';
     let individual = false; try { individual = sbCachedSubscription.tier === 'individual'; } catch (e) {}
     tb.querySelectorAll('.pb-tab').forEach(b => {
       const tab = b.dataset.tab;
@@ -15058,7 +15208,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     try { lines = pbActiveBarLines(screen); } catch (e) { console.error('Active bar failed:', e); lines = []; }
     // On Home its cards show the routine work: only the red lines. While typing: the red lines and the
     // open permit (still one tap away); on the password screen (an email link's sign-in) only the red ones.
-    if (screen === 'home' || screen === 'setPassword') lines = lines.filter(l => l.tone === 'danger');
+    if (screen === 'setPassword') lines = lines.filter(l => l.tone === 'danger'); // r16.07: Home shows them all again (owner: the habit is to continue from there)
     else if (pbShellKb) lines = lines.filter(l => l.tone === 'danger' || l.id === 'Permit');
     pbActiveLines = lines;
     const sig = JSON.stringify(lines.map(l => [l.id, l.tone, l.text, l.go]));
@@ -16484,10 +16634,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbAiAskCtx) parts.splice(1, 0, 'ASKED FROM: the app’s ' + pbAiAskCtx.label + ' screens (the excerpts favour those pages; answer the question as asked).');
     if (!ex.length) parts.push('(none matched this question)');
     ex.forEach(x => parts.push('[' + x.n + '] (page: ' + x.page + ') ' + x.text + (x.caution ? ' (page note: ' + x.caution + ')' : '')));
-    const prev = pbAiAskTurns(); // ask_v2: this thread's last turns, not other threads
+    const prev = pbAiAskTurns().slice(0, 4); // ask_v2: this thread's last turns, not other threads (feat_convo: the old v1 text keeps 4 short ones)
     if (prev.length) {
       parts.push('', 'EARLIER IN THIS CONVERSATION (context only):');
-      prev.slice().reverse().forEach(h => { parts.push('Q: ' + h.q.slice(0, 300)); parts.push('A: ' + pbAiAskA(h.body)); });
+      prev.slice().reverse().forEach(h => { parts.push('Q: ' + h.q.slice(0, 300)); parts.push('A: ' + pbAiAskA(h.body, 9)); });
     }
     return parts.join('\n');
   }
@@ -16553,11 +16703,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // ---- ask_v2: one conversation in the same box. Each question joins the current thread and goes with its last 4
   // turns as history (v1 text and v2 field). The thread shows in order, like a chat, above the box. New Chat clears it;
   // opening Ask from another topic or screen, or after 30 minutes idle, starts a new thread and folds the old one away.
-  const PB_AI_TURNS = 4, PB_AI_IDLE_MS = 30 * 60 * 1000, PB_AI_KEEP = 16;
+  const PB_AI_TURNS = 8, PB_AI_IDLE_MS = 30 * 60 * 1000, PB_AI_KEEP = 16;
   let pbAiAskThread = { tid: 1, key: null, at: 0 }, pbAiAskTidN = 1;
   const pbAiAskCur = () => pbAiAskHistory.filter(h => h.tid === pbAiAskThread.tid); // newest first
   function pbAiAskTurns() { return pbAiAskCur().filter(h => !h.streaming && !h.failed).slice(0, PB_AI_TURNS); } // r15.99: no partial answers
-  function pbAiAskA(body) { const s = String(body || '').replace(/\s+\n/g, '\n'); return s.length <= 500 ? s : s.slice(0, 240) + ' … ' + s.slice(-250); } // the end too: a question Ask asked back is usually last
+  function pbAiAskA(body, k) { const s = String(body || '').replace(/\s+\n/g, '\n'), max = k === 9 ? 500 : k < 2 ? 3000 : 1500; return s.length <= max ? s : (max === 500 ? s.slice(0, 240) : s.slice(0, max - 260)) + ' … ' + s.slice(-250); } // feat_convo (9 = the old v1 text: 500 as before) // the end too: a question Ask asked back is usually last
   function pbAiAskKeyNow() { return pbAiAskCtx ? 'ctx:' + pbAiAskCtx.label : 'scr:' + String(pbCurrentScreen || ''); }
   function pbAiAskRoll() { if (pbAiAskCur().length) pbAiAskThread = { tid: ++pbAiAskTidN, key: null, at: 0 }; }
   function pbAiAskMaybeRoll() { // on opening Ask
@@ -16582,25 +16732,71 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   // v20 photos: the next question's photos (pending) and the chat's earlier ones (on their cards, memory only)
   const PB_AI_PHOTOS_MAX = 3, PB_AI_PHOTO_PX = 1568, PB_AI_PHOTO_B64_MAX = 1400000;
+  const PB_AI_CHAT_PHOTOS = 6, PB_AI_SEND_B64 = 6000000; // feat_plans: photos kept in a chat; all images of one question together
+  const PB_AI_PLAN_RX = /\b(plans?|plan sheets?|drawings?|blue ?prints?|dimensions?|foundation|footings?|slab|takeoff|take-off|yardage|cubic yards?|yd3|callouts?|inverts?|IE|stations?|STA|floor plan|site plan|grading plan|cut ?sheet)\b/i; // same words as the server's PLAN_RX
   let pbAiAskPhotos = []; // [{ media_type, data, thumb }]
   let pbAiAskPhotoBusy = false, pbAiAskPhotoGen = 0; // review: one pick at a time; a New Chat drops a photo still being prepared
+  // feat_askui: a PDF's first pages, each drawn at about 3,100 px on its long side (so the zoomed parts keep detail)
+  async function pbAiAskPdfPages(file, max, gen) {
+    if (file.size > 40 * 1024 * 1024) throw new Error('pdf'); // review: a 40 MB cap before reading it
+    if (!(await pbEnsurePdfjs())) throw new Error('pdf');
+    const task = pdfjsLib.getDocument(Object.assign({ data: new Uint8Array(await file.arrayBuffer()) }, PB_PV_PDFJS));
+    try {
+      const pdf = await task.promise;
+      if (!pdf.numPages) throw new Error('pdf');
+      const out = [];
+      for (let n = 1; n <= pdf.numPages && out.length < max; n++) {
+        if (gen !== pbAiAskPhotoGen) break; // New Chat meanwhile
+        const pg = await pdf.getPage(n), c = document.createElement('canvas');
+        try {
+          const v1 = pg.getViewport({ scale: 1 }), vp = pg.getViewport({ scale: Math.min(4, 3136 / Math.max(v1.width, v1.height)) });
+          c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+          const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+          await pg.render({ canvasContext: g, viewport: vp }).promise;
+          const p = pbAiAskPrepFrom(c, c.width, c.height); p.page = n; out.push(p);
+        } finally { c.width = c.height = 0; try { pg.cleanup(); } catch (e) {} }
+      }
+      return { pages: out, total: pdf.numPages };
+    } finally { try { task.destroy(); } catch (e) {} }
+  }
+  const pbAiAskIsPdf = (f) => !!f && (f.type === 'application/pdf' || /\.pdf$/i.test(f.name || ''));
   async function pbAiAskPrepPhoto(file) { // redrawn: pixels only (no EXIF / GPS), long side <= 1568 px, JPEG 0.8
     const url = URL.createObjectURL(file);
     try {
       const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('decode')); i.src = url; });
       const w = img.naturalWidth, h = img.naturalHeight; if (!w || !h) throw new Error('decode');
+      return pbAiAskPrepFrom(img, w, h);
+    } finally { URL.revokeObjectURL(url); }
+  }
+  function pbAiAskPrepFrom(img, w, h) { // feat_askui: an image or a drawn PDF page
+    {
       const draw = (px) => { const k = Math.min(1, px / Math.max(w, h)), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
         const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height); return c; };
       const c = draw(PB_AI_PHOTO_PX); let q = 0.8, d = c.toDataURL('image/jpeg', q);
       while (d.length > PB_AI_PHOTO_B64_MAX && q > 0.4) { q -= 0.1; d = c.toDataURL('image/jpeg', q); }
       if (d.length > PB_AI_PHOTO_B64_MAX + 23 || d.indexOf('data:image/jpeg;base64,') !== 0) throw new Error('size');
       const t = draw(112), th = t.toDataURL('image/jpeg', 0.6); c.width = c.height = t.width = t.height = 0; // review: free the canvases (iOS canvas memory)
-      return { media_type: 'image/jpeg', data: d.slice(d.indexOf(',') + 1), thumb: th };
-    } finally { URL.revokeObjectURL(url); }
+      // feat_plans: 4 overlapping quarters (55% each way) at full detail, sent only with a plan question. Only when the
+      // original has more detail than the 1568 px copy (long side over ~2000 px).
+      const tiles = [];
+      if (Math.max(w, h) > PB_AI_PHOTO_PX * 1.3) {
+        const fw = Math.round(w * 0.55), fh = Math.round(h * 0.55);
+        for (const [zoom, x0, y0] of [['tl', 0, 0], ['tr', w - fw, 0], ['bl', 0, h - fh], ['br', w - fw, h - fh]]) {
+          const k = Math.min(1, PB_AI_PHOTO_PX / Math.max(fw, fh)), tc = document.createElement('canvas');
+          tc.width = Math.max(1, Math.round(fw * k)); tc.height = Math.max(1, Math.round(fh * k));
+          const g = tc.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, tc.width, tc.height); g.drawImage(img, x0, y0, fw, fh, 0, 0, tc.width, tc.height);
+          let tq = 0.75, td = tc.toDataURL('image/jpeg', tq);
+          while (td.length > PB_AI_PHOTO_B64_MAX && tq > 0.4) { tq -= 0.1; td = tc.toDataURL('image/jpeg', tq); }
+          tc.width = tc.height = 0;
+          if (td.length <= PB_AI_PHOTO_B64_MAX + 23 && td.indexOf('data:image/jpeg;base64,') === 0) tiles.push({ zoom, data: td.slice(td.indexOf(',') + 1) });
+        }
+      }
+      return { media_type: 'image/jpeg', data: d.slice(d.indexOf(',') + 1), thumb: th, tiles };
+    }
   }
   function pbAiAskThumbsRender() {
     const el = document.getElementById('aiAskThumbs'); if (!el) return;
-    el.innerHTML = pbAiAskPhotos.map((p, k) => '<span class="pb-ai-thumb"><img src="' + escapeHtml(p.thumb) + '" alt="Photo ' + (k + 1) + '"><button type="button" class="pb-ai-thumb-x" aria-label="Remove photo ' + (k + 1) + '" onclick="pbAiAskPhotoRemove(' + k + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-x"/></svg></button></span>').join('');
+    el.innerHTML = pbAiAskPhotos.map((p, k) => '<span class="pb-ai-thumb"><img src="' + escapeHtml(p.thumb) + '" alt="' + (p.page ? 'PDF page ' + p.page : 'Photo ' + (k + 1)) + '">' + (p.page ? '<span class="pb-ai-thumb-pg" aria-hidden="true">p.' + p.page + '</span>' : '') + '<button type="button" class="pb-ai-thumb-x" aria-label="Remove ' + (p.page ? 'PDF page ' + p.page : 'photo ' + (k + 1)) + '" onclick="pbAiAskPhotoRemove(' + k + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-x"/></svg></button></span>').join('');
     const b = document.getElementById('aiAskPhotoBtn'); if (b) b.disabled = pbAiAskPhotoBusy || pbAiAskPhotos.length >= PB_AI_PHOTOS_MAX;
   }
   window.pbAiAskPickPhoto = function() {
@@ -16611,24 +16807,42 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbAiAskPhotoPicked = async function(inp) {
     const st = document.getElementById('aiAskStatus'), files = [...((inp && inp.files) || [])]; if (inp) inp.value = '';
     if (!files.length || pbAiAskPhotoBusy) return;
-    let over = false, bad = false; const gen = pbAiAskPhotoGen;
+    let over = false, bad = false, pdfBad = false, pdfMore = '', notImg = false; const gen = pbAiAskPhotoGen;
     pbAiAskPhotoBusy = true; pbAiAskThumbsRender(); pbAiShow(st, 'info', 'Preparing photo…', '');
     try {
       for (const f of files) {
         if (pbAiAskPhotos.length >= PB_AI_PHOTOS_MAX) { over = true; break; }
+        if (pbAiAskIsPdf(f)) { // feat_askui: a PDF's pages, as many as fit
+          pbAiShow(st, 'info', 'Preparing PDF…', '');
+          let r = null; try { r = await pbAiAskPdfPages(f, PB_AI_PHOTOS_MAX - pbAiAskPhotos.length, gen); } catch (e) { pdfBad = true; }
+          if (gen !== pbAiAskPhotoGen) return;
+          if (r) { r.pages.forEach(p => { if (pbAiAskPhotos.length < PB_AI_PHOTOS_MAX) pbAiAskPhotos.push(p); }); if (r.total > r.pages.length) pdfMore = 'Added pages 1–' + r.pages.length + ' of ' + r.total + '. Up to 3 pages a question: send a page on its own to ask about it.'; }
+          continue;
+        }
+        if (f.type && !/^image\//.test(f.type)) { notImg = true; continue; } // review: a .docx or similar
         let p = null; try { p = await pbAiAskPrepPhoto(f); } catch (e) { bad = true; }
         if (gen !== pbAiAskPhotoGen) return; // New Chat meanwhile: dropped
         if (p) { if (pbAiAskPhotos.length < PB_AI_PHOTOS_MAX) pbAiAskPhotos.push(p); else over = true; }
       }
-    } finally { pbAiAskPhotoBusy = false; pbAiAskThumbsRender(); }
-    if (bad) pbAiShow(st, 'warn', PB_AI_PHOTO_FAIL, ''); else if (over) pbAiShow(st, 'warn', 'Up to 3 photos per question.', ''); else pbAiShow(st, '', '', '');
+    } finally { if (gen === pbAiAskPhotoGen) { pbAiAskPhotoBusy = false; pbAiAskThumbsRender(); } } // review: an old pick never frees a newer one
+    if (bad) pbAiShow(st, 'warn', PB_AI_PHOTO_FAIL, ''); else if (pdfBad) pbAiShow(st, 'warn', 'That PDF couldn’t be read. Try a photo of the page.', ''); else if (notImg) pbAiShow(st, 'warn', 'Attach a photo or a PDF.', ''); else if (over) pbAiShow(st, 'warn', 'Up to 3 photos per question.', ''); else if (pdfMore) pbAiShow(st, 'info', pdfMore, ''); else pbAiShow(st, '', '', '');
   };
   window.pbAiAskPhotoRemove = function(k) { pbAiAskPhotos.splice(k, 1); pbAiAskThumbsRender(); const b = document.getElementById('aiAskPhotoBtn'); if (b && !b.disabled) { try { b.focus({ preventScroll: true }); } catch (e) {} } };
   // The photos sent with a question: this question's (turn 0), then the chat's earlier ones (turn = questions back), 3 at most
-  function pbAiAskImages() {
-    const out = pbAiAskPhotos.slice(0, PB_AI_PHOTOS_MAX).map(p => ({ media_type: p.media_type, data: p.data, turn: 0 }));
-    pbAiAskTurns().forEach((h, k) => (h.photos || []).forEach(p => { if (p.data && out.length < PB_AI_PHOTOS_MAX) out.push({ media_type: p.media_type, data: p.data, turn: k + 1 }); }));
-    return out;
+  function pbAiAskImages(q) {
+    // feat_plans: this question's photos (each followed by its zoomed quarters when the question is about plans), then
+    // the chat's earlier photos (whole only), up to 6 photos; zoomed parts are dropped first if the total would be too big.
+    const turns = pbAiAskTurns(), cur = pbAiAskPhotos.slice(0, PB_AI_PHOTOS_MAX);
+    const plan = cur.length > 0 && PB_AI_PLAN_RX.test(String(q || '')); // review: this question's words only
+    const out = [], tiles = [];
+    cur.forEach(p => { const i = out.length; out.push({ media_type: p.media_type, data: p.data, turn: 0 }); if (plan) (p.tiles || []).forEach(t => tiles.push({ at: i, t })); });
+    turns.forEach((h, k) => (h.photos || []).forEach(p => { if (p.data && out.length < PB_AI_CHAT_PHOTOS) out.push({ media_type: p.media_type, data: p.data, turn: k + 1 }); }));
+    let size = out.reduce((n, x) => n + x.data.length, 0); const keep = [];
+    tiles.forEach(x => { if (size + x.t.data.length <= PB_AI_SEND_B64) { keep.push(x); size += x.t.data.length; } });
+    // each photo's zoomed parts go right after it (the server checks "of" points at an earlier photo of this question)
+    const res = []; const at = new Map();
+    out.forEach((x, i) => { at.set(i, res.length); res.push(x); if (x.turn === 0) keep.filter(k => k.at === i).forEach(k => res.push({ media_type: 'image/jpeg', data: k.t.data, turn: 0, zoom: k.t.zoom, of: at.get(i) })); });
+    return res;
   }
   window.pbAiAskNewChat = function() {
     pbAiAskPhotos = []; pbAiAskPhotoGen++; pbAiAskPhotoBusy = false; pbAiAskThumbsRender(); // v20: a new chat starts without photos
@@ -16697,7 +16911,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbAiAskPayload(q, ex, images) {
     return { v: 2, question: q, ...(images && images.length ? { images } : {}),
       excerpts: ex.map(x => ({ n: x.n, article: x.article, anchor: x.anchor, title: x.title, page: x.page, caution: x.caution, text: x.text })),
-      history: pbAiAskTurns().map(h => ({ q: String(h.q || '').slice(0, 300), a: pbAiAskA(h.body) })), // this thread's last turns, newest first
+      history: pbAiAskTurns().map((h, k) => ({ q: String(h.q || '').slice(0, 300), a: pbAiAskA(h.body, k) })), // this thread's last turns, newest first (feat_convo: 8)
       ctx: { label: pbAiAskCtx ? pbAiAskCtx.label : '', screen: pbAiAskCtx ? pbAiAskCtx.screen : pbCurrentScreen, job: pbAskCurrentJob(), run: pbAskRunSummary() },
       mode: 'auto' }; // v20: the server decides Ask or analysis from the question
   }
@@ -16772,8 +16986,31 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const fb = typeof d.answer_id === 'string' && /^[A-Za-z0-9_-]{20,12000}\.[A-Za-z0-9_-]{43}$/.test(d.answer_id) ? d.answer_id : ''; // gap loop: "Not right"
     const noHint = d.data === true || d.type === 'refusal' || d.type === 'data' || analysis || more.some(s => s.kind === 'data'); // v20: job data or off-topic: no Education-pages line
     return { v: 2, fb, noHint, body: String(d.text || '').trim(), safety: !!d.safety || d.type === 'safety' || PB_AI_SAFETY_RX.test(q), sources: app, more, analysis,
-      table: pbAiTableOk(d.table), chart: analysis && pbAskIsOffice() ? pbAiChartOk(d.chart) : null };
+      table: pbAiTableOk(d.table), chart: analysis && pbAskIsOffice() ? pbAiChartOk(d.chart) : null, prop: pbAiPropOk(d.proposal) };
   }
+  // feat_takeoff: { job, items: [{ name, kind, qty, unit, basis }] } from the server, checked again here
+  function pbAiPropOk(p) {
+    if (!p || typeof p !== 'object' || typeof p.job !== 'string' || !p.job.trim() || !Array.isArray(p.items) || !p.items.length) return null;
+    const items = p.items.slice(0, 20).filter(x => x && typeof x === 'object' && typeof x.name === 'string' && x.name.trim() && Number(x.qty) > 0 && typeof x.unit === 'string' && x.unit.trim())
+      .map(x => ({ name: x.name.trim().slice(0, 60), kind: ['pipe', 'fittings', 'structures', 'concrete', 'asphalt', 'base', 'other'].includes(x.kind) ? x.kind : 'other', qty: Math.round(Number(x.qty) * 1000) / 1000, unit: x.unit.trim().slice(0, 12), basis: String(x.basis || '').slice(0, 200) }));
+    return items.length ? { job: p.job.trim().slice(0, 60), items } : null;
+  }
+  function pbAiPropQty(n) { return Number(n).toLocaleString(undefined, { maximumFractionDigits: 3 }); } // the takeoff's own figure, not rounded to 0.1
+  window.pbAiPropQty = pbAiPropQty;
+  function pbAiPropHtml(h, i) {
+    const P = h.prop; if (!P || h.streaming || h.failed) return '';
+    return '<div class="pb-ai-prop" id="aiProp' + i + '"><p class="pb-ai-prop-h">' + escapeHtml('Proposed for job ' + P.job + ' materials') + '</p><ul class="pb-ai-prop-l">'
+      + P.items.map(x => '<li><span class="pb-ai-prop-n">' + escapeHtml(x.name) + '</span><span class="pb-ai-prop-q">' + escapeHtml(pbAiPropQty(x.qty) + ' ' + x.unit) + '</span>' + (x.basis ? '<span class="pb-ai-prop-b">' + escapeHtml(x.basis) + '</span>' : '') + '</li>').join('') + '</ul>'
+      + (pbAskIsOffice() ? '<button type="button" class="pb-btn small secondary" id="aiPropOpen' + i + '" onclick="pbAiPropOpen(' + i + ')">Review in Job Materials</button><p class="pb-ai-hint">Nothing is saved until you save each line.</p>' : '<p class="pb-ai-hint">A PM or the company account can save these to the job.</p>') + '</div>';
+  }
+  window.pbAiPropOpen = async function(i) {
+    const h = pbAiAskHistory[i], P = h && h.prop; if (!P || !pbAskIsOffice()) return;
+    const key = P.job.trim().toLowerCase().slice(0, 60);
+    window.pbAiTk = { job: P.job, key, uid: pbArchiveOwnerUid, items: P.items.map(x => Object.assign({}, x)) };
+    try { window.pbAskSheetClose(); } catch (e) {}
+    if (typeof window.pbCxOpenJob === 'function') await window.pbCxOpenJob(key, 'materials');
+    try { const el = document.getElementById('pjMatTk'); if (el) el.scrollIntoView({ block: 'start' }); } catch (e) {}
+  };
   function pbAiAskModeSync() { pbAiPrivacySync(); } // v20: no Ask | Analyze switch; only the privacy line follows v2
   let pbAiAskWord = null, pbAiAskWaitDraw = null; // r15.99: 'Writing…' / 'Checking…' while a streamed answer comes in
   function pbAiAskWaitWord(w) { pbAiAskWord = w; if (pbAiAskWaitDraw) pbAiAskWaitDraw(); }
@@ -16837,6 +17074,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + (h.streaming || h.failed ? '' : h.sources.length ? '<div class="pb-ai-src"><span class="pb-ai-src-k">' + (h.local ? 'Read:' : 'From this app:') + '</span>' + h.sources.map(x => '<button type="button" class="pb-edu-link" data-article="' + escapeHtml(x.article) + '" data-anchor="' + escapeHtml(x.anchor || '') + '" onclick="pbAiOpenSource(this)">[' + escapeHtml(String(x.n)) + '] ' + escapeHtml(x.title) + '</button>').join('') + '</div>' : (h.local || h.noHint || i !== 0 || (h.more && h.more.length) ? '' : '<p class="pb-ai-hint">Not from this app’s Education pages.</p>'))
       + (pbAiChipsOnce(h).length ? '<div class="pb-ai-src">' + pbAiChipsOnce(h).join('') + '</div>' : '')
       + (h.streaming || h.failed ? '<p class="pb-ai-hint pb-ai-label"><span class="pb-ai-tag">AI</span> ' + (h.failed ? 'no checked answer' : 'writing… checked when done') + '</p>' : '<p class="pb-ai-hint pb-ai-label">' + (h.local ? 'Answered by the app · no AI used' : '<span class="pb-ai-tag">AI</span>' + (i !== 0 ? '' : ' ' + (h.analysis ? 'analysis of your company’s numbers \u00b7 check before acting' : 'answer \u00b7 can be wrong'))) + '</p>')
+      + pbAiPropHtml(h, i)
       + pbAiNrHtml(h)
       + '</div></article>';
   }
@@ -16951,7 +17189,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!pbAiPlanOk()) { pbAiShow(st, 'warn', 'AI not on your plan.', PB_AI_MSG.plan); return; }
     if (pbAiAskBusy) return;
     if (pbAiAskPhotoBusy) { pbAiShow(st, 'info', 'Preparing photo…', 'Ask again in a moment.'); return; } // review: never sent without the photo being added
-    const sentPhotos = pbAiAskPhotos.slice(0, PB_AI_PHOTOS_MAX), imgs = pbAiAskImages(); // v20
+    const sentPhotos = pbAiAskPhotos.slice(0, PB_AI_PHOTOS_MAX), imgs = pbAiAskImages(q); // v20; feat_plans: the question decides the zoomed parts
     if (sentPhotos.length && pbAiAskV1Only) { pbAiShow(st, 'warn', 'Photos aren’t available in Ask yet.', 'Remove the photo to ask without it.'); return; }
     pbAiEnsurePrivacy(async () => {
       const tid0 = pbAiAskThread.tid; // the thread it was asked in
@@ -16999,7 +17237,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (live && pbAiAskHistory.indexOf(live) >= 0) { delete live.streaming; Object.assign(live, done); } // the streamed card becomes the checked answer
       else if (!pbAiAskJoin(done, tid0)) return;
       if (box && box.value.trim() === q) box.value = '';
-      if (sentPhotos.length) { pbAiAskPhotos = pbAiAskPhotos.filter(p => !sentPhotos.includes(p)); pbAiAskThumbsRender(); } // sent: they now belong to the card
+      if (sentPhotos.length) { pbAiAskPhotos = pbAiAskPhotos.filter(p => !sentPhotos.includes(p)); sentPhotos.forEach(p => { p.tiles = []; }); pbAiAskThumbsRender(); } // sent: they now belong to the card (feat_plans: later questions send them whole)
       pbAiAskQuotaLine(st); // the card says it was answered; the status keeps only "N of 20 left today"
       pbAiAskRender(); pbAiAskScrollToNewest(false);
     });
@@ -19827,6 +20065,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const errEl = op.errId ? document.getElementById(op.errId) : null;
     const fail = m => { if (errEl && getCurrentArchiveEntry() === entry) { errEl.textContent = m; errEl.style.display = ''; } else pbAlert(m, 'Layout Not Changed'); return false; };
     if (!runArchive.includes(entry) || getCurrentArchiveEntry() !== entry) { pbAlert('This run isn’t open. Reopen it and try again.', 'Layout Not Changed'); return false; }
+    if (!pbFormHoldsLockedRun(entry) && !pbLoadRunForCorrection(entry)) { try { if (!window._pbResumingFromEntryId && !pbLayOldRule(entry) && !(hasUnsavedRunData() && !pbFormIsSavedLockedRun() && !pbRdFormSaved())) pbLoadRunIntoForm(entry); } catch (e) { console.error(e); } } /* review1: after a restart, the record comes back onto the form (as Edit Run Data does) */
     if (!pbFormHoldsLockedRun(entry)) return fail(pbCorrectFormMsg(entry)); // bughunt Oct 19 (4)
     const formGen = pbFormGen;
     const ownsForm = () => pbFormGen === formGen && currentRunArchiveId === entry.id;
@@ -19841,7 +20080,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (calc.errors && calc.errors.length) { pbLayRestoreForm(snap); return fail(calc.errors.join(' ')); }
     const stop = pbStopAfterCorrection(entry, calc);
     if (stop && stop.error) { pbLayRestoreForm(snap); return fail(stop.error); }
-    if (pbLaySameRecord(calc.layout && calc.layout.record, entry.pipeLayout) && JSON.stringify(calc.rows.map(r => r.station)) === JSON.stringify((entry.intervalRows || []).filter(r => !r.addedTime).map(r => r.stationFt))) { pbLayRestoreForm(snap); return fail('Nothing changes with that \u2014 the layout is already like this.'); }
+    if (op.action !== 'fitlay' && pbLaySameRecord(calc.layout && calc.layout.record, entry.pipeLayout) && JSON.stringify(calc.rows.map(r => r.station)) === JSON.stringify((entry.intervalRows || []).filter(r => !r.addedTime).map(r => r.stationFt))) { pbLayRestoreForm(snap); return fail('Nothing changes with that \u2014 the layout is already like this.'); }
     const record = { time: Date.now(), type: 'layout', action: op.action, runNum: op.run, desc: op.desc, reason: op.reason || '' };
     const mine = pbLaySnapForm();
     const ok = await finishCorrectDistanceApply(entry, calc, op.desc.replace(/^Pipe layout: /, '').replace(/^./, c => c.toUpperCase()) + (op.noRows ? '' : ' Grade at every station is unchanged; only where check rows appear changed.') + (op.extra || ''), null, null, record, ownsForm);
@@ -22242,14 +22481,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (r.label || r.addedTime || r.verified !== null || pbRsLayNote(r.layoutNote) || pbFitR) {
         const labelTr = document.createElement('tr');
         labelTr.className = rowClass + (pbFitR ? 'pb-fitstrip' : '');
+        if (pbRsHubFoldable(r, pbFitR)) { const o = pbRsHubIsOpen(entry, idx); labelTr.classList.add('pb-hubstrip'); if (o) labelTr.classList.add('pb-hubopen'); labelTr.setAttribute('role', 'button'); labelTr.tabIndex = 0; labelTr.setAttribute('aria-expanded', String(o)); labelTr.setAttribute('onclick', 'pbRsHubToggle(' + idx + ', event)'); labelTr.setAttribute('onkeydown', "if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); pbRsHubToggle(" + idx + "); }"); } /* r16.07 hubfold */
         labelTr.innerHTML = `<td colspan="${colCount}" style="text-align:left; white-space:normal; padding:7px 8px 3px 8px; border-top:2px solid var(--ink);">
           ${r.label && !pbFitR ? `<span class="pb-rs-hd"><span class="pb-sta-sub ${staSubClass}" style="margin:0;">${escapeHtml(pbRsNoStakeWord(pbRowStripName(entry, r)))}</span>${pbRsPointInfo(entry, r) ? `<span class="pb-rs-hdinfo">${escapeHtml(pbRsPointInfo(entry, r))}</span>` : ''}</span>` : ''}${!r.label && !pbFitR && pbRsPointInfo(entry, r) ? `<span class="pb-rs-hd"><span class="pb-rs-hdinfo">${escapeHtml(pbRsPointInfo(entry, r))}</span></span>` : ''}
-          ${pbRsLayNote(r.layoutNote) ? `<span class="pb-lay-note">${escapeHtml(pbRsLayNote(r.layoutNote))}</span>` : ''}
+          ${pbRsLayNoteStrip(r, pbFitR) ? `<span class="pb-lay-note">${escapeHtml(pbRsLayNoteStrip(r, pbFitR))}</span>` : ''}
           ${pbFitStripHTML(entry, r)}
           ${r.addedTime ? `<span style="margin-left:8px; font-size:11px; font-weight:400; text-transform:none; letter-spacing:0; opacity:.7;">added ${new Date(r.addedTime).toLocaleTimeString()}</span>` : ''}
           ${r.addedTime && !pbIsStopRow(entry, r) ? `<button class="pb-remove" style="margin-left:8px;" onclick="pbRemoveManualInterval(${idx})">Remove</button>` : ''}
         </td>`;
         labelTr.dataset.laidIdx = String(idx); labelTr.dataset.laidStrip = '1'; // batch 14 F
+        if (labelTr.classList.contains('pb-hubstrip') && labelTr.firstElementChild) labelTr.firstElementChild.insertAdjacentHTML('beforeend', '<span class="pb-fold-pill" aria-hidden="true"><span class="pb-fold-s">Show</span><span class="pb-fold-h">Hide</span><svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'); /* r16.07 hubfold: the Show / Hide pill */
         body.appendChild(labelTr);
       }
 
@@ -22257,6 +22498,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       tr.className = rowClass;
       if (pbXingP.near.has(idx)) tr.classList.add('pb-xing-near'); /* xingrow */
       if (pbFitR) tr.classList.add('pb-fitrow'); /* fitcard */
+      if (pbRsHubFoldable(r, pbFitR) && !pbRsHubIsOpen(entry, idx)) tr.classList.add('pb-hubfold'); /* r16.07 hubfold */
       const pbRsSta = pbRsStaOf(r); if (pbRsSta) tr.classList.add('pb-rs-hassta'); /* feat_results2 */
       tr.innerHTML = `
         <td>
@@ -22399,6 +22641,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!el) return false;
       if (el.validity && el.validity.badInput) return true;
       if (id === 'fpPipeInstalled' && pbLaidPrefillShown(el)) return false; // batch 14 F: the app's own suggestion, not typed
+      if ((id === 'fpExcavated' || id === 'fpBackfill') && el.dataset.pbLaidPrefill !== undefined && el.value === el.dataset.pbLaidPrefill && !el.dataset.pbMoreTyped) return false; /* prodfill: same for the copies */
       if (id === 'fpForeman') return el.value.trim() !== (f[k] || '');
       return numVal(id) !== (typeof f[k] === 'number' ? f[k] : null);
     });
@@ -24946,7 +25189,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     window._pbRsStop = Number.isFinite(stop) && stop > 0.005 ? { ft: stop, from: entry.id } : null; /* feat_revfrom */
     if (!Number.isFinite(stop) || !(stop > 0.005)) return null;
     const tot = numVal('totalDist'); if (tot === null || stop >= tot - 0.005) return null;
-    if (getAllHubPrefixes().some(h => { const f = numVal(h + 'Station'); return f !== null && Math.abs(f - stop) <= 0.005; })) return null;
+    { const at = getAllHubPrefixes().find(h => { const f = numVal(h + 'Station'); return f !== null && Math.abs(f - stop) <= 0.005; });
+      if (at) { try { if (activeVal(at + 'ModeToggle') === 'elev' && !(window._pbStakeGround && window._pbStakeGround[at]) && window.pbNoStakeMark) window.pbNoStakeMark(at, 'No stake here: the run left off at this point.'); } catch (e) {} return null; } } /* feat_nostake: a point already there that isn't a stake says so */
     const rows = (entry.intervalRows || []).filter(r => typeof r.stationFt === 'number' && typeof r.piFt === 'number' && Number.isFinite(r.piFt) && r.stationFt <= tot + 0.005 && !/^seg\d/.test(r.pointId || '')).sort((a, b) => a.stationFt - b.stationFt);
     let lo = null, hi = null; rows.forEach(r => { if (r.stationFt <= stop + 0.005) lo = r; if (hi === null && r.stationFt >= stop - 0.005) hi = r; });
     if (!lo || !hi) return null;
@@ -24956,6 +25200,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     document.getElementById(id + 'Station').value = String(Math.round(stop * 1000) / 1000);
     const lab = document.getElementById(id + 'Label'); if (lab) lab.value = 'Left off';
     try { if (typeof pbRsMode === 'function') pbRsMode(id, 'elev'); } catch (e) {}
+    try { if (window.pbNoStakeMark) window.pbNoStakeMark(id, 'No stake here: the run left off at this point.'); } catch (e) {} /* feat_nostake (owner, Nov 6) */
     setElevFieldValue(id + 'Elev', Math.round(pi * 10000) / 10000, isArch());
     const next = Array.from(document.querySelectorAll('#hubsContainer > [data-hub-id]')).find(c => c !== card && (numVal(c.dataset.hubId + 'Station') || 0) > stop);
     if (next && card) next.parentNode.insertBefore(card, next); // in station order on the page
@@ -25127,6 +25372,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // Without it the form is emptied in place and then holds the record as if it had just locked it: a correction can read
   // it, Edit Run Data shows it, and an unchanged Lock is asked "Already Locked" instead of making a second record.
   function pbLoadRunIntoForm(entry, opts) {
+    pbNoStakeClear();
     // Added points are carried whether or not they were given a label;
     // plain interval rows (no label, not added) are rebuilt from the interval.
     const realRows = entry.intervalRows.filter(r => r.label || r.addedTime);
@@ -41369,6 +41615,27 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbProdMineRender(); pbProdScopeLoad();
     pbProdSyncSoon(500, { background: true });
   };
+  /* fmhome: Home > "Job progress": each of his jobs' company progress bar and legend (My production's job cards); tap = My production */
+  let pbFmHpAsked = { uid: null, at: 0 };
+  function pbFmHomeProg() {
+    const home = document.getElementById('homeWork'); if (!home || !home.parentNode) return;
+    let el = document.getElementById('homeFmProg');
+    const uid = pbArchiveOwnerUid, fm = !!(uid && uid !== 'shared' && typeof pbLvIsForeman === 'function' && pbLvIsForeman(uid));
+    if (!fm) { if (el) { el.hidden = true; el.innerHTML = ''; } return; }
+    if (!el) { el = document.createElement('section'); el.id = 'homeFmProg'; el.className = 'pb-home-fmprog'; el.setAttribute('aria-label', 'Job progress'); home.insertAdjacentElement('afterend', el); }
+    if (pbPm.uid !== uid) pbPm = { uid, scope: null, at: 0, cached: false, busy: false, msg: '', gen: 0 };
+    if (!pbPm.scope && pbFmHpAsked.uid !== uid) { pbFmHpAsked = { uid, at: Date.now() }; pbProdCacheGet(uid, 'scope').then(c => { if (c && c.data && pbPm.uid === uid && !pbPm.scope) { pbPm.scope = c.data; pbPm.at = c.at || 0; pbPm.cached = true; } pbFmHomeProg(); }).catch(() => {}); try { window.pbProdScopeLoad(); } catch (e) {} }
+    else if (Date.now() - (pbPm.at || 0) > 10 * 60000 && Date.now() - pbFmHpAsked.at > 60000 && !pbPm.busy) { pbFmHpAsked.at = Date.now(); try { window.pbProdScopeLoad(); } catch (e) {} } // a fresh copy every 10 minutes on Home
+    const jobs = pbPm.scope && Array.isArray(pbPm.scope.jobs) ? pbPm.scope.jobs.filter(j => j && typeof j === 'object' && j.plan) : [];
+    if (!jobs.length) { el.hidden = true; el.innerHTML = ''; return; }
+    const html = '<p class="pb-home-sec" id="homeFmProgHead">Job progress</p>' + jobs.slice(0, 4).map((j, i) => { const v = pbProdJobView(j.plan || null, j.cats);
+      return '<button type="button" class="pbp-job pb-fmhp-job" id="homeFmProgJob' + i + '" onclick="pbOpenProdMine()"><span class="pbp-jobhead"><span class="pbp-jobname"><span class="pbp-jobnum">' + escapeHtml(pbProdJobLabel(j.job_number)) + '</span>' + (j.project_name || j.name ? '<span class="pbp-jobsite">' + escapeHtml(j.project_name || j.name) + '</span>' : '') + '</span></span>' + pbProdBar(v) + '</button>'; }).join('')
+      + (pbPm.cached && pbPm.at ? '<p class="pbp-dim pb-fmhp-when">Copy from ' + escapeHtml(pbProdTimeText(pbPm.at)) + '</p>' : '');
+    if (el.dataset.h !== html) { el.innerHTML = html; el.dataset.h = html; try { pbProdFitBars(el); } catch (e) {} }
+    el.hidden = false;
+  }
+  window.pbFmHomeProg = pbFmHomeProg;
+  { const r0 = window.pbRenderHome; if (typeof r0 === 'function') window.pbRenderHome = function() { const out = r0.apply(this, arguments); try { pbFmHomeProg(); } catch (e) { console.error(e); } return out; }; }
   window.pbProdScopeLoad = async function() {
     const uid = pbArchiveOwnerUid;
     if (pbPm.busy || pbPm.uid !== uid || !uid || uid === 'shared') return;
@@ -41383,6 +41650,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbPm.scope = r.data; pbPm.at = Date.now(); pbPm.cached = false; pbPm.msg = '';
     pbProdCacheSet(uid, 'scope', { at: pbPm.at, data: r.data });
     pbProdMineRender();
+    try { if (pbCurrentScreen === 'home') pbFmHomeProg(); } catch (e) {} /* fmhome */
   };
   function pbProdEntryHtml(x) {
     const s = pbProdStateOf(x), chip = s.k === 'ok' ? 'ok' : s.k === 'local' || s.k === 'earlier' || s.k === 'nocompany' || s.k === 'crewdone' ? 'saved' : 'notsent';
@@ -42362,7 +42630,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (sticks >= 1 && ms > 0) avg = ms / sticks;
     }
     const ended = !!(entry && (entry.completed || entry.incomplete));
-    return { avg, sticks, ms, lastOwn: ended ? null : S.lastOwn, ended };
+    const st = entry ? (typeof entry.runStartTime === 'number' ? entry.runStartTime : new Date(entry.lockTime).getTime()) : NaN;
+    return { avg, sticks, ms, lastOwn: ended ? null : (S.lastOwn !== null && S.lastOwn !== undefined ? S.lastOwn : (Number.isFinite(st) ? st : null)), ended };
   }
   // fix_foldcount (owner, Nov 5): the folded bars count pipes and fittings, not rows (no pipe layout on the run: rows)
   function pbLaidFoldCount(entry, S, a, b) {
@@ -42395,7 +42664,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbLsStart() { const el = pbProdEl('laidProgress'); if (!pbLsLive(el)) { pbLsStop(); return; } pbLsTick(); if (!pbLsT) pbLsT = setInterval(pbLsTick, 1000); }
   function pbLaidStatsPaint(entry, S) {
     const el = pbProdEl('laidProgress'); if (!el) return;
-    if (!entry || !S || !S.n) { pbLsStop(); el.hidden = true; el.textContent = ''; delete el.dataset.entryId; delete el.dataset.lastOwn; return; }
+    if (!entry || !S || (!S.n && (entry.completed || entry.incomplete || !(S.total > 0)))) { pbLsStop(); el.hidden = true; el.textContent = ''; delete el.dataset.entryId; delete el.dataset.lastOwn; return; }
     const T = pbLaidStats(entry, S), ft = '<span class="pb-sr"> ft</span>';
     const col = (k, label, dd, live) => '<div class="pb-lstat" data-k="' + k + '"><dt>' + label + '</dt><dd data-k="' + k + '"' + (live ? ' aria-live="off"' : '') + '>' + dd + '</dd></div>';
     el.innerHTML = col('laid', 'Pipe laid', escapeHtml(pbProdQtyText(S.laidFt)) + '<span class="pb-lstat-of"><span aria-hidden="true"> / </span><span class="pb-sr"> of </span>' + escapeHtml(pbProdQtyText(S.total)) + '</span>' + ft)
@@ -42884,6 +43153,20 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // ---- "Feet of pipe installed" pre-filled from the laid marks (never over a typed or saved value) ----
   let pbLaidTouched = null; // the run whose pipe field the person typed in
   function pbLaidPrefillShown(el) { return !!el && el.dataset.pbLaidPrefill !== undefined && el.value === el.dataset.pbLaidPrefill && pbLaidTouched !== currentRunArchiveId; }
+  /* prodfill (owner, Nov 6): Excavation and Backfill get the same feet as the pipe prefill; a box typed in or saved is left alone */
+  function pbLaidPrefillMore(entry, v) {
+    const f = (entry && entry.foreman) || {};
+    [['fpExcavated', 'feetExcavated'], ['fpBackfill', 'feetBackfill']].forEach(([id, key]) => {
+      const el = pbProdEl(id); if (!el) return;
+      if (!el.dataset.pbMoreWired) { el.dataset.pbMoreWired = '1'; el.addEventListener('input', () => { el.dataset.pbMoreTyped = String(currentRunArchiveId); }); }
+      if (el.dataset.pbMoreTyped && el.dataset.pbMoreTyped !== String(entry.id)) delete el.dataset.pbMoreTyped;
+      const was = el.dataset.pbLaidPrefill !== undefined && el.value === el.dataset.pbLaidPrefill;
+      const free = typeof f[key] !== 'number' && !el.dataset.pbMoreTyped && (el.value === '' || was) && !(el.validity && el.validity.badInput) && !(el.dataset.fmUnit && !/^(lf|ft|feet)$/i.test(el.dataset.fmUnit));
+      if (!free) { if (!was) delete el.dataset.pbLaidPrefill; return; }
+      if (v) { el.value = v; el.dataset.pbLaidPrefill = v; if (pbForemanShown && pbForemanShown.id === entry.id && pbForemanShown.vals) pbForemanShown.vals[id] = v; }
+      else if (was) { el.value = ''; delete el.dataset.pbLaidPrefill; if (pbForemanShown && pbForemanShown.id === entry.id && pbForemanShown.vals) pbForemanShown.vals[id] = ''; }
+    });
+  }
   function pbLaidPrefill(entry) {
     const el = pbProdEl('fpPipeInstalled'); if (!el || !entry) return;
     if (!el.dataset.pbLaidWired) { el.dataset.pbLaidWired = '1'; el.addEventListener('input', () => { pbLaidTouched = currentRunArchiveId; const h = pbProdEl('fpLaidHint'); if (h) h.hidden = true; }); }
@@ -42900,7 +43183,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       el.value = v; el.dataset.pbLaidPrefill = v;
       if (pbForemanShown && pbForemanShown.id === entry.id && pbForemanShown.vals) pbForemanShown.vals.fpPipeInstalled = v; // shown by the app, not typed
       hint.textContent = (pbEaP ? pbEaP.text + ': ' + v + ' ft' : (S.earlierFt > 0 ? 'Filled in from the rows marked laid this session (' + v + ' ft; the ' + pbProdQtyText(S.earlierFt) + ' ft before them were laid in an earlier session)' : 'Filled in from the rows marked laid (' + v + ' ft)')) + '. Change it if it isn’t right.'; hint.hidden = false;
+      pbLaidPrefillMore(entry, v); /* prodfill */
     } else if (free && wasPrefill) { // the marks were undone: take the suggestion back out
+      pbLaidPrefillMore(entry, null); /* prodfill */
       el.value = ''; delete el.dataset.pbLaidPrefill; if (pbForemanShown && pbForemanShown.id === entry.id && pbForemanShown.vals) pbForemanShown.vals.fpPipeInstalled = ''; hint.hidden = true;
     } else { if (!wasPrefill || saved) delete el.dataset.pbLaidPrefill; hint.hidden = true; }
   }
@@ -42913,6 +43198,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return { sessionRef: String(entry.id), runRef: String(root.clientRunId || root.id), jobNumber: String(entry.jobNumber || '').trim().slice(0, 60), jobsite: String(entry.jobsite || '').trim().slice(0, 120),
       label: (String(entry.startLabel || 'Start') + ' → ' + String(entry.endLabel || 'End')).slice(0, 120), workDate: pbProdLocalDate(entry.runStartTime || entry.lockTime),
       totalFt: S.total, laidFt: S.sessionFt, laidToFt: S.laidFt, laidToStation: S.laidTo, lastLaidAt: S.last, rowsTotal: S.rows.length, rowsLaid: S.n,
+      pipe: pbLvPipeOf(entry, S), pipeType: String(entry.pipeType || entry.statsType || 'PVC SDR 35').trim().slice(0, 60), /* feat_livetoday: blank = the app's default type */
       startedAt: typeof entry.runStartTime === 'number' ? entry.runStartTime : null, ended, endedAt: ended && typeof entry.runEndTime === 'number' ? entry.runEndTime : null, ...pbEaStatusExtra(entry), ...(entry.rfForeman && typeof entry.rfForeman === 'object' && (entry.rfForeman.id || entry.rfForeman.none) ? { foremanId: entry.rfForeman.none ? 'none' : String(entry.rfForeman.id) } : {}) }; /* r15.48 access: the pick reaches the server at Lock */ // batch 17 END: time zone, an end entered later
   }
   function pbLiveWanted(entry) {
@@ -43230,6 +43516,50 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbLvPhone(iso) { return pbCrewPhoneTime(iso, pbLv.data && pbLv.data.server_at, pbLv.at); }
   // r14 integration: laidFt is the session's feet, laidToFt how far the run is laid (an older phone sends the same in both)
   function pbLvReach(s) { const a = Number(s && s.laidFt) || 0, b = Number(s && s.laidToFt); return Number.isFinite(b) && b > a ? b : a; }
+  // ==== feat_livetoday (owner, Nov 6 2026): what each pipelayer laid today, by pipe size and type ====
+  // The phone sends, per session, the feet laid THIS session split by pipe size (the run's pipes in order; a size
+  // changes at each "Run n start" row) and the run's pipe type. Live now adds up a person's sessions of today
+  // (ended ones too) into one line per size + type. Statuses from older phones have no sizes: their feet show as "pipe".
+  function pbLvPipeOf(entry, S) {
+    try {
+      const rows = S && S.rows || [], pi = (entry && entry.summary && Array.isArray(entry.summary.pipeInfo)) ? entry.summary.pipeInfo : [];
+      if (rows.length < 2 || !(S.sessionFt > 0)) return [];
+      const base = Number(rows[0].stationFt) || 0, from = base + (Number(S.earlierFt) || 0), to = base + (Number(S.laidFt) || 0), acc = new Map();
+      let k = 0;
+      for (let i = 1; i < rows.length; i++) {
+        if (i - 1 > 0 && /^seg\d+start$/.test(String(rows[i - 1].pointId || ''))) k++;
+        const a = Number(rows[i - 1].stationFt), b = Number(rows[i].stationFt); if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
+        const ft = Math.min(b, to) - Math.max(a, from); if (!(ft > 0)) continue;
+        const p = pi[Math.min(k, pi.length - 1)], inch = p && typeof p.idIn === 'number' && p.idIn > 0 ? +p.idIn.toFixed(2) : null;
+        acc.set(inch, (acc.get(inch) || 0) + ft);
+      }
+      return Array.from(acc, ([inch, ft]) => inch === null ? { ft: +ft.toFixed(2) } : { in: inch, ft: +ft.toFixed(2) }).slice(0, 8);
+    } catch (e) { return []; }
+  }
+  // Today's sessions of one person (from the board's people[].runs): sizes summed, earlier (ended) runs listed.
+  function pbLvToday(p, today) {
+    const runs = (p && Array.isArray(p.runs) ? p.runs : []).filter(r => r && typeof r === 'object' && r.work_date === today); // review: a run open since an earlier day is not today's
+    const acc = new Map(); let total = 0;
+    runs.forEach(r => {
+      const s = r.status || {}, type = String(s.pipeType || '').trim(), parts = Array.isArray(s.pipe) ? s.pipe.filter(x => x && Number(x.ft) > 0) : [];
+      const add = (inch, ft) => { const key = (inch === null ? '' : inch) + '|' + type; const g = acc.get(key) || { inch, type, ft: 0 }; g.ft += ft; acc.set(key, g); total += ft; };
+      let sum = 0;
+      if (parts.length) parts.forEach(x => { add(Number(x.in) > 0 ? Number(x.in) : null, Number(x.ft)); sum += Number(x.ft); });
+      else if (Number(s.laidFt) > 0) { add(null, Number(s.laidFt)); sum = Number(s.laidFt); }
+      const endFt = pbLvEndFt(s); if (endFt - sum > 0.05) { const lastIn = parts.length && Number(parts[parts.length - 1].in) > 0 ? Number(parts[parts.length - 1].in) : null; add(lastIn, endFt - sum); } // review: an end entered later counts its feet
+    });
+    const groups = Array.from(acc.values()).sort((a, b) => (a.inch === null) - (b.inch === null) || (a.inch || 0) - (b.inch || 0) || a.type.localeCompare(b.type));
+    const text = groups.map(g => ((g.inch !== null ? +g.inch.toFixed(2) + '" ' : '') + (g.type || 'pipe')).trim() + ' · ' + pbProdQtyText(g.ft) + ' ft');
+    const earlier = runs.filter(r => r.ended && r.work_date === today);
+    return { runs, earlier, total, text, line: text.length ? 'Today: ' + text.join(' · ') + (text.length > 1 ? ' (' + pbProdQtyText(total) + ' ft in all)' : '') : '' };
+  }
+  function pbLvEndFt(s) { return s && s.endLate === true && Number(s.endSessFt) > 0 ? Number(s.endSessFt) : 0; }
+  function pbLvEarlierText(r) {
+    const s = r.status || {}, ft = Math.max(Number(s.laidFt) || 0, pbLvEndFt(s)), end = typeof s.endedAt === 'number' ? s.endedAt : Date.parse(s.endedAt); /* the server sends a timestamp string */
+    return [pbProdJobLabel(r.job_number || s.jobNumber) + (s.label ? ' · ' + s.label : ''), pbProdQtyText(ft) + ' ft', Number.isFinite(end) && end > 0 ? 'ended ' + pbProdTimeText(end) : 'ended'].join(' · ');
+  }
+  window.__pbLvPipeOf = pbLvPipeOf; window.__pbLvToday = pbLvToday; // tests
+  // ==== end feat_livetoday ====
   function pbLvSessNote(reach, sess) { return reach - sess > 0.05 ? ' (this session ' + pbProdQtyText(sess) + ' ft)' : ''; }
   function pbLvFt(n) { return Number.isFinite(Number(n)) ? pbProdQtyText(Number(n)) : '?'; }
   function pbLvRunHtml(p, run, pi, ri, current) {
@@ -43315,12 +43645,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbLvEqAdd = function(key) { window.pbPfEq.pmLive.Add(key); };
   window.pbLvEqDel = function(k) { window.pbPfEq.pmLive.Del(k); };
   // the boxes (one per row, data-key = the row), the equipment pieces and the refusal; o: { pre, typed(k) → oninput, eq, errId }
+  /* review2: a filled-in number is selected on tap, so typing replaces it (not 40 -> 4055) */
+  window.pbPreSel = function(el) { const go = () => { try { if (el.value === el.dataset.pre && document.activeElement === el) el.select(); } catch (e) {} }; el.__pbPs = 1; go(); setTimeout(go, 0); };
+  window.pbPreUp = function(ev, el) { if (el.__pbPs) { el.__pbPs = 0; if (el.value === el.dataset.pre) ev.preventDefault(); } };
   function pbProdFormHtml(F, o) {
     return '<div class="pb-pg"><div class="pb-pg-grid">' /* r15.52 prodgrid: two boxes per row */ + F.rows.map((r, k) => { const help = (r.pre && r.qty === r.pre ? '<p class="pb-help pbp-livepre">' + escapeHtml(r.preText || 'Filled in from the rows marked laid.') + '</p>' : '') + (r.help ? '<p class="pb-help">' + escapeHtml(r.help) + '</p>' : '');
-        return '<div class="pb-field"><label for="' + o.pre + 'Q' + k + '">' + escapeHtml(r.label || (pbProdCatName(r.key) + ' (' + r.unit + ')')) + '</label><input id="' + o.pre + 'Q' + k + '" data-key="' + escapeHtml(r.key) + '" type="text" inputmode="decimal" autocomplete="off" value="' + escapeHtml(r.qty) + '" oninput="' + o.typed(k) + '">'
+        return '<div class="pb-field"><label for="' + o.pre + 'Q' + k + '">' + escapeHtml(r.label || (pbProdCatName(r.key) + ' (' + r.unit + ')')) + '</label><input id="' + o.pre + 'Q' + k + '" data-key="' + escapeHtml(r.key) + '" type="text" inputmode="decimal" autocomplete="off" value="' + escapeHtml(r.qty) + '"' + (r.pre && r.qty === r.pre ? ' data-pre="' + escapeHtml(r.pre) + '" onfocus="pbPreSel(this)" onmouseup="pbPreUp(event, this)"' : '') + ' oninput="' + o.typed(k) + '">'
         + (help ? '<div class="pb-pg-help">' + help + '</div>' : '') + '</div>'; }).join('') + '</div></div>'
       + pbEqFormHtml(F.eq, o.pre, o.eq) // feat_equip
-      + (o.rental ? pbFmRentHtml(F, o.pre) : '') // feat_foreman 11
+      + (o.rental && ((Array.isArray(F.rentals) && F.rentals.length) || window.__pbLegacyProdBoxes) ? pbFmRentHtml(F, o.pre) : '') // feat_foreman 11 (prodfill: rentals are added in the daily report's equipment; one entered here before stays editable)
       + (F.err ? '<p class="pb-warn pbp-manmsg"' + (o.errId ? ' id="' + o.errId + '"' : '') + ' role="alert"><strong>Not saved</strong>' + escapeHtml(F.err) + '</p>' : '');
   }
   // a row's name in a refusal
@@ -43415,7 +43748,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const laid = Number(run.status && run.status.laidFt) || 0;
     const rlEnd = pbRolesEndPre(run.status); // batch 29 ROLES: batch 17 END's end first, then the laid marks
     const P0 = pbLvPlans[String(run.job_number || (run.status && run.status.jobNumber) || '').trim().toLowerCase().slice(0, 60)], pc0 = P0 && Array.isArray(P0.cats) ? P0.cats.find(c => c && c.key === 'pipe') : null, lfPipe = !(pc0 && pc0.unit) || String(pc0.unit).trim().toUpperCase() === 'LF'; /* r15.50 review S2: laid feet only into an LF field */
-    const rows = PB_PROD_FIELD_MAP.map(m => { const i = have.get(m.key); const q = i && i.qty != null ? String(i.qty) : ''; const pv = rlEnd ? rlEnd.ft : laid; const pre = !x && !mine && m.key === 'pipe' && pv > 0 && lfPipe ? String(+pv.toFixed(1)) : null; return { key: m.key, unit: (i && i.unit) || m.unit, itemUnit: (i && i.unit) || null /* r15.50 review S1 */, qty: pre !== null ? pre : q, pre, typed: false, preText: pre !== null && rlEnd ? rlEnd.text : null }; }).concat(pbRolesHourRows(x ? x.items : mine || [])); // batch 29 ROLES: hours
+    const lfOf = (k) => { if (k === 'pipe') return lfPipe; const c = P0 && Array.isArray(P0.cats) ? P0.cats.find(y => y && y.key === k) : null; return !(c && c.unit) || String(c.unit).trim().toUpperCase() === 'LF'; }; /* prodfill */
+    const rows = PB_PROD_FIELD_MAP.map(m => { const i = have.get(m.key); const q = i && i.qty != null ? String(i.qty) : ''; const pv = rlEnd ? rlEnd.ft : laid; const pre = !x && !mine && (m.key === 'pipe' || m.key === 'excavation' || m.key === 'backfill') && pv > 0 && lfOf(m.key) ? String(+pv.toFixed(1)) : null; /* prodfill: trench and backfill follow the pipe */ return { key: m.key, unit: (i && i.unit) || m.unit, itemUnit: (i && i.unit) || null /* r15.50 review S1 */, qty: pre !== null ? pre : q, pre, typed: false, preText: pre !== null && rlEnd ? rlEnd.text : null }; }).concat(pbRolesHourRows(x ? x.items : mine || []).filter(r => r.qty !== '' || window.__pbLegacyProdBoxes)); // batch 29 ROLES: hours (prodfill: only ones already entered)
     // the laid rows can only fill the pipe field before anything was entered: a value already entered stays
     pbLv.form = { cid, pid: p.id, name: p.name || '', sref: run.session_ref, rref: run.run_ref || (run.status && run.status.runRef) || run.session_ref, job: run.job_number || (run.status && run.status.jobNumber) || '', jobsite: (run.status && run.status.jobsite) || '', workDate: run.work_date || (run.status && run.status.workDate) || pbTkToday(), rows, err: '', mineV: run.mine && typeof run.mine.version === 'number' ? run.mine.version : 0 /* r15.57 B1 */ };
     pbLv.form.rentals = pbFmRentFrom(x && x.rec); // feat_foreman 11
@@ -43444,13 +43778,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbProdFieldUnit(r, c) {
     const m = PB_PROD_FIELD_MAP.find(x => x.key === r.key); if (!m) return r.unit;
     if (r.itemUnit) return r.itemUnit;
-    if (r.typed || String(r.qty == null ? '' : r.qty).trim() !== '') return r.unit;
+    const sug = r.pre != null && r.qty === r.pre && !r.typed; /* review2: the app's own suggestion */
+    if (r.typed || (!sug && String(r.qty == null ? '' : r.qty).trim() !== '')) return r.unit;
     return (c && c.unit) || m.unit;
   }
   // the plan's own names, units (pbProdFieldUnit) and cost codes on the rows (true when a row changed)
   function pbProdPlanLabels(cats, rows, o) {
     let ch = false; const nm = (o && o.name) || ((k) => k), C = (Array.isArray(cats) ? cats : []).filter(c => c && typeof c === 'object');
-    rows.forEach(r => { if (!PB_PROD_RUN_KEYS.has(r.key)) return; const c = C.find(x => x.key === r.key), u = pbProdFieldUnit(r, c); if (u !== r.unit) { r.unit = u; if (!c) delete r.label; ch = true; } });
+    rows.forEach(r => { if (!PB_PROD_RUN_KEYS.has(r.key)) return; const c = C.find(x => x.key === r.key), u = pbProdFieldUnit(r, c); if (u !== r.unit) { r.unit = u; if (!c) delete r.label; ch = true; if (r.pre != null && r.qty === r.pre && !r.typed && !/^(LF|FT|FEET)$/i.test(String(u).trim())) { r.qty = ''; r.pre = null; r.preText = null; } } });
     C.forEach(c => { const r = rows.find(x => x.key === c.key); if (!r) return; const lab = (c.name || nm(r.key)) + (r.unit ? ' (' + r.unit + ')' : '') + (c.cost_code ? ' · ' + c.cost_code : ''); if (r.label !== lab) { r.label = lab; ch = true; } });
     return ch;
   }
@@ -43681,7 +44016,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // with the company copies (pbProdForgetCompany: a refusal, or access says not a manager) and on an account change.
   function pbBdOk() {
     const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared' || pbBd.uid !== uid) return false;
-    const a = pbProdAccMem.get(uid); return a ? !!(a.manager && a.member !== false) : pbBd.mgr === true;
+    const a = pbProdAccMem.get(uid); return a ? !!a.manager : pbBd.mgr === true; /* review1: the owner is a manager without a member row */
   }
   function pbBdForget() { pbBd = pbBdNew(null); const el = pbProdEl('pdLive'); if (el) el.innerHTML = ''; }
   window.pbBdForget = pbBdForget;
@@ -43719,26 +44054,31 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + (x.closed ? '' : '<span class="pbp-dim' + (s.airOk === false ? ' pbp-bdbad' : '') + '">' + escapeHtml(air) + '</span>')
       + '<span class="pbp-dim">' + escapeHtml((x.who ? x.who + ' · ' : '') + 'Last update ' + upd + ', not live if the phone is offline') + '</span></li>';
   }
-  function pbBdRunHtml(p, run, i, srv) {
+  function pbBdTodayHtml(T) { /* feat_livetoday */
+    return (T && T.line ? '<span class="pbp-eq pbp-bdtoday">' + escapeHtml(T.line) + '</span>' : '')
+      + (T && T.earlier.length ? '<span class="pbp-dim pbp-bdearlier">' + T.earlier.map(r => escapeHtml('Earlier: ' + pbLvEarlierText(r))).join('<br>') + '</span>' : '');
+  }
+  function pbBdRunHtml(p, run, i, srv, T) {
+    if (!run) return '<li class="pbp-livecard" id="pdLiveRun' + i + '"><span class="pbp-livename">' + escapeHtml((p.name || 'Crew member') + (p.foreman ? ' · foreman ' + p.foreman : '')) + '</span><span class="pbp-dim">No run in progress</span>' + pbBdTodayHtml(T) + '</li>';
     const s = run.status || {}, total = Number(s.totalFt), laid = pbLvReach(s), sess = Number(s.laidFt) || 0, rowsL = Number(s.rowsLaid) || 0;
     return '<li class="pbp-livecard" id="pdLiveRun' + i + '"><span class="pbp-livename">' + escapeHtml((p.name || 'Crew member') + (p.foreman ? ' · foreman ' + p.foreman : '')) + '</span>'
       + '<span class="pbp-ehead">' + escapeHtml(pbProdJobLabel(run.job_number || s.jobNumber) + (s.label ? ' · ' + s.label : '')) + '</span>'
       + (total > 0 ? '<span class="pbp-livebar" role="img" aria-label="' + escapeHtml('Pipe laid ' + pbProdQtyText(laid) + ' of ' + pbProdQtyText(total) + ' ft') + '"><span style="width:' + (Math.max(0, Math.min(1, laid / total)) * 100).toFixed(1) + '%"></span></span>' : '')
       + '<span class="pbp-eq">' + escapeHtml(rowsL ? 'Pipe laid: ' + pbProdQtyText(laid) + ' of ' + pbProdQtyText(total) + ' ft' + pbLvSessNote(laid, sess) + (s.lastLaidAt ? ', last ' + pbProdTimeText(Date.parse(s.lastLaidAt)) : '') : 'No rows marked laid yet') + '</span>'
-      + '<span class="pbp-dim">' + escapeHtml('Last update ' + pbBdT(run.updated_at, srv) + ', not live if the phone is offline') + '</span></li>';
+      + pbBdTodayHtml(T) + '<span class="pbp-dim">' + escapeHtml('Last update ' + pbBdT(run.updated_at, srv) + ', not live if the phone is offline') + '</span></li>';
   }
   function pbBdRender() {
     const el = pbProdEl('pdLive'); if (!el) return;
     if (!pbBdOk()) { el.innerHTML = ''; return; } // r14 integration: this account's board only, while it is the company account
     const R = pbBd.runs, P = pbBd.permits;
-    const runs = []; (R && Array.isArray(R.people) ? R.people : []).forEach(p => { const cur = (Array.isArray(p.runs) ? p.runs : []).find(r => r && !r.ended); if (cur) runs.push([p, cur]); });
+    const runs = []; (R && Array.isArray(R.people) ? R.people : []).forEach(p => { if (!p || typeof p !== 'object') return; const cur = (Array.isArray(p.runs) ? p.runs : []).find(r => r && !r.ended), T = pbLvToday(p, R.today); if (cur || T.earlier.length) runs.push([p, cur || null, T]); }); /* feat_livetoday: today's earlier runs too */
     const permits = P && Array.isArray(P.permits) ? P.permits.filter(x => x && x.permit_ref) : [];
     const line = pbBd.busy && !R && !P ? 'Loading…' : pbBd.busy ? 'Updating…' : pbBd.msg ? pbBd.msg + (pbBd.at ? ' Showing the copy from ' + pbProdTimeText(pbBd.at) + '.' : '') : pbBd.cached ? 'Copy from ' + pbProdTimeText(pbBd.at) + '.' : pbBd.at ? 'Updated ' + pbProdTimeText(pbBd.at) + '.' : '';
     const h = '<section class="pbp-block" id="pdLiveSec"><h2 class="pb-h2 pbp-h2">Live now</h2>'
       + '<p class="pbp-dim">What crews’ phones last sent. Not live if a phone is offline, and nobody is alerted from this board.</p>'
       + '<p class="pb-rpt-status" id="pdLiveStatus" role="status">' + escapeHtml(line) + '</p>'
       + '<h3 class="pbp-h3 pbp-bdh">Permits</h3>' + (!P ? '<p class="pbp-dim">Loads with signal.</p>' : !permits.length ? '<p class="pbp-dim pbp-none">No active permits reported.</p>' : '<ul class="pbp-livelist">' + permits.map((x, i) => pbBdPermitHtml(x, i, P.server_at)).join('') + '</ul>')
-      + '<h3 class="pbp-h3 pbp-bdh">Runs</h3>' + (!R ? '<p class="pbp-dim">Loads with signal.</p>' : !runs.length ? '<p class="pbp-dim pbp-none">No runs in progress reported.</p>' : '<ul class="pbp-livelist">' + runs.map(([p, r], i) => pbBdRunHtml(p, r, i, R.server_at)).join('') + '</ul>')
+      + '<h3 class="pbp-h3 pbp-bdh">Runs</h3>' + (!R ? '<p class="pbp-dim">Loads with signal.</p>' : !runs.length ? '<p class="pbp-dim pbp-none">No runs reported today.</p>' : '<ul class="pbp-livelist">' + runs.map(([p, r, T], i) => pbBdRunHtml(p, r, i, R.server_at, T)).join('') + '</ul>')
       + '<div class="pb-btn-wrap pbp-btns">' + pbCrewBtn('pdLiveRefresh', '<svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Refresh Live Now', 'pbBdRefresh()', 'ghost') + '</div></section>';
     pbSetHtml(el, h);
   }
@@ -50717,7 +51057,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbJobGrpFormGen = function() { return pbFormGen; }; // batch 14 R3
   window.pbJobGrpAccount = function() { try { return pbArchiveOwnerUid || null; } catch (e) { return null; } }; // batch 14 R3
   window.pbJobGrpIsFreshForm = function() { try { return pbFormFresh && !window._pbResumingFromEntryId && !hasUnsavedRunData({ fieldsOnly: true }); } catch (e) { return false; } }; // batch 14 R3
+  /* feat_nostake: "Not staked on the last run" under a resumed point's Survey Stake / Invert switch */
+  function pbNoStakeMark(prefix, text) {
+    const t = document.getElementById(prefix + 'ModeToggle'); if (!t || document.getElementById(prefix + 'NoStake')) return;
+    const p = document.createElement('p'); p.className = 'pb-help pb-nostake'; p.id = prefix + 'NoStake'; p.textContent = text || 'Not staked on the last run: no stake elevation here.';
+    t.insertAdjacentElement('afterend', p);
+  }
+  function pbNoStakeClear() { document.querySelectorAll('#screen-input .pb-nostake').forEach(e => e.remove()); }
+  window.pbNoStakeMark = pbNoStakeMark;
   function pbResetRunForm() {
+    pbNoStakeClear();
     try { if (window.pbRsEarlyClear) window.pbRsEarlyClear(); } catch (e) {} /* feat_resume2 */
     pbRdBeforeReset(); // batch 14 R: the form's draft is saved and kept, not lost
     pbFormGen++;
@@ -53998,6 +54347,48 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbMatList() { const J = pbPj.job && pbMat.jobs[pbPj.job.job_key]; return J && J.data && Array.isArray(J.data.materials) ? J.data.materials.filter(m => m && typeof m === 'object') : null; }
   function pbMatFind(id) { return (pbMatList() || []).find(m => m.id === id) || null; }
+  // ==== feat_takeoff: Ask's proposal, line by line, through the usual material form ====
+  const pbMatTkKey = (n) => String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  // review: units compared in one spelling (yd3 / CY / yd³ the same); a footage (pipe) material counts in LF
+  const pbMatTkUnit = (u) => { const t = String(u || '').trim().toLowerCase().replace('³', '3'); return /^(yd3|cy|cu ?yd|cubic yards?)$/.test(t) ? 'yd3' : /^tons?$/.test(t) ? 'ton' : /^(lf|ft|feet)$/.test(t) ? 'lf' : /^(ea|each)$/.test(t) ? 'ea' : t; };
+  const pbMatTkMUnit = (m) => m.source === 'pipe_footage' ? 'lf' : pbMatTkUnit(m.unit);
+  // the job's live materials with this name: one with the same unit = Set Expected; none = Add; several or another unit = say so
+  function pbMatTkMatch(list, x) {
+    const same = (list || []).filter(m => m && !m.archived && pbMatTkKey(m.name) === pbMatTkKey(x.name));
+    if (!same.length) return null;
+    const u = same.filter(m => pbMatTkMUnit(m) === pbMatTkUnit(x.unit));
+    return u.length === 1 ? u[0] : { clash: same.length > 1 ? 'Several lines on the job have this name. Open the right one in Materials.' : 'On the job in ' + (same[0].unit || 'LF') + ', not ' + x.unit + '. Change it in Materials.' };
+  }
+  function pbMatTkHtml(job, list) {
+    const T = window.pbAiTk; if (!T || !job || pbMatTkKey(job.job_key) !== pbMatTkKey(T.key)) return '';
+    const rows = T.items.map((x, k) => {
+      const m0 = pbMatTkMatch(list, x), clash = m0 && m0.clash, m = clash ? null : m0, same = m && Math.abs((Number(m.expected) || 0) - x.qty) < 0.0005;
+      const act = !list || clash ? '' : same ? '<span class="pb-chip ok">Saved</span>' : m ? '<button type="button" class="pb-btn small secondary" id="pjMatTkSet' + k + '" onclick="pbMatTkSet(' + k + ')">Set Expected</button>'
+        : '<button type="button" class="pb-btn small secondary" id="pjMatTkAdd' + k + '" onclick="pbMatTkAdd(' + k + ')">Add</button>';
+      return '<li class="pbm-tk-row"><span class="pbm-tk-n">' + escapeHtml(x.name + ' · ' + window.pbAiPropQty(x.qty) + ' ' + x.unit) + '</span>'
+        + '<span class="pbp-dim">' + escapeHtml(clash ? clash : m && !same ? 'On the job now: ' + window.pbAiPropQty(Number(m.expected) || 0) + ' ' + (m.unit || x.unit) + ' expected' : x.basis || '') + '</span>' + act + '</li>';
+    }).join('');
+    return '<div class="pbm-tk" id="pjMatTk"><p class="pbm-tk-h">From Ask: plan takeoff</p><p class="pbp-dim">Check each line against the plans, then save it. Nothing changes until you tap Save.</p><ul class="pbm-tk-l">' + rows + '</ul>'
+      + '<div class="pb-btn-wrap"><button type="button" class="pb-btn small ghost" id="pjMatTkDone" onclick="pbMatTkClose()">Close Takeoff</button></div></div>';
+  }
+  window.pbMatTkClose = function() { window.pbAiTk = null; pbMatJobPaint(); };
+  window.pbAccountLoadHooks.push((uid) => { if (window.pbAiTk && window.pbAiTk.uid !== uid) window.pbAiTk = null; }); // review: another account never sees it
+  window.pbMatTkAdd = function(k) {
+    const T = window.pbAiTk, x = T && T.items[k]; if (!x) return;
+    window.pbMatEdit(null); const F = pbMat.form; if (!F || F.kind !== 'mat') return;
+    const V = F.v; V.name = x.name; F.nameAuto = false;
+    // review: each kind lands on the app's own material type (concrete / asphalt use the paving types and their units)
+    if (x.kind === 'pipe' && pbMatTkUnit(x.unit) === 'lf') { V.category = 'pipe'; V.source = 'pipe_footage'; V.footage_cat = 'pipe'; V.unit = ''; }
+    else if ((x.kind === 'concrete' && pbMatTkUnit(x.unit) === 'yd3') || (x.kind === 'asphalt' && pbMatTkUnit(x.unit) === 'ton')) { pbMatKindSet(F, x.kind); V.name = x.name; F.nameAuto = false; }
+    else { V.category = x.kind === 'fittings' || x.kind === 'structures' ? x.kind : 'other'; V.source = 'entered'; V.unit = pbMatTkUnit(x.unit) === 'yd3' ? 'yd³' : x.unit; V.kind = ''; }
+    V.expected = String(x.qty); F.expAuto = false; pbMatJobPaint();
+  };
+  window.pbMatTkSet = function(k) {
+    const T = window.pbAiTk, x = T && T.items[k], m = x ? pbMatTkMatch(pbMatList(), x) : null; if (!m || m.clash) return;
+    window.pbMatEdit(m.id); const F = pbMat.form; if (!F || F.kind !== 'mat') return;
+    F.v.expected = String(x.qty); F.expAuto = false; pbMatJobPaint();
+  };
+  // ==== end feat_takeoff ====
   function pbMatSectionHtml() {
     const job = pbPj.job, M = pbMat;
     let h = '<section class="pb-section pbp-card pbm-sec" id="pjMatSec" aria-labelledby="pjMatTitle"><div class="pbp-jobhead pbm-head"><h3 class="pbp-h3" id="pjMatTitle">Materials</h3><span class="pbm-keyq"><span class="pbm-key" id="pjMatKey">Used / Ordered / Expected</span><button type="button" class="pbm-q" id="pjMatHelpBtn" aria-label="How materials are counted" onclick="pbMatHelp()"><span aria-hidden="true">?</span></button></span></div>';
@@ -54006,6 +54397,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const st = M.jobBusy ? (list ? 'Updating…' : 'Loading materials…') : M.jobMsg ? M.jobMsg + (list && J.at ? ' Showing the copy from ' + pbProdTimeText(J.at) + '.' : '') : J && J.cached ? 'Copy from ' + pbProdTimeText(J.at) + '.' : '';
     h += '<p class="pb-rpt-status pbm-status' + (M.jobMsg ? ' pbp-err' : '') + '" id="pjMatStatus" role="status">' + escapeHtml(st) + '</p>';
     if (M.form) return h + pbMatFormHtml() + '</section>';
+    h += pbMatTkHtml(job, list); // feat_takeoff
     h += '<div class="pb-btn-wrap pbp-btns pbm-addtop"><button type="button" class="pb-btn secondary" id="pjMatAdd" onclick="pbMatEdit(null)"' + (list ? '' : ' disabled') + '><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Material</button></div>';
     if (list) {
       const live = list.filter(m => !m.archived), arch = list.filter(m => m.archived);
@@ -57500,6 +57892,22 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbSetHtml(el, h); if (el.hidden) el.hidden = false;
   }
   window.pbDxHomeDaily = function() { window.pbOpenDailyReport({ tab: 'notes' }); };
+  /* dxresume (owner, Nov 6): a daily report started and not signed is on Home (Current Work) and in the line above the tabs, until it's signed */
+  let pbDxResumeAsked = null;
+  function pbDxResumeItems() {
+    const uid = pbArchiveOwnerUid; if (!uid || uid === 'shared') return [];
+    if (pbDp.uid !== uid || !pbDp.drafts) { if (pbDxResumeAsked !== uid) { pbDxResumeAsked = uid; pbDpLoad(uid).then(() => { try { if (typeof window.pbRenderShell === 'function') window.pbRenderShell(); if (pbCurrentScreen === 'home' && typeof window.pbRenderHome === 'function') window.pbRenderHome(); } catch (e) {} }).catch(() => {}); } return []; }
+    const D = pbDp.drafts, st = pbDly.st, old = Date.now() - 14 * 86400000, out = [];
+    Object.keys(D).forEach(k => { const d = D[k]; if (!d || d.quick || !(d.from && d.from.edited) || (d.at || 0) < old) return;
+      const i = k.lastIndexOf('|'), job = k.slice(0, i), date = k.slice(i + 1); if (!job || !/^\d{4}-\d\d-\d\d$/.test(date)) return;
+      if (st && Array.isArray(st.reports) && st.reports.some(r => r && r.state !== 'discarded' && r.state !== 'replaced' && r.workDate === date && pbDlyKey(r.jobNumber) === job)) return; // signed
+      out.push({ job, date, at: d.at || 0 }); });
+    return out.sort((a, b) => b.at - a.at).slice(0, 3);
+  }
+  const pbDxResumeWork = () => pbDxResumeItems().map(x => ({ id: 'dxResume_' + x.job + '_' + x.date, title: 'Daily report', text: 'Job ' + x.job + ' · ' + pbDxShort(x.date), status: 'Not signed', action: 'Continue', screen: 'dailyReport', onClick: () => window.pbOpenDailyReportFor(x.job, x.date, 'notes') }));
+  (window.pbHomeWorkProviders = Array.isArray(window.pbHomeWorkProviders) ? window.pbHomeWorkProviders : []).push(pbDxResumeWork);
+  (window.pbActiveBarProviders = Array.isArray(window.pbActiveBarProviders) ? window.pbActiveBarProviders : []).push((screen) => { const L = pbDxResumeWork(); return L.length ? Object.assign({}, L[0], { text: 'Daily report not signed · Job ' + pbDxResumeItems()[0].job, go: 'Continue' }) : null; });
+  window.pbAccountLoadHooks.push(() => { pbDxResumeAsked = null; });
   { const r0 = window.pbRenderHome; if (typeof r0 === 'function') window.pbRenderHome = function() { const out = r0.apply(this, arguments); try { pbDxHomeBar(); } catch (e) { console.error(e); } return out; }; }
 
   // ---- the PDF: the narrative, the notes and the day's photos up front; the crew's reports; the crew's hours ----
@@ -60113,12 +60521,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   // Live now: each person's current run (as the board shows it) and every open permit, emergencies first.
   function pbCxLive(B) {
-    const runs = [], permits = [];
+    const runs = [], permits = [], done = [];
     if (!B) return null;
-    (B.runs && Array.isArray(B.runs.people) ? B.runs.people : []).forEach(p => { if (!p || typeof p !== 'object') return; const cur = (Array.isArray(p.runs) ? p.runs : []).find(r => r && typeof r === 'object' && !r.ended); if (cur) runs.push({ p, r: cur, job: String(cur.job_number || (cur.status && cur.status.jobNumber) || '') }); });
+    (B.runs && Array.isArray(B.runs.people) ? B.runs.people : []).forEach(p => { if (!p || typeof p !== 'object') return; const cur = (Array.isArray(p.runs) ? p.runs : []).find(r => r && typeof r === 'object' && !r.ended), T = pbLvToday(p, B.runs.today); if (cur) runs.push({ p, r: cur, T, job: String(cur.job_number || (cur.status && cur.status.jobNumber) || '') }); else if (T.earlier.length) done.push({ p, T, job: String(T.earlier[0].job_number || (T.earlier[0].status && T.earlier[0].status.jobNumber) || '') }); }); /* feat_livetoday */
     (B.permits && Array.isArray(B.permits.permits) ? B.permits.permits : []).forEach(x => { if (x && typeof x === 'object' && x.permit_ref && !x.closed) permits.push({ x, s: x.status || {}, job: String((x.status && x.status.jobNumber) || '') }); });
     permits.sort((a, b) => (b.s.emergency ? 1 : 0) - (a.s.emergency ? 1 : 0));
-    return { runs, permits, emerg: permits.filter(p => p.s.emergency), at: B.at, cached: B.cached, runsKnown: !!B.runs, permitsKnown: !!B.permits, srvRuns: B.runs && B.runs.server_at, srvPermits: B.permits && B.permits.server_at };
+    return { runs, done, permits, emerg: permits.filter(p => p.s.emergency), at: B.at, cached: B.cached, runsKnown: !!B.runs, permitsKnown: !!B.permits, srvRuns: B.runs && B.runs.server_at, srvPermits: B.permits && B.permits.server_at };
   }
   const pbCxSameJob = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
   function pbCxMatAlerts(uid) {
@@ -60453,7 +60861,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return pbCxRowBtn(job, 'overview', '<span class="pbx-row-tx"><span class="pbx-row-h">' + pbCxE((x.p.name || 'Crew member') + (x.p.foreman ? ' · foreman ' + x.p.foreman : '')) + '</span>'
       + '<span class="pbx-row-s">' + pbCxE(pbProdJobLabel(x.job) + (s.label ? ' · ' + s.label : '')) + '</span>'
       + (total > 0 ? '<span class="pbx-mini" aria-hidden="true"><span style="width:' + (Math.max(0, Math.min(1, laid / total)) * 100).toFixed(1) + '%"></span></span><span class="pbx-row-s">' + pbCxE('Pipe laid ' + pbProdQtyText(laid) + ' of ' + pbProdQtyText(total) + ' ft') + '</span>' : '')
-      + '<span class="pbx-row-d">' + pbCxE('Last update ' + pbBdT(x.r.updated_at, srv)) + '</span></span>', 'cxRun' + i);
+      + pbCxTodayHtml(x.T) + '<span class="pbx-row-d">' + pbCxE('Last update ' + pbBdT(x.r.updated_at, srv)) + '</span></span>', 'cxRun' + i);
+  }
+  function pbCxTodayHtml(T) { /* feat_livetoday */
+    return (T && T.line ? '<span class="pbx-row-s pbx-today">' + pbCxE(T.line) + '</span>' : '') + (T && T.earlier.length ? T.earlier.map(r => '<span class="pbx-row-d">' + pbCxE('Earlier: ' + pbLvEarlierText(r)) + '</span>').join('') : '');
+  }
+  function pbCxDoneRow(uid, x, i) {
+    const job = pbCxJobKnown(uid, x.job);
+    return pbCxRowBtn(job, 'overview', '<span class="pbx-row-tx"><span class="pbx-row-h">' + pbCxE((x.p.name || 'Crew member') + (x.p.foreman ? ' · foreman ' + x.p.foreman : '')) + '</span><span class="pbx-row-s">No run in progress</span>' + pbCxTodayHtml(x.T) + '</span>', 'cxDone' + i);
   }
   function pbCxPermitRow(uid, x, i, srv) {
     const s = x.s, job = pbCxJobKnown(uid, x.job);
@@ -60476,7 +60891,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       h = '<p class="pbx-note">What crews’ phones last sent. Not live if a phone is offline, and nobody is alerted from here.</p>';
       if (L) {
         h += '<h2 class="pbx-h2">' + pbCxE('Permits (' + L.permits.length + ')') + '</h2>' + (!L.permitsKnown ? '<p class="pbx-none">Loads with signal.</p>' : L.permits.length ? '<div class="pbx-rows">' + L.permits.map((x, i) => pbCxPermitRow(uid, x, i, L.srvPermits)).join('') + '</div>' : '<p class="pbx-none">No active permits reported.</p>');
-        h += '<h2 class="pbx-h2">' + pbCxE('Runs (' + L.runs.length + ')') + '</h2>' + (!L.runsKnown ? '<p class="pbx-none">Loads with signal.</p>' : L.runs.length ? '<div class="pbx-rows">' + L.runs.map((x, i) => pbCxRunRow(uid, x, i, L.srvRuns)).join('') + '</div>' : '<p class="pbx-none">No runs in progress reported.</p>');
+        h += '<h2 class="pbx-h2">' + pbCxE('Runs (' + L.runs.length + ')') + '</h2>' + (!L.runsKnown ? '<p class="pbx-none">Loads with signal.</p>' : L.runs.length ? '<div class="pbx-rows">' + L.runs.map((x, i) => pbCxRunRow(uid, x, i, L.srvRuns)).join('') + '</div>' : '<p class="pbx-none">No runs in progress reported.</p>')
+          + (L.runsKnown && L.done.length ? '<h2 class="pbx-h2">' + pbCxE('Done for now (' + L.done.length + ')') + '</h2><div class="pbx-rows">' + L.done.map((x, i) => pbCxDoneRow(uid, x, i)).join('') + '</div>' : ''); /* feat_livetoday */
       }
     } else if (kind === 'mat') {
       const A = pbCxMatAlerts(uid);
@@ -60698,6 +61114,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   };
   function pbRrSendBackHtml(O, x, any) { return (x.can_send_back && (any || (!O.fromCrew && !O.fromList)) ? (O.sendBack ? '<div class="pb-field" id="cxSendBackForm" style="margin-top:14px"><label for="cxSendBackNote">What does the foreman need to add or fix?</label><textarea id="cxSendBackNote" rows="3" maxlength="500" placeholder="e.g. Add the crew hours" style="width:100%;box-sizing:border-box" oninput="pbRrSendBackType(this.value)">' + escapeHtml(O.sendBackText || '') + '</textarea>' + (O.sendBackErr ? '<p class="pb-warn pbp-manmsg" role="alert">' + pbCxE(O.sendBackErr) + '</p>' : '') + '<div class="pb-save-offer-btns"><button type="button" class="pb-btn small" id="cxSendBackGo" onclick="pbRrSendBack()">Send Back</button><button type="button" class="pb-btn ghost small" onclick="pbRrSendBackCancel()">Cancel</button></div></div>'
           : '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn ghost small" id="cxSendBackBtn" onclick="pbRrSendBackOpen()">Send Back to Foreman</button></div>') : ''); } /* r15.48 access: also for a foreman who is a listed manager (any: on his own report screen) */
+  // feat_rrnudge: on the office's view of a run report still waiting on its foreman
+  const pbRrNudgeLast = new Map(); // entry id -> { t: the last result line, gone: not waiting any more } (this session)
+  window.pbRrNudgeKey = (x) => { const l = x && pbRrNudgeLast.get(String(x.entry_id)); return [pbRoStatus(x || {}), x && x.confirmed ? 1 : 0, (x && x.foreman_name) || '', l ? l.t : ''].join('~'); };
+  function pbRrNudgeHtml(x) {
+    if (!x || !x.entry_id || x.reviewed_at || x.removed_at || x.office_only || pbRoStatus(x) !== 'waiting') return '';
+    const fm = x.foreman_name ? String(x.foreman_name).split(/\s+/)[0] : '', last = pbRrNudgeLast.get(String(x.entry_id));
+    const msg = '<p class="pbx-note" id="cxRunNudgeMsg" role="status" aria-live="polite">' + pbCxE(last ? last.t : '') + '</p>';
+    if (last && last.gone) return msg; // review: not waiting on a foreman (server): no button again
+    return '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn secondary small" id="cxRunNudge" onclick="pbRrNudge()">' + pbCxE(fm ? 'Nudge ' + fm : 'Nudge Foreman') + '</button></div>' + msg;
+  }
   function pbRoDetailHtml(O) {
     const x = O.open, e = O.rec;
     let h = '' /* feat_rrflow F4: the header's Back closes the report (pbCxListBack) */
@@ -60723,10 +61149,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       h += approve + pbRrSetupHtml(O, x) + '<section id="cxRunReport" style="margin-top:14px">' + pdf + '</section>' + pbRrSendBackHtml(O, x, true) /* r15.48 access */
         + '<details class="pb-more" id="cxRunMore" style="margin-top:14px"><summary><span>More</span></summary><p class="pbx-note">Delete this run if it shouldn’t be in the company’s records (a test, a duplicate, the wrong job). It leaves every list and its production stops counting. The office sees that you deleted it, and the server keeps a copy.</p><button type="button" class="pb-btn ghost small" id="cxRunDelete" style="color:var(--rod-red)" onclick="pbRrDelete()">Delete Run</button></details>';
     } else {
-      h += pdf + pbRrSetupHtml(O, x) + pbRrOffHtml(O, x) + (x.can_review && !x.reviewed_at && !window.pbRrAqHas(x.id) ? '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn small" id="cxRunReviewed" onclick="pbRrReviewed()">Approve Report</button></div>' : '')
+      h += pdf + pbRrNudgeHtml(x) + pbRrSetupHtml(O, x) + pbRrOffHtml(O, x) + (x.can_review && !x.reviewed_at && !window.pbRrAqHas(x.id) ? '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="pb-btn small" id="cxRunReviewed" onclick="pbRrReviewed()">Approve Report</button></div>' : '')
         + pbRrSendBackHtml(O, x);
     }
-    const keep = 'd|' + [x.id || x.sref, e.id, (x.reviewed_at || '') + (window.pbRrAqHas(x.id) ? ':q' : '') + (x.corrected_at || ''), x.sent_at || '', O.sendBack ? 'sb:' + (O.sendBackErr || '') : '', x.sent_back_at || '', x.removed_at || '', pbRrOffKey(O, x), pbRrSetupKey(O, x), canProd ? ((pbLv.data ? 1 : 0) + ':' + (pbLv.form ? pbLv.form.cid + ':' + (pbLv.form.err || '') + ':' + pbLv.form.rows.map(r => r.key + '=' + r.unit + '=' + (r.label || '')).join(',') /* r15.50 X1: not just the count */ + ':' + (pbLv.form.eq ? pbLv.form.eq.rows.map(r => r.key).join(',') : '') + ':r' + (Array.isArray(pbLv.form.rentals) ? pbLv.form.rentals.length : 0) /* feat_foreman 11 */ : '') + ':' + JSON.stringify(pbLvRuns())) : ''].join('|');
+    const keep = 'd|' + [x.id || x.sref, e.id, window.pbRrNudgeKey(x) /* feat_rrnudge */, (x.reviewed_at || '') + (window.pbRrAqHas(x.id) ? ':q' : '') + (x.corrected_at || ''), x.sent_at || '', O.sendBack ? 'sb:' + (O.sendBackErr || '') : '', x.sent_back_at || '', x.removed_at || '', pbRrOffKey(O, x), pbRrSetupKey(O, x), canProd ? ((pbLv.data ? 1 : 0) + ':' + (pbLv.form ? pbLv.form.cid + ':' + (pbLv.form.err || '') + ':' + pbLv.form.rows.map(r => r.key + '=' + r.unit + '=' + (r.label || '')).join(',') /* r15.50 X1: not just the count */ + ':' + (pbLv.form.eq ? pbLv.form.eq.rows.map(r => r.key).join(',') : '') + ':r' + (Array.isArray(pbLv.form.rentals) ? pbLv.form.rentals.length : 0) /* feat_foreman 11 */ : '') + ':' + JSON.stringify(pbLvRuns())) : ''].join('|');
     return { h, s: '', keep };
   }
   // ---- feat_runsetup: a sent run's setup, changed by the office (intended) or its foreman (field; his win) ----
@@ -60841,7 +61267,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbRrOffForm(x) {
     const items = x.prod && Array.isArray(x.prod.items) ? x.prod.items : [], plan = Array.isArray(x.plan) ? x.plan : [], o = { name: (k) => pbProdCatName(k) };
     const have = new Map(items.filter(i => i && typeof i.key === 'string').map(i => [i.key, i]));
-    const rows = PB_PROD_FIELD_MAP.map(m => { const c = plan.find(p => p.key === m.key), i = have.get(m.key); return { key: m.key, unit: (i && i.unit) || (c && c.unit) || m.unit, itemUnit: (i && i.unit) || null, qty: i && i.qty != null ? String(i.qty) : '', pre: null, typed: false, preText: null }; }).concat(pbRolesHourRows(items)); /* review S1: a stored amount keeps its unit */
+    const rows = PB_PROD_FIELD_MAP.map(m => { const c = plan.find(p => p.key === m.key), i = have.get(m.key); return { key: m.key, unit: (i && i.unit) || (c && c.unit) || m.unit, itemUnit: (i && i.unit) || null, qty: i && i.qty != null ? String(i.qty) : '', pre: null, typed: false, preText: null }; }).concat(pbRolesHourRows(items).filter(r => r.qty !== '' || window.__pbLegacyProdBoxes)); /* prodfill */ /* review S1: a stored amount keeps its unit */
     window.pbProdPlanLabels(plan, rows, o);
     window.pbProdRowsSplice(rows, window.pbProdPlanExtraRows(plan, have, rows, o));
     rows.forEach(r => { r.nm = String(r.label || pbProdCatName(r.key)).replace(/ \([^)]*\).*$/, ''); });
@@ -61805,6 +62231,27 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (x.sent_back_at && !x.reviewed_at && !x.removed_at) more += '<div class="pb-save-offer-btns"><button type="button" class="pb-btn ghost small" id="cxRunOffApproveBack" onclick="pbRfOffApproveBack()">' + escapeHtml('Approve Without ' + (x.foreman_name ? String(x.foreman_name).split(/\s+/)[0] : 'the Foreman')) + '</button></div>'; // review S5
     return { h, more };
   };
+  window.pbRrNudge = function() { // feat_rrnudge
+    const uid = pbArchiveOwnerUid, O = pbRoFor(uid), x = O && O.open; if (!x || !x.entry_id) return;
+    const fm = x.foreman_name ? String(x.foreman_name).split(/\s+/)[0] : 'the foreman';
+    const say = (t, gone) => { pbRrNudgeLast.set(String(x.entry_id), { t, gone: !!gone }); const el = document.getElementById('cxRunNudgeMsg'); if (el) el.textContent = t; if (gone) { const b = document.getElementById('cxRunNudge'); if (b) b.closest('.pb-save-offer-btns').remove(); } };
+    pbShowModal('Send ' + fm + ' a notification to look at this run? Between 9 PM and 6 AM it waits until 6 AM. One nudge per run per hour.', [{ label: 'Cancel' }, { label: 'Nudge ' + (x.foreman_name ? fm : 'Foreman'), primary: true, onClick: async () => {
+      const b = document.getElementById('cxRunNudge'); if (b) b.disabled = true;
+      let r = null; try { r = await pbPermitRpc('pb_prod_crew_nudge', { p_entry_id: x.entry_id, p_expect_uid: uid }, 30000); } catch (e) { r = null; }
+      if (b) b.disabled = false;
+      const d = r && !r.error ? r.data || {} : null, code = d ? String(d.code || '') : '';
+      const em = r && r.error ? String(r.error.message || '') : '';
+      if (!d) say(navigator.onLine === false ? 'No signal. Try again with signal.' : /not_company_account/.test(em) ? 'Only the company account or a PM can nudge.' : /wrong_account/.test(em) ? 'This phone switched accounts. Open the run again.' : 'Couldn’t send the nudge. Try again.');
+      else if (d.ok && d.result === 'held') say('Nudge held until 6 AM (quiet hours).');
+      else if (d.ok && d.result === 'skipped') say('Not sent: the run or its foreman changed.');
+      else if (d.ok) say((d.to === 'pipelayer' ? 'Nudged the pipelayer (no foreman is set on this run).' : 'Nudged ' + fm + '.'));
+      else if (/nudged_recently/.test(code)) say('Already nudged in the last hour.');
+      else if (/not_waiting/.test(code)) say('It isn’t waiting for a foreman’s claim any more (claimed, counted, or past 24 hours), so there’s no one to nudge.', true);
+      else if (/no_one/.test(code)) say('No foreman is set on this run.', true);
+      else if (/not_found/.test(code)) say('This run isn’t in the company’s records any more.', true);
+      else say('Couldn’t send the nudge. Try again.');
+    } }]);
+  };
   window.pbRfOffApproveBack = function() {
     const O = pbRoFor(pbArchiveOwnerUid), x = O.open; if (!x || !x.id) return;
     const fm = x.foreman_name || 'the foreman';
@@ -62665,7 +63112,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbCxNewErr(pbCxNewMsg); pbCxNewMsg = '';
     { const a = document.getElementById('cxnAddr'), au = document.getElementById('cxnAddrAuto'); /* clean_b: City, State from the company's most recent job, from the copy on this phone only */
       if (a && !a.value.trim()) { a.dataset.auto = ''; let src = null; try { const D = pbCohDash(pbArchiveOwnerUid) || (pbPd.uid === pbArchiveOwnerUid && pbPd.data ? { data: pbPd.data } : null); const J = D && D.data && Array.isArray(D.data.jobs) ? D.data.jobs.filter(j => j && typeof j.address === 'string' && j.address.trim()) : []; J.sort((x, y) => String(y.start_date || y.last_at || '').localeCompare(String(x.start_date || x.last_at || ''))); src = J[0] || null; } catch (e) {}
-        if (src) { a.value = src.address.trim().slice(0, 300); a.dataset.auto = '1'; } }
+        if (src) { const parts = src.address.split(',').map(x => x.trim()).filter(Boolean), cs = parts.length >= 3 ? parts.slice(-2).join(', ') : parts.length === 2 && !/\d/.test(parts[0]) ? parts.join(', ') : ''; /* review1: never the street */
+          if (cs) { a.value = cs.slice(0, 300); a.dataset.auto = '1'; } } }
       if (au) au.hidden = !(a && a.dataset.auto === '1' && a.value.trim()); }
     { const f = document.getElementById('cxNewForm'); if (f && !f.__cxIn) { f.__cxIn = true; f.addEventListener('input', () => pbCxNewErr('')); } } // a message goes once the person types again
     pbGoto('cxNew');
@@ -63752,7 +64200,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const unitOf = (k) => { const i = have.get(k); if (i && i.unit) return i.unit; const m = PB_PROD_FIELD_MAP.find(y => y.key === k); return m ? m.unit : ''; };
     const rows = keys.map(k => { const i = have.get(k); return { key: k, unit: unitOf(k), qty: i && i.qty != null ? String(i.qty) : '' }; });
     const hb = base.some(it => it && (it.key === PB_PROD_HOURS_KEY || it.key === PB_ROLES_EQ_KEY)) ? base : (x.items || []);
-    return { id: x.id, version: Number(x.version) || 1, rows: rows.concat(pbRolesHourRows(hb).map(r => ({ key: r.key, unit: 'h', qty: r.qty, label: r.label }))), hours: [], err: '' };
+    return { id: x.id, version: Number(x.version) || 1, rows: rows.concat(pbRolesHourRows(hb).filter(r => r.qty !== '' || window.__pbLegacyProdBoxes).map(r => ({ key: r.key, unit: 'h', qty: r.qty, label: r.label }))), /* prodfill */ hours: [], err: '' };
   }
   // ---- the daily report (batch 23 DAILY): hours he entered for his pipelayers' runs ----
   // His own runs' Crew & Equipment Logs are counted by DAILY as before. Added here, once per pipelayer run session, the
@@ -63862,7 +64310,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbLocLevel(l) { const d = pbLocLeft(l); return d === null || l.closed ? '' : d <= 2 ? 'red' : d <= 7 ? 'amber' : ''; } // red: 2 days or less, or expired
   function pbLocLeftText(l) { const d = pbLocLeft(l); return d === null ? '' : d < 0 ? 'Expired ' + (-d) + (d === -1 ? ' day ago' : ' days ago') : d === 0 ? 'Expires today' : d === 1 ? 'Expires tomorrow' : d + ' days left'; }
   // an expired ticket isn't something to "refresh" and keep digging on: the crew stops until a new one is valid (review S4)
-  function pbLocDueText(l) { const d = pbLocLeft(l), x = pbLocDay(l.expires_at); return d === null ? '' : d < 0 ? 'expired ' + x + ' — don’t dig until it’s refreshed' : d === 0 ? 'expires today (' + x + ')' : d === 1 ? 'expires tomorrow (' + x + ')' : 'expires in ' + d + ' days (' + x + ')'; }
+  function pbLocDueText(l) { const d = pbLocLeft(l), x = pbLocDay(l.expires_at); return d === null ? '' : d < 0 ? 'expired ' + x + ' — don’t dig until a new ticket is valid' : d === 0 ? 'expires today (' + x + ')' : d === 1 ? 'expires tomorrow (' + x + ')' : 'expires in ' + d + ' days (' + x + ')'; }
   const pbLocByExp = (a, b) => String(a.expires_at || '').localeCompare(String(b.expires_at || ''));
   function pbLocUuid() {
     try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
@@ -63901,7 +64349,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     Object.keys(st.gone).forEach(c => { if (now - Number(st.gone[c]) > 30 * 86400000) delete st.gone[c]; });
     const by = new Map();
     st.queue.concat(o.queue || []).forEach(q => { if (!q || !q.cid || !q.id || st.gone[q.cid]) return; const w = by.get(q.cid); if (!w || pbLocUpd(q) > pbLocUpd(w)) by.set(q.cid, q); });
-    const top = new Map(); [...by.values()].forEach(q => { const w = top.get(q.id); if (!w || String(q.savedAt) > String(w.savedAt)) top.set(q.id, q); });
+    const top = new Map(); [...by.values()].forEach(q => { const w = top.get(q.id); if (!w || String(q.savedAt) > String(w.savedAt)) { if (w && w.renewed_at && !q.renewed_at) { q.renewed_at = w.renewed_at; if (String(w.expires_at) > String(q.expires_at)) q.expires_at = w.expires_at; } top.set(q.id, q); } else if (q.renewed_at && !w.renewed_at) { w.renewed_at = q.renewed_at; if (String(q.expires_at) > String(w.expires_at)) w.expires_at = q.expires_at; } });
     st.queue = st.queue.filter(q => top.get(q.id) === q).concat([...top.values()].filter(q => !st.queue.includes(q)));
     Object.keys(o.jobs || {}).forEach(k => { const a = st.jobs[k], b = o.jobs[k]; if (b && (!a || (b.at || 0) > (a.at || 0))) st.jobs[k] = b; });
     if (o.mine && (!st.mine || (o.mine.at || 0) > (st.mine.at || 0))) st.mine = o.mine;
@@ -63994,7 +64442,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const out = list.map(l => Object.assign({}, l));
     (pbLoc.st ? pbLoc.st.queue : []).filter(q => pbLocPend(q) && (key === null || q.key === key)).forEach(q => {
       const i = out.findIndex(l => l.id === q.id), was = i >= 0 ? out[i] : { by_name: null };
-      const v = Object.assign({}, was, { id: q.id, job_number: q.job_number, ticket_no: q.ticket_no, called_at: q.called_at, expires_at: q.expires_at, note: q.note, closed: q.closed === null || q.closed === undefined ? !!was.closed : !!q.closed, pend: q });
+      const v = Object.assign({}, was, { id: q.id, job_number: q.job_number, ticket_no: q.ticket_no, called_at: q.called_at, expires_at: q.expires_at, renewed_at: q.renewed_at || was.renewed_at || null, note: q.note, closed: q.closed === null || q.closed === undefined ? !!was.closed : !!q.closed, pend: q });
       if (i >= 0) out[i] = v; else out.push(v);
     });
     return out;
@@ -64045,7 +64493,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const PB_LOC_ERR = { 'pb:foremen_only': 'Only foremen and the company account keep locate tickets.', 'pb:not_company_member': 'This account isn’t in a company.', 'pb:not_company_account': 'This account isn’t your company account.',
     'pb:bad_ticket_no': 'The ticket number is missing.', 'pb:bad_date': 'Check the dates: it can’t expire before it was called in, nor more than a year after.', 'pb:bad_job': 'The job number isn’t right.',
     'pb:quota': 'Too many tickets for now (40 open on a job, 200 a day).', 'pb:not_found': 'That ticket isn’t on the company server (another company’s, or removed).', 'pb:bad_request': 'The server couldn’t read it.',
-    'pb:no_job': 'That job isn’t on the company server yet. Add the job first, then send this again.' };
+    'pb:no_job': 'That job isn’t on the company server yet. Add the job first, then send this again.', 'pb:renew_late': 'It had already expired. 811 only renews a ticket before it expires: call in a new ticket.' };
   // no answer at all (no signal, a timeout, the network): try the same change later, and stop for now (review S8)
   const pbLocNoAnswer = (m) => navigator.onLine === false || /^(timeout|no answer|no client)$/.test(m) || /failed to fetch|networkerror|network request|load failed|fetch failed|aborted|offline/i.test(m);
   // the version this phone's change was made on: an unsent change keeps the one it started from; after a "changed on the
@@ -64070,15 +64518,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       for (const q of st.queue.filter(x => x.state === 'waiting')) {
         if (pbLoc.uid !== uid || pbLoc.st !== st || pbArchiveOwnerUid !== uid) return;
         if (st.gone[q.cid]) continue;
-        const r = await pbPermitRpc('pb_prod_locate_set', { p_job_number: q.job_number, p_id: q.id, p_ticket_no: q.ticket_no, p_called_at: q.called_at, p_expires_at: q.expires_at, p_note: q.note || null, p_closed: q.closed === null || q.closed === undefined ? null : !!q.closed, p_expect_version: Number(q.ver) || 0, p_expect_uid: uid }, 30000);
+        const r = await pbPermitRpc('pb_prod_locate_set', { p_job_number: q.job_number, p_id: q.id, p_ticket_no: q.ticket_no, p_called_at: q.called_at, p_expires_at: q.expires_at, p_note: q.note || null, p_closed: q.closed === null || q.closed === undefined ? null : !!q.closed, p_expect_version: Number(q.ver) || 0, p_expect_uid: uid, ...(q.renewed_at ? { p_renewed_at: q.renewed_at } : {}) }, 30000);
         if (pbLoc.uid !== uid || pbLoc.st !== st) return;
         const m = String((r && r.error && r.error.message) || ''), code = (/pb:[a-z_]+/.exec(m) || [])[0] || null, D = r && !r.error && r.data;
         if (D && Array.isArray(D.locates)) { const J = st.jobs[q.key] || (st.jobs[q.key] = { job_number: q.job_number, locates: null, at: 0 }); J.locates = D.locates; J.at = Date.now(); pbLocPush(uid, q.key, D.locates); }
-        if (D && D.ok === true) { st.gone[q.cid] = Date.now(); st.queue = st.queue.filter(x => x.cid !== q.cid); changed = true; sent++; continue; }
+        if (D && D.ok === true) { try { pbLocLogs.delete(q.id); } catch (e) {} st.gone[q.cid] = Date.now(); st.queue = st.queue.filter(x => x.cid !== q.cid); changed = true; sent++; continue; }
         if (D && D.stale) { // the office changed it after this phone loaded it: not applied; say what the server has now
           const cur = D.locate || {}, now = cur.closed ? 'it is closed there now' : cur.expires_at ? 'it now expires ' + pbLocDay(cur.expires_at) : '';
           mark(q, { state: 'refused', code: 'pb:stale', why: 'Changed on the company server after this phone loaded it' + (now ? ' (' + now + ')' : '') + '. Discard yours to keep that, or Fix and Send Again to redo yours on it.' }); continue;
         }
+        if (/Could not find the function|function .* does not exist/i.test(m) && q.renewed_at) { mark(q, { state: 'refused', code: 'pb:no_renew', why: 'The company server can’t take renewals yet. Discard this and renew again after it is updated.' }); continue; } /* feat_locrenew: one renewal never holds up the rest */
         if (/Could not find the function|function .* does not exist/i.test(m)) { if (q.why !== 'not_ready') mark(q, { why: 'not_ready' }); break; } // kept: sent once the server has it
         if (code && /pb:(signed_out|wrong_account)/.test(code)) { if (q.why !== 'signin') mark(q, { why: 'signin' }); break; } // signed out: try later
         if (!code && pbLocNoAnswer(m)) { if (q.why) mark(q, { why: '' }); break; } // no signal: the rest won't go either
@@ -64106,7 +64555,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbLocRefreshScreens(); pbLocSyncSoon(0);
     return true;
   }
-  const pbLocRec = (job, id, v, closed, ver) => ({ cid: 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), id, key: job.key, job_number: job.job_number, ticket_no: v.ticket_no, called_at: v.called_at, expires_at: v.expires_at, note: String(v.note || '').replace(/\s+/g, ' ').trim().slice(0, 300), closed, ver: Number(ver) || 0, savedAt: new Date().toISOString(), state: 'waiting', why: '' });
+  const pbLocRec = (job, id, v, closed, ver) => ({ cid: 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), id, key: job.key, job_number: job.job_number, ticket_no: v.ticket_no, called_at: v.called_at, expires_at: v.expires_at, renewed_at: v.renewed_at || null, note: String(v.note || '').replace(/\s+/g, ' ').trim().slice(0, 300), closed, ver: Number(ver) || 0, savedAt: new Date().toISOString(), state: 'waiting', why: '' });
 
   // ---- the Locates screen ----
   window.pbOpenLocates = async function(jobNumber) {
@@ -64148,15 +64597,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const lv = pbLocLevel(l), p = l.pend, sid = escapeHtml(String(l.id)), addr = pbLoc.job ? pbLocJobInfo(pbLoc.job).address : '';
     const chip = l.closed ? '<span class="pb-chip calculated pbd-chip">Closed</span>'
       : '<span class="pb-chip pbd-chip pbloc-chip' + ((pbLocStat(l) || {}).k === 'early' ? ' notsent' : lv === 'red' ? ' overdue' : lv === 'amber' ? ' notsent' : '') + '" id="locChip_' + sid + '">' + escapeHtml(pbLocStatText(l)) + '</span>'; /* feat_locate28 */
-    const line = 'Called in ' + pbLocDay(l.called_at) + (l.by_name && !p ? ' · ' + l.by_name : ''); /* feat_locate28: the dates are in the row below */
+    const line = 'Called in ' + pbLocDay(l.called_at) + (pbLocIsDay(l.renewed_at) ? ' · Renewed ' + pbLocDay(l.renewed_at) + (Number(l.renewals) > 1 ? ' (' + l.renewals + ' times)' : '') : '') + (l.by_name && !p ? ' · ' + l.by_name : ''); /* feat_locate28: the dates are in the row below */
     let h = '<div class="pbd-card pbloc-card' + (lv ? ' ' + lv : '') + (l.closed ? ' closed' : '') + '" id="locT_' + sid + '"><div class="pbd-ihead"><strong class="pbloc-no">Ticket ' + escapeHtml(l.ticket_no) + '</strong> ' + chip + '</div>'
       + '<p class="pbd-dim">' + escapeHtml(line) + '</p>' + (l.closed ? '' : pbLocDatesHtml(l, 'loc_' + sid)) /* feat_locate28 */ + (l.note && l.note !== addr ? '<p class="pbd-note">' + escapeHtml(l.note) + '</p>' : '') // the job's own address is in the header already
-      + (!l.closed && pbLocLeft(l) !== null && pbLocLeft(l) < 0 ? '<p class="pbp-err pbloc-nodig" id="locNoDig_' + sid + '">' + escapeHtml('Expired ' + pbLocDay(l.expires_at) + ' — don’t dig until it’s refreshed.') + '</p>' : '');
+      + (!l.closed && pbLocLeft(l) !== null && pbLocLeft(l) < 0 ? '<p class="pbp-err pbloc-nodig" id="locNoDig_' + sid + '">' + escapeHtml('Expired ' + pbLocDay(l.expires_at) + '. Don’t dig until a new ticket is valid.') + '</p>' : '');
     if (p) h += '<p class="pbd-pend" id="locPend_' + sid + '"><span class="pb-chip ' + (p.state === 'refused' ? 'overdue' : 'notsent') + ' pbd-chip">' + (p.state === 'refused' ? 'Not accepted' : 'Waiting to send') + '</span>' + (p.state === 'refused' || p.why ? ' <span class="pbd-why" id="locWhy_' + sid + '">' + escapeHtml(p.state === 'refused' ? (p.why || '') : pbLocWaitWhy(p)) + '</span>' : '') + '</p>'; // the plain wait is said once, in the status line
     if (p && p.state === 'refused') h += '<div class="pbd-acts"><button type="button" class="pb-btn secondary small" id="locFix_' + sid + '" onclick="pbLocEdit(' + pbLocQ(l.id) + ')">Fix and Send Again</button><button type="button" class="pb-btn ghost small" id="locDiscard_' + sid + '" onclick="pbLocDiscard(' + pbLocQ(l.id) + ')">Discard</button></div>';
     else if (l.closed) h += '<div class="pbd-acts"><button type="button" class="pb-btn ghost small" id="locReopen_' + sid + '" onclick="pbLocReopen(' + pbLocQ(l.id) + ')">Reopen</button></div>';
-    else h += '<div class="pbd-acts"><button type="button" class="pb-btn secondary small" id="locEdit_' + sid + '" onclick="pbLocEdit(' + pbLocQ(l.id) + ')">Edit</button><button type="button" class="pb-btn ghost small" id="locClose_' + sid + '" onclick="pbLocClose(' + pbLocQ(l.id) + ')">Mark Closed</button></div>';
-    return h + '</div>';
+    else h += '<div class="pbd-acts">' + (pbLocLeft(l) !== null && pbLocLeft(l) >= 0 && l.renewals !== undefined && l.renewals !== null ? '<button type="button" class="pb-btn secondary small" id="locRenew_' + sid + '" onclick="pbLocRenew(' + pbLocQ(l.id) + ')">Renew</button>' : '') + '<button type="button" class="pb-btn secondary small" id="locEdit_' + sid + '" onclick="pbLocEdit(' + pbLocQ(l.id) + ')">Edit</button><button type="button" class="pb-btn ghost small" id="locClose_' + sid + '" onclick="pbLocClose(' + pbLocQ(l.id) + ')">Mark Closed</button></div>';
+    return h + pbLocLogHtml(l, sid) + '</div>';
   }
   window.pbLocRender = function() {
     const head = pbLocE('locHead'), st = pbLocE('locStatus'), body = pbLocE('locBody'), eb = pbLocE('locEyebrow'); if (!body) return;
@@ -64166,7 +64615,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (head) head.innerHTML = '<p class="pbp-sub" id="locJobLine">' + escapeHtml([pbProdJobLabel(job.job_number), info.name, info.address].filter(Boolean).join(' · ')) + '</p>';
     const waiting = pbLocRows(job.key).some(l => l.pend && l.pend.state === 'waiting' && !l.pend.why);
     if (st) st.textContent = waiting ? (navigator.onLine === false ? 'Saved on this phone. It is sent when there is signal.' : 'Saved on this phone. Sending…') : pbLoc.busy ? 'Loading…' : pbLoc.msg && !/^Saved/.test(pbLoc.msg) ? pbLoc.msg : J.at ? 'Updated ' + pbProdTimeText(J.at) + '.' : '';
-    if (pbLoc.form) { body.innerHTML = pbLocFormHtml(); pbLocFormWire(); return; }
+    if (pbLoc.form) { if (pbLoc.form.mode === 'renew') { body.innerHTML = pbLocRenewHtml(); pbLocRenewWire(); } else { body.innerHTML = pbLocFormHtml(); pbLocFormWire(); } return; }
     const rows = pbLocRows(job.key), open = rows.filter(l => !l.closed).sort(pbLocByExp), closed = rows.filter(l => l.closed);
     let h = '<div class="pb-btn-wrap pbd-bw"><button type="button" class="pb-btn" id="locAddBtn" onclick="pbLocAdd()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Dig Ticket</button></div>';
     if (!pbLocServerRows(job.key) && !rows.length) h += pbLoc.busy ? '' : '<p class="pbd-dim" id="locNoData">Loads with signal.</p>';
@@ -64184,12 +64633,97 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbLocEdit = function(id) {
     const job = pbLoc.job; if (!job) return;
     let l = pbLocRows(job.key).find(x => x.id === id); if (!l) return;
+    if (l.pend && l.pend.state === 'refused' && l.pend.renewed_at) { const sv = (pbLocServerRows(job.key) || []).find(x => x.id === id); if (sv && (sv.renewed_at || null) !== l.pend.renewed_at) { window.pbLocRenew(id, { base: Object.assign({}, sv, { pend: l.pend }), renewed_at: l.pend.renewed_at, expires_at: l.pend.expires_at, err: l.pend.why || '' }); return; } } /* feat_locrenew */
     if (l.pend && l.pend.code === 'pb:stale') { const sv = (pbLocServerRows(job.key) || []).find(x => x.id === id); if (sv) l = Object.assign({}, sv, { pend: l.pend }); } // redo it on the server's copy, never over it
-    pbLoc.form = { mode: 'edit', id: l.id, ver: pbLocBaseVer(l), was: l.ticket_no, days: pbLocDefaultDays(job.key), expTyped: true, noteTyped: true, err: l.pend && l.pend.state === 'refused' ? l.pend.why || '' : '', closed: l.pend && l.pend.closed !== undefined ? l.pend.closed : null, v: { ticket_no: l.ticket_no || '', called_at: l.called_at || pbTkToday(), expires_at: l.expires_at || '', note: l.note || '' } };
+    const eDays = pbLocDefaultDays(job.key), eRen = pbLocIsDay(l.renewed_at);
+    pbLoc.form = { mode: 'edit', id: l.id, ver: pbLocBaseVer(l), was: l.ticket_no, days: eDays, renewed: eRen, expTyped: eRen || (pbLocIsDay(l.called_at) && pbLocIsDay(l.expires_at) && String(l.expires_at).slice(0, 10) !== pbLocAddDays(l.called_at, eDays)), expTouched: false, noteTyped: true, err: l.pend && l.pend.state === 'refused' ? l.pend.why || '' : '', closed: l.pend && l.pend.closed !== undefined ? l.pend.closed : null, v: { ticket_no: l.ticket_no || '', called_at: l.called_at || pbTkToday(), expires_at: l.expires_at || '', renewed_at: l.renewed_at || null, note: l.note || '' } };
     window.pbLocRender(); setTimeout(() => { const el = pbLocE('locNo'); if (el) el.focus(); }, 50);
   };
   window.pbLocFormCancel = function() { pbLoc.form = null; window.pbLocRender(); const b = pbLocE('locAddBtn'); if (b) b.focus({ preventScroll: true }); };
-  function pbLocExpHelp(F) { return F.expTyped ? 'Your own date. Clear it to use the called-in day + ' + F.days + ' days.' : 'The called-in day + ' + F.days + ' days (Settings › Company).'; }
+  /* feat_locrenew: every add, edit, renewal, close and reopen, newest first (kept on the company server) */
+  const PB_LOC_ACT = { added: 'Added', edited: 'Edited', renewed: 'Renewed', closed: 'Closed', reopened: 'Reopened', on_file: 'On file' };
+  const PB_LOC_FLD = { ticket_no: 'Ticket', called_at: 'Called in', expires_at: 'Expires', renewed_at: 'Renewed', note: 'Where' };
+  function pbLocLogLine(g) {
+    const ch = g && g.changes && typeof g.changes === 'object' ? g.changes : {};
+    const v = (k, x) => x === null || x === undefined || x === '' ? '—' : /_at$/.test(k) ? pbLocDay(x) : String(x);
+    let w = Object.keys(PB_LOC_FLD).filter(k => Array.isArray(ch[k])).map(k => PB_LOC_FLD[k] + ' ' + v(k, ch[k][0]) + ' → ' + v(k, ch[k][1]));
+    if (g.action === 'added' || g.action === 'on_file') w = ['Called in ' + v('called_at', g.called_at) + ', expires ' + v('expires_at', g.expires_at) + (g.renewed_at ? ', renewed ' + v('renewed_at', g.renewed_at) : '')];
+    return '<li><span class="k">' + escapeHtml(PB_LOC_ACT[g.action] || 'Changed') + '</span> · ' + escapeHtml(pbProdTimeText(g.at) + (g.by_name ? ' · ' + g.by_name : '')) + (w.length ? '<span class="w">' + escapeHtml(w.join(' · ')) + '</span>' : '') + '</li>';
+  }
+  function pbLocLogHtml(l, sid) {
+    const n = Number(l && l.log_n) || 0; if (!(n > 0)) return '';
+    const got = pbLocLogs.get(l.id), open = pbLocLogOpen.has(l.id);
+    return '<details class="pb-more pbloc-log" id="locLog_' + sid + '"' + (open ? ' open' : '') + ' ontoggle="pbLocLogToggle(this, ' + pbLocQ(l.id) + ')"><summary>History (' + n + ')</summary><div id="locLogBody_' + sid + '">' + pbLocLogBody(got) + '</div></details>';
+  }
+  const pbLocLogs = new Map(), pbLocLogOpen = new Set(); // what was read this visit; never kept on the phone
+  function pbLocLogBody(got) {
+    if (!got) return '';
+    if (got.err) return '<p class="pbd-dim">' + escapeHtml(got.err) + '</p>';
+    const L = (got.log || []).filter(g => g && g.action);
+    return L.length ? '<ol>' + L.map(pbLocLogLine).join('') + '</ol>' + (got.total > L.length ? '<p class="pbd-dim">The newest ' + L.length + ' of ' + got.total + '.</p>' : '') : '<p class="pbd-dim">Nothing yet.</p>';
+  }
+  window.pbLocLogToggle = async function(el, id) {
+    if (!el.open) { pbLocLogOpen.delete(id); return; }
+    pbLocLogOpen.add(id);
+    const job = pbLoc.job, uid = pbArchiveOwnerUid, body = () => document.getElementById('locLogBody_' + id);
+    if (!job) return;
+    const b0 = body(); if (b0 && !pbLocLogs.get(id)) b0.innerHTML = '<p class="pbd-dim">Loading…</p>';
+    let got;
+    try {
+      const r = await pbPermitRpc('pb_prod_locate_log', { p_job_number: job.job_number, p_id: id }, 20000), m = String((r && r.error && r.error.message) || '');
+      got = r && !r.error && r.data && r.data.ok ? { log: Array.isArray(r.data.log) ? r.data.log : [], total: Number(r.data.total) || 0 } : { err: pbLocNoAnswer(m) ? 'Loads with signal.' : 'Couldn’t load the history. Try again.' };
+    } catch (e) { got = { err: 'Loads with signal.' }; }
+    if (pbArchiveOwnerUid !== uid || pbLoc.job !== job) return;
+    if (!got.err) pbLocLogs.set(id, got);
+    const b = body(); if (b) b.innerHTML = pbLocLogBody(got);
+  };
+  window.pbLocRenew = function(id, pre) {
+    const job = pbLoc.job; if (!job) return;
+    const l = (pre && pre.base) || pbLocRows(job.key).find(x => x.id === id); if (!l) return;
+    const days = pbLocDefaultDays(job.key), t = (pre && pre.renewed_at) || pbTkToday();
+    if (pbLocLeft(l) !== null && pbLocLeft(l) < 0) { pbAlert('It expired ' + pbLocDay(l.expires_at) + '. 811 only renews a ticket before it expires: call in a new ticket.', 'Ticket Expired'); return; }
+    pbLoc.form = { mode: 'renew', id: l.id, ver: pbLocBaseVer(l), was: l.ticket_no, days, expTyped: !!(pre && pre.expires_at && pre.expires_at !== pbLocAddDays(t, days)), oldExp: String(l.expires_at || '').slice(0, 10), closed: null, err: (pre && pre.err) || '',
+      v: { ticket_no: l.ticket_no || '', called_at: l.called_at, renewed_at: t, expires_at: (pre && pre.expires_at) || pbLocAddDays(t, days), note: l.note || '' } };
+    window.pbLocRender(); setTimeout(() => { const el = pbLocE('locRen'); if (el) el.focus(); }, 50);
+  };
+  const pbLocId = (x) => 'id="' + x + '"'; // the renewal form shares the ticket form's box ids (one form at a time)
+  function pbLocRenewHtml() {
+    const F = pbLoc.form;
+    return '<div class="pbd-card pbloc-form" ' + pbLocId('locForm') + '><h3 class="pb-h2 pbd-h3">Renew ticket ' + escapeHtml(F.was || '') + '</h3>'
+      + '<p class="pbd-dim" ' + pbLocId('locRenWas') + '>Now expires ' + escapeHtml(pbLocDayW(F.oldExp)) + '.</p>'
+      + '<div class="pbd-two"><div class="pb-field"><label for="locRen">Renewed with 811</label><input type="date" ' + pbLocId('locRen') + '></div><div class="pb-field"><label for="locExp">New expiry</label><input type="date" ' + pbLocId('locExp') + ' aria-describedby="locExpHelp"></div></div>'
+      + '<p class="pb-help pbloc-help" ' + pbLocId('locExpHelp') + '>' + escapeHtml(F.expTyped ? 'Your own date. Clear it to use the renewal day + ' + F.days + ' days.' : 'The renewal day + ' + F.days + ' days.') + '</p>'
+      + '<p class="pbp-err pbloc-err" ' + pbLocId('locErr') + ' role="alert"' + (F.err ? '' : ' hidden') + '>' + escapeHtml(F.err || '') + '</p>'
+      + '<div class="pb-btn-row pbloc-btns"><button type="button" class="pb-btn" ' + pbLocId('locSave') + ' onclick="pbLocRenewSave()">Save</button><button type="button" class="pb-btn ghost" ' + pbLocId('locCancel') + ' onclick="pbLocFormCancel()">Cancel</button></div></div>';
+  }
+  function pbLocRenewWire() {
+    const F = pbLoc.form, r = pbLocE('locRen'), x = pbLocE('locExp'), help = pbLocE('locExpHelp'); if (!F || !r || !x) return;
+    r.value = F.v.renewed_at; x.value = F.v.expires_at;
+    const say = () => { if (help) help.textContent = F.expTyped ? 'Your own date. Clear it to use the renewal day + ' + F.days + ' days.' : 'The renewal day + ' + F.days + ' days.'; };
+    const ren = () => { F.v.renewed_at = r.value; if (!F.expTyped && pbLocIsDay(r.value)) { F.v.expires_at = pbLocAddDays(r.value, F.days); x.value = F.v.expires_at; } };
+    r.addEventListener('input', ren); r.addEventListener('change', ren);
+    const exp = () => { F.v.expires_at = x.value; F.expTyped = x.value !== ''; if (!x.value && pbLocIsDay(F.v.renewed_at)) { F.v.expires_at = pbLocAddDays(F.v.renewed_at, F.days); x.value = F.v.expires_at; } say(); };
+    x.addEventListener('input', exp); x.addEventListener('change', exp);
+  }
+  window.pbLocRenewSave = async function() {
+    const F = pbLoc.form, job = pbLoc.job, uid = pbArchiveOwnerUid; if (!F || F.mode !== 'renew' || !job || F.saving) return;
+    const r = pbLocE('locRen'), x = pbLocE('locExp'); if (r) F.v.renewed_at = r.value; if (x) F.v.expires_at = x.value;
+    const v = F.v, fail = (t) => { F.err = t; const e = pbLocE('locErr'); if (e) { e.textContent = t; e.hidden = false; e.scrollIntoView({ block: 'nearest' }); } };
+    if (!pbLocIsDay(v.renewed_at)) return fail('Pick the day it was renewed.');
+    if (v.renewed_at < String(v.called_at).slice(0, 10)) return fail('It can’t be renewed before the day it was called in.');
+    if (pbLocIsDay(F.oldExp) && v.renewed_at > F.oldExp) return fail('It expires ' + pbLocDay(F.oldExp) + '. 811 only renews a ticket before it expires: after that, call in a new ticket.');
+    if (pbLocDayMs(v.renewed_at) > pbLocDayMs(pbTkToday()) + 86400000) return fail('The renewal day can’t be in the future.');
+    if (!pbLocIsDay(v.expires_at)) return fail('Pick the new expiry.');
+    if (v.expires_at < v.renewed_at) return fail('It can’t expire before the day it was renewed.');
+    if (pbLocDayMs(v.expires_at) - pbLocDayMs(v.renewed_at) > 365 * 86400000) return fail('That expiry is more than a year after the renewal. Check the dates.');
+    F.saving = true;
+    const ok = await pbLocQueue(uid, pbLocRec(job, F.id, v, null, F.ver));
+    F.saving = false;
+    if (!ok) return fail('Not saved. This phone’s storage is full.');
+    if (pbLoc.form === F) pbLoc.form = null;
+    window.pbLocRender(); const b = pbLocE('locRenew_' + F.id) || pbLocE('locAddBtn'); if (b) b.focus({ preventScroll: true });
+  };
+  function pbLocExpHelp(F) { if (F.renewed) return 'Renewed ' + pbLocDay(F.v.renewed_at) + '. Clear it to use the renewal day + ' + F.days + ' days.'; return F.expTyped ? 'Your own date. Clear it to use the called-in day + ' + F.days + ' days.' : 'The called-in day + ' + F.days + ' days (Settings › Company).'; }
   function pbLocFormHtml() {
     const F = pbLoc.form;
     return '<div class="pbd-card pbloc-form" id="locForm"><h3 class="pb-h2 pbd-h3">' + (F.mode === 'add' ? 'New dig ticket' : 'Ticket ' + escapeHtml(F.was || '')) + '</h3>'
@@ -64208,9 +64742,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     no.value = F.v.ticket_no; c.value = F.v.called_at; x.value = F.v.expires_at; nt.value = F.v.note;
     no.addEventListener('input', () => { F.v.ticket_no = no.value; });
     const dates = () => { const w = pbLocE('locFDates'); if (w) w.outerHTML = pbLocDatesHtml(F.v, 'locF', true); }; /* feat_locate28 */
-    const called = () => { F.v.called_at = c.value; if (!F.expTyped && pbLocIsDay(c.value)) { F.v.expires_at = pbLocAddDays(c.value, F.days); x.value = F.v.expires_at; } dates(); };
+    const called = () => { F.v.called_at = c.value; if (F.mode === 'edit' && !F.renewed && !F.expTouched) F.expTyped = false; if (!F.expTyped && pbLocIsDay(c.value)) { F.v.expires_at = pbLocAddDays(c.value, F.days); x.value = F.v.expires_at; } if (help) help.textContent = pbLocExpHelp(F); dates(); };
     c.addEventListener('input', called); c.addEventListener('change', called);
-    const exp = () => { F.v.expires_at = x.value; F.expTyped = x.value !== ''; if (!x.value && pbLocIsDay(F.v.called_at)) { F.v.expires_at = pbLocAddDays(F.v.called_at, F.days); x.value = F.v.expires_at; } if (help) help.textContent = pbLocExpHelp(F); dates(); };
+    const exp = () => { F.v.expires_at = x.value; F.expTyped = x.value !== ''; F.expTouched = F.expTyped; const base = F.renewed && pbLocIsDay(F.v.renewed_at) ? F.v.renewed_at : F.v.called_at; if (!x.value && pbLocIsDay(base)) { F.v.expires_at = pbLocAddDays(base, F.days); x.value = F.v.expires_at; } if (help) help.textContent = pbLocExpHelp(F); dates(); };
     x.addEventListener('input', exp); x.addEventListener('change', exp);
     nt.addEventListener('input', () => { F.v.note = nt.value; F.noteTyped = true; });
   }
@@ -64223,7 +64757,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!pbLocIsDay(v.called_at)) return fail('Pick the day it was called in.');
     if (!pbLocIsDay(v.expires_at)) return fail('Pick the day it expires.');
     if (v.expires_at < v.called_at) return fail('It can’t expire before the day it was called in.');
-    if (pbLocDayMs(v.expires_at) - pbLocDayMs(v.called_at) > 365 * 86400000) return fail('That expiry is more than a year after the call-in. Check the dates.');
+    if (pbLocIsDay(v.renewed_at) && v.renewed_at < v.called_at) return fail('It was renewed ' + pbLocDay(v.renewed_at) + ', before that called-in day. Check the date.');
+    if (pbLocDayMs(v.expires_at) - pbLocDayMs(pbLocIsDay(v.renewed_at) && v.renewed_at > v.called_at ? v.renewed_at : v.called_at) > 365 * 86400000) return fail('That expiry is more than a year after the call-in. Check the dates.');
     if (pbLocDayMs(v.called_at) > pbLocDayMs(pbTkToday()) + 30 * 86400000) return fail('The called-in day is more than 30 days ahead. Check the date.');
     F.saving = true;
     const ok = await pbLocQueue(uid, pbLocRec(job, F.id, v, F.mode === 'add' ? false : F.closed === undefined ? null : F.closed, F.ver));
