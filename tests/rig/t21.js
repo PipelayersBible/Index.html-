@@ -1,0 +1,3 @@
+const boot=require('./boot');(async()=>{const {b,p}=await boot('http://localhost:8814/',{init:require('./pm'),wait:4000});
+await p.context().setOffline(true);await p.evaluate(()=>window.dispatchEvent(new Event('offline')));await p.waitForTimeout(1500);
+console.log(await p.evaluate(()=>{const e=[...document.querySelectorAll('*')].find(x=>x.children.length===0&&x.textContent.trim()==='Loads with signal'&&x.offsetParent);return [navigator.onLine,document.documentElement.className,e&&e.tagName,e&&e.className,e&&e.closest('.pb-screen')&&e.closest('.pb-screen').id,document.querySelector('#pbApp .pb-screen.active')&&document.querySelector('#pbApp .pb-screen.active').id]}));await b.close();})();

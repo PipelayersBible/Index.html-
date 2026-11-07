@@ -10504,6 +10504,10 @@ html.pb-light #pbApp { --pb-xing-bg: #FBE1E3; }
 /* tabs: stay at the top while the panel scrolls */
 #pbApp .pbx-tabs { position: sticky; top: 0; z-index: 6; display: flex; gap: 4px; margin: 12px -16px 0 -16px; padding: 8px 16px; overflow-x: auto; scrollbar-width: none; background: var(--pb-canvas); box-shadow: 0 1px 0 var(--pb-divider); }
 #pbApp .pbx-tabs::-webkit-scrollbar { display: none; }
+/* feat_r1614 (owner, Nov 7): no signal = one line under the screen's header, not "Loads with signal" on every card */
+html.pb-nosig #pbApp .pb-offhide { display: none !important; }
+#pbApp .pb-nosig-line { display: none; margin: 10px var(--pb-gutter, 16px) 0; padding: 8px 12px; border-radius: 10px; background: var(--pb-raised, #f3f1ea); color: var(--pb-text-2, #555); font-size: 14px; font-weight: 600; }
+html.pb-nosig #pbApp .pb-screen.active > .pb-nosig-line { display: block; }
 /* feat_r1613 (owner, Nov 7): no Menu column; the distance is the row's menu button (outlined, with a caret) */
 #pbApp #screen-results #resultsTable thead th.pb-menuth, #pbApp #screen-results #resultsTable tr > td:first-child:not([colspan]):has(> .pb-gsdots), #pbApp #screen-results #resultsTable tr > td:first-child:not([colspan]):empty { display: none; }
 #pbApp #screen-results #resultsTable td.pb-distcell { cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -12623,7 +12627,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.13 · 2026-11-07'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.14 · 2026-11-07'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -22109,6 +22113,22 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const open = (ev) => { const td = ev.target && ev.target.closest && ev.target.closest('#resultsBody td.pb-distcell'); if (!td) return false; const b = td.parentElement && td.parentElement.querySelector('.pb-gsdots'); if (!b) return false; b.click(); return true; };
     document.addEventListener('click', (ev) => { open(ev); });
     document.addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && open(ev)) ev.preventDefault(); });
+  })();
+  (function () { // feat_r1614: one "No signal" line per screen; the per-card signal lines hide while there is none
+    const PH = /^(loads with signal\.?|couldn\u2019t load\.?|couldn't load\.?|couldn\u2019t load crew runs\.?|active runs and permits load with signal\.?|sign in with signal to see the latest\.?|no signal\..*|loads with signal \u2014.*)$/i;
+    let mo = null, t = null;
+    const tidy = () => {
+      t = null; const off = navigator.onLine === false; document.documentElement.classList.toggle('pb-nosig', off);
+      if (!off) return;
+      const scr = document.querySelector('#pbApp .pb-screen.active'); if (!scr) return;
+      if (!scr.querySelector(':scope > .pb-nosig-line')) { const h = scr.querySelector(':scope > .pb-header'); const d = document.createElement('p'); d.className = 'pb-nosig-line'; d.setAttribute('role', 'status'); d.textContent = 'No signal \u00b7 showing what\u2019s saved on this phone'; if (h) h.after(d); else scr.prepend(d); }
+      scr.querySelectorAll('p, span, div, small').forEach(el => { if (el.children.length || el.classList.contains('pb-nosig-line')) return; const x = (el.textContent || '').trim(); if (x && x.length < 90 && PH.test(x)) el.classList.add('pb-offhide'); });
+    };
+    const soon = () => { if (!t) t = setTimeout(tidy, 60); };
+    const watch = () => { if (navigator.onLine === false) { if (!mo) { mo = new MutationObserver(soon); const app = document.getElementById('pbApp'); if (app) mo.observe(app, { childList: true, subtree: true, characterData: true }); } } else if (mo) { mo.disconnect(); mo = null; } soon(); };
+    window.addEventListener('offline', watch); window.addEventListener('online', watch);
+    (window.pbScreenHooks = Array.isArray(window.pbScreenHooks) ? window.pbScreenHooks : []).push(() => soon());
+    setTimeout(watch, 0);
   })();
   function pbSlRowNotesInto(body, e, idx, colCount) {
     const list = pbSlForRow(e, idx); if (!list.length) return;
