@@ -12609,7 +12609,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.11 · 2026-11-07'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.12 · 2026-11-07'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -21578,11 +21578,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const prior = runArchive.find(e => e.id === pbLastLockedEntryId && e.kind === 'run');
       if (prior && pbReplaceablePriorRun(prior)) {
         const again = (x) => pbLock(Object.assign({}, opts || {}, { replaceAnswered: true }, x));
-        pbShowModal('This form already locked ' + prior.startLabel + ' → ' + prior.endLabel + ' at ' + prior.lockTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '. Replace that record with these corrected numbers (it leaves Records and Stats' + (prior.sent === true ? '; its report was already sent' : '') + '), or keep both if this is another run?' + (typeof window.pbR57LockToLine === 'function' ? window.pbR57LockToLine() : ''), [
+        pbShowModal('This form already locked ' + prior.startLabel + ' → ' + prior.endLabel + ' at ' + prior.lockTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '. Replace that record with these corrected numbers (it leaves Records and Stats' + (prior.sent === true ? '; its report was already sent' : '') + ')? To lay another run, end this one first.' + (typeof window.pbR57LockToLine === 'function' ? window.pbR57LockToLine() : ''), [
           { label: 'Cancel' },
-          { label: 'Keep Both', onClick: () => again({}) },
           { label: 'Replace', primary: true, onClick: () => again({ replacePriorId: prior.id }) }
-        ], 'Locked Once Already');
+        ], 'Locked Once Already'); /* feat_r1612 (B05): no Keep Both: it left two open runs */
+        return;
+      }
+      // feat_r1612 (B05): an edited form of a run that is still open, with work on it: locking would leave a second open run.
+      if (prior && runArchive.includes(prior) && !prior.runEndTime && !prior.completed && !prior.incomplete) {
+        pbShowModal(prior.startLabel + ' \u2192 ' + prior.endLabel + ' is still open. Fix a distance or hub with Correct a Distance or Hub on its Results, or end it before locking another run.', [{ label: 'OK', primary: true }], 'Run Still Open');
         return;
       }
     }
@@ -42738,16 +42742,19 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     });
   }
   window.__pbLaidSched = () => { const e = getCurrentArchiveEntry(); return e ? pbLaidSched(e) : null; };
+  // feat_r1612 (B04): where a run ended short (End Run Without Completing), or null. Marks past it were made before
+  // the stop was chosen; they stay in the record's history but are not laid pipe.
+  function pbLaidStopCap(entry) { const c = entry && entry.incomplete === true ? entry.completedDistance : null; return typeof c === 'number' && Number.isFinite(c) ? c : null; }
   function pbLaidEarlier(entry) {
     const out = { reach: null, at: null, endAt: null, times: new Map() };
     const seen = new Set([entry]); let cur = entry, g = 0;
     while (cur && cur.resumedFromId !== undefined && cur.resumedFromId !== null && g++ < 50) {
       const prev = runArchive.find(x => x && x.kind === 'run' && x.id === cur.resumedFromId);
       if (!prev || seen.has(prev)) break; seen.add(prev); cur = prev;
-      const rows = Array.isArray(prev.intervalRows) ? prev.intervalRows : [], marks = pbLaidMarks(prev);
+      const rows = Array.isArray(prev.intervalRows) ? prev.intervalRows : [], marks = pbLaidMarks(prev), cap = pbLaidStopCap(prev);
       rows.forEach(r => {
         const t = marks[pbLaidKey(r)], f = Number(r && r.stationFt);
-        if (typeof t !== 'number' || !Number.isFinite(t) || !Number.isFinite(f)) return;
+        if (typeof t !== 'number' || !Number.isFinite(t) || !Number.isFinite(f) || (cap !== null && f > cap + 0.005)) return;
         const k = f.toFixed(2); if (!out.times.has(k) || out.times.get(k) > t) out.times.set(k, t);
         if (out.reach === null || f > out.reach) out.reach = f;
         if (out.at === null || t > out.at) out.at = t;
@@ -42767,8 +42774,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const rows = entry && Array.isArray(entry.intervalRows) ? entry.intervalRows : [], marks = pbLaidMarks(entry);
     const E = entry && entry.resumedFromId !== undefined && entry.resumedFromId !== null ? pbLaidEarlier(entry) : null;
     const early = rows.map(r => !!E && E.reach !== null && Number.isFinite(Number(r && r.stationFt)) && Number(r.stationFt) <= E.reach + 0.005);
+    const cap = pbLaidStopCap(entry); // feat_r1612 (B04): ended short before rows marked laid: those marks don't count
     const laid = rows.map((r, i) => {
-      const t = marks[pbLaidKey(r)], own = typeof t === 'number' && Number.isFinite(t) ? t : null;
+      const t = marks[pbLaidKey(r)], own = typeof t === 'number' && Number.isFinite(t) && !(cap !== null && Number(r && r.stationFt) > cap + 0.005) ? t : null;
       if (!early[i]) return own;
       const et = E.times.get(Number(r.stationFt).toFixed(2));
       return typeof et === 'number' ? et : own !== null ? own : (E.endAt || E.at || Date.now());
@@ -52859,7 +52867,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     try {
       const a = pbRd.account();
       if (!a || pbRunFormOwner !== a) return false;
-      return pbFormFresh && !window._pbResumingFromEntryId && hasUnsavedRunData({ fieldsOnly: true }) && !pbFormIsSavedLockedRun();
+      const rs = !!window._pbResumingFromEntryId; /* feat_r1612 (B10): a resumed run with something typed on it is kept too */
+      if (rs && window._pbResumeFormKey && pbFormStateKey() === window._pbResumeFormKey) return false;
+      return (rs || pbFormFresh) && hasUnsavedRunData({ fieldsOnly: true }) && !pbFormIsSavedLockedRun();
     } catch (e) { return false; }
   }
   function pbRdSegs() { const s = []; for (let n = 2; n <= MAX_SEG; n++) if (segIsActive(n)) s.push(n); return s; }
@@ -52890,7 +52900,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       fromStep: Object.assign({}, window._pbSegStartFromStep || {}),
       startedAt: runLifecycleStartTime ? runLifecycleStartTime.getTime() : null,
       statsAt: statsRunStartTime ? statsRunStartTime.getTime() : null,
-      photoCount, cutsheet: cs && cs.aiText.length < 200000 ? cs : null, st: pbStDraftSnap(), pa: pbPiAAutoIds(), pt: pbPtAuto() }; /* feat_results2: st; feat_pipeauto: pa */
+      photoCount, cutsheet: cs && cs.aiText.length < 200000 ? cs : null, st: pbStDraftSnap(), pa: pbPiAAutoIds(), pt: pbPtAuto(), /* feat_results2: st; feat_pipeauto: pa */
+      rs: window._pbResumingFromEntryId ? { from: window._pbResumingFromEntryId } : undefined }; /* feat_r1612 (B10): the run this form continues */
   }
   function pbRdTyped(d) {
     const v = (f) => f && !f.pred ? (f.raw ? [f.raw.ft, f.raw.inch, f.raw.frac] : f.val) : null;
@@ -52958,7 +52969,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbRdFormSaved() { return pbRd.formSaved(); }
   function pbRdDiscardKept() { /* R2: starting a new run never discards a draft */ }
   function pbRdAskKeptOnNewRun() { return false; } // R2: drafts are listed on Home and Run Setup; a new run is a new draft
-  function pbRdApply(d) {
+  function pbRdApply(d, reuse) {
     const rb = document.querySelector('#rodToggle button[data-val="' + d.rod + '"]');
     if (rb && activeVal('rodToggle') !== d.rod) rb.click();
     const hb = document.querySelector('#hiToggle button[data-val="' + d.hi + '"]');
@@ -52967,9 +52978,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     (d.segs || []).slice().sort((x, y) => x - y).forEach(n => { if (segIsActive(n) || n > MAX_SEG) return; if (n === 2) pbAddReducerSegment(); else pbAddSeg(n); });
     const map = {};
     Object.keys(d.hubs || {}).map(Number).sort((x, y) => x - y).forEach(n => {
-      (d.hubs[n] || []).forEach(h => {
-        if (n === 1) pbAddHub(); else if (n === 2) pbAddHub2(); else pbAddHubN(n);
-        const list = pbRdHubList(n), id = list[list.length - 1];
+      const have = reuse ? pbRdHubList(n).slice() : [];
+      (d.hubs[n] || []).forEach((h, i) => {
+        let id = have[i];
+        if (!id) { if (n === 1) pbAddHub(); else if (n === 2) pbAddHub2(); else pbAddHubN(n); const list = pbRdHubList(n); id = list[list.length - 1]; }
         map[h.id] = id;
         const st = document.getElementById(id + 'Station'); if (st) st.value = h.station;
         applyPointData(id, Object.assign({}, h.snap, { photos: [] }), arch);
@@ -53009,7 +53021,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!pbCanOpen('input', { explain: true })) return false;
     if (pbRefuseWhileCorrectionSaving()) return false;
     if (pbRd.formId === id && pbRd.formUid === a && pbRdFormWork()) { pbGoto('input'); return true; } // the form already holds it
-    if (d.startedAt && runArchive.some(e => e && e.kind === 'run' && e.runStartTime === d.startedAt)) {
+    const rsE = d.rs && d.rs.from !== undefined && d.rs.from !== null ? runArchive.find(e => e && e.kind === 'run' && e.id === d.rs.from) : null; /* feat_r1612 (B10) */
+    if (d.rs && (!rsE || !rsE.incomplete || pbLiveResumeOf(rsE) || pbUnsavedResumeOf(rsE.id))) {
+      pbShowModal('The run this draft continued was already finished or continued, so it can\u2019t be continued again.', [
+        { label: 'Keep Draft' },
+        { label: 'Discard Draft', primary: true, onClick: () => pbRd.remove(a, id) }
+      ], 'Run Already Continued');
+      return false;
+    }
+    if (!rsE && d.startedAt && runArchive.some(e => e && e.kind === 'run' && e.runStartTime === d.startedAt)) {
       pbShowModal('A run started at the same moment as this draft is already locked in your records, so this draft is probably that run. Resuming it would make a second copy.', [
         { label: 'Keep Draft' },
         { label: 'Discard Draft', primary: true, onClick: () => pbRd.remove(a, id) }
@@ -53025,10 +53045,20 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     if (!pbNewRunGuardPassed && pbNewRunNeedsAnswer({}, () => pbNewRunAfterAnswer(() => pbRdResume(id, true)))) return false;
     pbRd.restoring = false;
-    pbResetRunForm(); // the run on the form now (a saved draft) is kept
+    if (rsE) { // feat_r1612 (B10): continued exactly as Resume does (its form, the Left off point), quietly
+      pbRd.restoring = true;
+      try {
+        pbLoadRunIntoForm(rsE, { open: true });
+        const lo = (() => { try { return window.pbRsStopHub(rsE); } catch (e) { console.error(e); return null; } })();
+        window._pbResumingFromEntryId = rsE.id; window._pbResumingFromLabel = pbResumedFromLabel(rsE);
+        try { setTimeout(() => window.pbRsEarlyFold(rsE), 0); } catch (e) {}
+        try { setTimeout(() => window.pbRsxResumeFold(rsE, lo), 0); } catch (e) {}
+        window._pbResumeFormKey = null;
+      } catch (e) { console.error(e); }
+    } else pbResetRunForm(); // the run on the form now (a saved draft) is kept
     pbRd.restoring = true;
     let ok = true;
-    try { pbRdApply(d); } catch (e) { ok = false; console.error('Run draft restore failed:', e); } finally { pbRd.restoring = false; }
+    try { pbRdApply(d, !!rsE); } catch (e) { ok = false; console.error('Run draft restore failed:', e); } finally { pbRd.restoring = false; }
     const now = pbRdSnapshot();
     const whole = ok && pbRdTyped(now) === pbRdTyped(d);
     pbRd.formUid = a; pbRd.formId = id; pbRd.lastJson = whole ? pbRdCore(now) : null; pbRd.state = 'saved'; pbRd.savedAt = d.savedAt;

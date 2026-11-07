@@ -1,0 +1,13 @@
+const boot=require('./boot'),mkrun=require('./mkrun');(async()=>{const url=process.argv[2]||'http://localhost:8811/';const {b,p}=await boot(url);
+const dump=()=>p.evaluate(()=>{const U='00000000-0000-4000-8000-000000000001:';const a=JSON.parse(localStorage.getItem(U+'runArchive'));return {cur:localStorage.getItem(U+'currentRunArchiveId'),runs:a.filter(x=>x.kind==='run').map(x=>({id:x.id,end:x.runEndTime||null,inc:x.incomplete||false,dist:x.distance,lab:x.endLabel,resFrom:x.resumedFromId,edited:x.editedFromId||x.supersedes||null}))};});
+await mkrun(p);await mkrun.lock(p);console.log('after lock',JSON.stringify(await dump()));
+await p.evaluate(()=>window.pbEditRunData());await p.waitForTimeout(1200);
+const modal=async()=>{for(let i=0;i<6;i++){const btns=await p.evaluate(()=>{const d=[...document.querySelectorAll('.pb-modal-overlay,.pb-modal,[role=dialog],[role=alertdialog]')].find(x=>x.offsetParent&&x.innerText.trim());return d?[d.innerText.replace(/\s+/g,' ').slice(0,300),[...d.querySelectorAll('button')].map(b=>b.textContent.trim())]:null;});
+ if(!btns)break;console.log('MODAL',JSON.stringify(btns));const want=process.env.PICK;const last=(want&&btns[1].includes(want))?want:btns[1][btns[1].length-1];await p.locator('button',{hasText:last}).last().click();await p.waitForTimeout(1200);}};
+await modal();
+await p.evaluate(()=>{const e=document.getElementById('totalDist');e.value='120';e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));});
+await p.getByText('Review & Calculate',{exact:true}).click();await p.waitForTimeout(1500);await modal();
+await p.getByText('Lock This Run',{exact:true}).click();await p.waitForTimeout(2000);await modal();
+console.log('after edit+lock',JSON.stringify(await dump()));
+await p.evaluate(()=>window.pbGoto('home'));await p.waitForTimeout(1000);await p.screenshot({path:'b6.png'});
+console.log(p.errs);await b.close();})();
