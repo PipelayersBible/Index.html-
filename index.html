@@ -12609,7 +12609,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.10 · 2026-11-07'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.11 · 2026-11-07'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -23561,6 +23561,48 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // onto a plain station hides its plain row, but what was noted there is still
   // that distance into its own run, exactly like a plain stop point.
   // Where an added point lands under a corrected geometry: the same distance into its own run.
+  // ==== feat_laidmove (owner, Nov 7 2026: B03) ====
+  // A distance or hub correction moves the laid marks with what was laid. A point (hub, Start/End, an added point)
+  // keeps its mark wherever it is corrected to; a plain row's mark goes to the same distance into its own run (like
+  // its notes). Laid past the corrected end of its run = laid to that run's end. Laying is always from the start, so a
+  // row left unmarked before a laid one (a hub corrected past unlaid rows, or back behind laid ones) is laid too, with
+  // the time of the next laid row. Rows laid in an earlier session stay theirs. True when the marks changed.
+  function pbLaidRekeyAfterCorrection(entry, oldRows, calc) {
+    const L = entry && entry.laid;
+    if (!L || !L.marks || typeof L.marks !== 'object' || !Object.keys(L.marks).length || !calc || !Array.isArray(calc.points)) return false;
+    const rows = Array.isArray(entry.intervalRows) ? entry.intervalRows : [];
+    const keyOf = new Map(rows.map(r => [pbLaidKey(r), r]));
+    const nm = {}, put = (k, t) => { if (typeof nm[k] !== 'number' || t < nm[k]) nm[k] = t; };
+    oldRows.forEach(r => {
+      const k = pbLaidKey(r), t = L.marks[k];
+      if (typeof t !== 'number' || !Number.isFinite(t)) return;
+      if (r.pointId && keyOf.has(k)) { put(k, t); return; } // the point itself, where it is now
+      const f = Number(r.stationFt); if (!Number.isFinite(f)) return;
+      const own = pbPlainOwnStart(oldRows, f), p = own ? calc.points.find(pt => pt.id === own.pointId) : null;
+      const ft = p ? Math.round((f - own.stationFt + p.station) * 1e6) / 1e6 : f;
+      const end = pbPlainRunEnd(oldRows, calc, f);
+      if (ft > end + 0.005) { // past its run's corrected end: laid to that end
+        const m = own && /^seg(\d+)start$/.exec(own.pointId || ''), endId = m ? 'seg' + m[1] + 'end' : 'end';
+        const er = rows.find(x => x.pointId === endId); if (er) put(pbLaidKey(er), t);
+        return;
+      }
+      const hit = rows.find(x => !/^seg\d+start$/.test(x.pointId || '') && Math.abs(Number(x.stationFt) - ft) < 0.005) || rows.find(x => Math.abs(Number(x.stationFt) - ft) < 0.005);
+      if (hit) put(pbLaidKey(hit), t);
+    });
+    let E = null; try { E = entry.resumedFromId !== undefined && entry.resumedFromId !== null ? pbLaidEarlier(entry) : null; } catch (e) { E = null; }
+    const early = (r) => !!E && E.reach !== null && Number(r.stationFt) <= E.reach + 0.005;
+    let nextT = null;
+    for (let i = rows.length - 1; i >= 0; i--) { // no gaps before a laid row
+      const r = rows[i]; if (early(r)) continue; const k = pbLaidKey(r);
+      if (typeof nm[k] === 'number') nextT = nextT === null ? nm[k] : Math.min(nextT, nm[k]);
+      else if (nextT !== null) nm[k] = nextT;
+    }
+    const a = JSON.stringify(Object.keys(L.marks).sort().map(k => [k, L.marks[k]])), b = JSON.stringify(Object.keys(nm).sort().map(k => [k, nm[k]]));
+    if (a === b) return false;
+    entry.laid = { ...L, marks: nm, log: Array.isArray(L.log) ? L.log.slice() : [] };
+    return true;
+  }
+  window.__pbLaidRekey = pbLaidRekeyAfterCorrection;
   function pbManualStationAfter(oldRows, calc, stationFt) {
     const own = pbPlainOwnStart(oldRows, stationFt);
     const p = own ? calc.points.find(pt => pt.id === own.pointId) : null;
@@ -23898,6 +23940,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const displacedNotes = pbRestationNotesAfterCorrection(entry, preRefs.intervalRows || [], calc, plainMoves);
     const waitingOff = pbDisplaceNotesWaiting(entry, notesWaiting, preRefs.intervalRows || [], calc, plainMoves, displacedNotes);
     const coveredOff = pbSaveCoveredNotesWaiting(entry, notesWaiting, plainMoves, waitingOff);
+    const laidMoved = pbLaidRekeyAfterCorrection(entry, preRefs.intervalRows || [], calc); // feat_laidmove
     displacedNotes.forEach(d => displacedPoints.push(d));
     if (displacedPoints.length && correctionRecord) {
       correctionRecord.displacedPoints = displacedPoints; // preserved alongside the correction that caused the displacement, including any photos, rather than lost with only a count
@@ -23951,6 +23994,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbSettleSavedWaiting(notesWaiting, manualWaiting); // saved: a displaced manual point's note work is in its note
     pbSettleSavedWaiting(notesWaiting, coveredOff); // saved: note work under a point is that station's note
     pbMoveNotesWaiting(entry, notesWaiting, plainMoves); // saved: what still waits for a moved point follows it
+    if (laidMoved) { try { Promise.resolve(pbLiveNoteRun(entry)).catch(e => console.error(e)); } catch (e) { console.error(e); } } // feat_laidmove: the live status shows the moved laid footage
     // Refreshed from the entry's own archived state — NOT the live form.
     // Passing undefined here (the previous behavior) routed recordStatsEntry
     // into its "live form" path, meaning correcting THIS archived entry
