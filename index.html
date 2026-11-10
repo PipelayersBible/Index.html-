@@ -12675,7 +12675,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.17 · 2026-11-10'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.18 · 2026-11-10'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -17531,7 +17531,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const buf = new Uint8Array(await file.arrayBuffer());
       const sha = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', buf))).map((b) => b.toString(16).padStart(2, '0')).join('');
       const pdf = await pdfjsLib.getDocument(Object.assign({ data: buf.slice(0) }, PB_PV_PDFJS)).promise;
-      const n = pdf.numPages;
+      const sheetPages = [];
+      for (let p = 1; p <= pdf.numPages; p++) { const pg = await pdf.getPage(p); const v = pg.getViewport({ scale: 1 }); if (Math.max(v.width, v.height) >= 1150) sheetPages.push(p); try { pg.cleanup(); } catch (e) {} }
+      const reportPages = pdf.numPages - sheetPages.length;
+      if (!sheetPages.length) { try { pdf.destroy(); } catch (e) {} pbPlansToDocs(file, 'That’s a report, not plan sheets. Add it under Documents instead? Ask reads it there for much less.'); return; }
+      const n = sheetPages.length;
       const title = String(file.name || 'Plans').replace(/\.pdf$/i, '').replace(/[_]+/g, ' ').slice(0, 200);
       const b = await pbDocsRpc('pb_plans_begin', { p_job: pbPlans.job, p_title: title, p_pages: n, p_sha256: sha }, 'Couldn’t add it.');
       if (!b.ok) { pbPlansSay(b.line); return; }
@@ -17540,7 +17544,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       for (let p = 1; p <= n; p++) {
         if (have.has(p)) continue;
         pbPlansWait('Sending sheet ' + p + ' of ' + n + '…');
-        const { grid, files } = await pbPlansRenderPage(pdf, p);
+        const { grid, files } = await pbPlansRenderPage(pdf, sheetPages[p - 1]); // r16.18: plan-size pages only
         for (const f of files) {
           if (!(await pbPlansPut(setId + '/p' + p + '/' + f.name + '.jpg', f.blob))) { pbPlansSay(navigator.onLine === false ? 'No signal. Add the same file again to carry on.' : 'Sheet ' + p + ' didn’t send. Add the same file again to carry on.'); return; }
         }
@@ -17551,6 +17555,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!u.ok) { pbPlansSay(u.line); return; }
       pbPlansSay('Sent. Ask can use each sheet as soon as it’s read.');
       try { pdf.destroy(); } catch (e) {}
+      if (reportPages) setTimeout(() => pbPlansToDocs(file, 'The plan sheets are sent. This file also has ' + reportPages + ' report page' + (reportPages === 1 ? '' : 's') + '. Add it under Documents too, so Ask can read those?'), 400);
     } catch (e) {
       console.error('plans upload', e);
       pbPlansSay('Couldn’t read that PDF.');
@@ -17559,6 +17564,18 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       pbPlans.busy = false; pbPlansWait(''); pbPlansRender(); pbPlansLoad(true);
     }
   };
+  // r16.18: hand a report to Documents, with this job picked
+  function pbPlansToDocs(file, msg) {
+    const job = pbPlans.job;
+    pbConfirm(msg, async () => {
+      if (typeof window.pbDocsOpen !== 'function') return;
+      if (pbDocs.ready !== true) { try { await pbDocsCheck(); } catch (e) {} }
+      window.pbDocsOpen(job);
+      setTimeout(() => {
+        try { if (pbCurrentScreen === 'askDocs') window.pbDocsPicked({ files: [file] }); else pbAlert('Documents isn’t ready yet. Try again in a moment from Tools > Documents.', 'Not Ready'); } catch (e) { console.error('plans to docs', e); }
+      }, 250);
+    }, 'Report', { no: 'Not Now', yes: 'Add to Documents' });
+  }
   window.pbPlansRemove = async function(id) {
     if (pbPlans.busy) return;
     const ok = await new Promise((res) => pbShowModal('Remove this plan set? Ask stops using it.', [{ label: 'Cancel', onClick: () => res(false) }, { label: 'Remove', primary: true, onClick: () => res(true) }], 'Remove Plans'));
