@@ -5485,6 +5485,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
     </div>
     <div class="pb-docs-wrap">
       <p class="pb-docs-line" id="plansLine" role="status" aria-live="polite"></p>
+      <div class="pb-field" id="plansJobPick" hidden><label for="plansJobIn">Job number</label><input type="text" id="plansJobIn" maxlength="60" autocomplete="off" autocapitalize="characters" enterkeyhint="done"></div>
       <div class="pb-btn-wrap" id="plansAddWrap" hidden style="padding-left:0;padding-right:0;"><button type="button" class="pb-btn" id="plansAddBtn" onclick="pbPlansPick()">Add Plan Set</button></div>
       <input type="file" id="plansFile" accept="application/pdf" hidden onchange="pbPlansPicked(this)">
       <div class="pb-ai-wait" id="plansWait" hidden style="margin-left:0;margin-right:0;"><span role="status" aria-live="polite"><span class="pb-ai-dot" aria-hidden="true"></span><span id="plansWaitT"></span></span></div>
@@ -12674,7 +12675,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.16 · 2026-11-10'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.17 · 2026-11-10'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -17417,7 +17418,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbPlansRender() {
     const eb = pbPlansEl('plansJobEyebrow'); if (eb) eb.textContent = pbPlans.job ? 'Job ' + pbPlans.job : 'Tools';
-    const add = pbPlansEl('plansAddWrap'); if (add) add.hidden = !pbPlans.job || !pbPlansCanAdd() || pbPlans.busy;
+    const add = pbPlansEl('plansAddWrap'); if (add) add.hidden = !pbPlansCanAdd() || pbPlans.busy;
+    const jp = pbPlansEl('plansJobPick'); if (jp) jp.hidden = !!pbPlans.job || !pbPlansCanAdd() || pbPlans.busy; // r16.17
     const list = pbPlansEl('plansList'); if (!list) return;
     if (!pbPlans.sets.length) { list.innerHTML = pbPlans.ready ? '<p class="pb-edu-empty">No plan sets on this job yet.</p>' : ''; return; }
     list.innerHTML = pbPlans.sets.map((x) => '<div class="pb-docs-item" data-id="' + escapeHtml(String(x.id)) + '"><button type="button" class="pb-docs-row pb-plans-open" data-id="' + escapeHtml(String(x.id)) + '" onclick="pbPlanSetOpen(this.dataset.id)"><span class="tx"><span class="name">' + escapeHtml((pbPlans.job ? '' : 'Job ' + (x.job || '') + ' · ') + x.title) +
@@ -17508,7 +17510,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbPlanLayout();
     if (view) { view.scrollLeft = cx * f - view.clientWidth / 2; view.scrollTop = cy * f - view.clientHeight / 2; }
   };
-  window.pbPlansPick = function() { if (pbPlans.busy) return; const f = pbPlansEl('plansFile'); if (f) { f.value = ''; f.click(); } };
+  window.pbPlansPick = function() {
+    if (pbPlans.busy) return;
+    if (!pbPlans.job) { // r16.17: from Tools > Plans, the set goes to the job typed here
+      const ji = pbPlansEl('plansJobIn'), v = ji ? String(ji.value || '').trim() : '';
+      if (!v) { pbPlansSay('Enter the job number first.'); if (ji) ji.focus(); return; }
+      pbPlans.job = v; pbPlans.sets = []; pbPlans.ready = null; pbPlansSay(''); pbPlansRender(); pbPlansLoad(true);
+    }
+    const f = pbPlansEl('plansFile'); if (f) { f.value = ''; f.click(); }
+  };
   window.pbPlansPicked = async function(inp) {
     const file = inp && inp.files && inp.files[0]; if (!file) return;
     if (!/pdf$/i.test(file.type || '') && !/\.pdf$/i.test(file.name || '')) { pbPlansSay('Use the plan set PDF.'); return; }
