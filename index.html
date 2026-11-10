@@ -12675,7 +12675,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.20 · 2026-11-10'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.21 · 2026-11-10'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -17530,6 +17530,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     let wake = null; try { wake = navigator.wakeLock ? await navigator.wakeLock.request('screen') : null; } catch (e) { wake = null; }
     const reports = [], sent = [], already = []; let stop = '';
     const qids = []; for (const f of pdfs) qids.push(await pbPlansQAdd(f, pbPlans.job)); // r16.20: kept on the phone until sent
+    pbPlansWait('Getting ready…'); await pbPlansProgStart(pdfs);
     try {
       for (let k = 0; k < pdfs.length && !stop; k++) {
         const r = await pbPlansSendOne(pdfs[k], pdfs.length > 1 ? 'Set ' + (k + 1) + ' of ' + pdfs.length + ' · ' : '', pbPlans.job);
@@ -17554,6 +17555,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       setTimeout(() => pbPlansToDocs(r0.file, msg), 400);
     }
   };
+  const pbPlansProg = { total: 0, done: 0, start: 0 };
+  async function pbPlansProgStart(files) {
+    pbPlansProg.total = 0; pbPlansProg.done = 0; pbPlansProg.start = Date.now();
+    for (const f of files) { try { const d = await pdfjsLib.getDocument(Object.assign({ data: new Uint8Array(await f.arrayBuffer()) }, PB_PV_PDFJS)).promise; pbPlansProg.total += d.numPages; try { d.destroy(); } catch (e) {} } catch (e) {} }
+    pbPlansProg.start = Date.now();
+  }
+  function pbPlansEta() {
+    const P = pbPlansProg; if (P.done < 2 || !P.total) return ' · figuring time left';
+    const left = Math.max(0, P.total - P.done) * (Date.now() - P.start) / P.done / 60000;
+    return left < 1 ? ' · under a minute left' : ' · about ' + Math.round(left) + ' min left';
+  }
   async function pbPlansSendOne(file, pre, job) {
     let pdf = null;
     try {
@@ -17564,22 +17576,25 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const sheetPages = [];
       for (let p = 1; p <= pdf.numPages; p++) { const pg = await pdf.getPage(p); const v = pg.getViewport({ scale: 1 }); if (Math.max(v.width, v.height) >= 1150) sheetPages.push(p); try { pg.cleanup(); } catch (e) {} }
       const reportPages = pdf.numPages - sheetPages.length;
+      pbPlansProg.total = Math.max(pbPlansProg.done, pbPlansProg.total - reportPages);
       if (!sheetPages.length) return { report: true, all: true, file, pages: reportPages };
       const n = sheetPages.length, rep = reportPages ? { report: true, all: false, file, pages: reportPages } : {};
       const title = String(file.name || 'Plans').replace(/\.pdf$/i, '').replace(/[_]+/g, ' ').slice(0, 200);
       const b = await pbDocsRpc('pb_plans_begin', { p_job: job, p_title: title, p_pages: n, p_sha256: sha }, 'Couldn’t add it.');
       if (!b.ok) return { stop: b.line };
       const setId = String(b.data.set_id), have = new Set(Array.isArray(b.data.have) ? b.data.have.map(Number) : []);
+      pbPlansProg.total = Math.max(pbPlansProg.done, pbPlansProg.total - have.size);
       if (b.data.existing && b.data.state !== 'uploading') return Object.assign({ already: true }, rep);
       for (let p = 1; p <= n; p++) {
         if (have.has(p)) continue;
-        pbPlansWait(pre + 'Sending sheet ' + p + ' of ' + n + '… Keep the app open.');
+        pbPlansWait(pre + 'Sending sheet ' + p + ' of ' + n + pbPlansEta() + '. Keep the app open.');
         const { grid, files } = await pbPlansRenderPage(pdf, sheetPages[p - 1]); // r16.18: plan-size pages only
         for (const f of files) {
           if (!(await pbPlansPut(setId + '/p' + p + '/' + f.name + '.jpg', f.blob))) return { net: true, stop: navigator.onLine === false ? 'No signal. It carries on by itself when you’re back online.' : 'Sheet ' + p + ' didn’t send. It tries again by itself.' };
         }
         const r = await pbDocsRpc('pb_plans_sheet_ready', { p_set: setId, p_page: p, p_grid: grid }, 'Sheet ' + p + ' didn’t send.');
         if (!r.ok) return { net: true, stop: r.line + ' It tries again by itself.' };
+        pbPlansProg.done++;
       }
       const u = await pbDocsRpc('pb_plans_uploaded', { p_set: setId }, 'Couldn’t finish sending.');
       if (!u.ok) return { stop: u.line };
@@ -17618,6 +17633,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbPlans.busy = true; pbPlansRender(); pbPlansSay('');
     let wake = null; try { wake = navigator.wakeLock ? await navigator.wakeLock.request('screen') : null; } catch (e) { wake = null; }
     let done = 0, line = '';
+    await pbPlansProgStart(q.map((e) => e.blob).filter((x) => x instanceof Blob));
     try {
       for (let k = 0; k < q.length; k++) {
         const e = q[k]; if (!sbUser || sbUser.id !== uid) break;
