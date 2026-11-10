@@ -16,7 +16,7 @@
  */
 'use strict';
 
-const PB_SW_BUILD = 'r16.19 · 2026-11-10';
+const PB_SW_BUILD = 'r16.20 · 2026-11-10';
 const PB_SB_URL = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'; // the page's supabase-js <script src> (crossorigin), read from the page by mksw.py
 const PB_SHELL_PREFIX = 'pb-shell-';
 const PB_SHELL = PB_SHELL_PREFIX + PB_SW_BUILD.replace(/[^A-Za-z0-9.]+/g, '-');
