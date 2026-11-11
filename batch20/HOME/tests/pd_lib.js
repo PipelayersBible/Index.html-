@@ -331,7 +331,8 @@ const RPC = () => {
         last_at: live.length ? live.map(e => e.updated_at).sort().pop() : null, last_work_date: live.length ? live.map(e => e.record.workDate).sort().pop() : null, entries: es.length,
         waiting: live.filter(e => e.crew && e.crew.state === 'pending' && RealDate.now() - e.crew.created < H24).length, edits_waiting: live.filter(e => e.pendingEdit).length,
         reporters: new Set(es.map(e => e.user)).size, reporters_today: new Set(es.filter(e => e.record.workDate === today).map(e => e.user)).size,
-        plan: p ? p.plan : null, plan_version: p ? p.version : null, pms: JSON.parse(localStorage.getItem('__jobPms') || '{}')[key] || 0, /* r15.26 */ cats: sums(es, today), _es: es }; };
+        plan: p ? p.plan : null, plan_version: p ? p.version : null, pms: JSON.parse(localStorage.getItem('__jobPms') || '{}')[key] || 0, /* r15.26 */ cats: sums(es, today), _es: es,
+        pace_week: es.flatMap(e => { const dd = (Date.parse(today) - Date.parse(e.record.workDate)) / 86400000; return dd >= 1 && dd <= 7 ? (e.items || []).filter(it => it.qty != null).map(it => ({ date: e.record.workDate, key: it.key, unit: it.unit || '', qty: it.qty })) : []; }) /* r15.41 schedule / r15.50 pace: the 7 days before today, as pb_prod.schedule_state's pace_week */ }; };
     if (fn === 'pb_prod_manual_add') {
       if (args.p_expect_uid !== me()) return { data: null, error: { message: 'pb:wrong_account' } };
       if (!(args.p_qty > 0)) return { data: null, error: { message: 'pb:bad_items' } };

@@ -72,9 +72,10 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
     check('overview: Pipe Installed has a %, no "no plan", no Use button', !(await page.$('#pjPlanMat')) && await page.evaluate(() => { const r = [...document.querySelectorAll('#pjBody *')].find(e => e.children.length === 0 && /^Pipe Installed/.test(e.textContent.trim())); return !!r && !/no plan/.test(r.parentElement.innerText) && /3,000/.test(r.parentElement.innerText); }));
     await page.evaluate(() => window.pbProdPlanEdit()); await page.waitForTimeout(1200);
     const pi = await page.evaluate(() => [...document.querySelectorAll('#ppRows input[id^=ppName]')].findIndex(i => /Pipe Installed/.test(i.value)));
-    check('editor: Planned 3000 says it follows the pipe materials (' + await txt(page, '#ppRow' + pi) + ')', (await page.inputValue('#ppPlanned' + pi)) === '3000' && /Planned follows the pipe materials/.test(await txt(page, '#ppRow' + pi)));
+    // feat_planfill (owner, Oct 28, pre-r15.65): an item that follows the materials (planned_auto) shows a blank Planned box; the help line says blank uses the pipe materials' Expected
+    check('editor: Planned (auto 3000) shows blank and says blank uses the pipe materials\' 3,000 LF (' + await txt(page, '#ppRow' + pi) + ')', (await page.inputValue('#ppPlanned' + pi)) === '' && /Blank uses the pipe materials’ Expected: 3,000 LF/.test(await txt(page, '#ppRow' + pi)));
     const di = await page.evaluate(() => [...document.querySelectorAll('#ppRows input[id^=ppName]')].findIndex(i => /^Demo/.test(i.value)));
-    check('a typed item does not say so', !/Planned follows/.test(await txt(page, '#ppRow' + di)));
+    check('a typed item does not say so', !/Blank uses the|Planned follows/.test(await txt(page, '#ppRow' + di)));
     // saving the plan right after the server bumped the version works (the app holds the new version)
     await page.click('#ppSaveBtn'); await page.waitForTimeout(1500);
     check('Save Plan works (no "plan changed")', !(await page.$('#ppSaveBtn')) && !/changed/i.test(await txt(page, '#pjBody')));

@@ -13,7 +13,9 @@ const sizes = (p) => p.evaluate(() => { const box = (el) => { if (!el) return nu
 const big = (b, W) => !!b && b.h >= 48 && b.fs >= 16 && (W ? b.w >= W - 2 : true);
 const pdfSink = (p) => p.evaluate(() => { window.__pdfData = null; window.__debugPdfSink = (d) => { window.__pdfData = d; }; });
 const pdfGot = async (p) => { for (let i = 0; i < 40; i++) { const n = await p.evaluate(() => window.__pdfData ? window.__pdfData.length : 0); if (n) return n; await sleep(p, 250); } return 0; };
-const reportShown = (p, id) => p.evaluate((id) => { if ((document.querySelector('.pb-screen.active') || {}).id !== 'screen-archive') return ''; const i = window.__debugGetArchive().findIndex(e => e.id === id); const pre = document.getElementById('archiveView' + i); return pre && getComputedStyle(pre).display !== 'none' ? pre.textContent : ''; }, id);
+// r15.37: every View opens the one PDF viewer (screen-pdfView) on that record; the viewer's session says which
+const viewer = (p) => p.evaluate(() => { const S = window.__pbPdfView && window.__pbPdfView.session(); return { scr: (document.querySelector('.pb-screen.active') || {}).id, id: S && S.entry ? S.entry.id : null, title: S ? S.title : '', from: S ? S.from : '' }; });
+const reportShown = async (p, id) => { const v = await viewer(p); return v.scr === 'screen-pdfView' && v.id === id ? await E.reportOf(p, id) : ''; };
 async function ownerRun(browser, o) { // Tue Oct 20 6:22 PM lock (510 ft), rows marked laid to 140.0 at 9:47 PM, Wed 4:26 AM
   const { ctx, page } = await setup(browser, Object.assign({ extra: LINKS, clock: '2026-10-20T18:22:00' }, o || {}));
   const id = await M.lockRun(page, { dist: 510 }); await M.dismiss(page);
@@ -68,13 +70,17 @@ const saveLbl = async (p) => ((await E.buttons(p)).find(b => /^Save/.test(b)) ||
         check('Tue 9:50 PM at 140.0: recorded, "entered next day at 4:26 AM"', (await E.title(page)) === 'End Recorded' && /work ended at 140\.0, Tue, Oct 20 at 9:50 PM \(entered next day at 4:26 AM\)/.test(await E.message(page)) && r.incomplete && r.dist === 140 && /Oct 20 2026 21:50/.test(r.end) && r.endEntry && r.endEntry.via === 'next_day' && r.endEntry.fromLaid === true, JSON.stringify(r.endEntry));
         await E.tap(page, 'Not Today'); await sleep(page, 1000);
         // ================= 2. the report after the END sheet =================
-        check('Home after the end: "Run ended" with View Report and Save PDF', (await E.screen(page)) === 'screen-home' && await vis(page, 'homeRunReportView') && await vis(page, 'homeRunReportPdf'));
-        await page.evaluate(() => { const b = document.getElementById('homeRunReportView'); if (b) b.click(); }); await sleep(page, 1200);
-        const txt = await reportShown(page, id);
-        check('View Report: Reports > Archive, that run\'s report open ("RUN RECORD … entered next day")', /RUN RECORD/.test(txt) && /entered next day at 4:26 AM/.test(txt), txt.slice(0, 200));
+        // r15.38/r15.65: the line says the report is going to the foreman; a run ended early also has its own Finish Run card
+        // on Home that leads to the same record, so View / Save PDF are said once (not repeated on the line)
+        const hrt = await page.evaluate(() => (document.getElementById('homeRunReportTitle') || {}).textContent || '');
+        check('Home after the end: the run-report line ("Sending the report to Frank Ortiz…") and the Finish Run card are up; View / Save PDF are not repeated on the line', (await E.screen(page)) === 'screen-home' && await vis(page, 'homeRunReport') && /Sending the report to Frank Ortiz/.test(hrt) && await vis(page, 'homeFinishRun_' + id) && !(await vis(page, 'homeRunReportView')) && !(await vis(page, 'homeRunReportPdf')), hrt);
+        await page.evaluate(() => pbOpenArchive()); await sleep(page, 800);
+        await page.evaluate((id) => pbArchiveTap('pbToggleArchiveView', id), id); await sleep(page, 1500);
+        const txt = await reportShown(page, id), pv1 = await viewer(page);
+        check('Records > View: that run\'s report opens in the PDF viewer (r15.37), its record saying "entered next day"', pv1.scr === 'screen-pdfView' && pv1.id === id && /RUN RECORD/.test(txt) && /entered next day at 4:26 AM/.test(txt), JSON.stringify(pv1) + ' ' + txt.slice(0, 200));
         await page.evaluate(() => pbGoto('home')); await sleep(page, 600); await pdfSink(page);
-        await page.evaluate(() => { const b = document.getElementById('homeRunReportPdf'); if (b) b.click(); });
-        check('Save PDF from Home: the run\'s PDF is made', (await pdfGot(page)) > 1000);
+        await page.evaluate((id) => pbArchiveTap('pbDownloadArchivePDF', id), id);
+        check('Save PDF for the ended-early run (from Records; Home says it once, on the Finish Run card\'s record): the run\'s PDF is made', (await pdfGot(page)) > 1000);
         await page.evaluate(() => { const b = document.getElementById('homeRunReportDismiss'); if (b) b.click(); }); await sleep(page, 300);
         check('Dismiss: the line goes', !(await vis(page, 'homeRunReport')));
         errs.push(...page._errors);
@@ -87,13 +93,17 @@ const saveLbl = async (p) => ((await E.buttons(p)).find(b => /^Save/.test(b)) ||
         await page.evaluate(() => pbLaidMark(4)); await sleep(page, 500);
         check('Results (pipelayer): View Report and Save PDF are offered', await vis(page, 'pbFxResView') && await vis(page, 'pbFxResPdf'));
         await page.evaluate(() => { const b = document.getElementById('pbFxResView'); if (b) b.click(); }); await sleep(page, 1000);
-        check('Results > View Report: the run\'s report in the Archive', /RUN RECORD/.test(await reportShown(page, id)));
+        check('Results > View Report: the run\'s report in the PDF viewer (r15.37)', /RUN RECORD/.test(await reportShown(page, id)) && (await viewer(page)).id === id, JSON.stringify(await viewer(page)));
         await page.evaluate(() => pbResumeLastRunResults()); await sleep(page, 800); await M.dismiss(page);
-        await page.evaluate(() => pbEndRun()); await sleep(page, 1800); await M.dismiss(page);
+        await page.evaluate(() => pbEndRun()); await sleep(page, 1800);
+        // r16.10: End Run asks when part of the run isn't marked laid (40 of 100 ft here); End Run anyway
+        const nal = await E.title(page);
+        check('End Run with 40 of 100 ft marked laid: asks "Not All Marked Laid" (r16.10)', nal === 'Not All Marked Laid' && /40 of 100 ft is marked laid/.test(await E.message(page)), nal);
+        await E.tap(page, 'End Run'); await sleep(page, 1500); await M.dismiss(page); await sleep(page, 600);
         check('End Run: ended, Home', (await E.screen(page)) === 'screen-home' && (await E.runOf(page, id)).completed);
         check('Home after End Run: View Report / Save PDF for that run', await vis(page, 'homeRunReportView') && await vis(page, 'homeRunReportPdf'));
         await page.evaluate(() => { const b = document.getElementById('homeRunReportView'); if (b) b.click(); }); await sleep(page, 1200);
-        check('View Report after End Run: the run\'s report, open', /RUN RECORD/.test(await reportShown(page, id)));
+        check('View Report after End Run: the run\'s report, open in the PDF viewer', /RUN RECORD/.test(await reportShown(page, id)) && (await viewer(page)).id === id, JSON.stringify(await viewer(page)));
         await pdfSink(page); await page.evaluate((id) => pbArchiveTap('pbDownloadArchivePDF', id), id);
         check('Archive Download PDF still works for the pipelayer', (await pdfGot(page)) > 1000);
         errs.push(...page._errors);

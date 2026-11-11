@@ -1,4 +1,5 @@
 // r15.1 PM RUNS updated copy of /home/claude/batch27/CONSOLE/updated/t_b20_company_home.js: Home now also has the Crew runs tile (homeCxRuns2).
+// Nov 11 (r16.22 sync): the Crew runs tile became the New daily reports tile in a pair (r15.78, r16.08); Records/Mine links joined the Company links (r15.76, r15.95).
 // Batch 27 CONSOLE copy (Company Home redesigned: Right now / Inbox / Material alerts / Waiting buttons, job cards, links;
 //   the batch 20 rows homeCoProd / homeCoLive / homeCoWait / homeCoMat / homeCoCrew / homeCoLogo are gone).
 // Batch 20 HOME: the Company Home (company account, listed managers, PMs) and who does NOT get it.
@@ -13,7 +14,7 @@ const errs = [];
 const state = (p) => p.evaluate(() => {
   const vis = (id) => { const e = document.getElementById(id); if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden'; };
   return { on: document.getElementById('screen-home').classList.contains('pb-coh-on'), sec: vis('homeCompany'), start: vis('homeTileNewRun'), startHead: vis('homeStartHead'),
-    rows: [...document.querySelectorAll('#homeCxPulse > button, #homeCompany .pbx-links > button')].map(b => b.id), subs: Object.fromEntries([...document.querySelectorAll('#homeCxPulse > button')].map(b => [b.id, b.innerText.replace(/\s+/g, ' ').trim()])),
+    rows: [...document.querySelectorAll('#homeCxPulse > button, #homeCompany .pbx-links > button')].map(b => b.id), pair: [...document.querySelectorAll('#homeCxPulse .pbx-pair > button')].map(b => b.id), subs: Object.fromEntries([...document.querySelectorAll('#homeCxPulse > button')].map(b => [b.id, b.innerText.replace(/\s+/g, ' ').trim()])),
     jobs: [...document.querySelectorAll('#homeCxJobs .pbx-job')].map(b => b.dataset.job),
     name: (document.getElementById('homeCoName') || {}).textContent || '' };
 });
@@ -31,8 +32,11 @@ const flipWatch = () => { window.__cohFlips = []; let was = false; new MutationO
       let s = await state(page);
       const has = await page.evaluate((o) => Object.fromEntries(Object.entries(o).map(([k, f]) => [k, typeof window[f] === 'function'])), optional);
       check('manager: the Company section is shown and the start list folded away', s.on && s.sec && !s.start && !s.startHead);
-      check('manager: Right now, Inbox, Material alerts, Waiting on foremen; Crew members, Production details (no Company logo: Settings) (' + JSON.stringify(s.rows) + ')',
-        JSON.stringify(s.rows) === JSON.stringify(['homeCxLive', 'homeCxInbox', 'homeCxMat', 'homeCxWait', 'homeCxRuns2', 'homeCxDash']));
+      // r15.76: New record, Company tickets, Company inspections & tests on the office Home; r15.78: run reports + delays in a side-by-side pair;
+      // r15.95: My production / My inspections & tests beside them; r16.08 (feat_drtile): the pair's first tile is New daily reports (homeCxDailies), the Crew runs tile (homeCxRuns2) is gone
+      check('manager: Right now, Inbox, Material alerts, Waiting on foremen; New record, Company production, Company tickets, My production, Company inspections, My inspections (no Company logo: Settings) (' + JSON.stringify(s.rows) + ')',
+        JSON.stringify(s.rows) === JSON.stringify(['homeCxLive', 'homeCxInbox', 'homeCxMat', 'homeCxWait', 'homeCxNewRec', 'homeCxDash', 'archiveTicketsDashBtn', 'homeCxProdMine', 'archiveInspCoBtn', 'homeCxInspMine']));
+      check('manager: the pair under them starts with New daily reports, no Crew runs tile (' + JSON.stringify(s.pair) + ')', s.pair[0] === 'homeCxDailies' && !s.pair.includes('homeCxRuns2'));
       check('manager: pbIsCompanyHome() says so', await page.evaluate(() => window.pbIsCompanyHome() === true && window.pbIsCompanyHome('shared') === false && window.pbIsCompanyHome('someoneElse') === false));
       await L.waitFor(page, () => document.querySelectorAll('#homeCxJobs .pbx-job').length > 0, 8000); s = await state(page);
       check('Home loads the jobs itself (' + JSON.stringify(s.jobs) + ')', s.jobs.includes('24-101') && s.jobs.includes('24-202'));

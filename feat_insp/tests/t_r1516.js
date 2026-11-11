@@ -59,6 +59,8 @@ const SPMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) =
   try {
     const { ctx, page } = await setup(browser, {}); await ctx.addInitScript(MATMOCK); await ctx.addInitScript(SPMOCK); await page.reload(); await page.waitForTimeout(1500);
     page.on('pageerror', e => errs.push(String(e)));
+    // r15.95 (calclive, owner Nov 3): calculators answer as you type; the Calculate button is gone. Leaving the field (blur) settles the live answer.
+    const calc = async () => { await page.evaluate(() => { const a = document.activeElement; if (a && a !== document.body && a.blur) a.blur(); }); await page.waitForTimeout(400); };
     await page.evaluate((P) => { const srv = JSON.parse(localStorage.getItem('__psrv')); srv.plans['c1|24-101'] = { plan: P, version: 3, job_number: '24-101' }; localStorage.setItem('__psrv', JSON.stringify(srv)); localStorage.setItem('__mats', '[]');
       localStorage.setItem('__spoils', JSON.stringify({ status: 'ok', estimate: true, swell_pct: 25, ft: 510, bank_yd3: 68, loose_yd3: 85, haul_loose_yd3: 85, loads: 9, truck_yd3: 10 })); }, PLAN);
     await page.evaluate(() => window.pbCxOpenJob('24-101', 'overview')); await page.waitForTimeout(2500);
@@ -75,7 +77,7 @@ const SPMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) =
     await page.selectOption('#pmf_category', 'roadbase'); await page.waitForTimeout(400);
     const rk = await page.evaluate(() => [...document.querySelectorAll('#pmf_basekind option')].map(o => o.textContent));
     check('Road base > Which kind: Class 2, Class 3, Class 6 (' + rk.join(', ') + ')', rk.join('|') === 'Class 2|Class 3|Class 6');
-    check('Class 2 Road Base, tons, density 2, waste 5', (await val(page, '#pmf_name')) === 'Class 2 Road Base' && (await val(page, '#pmf_density_tpy')) === '2' && (await val(page, '#pmf_extra_pct')) === '5' && /Expected in all \(tons\)/.test(await txt(page, '#pmfForm')));
+    check('Class 2 Road Base, tons, density 2, waste 5', (await val(page, '#pmf_name')) === 'Class 2 Road Base' && (await val(page, '#pmf_density_tpy')) === '2' && (await val(page, '#pmf_extra_pct')) === '5' && /Expected \(tons\)/.test(await txt(page, '#pmfForm')));
     await page.selectOption('#pmf_basekind', 'base_class6'); await page.waitForTimeout(400);
     check('Class 6: the name follows', (await val(page, '#pmf_name')) === 'Class 6 Road Base' && (await val(page, '#pmf_basekind')) === 'base_class6');
     await page.check('input[name="pmfPMode"][value="calc"]'); await page.waitForTimeout(300);
@@ -83,7 +85,7 @@ const SPMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) =
     await page.tap('#pmfCiOpen_vol'); await page.waitForTimeout(600);
     await page.evaluate(() => document.querySelector('#volShapeToggle button[data-val="rect"]').click());
     await page.fill('#volRectL', '100'); await page.fill('#volRectW', '27'); await page.fill('#volRectD', '1'); await page.fill('#volQty', '1');
-    await page.tap('#screen-volumeCalc button[onclick="pbCalcVolume()"]'); await page.waitForTimeout(300);
+    await calc();
     const wt = await page.evaluate(() => [...document.querySelectorAll('#pbWt-volume .pb-wt-pick button .pb-wt-n')].map(b => b.textContent));
     check('the tons picker has Asphalt and Road base (' + wt.join(', ') + ')', wt.includes('Asphalt (hot mix)') && wt.includes('Road base (Class 2 / 3 / 6)'));
     await page.evaluate(() => [...document.querySelectorAll('#pbWt-volume .pb-wt-pick button')].find(b => /Road base/.test(b.textContent)).click()); await page.waitForTimeout(300);
@@ -98,7 +100,8 @@ const SPMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) =
     await page.tap('#pjMatAdd'); await page.waitForTimeout(400);
     await page.selectOption('#pmf_category', 'bedding'); await page.waitForTimeout(300);
     await page.selectOption('#pmf_bedkind', 'p:pea'); await page.waitForTimeout(300);
-    check('Pea gravel: name, density 1.4, says to verify', (await val(page, '#pmf_name')) === 'Pea gravel (1/4" rock)' && (await val(page, '#pmf_density_tpy')) === '1.4' && /1\.40 tons per yd³ to start\. Verify with your supplier/.test(await txt(page, '#pmfForm')));
+    // r15.70 (feat_matform: no help lines): the "1.40 tons per yd³ to start" line is gone; the density box holds the preset and one line says to verify it
+    check('Pea gravel: name, density 1.4, says to verify', (await val(page, '#pmf_name')) === 'Pea gravel (1/4" rock)' && (await val(page, '#pmf_density_tpy')) === '1.4' && /Verify the density with your supplier/.test(await txt(page, '#pmfForm')));
     await page.selectOption('#pmf_bedkind', 'c:bedding_sand'); await page.waitForTimeout(300);
     check('Other sand: kind changes, the typed name stays', (await val(page, '#pmf_bedkind')) === 'c:bedding_sand');
     await page.evaluate(() => window.pbMatFormCancel());

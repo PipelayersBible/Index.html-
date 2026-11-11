@@ -28,31 +28,38 @@ require('/home/claude/batch27/CONSOLE/tests/cx_shim.js')(M); // batch 27 CONSOLE
     const card = await page.evaluate(() => { const b = [...document.querySelectorAll('#pdJobs .pbp-job')].find(x => /Job 24-101/.test(x.textContent)); return b ? b.innerText.replace(/\s+/g, ' ') : ''; });
     check('dashboard card: a Materials block headed "Used / Ordered / Expected"', /Materials Used \/ Ordered \/ Expected/.test(card), card.slice(0, 300));
     check('dashboard: "8in PVC SDR 35: 360 / 400 / 1,000 LF +40 waiting" with the 80% chip in words', /8in PVC SDR 35: 360 \/ 400 \/ 1,000 LF \+40 waiting All of what’s ordered used/.test(card));
-    check('dashboard: bedding marked (est.) with ≈, and its key line', /Fine sand \(mason sand\) \(est\.\): ≈ 23 \/ — \/ 10 yd³/.test(card) && /est\. = estimate from footage × trench width × bedding thickness/.test(card) && /Over expected/.test(card));
+    // r15.94 (cleanup, fewer explanations): the card's key is the short "est. = from footage"; the full math is behind the job page's "?"
+    check('dashboard: bedding marked (est.) with ≈, and its key line', /Fine sand \(mason sand\) \(est\.\): ≈ 23 \/ — \/ 10 yd³/.test(card) && /est\. = from footage/.test(card) && /Over expected/.test(card), card);
     check('dashboard: no trench width = no number, "Needs trench width"', /3\/4" crushed rock \(est\.\): — \/ — \/ — ton Needs trench width/.test(card));
     check('dashboard: entered material "Tees: 3 / — / 12 EA"', /Tees: 3 \/ — \/ 12 EA/.test(card));
     check('dashboard: unassigned delivery tickets counted on the card', /3 delivery ticket lines not assigned to a material/.test(card));
     check('dashboard: a ticket link whose ticket changed or moved is flagged on the card (review S2)', /1 ticket link needs a look \(the ticket changed or moved; not counting\)/.test(card));
     check('dashboard: a job with no materials gets no block', await page.evaluate(() => { const b = [...document.querySelectorAll('#pdJobs .pbp-job')].find(x => /Job 24-202/.test(x.textContent)); return !!b && !b.querySelector('.pbm-dash'); }));
-    check('dashboard lead mentions materials and estimates', await page.evaluate(() => /used \/ ordered \/ expected; bedding amounts are estimates/.test(document.querySelector('#screen-prodDashboard .pbp-lead').textContent)));
+    // r15.94 (clean_b): the dashboard's lead paragraph is gone; a one-line key "Materials: used / ordered / expected" stays, the card marks estimates "(est.)"
+    check('dashboard key says "Materials: used / ordered / expected"; estimates marked on the card', await page.evaluate(() => /Materials: used \/ ordered \/ expected/.test((document.querySelector('#screen-prodDashboard .pbp-key') || {}).textContent || '')) && /\(est\.\)/.test(card));
     // job page
     await T.openJob(page, '24-101');
     let t = await T.matText(page);
     check('job page: Materials section with the Used / Ordered / Expected key', /^Materials Used \/ Ordered \/ Expected/.test(t), t.slice(0, 200));
-    check('job page: pipe row says it is from reported footage (not an estimate)', /8in PVC SDR 35 All of what’s ordered used 360 \/ 400 \/ 1,000 LF \+40 waiting Counts Pipe Installed footage/.test(t));
+    // r15.70 (feat_matform): the rows' one-line "Counts … footage" / "… estimate from …" / "Recorded by hand." notes are gone (no help lines); the math is under Details › Show math
+    const pipeRow = await page.evaluate(() => document.getElementById('pjMat_mp1').innerText.replace(/\s+/g, ' '));
+    check('job page: pipe row from reported footage: no Estimate chip, no ≈', /^8in PVC SDR 35 All of what’s ordered used 360 \/ 400 \/ 1,000 LF \+40 waiting/.test(pipeRow) && !/Estimate|≈/.test(pipeRow), pipeRow);
     const sandRow = await page.evaluate(() => document.getElementById('pjMat_ms1').innerText.replace(/\s+/g, ' '));
-    check('job page: bedding row has the Estimate chip and the plain-words note', /Fine sand \(mason sand\) Over expected Estimate ≈ 23 \/ — \/ 10 yd³ (\+[\d.]+ waiting )?Bedding estimate from Pipe Installed footage\./.test(sandRow) /* r15.5.1: short row text (owner) */, sandRow);
+    check('job page: bedding row has the Estimate chip and ≈', /^Fine sand \(mason sand\)( All of what’s expected used)? Over expected Estimate ≈ 23 \/ — \/ 10 yd³( \+[\d.]+ waiting)? Details/.test(sandRow) /* r16.08: the "All of what’s expected used" chip */, sandRow);
     check('job page: a bedding (sand) + a shading (rock) pair is normal: no split warning (review S7)', !/Split unknown/.test(t) && !/Each one counts the whole job/.test(t));
-    check('job page: entered row: "Amounts you record by hand" and a Record Use button (only there)', /Tees 3 \/ — \/ 12 EA Recorded by hand\. Details Add Order Record Use Add to Expected Edit/.test(t) /* r15.3.4: Add to Expected */ && (t.match(/Record Use/g) || []).length === 1);
-    check('job page: the "How materials are counted" help explains the estimate, waiting, the alert and quiet hours', await page.evaluate(() => { const h = document.getElementById('pjMatHelp').textContent; return /estimate/.test(h) && /nothing taken off/.test(h) && /Shading/.test(h) && /15%/.test(h) && /\+ waiting/.test(h) && /80%/.test(h) && /8:55 PM to 6:00 AM/.test(h); }));
+    check('job page: entered row: no estimate, a Record Use button (only there)', /Tees 3 \/ — \/ 12 EA Details Add Order Record Use Add to Expected Edit/.test(t) /* r15.3.4: Add to Expected */ && (t.match(/Record Use/g) || []).length === 1, t.slice(t.indexOf('Tees'), t.indexOf('Tees') + 120));
+    // r15.70: the help is a modal behind the "?" by the key (pbMatHelp), not a fold on the page
+    await page.evaluate(() => document.getElementById('pjMatHelpBtn').click()); await page.waitForTimeout(200);
+    { const hm = await T.modal(page); await M.dismiss(page); await page.waitForTimeout(150);
+      check('job page: the "?" help explains the estimate, waiting, the alert and quiet hours', hm && /How Materials Are Counted/.test(hm.title) && /estimate/.test(hm.msg) && /nothing taken off/.test(hm.msg) && /Shading/.test(hm.msg) && /15%/.test(hm.msg) && /\+ waiting/.test(hm.msg) && /80%/.test(hm.msg) && /8:55 PM to 6:00 AM/.test(hm.msg), hm); }
     // details: calc, orders, history
     await page.evaluate(() => document.querySelector('#pjMat_ms1 .pbm-head').click()); await page.waitForTimeout(200);
-    t = await page.evaluate(() => document.getElementById('pjMatD_ms1').innerText.replace(/\s+/g, ' '));
-    check('details: the calculation in numbers (3 × 0.5 ÷ 27, +15%, footage counted)', /3 ft wide × 0.5 ft thick ÷ 27 = 0\.0556 yd³ in place, \+ 15% compaction allowance\. Footage counted: 360 LF \(\+40 LF waiting\)/.test(t), t);
+    t = await page.evaluate(() => (document.querySelector('#pjMatD_ms1 details.pbm-math .pbm-calc') || document.getElementById('pjMatD_ms1')).textContent.replace(/\s+/g, ' ')); // r15.70: under the details' "Show math"
+    check('details › Show math: the calculation in numbers (3 × 0.5 ÷ 27, +15%, footage counted)', /3 ft wide × 0.5 ft thick ÷ 27 = 0\.0556 yd³ in place, \+ 15% compaction allowance\. Footage counted: 360 LF \(\+40 LF waiting\)/.test(t), t);
     await page.evaluate(() => document.querySelector('#pjMat_mp1 .pbm-head').click()); await page.waitForTimeout(200);
     await page.evaluate(() => [...document.querySelectorAll('#pjMatD_mp1 button')].find(b => b.textContent === 'Show History').click()); await page.waitForTimeout(500);
     t = await page.evaluate(() => document.getElementById('pjMatD_mp1').innerText.replace(/\s+/g, ' '));
-    check('details: orders listed, history shows server time, phone time, who, and alerts with who they went to', /400 LF · ordered .* · PO 7/.test(t) && /Added · .*\(server time\) · owner-a.test/.test(t) && /Phone time/.test(t) && /Alert at 80% .* Sent · to owner-a.test/.test(t), t.slice(0, 400));
+    check('details: orders listed, history shows server time, phone time, who, and alerts with who they went to', /400 LF · ordered .* · PO 7/.test(t) && /Added · \S.* · owner-a.test/.test(t) /* r15.70: no "(server time)" suffix */ && /Phone time/.test(t) && /Alert at 80% .* Sent · to owner-a.test/.test(t), t.slice(0, 400));
     // add from a preset
     await page.click('#pjMatAdd'); await page.waitForTimeout(200);
     const types = await page.evaluate(() => [...document.querySelectorAll('#pmf_category option')].map(o => o.textContent));
@@ -61,19 +68,24 @@ require('/home/claude/batch27/CONSOLE/tests/cx_shim.js')(M); // batch 27 CONSOLE
     const presets = await page.evaluate(() => [...document.querySelectorAll('#pmf_bedkind option')].map(o => o.textContent));
     check('r15.16: Bedding / Shading > Which kind: the four presets, then Other rock / sand / Other', JSON.stringify(presets) === JSON.stringify(['3/4" crushed rock', 'Pea gravel (1/4" rock)', 'Coarse sand (concrete sand)', 'Fine sand (mason sand)', 'Other rock', 'Other sand', 'Other']), presets);
         await page.evaluate(() => ((re) => { const c = document.getElementById('pmf_category'); if (c.value !== 'bedding') { c.value = 'bedding'; c.dispatchEvent(new Event('change')); } const s = document.getElementById('pmf_bedkind'); const o = [...s.options].find(x => re.test(x.textContent)); s.value = o.value; s.dispatchEvent(new Event('change')); })(/Pea gravel/)); await page.waitForTimeout(150);
-    let f = await page.evaluate(() => ({ name: pmf_name.value, cat: pmf_category.value === 'bedding' ? ({ 'p:rock34': 'bedding_rock', 'p:pea': 'bedding_rock', 'p:csand': 'bedding_sand', 'p:fsand': 'bedding_sand' }[pmf_bedkind.value] || pmf_bedkind.value.replace('c:', '')) : pmf_category.value, extra: pmf_extra_pct.value, dens: pmf_density_tpy.value, dl: pmf_density_tpy.parentNode.textContent, basis: document.querySelector('input[name="pmfBasis"]:checked').value, est: (document.getElementById('pmfEst') || {}).textContent || '' }));
-    check('preset pea gravel: name, Bedding: rock, allowance 15, yd³ by default with the density 1.4 kept (optional, for tickets in tons), the estimate note shown', f.name === 'Pea gravel (1/4" rock)' && f.cat === 'bedding_rock' && f.extra === '15' && f.basis === 'volume' && f.dens === '1.4' && /optional/.test(f.dl) && /tickets in tons/.test(f.dl) && /^Estimate from footage × trench width × bedding thickness/.test(f.est), f);
+    let f = await page.evaluate(() => ({ name: pmf_name.value, cat: pmf_category.value === 'bedding' ? ({ 'p:rock34': 'bedding_rock', 'p:pea': 'bedding_rock', 'p:csand': 'bedding_sand', 'p:fsand': 'bedding_sand' }[pmf_bedkind.value] || pmf_bedkind.value.replace('c:', '')) : pmf_category.value, extra: pmf_extra_pct.value, dens: pmf_density_tpy.value, dl: pmfForm.textContent, basis: document.querySelector('input[name="pmfBasis"]:checked').value, allow: (document.getElementById('pmfAllow') || {}).textContent || '', math: !!document.querySelector('#pmfMath summary') }));
+    // r15.70 (feat_matform): the form's estimate note is gone; its math (the compaction factor) sits under "Show math"
+    // r15.70 (feat_matform): the density box's "optional, for tickets in tons" and the presets line are gone (no help lines); "Verify the density with your supplier." stays
+    check('preset pea gravel: name, Bedding: rock, allowance 15, yd³ by default with the density 1.4 kept, "Verify the density with your supplier", the allowance math under Show math', f.name === 'Pea gravel (1/4" rock)' && f.cat === 'bedding_rock' && f.extra === '15' && f.basis === 'volume' && f.dens === '1.4' && /Verify the density with your supplier/.test(f.dl) && f.math && /In place × 1\.15 = to order/.test(f.allow), f);
     await page.check('input[name="pmfBasis"][value="weight"]'); await page.waitForTimeout(150);
-    f = await page.evaluate(() => ({ dens: pmf_density_tpy.value, help: pmf_density_tpy.parentNode.textContent }));
-    check('tons: density 1.4 filled from the preset, "Verify with your supplier" and all four preset values', f.dens === '1.4' && /Verify with your supplier/.test(f.help) && /1\.35.*1\.40.*1\.49.*1\.43/.test(f.help) /* r15.3.2: owner raised both sands Oct 21 */, f);
+    // the four preset densities, proven by picking each (the presets line left the form in r15.70)
+    { const d = []; for (const re of ['3\\/4', 'Coarse sand', 'Fine sand', 'Pea gravel']) { await page.evaluate((r) => { const s = document.getElementById('pmf_bedkind'); s.value = [...s.options].find(x => new RegExp(r).test(x.textContent)).value; s.dispatchEvent(new Event('change')); }, re); await page.waitForTimeout(150); d.push(await page.inputValue('#pmf_density_tpy')); }
+      f = await page.evaluate((all) => ({ dens: pmf_density_tpy.value, help: pmfForm.textContent, all }), d.join(' / ')); }
+    check('tons: density 1.4 filled from the preset, "Verify the density with your supplier" and all four preset values (1.35 / 1.485 / 1.431 / 1.4)', f.dens === '1.4' && /Verify the density with your supplier/.test(f.help) && f.all === '1.35 / 1.485 / 1.431 / 1.4' /* r15.3.2: owner raised both sands Oct 21 (110 / 106 lb/ft³) */, f);
     await page.fill('#pmf_name', '  '); await page.click('#pmfSave'); await page.waitForTimeout(200);
     check('no name: "Name the material." and nothing sent', /Name the material/.test(await page.evaluate(() => pmfErr.textContent)) && (await T.matLog(page, 'pb_mat_save')).length === 0);
     await page.fill('#pmf_name', 'Pea gravel (1/4" rock)'); await page.fill('#pmf_trench_width_ft', '2.5'); await page.fill('#pmf_bed_thick_ft', 'x'); await page.click('#pmfSave'); await page.waitForTimeout(200);
     check('not a number: says which field, nothing sent', /Bedding thickness: enter a number/.test(await page.evaluate(() => pmfErr.textContent)) && (await T.matLog(page, 'pb_mat_save')).length === 0);
     await page.fill('#pmf_bed_thick_ft', '0.5'); await page.fill('#pmf_alert_pct', '75'); await page.click('#pmfSave'); await page.waitForTimeout(400);
-    { const sh = await page.evaluate(() => [...document.querySelectorAll('#pbModalButtons button')].some(b => b.offsetParent && b.textContent === 'Share It')); // r15.4.3: a 2nd bedding on the same footage asks first
-      check('a 2nd bedding on the same footage asks first (Share It / Pick Its Own Item)', sh);
-      await page.evaluate(() => { const b = [...document.querySelectorAll('#pbModalButtons button')].find(x => x.textContent === 'Share It'); if (b) b.click(); }); await page.waitForTimeout(900); }
+    { // r15.70 (feat_matform): aggregates are picked on Run Setup, so a 2nd bedding on the same footage saves without the r15.4.3 "Same Footage" ask (that ask is for pipes)
+      const md = await T.modal(page);
+      check('r15.70: a 2nd aggregate on the same footage saves without asking (no "Same Footage" dialog)', !md || !/Same Footage/.test(md.title), md);
+      await page.waitForTimeout(700); }
     let sv = (await T.matLog(page, 'pb_mat_save')).pop();
     check('saved: job number, category, calculated, tons, density 1.4, allowance 15, alert 75, width / thickness, expect version 0', sv && sv.args.p_job_number === '24-101' && sv.args.p_material.category === 'bedding_rock' && sv.args.p_material.source === 'bedding_calc'
       && sv.args.p_material.basis === 'weight' && sv.args.p_material.density_tpy === '1.4' && sv.args.p_material.extra_pct === '15' && sv.args.p_material.alert_pct === '75' && sv.args.p_material.trench_width_ft === '2.5' && sv.args.p_expect_version === 0 && sv.args.p_expect_uid === 'acctA' && !!sv.args.p_phone_at, sv && sv.args);
@@ -88,7 +100,7 @@ require('/home/claude/batch27/CONSOLE/tests/cx_shim.js')(M); // batch 27 CONSOLE
     await page.evaluate((i) => [...document.querySelectorAll('#pjMatD_' + i + ' button')].find(x => x.textContent === 'Archive').click(), pg); await page.waitForTimeout(200);
     await T.click(page, '^Archive$'); await page.waitForTimeout(900);
     t = await T.matText(page);
-    check('pea gravel archived: the sand counts again (≈ 23)', /Fine sand \(mason sand\) Over expected Estimate ≈ 23/.test(t) && !/Split unknown/.test(t), t.slice(0, 600));
+    check('pea gravel archived: the sand counts again (≈ 23)', /Fine sand \(mason sand\)( All of what’s expected used)? Over expected Estimate ≈ 23/.test(t) && !/Split unknown|Shares footage/.test(t), t.slice(0, 600));
     // duplicate name
     await page.click('#pjMatAdd'); await page.waitForTimeout(150);
     await page.evaluate(() => localStorage.setItem('__matMode', 'dup'));

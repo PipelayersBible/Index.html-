@@ -38,7 +38,9 @@ const readPdf = (f) => f ? fs.readFileSync(f) : Buffer.alloc(0);
   // ---- a run with a note photo, a correction, and a damaged second photo ----
   const id = await L.lockRun(page, { dist: 100, stats: true });
   const idx = 5;
-  await page.evaluate((i) => document.querySelector('button[onclick="pbToggleNote(this, ' + i + ')"]').click(), idx); await page.waitForTimeout(150);
+  // r16.13: the Notes column is gone; a row's note opens from its distance (▾) menu, "Add note"
+  await page.evaluate((i) => { const e = window.__debugGetCurrentArchiveEntry(), r = e.intervalRows[i], k = r.pointId ? 'p:' + r.pointId : 'sta:' + (Number(r.stationFt) || 0).toFixed(2); const b = [...document.querySelectorAll('#resultsBody .pb-gsdots')].find(x => x.dataset.gsKey === k); pbGsRowMenu(b, i); }, idx); await page.waitForTimeout(200);
+  await page.click('#pbModalButtons button:has-text("Add note")'); await page.waitForTimeout(150);
   await (await page.$('#note' + idx + 'Photo')).setInputFiles(PH + 'p2_sandstone.jpg'); await page.waitForTimeout(900);
   await (await page.$('#note' + idx + 'Photo')).setInputFiles(PH + 'p5_water.jpg'); await page.waitForTimeout(900);
   await page.evaluate((i) => { const tr = document.querySelector('#note' + i + 'Photo').closest('tr'); tr.querySelector('textarea').value = 'rock at fifty'; window._s = pbSaveNote(tr.querySelector('button.pb-btn:not(.ghost)'), i); }, idx); await page.waitForTimeout(1200); await L.dismiss(page);
@@ -62,7 +64,9 @@ const readPdf = (f) => f ? fs.readFileSync(f) : Buffer.alloc(0);
   L.check('run: the printed page number points at the page that really holds Photo 1 (' + bodyPage + ' = ' + photoPage + ')', bodyPage === photoPage);
   const raw = readPdf(f1).toString('latin1');
   L.check('run: the photo labels and contents are real internal links (GoTo / Dest annotations)', (raw.match(/\/Subtype \/Link/g) || []).length >= 3 && /\/Dest \[/.test(raw));
-  L.check('run: stations print in the app\'s plus format (0+50.00) and numbers are right-aligned table cells', /0\+50\.00/.test(t1) && /1\+00\.00/.test(t1));
+  // r15.70 (feat_results2): the grade sheet's first column is "Dist." in feet (50.00, 100.00); a plus-format "Station" column is added only when the run carries plan stationing (runStations); the header still anchors 0+00.00 at Start
+  { const gs1 = t1.slice(t1.indexOf('Dist. Point'), t1.indexOf('Source: Stake'));
+    L.check('run: the grade sheet prints Dist. in feet (50.00 / 100.00 rows, no plus-format column without plan stations), the header anchors 0+00.00 at Start, and notes still say Sta 0+50.00', /^Dist\. Point BOP/.test(gs1) && /\n50\.00 /.test(gs1) && /\n100\.00 /.test(gs1) && !/\d\+\d\d\.\d\d/.test(gs1) && /\(0\+00\.00 at Start\)/.test(flat(t1)) && /Sta 0\+50\.00/.test(t1)); }
   L.check('run: the correction shows the original beside the corrected value, with its reason', /Run 1 distance\s+100\.0 ft\s+101\.5 ft\s+re-taped/.test(flat(t1)));
   L.check('run: provenance labels are printed per point, never over-claimed (S7)', /\bInvert\b/.test(t1) && /Calculated/.test(t1) && /Source: Stake \/ Invert = a point entered/.test(flat(t1)) && !/AI cutsheet/.test(t1));
   L.check('run: the time zone is stated', /America\/Denver/.test(t1) && /M[DS]T/.test(t1));

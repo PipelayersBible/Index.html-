@@ -9,7 +9,9 @@ const { L, fill, correctDist, entryState } = require('/home/claude/test/hunt/cor
   await page.evaluate(() => { for (const p of ['start', 'end']) document.querySelector('#' + p + 'ModeToggle button[data-val="stake"]').click(); }); await page.waitForTimeout(100);
   await fill(page, 'startStakeElev', '104.00'); await page.selectOption('#startCutFill', 'cut'); await fill(page, 'startCutFillVal', '4.00');
   await fill(page, 'endStakeElev', '103.50'); await page.selectOption('#endCutFill', 'cut'); await fill(page, 'endCutFillVal', '4.50');
-  await page.fill('#totalDist', '100'); await page.fill('#interval', '10'); await page.fill('#runWT', '0.05'); await page.selectOption('#runIdSel', '10'); await page.fill('#runTrenchWidth', '3');
+  await page.fill('#totalDist', '100'); await page.fill('#interval', '10'); await page.fill('#runWT', '0.05'); await page.selectOption('#runIdSel', '10');
+  await page.evaluate(() => { const d = document.getElementById('runBedRow'); if (d) d.open = true; }); // r15.94 (cleanup A, P5): trench width sits in the closed "Bedding, Shading & Materials" row
+  await page.fill('#runTrenchWidth', '3');
   await page.check('#saEnableToggle'); await page.fill('#saJobNumber', 'J-PS'); await page.selectOption('#statsType', 'PVC Sch 40');
   await page.waitForTimeout(200);
   await page.click('text=Review & Calculate'); await page.waitForTimeout(500);

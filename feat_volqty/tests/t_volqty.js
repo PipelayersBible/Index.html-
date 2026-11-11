@@ -64,21 +64,25 @@ const modal = (p) => p.evaluate(() => { const m = document.querySelector('.pb-mo
     const { ctx, page } = await setup(browser, {}); await ctx.addInitScript(MATMOCK); await page.reload(); await page.waitForTimeout(1500); await page.evaluate(() => pbGotoTab('home')); await page.waitForTimeout(1500);
     page.on('pageerror', e => errs.push(String(e)));
     await page.evaluate(() => localStorage.setItem('__mats', JSON.stringify([{ id: 'bed1', name: 'Bedding rock', category: 'bedding_rock', source: 'bedding_calc', basis: 'volume', unit: 'yd³', expected: 50, alert_pct: 80, trench_width_ft: 3, bed_thick_ft: 0.5, density_tpy: 1.4, extra_pct: 10, use_as: 'bedding', version: 2, archived: false, orders: [], uses: [], fig: { status: 'ok', ordered: 0, used: 0, waiting: 0 } }])));
-    const calc = async () => { await page.tap('#screen-volumeCalc button[onclick="pbCalcVolume()"]'); await page.waitForTimeout(300); };
+    // r15.95 (calclive, owner Nov 3): calculators answer as you type; the Calculate button is gone. Leaving the field (blur) settles the live answer,
+    // and a refused entry clears the answer and says why in the screen's live line (#volumeCalcLiveMsg)
+    const calc = async () => { await page.evaluate(() => { const a = document.activeElement; if (a && a !== document.body && a.blur) a.blur(); }); await page.waitForTimeout(400); };
+    const res = () => page.evaluate(() => { const r = document.getElementById('volumeResult'), m = document.getElementById('volumeCalcLiveMsg'); return ((r ? r.innerText : '') + ' ' + (m && !m.hidden ? m.innerText : '')).replace(/\s+/g, ' ').trim(); });
     // ---- Material Volume on its own ----
     await page.evaluate(() => pbOpenVolumeCalc()); await page.waitForTimeout(500);
-    check('Quantity field, starts at 1, above Calculate', (await val(page, '#volQty')) === '1' && await page.evaluate(() => { const q = document.getElementById('volQty'), b = document.querySelector('#screen-volumeCalc button[onclick="pbCalcVolume()"]'); return !!(q.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING); }));
+    check('Quantity field, starts at 1, after the shape fields and above the answer (r15.95: no Calculate button)', (await val(page, '#volQty')) === '1' && await page.evaluate(() => { const q = document.getElementById('volQty'), d = document.getElementById('volRectD'), r = document.getElementById('volumeResult'); return !!(q.compareDocumentPosition(r) & Node.DOCUMENT_POSITION_FOLLOWING) && !!(d.compareDocumentPosition(q) & Node.DOCUMENT_POSITION_FOLLOWING) && !document.querySelector('#screen-volumeCalc button[onclick="pbCalcVolume()"]'); }));
     await page.fill('#volRectL', '10'); await page.fill('#volRectW', '10'); await page.fill('#volRectD', '1'); await calc();
     check('quantity 1: 3.70 yd³, no "each"', /3\.70 yd³/.test(await txt(page, '#volumeResult')) && !/each/.test(await txt(page, '#volumeResult')));
-    await page.fill('#volQty', '6');
-    check('changing Quantity marks the answer out of date', await page.evaluate(() => window.pbCalcIsStale('volumeCalc')));
+    await page.fill('#volQty', '6'); await page.waitForTimeout(200);
+    // r15.95: the answer follows the Quantity as it is typed, so it is never left out of date
+    check('typing Quantity 6 re-answers at once (22.22 yd³), nothing left out of date (' + (await txt(page, '#volumeResult')).slice(0, 60) + ')', /22\.22 yd³/.test(await txt(page, '#volumeResult')) && !(await page.evaluate(() => window.pbCalcIsStale('volumeCalc'))));
     await calc();
     let t = await txt(page, '#volumeResult');
     check('quantity 6: 22.22 yd³, "Volume × 6", "6 × 3.70 yd³ each" (' + t.slice(0, 120) + ')', /Volume × 6/.test(t) && /22\.22 yd³/.test(t) && /6 × 3\.70 yd³ each/.test(t));
     await page.evaluate(() => document.querySelector('#volUnitToggle button[data-val="ft3"]').click()); await page.waitForTimeout(200);
     check('unit toggle keeps the quantity: 600.00 ft³', /600\.00 ft³/.test(await txt(page, '#volumeResult')));
     await page.evaluate(() => document.querySelector('#volUnitToggle button[data-val="yd3"]').click());
-    for (const bad of ['0', '2.5', '-3']) { await page.fill('#volQty', bad); await calc(); check('quantity ' + bad + ' is refused (' + await txt(page, '#volumeResult') + ')', /Quantity: a whole number, 1 or more/.test(await txt(page, '#volumeResult'))); }
+    for (const bad of ['0', '2.5', '-3']) { await page.fill('#volQty', bad); await calc(); check('quantity ' + bad + ' is refused: no answer, the live line says why (' + await res() + ')', /Quantity: a whole number, 1 or more/.test(await res()) && !/yd³/.test(await txt(page, '#volumeResult'))); }
     await page.fill('#volQty', ''); await calc();
     check('blank quantity counts as 1', /3\.70 yd³/.test(await txt(page, '#volumeResult')) && !/each/.test(await txt(page, '#volumeResult')));
     await page.evaluate(() => document.querySelector('#volShapeToggle button[data-val="cyl"]').click()); await page.waitForTimeout(200);
@@ -111,7 +115,7 @@ const modal = (p) => p.evaluate(() => { const m = document.querySelector('.pb-mo
     check('Structure Bedding has Quantity (structures this size), 1', (await val(page, '#beddingQty')) === '1' && /Quantity \(structures this size\)/.test(await txt(page, '#screen-beddingCalc')));
     await page.evaluate(() => { const b = document.querySelector('#beddingRefToggle button[data-val="inv"]'); if (b) b.click(); });
     await page.fill('#beddingInv', '100'); await page.fill('#beddingDist', '1'); await page.fill('#beddingThk', '0.5'); await page.fill('#beddingPadL', '6'); await page.fill('#beddingPadW', '9'); await page.fill('#beddingQty', '3');
-    await page.tap('#screen-beddingCalc button[onclick="pbCalcBedding()"]'); await page.waitForTimeout(300);
+    await calc();
     t = await txt(page, '#beddingVolBox');
     check('pad 6 × 9 × 0.5 × 3 structures = 3.00 yd³ (' + t + ')', /3\.00 yd³/.test(t) && /× 3 structures/.test(t));
     await page.tap('#ciUseBtn_sb'); await page.waitForTimeout(800);
@@ -119,7 +123,7 @@ const modal = (p) => p.evaluate(() => { const m = document.querySelector('.pb-mo
     check('3 yd³ + 10% = 3.3, new total 53.3 (' + await txt(page, '#pmfAddTot') + ')', /New total: 53\.3/.test(await txt(page, '#pmfAddTot') || ''));
     await page.evaluate(() => window.pbMatFormCancel());
     await page.evaluate(() => window.pbOpenBeddingCalc()); await page.waitForTimeout(400);
-    await page.fill('#beddingQty', '1.5'); await page.tap('#screen-beddingCalc button[onclick="pbCalcBedding()"]'); await page.waitForTimeout(300);
+    await page.fill('#beddingQty', '1.5'); await calc();
     check('a bad structure quantity says so', /Quantity: a whole number, 1 or more/.test(await txt(page, '#beddingResult')));
     check('no page errors (' + errs.slice(0, 3).join(' | ') + ')', errs.length === 0);
     await ctx.close();

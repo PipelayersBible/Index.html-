@@ -42,8 +42,12 @@ const day = () => { const d = new Date(); return d.getFullYear() + '-' + String(
     check('left out: the refused entry (50 h), the claim still waiting for approval (99 h), another job (7 h)', !P.concat(E).some(p => p.hours === 50 || p.hours === 99 || p.hours === 7), names);
     check('totals: equipment 17 h (3 + 6 + 8); laborer 2 h (typed man-hours are listed, not in L and O, as batch 28’s)', C && C.totals.equipment_h === 17 && C.totals.laborer_h === 2, JSON.stringify(C && C.totals));
     check('the source line says how they are counted', C && /entered for your pipelayers’ runs .* listed once per run/.test(C.source), C && C.source);
-    const scr = await page.evaluate(() => (document.getElementById('drCrew') || {}).textContent || '');
-    check('on screen: "Equipment 17 h" and both pipelayers’ runs listed', /Equipment 17 h/.test(scr) && /Crew man-hours on Wes Hall’s run/.test(scr) && /Walt Ruiz’s run/.test(scr), scr.slice(0, 500));
+    // r15.65 / r16.01: the screen's Crew Today and Equipment on Site cards list people and pieces (the Crew log's Joe and Dozer #2);
+    // the hours entered on pipelayers' runs are each card's "On runs:" line (dxCrewRuns / dxEqRuns), once per run. The 17 h total stays in the snapshot (PDF), checked above.
+    const scrC = await page.evaluate(() => (document.getElementById('dxCrewRuns') || {}).textContent || ''), scrE = await page.evaluate(() => (document.getElementById('dxEqRuns') || {}).textContent || '');
+    const heads = await page.evaluate(() => ({ crew: (document.getElementById('dpCrewN') || {}).textContent || '', eq: (document.getElementById('dpEquipN') || {}).textContent || '' }));
+    check('on screen: Crew Today "On runs:" lists both pipelayers’ runs (Wes 16 h, Walt 24 h), once each', /^On runs: /.test(scrC) && /Crew man-hours on Wes Hall’s run \(entered by you on their run\) 16 h/.test(scrC) && /Crew man-hours on Walt Ruiz’s run \(a run you claimed\) 24 h/.test(scrC) && (scrC.match(/Wes Hall/g) || []).length === 1 && (scrC.match(/Walt Ruiz/g) || []).length === 1, scrC.slice(0, 500));
+    check('on screen: Equipment on Site "On runs:" lists both runs’ equipment hours (6 h, 8 h), once each; the card head counts the piece from the Crew log (1 piece · 3 h)', /Equipment hours on Wes Hall’s run \(entered by you on their run\) 6 h/.test(scrE) && /Equipment hours on Walt Ruiz’s run \(a run you claimed\) 8 h/.test(scrE) && (scrE.match(/Wes Hall/g) || []).length === 1 && /1 piece · 3 h/.test(heads.eq), scrE.slice(0, 500) + ' :: ' + JSON.stringify(heads));
     C = await crewOf();
     check('built again (re-opened): still once each, equipment still 17 h (never added twice)', C && C.people.filter(p => /Wes Hall|Walt Ruiz/.test(p.name)).length === 2 && C.totals.equipment_h === 17, JSON.stringify(C && C.totals));
     check('no JS errors', page._errors.length === 0, page._errors.join(' | '));

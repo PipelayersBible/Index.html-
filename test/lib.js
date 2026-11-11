@@ -1,4 +1,6 @@
 let chromium; try { ({ chromium } = require('playwright')); } catch (e) { ({ chromium } = require('/home/claude/.npm-global/lib/node_modules/playwright')); }
+// r15.65+: a point starts on Survey Stake; these tests enter invert elevations, so switch Start and End to Invert Elevation first
+const elevMode = (page) => page.evaluate(() => ['start', 'end'].forEach((p) => { const b = document.querySelector('#' + p + 'ModeToggle button[data-val="elev"]'); if (b && !b.classList.contains('active')) b.click(); }));
 const ORIGIN = ('http://localhost:' + (process.env.PB_TEST_PORT || 8765) + '/app.html');
 // A failed check prints *** FAIL *** AND sets a failing exit code, so automation can't miss it.
 const check = (l, c) => { console.log((c ? 'OK  ' : '*** FAIL ***') + ' - ' + l); if (!c) process.exitCode = 1; };
@@ -15,6 +17,7 @@ async function newPage(browser, uid, ctx) {
 async function lockRun(page, { dist = 100, stats = false } = {}) {
   await page.evaluate(() => pbOpenNewRun()); await page.waitForTimeout(300);
   await page.click('#rodToggle button[data-val="lenker"]');
+  await elevMode(page);
   await page.fill('#startElev','100.00'); await page.fill('#endElev','99.00'); await page.fill('#totalDist', String(dist)); await page.fill('#interval','10');
   await page.fill('#runWT','0.3'); await page.selectOption('#runIdSel','10');
   if (stats) { await page.check('#saEnableToggle'); await page.fill('#saJobNumber','JOB-AUD'); await page.selectOption('#statsType','PVC Sch 40'); }

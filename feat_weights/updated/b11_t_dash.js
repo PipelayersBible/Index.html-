@@ -11,9 +11,11 @@ require('/home/claude/batch27/CONSOLE/tests/cx_shim.js')(M); // batch 27 CONSOLE
   // ---------- crew account: no way in ----------
   { const { ctx, page } = await T.setup(browser, { extra: { __psrv: T.seedServer() } });
     try {
-      await page.evaluate(() => pbOpenArchive()); await page.waitForTimeout(400);
-      const r = await page.evaluate(() => ({ dash: getComputedStyle(archiveProdDashBtn).display, mine: getComputedStyle(archiveProdMineBtn).display }));
-      check('crew: Company production row hidden; My production row shown', r.dash === 'none' && r.mine !== 'none');
+      // r15.76 (office dashboards on Home): the Company production door is a link on the company account's Home (#homeCxDash); the
+      // Records row (#archiveProdDashBtn) is kept hidden for the code that sets it. My production is a Home tile (nav95).
+      await page.evaluate(() => pbGotoTab('home')); await page.waitForTimeout(600);
+      const r = await page.evaluate(() => { const v = (id) => { const e = document.getElementById(id); if (!e) return false; const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0 && getComputedStyle(e).display !== 'none'; }; return { dash: v('homeCxDash'), mine: v('homeProdMine'), rec: getComputedStyle(document.getElementById('archiveProdDashBtn')).display }; });
+      check('crew: no Company production door on Home (nor the Records row); the My production tile is shown', !r.dash && r.rec === 'none' && r.mine, r);
       await page.evaluate(() => pbOpenProdDashboard()); await page.waitForTimeout(500);
       const md = await T.modal(page);
       check('crew: opening Company production by any route is refused with a plain reason', md && /Only your company account/.test(md.msg) && (await T.screen(page)) !== 'screen-prodDashboard');
@@ -37,9 +39,10 @@ require('/home/claude/batch27/CONSOLE/tests/cx_shim.js')(M); // batch 27 CONSOLE
   // ---------- company account: empty ----------
   { const { ctx, page } = await T.setup(browser, { manager: true });
     try {
-      await page.evaluate(() => pbOpenArchive()); await page.waitForTimeout(300);
-      check('company account: the Company production row is shown', await page.evaluate(() => getComputedStyle(archiveProdDashBtn).display !== 'none'));
-      await page.click('#archiveProdDashBtn'); await page.waitForTimeout(900);
+      await page.evaluate(() => pbGotoTab('home')); await page.waitForTimeout(600);
+      // r15.76: the company account's Home has the "Company production" link (its Records row is in the hidden compat block)
+      check('company account: the Company production door is shown on Home', await page.evaluate(() => { const e = document.getElementById('homeCxDash'), b = e && e.getBoundingClientRect(); return !!b && b.width > 0 && b.height > 0 && /Company production/.test(e.textContent); }));
+      await page.click('#homeCxDash'); await page.waitForTimeout(900);
       const e = await page.evaluate(() => ({ scr: document.querySelector('.pb-screen.active').id, tab: (document.querySelector('#pbTabBar .pb-tab[aria-current="page"]') || {}).dataset.tab, empty: (document.getElementById('pdEmpty') || {}).textContent || '' }));
       check('empty: says no production yet, and that a job appears on its own (zero setup)', e.scr === 'screen-prodDashboard' && e.tab === 'reports' && /No production yet/.test(e.empty) && /shows up here on its own/.test(e.empty));
     } finally { await ctx.close(); }

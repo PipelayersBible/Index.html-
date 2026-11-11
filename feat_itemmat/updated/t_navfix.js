@@ -79,7 +79,8 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
     await page.waitForTimeout(2000);
     const pi = await page.evaluate(() => [...document.querySelectorAll('#ppRows input[id^=ppName]')].findIndex(i => /Pipe Installed/.test(i.value)));
     const pv = await page.inputValue('#ppPlanned' + pi);
-    check('Pipe Installed Planned filled in from the pipe material Expected: 3000 (' + pv + ')', pv === '3000' && /follows the pipe materials/.test(await txt(page, '#ppRow' + pi)));
+    // feat_planfill (owner, Oct 28, pre-r15.65): nothing writes a number into Planned; a blank LF item follows the pipe materials on the server and the help line says what blank uses
+    check('Pipe Installed Planned left blank, help says blank uses the pipe material Expected: 3,000 LF (' + pv + ')', pv === '' && /Blank uses the pipe materials’ Expected: 3,000 LF/.test(await txt(page, '#ppRow' + pi)));
     check('no page errors (' + errs.slice(0, 3).join(' | ') + ')', errs.length === 0);
     await ctx.close();
   } catch (e) { console.log('SCRIPT ERROR', e); }

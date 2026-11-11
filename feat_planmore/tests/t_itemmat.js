@@ -50,6 +50,12 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
   if (fn === 'pb_mat_save') { window.__rpcLog.push({ fn, args: JSON.parse(JSON.stringify(args)) }); { const L = JSON.parse(localStorage.getItem('__mats') || '[]'); L.push(Object.assign({ id: 'n' + L.length, version: 1, unit: 'LF', fig: { status: 'ok', used: 0, ordered: 0, waiting: 0 }, orders: [], uses: [] }, args.p_material)); localStorage.setItem('__mats', JSON.stringify(L)); } return { data: { ok: true, material: Object.assign({ id: 'm' + Date.now(), version: 1, unit: 'yd³' }, args.p_material) }, error: null }; }
   if (fn === 'pb_mat_tickets') return { data: { lines: [] }, error: null };
   if (fn === 'pb_mat_job_settings') return { data: { settings: localStorage.getItem('__noTrench') ? null : { trench_width_ft: 3, bed_thick_ft: 0.5, shade_thick_ft: 1, pipe_od_in: 8.625, version: 1 } }, error: null };
+  if (fn === 'pb_prod_plan_set') { // feat_planfill (Oct 28): the phone sends blank + planned_auto; the server's fill_planned (sql 15) fills an LF item from its pipe materials' Expected
+    const r = await o(fn, args); if (!r || !r.data || !r.data.plan) return r;
+    const mats = JSON.parse(localStorage.getItem('__mats') || '[]'), sum = (k) => mats.filter(m => !m.archived && m.source === 'pipe_footage' && (m.footage_cat || 'pipe') === k && Number(m.expected) > 0 && !(Number(m.each_ft) > 0)).reduce((a, m) => a + Number(m.expected), 0);
+    r.data.plan.categories.forEach(c => { if (c.planned_auto === true && c.planned == null && /^\s*(lf|ft|feet)?\s*$/i.test(String(c.unit || '')) && sum(c.planned_from || c.key) > 0) c.planned = sum(c.planned_from || c.key); });
+    const srv = JSON.parse(localStorage.getItem('__psrv')), co = localStorage.getItem('__company') || 'c1', key = co + '|' + String(args.p_job_number || '').trim().toLowerCase().slice(0, 60); if (srv.plans[key]) { srv.plans[key].plan = r.data.plan; localStorage.setItem('__psrv', JSON.stringify(srv)); }
+    return r; }
   return o(fn, args); }; };
 (async () => {
   const browser = await M.chromium.launch();
@@ -98,15 +104,17 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
     await page.evaluate(() => window.pbProdPlanEdit()); await page.waitForTimeout(1500);
     const idx = async (n) => page.evaluate((re) => [...document.querySelectorAll('#ppRows input[id^=ppName]')].findIndex(i => new RegExp(re).test(i.value)), n);
     const pi = await idx('^Pipe'), ei = await idx('^Excavation'), di = await idx('^Demo'), si = await idx('^Structures');
-    check('Pipe Installed: box checked, Planned 400 read-only (' + await page.inputValue('#ppPlanned' + pi) + ')', await page.isChecked('#ppAuto' + pi) && (await page.inputValue('#ppPlanned' + pi)) === '400' && await page.evaluate((i) => document.getElementById('ppPlanned' + i).readOnly, pi));
-    check('Excavation: box unchecked, Planned 3000 editable', !(await page.isChecked('#ppAuto' + ei)) && (await page.inputValue('#ppPlanned' + ei)) === '3000' && !(await page.evaluate((i) => document.getElementById('ppPlanned' + i).readOnly, ei)));
-    check('Structures (EA): no box', !(await page.$('#ppAuto' + si)));
+    // feat_planfill (owner, Oct 28, pre-r15.65): the "Use the pipe length" box is gone; Planned is always typed. An item that follows
+    // the materials shows a blank, editable Planned and a help line with the pipe materials' Expected; a typed number is the user's own.
+    const help = (i) => page.evaluate((i) => { const h = document.getElementById('ppPlanHelp' + i); return h && h.style.display !== 'none' ? h.textContent : ''; }, i);
+    check('Pipe Installed (follows the materials): Planned blank and editable, help "Blank uses the pipe materials’ Expected: 400 LF" (' + await help(pi) + ')', (await page.inputValue('#ppPlanned' + pi)) === '' && !(await page.evaluate((i) => document.getElementById('ppPlanned' + i).readOnly, pi)) && /^Blank uses the pipe materials’ Expected: 400 LF$/.test(await help(pi)));
+    check('Excavation (typed): Planned 3000 editable, no help line', (await page.inputValue('#ppPlanned' + ei)) === '3000' && !(await page.evaluate((i) => document.getElementById('ppPlanned' + i).readOnly, ei)) && (await help(ei)) === '');
+    check('no "Use the pipe length" box on any row; Structures (EA) has no help line', (await page.evaluate(() => document.querySelectorAll('#ppRows [id^=ppAuto]').length)) === 0 && (await help(si)) === '');
     check('Alert at starts at 80', (await page.inputValue('#ppAlert' + di)) === '80');
-    await page.check('#ppAuto' + ei); await page.waitForTimeout(400);
-    check('check it: Excavation Planned = the pipe length 400, read-only (' + await txt(page, '#ppRow' + ei) + ')', (await page.inputValue('#ppPlanned' + ei)) === '400' && await page.evaluate((i) => document.getElementById('ppPlanned' + i).readOnly, ei) && /Use the pipe length \(400 LF from Pipe Installed\)/.test(await txt(page, '#ppRow' + ei)));
-    await page.uncheck('#ppAuto' + ei); await page.waitForTimeout(400);
-    await page.fill('#ppPlanned' + ei, '3000');
-    check('uncheck: type your own (3000)', (await page.inputValue('#ppPlanned' + ei)) === '3000' && /Planned is your own number/.test(await txt(page, '#ppRow' + ei)));
+    await page.fill('#ppPlanned' + pi, '450'); await page.waitForTimeout(400);
+    check('type a number on Pipe Installed: it is your own, the help line goes', (await page.inputValue('#ppPlanned' + pi)) === '450' && (await help(pi)) === '');
+    await page.fill('#ppPlanned' + pi, ''); await page.waitForTimeout(400);
+    check('clear it again: blank follows the materials, the help line is back', (await help(pi)) === 'Blank uses the pipe materials’ Expected: 400 LF');
     await page.screenshot({ path: SHOTS + 'plan_box.png', fullPage: false });
     await page.fill('#ppAlert' + di, '5'); await page.click('#ppSaveBtn'); await page.waitForTimeout(800);
     check('Alert at 5 is refused (' + await txt(page, '#ppEditor') .then(t => (t.match(/Alert at is[^.]*\./) || [''])[0]) + ')', !!(await page.$('#ppSaveBtn')) && /Alert at is a whole number from 10 to 100/.test(await txt(page, '#ppEditor')));
@@ -115,10 +123,11 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
     await page.click('#ppSaveBtn'); await page.waitForTimeout(1500);
     const a = await page.evaluate(() => (window.__rpcLog.filter(x => x.fn === 'pb_prod_plan_set').pop() || {}).args);
     const cat = (k) => a && a.p_plan.categories.find(c => c.key === k);
-    check('saved: pipe box on (' + JSON.stringify(cat('pipe')) + ')', cat('pipe') && cat('pipe').planned_auto === true && cat('pipe').planned === 400);
-    check('saved: excavation box off, 3000 (' + JSON.stringify(cat('excavation')) + ')', cat('excavation') && cat('excavation').planned_auto === false && cat('excavation').planned === 3000);
-    check('saved: demo alert 90, structures alert 80, no box on EA', cat('demo').alert_pct === 90 && cat('structures').alert_pct === 80 && !('planned_auto' in cat('structures')));
+    check('saved: pipe keeps following (blank planned, planned_auto true; the server fills it) (' + JSON.stringify(cat('pipe')) + ')', cat('pipe') && cat('pipe').planned_auto === true && cat('pipe').planned == null); // feat_planfill
+    check('saved: excavation typed, 3000, planned_auto false (' + JSON.stringify(cat('excavation')) + ')', cat('excavation') && cat('excavation').planned_auto === false && cat('excavation').planned === 3000);
+    check('saved: demo alert 90, structures alert 80, no planned_auto on EA', cat('demo').alert_pct === 90 && cat('structures').alert_pct === 80 && !('planned_auto' in cat('structures')));
     R = await rowsTxt();
+    check('after save: Pipe Installed still 360 / 400 LF (the server filled it from the materials) (' + R.find(x => x.startsWith('Pipe')) + ')', /360 \/ 400 LF/.test(R.find(x => x.startsWith('Pipe')) || ''));
     check('after save: Demo at 80% is no longer at its 90% alert', !/Reached \d+% of planned/.test(R.find(x => x.startsWith('Demo')) || ''));
     // material form: Overview item for a hand-counted material
     await page.tap('#pjCxTab_materials'); await page.waitForTimeout(800);

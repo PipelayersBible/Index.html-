@@ -3,7 +3,7 @@
 //  C4 material chip prints the real share, never the alert threshold
 //  C1 Save Plan carries the required inspections (and the Overview row keeps them)
 //  C5 "Work without a run" panel only on the Production tab
-//  C6 foreman tile is "Runs need production"; C7/C9 manager gets one pulse; company Home hides the Current job card
+//  C6 foreman tile is "Run reports to approve" (r15.38); C7 manager-foreman sees crew + company pulse once each (r15.48); C9 company Home hides the Current job card
 const C = require('./clib.js'); const { M, check } = C;
 (async () => {
   const browser = await M.chromium.launch();
@@ -17,7 +17,8 @@ const C = require('./clib.js'); const { M, check } = C;
       await page.evaluate(() => pbCxTab('waiting')); await page.waitForTimeout(400);
       const hero = await page.evaluate(() => [...document.querySelectorAll('#pjCxHero .pbx-flag')].map(f => f.textContent.trim()));
       const badge = await C.txt(page, '#pjCxTab_waiting'), sum = await C.txt(page, '#pjCxWaitSum');
-      check('C3 job page agrees with Home: 2 waiting (hero, badge, summary)', hero.some(f => /2 waiting on foremen/.test(f)) && /Waiting 2/.test(badge || '') && /2 waiting:/.test(sum || ''), JSON.stringify([hero, badge, sum]));
+      // r15.94: the summary line is now "2 waiting on foremen or you" (explanation sentence cut)
+      check('C3 job page agrees with Home: 2 waiting (hero, badge, summary)', hero.some(f => /2 waiting on foremen/.test(f)) && /Waiting 2/.test(badge || '') && /2 waiting on foremen or you/.test(sum || ''), JSON.stringify([hero, badge, sum]));
       check('C3 nothing says 3 waiting', !hero.some(f => /3 waiting/.test(f)) && !/3/.test(badge || '') && !/3 waiting/.test(sum || ''));
       check('C11 waiting note names the pipelayer', /Nudge the pipelayer or the assigned foreman/.test((await C.txt(page, '#pjCxWaitNote')) || ''));
       // C5 panel per tab
@@ -27,7 +28,8 @@ const C = require('./clib.js'); const { M, check } = C;
       // C10 equipment note
       await page.evaluate(() => pbCxTab('equipment')); await page.waitForTimeout(400);
       const eq = await C.screenText(page);
-      check('C10 equipment note names where the hours come from', /hours foremen enter for their pipelayers’ runs \(My crew now\) and the office enters on run reports/.test(eq) && !/Enter Production\)\./.test(eq));
+      // r15.94: the note is one short line, "From run and daily reports, counted once." (daily reports carry equipment hours since r15.42)
+      check('C10 equipment note names where the hours come from', /From run and daily reports, counted once\./.test(eq) && !/Enter Production\)\./.test(eq) && !/hours foremen enter/.test(eq), eq.split('\n').filter(l => /reports/.test(l)).join(' | '));
       // C4 material chip (job Overview rows)
       await page.evaluate(() => pbCxTab('overview')); await page.waitForTimeout(600);
       const ov = await page.evaluate(() => [...document.querySelectorAll('#pjCxHero .pbx-matrow')].map(r => r.innerText.replace(/\s+/g, ' ').trim()));
@@ -55,14 +57,18 @@ const C = require('./clib.js'); const { M, check } = C;
     { const { ctx, page } = await C.setup(browser, { who: 'foreman' });
       await page.evaluate(() => pbGotoTab('home')); await page.waitForTimeout(3500);
       const tile = await C.text(page, 'homeFmWait');
-      check('C6 foreman tile is "Runs need production" (not "Waiting on you · Nothing waiting")', /Runs need production/.test(tile || '') && !/Waiting on you|Nothing waiting/.test(tile || ''), tile);
+      // r15.38 (feat_runflow P2/P3): the foreman's one door is "Run reports to approve"; the seed has 2 (Wes's held run, Walt's edit)
+      check('C6 foreman tile is "2 Run reports to approve" (not "Waiting on you · Nothing waiting")', /^2 Run reports to approve From your crew$/.test(tile || '') && !/Waiting on you|Nothing waiting/.test(tile || ''), tile);
       check('no page errors (foreman)', !page._errors.length, page._errors.join(' | '));
       await ctx.close(); }
     { const { ctx, page } = await C.setup(browser, { who: 'manager' });
       await page.evaluate(() => pbGotoTab('home')); await page.waitForTimeout(3500);
       const t = await C.screenText(page); const n = (re) => (t.match(re) || []).length;
-      check('C7 manager sees one pulse: "active runs" once, "active permits" once', n(/active runs?/g) === 1 && n(/active permits?/g) === 1, 'runs x' + n(/active runs?/g) + ' permits x' + n(/active permits?/g));
-      check('C7 the company pulse stays, the crew pulse is hidden', !(await C.shown(page, 'homeFmPulse')) && await C.shown(page, 'homeCxLive'));
+      // r15.48 access: a foreman who is also a manager keeps his crew pulse ("My crew now", his pipelayers) beside the
+      // company pulse ("Live now", the whole company); each is said once and the crew pulse's "On my crew" tile stays
+      // hidden because the company Home's own "My crew" row says it (CSS: html.pb-cx #homeFmPulse ... #homeFmCrew)
+      check('C7 manager sees each pulse once: "My crew now" once, "Live now" once', n(/My crew now/g) === 1 && n(/Live now/g) === 1 && n(/active runs?/g) === 2 && n(/active permits?/g) === 2, 'crew x' + n(/My crew now/g) + ' live x' + n(/Live now/g) + ' runs x' + n(/active runs?/g) + ' permits x' + n(/active permits?/g));
+      check('C7 the company pulse stays, the crew pulse stays (r15.48) and its "On my crew" tile is hidden', await C.shown(page, 'homeFmPulse') && await C.shown(page, 'homeCxLive') && !(await C.shown(page, 'homeFmCrew')) && n(/On my crew/g) === 0);
       check('no page errors (manager)', !page._errors.length, page._errors.join(' | '));
       await ctx.close(); }
   } catch (e) { check('script ran', false, e && e.stack); }

@@ -25,7 +25,7 @@ const NEWJOB = () => {
   };
 };
 async function setup(browser, opts) {
-  const ctx = await browser.newContext({ viewport: { width: opts.width || 390, height: opts.height || 844 }, isMobile: true, hasTouch: true });
+  const ctx = await browser.newContext({ viewport: { width: opts.width || 390, height: opts.height || 844 }, isMobile: true, hasTouch: true, timezoneId: 'America/Los_Angeles' }); // r15.71: the owner's phone is on Pacific time (pbCoTzPhone needs an Area/City zone; the sandbox browser is UTC)
   await ctx.route(/supabase-js/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body: '' }));
   await ctx.route(/fonts\.googleapis|cdn\.jsdelivr/, r => r.abort());
   await ctx.addInitScript(M.mockInit); await ctx.addInitScript(T.RPC); await ctx.addInitScript(NEWJOB);
@@ -49,7 +49,7 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
   if (fn === 'pb_mat_job') return { data: { job_key: String(args.p_job_number).toLowerCase(), job_number: args.p_job_number, materials: JSON.parse(localStorage.getItem('__mats') || '[]'), pipe_ft: { counted: 0, waiting: 0 }, server_at: new Date().toISOString() }, error: null };
   if (fn === 'pb_mat_save') { window.__rpcLog.push({ fn, args: JSON.parse(JSON.stringify(args)) }); { const L = JSON.parse(localStorage.getItem('__mats') || '[]'); L.push(Object.assign({ id: 'n' + L.length, version: 1, unit: 'LF', fig: { status: 'ok', used: 0, ordered: 0, waiting: 0 }, orders: [], uses: [] }, args.p_material)); localStorage.setItem('__mats', JSON.stringify(L)); } return { data: { ok: true, material: Object.assign({ id: 'm' + Date.now(), version: 1, unit: 'yd³' }, args.p_material) }, error: null }; }
   if (fn === 'pb_mat_mute') { window.__rpcLog.push({ fn, args: JSON.parse(JSON.stringify(args)) }); const L = JSON.parse(localStorage.getItem('__mats') || '[]'); const m = L.find(x => x.id === args.p_material_id); if (m) m.muted = !!args.p_muted; localStorage.setItem('__mats', JSON.stringify(L)); return { data: { ok: true, material: m }, error: null }; }
-  if (fn === 'pb_company_settings_get') { window.__rpcLog.push({ fn, args: JSON.parse(JSON.stringify(args)) }); const S = JSON.parse(localStorage.getItem('__cosettings') || '{"tz":"America/Chicago","digest_time":"06:00","owner_copies":true,"tz_set":false}'); return { data: Object.assign({ ok: true, company_id: 'c1', is_owner: localStorage.getItem('__notOwner') !== '1', server_at: new Date().toISOString() }, S), error: null }; }
+  if (fn === 'pb_company_settings_get') { window.__rpcLog.push({ fn, args: JSON.parse(JSON.stringify(args)) }); const S = JSON.parse(localStorage.getItem('__cosettings') || '{"tz":"America/Chicago","digest_time":"06:00","owner_copies":true,"tz_set":false}'); return { data: Object.assign({ ok: true, company_id: 'c1', is_owner: localStorage.getItem('__notOwner') !== '1', has_pm: false, can_edit_tz: localStorage.getItem('__notOwner') === '1', from_phone: !S.tz_set, server_at: new Date().toISOString() }, S), error: null }; } // r15.71 (feat_server): until a zone is picked the server follows the owner's phone (from_phone); has_pm / can_edit_tz decide who sees the Home card
   if (fn === 'pb_pm_settings_set') { window.__rpcLog.push({ fn, args: JSON.parse(JSON.stringify(args)) }); const S = JSON.parse(localStorage.getItem('__cosettings') || '{"tz":"America/Chicago","digest_time":"06:00","owner_copies":true,"tz_set":false}'); if (args.p_tz) S.tz = args.p_tz; if (args.p_digest_time) S.digest_time = args.p_digest_time; if (args.p_owner_copies !== null && args.p_owner_copies !== undefined) S.owner_copies = args.p_owner_copies; S.tz_set = true; localStorage.setItem('__cosettings', JSON.stringify(S)); return { data: { ok: true, tz: S.tz, digest_time: S.digest_time + ':00', owner_copies: S.owner_copies }, error: null }; }
   if (fn === 'pb_mat_tickets') return { data: { lines: [] }, error: null };
   if (fn === 'pb_mat_job_settings') return { data: { settings: localStorage.getItem('__noTrench') ? null : { trench_width_ft: 3, bed_thick_ft: 0.5, shade_thick_ft: 1, pipe_od_in: 8.625, version: 1 } }, error: null };
@@ -58,20 +58,29 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
   const browser = await M.chromium.launch({ args: [] });
   const errs = [];
   try {
-    // the owner's phone is on Pacific time (the test browser's zone)
-    const ctx0 = await browser.newContext({ timezoneId: 'America/Los_Angeles', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-    await ctx0.close();
+    // the owner's phone is on Pacific time (setup pins the browser's zone)
     const { ctx, page } = await setup(browser, {}); await ctx.addInitScript(MATMOCK); await page.reload(); await page.waitForTimeout(3500);
     page.on('pageerror', e => errs.push(String(e)));
     const set = async () => page.evaluate(() => (window.__rpcLog.filter(x => x.fn === 'pb_pm_settings_set').pop() || {}).args);
     const phone = await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone);
-    const s = await set();
-    check('first load, nothing saved: the phone sets the company time zone (' + phone + ') with nothing else touched', s && s.p_tz === phone && s.p_digest_time === null && s.p_owner_copies === null && s.p_expect_uid === 'acctA');
+    // r15.71 (feat_server): the app no longer saves the phone's zone by itself; the server follows the owner's phone until
+    // someone picks one, and Home shows a "Set the company time zone" card with a one-tap "Use <phone zone>" button.
+    check('first load, nothing saved: nothing is set without a tap (r15.71) (' + phone + ')', phone === 'America/Los_Angeles' && !(await set()));
     await page.evaluate(() => pbGoto('settings')); await page.waitForTimeout(800);
     const row = await txt(page, '#settingsCoTimeRow');
     check('Settings › Company: the Time zone row shows it and the email time (' + row + ')', /Time zone/.test(row || '') && /morning email 6:00 AM/.test(row || '') && /Edit/.test(row || ''));
-    check('says it came from the phone', /Set from this phone/.test(await txt(page, '#settingsCoTime') || ''));
+    check('says it came from the phone (the server\'s from_phone while no zone is picked)', /Set from this phone/.test(await txt(page, '#settingsCoTime') || ''));
     await page.screenshot({ path: SHOTS + 'cotz_row.png', fullPage: false });
+    await page.evaluate(() => pbGoto('home')); await page.waitForTimeout(800);
+    const card = await txt(page, '#homeAttention_coTz');
+    check('Home: "Set the company time zone" card offers the phone\'s zone (' + card + ')', /Set the company time zone/.test(card || '') && /Use Pacific time/.test(card || '') && await vis(page, '#homeCoTzUse'));
+    await page.click('#homeCoTzUse'); await page.waitForTimeout(800);
+    const s = await set();
+    check('one tap: the phone sets the company time zone (' + phone + ') with nothing else touched', s && s.p_tz === phone && s.p_digest_time === '06:00' && s.p_owner_copies === null && s.p_expect_uid === 'acctA');
+    check('card gone once it is set', !(await vis(page, '#homeAttention_coTz')));
+    await page.evaluate(() => pbGoto('settings')); await page.waitForTimeout(800);
+    const row2 = await txt(page, '#settingsCoTimeRow');
+    check('Settings row shows Pacific time, no longer "from this phone" (' + row2 + ')', /Pacific time · morning email 6:00 AM/.test(row2 || '') && !/Set from this phone/.test(await txt(page, '#settingsCoTime') || ''));
     await page.click('#settingsCoTimeRow'); await page.waitForTimeout(300);
     check('Edit: time zone, email time, copies; focus on the zone', await page.evaluate(() => document.activeElement && document.activeElement.id === 'settingsCoTz') && (await val(page, '#settingsCoTz')) === phone && (await val(page, '#settingsCoTime2')) === '06:00' && await page.isChecked('#settingsCoCopies'));
     await page.selectOption('#settingsCoTz', 'America/Denver'); await page.selectOption('#settingsCoTime2', '05:30'); await page.uncheck('#settingsCoCopies');

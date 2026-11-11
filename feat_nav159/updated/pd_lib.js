@@ -320,8 +320,11 @@ const layout = (p) => p.evaluate(() => {
 });
 // a locked run with a job number and foreman quantities saved, on the Results screen
 async function runWithProduction(page, { job = '24-101', exc = '120', pipe = '80', by = 'Frank' } = {}) {
-  await M.lockRun(page);
+  // r15.65 (runflow): a company member's run with no job number asks "Which Job Is This Run On?" at Lock; answer it with the job, typed, as a person would
+  await page.evaluate((j) => { window.__pdJobAnswer = setInterval(() => { const t = document.getElementById('pbModalTitle'); if (!t || t.textContent !== 'Which Job Is This Run On?') return; const i = document.getElementById('rfJobType'), b = document.getElementById('rfJobTypeGo'); if (i && b) { i.value = j; b.click(); } }, 200); }, job);
+  try { await M.lockRun(page); } finally { await page.evaluate(() => clearInterval(window.__pdJobAnswer)).catch(() => {}); }
   await page.evaluate((j) => { const e = window.__debugGetCurrentArchiveEntry(); e.jobNumber = j; return window.__debugSaveRunArchive(); }, job); await page.waitForTimeout(300);
+  await page.evaluate(() => { const c = document.getElementById('resForemanCard'); if (c) c.open = true; }); // r15.94 (cleanup A, P4): the production form sits in a closed "Production & Crew" card
   await page.fill('#fpForeman', by); if (exc !== null) await page.fill('#fpExcavated', exc); if (pipe !== null) await page.fill('#fpPipeInstalled', pipe);
   await page.evaluate(() => pbSaveForemanData()); await page.waitForTimeout(600); await M.dismiss(page);
 }

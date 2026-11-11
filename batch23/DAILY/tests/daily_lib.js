@@ -98,6 +98,7 @@ const MOCK = () => {
     }
     if (fn === 'pb_daily_list') return { data: { ok: true, reports: s.reports.filter(r => r.job_number.toLowerCase() === String(args.p_job_number).toLowerCase()).map(r => ({ id: r.id, job_number: r.job_number, work_date: r.work_date, version: r.version, supersedes: r.supersedes, amend_reason: r.amend_reason, foreman: r.foreman, mine: isForeman(), signed_name: r.signed_name, signed_at: r.signed_at, signed_tz: r.signed_tz, received_at: r.received_at, snapshot_sha256: r.snapshot_sha256, sha_matches: true, latest: !s.reports.some(x => x.supersedes === r.id) })).reverse() }, error: null };
     if (fn === 'pb_daily_get') { const r = s.reports.find(x => x.id === args.p_report_id); return { data: r ? Object.assign({ ok: true }, r) : { ok: false, code: 'pb:not_found' }, error: null }; }
+    if (fn === 'pb_daily_attach_day') return { data: { ok: true, runs: [], permits: [], runs_total: 0, permits_total: 0 }, error: null }; /* r15.54/r15.65: the crew's run reports and permits for the day (none here) */
     if (fn === 'pb_daily_weather_get') { const w = s.weather[args.p_job_number + '|' + args.p_work_date]; return { data: { ok: true, company_id: CO, can_set_location: isOwner(), weather: w || null, location: s.location }, error: null }; }
     return { data: null, error: { message: 'not mocked' } };
   };
@@ -107,13 +108,13 @@ const MOCK = () => {
     if (localStorage.getItem('__dlyNoServer') === '1') return { data: null, error: { name: 'FunctionsHttpError', message: 'Function not found' } };
     const s = srvGet(), mode = window.__wx || 'auto';
     if (mode === 'down') return { data: { ok: false, code: 'pb:nws_down', message: 'The National Weather Service isn’t answering right now. Try again later.' }, error: null };
-    const newLoc = !!(body.address || (typeof body.lat === 'number'));
-    if (newLoc && !isOwner()) return { data: { ok: false, code: 'pb:location_managers_only', message: 'Only the company account, a manager or a PM can set a job’s location. Ask the office to set it.' }, error: null };
+    const newLoc = !!(body.address || body.place || (typeof body.lat === 'number'));
+    if (newLoc && !isOwner() && !body.place) return { data: { ok: false, code: 'pb:location_managers_only', message: 'Only the company account, a manager or a PM can set a job’s location. Ask the office to set it.' }, error: null };
     const key = body.job_number + '|' + body.work_date, last = (s.wxAt || {})[key];
     if (!newLoc && last && Date.now() - last < 3600000) { const w0 = s.weather[key]; return w0 ? { data: { ok: true, cached: true, weather: w0, next_at: new Date(last + 3600000).toISOString(), location: s.location }, error: null } : { data: { ok: false, code: 'pb:try_later', message: 'Looked up less than an hour ago.' }, error: null }; }
     if (!s.location && !newLoc) return { data: { ok: false, code: isOwner() ? 'pb:need_location' : 'pb:need_location_office', message: 'This job has no location yet. Ask the office to set it.' }, error: null };
     s.wxAt = s.wxAt || {}; s.wxAt[key] = Date.now();
-    if (body.address) s.location = { source: 'geocoded', address: body.address, set_at: new Date().toISOString() }; else if (typeof body.lat === 'number') s.location = { source: body.source, lat: body.lat, lon: body.lon, set_at: new Date().toISOString() };
+    if (body.address || body.place) s.location = { source: 'geocoded', address: body.address || body.place, set_at: new Date().toISOString() }; /* r15.65 (feat_dailyx/wxfix): a foreman sets the job's City, State as `place` */ else if (typeof body.lat === 'number') s.location = { source: body.source, lat: body.lat, lon: body.lon, set_at: new Date().toISOString() };
     const w = { station: 'KMDW', complete: false, retrieved_at: new Date().toISOString(), data: { station: 'KMDW', station_name: 'Chicago Midway', tz: 'America/Chicago', work_date: body.work_date, obs_count: 9, first_obs: new Date(Date.now() - 8 * 3600000).toISOString(), last_obs: new Date(Date.now() - 600000).toISOString(),
       high_f: 64.4, low_f: 46.4, high_c: 18, low_c: 8, precip_in: 0.3, precip_hours_reported: 4, precip_hours_in_day: 24, wind_max_mph: 14, gust_max_mph: 25, conditions: [{ text: 'Light Rain', n: 3 }, { text: 'Cloudy', n: 2 }], complete: false, location_source: s.location.source, location: s.location } };
     s.weather[body.job_number + '|' + body.work_date] = w; srvSet(s);

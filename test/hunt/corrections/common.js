@@ -1,9 +1,12 @@
 const L = require('/home/claude/test/lib.js');
+// r15.65+: a point starts on Survey Stake; these tests enter invert elevations, so switch Start and End to Invert Elevation first
+const elevMode = (page) => page.evaluate(() => ['start', 'end'].forEach((p) => { const b = document.querySelector('#' + p + 'ModeToggle button[data-val="elev"]'); if (b && !b.classList.contains('active')) b.click(); }));
 const fill = (page, id, v) => page.evaluate(([id, v]) => { const el = document.getElementById(id); el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); }, [id, v]);
 // Lenker run, Start 100 / End 99 elev mode, optional stake hub, stats on.
 async function lockStakeHubRun(page, { dist = 100, hubStation = 50, stakeElev = '105.00', cut = '5.50', stats = true, trench = null } = {}) {
   await page.evaluate(() => pbOpenNewRun()); await page.waitForTimeout(300);
   await page.click('#rodToggle button[data-val="lenker"]');
+  await elevMode(page);
   await page.fill('#startElev', '100.00'); await page.fill('#endElev', '99.00'); await page.fill('#totalDist', String(dist)); await page.fill('#interval', '10');
   await page.fill('#runWT', '0.3'); await page.selectOption('#runIdSel', '10');
   if (trench) await page.fill('#runTrenchWidth', trench);

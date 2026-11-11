@@ -90,26 +90,31 @@ const endRun = (page) => page.evaluate(() => { const e = window.__debugGetCurren
       await ctx.addInitScript(MOCK); await page.reload(); await sleep(page, 2000); await M.dismiss(page);
       page.on('pageerror', e => errs.push(String(e)));
       await page.evaluate(() => pbGotoTab('home')); await sleep(page, 1000);
-      await L.waitFor(page, () => !!document.getElementById('homeWork_rrReview'), 15000);
-      const c = await page.evaluate(() => (document.getElementById('homeWork_rrReview') || {}).innerText || '');
-      check('foreman Home: "Run reports to approve", 2 from his crew (' + c.replace(/\s+/g, ' ') + ')', /Run reports to approve/.test(c) && /2 run reports from your crew/.test(c));
+      // r15.38 (run report workflow P2): the foreman's Home tile "Run reports to approve" (#homeFmWait) is the one door; the Current Work row only shows a report the office sent back
+      await L.waitFor(page, () => /^2\s+Run reports to approve/.test(((document.getElementById('homeFmWait') || {}).innerText || '').replace(/\s+/g, ' ').trim()), 15000);
+      const c = await page.evaluate(() => (document.getElementById('homeFmWait') || {}).innerText || '');
+      check('foreman Home: "Run reports to approve", 2 from his crew (' + c.replace(/\s+/g, ' ') + ')', /^2\s+Run reports to approve\s+From your crew/.test(c.replace(/\s+/g, ' ').trim()));
       await page.screenshot({ path: '/home/claude/feat_pmruns/shots/review_home.png' });
-      await page.click('#homeWork_rrReview'); await sleep(page, 1500);
+      await page.click('#homeFmWait'); await sleep(page, 1500);
       const row = await page.evaluate(() => (document.getElementById('cxRev0') || {}).innerText || '');
       check('the list: who, sent, Not reviewed (' + row.replace(/\s+/g, ' ') + ')', /Mike Smith/.test(row) && /Not approved/.test(row));
       await page.click('#cxRev0'); await sleep(page, 1500);
       await L.waitFor(page, () => !!document.getElementById('cxRunLiveQ0'), 15000);
-      check('a report opens with the production form, Approve Report and Save or Share PDF (no separate Reviewed)', await page.evaluate(() => !document.getElementById('cxRunReviewed') && !!document.getElementById('cxRunApproveBtn') && !!document.getElementById('cxRunLiveQ0') && !!document.getElementById('cxRunPdf') && (document.getElementById('cxRunText') || {}).textContent.length > 50));
-      check('production is on top, the PDF folded under "View the run report (PDF)"', await page.evaluate(() => { const a = document.getElementById('cxRunApprove'), f = document.getElementById('cxRunPdfFold'); return !!a && !!f && !f.open && (a.compareDocumentPosition(f) & Node.DOCUMENT_POSITION_FOLLOWING) > 0 && !document.querySelector('#cxRunPdfView canvas'); }));
+      // r15.37 (feat_pdfview) + r16.08 cleanup: one "View Run Report" button opens the in-app PDF viewer screen (Download / Share / Text version live there); no PDF fold or text on the review itself
+      check('a report opens with the production form, Approve Report and one View Run Report (no separate Reviewed)', await page.evaluate(() => !document.getElementById('cxRunReviewed') && !!document.getElementById('cxRunApproveBtn') && !!document.getElementById('cxRunLiveQ0') && document.querySelectorAll('#cxRunView').length === 1 && !document.getElementById('cxRunPdfFold') && !document.getElementById('cxRunText')));
+      check('production is on top, View Run Report below it, no PDF drawn on the review', await page.evaluate(() => { const a = document.getElementById('cxRunApprove'), f = document.getElementById('cxRunReport'); return !!a && !!f && (a.compareDocumentPosition(f) & Node.DOCUMENT_POSITION_FOLLOWING) > 0 && !document.querySelector('#screen-cxList canvas'); }));
       await page.screenshot({ path: '/home/claude/feat_pmruns/shots/approve_top.png' });
-      await page.click('#cxRunPdfFold summary'); await sleep(page, 300);
-      await L.waitFor(page, () => !!document.getElementById('cxRunPdfView').dataset.pages, 30000);
-      const pv = await page.evaluate(() => { const c = document.querySelectorAll('#cxRunPdfView canvas'), b = document.getElementById('cxRunPdfView'); return { n: c.length, pages: b.dataset.pages, w: c[0] ? c[0].getBoundingClientRect().width : 0, ink: (() => { try { const x = c[0].getContext('2d').getImageData(0, 0, c[0].width, Math.min(400, c[0].height)).data; let dark = 0; for (let i = 0; i < x.length; i += 16) if (x[i] < 128) dark++; return dark; } catch (e) { return -1; } })() }; });
-      check('the report shows as its PDF in the app: every page drawn, page fits the screen, has ink (' + JSON.stringify(pv) + ')', pv.n >= 1 && String(pv.n) === pv.pages && pv.w > 250 && pv.w < 400 && pv.ink > 50);
-      await page.click('#cxPdfZoomIn'); await sleep(page, 2500);
-      const zw = await page.evaluate(() => { const c = document.querySelector('#cxRunPdfView canvas'); return c ? c.getBoundingClientRect().width : 0; });
-      check('zoom + draws it bigger (' + Math.round(zw) + ' px)', zw > pv.w * 1.3);
-      await page.click('#cxPdfZoomOut'); await sleep(page, 800);
+      await page.click('#cxRunView'); await sleep(page, 300);
+      await L.waitFor(page, () => !!document.querySelector('#screen-pdfView.active') && document.querySelectorAll('#pdfvPages canvas').length >= 1, 30000);
+      const pv = await page.evaluate(() => { const c = document.querySelectorAll('#pdfvPages canvas'), p = document.querySelectorAll('#pdfvPages .pb-pdfv-page'); return { n: c.length, pages: p.length, w: c[0] ? c[0].getBoundingClientRect().width : 0, ink: (() => { try { const x = c[0].getContext('2d').getImageData(0, 0, c[0].width, Math.min(400, c[0].height)).data; let dark = 0; for (let i = 0; i < x.length; i += 16) if (x[i] < 128) dark++; return dark; } catch (e) { return -1; } })() }; });
+      check('View Run Report: the report shows as its PDF in the app (viewer screen): the page drawn, fits the screen, has ink (' + JSON.stringify(pv) + ')', pv.n >= 1 && pv.pages >= 1 && pv.w > 250 && pv.w < 400 && pv.ink > 50);
+      await page.click('#pdfvZoom'); await sleep(page, 2500); // r15.37: zoom cycles 100 / 150 / 200 %
+      const zw = await page.evaluate(() => { const c = document.querySelector('#pdfvPages canvas'); return c ? c.getBoundingClientRect().width : 0; });
+      check('zoom draws it bigger (' + Math.round(zw) + ' px)', zw > pv.w * 1.3);
+      await page.click('#pdfvTextBtn'); await sleep(page, 400);
+      check('Text version: the report text, a tap away', await page.evaluate(() => getComputedStyle(document.getElementById('pdfvText')).display !== 'none' && document.getElementById('pdfvText').textContent.length > 50));
+      await page.click('#pdfvBack'); await sleep(page, 800);
+      check('Back from the viewer returns to the review', await page.evaluate(() => (document.querySelector('.pb-screen.active') || {}).id === 'screen-cxList' && !!document.getElementById('cxRunApproveBtn')));
       await page.screenshot({ path: '/home/claude/feat_pmruns/shots/review_detail.png' });
       await page.click('#cxRunApproveBtn'); await sleep(page, 1200);
       const mm = await page.evaluate(() => { const ov = document.getElementById('pbModalOverlay'); if (!ov || getComputedStyle(ov).display === 'none') return null; return { msg: document.getElementById('pbModalMessage').textContent, buttons: [...document.querySelectorAll('#pbModalButtons button')].map(b => b.textContent) }; });
@@ -119,13 +124,14 @@ const endRun = (page) => page.evaluate(() => { const e = window.__debugGetCurren
       await page.fill('#cxRunLiveQ' + k, '140'); await sleep(page, 200);
       await page.screenshot({ path: '/home/claude/feat_pmruns/shots/approve_form.png' });
       await page.click('#cxRunApproveBtn'); await sleep(page, 3000);
-      check('Approve Report: production saved for that run and the report approved, in one tap', await page.evaluate(() => window.__rpcLog.some(x => x.fn === 'pb_prod_run_report_review') && Object.values(window.__pbLvDebug().runs || {}).some(r => (r.items || []).some(i => i.key === 'pipe' && i.qty === 140)) && /Approved/.test((document.getElementById('cxRunSent') || {}).textContent || '') && !document.getElementById('cxRunApproveBtn')));
+      check('Approve Report: production saved for that run and the report approved, in one tap', await page.evaluate(() => window.__rpcLog.some(x => x.fn === 'pb_prod_run_report_review') && Object.values(window.__pbLvDebug().runs || {}).some(r => (r.items || []).some(i => i.key === 'pipe' && i.qty === 140)) && /Approved/.test((document.getElementById('cxRunApproved') || {}).textContent || '') && !document.getElementById('cxRunApproveBtn'))); // r16.08 cleanup: "Approved" said once, in the note under the production (not again in the sent line)
       await page.screenshot({ path: '/home/claude/feat_pmruns/shots/approved.png' });
-      await page.click('#cxRunBack'); await sleep(page, 1200);
+      await page.click('#cxListBack'); await sleep(page, 1200);
       check('back to the list, that report now Approved', /Approved/.test(await page.evaluate(() => [...document.querySelectorAll('[id^="cxRev"]')].map(e => e.innerText).join(' | '))));
       await page.evaluate(() => pbGotoTab('home')); await sleep(page, 1500);
-      const c2 = await page.evaluate(() => (document.getElementById('homeWork_rrReview') || {}).innerText || '');
-      check('Home: 1 left to review (' + c2.replace(/\s+/g, ' ') + ')', /1 run report from your crew/.test(c2));
+      await L.waitFor(page, () => /^1\s+Run reports to approve/.test(((document.getElementById('homeFmWait') || {}).innerText || '').replace(/\s+/g, ' ').trim()), 10000);
+      const c2 = await page.evaluate(() => (document.getElementById('homeFmWait') || {}).innerText || '');
+      check('Home: 1 left to review (' + c2.replace(/\s+/g, ' ') + ')', /^1\s+Run reports to approve\s+From your crew/.test(c2.replace(/\s+/g, ' ').trim()));
       await ctx.close();
     }
     check('no page errors (' + errs.slice(0, 3).join(' | ') + ')', errs.length === 0);

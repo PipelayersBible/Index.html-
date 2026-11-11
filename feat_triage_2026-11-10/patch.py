@@ -9,6 +9,7 @@ usage: python3 patch.py LIVE_INDEX OUT_HTML
 - Time left is the average of the last three sheets, not since the start; time the phone spends asleep or in the
   background doesn't count (that is what made "131 min left" for 8 sheets).
 - The wait line says "Preparing sheet p of n" while drawing and "Sending sheet p of n" while uploading.
+- The material row chip wraps at 320 px / large text instead of making the company job page scroll sideways.
 """
 import sys
 s = open(sys.argv[1], encoding='utf-8').read()
@@ -151,6 +152,12 @@ rep('''  const pbPlansProg = { total: 0, done: 0, start: 0 };
   }
   window.pbPlansEta = pbPlansEta; window.pbPlansProg = pbPlansProg; window.pbPlansProgDone = pbPlansProgDone;''')
 
-# 4. build
+# 4. r16.22: the material row chip ("All of what’s expected used", r16.08 wording) is a no-wrap pill; at 320 px with large
+#    text it ran past the screen edge and the company job page scrolled sideways (suite b18_t_m4 "320 XL"). The chip may
+#    wrap now, and the chip row never widens the page.
+rep("  #pbApp .pbm-chip { min-height: 24px; font-size: 12.5px; padding: 2px 8px 2px 6px; margin: 2px 4px 2px 0; }",
+    "  #pbApp .pbm-chip { min-height: 24px; font-size: 12.5px; padding: 2px 8px 2px 6px; margin: 2px 4px 2px 0; white-space: normal; max-width: 100%; text-align: left; } /* r16.22: wraps at 320 px / large text instead of a sideways scroll */\n  #pbApp .pbm-chips { min-width: 0; max-width: 100%; }")
+
+# 5. build
 rep("PB_APP_BUILD = 'r16.21 · 2026-11-10'", "PB_APP_BUILD = 'r16.22 · 2026-11-10'")
 open(sys.argv[2], 'w', encoding='utf-8').write(s); print('ok')

@@ -23,7 +23,7 @@ const sink = async (page, fn, name) => { await page.evaluate(() => { window.__pd
   await page.fill('#endElev', '99.10'); await page.click('text=Review & Calculate'); await page.waitForTimeout(400);
   await page.click('button[onclick="pbLock()"]'); await page.waitForTimeout(500);
   let m = await H.modal(page);
-  L.check('control: Lock after a changed end invert asks Locked Once Already (Cancel / Keep Both / Replace)', !!m && /Locked Once Already/.test(m.title) && m.btns.join('|') === 'Cancel|Keep Both|Replace', m && JSON.stringify(m));
+  L.check('control: Lock after a changed end invert asks Locked Once Already (Cancel / Replace; r16.12: no Keep Both, it left two open runs)', !!m && /Locked Once Already/.test(m.title) && m.btns.join('|') === 'Cancel|Replace' && /To lay another run, end this one first/.test(m.msg), m && JSON.stringify(m));
   await H.clickBtn(page, /^Replace$/); await page.waitForSelector('#screen-results.active'); await page.waitForTimeout(900); await L.dismiss(page);
   const id2 = await page.evaluate(() => window.__debugGetCurrentArchiveEntry().id);
   const arch = await page.evaluate(() => window.__debugGetArchive().filter(e => e.kind === 'run').map(e => ({ id: e.id, end: e.endElev !== undefined ? e.endElev : (e.calc && e.calc.endElev), dist: e.distance, keys: Object.keys(e).filter(k => /elev/i.test(k)).join(',') })));

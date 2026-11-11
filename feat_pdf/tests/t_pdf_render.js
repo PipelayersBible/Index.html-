@@ -31,7 +31,8 @@ const pages = (f) => pdfText(f).split('\f').filter(p => p.trim());
     L.check('run: the grade-sheet legend is printed', /Source: Stake \/ Invert = a point entered on the run form/.test(t));
     const opens = P.filter(p => /^\s*Source: Stake \/ Invert = a point entered/m.test(p) && !/Grade sheet: interval and layout rows/.test(p.split('Source: Stake')[0]));
     // F2: on any page where the legend is the first thing after the header, its lead line is right above it
-    const bad = opens.filter(p => { const i = p.indexOf('Source: Stake'); const above = p.slice(0, i); return !/Grade sheet legend \(the table is on the previous page\)/.test(above) && !/\d\+\d\d\.\d\d/.test(above); });
+    // r15.70: grade-sheet rows print the distance in feet ("  250.00"), no longer the plus format; rows continued above the legend count as its lead
+    const bad = opens.filter(p => { const i = p.indexOf('Source: Stake'); const above = p.slice(0, i); return !/Grade sheet legend \(the table is on the previous page\)/.test(above) && !/\d\+\d\d\.\d\d/.test(above) && !/^\s*Dist\.\s+Point[\s\S]*^\s*\d+\.\d\d\s/m.test(above); });
     L.check('F2: a legend that opens a page has its lead line ("Grade sheet legend (the table is on the previous page)") above it [' + opens.length + ' such page(s)]', bad.length === 0);
     L.check('F6: every footer keeps "Generated <date>" (' + P.length + ' pages)', P.every(p => /Generated [A-Z][a-z]{2} \d{1,2}, 20\d\d/.test(p)));
     L.check('no replaced-characters note on any page', !/could not be printed in this PDF/.test(t));

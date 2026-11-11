@@ -29,6 +29,10 @@ const SH = '/home/claude/night/daily/shots/';
     console.log('intro paragraph chars=' + intro);
     // --- draft: typed, then the app is killed (full reload) ---
     await page.fill('#drNarrative', 'Draft before the app was killed'); await page.dispatchEvent('#drNarrative', 'input');
+    // r16.00: the report opens on Narrative; the name and the pad are on "Hours & Sign" (Next: Hours & Sign)
+    check('r16.00 the report opens on the Narrative step with a Next button', await T.shown(page, 'dxNextWrap') && !(await T.shown(page, 'drName')));
+    await page.click('#dxNextBtn'); await page.waitForTimeout(500);
+    check('Next: Hours & Sign shows the name field', await T.shown(page, 'drName'));
     await page.fill('#drName', 'Frank Ortiz'); await page.dispatchEvent('#drName', 'input'); await page.waitForTimeout(1500);
     await page.reload(); await page.waitForTimeout(2500); await M.dismiss(page);
     await page.evaluate(() => pbOpenDailyReport()); await page.waitForTimeout(3500);
@@ -57,7 +61,9 @@ const SH = '/home/claude/night/daily/shots/';
     // --- sign offline ---
     await page.evaluate(() => pbDlySigClear());
     await page.evaluate(() => { window.__offline = true; });
-    await page.fill('#drNarrative', 'Laid 60 ft, gas conflict at 0+40.'); await page.dispatchEvent('#drNarrative', 'input'); await page.fill('#drName', 'Frank Ortiz');
+    await page.fill('#drNarrative', 'Laid 60 ft, gas conflict at 0+40.'); await page.dispatchEvent('#drNarrative', 'input');
+    await page.click('#dxNextBtn'); await page.waitForTimeout(500); /* r16.00: Next: Hours & Sign */
+    await page.fill('#drName', 'Frank Ortiz');
     await page.click('#drSignBtn'); await page.waitForTimeout(2500);
     let st = await T.text(page, 'drSignStatus'); console.log('sign status (1): ' + st);
     if (!(await T.modal(page))) { if (await page.$('#drWxConfirm')) await page.check('#drWxConfirm'); await page.click('#drSignBtn'); await page.waitForTimeout(2500); }

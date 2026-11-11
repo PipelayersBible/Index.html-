@@ -26,24 +26,30 @@ require('/home/claude/batch27/CONSOLE/tests/cx_shim.js')(M); // batch 27 CONSOLE
     check('settings shown: "pipe OD 8.625 in (ID 8 + 2 × wall 0.3125)"', /Trench width 2 ft · bedding 0\.5 ft under the pipe · shading 1 ft over the pipe · pipe OD 8\.625 in \(ID 8 \+ 2 × wall 0\.3125\)/.test(t));
     await page.click('#pjSetHist'); await page.waitForTimeout(500);
     const hist = await page.evaluate(() => (document.getElementById('pjSetHistList') || {}).innerText || '');
-    check('Settings History (review S9): version 1 with server time, who, phone time and the values', /Version 1 · .*\(server time\) · owner-a\.test/.test(hist) && /Phone time/.test(hist) && /Width 2 ft · bedding 0\.5 ft · shading 1 ft · ID 8 in · wall 0\.3125 in · OD —/.test(hist.replace(/\s+/g, ' ')), hist);
+    // r15.70: the "(server time)" suffix left the history lines (fewer explanation words); the server time is still the first time shown, the phone time is labelled
+    check('Settings History (review S9): version 1 with server time, who, phone time and the values', /Version 1 · \S.* · owner-a\.test/.test(hist) && /Phone time/.test(hist) && /Width 2 ft · bedding 0\.5 ft · shading 1 ft · ID 8 in · wall 0\.3125 in · OD —/.test(hist.replace(/\s+/g, ' ')), hist);
     await page.click('#pjSetHist'); await page.waitForTimeout(200);
         // a shading material with no values of its own (job settings), allowance 0 for the hand check
     await page.click('#pjMatAdd'); await page.waitForTimeout(150);
     await page.evaluate(() => ((re) => { const c = document.getElementById('pmf_category'); if (c.value !== 'bedding') { c.value = 'bedding'; c.dispatchEvent(new Event('change')); } const s = document.getElementById('pmf_bedkind'); const o = [...s.options].find(x => re.test(x.textContent)); s.value = o.value; s.dispatchEvent(new Event('change')); })(/Coarse sand/)); await page.waitForTimeout(150);
-    await page.check('input[name="pmfUse"][value="shading"]'); await page.waitForTimeout(150);
-    const f = await page.evaluate(() => ({ sh: !!document.getElementById('pmf_shade_thick_ft'), bt: !!document.getElementById('pmf_bed_thick_ft'), est: pmfEst.textContent }));
-    check('shading form: a "Shading over the pipe" box instead of bedding thickness, and the shading estimate note', f.sh && !f.bt && /^Estimate from footage × \(trench width × \(pipe OD \+ shading thickness\) − the pipe’s own area\)\. Actual use varies with field conditions/.test(f.est), f);
+    // r15.70 (feat_matform): "Used as" is a folded <details id="pmfUseD"> with Bedding / Shading boxes (a new aggregate is both); the form's estimate note moved under Show math, the card keeps it
+    const useAs = async (bed, shade) => { await page.evaluate(() => { const d = document.getElementById('pmfUseD'); if (d && !d.open) d.open = true; }); await page.waitForTimeout(150);
+      if ((await page.isChecked('#pmf_use_bed')) !== bed) await page.click('#pmf_use_bed'); await page.waitForTimeout(150);
+      if ((await page.isChecked('#pmf_use_shade')) !== shade) await page.click('#pmf_use_shade'); await page.waitForTimeout(200); };
+    await useAs(false, true);
+    const f = await page.evaluate(() => ({ sh: !!document.getElementById('pmf_shade_thick_ft'), bt: !!document.getElementById('pmf_bed_thick_ft'), use: document.querySelector('#pmfUseD summary').textContent.trim(), lbl: (document.querySelector('label[for="pmf_shade_thick_ft"]') || {}).textContent }));
+    check('shading form: a "Shading thickness" box instead of bedding thickness, "Used as: Shading only"', f.sh && !f.bt && /Shading thickness/.test(f.lbl) && /Used as: Shading only/.test(f.use), f);
     await page.fill('#pmf_extra_pct', '0'); await page.click('#pmfSave'); await page.waitForTimeout(900);
     const sv = (await T.matLog(page, 'pb_mat_save')).pop();
     check('saved as shading, blank width / thickness (the job’s), allowance 0', sv.args.p_material.use_as === 'shading' && sv.args.p_material.shade_thick_ft === '' && sv.args.p_material.trench_width_ft === '' && sv.args.p_material.extra_pct === '0', sv.args.p_material);
     const id = await page.evaluate(() => (window.__debugMat().jobs['24-101'].data.materials.find(m => m.use_as === 'shading') || {}).id);
     const row = await page.evaluate((i) => document.getElementById('pjMat_' + i).innerText.replace(/\s+/g, ' '), id);
     // 360 ft × 3.03176 / 27 = 40.42 yd³
-    check('HAND CHECK on screen: 360 ft × 3.0318 ft³/ft ÷ 27 ≈ 40.4 yd³, an Estimate, labelled shading', /Estimate ≈ 40\.4 \/ — \/ — yd³/.test(row) && /Shading estimate from Pipe Installed footage/.test(row) /* r15.5.1 short row text */, row);
+    // r15.70 (feat_matform): the row's "Shading estimate from … footage" line is gone (no help lines); the math sits under the details' "Show math", where "over the pipe" says it is shading
+    check('HAND CHECK on screen: 360 ft × 3.0318 ft³/ft ÷ 27 ≈ 40.4 yd³, an Estimate', /Estimate ≈ 40\.4 \/ — \/ — yd³/.test(row), row);
     await page.evaluate((i) => document.querySelector('#pjMat_' + i + ' .pbm-head').click(), id); await page.waitForTimeout(200);
-    const d = await page.evaluate((i) => document.getElementById('pjMatD_' + i).innerText.replace(/\s+/g, ' '), id);
-    check('details: 2 ft wide × (0.7188 ft OD [8.625 in, ID + 2 × wall] + 1 ft over the pipe) − 0.4057 ft² of pipe = 3.0318 ft³ ÷ 27 = 0.1123 yd³ (job settings)',
+    const d = await page.evaluate((i) => { const D = document.getElementById('pjMatD_' + i), c = D.querySelector('details.pbm-math .pbm-calc'); return (c ? c.textContent : D.innerText).replace(/\s+/g, ' '); }, id);
+    check('details › Show math: 2 ft wide × (0.7188 ft OD [8.625 in, ID + 2 × wall] + 1 ft over the pipe) − 0.4057 ft² of pipe = 3.0318 ft³ ÷ 27 = 0.1123 yd³ (job settings), labelled shading',
       /Per foot of pipe: 2 ft wide × \(0\.7188 ft OD \[8\.625 in, ID \+ 2 × wall\] \+ 1 ft over the pipe\) − 0\.4057 ft² of pipe = 3\.0318 ft³ ÷ 27 = 0\.1123 yd³ in place \(job settings\)/.test(d), d);
     // no OD: "Needs pipe OD"
     await page.click('#pjSetEdit'); await page.waitForTimeout(150);
@@ -58,10 +64,13 @@ require('/home/claude/batch27/CONSOLE/tests/cx_shim.js')(M); // batch 27 CONSOLE
     // bedding still under the pipe: 2 × 0.5 ÷ 27 per ft, nothing taken off
     await page.click('#pjMatAdd'); await page.waitForTimeout(150);
     await page.evaluate(() => ((re) => { const c = document.getElementById('pmf_category'); if (c.value !== 'bedding') { c.value = 'bedding'; c.dispatchEvent(new Event('change')); } const s = document.getElementById('pmf_bedkind'); const o = [...s.options].find(x => re.test(x.textContent)); s.value = o.value; s.dispatchEvent(new Event('change')); })(/3\/4/)); await page.waitForTimeout(150);
+    await useAs(true, false); // r15.70: a new aggregate is bedding & shading unless changed; this one is bedding only
     await page.fill('#pmf_extra_pct', '0'); await page.click('#pmfSave'); await page.waitForTimeout(900);
     const bid = await page.evaluate(() => (window.__debugMat().jobs['24-101'].data.materials.find(m => m.use_as === 'bedding') || {}).id);
-    t = await page.evaluate((i) => document.getElementById('pjMat_' + i).innerText.replace(/\s+/g, ' '), bid);
-    check('bedding from the job settings: 360 × 2 × 0.5 ÷ 27 ≈ 13.3 yd³, labelled under the pipe', /≈ 13\.3 \/ — \/ — yd³/.test(t) && /Bedding estimate from Pipe Installed footage/.test(t) /* r15.5.1 short row text */, t);
+    await page.evaluate((i) => document.querySelector('#pjMat_' + i + ' .pbm-head').click(), bid); await page.waitForTimeout(200);
+    t = await page.evaluate((i) => document.getElementById('pjMat_' + i).innerText.replace(/\s+/g, ' ') + ' | ' + ((document.querySelector('#pjMatD_' + i + ' details.pbm-math .pbm-calc') || {}).textContent || '').replace(/\s+/g, ' '), bid);
+    // r15.70: no row label; Show math says "2 ft wide × 0.5 ft thick ÷ 27" (nothing taken off for the pipe, no "over the pipe")
+    check('bedding from the job settings: 360 × 2 × 0.5 ÷ 27 ≈ 13.3 yd³, the math under the pipe (nothing taken off)', /≈ 13\.3 \/ — \/ — yd³/.test(t) && /Per foot of pipe: 2 ft wide × 0\.5 ft thick ÷ 27 = 0\.0370 yd³ in place \(job settings\)/.test(t) && !/over the pipe/.test(t), t);
     check('no JS errors', page._errors.length === 0, page._errors);
   } finally { await ctx.close(); }
   // server without 03: no settings block, everything else as before

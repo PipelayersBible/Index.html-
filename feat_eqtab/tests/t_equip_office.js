@@ -73,15 +73,17 @@ const txt = (page, id) => page.evaluate((i) => ((document.getElementById(i) || {
     await ctx.addInitScript(MOCK); await page.reload(); await sleep(page, 2000); await M.dismiss(page);
     page.on('pageerror', e => errs.push(String(e)));
     await page.evaluate(() => pbGotoTab('home')); await sleep(page, 2000);
-    await page.click('#homeCxRuns2'); await sleep(page, 1500);
+    await page.evaluate(() => pbCxOpenList('runs')); await sleep(page, 1500); // r16.08 (feat_drtile): the Home run reports tile is gone (New daily reports in its place); the Run reports list is a company door
     await page.evaluate(() => window.pbRrOpen(0)); await sleep(page, 1500);
+    await page.evaluate(() => { const d = document.getElementById('cxRunOffMore'); if (d) d.open = true; }); // r15.38 (feat_runflow P4): the office's Correct Production sits under "More"
     await page.tap('#cxRunOffEdit'); await sleep(page, 400);
     check('office form: an old total without pieces comes in as Other equipment 4', /Other equipment[\s\S]*Used h/.test(await page.evaluate(() => document.getElementById('cxRunOffEqSec').innerText)) && (await page.inputValue('#cxRunOffE0')) === '4');
     await page.selectOption('#cxRunOffEqAdd', 'eq_loader'); await sleep(page, 300);
     await page.fill('#cxRunOffE1', '3'); await page.tap('#cxRunOffSave'); await sleep(page, 1200);
     const a = await page.evaluate(() => (window.__rpcLog.filter(x => x.fn === 'pb_prod_company_run_prod_save').pop() || {}).args);
     check('office saves pieces + total 7 (' + JSON.stringify(a && a.p_items) + ')', a && JSON.stringify(a.p_items.filter(i => i.key.charAt(0) === '_')) === JSON.stringify([{ key: '_eq_other', qty: 4, unit: 'h' }, { key: '_eq_loader', qty: 3, unit: 'h' }, { key: '_equiphours', qty: 7, unit: 'h' }]));
-    check('shown with the pieces', /Equipment hours 7 h \(Other equipment 4 h, Loader 3 h\)/.test(await page.evaluate(() => document.getElementById('cxRunOffProd').innerText.replace(/\s+/g, ' '))));
+    const shown = await page.evaluate(() => document.getElementById('cxRunOffProd').innerText.replace(/\s+/g, ' '));
+    check('shown with the pieces (' + shown.slice(0, 200) + ')', /Equipment hours 7 h \(Other equipment 4 h, Loader 3 h\)/.test(shown));
     check('no page errors (' + errs.slice(0, 3).join(' | ') + ')', errs.length === 0);
     await ctx.close();
   } catch (e) { console.log('SCRIPT ERROR', e); }

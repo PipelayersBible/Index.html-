@@ -7,6 +7,11 @@ const T = require('/home/claude/batch11/D/tests/pd_lib.js'); const { M, check } 
 const waitFor = async (page, fn, ms = 9000) => { for (let t = 0; t < ms; t += 250) { if (await page.evaluate(fn)) return true; await page.waitForTimeout(250); } return false; };
 const filed = (p) => p.evaluate(() => (window.__filed || []).slice());
 const sess = async (p) => (await T.prod(p)).sessions;
+// r15.65 (runflow): a company member's run with no job number asks "Which Job Is This Run On?" at Lock; answer it with the job, typed, as a person would
+async function lockRunOn(page, job) {
+  await page.evaluate((j) => { window.__b1JobAnswer = setInterval(() => { const t = document.getElementById('pbModalTitle'); if (!t || t.textContent !== 'Which Job Is This Run On?') return; const i = document.getElementById('rfJobType'), b = document.getElementById('rfJobTypeGo'); if (i && b) { i.value = j; b.click(); } }, 200); }, job);
+  try { await M.lockRun(page); } finally { await page.evaluate(() => clearInterval(window.__b1JobAnswer)).catch(() => {}); }
+}
 (async () => {
   const browser = await M.chromium.launch();
   // ---------- A. saved while NOT in a company, joined a company later ----------
@@ -79,15 +84,16 @@ const sess = async (p) => (await T.prod(p)).sessions;
   // ---------- S7: a run whose clientRunId is filled in after its first sync keeps its entry id ----------
   { const { ctx, page } = await T.setup(browser, {});
     try {
-      await M.lockRun(page);
+      await lockRunOn(page, '24-101');
       await page.evaluate(() => { const e = window.__debugGetCurrentArchiveEntry(); e.jobNumber = '24-101'; delete e.clientRunId; return window.__debugSaveRunArchive(); }); await page.waitForTimeout(300);
+      await page.evaluate(() => { const c = document.getElementById('resForemanCard'); if (c) c.open = true; }); // r15.94 (cleanup A, P4): the production form sits in a closed "Production & Crew" card
       await page.fill('#fpExcavated', '40'); await page.evaluate(() => pbSaveForemanData()); await page.waitForTimeout(600); await M.dismiss(page);
       await waitFor(page, () => window.__rpcLog.filter(x => x.fn === 'pb_prod_save').length >= 1);
       await page.evaluate(() => { const e = window.__debugGetCurrentArchiveEntry(); e.clientRunId = 'filled-in-later-uuid'; return window.__debugSaveRunArchive(); }); await page.waitForTimeout(300);
       await page.fill('#fpExcavated', '45'); await page.evaluate(() => pbSaveForemanData()); await page.waitForTimeout(600); await M.dismiss(page);
       await waitFor(page, () => window.__rpcLog.filter(x => x.fn === 'pb_prod_save').length >= 2);
       const sv = await T.saves(page);
-      check('S7: same entry id before and after clientRunId is filled in (one server entry, 2 versions)', sv.length === 2 && sv[0].args.p_client_entry_id === sv[1].args.p_client_entry_id && /^run:id\d+$/.test(sv[0].args.p_client_entry_id)
+      check('S7: same entry id before and after clientRunId is filled in (one server entry, 2 versions)', sv.length === 2 && sv[0].args.p_client_entry_id === sv[1].args.p_client_entry_id && /^run:\S+$/.test(sv[0].args.p_client_entry_id) /* r15.65 (runflow): the job answer at Lock syncs the run first, which backfills a clientRunId, so the id is run:<uuid> rather than the run:id<n> fallback; what matters is that it never changes */
         && await page.evaluate(() => { const e = Object.values(JSON.parse(localStorage.__psrv).entries); return e.length === 1 && e[0].versions.length === 2; }));
       check('S7: the id is kept in prodSync', await page.evaluate((cid) => { const st = JSON.parse(localStorage.getItem('acctA:prodSync')); return Object.values(st.ids).includes(cid); }, sv[0].args.p_client_entry_id));
       // ---------- S6: removing the run asks; Keep is the default ----------

@@ -34,7 +34,8 @@ function seed() {
     check('a material row says how much was picked for it on Run Setup and how much of the job isn\'t assigned', /100 LF picked for it on Run Setup\. 60 LF of this job isn’t assigned to a pipe material yet/.test(row), row);
     // typed names
     let un = await page.evaluate(() => (document.getElementById('pjUnList') || {}).innerText || '');
-    check('typed on runs: "Sand" · Shading, 100 LF on 1 run, with the suggestion preselected', /“Sand” · Shading/.test(un) && /100 LF on 1 run/.test(un) && await page.evaluate(() => pjUnSel0.value === 'mr1' && [...pjUnSel0.options].every(o => o.value === 'mr1')), un);
+    // r15.70: the picker lists every aggregate (bedding or shading), not just the shading ones; the suggestion is still the preselected one
+    check('typed on runs: "Sand" · Shading, 100 LF on 1 run, with the suggestion preselected', /“Sand” · Shading/.test(un) && /100 LF on 1 run/.test(un) && await page.evaluate(() => pjUnSel0.value === 'mr1' && JSON.stringify([...pjUnSel0.options].map(o => o.value).sort()) === '["mr1","ms1"]'), un);
     await page.evaluate(() => [...document.querySelectorAll('#pjUnList button')].find(b => b.textContent === 'Match').click()); await W(page, 900);
     const ta = (await T.matLog(page, 'pb_mat_typed_assign')).pop();
     check('Match sends job, use, the typed name and the chosen item', ta && ta.args.p_job_number === '24-101' && ta.args.p_use === 'shading' && ta.args.p_typed_name === 'Sand' && ta.args.p_material_id === 'mr1' && ta.args.p_expect_uid === 'acctA', ta && ta.args);

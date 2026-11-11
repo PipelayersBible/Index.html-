@@ -37,4 +37,20 @@ const shown = (p, id) => p.evaluate((i) => { const el = document.getElementById(
 const text = (p, id) => p.evaluate((i) => { const el = document.getElementById(i); return el ? el.textContent : null; }, id);
 const waitFor = async (page, fn, ms = 15000, arg) => { for (let t = 0; t < ms; t += 250) { if (await page.evaluate(fn, arg)) return true; await page.waitForTimeout(250); } return false; };
 const rpcs = (p, name) => p.evaluate((n) => window.__rpcLog.filter(x => x.fn === n), name);
-module.exports = { M, T, check: M.check, setup, shown, text, waitFor, rpcs, modal: T.modal, click: T.click, iso, today, FOREMEN, PIPELAYERS };
+// r15.38 (job question at Lock) / r15.57 (no foreman picked): a company member's Lock stops on "Which Job Is This Run On?"
+// when the form has no job, and a pipelayer's with no foreman on "No Foreman Picked". Answer them as a person would while
+// lib.js's lockRun waits for Results: type the job (opts.job, default '24-101') and "Lock anyway". (Same as batch14 lf_lib.)
+const lockRun0 = M.lockRun;
+async function lockRun(page, opts = {}) {
+  const job = opts.job === undefined ? '24-101' : opts.job;
+  let done = false;
+  const answer = (async () => { while (!done) { try { await page.evaluate((j) => {
+    const ov = document.getElementById('pbModalOverlay'); if (!ov || getComputedStyle(ov).display === 'none') return;
+    const t = (document.getElementById('pbModalTitle') || {}).textContent || '';
+    if (t === 'No Foreman Picked') { const b = [...document.querySelectorAll('#pbModalButtons button')].find(x => x.textContent.trim() === 'Lock anyway'); if (b) b.click(); }
+    else if (t === 'Which Job Is This Run On?') { const i = document.getElementById('rfJobType'), g = document.getElementById('rfJobTypeGo'), b0 = document.getElementById('rfJob0'); if (j && i && g) { i.value = j; g.click(); } else if (!j && b0) b0.click(); }
+  }, job); } catch (e) {} await new Promise(r => setTimeout(r, 200)); } })();
+  try { return await lockRun0(page, opts); } finally { done = true; await answer; }
+}
+const MW = Object.assign({}, M, { lockRun });
+module.exports = { M: MW, T, check: M.check, setup, shown, text, waitFor, rpcs, lockRun, modal: T.modal, click: T.click, iso, today, FOREMEN, PIPELAYERS };

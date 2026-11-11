@@ -87,10 +87,10 @@ const setupTxt = (page) => page.evaluate(() => ((document.getElementById('cxRunS
       await ctx.addInitScript(MOCK); await page.reload(); await sleep(page, 2000); await M.dismiss(page);
       page.on('pageerror', e => errs.push(String(e)));
       await page.evaluate(() => pbGotoTab('home')); await sleep(page, 2000);
-      await page.click('#homeCxRuns2'); await sleep(page, 1500);
+      await page.evaluate(() => pbCxOpenList('runs')); await sleep(page, 1500); // r16.08 (feat_drtile): the Home run reports tile is gone (New daily reports in its place); the Run reports list is a company door
       await page.evaluate(() => window.pbRrOpen(0)); await sleep(page, 1500);
       let t = await setupTxt(page);
-      check('office: Run setup with the crew values (' + t.slice(0, 200) + ')', /Job: 26014/.test(t) && /Pipe: 8in SDR 35/.test(t) && /Bedding thickness: 0\.5 ft/.test(t) && /Trench width: 3 ft/.test(t) && /intended setup/.test(t));
+      check('office: Run setup with the crew values (' + t.slice(0, 200) + ')', /Job: 26014/.test(t) && /Pipe: 8in SDR 35/.test(t) && /Bedding thickness: 0\.5 ft/.test(t) && /Trench width: 3 ft/.test(t) && !/intended setup/.test(t)); // r16.08 run report cleanup: the "intended setup" / "field setup" notes were removed
       await page.tap('#cxRunSetupEdit'); await sleep(page, 400);
       check('form: job, jobsite, picks from the job list, numbers', !!(await page.$('#cxRsJob')) && (await page.inputValue('#cxRs_1_width')) === '3' && (await page.evaluate(() => [...document.querySelectorAll('#cxRs_1_bed option')].map(o => o.textContent).join('|'))) === 'None|Fine sand · 02-100');
       await page.fill('#cxRs_1_width', '500'); await page.tap('#cxRunSetupSave'); await sleep(page, 400);
@@ -109,7 +109,7 @@ const setupTxt = (page) => page.evaluate(() => ((document.getElementById('cxRunS
       const x = Object.values(srv.runs)[0];
       await page.evaluate(([p, s]) => window.pbRrCrewOpen(p, s, 'Mike Smith', 'crewreports'), [x.pid, x.entry]); await sleep(page, 2500);
       let t = await setupTxt(page);
-      check('foreman sees the PM’s setup (' + t.slice(0, 200) + ')', /Trench width: 3\.5 ft PM/.test(t) && /field setup/.test(t));
+      check('foreman sees the PM’s setup (' + t.slice(0, 200) + ')', /Trench width: 3\.5 ft PM/.test(t) && !/field setup/.test(t)); // r16.08 run report cleanup: no setup notes
       await page.tap('#cxRunSetupEdit'); await sleep(page, 400);
       check('foreman form starts from the result (3.5)', (await page.inputValue('#cxRs_1_width')) === '3.5');
       await page.fill('#cxRs_1_width', '4'); await page.tap('#cxRunSetupSave'); await sleep(page, 1200);
@@ -129,7 +129,7 @@ const setupTxt = (page) => page.evaluate(() => ((document.getElementById('cxRunS
       await ctx.addInitScript(MOCK); await page.reload(); await sleep(page, 2000); await M.dismiss(page);
       page.on('pageerror', e => errs.push(String(e)));
       await page.evaluate(() => pbGotoTab('home')); await sleep(page, 2000);
-      await page.click('#homeCxRuns2'); await sleep(page, 1500);
+      await page.evaluate(() => pbCxOpenList('runs')); await sleep(page, 1500); // r16.08 (feat_drtile): the Home run reports tile is gone (New daily reports in its place); the Run reports list is a company door
       await page.evaluate(() => window.pbRrOpen(0)); await sleep(page, 1500);
       await page.tap('#cxRunSetupEdit'); await sleep(page, 400);
       check('office form starts from its own intended 3.5', (await page.inputValue('#cxRs_1_width')) === '3.5');

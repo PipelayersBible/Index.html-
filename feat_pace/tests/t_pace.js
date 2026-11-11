@@ -62,19 +62,24 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
     page.on('pageerror', e => errs.push(String(e)));
     await page.evaluate((P) => { const srv = JSON.parse(localStorage.getItem('__psrv')); srv.plans['c1|24-101'] = { plan: P, version: 3, job_number: '24-101' }; localStorage.setItem('__psrv', JSON.stringify(srv)); localStorage.setItem('__mats', '[]'); }, PLAN);
     await page.evaluate(() => pbGotoTab('home')); await page.waitForTimeout(1500);
-    const cats = await page.evaluate(async () => { const r = await window.__rpc('pb_prod_company_dashboard', { p_today: new Date().toISOString().slice(0, 10) }); const j = (r.data.jobs || []).find(x => x.job_key === '24-101'); return j ? { cats: j.cats, pms: j.pms } : null; });
+    // the phone's own local date (pd_lib's __pdDay, the same local-date rule as the app's pbTkToday), as the app sends it: the UTC date is tomorrow after 5 pm Pacific and the fake server's "today" would not match
+    const cats = await page.evaluate(async () => { const today = window.__pdDay(0); const r = await window.__rpc('pb_prod_company_dashboard', { p_today: today }); const j = (r.data.jobs || []).find(x => x.job_key === '24-101'); return j ? { cats: j.cats, pms: j.pms, paceWeek: j.pace_week, today } : null; });
     check('mock dashboard job has cats (' + JSON.stringify(cats && cats.cats && cats.cats.filter(c => c.key === 'pipe')) + ')', !!cats);
     const flags = await txt(page, '#homeCxJobs .pbx-job[data-job="24-101"] .pbx-flags');
-    check('job list: "No PM assigned" when the dashboard says pms 0 (' + flags + ', pms=' + (cats && cats.pms) + ')', cats && cats.pms === 0 ? /No PM assigned/.test(flags || '') : !/No PM assigned/.test(flags || ''));
+    check('job list: "No PM or super" when the dashboard says pms 0 (' + flags + ', pms=' + (cats && cats.pms) + ')', cats && cats.pms === 0 ? /No PM or super/.test(flags || '') : !/No PM or super/.test(flags || '')); // r15.52: superintendents
     await page.evaluate(() => { localStorage.setItem('__jobPms', JSON.stringify({ '24-101': 1 })); }); await page.evaluate(() => window.pbCxRefresh(true)); await page.waitForTimeout(2000);
     const flags2 = await txt(page, '#homeCxJobs .pbx-job[data-job="24-101"] .pbx-flags');
-    check('with a PM assigned: no flag (' + flags2 + ')', !/No PM assigned/.test(flags2 || ''));
+    check('with a PM assigned: no flag (' + flags2 + ')', !/No PM or super/.test(flags2 || ''));
     await page.evaluate(() => window.pbCxOpenJob('24-101', 'overview')); await page.waitForTimeout(2500);
     const rows = await page.evaluate(() => [...document.querySelectorAll('#pjCxHero .pbx-legrow')].map(r => r.innerText.replace(/\s+/g, ' ').trim()));
     const pipe = rows.find(r => r.startsWith('Pipe Installed')) || '', demo = rows.find(r => r.startsWith('Restoration')) || '';
-    const week = cats.cats.filter(c => c.key === 'pipe').reduce((a, c) => a + Number(c.week || 0), 0), done = cats.cats.filter(c => c.key === 'pipe').reduce((a, c) => a + Number(c.done || 0), 0);
-    const exp = week > 0 && done < 400 ? Math.ceil((400 - done) / (week / 5)) : null;
-    check('Pipe Installed: "≈ N work days left at last week’s pace" matches the numbers (' + pipe + ' | week ' + week + ' done ' + done + ')', exp === null ? !/work day/.test(pipe) : new RegExp('≈ ' + exp + ' work day').test(pipe));
+    // r15.41 / r15.50 (the schedule's one pace rule): completed days only — the pipe laid in the 7 days before today (the server's
+    // pace_week) ÷ the work days in them (Mon–Fri, no company holidays here), on what was left before today (planned − (done − today))
+    const pipeCats = cats.cats.filter(c => c.key === 'pipe'), done = pipeCats.reduce((a, c) => a + Number(c.done || 0), 0), todayQty = pipeCats.reduce((a, c) => a + Number(c.today || 0), 0);
+    const week = (cats.paceWeek || []).filter(r => r.key === 'pipe').reduce((a, r) => a + Number(r.qty || 0), 0);
+    const T = Math.round(Date.parse(cats.today) / 86400000); let wd = 0; for (let n = T - 7; n <= T - 1; n++) if (((n + 3) % 7) + 1 <= 5) wd++;
+    const leftB = Math.max(400 - (done - todayQty), 0), exp = week > 0 && done < 400 ? Math.ceil(leftB * wd / week - 1e-9) : null;
+    check('Pipe Installed: "≈ N work days left at last week’s pace" matches the numbers (' + pipe + ' | week ' + week + ' over ' + wd + ' work days, left before today ' + leftB + ')', exp !== null && new RegExp('≈ ' + exp + ' work day').test(pipe));
     check('an item with no work last week has no pace line (' + demo + ')', demo !== '' && !/work day/.test(demo));
     check('the basis is said once, under the list', (await page.evaluate(() => document.querySelectorAll('.pbx-etanote').length)) === 1);
     await page.screenshot({ path: SHOTS + 'pace.png', fullPage: false });

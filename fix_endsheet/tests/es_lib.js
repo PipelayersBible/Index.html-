@@ -12,7 +12,7 @@ async function setup(browser, o) {
   await ctx.addInitScript(T.RPC);
   if (o.real !== false) await ctx.addInitScript(REAL);
   if (o.init) await ctx.addInitScript(o.init);
-  await ctx.addInitScript(([u, rl, ex, sub]) => {
+  await ctx.addInitScript(([u, rl, ex, sub, cj]) => {
     if (localStorage.getItem('__seeded')) return; localStorage.setItem('__seeded', '1');
     localStorage.setItem('__mockSess', JSON.stringify({ id: u, email: u + '@x.com' }));
     localStorage.setItem('lastKnownUserId', u); localStorage.setItem('legacyDataMigrated', 'true');
@@ -22,7 +22,10 @@ async function setup(browser, o) {
     localStorage.setItem('__pipelayers', JSON.stringify([{ id: 'acctP', name: 'Wes Hall' }]));
     localStorage.setItem('__names', JSON.stringify({ acctF: 'Frank Ortiz', acctP: 'Wes Hall' }));
     if (ex) for (const k in ex) localStorage.setItem(k, typeof ex[k] === 'string' ? ex[k] : JSON.stringify(ex[k]));
-  }, [o.uid || 'acctP', o.role || 'pipelayer', o.extra || null, o.sub || null]);
+    // r15.38 (run report workflow): a company run with no job number asks "Which Job Is This Run On?" at Lock; with a Current
+    // job picked on Home (feat_curjob) the job is filled in and nothing is asked, so these tests pick one (as a pipelayer does)
+    if (cj && !localStorage.getItem(u + ':pbCurrentJob')) localStorage.setItem(u + ':pbCurrentJob', JSON.stringify({ job_number: '24-101', name: 'Main St' }));
+  }, [o.uid || 'acctP', o.role || 'pipelayer', o.extra || null, o.sub || null, o.curJob !== false]);
   const page = await ctx.newPage();
   page.on('dialog', d => d.accept());
   page._errors = []; page.on('pageerror', e => page._errors.push(e.message));

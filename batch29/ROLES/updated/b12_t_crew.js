@@ -13,6 +13,9 @@ const waitFor = async (page, fn, ms = 15000, arg) => { for (let t = 0; t < ms; t
 const srv = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('__psrv') || '{"entries":{}}'));
 const setSrv = (p, f, arg) => p.evaluate(([fs, a]) => { const s = JSON.parse(localStorage.getItem('__psrv') || '{"entries":{},"plans":{}}'); (new Function('s', 'a', fs))(s, a); localStorage.setItem('__psrv', JSON.stringify(s)); }, [f, arg]);
 const errs = [];
+// r15.38 (runflow P3, "one door"): a foreman's My production keeps the claim / edit sections folded under "Older claims and
+// changes" (the Home tile "Run reports to approve" is the door now). Open the fold before tapping in it, as a person would.
+const unfold = (page) => page.evaluate(() => { const d = document.getElementById('pmOldFold'); if (d && !d.open) d.open = true; });
 async function legacyRun(page, o) { // batch 29 ROLES
   await page.evaluate(() => { localStorage.__role = 'foreman'; }); await page.reload(); await page.waitForTimeout(2500); await M.dismiss(page);
   await T.runWithProduction(page, o);
@@ -35,6 +38,7 @@ const held = (id, user, name, job, items, extra) => [user + '|run:' + id, Object
       check('Demo: the run\'s Foreman Production Entry has a "Feet of demo completed" field', await page.evaluate(() => { const el = document.getElementById('fpDemo'); return !!el && el.type === 'number' && /Feet of demo completed/.test(el.closest('.pb-field').textContent); }));
       await M.lockRun(page);
       await page.evaluate(() => { const e = window.__debugGetCurrentArchiveEntry(); e.jobNumber = '24-101'; return window.__debugSaveRunArchive(); }); await page.waitForTimeout(300);
+      await page.evaluate(() => { const c = document.getElementById('resForemanCard'); if (c) c.open = true; }); // r15.94 (cleanup A, P4): the production form sits in a closed "Production & Crew" card
       await page.fill('#fpForeman', 'Frank'); await page.fill('#fpExcavated', '50'); await page.fill('#fpDemo', '35');
       await page.evaluate(() => pbSaveForemanData()); await page.waitForTimeout(600); await M.dismiss(page);
       check('Demo: saved on the run like the other feet (feetDemo 35)', await page.evaluate(() => window.__debugGetCurrentArchiveEntry().foreman.feetDemo === 35));
@@ -139,16 +143,19 @@ const held = (id, user, name, job, items, extra) => [user + '|run:' + id, Object
       check('foreman: "Runs waiting for you" shows the unassigned ones only (not one assigned to another foreman)', w.length === 4 && w.every(t => /Wes Hall/.test(t)) && !w.some(t => /Pipe Installed 60/.test(t)));
       check('review 1 SF2: a run assigned to someone no longer a foreman is shown to any foreman', w.some(t => /Structures 2/.test(t)));
       await page.evaluate(() => pbGoto('home')); await page.waitForTimeout(500);
-      check('foreman: Home says "4 runs waiting for you · 2 edits waiting for approval"', /4 runs waiting for you · 2 edits waiting for approval/.test(await page.evaluate(() => (document.getElementById('homeAttention_prodCrew') || {}).textContent || '')));
+      // r15.38 (runflow P3, one door): a foreman's waiting runs and edits are no longer a Home attention line; they count on the Home tile
+      // "Run reports to approve" (4 runs + 2 edits = 6) and the My production row says "4 runs waiting for you"
+      { const hm = await page.evaluate(() => ({ att: !!document.getElementById('homeAttention_prodCrew'), tile: (document.getElementById('homeFmWait') || {}).innerText || '', sub: (document.getElementById('archiveProdMineSub') || {}).textContent || '' }));
+        check('foreman: Home tile "6 Run reports to approve" (4 runs + 2 edits) and My production "4 runs waiting for you"; no attention line', !hm.att && /^6\s*Run reports to approve/.test(hm.tile.replace(/\s+/g, ' ').trim()) && /4 runs waiting for you/.test(hm.sub), hm); }
       await page.evaluate(() => pbOpenProdMine()); await page.waitForTimeout(600);
       // claim p1 while offline
       await page.evaluate(() => { localStorage.__rpcMode = 'offline'; });
       const i1 = await page.evaluate(() => [...document.querySelectorAll('#pmWaiting li')].findIndex(li => /Excavation 100/.test(li.textContent)));
-      await page.click('#pmClaim' + i1); await page.waitForTimeout(400);
+      await unfold(page); await page.click('#pmClaim' + i1); await page.waitForTimeout(400);
       check('claim offline: queued, said so', /Claim: saved on this phone, goes as soon as there.s signal/.test(await page.evaluate(() => document.getElementById('pmWaiting').textContent)));
       // p4: queued claim, but another foreman claims it first
       const i4 = await page.evaluate(() => [...document.querySelectorAll('#pmWaiting li')].findIndex(li => /Backfill 20/.test(li.textContent)));
-      await page.click('#pmClaim' + i4); await page.waitForTimeout(300);
+      await unfold(page); await page.click('#pmClaim' + i4); await page.waitForTimeout(300);
       await setSrv(page, `s.entries['acctP|run:p4'].crew.state = 'claimed'; s.entries['acctP|run:p4'].crew.by = 'acctF2';`);
       await page.evaluate(() => { localStorage.__rpcMode = 'ok'; window.dispatchEvent(new Event('online')); pbProdSyncNow(); });
       await waitFor(page, () => (window.__debugProd().st.actions || []).length === 0, 20000); await page.waitForTimeout(1500);
@@ -158,7 +165,7 @@ const held = (id, user, name, job, items, extra) => [user + '|run:' + id, Object
       check('someone else first: "Already claimed by another foreman." and nothing claimed', /Already claimed by another foreman\. Nothing was changed\./.test(pm) && !Object.values(S.entries).some(e => e.source === 'p4'));
       check('claim: shown under "Runs you claimed"', await page.evaluate(() => !!document.getElementById('pmClaimed0') && /From Wes Hall/.test(document.getElementById('pmClaimed').textContent)));
       // edit the claimed copy
-      await page.click('#pmEdit0'); await page.waitForTimeout(200);
+      await unfold(page); await page.click('#pmEdit0'); await page.waitForTimeout(200);
       await page.fill('#pmEdit0', '90'); await page.click('#pmEditSave');
       await waitFor(page, () => (window.__debugProd().st.actions || []).length === 0 && window.__rpcLog.some(x => x.fn === 'pb_prod_claimed_edit'), 15000); await page.waitForTimeout(800);
       const S2 = await srv(page), copy2 = Object.values(S2.entries).find(e => e.source === 'p1');
@@ -166,27 +173,27 @@ const held = (id, user, name, job, items, extra) => [user + '|run:' + id, Object
       // review 1 SF1: the run changed after the foreman's list loaded -> refused, list refreshed, honest words
       await setSrv(page, `const e = s.entries['acctP|run:p5']; e.items = [{ key: 'structures', qty: 9, unit: 'EA' }]; e.versions.push(1);`);
       const i5 = await page.evaluate(() => [...document.querySelectorAll('#pmWaiting li')].findIndex(li => /Structures 2/.test(li.textContent)));
-      await page.click('#pmClaim' + i5);
+      await unfold(page); await page.click('#pmClaim' + i5);
       await waitFor(page, () => /This run changed since you opened it/.test(document.getElementById('pmCrew').innerText), 15000); await page.waitForTimeout(1500);
       check('stale claim: "This run changed since you opened it. Check the new numbers." and nothing claimed', !Object.values((await srv(page)).entries).some(e => e.source === 'p5'));
       check('stale claim: the list shows the new numbers', /Structures 9/.test(await page.evaluate(() => document.getElementById('pmWaiting').textContent)));
       // already counted
       const i3 = await page.evaluate(() => [...document.querySelectorAll('#pmWaiting li')].findIndex(li => /Pipe Installed 30/.test(li.textContent)));
-      await page.click('#pmCover' + i3); await page.waitForTimeout(200);
+      await unfold(page); await page.click('#pmCover' + i3); await page.waitForTimeout(200);
       check('already counted: asks first', /already covers this work/.test(((await T.modal(page)) || {}).msg || ''));
       await T.click(page, '^Already Counted$');
       await waitFor(page, () => (window.__debugProd().st.actions || []).length === 0, 15000); await page.waitForTimeout(500);
       check('already counted: marked on the server, never counted', (await srv(page)).entries['acctP|run:p3'].crew.state === 'covered');
       // Tommy 11:29: edits waiting for approval, with before -> after
-      const edl = await page.evaluate(() => (document.getElementById('pmEdits') || {}).innerText || '');
+      await unfold(page); const edl = await page.evaluate(() => (document.getElementById('pmEdits') || {}).innerText || '');
       check('approver: "Edits waiting for approval" with "Pipe Installed: 10 LF \u2192 50 LF"', /Edits waiting for approval/.test(edl) && /Pipe Installed: 10 LF \u2192 50 LF/.test(edl) && /Backfill: 8 LF \u2192 80 LF/.test(edl));
       const ia = await page.evaluate(() => [...document.querySelectorAll('#pmEdits li')].findIndex(li => /Pipe Installed: 10/.test(li.textContent)));
-      await page.click('#pmApprove' + ia); await page.waitForTimeout(200); await T.click(page, '^Approve$');
+      await unfold(page); await page.click('#pmApprove' + ia); await page.waitForTimeout(200); await T.click(page, '^Approve$');
       await waitFor(page, () => (window.__debugProd().st.actions || []).length === 0 && window.__rpcLog.some(x => x.fn === 'pb_prod_edit_decide'), 15000); await page.waitForTimeout(1500);
       const S6 = (await srv(page)).entries['acctP|run:p6'];
       check('approve: the edited numbers count (50); who decided is kept', S6.items[0].qty === 50 && S6.lastEdit.decision === 'approved' && S6.lastEdit.by === 'acctA');
       const ir = await page.evaluate(() => [...document.querySelectorAll('#pmEdits li')].findIndex(li => /Backfill: 8/.test(li.textContent)));
-      await page.click('#pmReject' + ir); await page.waitForTimeout(200); await T.click(page, '^Reject$');
+      await unfold(page); await page.click('#pmReject' + ir); await page.waitForTimeout(200); await T.click(page, '^Reject$');
       await waitFor(page, () => (window.__debugProd().st.actions || []).length === 0 && window.__rpcLog.filter(x => x.fn === 'pb_prod_edit_decide').length === 2, 15000); await page.waitForTimeout(1500);
       const S7 = (await srv(page)).entries['acctP|run:p7'];
       check('reject: the earlier numbers keep counting (8)', S7.items[0].qty === 8 && S7.lastEdit.decision === 'rejected' && !S7.pendingEdit);
@@ -238,13 +245,13 @@ const held = (id, user, name, job, items, extra) => [user + '|run:' + id, Object
     try {
       await setSrv(page, `a.forEach(([k, v]) => { s.entries[k] = v; });`, [held('q1', 'acctP', 'Wes Hall', '24-501', [{ key: 'pipe', qty: 10, unit: 'LF' }], { crew: { state: 'sent', created: Date.now(), by: 'acctP' } })]);
       await page.evaluate(() => pbOpenProdMine()); await waitFor(page, () => !!document.getElementById('pmLateClaim0'));
-      await page.click('#pmLateClaim0'); await page.waitForTimeout(200);
+      await unfold(page); await page.click('#pmLateClaim0'); await page.waitForTimeout(200);
       check(decision + ': claiming a counted run asks first and says the company approves', /company approves your claim first/.test(((await T.modal(page)) || {}).msg || ''));
       await T.click(page, '^Claim$');
       await waitFor(page, () => (window.__debugProd().st.actions || []).length === 0 && window.__rpcLog.some(x => x.fn === 'pb_prod_crew_claim'), 15000); await page.waitForTimeout(1500);
       check(decision + ': the claimed copy waits for the company ("waiting for the company\u2019s approval")', /waiting for the company.s approval/.test(await page.evaluate(() => document.getElementById('pmClaimed').innerText)));
       // the foreman changes the copy while it waits: still waits for the company
-      await page.click('#pmEdit0'); await page.waitForTimeout(200); await page.fill('#pmEdit0', '12'); await page.click('#pmEditSave');
+      await unfold(page); await page.click('#pmEdit0'); await page.waitForTimeout(200); await page.fill('#pmEdit0', '12'); await page.click('#pmEditSave');
       await waitFor(page, () => (window.__debugProd().st.actions || []).length === 0 && window.__rpcLog.some(x => x.fn === 'pb_prod_claimed_edit'), 15000); await page.waitForTimeout(800);
       S = await srv(page);
       errs.push(...page._errors);
@@ -276,7 +283,7 @@ const held = (id, user, name, job, items, extra) => [user + '|run:' + id, Object
           await page.evaluate((x) => { localStorage.setItem('__psrv', JSON.stringify(x)); }, S_after);
           await page.evaluate(() => pbOpenProdMine()); await waitFor(page, () => !!document.getElementById('pmLateClaim0'));
           check('re-claim: after the reject the same foreman can claim the run again', true);
-          await page.click('#pmLateClaim0'); await page.waitForTimeout(200); await T.click(page, '^Claim$');
+          await unfold(page); await page.click('#pmLateClaim0'); await page.waitForTimeout(200); await T.click(page, '^Claim$');
           await waitFor(page, () => (window.__debugProd().st.actions || []).length === 0 && window.__rpcLog.some(x => x.fn === 'pb_prod_crew_claim'), 15000); await page.waitForTimeout(1500);
           S3 = await srv(page);
           const copies = Object.values(S3.entries).filter(x => x.source === S3.entries['acctP|run:q1'].id);
@@ -310,7 +317,7 @@ const held = (id, user, name, job, items, extra) => [user + '|run:' + id, Object
         else await setSrv(page, `a.forEach(([k, v]) => { s.entries[k] = v; });`, [held('q2', 'acctP', 'Wes Hall', '24-701', [{ key: 'pipe', qty: 10, unit: 'LF' }], { crew: { state: 'sent', created: Date.now(), by: 'acctP' } })]);
         await page.evaluate(() => pbOpenProdMine()); await waitFor(page, () => !!document.getElementById('pmLateClaim0'));
         const before = await page.evaluate(() => (document.getElementById('pmClaimed') || {}).innerText || '');
-        await page.click('#pmLateClaim0'); await page.waitForTimeout(200); await T.click(page, '^Claim$');
+        await unfold(page); await page.click('#pmLateClaim0'); await page.waitForTimeout(200); await T.click(page, '^Claim$');
         await waitFor(page, () => (window.__debugProd().st.actions || []).length === 0 && window.__rpcLog.some(x => x.fn === 'pb_prod_crew_claim'), 15000); await page.waitForTimeout(1500);
         errs.push(...page._errors); return { S: await srv(page), before };
       } finally { await ctx.close(); } };

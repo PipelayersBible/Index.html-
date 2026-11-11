@@ -74,8 +74,11 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
     check('Footage from: Pipe Installed (first) and Laterals (' + opts.join(', ') + ')', opts[0] === 'pipe:Pipe Installed' && opts.some(o => /^laterals:Laterals$/.test(o)));
     await page.evaluate(() => ((re) => { const c = document.getElementById('pmf_category'); if (c.value !== 'bedding') { c.value = 'bedding'; c.dispatchEvent(new Event('change')); } const s = document.getElementById('pmf_bedkind'); const o = [...s.options].find(x => re.test(x.textContent)); s.value = o.value; s.dispatchEvent(new Event('change')); })(/Fine sand/)); await page.waitForTimeout(300);
     await page.selectOption('#pmf_footage_cat', 'laterals'); await page.waitForTimeout(400);
-    const yd = Math.round(300 * 3 * 0.5 / 27 * 1.15 * 10) / 10;
-    check('fine sand on Laterals: Expected = 300 LF × 3 × 0.5 ÷ 27 × 1.15 = ' + yd + ' (' + await page.inputValue('#pmf_expected') + ' | ' + await txt(page, '#pmfExpHelp') + ')', (await page.inputValue('#pmf_expected')) === String(yd) && /300 LF \(Laterals planned\)/.test((await txt(page, '#pmfExpHelp')) || ''));
+    // r15.70 (feat_matform, owner Oct 30): a new aggregate is "Bedding & shading unless changed", so Expected = L × (W × bed + W × (OD + shade) − pipe area) ÷ 27 × 1.15 (job: W 3, bed 0.5, shade 1, OD 8.625 in);
+    // the help line sits under "Show math" (<details id="pmfMath">), so read its text rather than innerText
+    const o = 8.625 / 12, per = 3 * 0.5 + 3 * (o + 1) - Math.PI * o * o / 4, yd = Math.round(300 * per / 27 * 1.15 * 10) / 10;
+    const help = () => page.evaluate(() => { const d = document.getElementById('pmfMath'), e = document.getElementById('pmfExpHelp'); return d && e && !d.hidden && !e.hidden ? e.textContent.replace(/\s+/g, ' ').trim() : ''; });
+    check('fine sand on Laterals (bedding & shading, the r15.70 default): Expected = 300 LF × (3 × 0.5 + 3 × (0.719 + 1) − pipe area) ÷ 27 × 1.15 = ' + yd + ' (' + await page.inputValue('#pmf_expected') + ' | ' + await help() + ')', (await page.inputValue('#pmf_expected')) === String(yd) && /300 LF \(Laterals planned\) × \(3 ft × 0\.5 ft \+ 3 ft × \(0\.719 ft OD \+ 1 ft\) − pipe area\) ÷ 27 × 1\.15/.test(await help()));
     await page.screenshot({ path: SHOTS + 'footage_from.png' });
     await page.tap('#pmfSave'); await page.waitForTimeout(1200);
     const a = await page.evaluate(() => (window.__rpcLog.filter(x => x.fn === 'pb_mat_save').pop() || {}).args);
@@ -86,7 +89,11 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
       { id: 'a2', name: '3in SDR 35', category: 'pipe', source: 'pipe_footage', unit: 'LF', expected: 300, alert_pct: 80, version: 1, footage_cat: 'laterals', orders: [], uses: [], fig: { status: 'ok', used: 40, ordered: 0, waiting: 0 } }])); });
     await page.evaluate(() => { window.pbCxOpenJob('26014', 'materials'); }); await page.waitForTimeout(2500);
     const sec = await txt(page, '#pjMatSec');
-    check('8in on Pipe Installed + 3in on Laterals: no "Split unknown"; the 3in says Laterals (' + sec.slice(0, 260) + ')', !/Split unknown/.test(sec) && /Counts Laterals footage/.test(sec));
+    // r15.70 (feat_matform): the card's "Counts Laterals footage" line is gone (no help lines); the item a material counts shows on the Overview, where materials sit under their plan item (r15.14)
+    await page.tap('#pjCxTab_overview'); await page.waitForTimeout(800);
+    const under = await page.evaluate(() => { const rows = [...document.querySelectorAll('#pjCxHero .pbx-legrow')]; const r = rows.find(x => /^Laterals/.test((x.querySelector('.pbx-leg-n') || {}).textContent || '')); const n = r && r.nextElementSibling; return n && n.classList.contains('pbx-matrows') ? n.innerText.replace(/\s+/g, ' ').trim() : null; });
+    check('8in on Pipe Installed + 3in on Laterals: no "Shares footage" on the Materials tab; the Overview lists the 3in under Laterals (' + sec.slice(0, 120) + ' | ' + under + ')', !/Shares footage|share the/.test(sec) && /3in SDR 35/.test(under || '') && !/8in SDR 35/.test(under || ''));
+    await page.tap('#pjCxTab_materials'); await page.waitForTimeout(500);
     await page.evaluate(() => { const m = JSON.parse(localStorage.getItem('__mats')); m[1].footage_cat = null; localStorage.setItem('__mats', JSON.stringify(m)); window.pbCxOpenJob('26014', 'materials'); }); await page.waitForTimeout(2500);
     check('both on Pipe Installed: one short line that says to pick its own item in Footage from', /8in SDR 35 and 3in SDR 35 share the Pipe Installed footage/.test(await txt(page, '#pjMatSec')) && /Tap Shares footage on one/.test(await txt(page, '#pjMatSec')));
     check('no page errors (' + errs.slice(0, 3).join(' | ') + ')', errs.length === 0);

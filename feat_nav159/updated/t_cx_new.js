@@ -108,7 +108,7 @@ const calls = (p, fn) => p.evaluate((f) => window.__rpcLog.filter(x => x.fn === 
     await ctx.setOffline(false); await page.evaluate(() => window.dispatchEvent(new Event('online')));
     await page.evaluate(() => pbGoto('home')); await page.waitForTimeout(300);
     md = await T.modal(page);
-    check('leaving with typed details asks first', md && /Leave without creating the project/.test(md.msg));
+    check('leaving with typed details asks first', md && /Leave without creating the job\?/.test(md.msg)); // r15.94: "Job" not "Project"
     await page.click('#pbModalButtons button >> nth=-1'); await page.waitForTimeout(300);
     check('page errors: none', page._errors.length === 0); if (page._errors.length) console.log(page._errors);
     await ctx.close();

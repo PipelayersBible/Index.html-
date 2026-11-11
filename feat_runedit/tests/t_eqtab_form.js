@@ -59,8 +59,10 @@ const endRun = (page) => page.evaluate(() => { const e = window.__debugGetCurren
       await ctx.addInitScript(MOCK); await page.reload(); await sleep(page, 2000); await M.dismiss(page);
       page.on('pageerror', e => errs.push(String(e)));
       await page.evaluate(() => pbGotoTab('home')); await sleep(page, 1000);
-      await L.waitFor(page, () => !!document.getElementById('homeWork_rrReview'), 15000);
-      await page.click('#homeWork_rrReview'); await sleep(page, 1500);
+      // r15.38 (run report workflow P2): the foreman's Home tile "Run reports to approve" is the one door (#homeFmWait); the Current Work row only shows a report the office sent back
+      await L.waitFor(page, () => /Run reports to approve/.test((document.getElementById('homeFmWait') || {}).innerText || '') && /^1\b/.test((document.getElementById('homeFmWait') || {}).innerText.trim()), 15000);
+      check('foreman Home: "1 Run reports to approve" tile', await page.evaluate(() => /^1\s+Run reports to approve/.test((document.getElementById('homeFmWait') || {}).innerText.replace(/\s+/g, ' ').trim())));
+      await page.click('#homeFmWait'); await sleep(page, 1500);
       await page.click('#cxRev0'); await sleep(page, 1500);
       await L.waitFor(page, () => !!document.getElementById('cxRunLiveEqAdd'), 15000);
       const labs = await page.evaluate(() => [...document.querySelectorAll('#cxRunProdBox label')].map(l => l.textContent));
@@ -85,7 +87,8 @@ const endRun = (page) => page.evaluate(() => { const e = window.__debugGetCurren
       const items = await page.evaluate(() => (Object.values(window.__pbLvDebug().runs || {})[0] || {}).items || []);
       check('saved per piece: used, idle, down; total 7.5 is the used (' + JSON.stringify(items) + ')', JSON.stringify(items) === JSON.stringify([{ key: 'pipe', qty: 140, unit: 'LF' }, { key: '_eq_cat320', qty: 6, unit: 'h' }, { key: '_ei_cat320', qty: 2, unit: 'h' }, { key: '_ed_cat320', qty: 1, unit: 'h' }, { key: '_eq_other', qty: 1.5, unit: 'h' }, { key: '_equiphours', qty: 7.5, unit: 'h' }]));
       const shown = await page.evaluate(() => (document.getElementById('cxRunProdBox') || {}).innerText.replace(/\s+/g, ' '));
-      check('shown: Equipment hours 7.5 h (CAT 320 #12 6 h, Other equipment 1.5 h) (' + shown.slice(0, 200) + ')', /Equipment hours 7\.5 h \(CAT 320 #12 6 h, CAT 320 #12 idle 2 h, CAT 320 #12 down 1 h, Other equipment 1\.5 h\)/.test(shown));
+      // feat_foreman 23 (r15.5x, before r15.65): each machine named once, its idle and down hours with it
+      check('shown: Equipment hours 7.5 h (CAT 320 #12 used 6 h · idle 2 h · down 1 h; Other equipment 1.5 h) (' + shown.slice(0, 200) + ')', /Equipment hours 7\.5 h \(CAT 320 #12 used 6 h · idle 2 h · down 1 h; Other equipment 1\.5 h\)/.test(shown));
       await page.evaluate(() => { const b = [...document.querySelectorAll('#cxRunProdBox button')].find(x => /Change Production/.test(x.textContent)); b.click(); }); await sleep(page, 800);
       check('Change Production: pieces come back with used / idle / down', (await page.inputValue('#cxRunLiveE0')) === '6' && (await page.inputValue('#cxRunLiveEI0')) === '2' && (await page.inputValue('#cxRunLiveED0')) === '1' && (await page.inputValue('#cxRunLiveE1')) === '1.5');
       await ctx.close(); }

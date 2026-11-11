@@ -20,8 +20,9 @@ const screenText = (page) => page.evaluate(() => { const s = document.getElement
         check('pipelayer Results: no Crew & Equipment Log', !L.crew, JSON.stringify(L));
         const txt = await screenText(page);
         check('pipelayer Results: neither heading is on the screen', !/Foreman Production Entry/i.test(txt) && !/Crew\s*(&|and)\s*Equipment Log/i.test(txt), txt.slice(-600));
-        const ok = await waitFor(page, () => /your foreman: Frank Ortiz\./.test((document.getElementById('pbRolesWho') || {}).textContent || ''), 15000);
-        check('pipelayer Results ends with "Production and crew hours are entered by your foreman: Frank Ortiz."', ok && (await text(page, 'pbRolesWho')) === 'Production and crew hours are entered by your foreman: Frank Ortiz.' && await shown(page, 'pbRolesWho'), await text(page, 'pbRolesWho'));
+        // r15.57: the line above says who ("Report goes to: Frank Ortiz."), so the sentence under it carries no name
+        const ok = await waitFor(page, () => /Report goes to: Frank Ortiz\./.test((document.getElementById('pbR57To') || {}).textContent || ''), 15000);
+        check('pipelayer Results ends with "Report goes to: Frank Ortiz." + "Production and crew hours are entered by your foreman." (r15.57)', ok && (await text(page, 'pbR57To')) === 'Report goes to: Frank Ortiz.' && (await text(page, 'pbRolesWho')) === 'Production and crew hours are entered by your foreman.' && await shown(page, 'pbRolesWho') && await shown(page, 'pbR57To'), JSON.stringify([await text(page, 'pbR57To'), await text(page, 'pbRolesWho')]));
         // the logs' functions refuse, nothing changes
         await page.evaluate(() => { window.__rpcLog.length = 0; pbSaveForemanData(); }); await page.waitForTimeout(500);
         const md = await R.modal(page);
@@ -54,7 +55,7 @@ const screenText = (page) => page.evaluate(() => { const s = document.getElement
         errs.push(...page._errors);
       } catch (e) { check('SCRIPT ERROR ' + String(e && e.message).slice(0, 200), false); } finally { await ctx.close(); }
     }
-    // ================= 2. a foreman: his own run has the logs; his pipelayer's runs take his production and hours =================
+    // ================= 2. a foreman: his own run has the logs; his pipelayer's runs take his production (hours: the daily report, r16.07) =================
     { const now = Date.now(), d = today();
       const st = (sref, o) => ({ user: 'acctP', company: 'c1', sref, seq: 2, ended: !!o.ended, work_date: d, job_number: '24-101', run_ref: 'r-' + sref, updated_at: iso(o.upd), created_at: iso(now - 5 * 3600000), phone_at: iso(o.upd),
         status: Object.assign({ sessionRef: sref, runRef: 'r-' + sref, jobNumber: '24-101', jobsite: 'Elm St', label: o.label, workDate: d, totalFt: 200, rowsTotal: 5 }, o.s) });
@@ -69,29 +70,32 @@ const screenText = (page) => page.evaluate(() => { const s = document.getElement
         await page.evaluate(() => pbOpenProdMine()); await waitFor(page, () => !!document.getElementById('pmLiveEnter0'), 15000);
         check('My crew now: Wes Hall’s open run has "Enter production for this run"', await shown(page, 'pmLiveEnter0'));
         check('…and so has his ended run with no entry of his (pmLiveEnter0_1)', await page.evaluate(() => !!document.getElementById('pmLiveEnter0_1')));
-        // the open run: pipe from the laid marks, plus the two hour fields
+        // the open run: pipe from the laid marks. r16.07 (prodfill): the Crew/Equipment hour boxes LEFT the production form on
+        // purpose (the daily report has them, Running · Down · Unused per machine since r16.01); Excavation and Backfill fill with the pipe feet
         await page.evaluate(() => pbLvFormOpen(0, 0)); await page.waitForTimeout(300);
         const labels = await page.$$eval('#pmLiveForm label', x => x.map(e => e.textContent));
-        check('the form has Crew hours (h) and Equipment hours (h)', labels.includes('Crew hours (h)') && labels.includes('Equipment hours (h)'), labels.join(' | '));
-        check('the open run: pipe filled in from the rows marked laid (30)', (await page.$eval('#pmLiveQ2', e => e.value)) === '30' && /Filled in from the rows marked laid\. Change it if it isn’t right\./.test(await text(page, 'pmLiveForm')));
+        const qid = (lab) => '#pmLiveQ' + labels.indexOf(lab); // r16.07: find a box by its label, the rows are in the plan's order
+        check('r16.07: the form has NO Crew hours (h) / Equipment hours (h) boxes (the daily report has them); the categories are there', !labels.includes('Crew hours (h)') && !labels.includes('Equipment hours (h)') && labels.includes('Pipe Installed (LF)') && labels.includes('Excavation (LF)'), labels.join(' | '));
+        check('the open run: pipe filled in from the rows marked laid (30)', (await page.$eval(qid('Pipe Installed (LF)'), e => e.value)) === '30' && /Filled in from the rows marked laid\./.test(await text(page, 'pmLiveForm'))); // r15.94: "Change it if it isn’t right." cut
+        check('r16.07: Excavation and Backfill follow the pipe feet (30)', (await page.$eval(qid('Excavation (LF)'), e => e.value)) === '30' && (await page.$eval(qid('Backfill (LF)'), e => e.value)) === '30');
         await page.evaluate(() => pbLvFormCancel()); await page.waitForTimeout(200);
         // the ended run (end entered the next day, batch 17 END): pipe to where it ended
         await page.evaluate(() => { pbLvDayToggle(0, true); pbLvFormOpen(0, 1); }); await page.waitForTimeout(300);
-        check('the ended run: pipe filled in from where the run ended (40, not the 30 laid), and says so', (await page.$eval('#pmLiveQ2', e => e.value)) === '40' && /Filled in from where the run ended \(140\.0, entered later\)\. Change it if it isn’t right\./.test(await text(page, 'pmLiveForm')), await text(page, 'pmLiveForm'));
+        check('the ended run: pipe filled in from where the run ended (40, not the 30 laid), and says so', (await page.$eval(qid('Pipe Installed (LF)'), e => e.value)) === '40' && /Filled in from where the run ended \(140\.0, entered later\)\./.test(await text(page, 'pmLiveForm')), await text(page, 'pmLiveForm'));
         check('without the server keeping endSessFt, the end is still worked out (140 − (130 − 30) = 40)', await page.evaluate(() => { const p = window.pbRolesEndPre({ endLate: true, endFt: 140, endStation: '1+40', laidToStation: '1+30', laidToFt: 30, laidFt: 30 }); return !!p && p.ft === 40; }));
-        await page.evaluate(() => { const set = (i, v) => { const el = document.getElementById('pmLiveQ' + i); el.value = v; el.dispatchEvent(new Event('input')); }; set(1, '45'); set(6, '16'); set(7, '6'); });
+        await page.evaluate((id) => { const el = document.querySelector(id); el.value = '45'; el.dispatchEvent(new Event('input')); }, qid('Excavation (LF)'));
         await page.evaluate(() => pbLvFormSave());
         const sent = await waitFor(page, () => window.__rpcLog.some(x => x.fn === 'pb_prod_crew_run_save' && x.args.p_session_ref === 's99'), 20000);
         const sv = (await rpcs(page, 'pb_prod_crew_run_save')).filter(x => x.args.p_session_ref === 's99').pop();
         const it = (k) => sv && (sv.args.p_items.find(i => i.key === k) || {}).qty;
-        check('saved for Wes Hall’s run: pipe 40, excavation 45, crew man-hours 16 h, equipment hours 6 h', sent && it('pipe') === 40 && it('excavation') === 45 && it('_manhours') === 16 && it('_equiphours') === 6, sv && JSON.stringify(sv.args.p_items));
+        check('saved for Wes Hall’s run: pipe 40, excavation 45 (typed over the prefill), backfill 40 (prefill); no crew / equipment hours (r16.07: those are the daily report’s)', sent && it('pipe') === 40 && it('excavation') === 45 && it('backfill') === 40 && it('_manhours') === undefined && it('_equiphours') === undefined, sv && JSON.stringify(sv.args.p_items));
         check('…filed for that pipelayer and session (crewrun, batch 14 F rules)', sv && sv.args.p_pipelayer === 'acctP' && sv.args.p_record.src === 'crewrun');
         await page.waitForTimeout(1500);
-        check('…and shown with its hours ("Crew hours 16 h · Equipment hours 6 h")', /Crew hours 16 h/.test(await text(page, 'pmLive') || '') && /Equipment hours 6 h/.test(await text(page, 'pmLive') || ''), await text(page, 'pmLive'));
+        check('…and shown with its amounts ("Pipe Installed 40 LF · Excavation 45 LF"), no hours line', /Pipe Installed 40 LF/.test(await text(page, 'pmLive') || '') && /Excavation 45 LF/.test(await text(page, 'pmLive') || '') && !/Crew hours|Equipment hours/.test(await text(page, 'pmLive') || ''), await text(page, 'pmLive'));
         errs.push(...page._errors);
       } catch (e) { check('SCRIPT ERROR ' + String(e && e.message).slice(0, 200), false); } finally { await ctx.close(); }
     }
-    // ================= 3. a claimed pipelayer run: the foreman enters crew and equipment hours =================
+    // ================= 3. a claimed pipelayer run: the foreman edits its amounts (r16.07: crew and equipment hours moved to the daily report) =================
     { const now = Date.now(), d = today();
       const entries = {
         'acctP|run:p1': { id: '00000000-0000-0000-0000-0000000000e1', user: 'acctP', email: 'p@x.com', company: 'c1', versions: [1], updated_at: iso(now - 3600000), record: { jobNumber: '24-101', workDate: d, enteredBy: 'Wes Hall', sessionRef: 's1' }, items: [{ key: 'pipe', qty: 40, unit: 'LF' }], crew: { state: 'claimed', created: now - 3600000, by: 'acctF', claim: '00000000-0000-0000-0002-0000000000c1' } },
@@ -103,23 +107,25 @@ const screenText = (page) => page.evaluate(() => { const s = document.getElement
         await page.evaluate(() => pbCrewEditOpen(0)); await page.waitForTimeout(300);
         const labels = await page.$$eval('#pmClaimed0 label', x => x.map(e => e.textContent));
         check('its Edit has every category (Excavation too, not only the pipe it came with)', labels.includes('Excavation (LF)') && labels.includes('Pipe Installed (LF)'), labels.join(' | '));
-        check('…and Crew hours (h) and Equipment hours (h)', labels.includes('Crew hours (h)') && labels.includes('Equipment hours (h)'), labels.join(' | '));
+        // r16.07 (prodfill): no Crew hours (h) / Equipment hours (h) boxes on a claimed run's Edit either (the daily report has them); a claim that already carries hours keeps them editable
+        check('…and NO Crew hours (h) / Equipment hours (h) boxes (r16.07: the daily report has them)', !labels.includes('Crew hours (h)') && !labels.includes('Equipment hours (h)'), labels.join(' | '));
         const idx = (l) => labels.indexOf(l);
-        await page.fill('#pmEdit' + idx('Excavation (LF)'), '55'); await page.fill('#pmEdit' + idx('Crew hours (h)'), '24'); await page.fill('#pmEdit' + idx('Equipment hours (h)'), '8');
+        await page.fill('#pmEdit' + idx('Excavation (LF)'), '55');
         await page.evaluate(() => { window.__rpcLog.length = 0; pbCrewEditSave(); });
         const ok = await waitFor(page, () => window.__rpcLog.some(x => x.fn === 'pb_prod_claimed_edit'), 20000);
         const sv = (await rpcs(page, 'pb_prod_claimed_edit')).pop(), it = (k) => sv && (sv.args.p_items.find(i => i.key === k) || {}).qty;
-        check('saved through the claim’s own edit (pb_prod_claimed_edit): pipe 40, excavation 55, crew man-hours 24 h, equipment hours 8 h', ok && it('pipe') === 40 && it('excavation') === 55 && it('_manhours') === 24 && it('_equiphours') === 8, sv && JSON.stringify(sv.args));
-        await waitFor(page, () => /Equipment hours 8 h/.test((document.getElementById('pmClaimed0') || {}).textContent || ''), 15000);
-        check('…and the claimed run shows them ("Crew hours 24 h", "Equipment hours 8 h")', /Crew hours 24 h/.test(await text(page, 'pmClaimed0')) && /Equipment hours 8 h/.test(await text(page, 'pmClaimed0')), await text(page, 'pmClaimed0'));
+        check('saved through the claim’s own edit (pb_prod_claimed_edit): pipe 40, excavation 55, no crew / equipment hours', ok && it('pipe') === 40 && it('excavation') === 55 && it('_manhours') === undefined && it('_equiphours') === undefined, sv && JSON.stringify(sv.args));
+        await waitFor(page, () => /Excavation 55 LF/.test((document.getElementById('pmClaimed0') || {}).textContent || ''), 15000);
+        check('…and the claimed run shows them ("Pipe Installed 40 LF · Excavation 55 LF"), no hours line', /Pipe Installed 40 LF · Excavation 55 LF/.test(await text(page, 'pmClaimed0')) && !/Crew hours|Equipment hours/.test(await text(page, 'pmClaimed0')), await text(page, 'pmClaimed0'));
         errs.push(...page._errors);
       } catch (e) { check('SCRIPT ERROR ' + String(e && e.message).slice(0, 200), false); } finally { await ctx.close(); }
     }
-    // ================= 4. role not known yet (offline at the first start): shown, as before (lead, Oct 21) =================
+    // ================= 4. role not known yet (offline at the first start): r15.48 access lockdown — hidden behind "Checking your account…" until the phone has the server's answer (it was shown before, lead Oct 21) =================
+    const unknownShown = async (page) => (await page.evaluate(() => window.pbRolesKind())) === 'unknown' && await shown(page, 'pbRolesLine') && (await text(page, 'pbRolesWho')) === 'Checking your account…' && /^Production and crew hours show here once this phone has checked your account\.( It needs signal once\.)?$/.test(await text(page, 'pbRolesUnknown') || ''); // "It needs signal once." only when navigator.onLine is false (this setup fails the rpcs, the browser stays online)
     { const { ctx, page } = await R.setup(browser, { uid: 'acctF', role: 'foreman', offline: true });
       try {
         await M.lockRun(page); await M.dismiss(page); await page.waitForTimeout(500);
-        check('offline first start, role unknown: the logs are shown, as before (only a confirmed pipelayer is hidden)', (await logsShown(page)).prod && (await logsShown(page)).crew && !(await shown(page, 'pbRolesLine')));
+        check('offline first start, role unknown: the logs are hidden behind "Checking your account…" (r15.48 access)', !(await logsShown(page)).prod && !(await logsShown(page)).crew && await unknownShown(page), JSON.stringify([await logsShown(page), await text(page, 'pbRolesWho'), await text(page, 'pbRolesUnknown')]));
         await page.evaluate(() => { localStorage.removeItem('__rpcMode'); localStorage.removeItem('__failSub'); window.dispatchEvent(new Event('online')); pbProdSyncNow(); });
         await page.waitForTimeout(4000);
         check('signal: the server says foreman: still shown', (await logsShown(page)).prod && !(await shown(page, 'pbRolesLine')));
@@ -129,7 +135,7 @@ const screenText = (page) => page.evaluate(() => { const s = document.getElement
     { const { ctx, page } = await R.setup(browser, { uid: 'acctP', role: 'pipelayer', offline: true });
       try {
         await M.lockRun(page); await M.dismiss(page); await page.waitForTimeout(500);
-        check('a pipelayer before the very first answer (offline): shown (accepted)', (await logsShown(page)).prod);
+        check('a pipelayer before the very first answer (offline): hidden too, "Checking your account…" (r15.48 access; was shown/accepted before)', !(await logsShown(page)).prod && await unknownShown(page), JSON.stringify([await logsShown(page), await text(page, 'pbRolesWho')]));
         await page.evaluate(() => { localStorage.removeItem('__rpcMode'); localStorage.removeItem('__failSub'); window.dispatchEvent(new Event('online')); pbProdSyncNow(); });
         const ok = await waitFor(page, () => { const w = document.getElementById('pbRolesProd'); return !!w && w.hidden; }, 20000);
         check('…the server says pipelayer: hidden at once (no reload), with the foreman line', ok && /entered by your foreman/.test(await text(page, 'pbRolesWho') || ''));
@@ -153,7 +159,9 @@ const screenText = (page) => page.evaluate(() => { const s = document.getElement
         // another account on this phone, while offline: its role isn't known, so nothing of the last account's carries over
         await page.evaluate(() => { localStorage.__role = 'foreman'; localStorage.__rpcMode = 'offline'; localStorage.__failSub = '1'; localStorage.__mockSess = JSON.stringify({ id: 'acctF2', email: 'acctF2@x.com' }); localStorage.lastKnownUserId = 'acctF2'; localStorage.setItem('acctF2:cachedSubscription', JSON.stringify({ tier: 'contractor', status: 'active' })); });
         await page.reload(); await page.waitForTimeout(2500); await M.dismiss(page);
-        check('account switch (offline) from the pipelayer: the new account isn’t a confirmed pipelayer, so nothing carries over: shown', await page.evaluate(() => window.pbRolesKind() === 'show') && (await page.evaluate(() => (document.getElementById('pbRolesProd') || {}).hidden)) === false);
+        // r15.48 access: the new account's role isn't checked yet, so it is neither the pipelayer's "entered by your foreman" nor shown: "Checking your account…"
+        // (this account has no run to resume, so the Results screen isn't open: the state is read from the elements, not from what is on screen)
+        check('account switch (offline) from the pipelayer: nothing carries over — the new account is unknown, "Checking your account…", not the pipelayer line (r15.48)', await page.evaluate(() => window.pbRolesKind() === 'unknown' && (document.getElementById('pbRolesProd') || {}).hidden === true && (document.getElementById('pbRolesLine') || {}).hidden === false) && (await text(page, 'pbRolesWho')) === 'Checking your account…' && !/entered by your foreman/.test(await text(page, 'pbRolesLineBody') || ''), JSON.stringify([await page.evaluate(() => window.pbRolesKind()), await text(page, 'pbRolesWho')]));
         errs.push(...page._errors);
       } catch (e) { check('SCRIPT ERROR ' + String(e && e.message).slice(0, 200), false); } finally { await ctx.close(); }
     }

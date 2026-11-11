@@ -16,7 +16,8 @@ const picks = (p) => p.evaluate(() => [...document.querySelectorAll('[id^="cjPic
     page.on('pageerror', e => errs.push(String(e)));
     await page.evaluate(() => pbGotoTab('home')); await sleep(page, 1200);
     let t = await cj(page);
-    check('Home: Current job "None chosen. Tap to choose." (' + t + ')', /Current job None chosen\. Tap to choose\./.test(t) && /Change/.test(t));
+    // r15.94 cleanup: "None chosen" with a "Choose ›" chip (the "Tap to choose." sentence and "Change" went)
+    check('Home: Current job "None chosen" + Choose (' + t + ')', /Current job None chosen/.test(t) && /Choose/.test(t) && !/Tap to choose/.test(t));
     await page.click('#homeCurrentJob'); await sleep(page, 1200);
     let p = await picks(page);
     check('tap: the company jobs (' + p.join(' | ') + ')', p.join('|') === 'Job 26050 — Main St Sewer|Job 26014' && /Current Job/.test(await page.evaluate(() => document.getElementById('pbModalTitle').textContent)));
@@ -42,12 +43,13 @@ const picks = (p) => p.evaluate(() => [...document.querySelectorAll('[id^="cjPic
     // Reports > View = the PDF
     await page.evaluate(() => pbGotoTab('reports')); await sleep(page, 1200);
     await page.evaluate(() => { const b = [...document.querySelectorAll('#screen-archive button')].find(x => x.textContent.trim() === 'View'); b.click(); });
-    await L.waitFor(page, () => { const b = document.getElementById('archivePdf0'); return !!b && !!b.dataset.pages; }, 30000);
-    const pv = await page.evaluate(() => ({ n: document.querySelectorAll('#archivePdf0 canvas').length, txt: getComputedStyle(document.getElementById('archiveView0')).display }));
-    check('View shows the PDF pages, the text hidden (' + JSON.stringify(pv) + ')', pv.n >= 1 && pv.txt === 'none');
+    // r15.37 (feat_pdfview): View opens the one in-app PDF viewer screen (#screen-pdfView, pages drawn by pdf.js), Text version a tap away
+    await L.waitFor(page, () => !!document.querySelector('#screen-pdfView.active') && document.querySelectorAll('#pdfvPages canvas').length >= 1, 30000);
+    const pv = await page.evaluate(() => ({ scr: (document.querySelector('.pb-screen.active') || {}).id, n: document.querySelectorAll('#pdfvPages canvas').length, txt: getComputedStyle(document.getElementById('pdfvText')).display }));
+    check('View shows the PDF pages, the text hidden (' + JSON.stringify(pv) + ')', pv.scr === 'screen-pdfView' && pv.n >= 1 && pv.txt === 'none');
     await page.screenshot({ path: '/home/claude/feat_curjob/archive_pdf.png' });
-    await page.click('#archiveTxtBtn0'); await sleep(page, 300);
-    check('Text Version shows the text', await page.evaluate(() => getComputedStyle(document.getElementById('archiveView0')).display !== 'none'));
+    await page.click('#pdfvTextBtn'); await sleep(page, 300);
+    check('Text Version shows the text', await page.evaluate(() => getComputedStyle(document.getElementById('pdfvText')).display !== 'none' && document.getElementById('pdfvText').textContent.length > 20));
     check('no page errors (' + errs.slice(0, 3).join(' | ') + ')', errs.length === 0);
     await ctx.close();
   } catch (e) { console.log('SCRIPT ERROR', e); }

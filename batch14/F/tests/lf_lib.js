@@ -58,4 +58,21 @@ const stored = (page, uid) => page.evaluate((u) => { const a = JSON.parse(localS
 const srvGet = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('__psrv') || '{"entries":{},"plans":{}}'));
 const srvPut = (p, v) => p.evaluate((x) => localStorage.setItem('__psrv', JSON.stringify(x)), v);
 const waitFor = async (page, fn, ms = 15000, arg) => { for (let t = 0; t < ms; t += 250) { if (await page.evaluate(fn, arg)) return true; await page.waitForTimeout(250); } return false; };
-module.exports = Object.assign({}, T, { SHOTS, setupTouch, touchDrag, rowPoint, laidState, stored, srvGet, srvPut, waitFor });
+// r15.38 (job question at Lock) / r15.57 (no foreman picked, asked once per form): a company account's Lock stops on
+// "Which Job Is This Run On?" when the form has no job, and a pipelayer's with no foreman picked on "No Foreman Picked".
+// Answer them as a person would while mock5's lockRun waits for Results: type the job (opts.job, default '26014';
+// null = tap the first job offered) and "Lock anyway" (the report waits until a foreman takes it).
+const lockRun0 = M.lockRun;
+async function lockRun(page, opts = {}) {
+  const job = opts.job === undefined ? '26014' : opts.job;
+  let done = false;
+  const answer = (async () => { while (!done) { try { await page.evaluate((j) => {
+    const ov = document.getElementById('pbModalOverlay'); if (!ov || getComputedStyle(ov).display === 'none') return;
+    const t = (document.getElementById('pbModalTitle') || {}).textContent || '';
+    if (t === 'No Foreman Picked') { const b = [...document.querySelectorAll('#pbModalButtons button')].find(x => x.textContent.trim() === 'Lock anyway'); if (b) b.click(); }
+    else if (t === 'Which Job Is This Run On?') { const i = document.getElementById('rfJobType'), g = document.getElementById('rfJobTypeGo'), b0 = document.getElementById('rfJob0'); if (j && i && g) { i.value = j; g.click(); } else if (!j && b0) b0.click(); }
+  }, job); } catch (e) {} await new Promise(r => setTimeout(r, 200)); } })();
+  try { return await lockRun0(page, opts); } finally { done = true; await answer; }
+}
+const MW = Object.assign({}, M, { lockRun });
+module.exports = Object.assign({}, T, { M: MW, lockRun, SHOTS, setupTouch, touchDrag, rowPoint, laidState, stored, srvGet, srvPut, waitFor });

@@ -6,9 +6,9 @@
 //  O4 Company tickets › View: "Entered by Frank Ortiz · <time>" (and the plain time when the server sends no by_name)
 //  O5 a foreman's New Ticket starts on the Current job, lists the company's jobs, fills the jobsite
 //  O6 Cancel Item asks its reason in a pb modal (no native dialog), needs a reason, sends it
-//  O7 inspections no-signal wording; "Invited <date>"; inbox preview ellipsis; "LF per stick"
+//  O7 inspections no-signal wording (r16.14: one line per screen); "Invited <date>"; inbox preview ellipsis; "LF per stick"
 //  O8 Materials tab › Field tickets row opens Company tickets on this job
-//  O9 Edit project › Project details: pre-filled form, pb_prod_job_info_set, hero and Home card follow
+//  O9 Edit project › Job details (r15.94 wording): pre-filled form, pb_prod_job_info_set, hero and Home card follow
 const O = require('./olib.js'); const { M, check } = O;
 const DIR = '/home/claude/feat_office34/tests/';
 const state = (p) => p.evaluate(() => { const r = (id) => { const e = document.getElementById(id); if (!e) return 'missing'; const b = e.getBoundingClientRect(); return e.hidden ? 'hidden' : b.height > 0 ? 'shown' : 'zero'; }; return { title: (document.getElementById('pjTitle') || {}).textContent, hero: r('pjCxHero'), tabs: r('pjCxTabs'), cards: document.querySelectorAll('#homeCxJobs .pbx-job').length }; });
@@ -140,10 +140,11 @@ const cacheKeys = (p, uid) => p.evaluate((u) => { try { return Object.keys(JSON.
       await page.evaluate(() => pbCxTab('overview')); await page.waitForTimeout(400);
       await page.evaluate(() => pbCxMenu()); await page.waitForTimeout(500);
       const menu = await O.text(page, 'pjCxMenu');
-      check('O9 Edit project offers a fifth row "Project details — Name, address and start date"', /Project details/.test(menu || '') && /Name, address and start date/.test(menu || '') && (await page.evaluate(() => document.querySelectorAll('#pjCxMenu .pbx-menu-btn').length)) === 5, menu);
+      // r15.94: "Job details" (Job, not Project); r15.41 added a sixth row, Schedule
+      check('O9 Edit project offers the row "Job details — Name, address and start date" (6 rows since r15.41 Schedule)', /Job details/.test(menu || '') && !/Project details/.test(menu || '') && /Name, address and start date/.test(menu || '') && /Schedule/.test(menu || '') && (await page.evaluate(() => document.querySelectorAll('#pjCxMenu .pbx-menu-btn').length)) === 6, menu);
       await page.click('#pjCxEdit_info'); await page.waitForTimeout(600);
       const m1 = await O.modal(page);
-      check('O9 the form opens in a modal titled "Project details · Job 24-101" with name / address / start date', !!m1 && /Project details · Job 24-101/.test(m1.title) && !!(await page.$('#cxiName')) && !!(await page.$('#cxiAddr')) && !!(await page.$('#cxiStart')), JSON.stringify(m1));
+      check('O9 the form opens in a modal titled "Job details · Job 24-101" with name / address / start date', !!m1 && /Job details · Job 24-101/.test(m1.title) && !!(await page.$('#cxiName')) && !!(await page.$('#cxiAddr')) && !!(await page.$('#cxiStart')), JSON.stringify(m1));
       const pre = await page.evaluate(() => ({ n: cxiName.value, a: cxiAddr.value, s: cxiStart.value }));
       check('O9 pre-filled from the job (no name yet on the seed: empty fields)', pre.n === '' && pre.a === '' && pre.s === '', JSON.stringify(pre));
       await page.fill('#cxiName', 'Elm St water main — Phase 2'); await page.fill('#cxiAddr', '400 Elm St, Springfield, IL'); await page.fill('#cxiStart', '2026-09-01');
@@ -159,7 +160,10 @@ const cacheKeys = (p, uid) => p.evaluate((u) => { try { return Object.keys(JSON.
       check('O9 one pb_prod_job_info_set with the job, name, address, date and p_expect_uid', !!sent && sent.args.p_job_number === '24-101' && sent.args.p_project_name === 'Elm St water main — Phase 2' && sent.args.p_address === '400 Elm St, Springfield, IL' && sent.args.p_start_date === '2026-09-01' && sent.args.p_expect_uid === 'acctA', JSON.stringify(sent && sent.args));
       const hero = await O.text(page, 'pjCxHero');
       check('O9 the hero shows the new name and address', /Elm St water main — Phase 2/.test(hero || '') && /400 Elm St/.test(hero || ''), (hero || '').slice(0, 200));
-      check('O9 the modal is closed, no error', !(await O.modal(page)));
+      // feat_jobcity: a changed City, State also moves the job's weather location (edge function weather v2, { place }); the fake answers location_saved
+      check('O9 the modal is closed, no error', !(await O.modal(page)), JSON.stringify(await O.modal(page)));
+      const wx = await page.evaluate(() => (window.__fnLog || []).filter(x => x.name === 'weather' && x.body.place).pop());
+      check('O9 the new address was sent to the weather function as { place } (feat_jobcity)', !!wx && wx.body.place === '400 Elm St, Springfield, IL' && wx.body.job_number === '24-101', JSON.stringify(wx));
       // the server's copy came back through pbCxRefresh(true): the dashboard answer carries it
       const refreshed = await page.evaluate(() => window.__rpcLog.filter(x => x.fn === 'pb_prod_company_dashboard').length);
       check('O9 pbCxRefresh(true) reloaded the dashboard', refreshed >= 2, refreshed);
@@ -208,11 +212,17 @@ const cacheKeys = (p, uid) => p.evaluate((u) => { try { return Object.keys(JSON.
       await page.evaluate(() => pbGotoTab('home')); await page.waitForTimeout(1500);
       await page.evaluate(() => pbOpenInspJob('24-101', 'Elm St water main')); await page.waitForTimeout(2000);
       const ij = (await O.screenText(page)).replace(/\s+/g, ' ');
-      check('O7 no signal: "No signal. The latest loads with signal." — not "Sign in with signal"', /No signal\. The latest loads with signal\./.test(ij) && !/Sign in with signal/.test(ij), ij.slice(0, 300));
-      check('O7 no signal: one "Loads with signal." line, no "Open (0) None open." / "Done (0) None done yet."', /Loads with signal\./.test(ij) && !/Open \(0\)/.test(ij) && !/None open/.test(ij) && !/None done yet/.test(ij), ij.slice(0, 300));
+      // r16.14: with no signal each screen shows ONE "No signal · showing what’s saved on this phone" line under its header;
+      // the screen's own "No signal. The latest loads with signal." / "Loads with signal." lines stay in the DOM but are hidden (.pb-offhide)
+      const NS = 'No signal · showing what’s saved on this phone';
+      const hiddenLines = (p) => p.evaluate(() => [...document.querySelectorAll('.pb-screen.active .pb-offhide')].map(e => e.textContent.trim()));
+      const nsLines = (p) => p.evaluate(() => [...document.querySelectorAll('.pb-screen.active .pb-nosig-line')].filter(e => e.getBoundingClientRect().height > 0).map(e => e.textContent.trim()));
+      const ijH = await hiddenLines(page), ijN = await nsLines(page);
+      check('O7 no signal: one "' + NS + '" line (r16.14) — not "Sign in with signal"', ijN.length === 1 && ijN[0] === NS && ij.split(NS).length === 2 && !/Sign in with signal/.test(ij), ij.slice(0, 300) + ' ns=' + JSON.stringify(ijN));
+      check('O7 no signal: the screen’s own "No signal. The latest loads with signal." line is hidden under it, no "Open (0) None open." / "Done (0) None done yet."', ijH.includes('No signal. The latest loads with signal.') && !/Loads with signal\./.test(ij) && !/The latest loads with signal/.test(ij) && !/Open \(0\)/.test(ij) && !/None open/.test(ij) && !/None done yet/.test(ij), ij.slice(0, 300) + ' hidden=' + JSON.stringify(ijH));
       await page.evaluate(() => pbOpenInspCompany()); await page.waitForTimeout(1500);
-      const ic = (await O.screenText(page)).replace(/\s+/g, ' ');
-      check('O7 Company inspections with no signal says "No signal. The latest loads with signal."', /No signal\. The latest loads with signal\./.test(ic), ic.slice(0, 200));
+      const ic = (await O.screenText(page)).replace(/\s+/g, ' '), icH = await hiddenLines(page), icN = await nsLines(page);
+      check('O7 Company inspections with no signal shows the one r16.14 line and hides its "No signal. The latest loads with signal."', icN.length === 1 && icN[0] === NS && ic.split(NS).length === 2 && icH.includes('No signal. The latest loads with signal.') && !/The latest loads with signal/.test(ic), ic.slice(0, 200) + ' hidden=' + JSON.stringify(icH));
       await O.online(ctx, page);
       // O7d: "LF per stick" on the Count It form
       await O.home(page); await page.evaluate(() => window.pbCxOpenJob('24-101', 'materials')); await page.waitForTimeout(3000);

@@ -59,24 +59,27 @@ const LINKS = [{ foreman: 'acctF', pipelayer: 'acctP', by: 'acctP', started: new
       // enter production while the run is open (offline: saved on this phone first)
       await page.click('#pmLiveEnter0'); await page.waitForTimeout(300);
       const pre = await page.evaluate(() => [...document.querySelectorAll('#pmLiveForm input')].map(i => i.value));
-      check('Enter production for this run: six categories plus crew man-hours and equipment hours (batch 29 ROLES); Pipe Installed pre-filled 40 from the laid rows', pre.length === 8 && pre[6] === '' && pre[7] === '' && pre[2] === '40' && /Filled in from the rows marked laid/.test(await page.evaluate(() => document.getElementById('pmLiveForm').textContent)));
-      await page.fill('#pmLiveQ1', '55'); await page.fill('#pmLiveQ2', '42');
+      // r16.07: the Crew / Equipment hour boxes left the production form (the daily report has them); Excavation and Backfill fill with the pipe feet (LF job)
+      // feat_foreman 21 (before r15.65): Pipe Installed first on the foreman's crew-run form, then the rest (Demo, Excavation, Backfill, Restoration, Structures)
+      const qi = await page.evaluate(() => { const L = [...document.querySelectorAll('#pmLiveForm label')].map(l => l.textContent); return { pipe: L.findIndex(l => /^Pipe Installed/.test(l)), exc: L.findIndex(l => /^Excavation/.test(l)), bf: L.findIndex(l => /^Backfill/.test(l)), demo: L.findIndex(l => /^Demo/.test(l)) }; });
+      check('Enter production for this run: the six categories only, no hour boxes (r16.07); Pipe Installed first and pre-filled 40 from the laid rows, Excavation and Backfill with it (' + JSON.stringify(pre) + ')', pre.length === 6 && qi.pipe === 0 && pre[qi.pipe] === '40' && pre[qi.exc] === '40' && pre[qi.bf] === '40' && pre[qi.demo] === '' && /Filled in from the rows marked laid/.test(await page.evaluate(() => document.getElementById('pmLiveForm').textContent)) && !/Crew hours|Equipment hours/.test(await page.evaluate(() => document.getElementById('pmLiveForm').textContent)));
+      await page.fill('#pmLiveQ' + qi.exc, '55'); await page.fill('#pmLiveQ' + qi.pipe, '42');
       await page.evaluate(() => pbLvRefresh()); await page.waitForTimeout(300);
-      check('a refresh never overwrites what the foreman typed (42 stays)', await page.evaluate(() => document.getElementById('pmLiveQ2') && document.getElementById('pmLiveQ2').value === '42'));
+      check('a refresh never overwrites what the foreman typed (42 stays)', await page.evaluate((k) => document.getElementById('pmLiveQ' + k) && document.getElementById('pmLiveQ' + k).value === '42', qi.pipe));
       await page.click('#pmLiveSave');
       await L.waitFor(page, () => /Sends when there/.test(document.getElementById('pmLive0').textContent), 10000);
       c = await card(page);
       if (!/Sends when there/.test(c)) console.log('debug save card:', c);
-      check('offline save: "Your production for this run: Excavation 55 LF · Pipe Installed 42 LF", "Saved on this phone. Sends when there\'s signal."', /Excavation 55 LF · Pipe Installed 42 LF/.test(c) && /Saved on this phone\. Sends when there’s signal\./.test(c));
+      check('offline save: "Your production for this run: Pipe Installed 42 LF · Excavation 55 LF · Backfill 40 LF", "Saved on this phone. Sends when there\'s signal." (' + c.slice(0, 300) + ')', /Pipe Installed 42 LF · Excavation 55 LF · Backfill 40 LF/.test(c) && /Saved on this phone\. Sends when there’s signal\./.test(c)); // r16.07: Backfill kept its prefill (the pipe feet); feat_foreman 21: Pipe first
       await page.reload(); await page.waitForTimeout(1500); await M.dismiss(page);
       await page.evaluate(() => pbOpenProdMine()); await L.waitFor(page, () => !!document.getElementById('pmLive0'));
-      check('after a reload (still offline) it is still saved on this phone', /Excavation 55 LF · Pipe Installed 42 LF/.test(await card(page)) && /Saved on this phone/.test(await card(page)));
+      check('after a reload (still offline) it is still saved on this phone', /Pipe Installed 42 LF · Excavation 55 LF · Backfill 40 LF/.test(await card(page)) && /Saved on this phone/.test(await card(page)));
       await page.evaluate(() => localStorage.setItem('__rpcMode', 'ok'));
       await page.evaluate(() => { window.dispatchEvent(new Event('online')); pbProdSyncNow(); });
       check('signal: sent (pb_prod_crew_run_save) and "Synced: counts for the company"', await L.waitFor(page, () => /Synced: counts for the company/.test(document.getElementById('pmLive0').textContent), 20000));
       const call = await page.evaluate(() => (window.__rpcLog || []).filter(x => x.fn === 'pb_prod_crew_run_save').pop());
       check('the entry is tied to Wes\'s run session, with the company answer held at Save', !!call && call.args.p_pipelayer === 'acctP' && call.args.p_session_ref === sref && call.args.p_access_company === 'c1' && !!call.args.p_access_at);
-      check('the foreman is told the pipelayer\'s own numbers will be marked covered', /own numbers for this run arrive, they’re marked as covered by yours/.test(await card(page)));
+      check('r16.08 cleanup: nothing said about the pipelayer\'s own numbers until they matter (they haven\'t arrived)', !/own numbers for this run/.test(await card(page)));
       srv = await L.srvGet(page);
       check('server: one foreman entry for that session (crewrun:acctP:' + sref + ')', Object.keys(srv.entries).filter(k => k.startsWith('acctF|crewrun:acctP:' + sref)).length === 1);
       errs.push(...page._errors);
@@ -108,7 +111,7 @@ const LINKS = [{ foreman: 'acctF', pipelayer: 'acctP', by: 'acctP', started: new
       const r = await page.evaluate(() => window.__rpc('pb_prod_company_dashboard', { p_today: null }));
       const job = r.data.jobs.find(j => j.job_key === '24-101');
       const cat = (k) => (job.cats.find(c => c.key === k) || {}).done;
-      check('no double count: Pipe Installed 42 (the foreman\'s), not 77; Excavation 55, not 105', cat('pipe') === 42 && cat('excavation') === 55);
+      check('no double count: Pipe Installed 42 (the foreman\'s), not 77; Excavation 55, not 105; Backfill 40 (' + JSON.stringify(job.cats) + ')', cat('pipe') === 42 && cat('excavation') === 55 && cat('backfill') === 40);
       // review 1 SF1: the company takes the foreman's entry off the totals -> Wes's own entry is no longer covered
       const fe = Object.values(srv.entries).find(e => e.user === 'acctF' && e.covers);
       await page.evaluate((id) => window.__rpc('pb_prod_void', { p_entry_id: id, p_reason: 'test', p_expect_uid: 'acctO' }), fe.id);
@@ -131,7 +134,7 @@ const LINKS = [{ foreman: 'acctF', pipelayer: 'acctP', by: 'acctP', started: new
       await page.evaluate(() => pbOpenProdMine()); await L.waitFor(page, () => !!document.getElementById('pmLive0'));
       if (name === '390') {
         check('the newest open run is the current one (MH-4 → MH-5); the other is under Today\'s other runs, read-only', /MH-4 → MH-5/.test(await page.evaluate(() => document.querySelector('#pmLive0 .pbp-liverun.cur').textContent)) && /Today’s other runs \(1\)/.test(await card(page)));
-        await page.click('#pmLiveEnter0'); await page.fill('#pmLiveQ2', '21'); await page.click('#pmLiveSave');
+        await page.click('#pmLiveEnter0'); await page.fill('#pmLiveQ0', '21'); /* feat_foreman 21: Pipe Installed is the first box */ await page.click('#pmLiveSave');
         check('already counted: "Not sent: their own production for this run already counts for the company …. Nothing was counted."', await L.waitFor(page, () => /Not sent: their own production for this run already counts for the company \(use Counted runs you can still claim\)\. Nothing was counted\./.test(document.getElementById('pmLive0').textContent), 20000));
         check('the refused entry was not filed on the server', !Object.keys((await L.srvGet(page)).entries).some(k => k.includes('crewrun:acctP:777')));
       }

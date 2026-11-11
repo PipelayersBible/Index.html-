@@ -79,9 +79,10 @@ const puts = (p) => p.evaluate(() => window.__rpcLog.filter(x => x.fn === 'pb_pr
       await page.evaluate(() => pbGotoTab('home')); await sleep(page, 2500);
       const onCx = await page.evaluate(() => document.documentElement.classList.contains('pb-cx'));
       check('PM gets the Company Home', onCx);
-      await L.waitFor(page, () => /New run report/.test((document.getElementById('homeCxRuns2') || {}).textContent || ''), 10000);
-      const tile = await page.evaluate(() => (document.getElementById('homeCxRuns2') || {}).innerText || '');
-      check('Home: Run reports tile, 1 new, 1 waiting for a foreman (' + tile.replace(/\s+/g, ' ') + ')', /1/.test(tile) && /New run report/.test(tile) && /1 new · 1 waiting for a foreman/.test(tile));
+      // r16.08 (feat_drtile): the PM's glance is the New daily reports tile; the run reports tile is gone and run reports come up through Waiting on foremen and the Run reports list
+      await L.waitFor(page, () => /Waiting on foremen/.test((document.getElementById('homeCxWait') || {}).textContent || '') && /1 run/.test((document.getElementById('homeCxWait') || {}).textContent || ''), 10000);
+      const tile = await page.evaluate(() => ({ runs2: !!document.getElementById('homeCxRuns2'), dailies: (document.getElementById('homeCxDailies') || {}).innerText || '' }));
+      check('Home: no run reports tile; the New daily reports tile in its place (' + JSON.stringify(tile).slice(0, 120) + ')', !tile.runs2 && /New daily reports/.test(tile.dailies));
       await page.screenshot({ path: '/home/claude/feat_pmruns/shots/home_tile.png' });
       const wt = await page.evaluate(() => (document.getElementById('homeCxWait') || {}).innerText || '');
       check('Home: Waiting on foremen counts the crew run (' + wt.replace(/\s+/g, ' ') + ')', /^\s*1\b/.test(wt.replace(/[^\S\n]+/g, ' ').trim().split('\n').filter(Boolean)[0] || '') || /\b1\s*Waiting on foremen/.test(wt.replace(/\s+/g, ' ')));
@@ -90,31 +91,38 @@ const puts = (p) => p.evaluate(() => window.__rpcLog.filter(x => x.fn === 'pb_pr
       await page.click('#cxWaitRuns'); await sleep(page, 1200);
       check('it opens Crew runs', await page.evaluate(() => !!document.getElementById('cxRun0')));
       await page.evaluate(() => pbGoto('home')); await sleep(page, 800);
-      await page.click('#homeCxRuns2'); await sleep(page, 1500);
+      await page.evaluate(() => pbCxOpenList('runs')); await sleep(page, 1500); // r16.08: the Run reports list (no Home tile)
       const row = await page.evaluate(() => (document.getElementById('cxRun0') || {}).innerText || '');
-      check('list: the run with job, who, waiting (' + row.replace(/\s+/g, ' ') + ')', /26014/.test(row) && /Mike Smith/.test(row) && /Waiting for a foreman/.test(row) && /50 ft marked laid/.test(row));
+      check('list: the run with job, who, new, waiting (' + row.replace(/\s+/g, ' ') + ')', /26014/.test(row) && /Mike Smith/.test(row) && /New/.test(row) && /waiting for a foreman/i.test(row) && /50 ft marked laid/.test(row));
       await page.screenshot({ path: '/home/claude/feat_pmruns/shots/list.png' });
       await page.click('#cxRun0'); await sleep(page, 1500);
-      const det = await page.evaluate(() => ({ t: (document.getElementById('cxRunText') || {}).textContent || '', ph: (document.getElementById('cxRunPhotos') || {}).textContent || '' }));
-      check('run opens: the report text and the photos note', det.t.length > 50 && /2 photos left out/.test(det.ph));
+      // r15.38 (feat_runflow P5): the photo count is in the summary block; r15.37 (feat_pdfview): the report is read on the PDF viewer screen (View Run Report), its text a tap away there
+      const det = await page.evaluate(() => ({ sum: (document.getElementById('cxRunSum') || {}).innerText || '', view: !!document.getElementById('cxRunView'), oldText: !!document.getElementById('cxRunText') }));
+      check('run opens: the summary says 2 photos stayed on the phone, View Run Report (' + det.sum.replace(/\s+/g, ' ') + ')', /2 photos \(on Mike’s phone\)/.test(det.sum) && det.view && !det.oldText);
       await page.screenshot({ path: '/home/claude/feat_pmruns/shots/detail.png' });
-      await L.waitFor(page, () => !!(document.getElementById('cxRunPdfView') || {}).dataset && !!document.getElementById('cxRunPdfView').dataset.pages, 30000);
-      await page.evaluate(() => { window.__c0 = document.querySelector('#cxRunPdfView canvas'); });
+      await page.click('#cxRunView'); await sleep(page, 300);
+      await L.waitFor(page, () => !!document.querySelector('#screen-pdfView.active') && document.querySelectorAll('#pdfvPages canvas').length >= 1, 30000);
+      await page.click('#pdfvTextBtn'); await sleep(page, 400);
+      check('Text version: the report text', await page.evaluate(() => getComputedStyle(document.getElementById('pdfvText')).display !== 'none' && document.getElementById('pdfvText').textContent.length > 50));
+      await page.click('#pdfvTextBtn'); await sleep(page, 1500); // back to the pages
+      await page.evaluate(() => { window.__c0 = document.querySelector('#pdfvPages canvas'); });
       await sleep(page, 6000); // the company Home redraws its lists every 1.5 s
-      const stable = await page.evaluate(() => ({ same: document.querySelector('#cxRunPdfView canvas') === window.__c0 && !!window.__c0 && document.contains(window.__c0), n: document.querySelectorAll('#cxRunPdfView canvas').length, pages: document.getElementById('cxRunPdfView').dataset.pages }));
-      check('the report stays put on the company account (no redraw loop) (' + JSON.stringify(stable) + ')', stable.same && String(stable.n) === stable.pages);
-      const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 30000 }).catch(() => null), page.click('#cxRunPdf')]);
+      const stable = await page.evaluate(() => ({ same: document.querySelector('#pdfvPages canvas') === window.__c0 && !!window.__c0 && document.contains(window.__c0), n: document.querySelectorAll('#pdfvPages canvas').length, pages: document.querySelectorAll('#pdfvPages .pb-pdfv-page').length }));
+      check('the report stays put on the company account (no redraw loop) (' + JSON.stringify(stable) + ')', stable.same && stable.n >= 1 && stable.pages >= 1);
+      const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 30000 }).catch(() => null), page.click('#pdfvDownload')]);
       let ok = false, size = 0;
       if (dl) { const p = await dl.path(); size = require('fs').statSync(p).size; ok = /^crew-run-26014-.*\.pdf$/.test(dl.suggestedFilename()) && size > 5000; require('fs').copyFileSync(p, '/home/claude/feat_pmruns/shots/office_copy.pdf'); }
-      check('Save PDF: a PDF of the run (' + (dl ? dl.suggestedFilename() : 'none') + ', ' + size + ' bytes)', ok);
-      await page.click('#cxRunBack'); await sleep(page, 400);
+      check('Download: a PDF of the run (' + (dl ? dl.suggestedFilename() : 'none') + ', ' + size + ' bytes)', ok);
+      await page.click('#pdfvBack'); await sleep(page, 600);
+      check('Back from the viewer returns to the run', await page.evaluate(() => (document.querySelector('.pb-screen.active') || {}).id === 'screen-cxList' && !!document.getElementById('cxRunView')));
+      await page.click('#cxListBack'); await sleep(page, 400);
       check('back to the list', await page.evaluate(() => !!document.getElementById('cxRun0')));
       await page.evaluate(() => localStorage.setItem('__rrReviewed', new Date().toISOString())); await page.evaluate(() => window.pbRrLoad('acctM', true)); await sleep(page, 1200);
       const rv = await page.evaluate(() => ({ row: (document.getElementById('cxRun0') || {}).innerText || '', n: window.pbRrWaitingCount('acctM') }));
-      check('reviewed by the foreman, no production yet: not waiting on him any more, says "No production entered" (' + rv.row.replace(/\s+/g, ' ') + ')', rv.n === 0 && /Approved by Brandon Jones/.test(rv.row) && /No production entered/.test(rv.row) && !/Waiting for a foreman/.test(rv.row));
+      check('reviewed by the foreman, no production yet: not waiting on him any more, says "Approved by Brandon Jones, no production" (' + rv.row.replace(/\s+/g, ' ') + ')', rv.n === 0 && /Approved by Brandon Jones, no production/.test(rv.row) && !/waiting for a foreman/i.test(rv.row)); // r15.38 (feat_runflow P8): one state tag per row
       await page.evaluate(() => localStorage.removeItem('__rrReviewed'));
       await page.evaluate(() => localStorage.setItem('__rrConfirmed', '1')); await page.evaluate(() => window.pbRrLoad('acctM', true)); await sleep(page, 1200);
-      check('after a foreman enters production: "Production entered"', /Production entered/.test(await page.evaluate(() => (document.getElementById('cxRun0') || {}).innerText || '')));
+      check('after a foreman enters production: "Not approved yet · production entered"', /Not approved yet · production entered/.test(await page.evaluate(() => (document.getElementById('cxRun0') || {}).innerText || ''))); // feat_office A11: one set of status words
       await ctx.close();
     }
     // ---- 2b. the foreman: View Run Report on his crew's run ----
@@ -142,12 +150,15 @@ const puts = (p) => p.evaluate(() => window.__rpcLog.filter(x => x.fn === 'pb_pr
       check('foreman: his crew run has View Run Report (' + b + ')', /View Run Report/.test(b));
       await page.screenshot({ path: '/home/claude/feat_pmruns/shots/foreman_crew.png' });
       await page.click('[id^="pmLiveRpt"]'); await sleep(page, 1500);
-      const t = await page.evaluate(() => ({ s: document.querySelector('.pb-screen.active').id, title: (document.getElementById('cxListTitle') || {}).textContent, text: (document.getElementById('cxRunText') || {}).textContent || '' }));
-      check('it opens the run report (' + t.s + ', ' + t.title + ')', t.s === 'screen-cxList' && t.title === 'Run report' && t.text.length > 50);
+      const t = await page.evaluate(() => ({ s: document.querySelector('.pb-screen.active').id, title: (document.getElementById('cxListTitle') || {}).textContent, body: (document.getElementById('cxListBody') || {}).innerText || '', view: !!document.getElementById('cxRunView') }));
+      check('it opens the run report (' + t.s + ', ' + t.title + ')', t.s === 'screen-cxList' && t.title === 'Run report' && /Mike Smith/.test(t.body) && /200 ft run/.test(t.body) && /2 photos/.test(t.body) && t.view); // r15.37: the text is on the viewer
       await page.screenshot({ path: '/home/claude/feat_pmruns/shots/foreman_report.png' });
-      const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 30000 }).catch(() => null), page.click('#cxRunPdf')]);
-      check('foreman: Save PDF works', !!dl && /\.pdf$/.test(dl.suggestedFilename()));
-      await page.click('#cxRunBack'); await sleep(page, 800);
+      await page.click('#cxRunView'); await sleep(page, 300);
+      await L.waitFor(page, () => !!document.querySelector('#screen-pdfView.active') && document.querySelectorAll('#pdfvPages canvas').length >= 1, 30000);
+      const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 30000 }).catch(() => null), page.click('#pdfvDownload')]);
+      check('foreman: Download (viewer) works', !!dl && /\.pdf$/.test(dl.suggestedFilename()));
+      await page.click('#pdfvBack'); await sleep(page, 600);
+      await page.click('#cxListBack'); await sleep(page, 800);
       check('Back returns to the crew screen', await page.evaluate(() => document.querySelector('.pb-screen.active').id) === 'screen-prodMine');
       await page.evaluate(() => localStorage.setItem('__rrCrew', JSON.stringify({ id: 'acctP', name: 'Mike Smith', sref: '999' })));
       await page.evaluate(() => window.pbRrCrewOpen('acctP', '999', 'Mike Smith')); await sleep(page, 1200);
@@ -160,7 +171,7 @@ const puts = (p) => p.evaluate(() => window.__rpcLog.filter(x => x.fn === 'pb_pr
       await ctx.addInitScript(RRMOCK); await page.reload(); await sleep(page, 1800); await M.dismiss(page);
       const r = await page.evaluate(() => window.__rpc('pb_prod_company_runs', { p_days: 60 }));
       check('a pipelayer is refused the list', r && r.error && /pb:not_company_account/.test(r.error.message));
-      check('a pipelayer has no Crew runs tile', !(await page.evaluate(() => !!document.getElementById('homeCxRuns2') && document.getElementById('homeCxRuns2').offsetParent !== null)));
+      check('a pipelayer has no Company Home (no Waiting on foremen / Run reports door)', !(await page.evaluate(() => document.documentElement.classList.contains('pb-cx') || (!!document.getElementById('homeCxWait') && document.getElementById('homeCxWait').offsetParent !== null)))); // r16.08: the run reports tile is gone for everyone; the list is a company door
       await ctx.close();
     }
     check('no page errors (' + errs.slice(0, 3).join(' | ') + ')', errs.length === 0);

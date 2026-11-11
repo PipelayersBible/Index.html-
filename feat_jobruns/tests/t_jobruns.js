@@ -63,7 +63,7 @@ const RUNS = () => { const o = window.__rpc; window.__rpc = async (fn, args) => 
     await page.click('#ppSaveBtn'); await page.waitForTimeout(1500);
     await T.waitFor(page, () => !!document.getElementById('pjCxRun0'), 15000);
     const r = await txt(page, '#pjCxRuns');
-    check('job Overview: Run reports lists this job\'s run, not the other job\'s (' + r + ')', /Mike Smith/.test(r) && /210 ft run/.test(r) && /Approved by Brandon Jones/.test(r) && /No production entered/.test(r) && !/Joe Other/.test(r));
+    check('job Overview: Run reports lists this job\'s run, not the other job\'s (' + r + ')', /Mike Smith/.test(r) && /210 ft run/.test(r) && /Approved by Brandon Jones, no production/.test(r) && !/Joe Other/.test(r)); // r15.67: one status line "Approved by <name>, no production" (was a separate "No production entered" tag)
     await page.screenshot({ path: SHOTS + 'job_runs.png' });
     await page.click('#pjCxRun0'); await page.waitForTimeout(1500);
     check('tapping it opens the run report', (await scr(page)) === 'screen-cxList' && /Job 26014/.test((await txt(page, '#cxListBody')) || '') && !!(await page.$('#cxSendBackBtn')));

@@ -2,6 +2,8 @@ const L = require('/home/claude/test/lib.js');
 // A Lock whose archive save fails leaves a pending-retry record with an entrySnapshot.
 // The user then deletes that (unsaved) run from the Archive, and the delete save succeeds.
 // Expected: the run stays deleted. Bug: reconcilePendingLockRetries revives it from the snapshot.
+// r15.65+: a point starts on Survey Stake; this test types invert elevations, so Start and End go to Invert Elevation first (as test/lib.js elevMode)
+const elevMode = (page) => page.evaluate(() => ['start', 'end'].forEach((p) => { const b = document.querySelector('#' + p + 'ModeToggle button[data-val="elev"]'); if (b && !b.classList.contains('active')) b.click(); }));
 (async () => {
   const browser = await L.chromium.launch();
   const uid = 'uStDel1';
@@ -10,7 +12,7 @@ const L = require('/home/claude/test/lib.js');
   const keepId = await L.lockRun(page, { dist: 50 });
   await page.evaluate(() => pbOpenNewRun()); await page.waitForTimeout(300);
   await page.click('#rodToggle button[data-val="lenker"]');
-  await page.fill('#startElev','100.00'); await page.fill('#endElev','99.00'); await page.fill('#totalDist','120'); await page.fill('#interval','10');
+  await elevMode(page); await page.fill('#startElev','100.00'); await page.fill('#endElev','99.00'); await page.fill('#totalDist','120'); await page.fill('#interval','10');
   await page.fill('#runWT','0.3'); await page.selectOption('#runIdSel','10');
   await page.click('text=Review & Calculate'); await page.waitForTimeout(400);
   await L.failSaves(page);
@@ -39,7 +41,7 @@ const L = require('/home/claude/test/lib.js');
   const p2 = await L.newPage(browser, 'uStDel2');
   await L.lockRun(p2, { dist: 50 });
   await p2.evaluate(() => pbOpenNewRun()); await p2.waitForTimeout(300);
-  await p2.fill('#startElev','100.00'); await p2.fill('#endElev','99.00'); await p2.fill('#totalDist','120'); await p2.fill('#interval','10');
+  await elevMode(p2); await p2.fill('#startElev','100.00'); await p2.fill('#endElev','99.00'); await p2.fill('#totalDist','120'); await p2.fill('#interval','10');
   await p2.fill('#runWT','0.3'); await p2.selectOption('#runIdSel','10');
   await p2.click('text=Review & Calculate'); await p2.waitForTimeout(400);
   await L.failSaves(p2);
@@ -60,7 +62,7 @@ const L = require('/home/claude/test/lib.js');
   const p3 = await L.newPage(browser, 'uStDel3');
   await L.lockRun(p3, { dist: 50 });
   await p3.evaluate(() => pbOpenNewRun()); await p3.waitForTimeout(300);
-  await p3.fill('#startElev','100.00'); await p3.fill('#endElev','99.00'); await p3.fill('#totalDist','120'); await p3.fill('#interval','10');
+  await elevMode(p3); await p3.fill('#startElev','100.00'); await p3.fill('#endElev','99.00'); await p3.fill('#totalDist','120'); await p3.fill('#interval','10');
   await p3.fill('#runWT','0.3'); await p3.selectOption('#runIdSel','10');
   await p3.click('text=Review & Calculate'); await p3.waitForTimeout(400);
   await L.failSaves(p3);

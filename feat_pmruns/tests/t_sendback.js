@@ -74,13 +74,13 @@ const txt = (page, id) => page.evaluate((i) => ((document.getElementById(i) || {
       await ctx.addInitScript(MOCK); await page.reload(); await sleep(page, 2000); await M.dismiss(page);
       page.on('pageerror', e => errs.push(String(e)));
       await page.evaluate(() => pbGotoTab('home')); await sleep(page, 2000);
-      await page.click('#homeCxRuns2'); await sleep(page, 1500);
+      await page.evaluate(() => pbCxOpenList('runs')); await sleep(page, 1500); // r16.08 (feat_drtile): the Home run reports tile is gone (New daily reports in its place); the Run reports list is a company door
       const rows = await page.evaluate(() => [...document.querySelectorAll('[id^="cxRun"]')].filter(e => /^cxRun\d+$/.test(e.id)).map(e => e.innerText.replace(/\s+/g, ' ')));
       const ai = rows.findIndex(r => /Approved by/.test(r)), ni = rows.findIndex(r => /Not approved yet/.test(r));
       check('office list: one approved, one not (' + rows.join(' | ').slice(0, 200) + ')', ai >= 0 && ni >= 0);
       await page.click('#cxRun' + ni); await sleep(page, 1500);
       check('a report not approved yet has no Send Back', await page.evaluate(() => !document.getElementById('cxSendBackBtn')));
-      await page.click('#cxRunBack'); await sleep(page, 800);
+      await page.click('#cxListBack'); await sleep(page, 800);
       await page.click('#cxRun' + ai); await sleep(page, 1500);
       check('an approved report has "Send Back to Foreman"', /Send Back to Foreman/.test(await txt(page, 'cxSendBackBtn')));
       await page.click('#cxSendBackBtn'); await sleep(page, 500);
@@ -98,7 +98,7 @@ const txt = (page, id) => page.evaluate((i) => ((document.getElementById(i) || {
       const d = await txt(page, 'cxRunSentBack');
       check('the report shows "Sent back by" with the note, no Approved, no Send Back button (' + d + ')', /Sent back by/.test(d) && /crew hours/.test(d) && !(await page.evaluate(() => !!document.getElementById('cxSendBackBtn'))));
       await page.screenshot({ path: '/home/claude/feat_pmruns/shots/sendback_done.png' });
-      await page.click('#cxRunBack'); await sleep(page, 1500);
+      await page.click('#cxListBack'); await sleep(page, 1500);
       const r2 = await page.evaluate(() => [...document.querySelectorAll('[id^="cxRun"]')].filter(e => /^cxRun\d+$/.test(e.id)).map(e => e.innerText.replace(/\s+/g, ' ')).join(' | '));
       check('office list: "Sent back", nothing Approved now (' + r2.slice(0, 200) + ')', /Sent back/.test(r2) && !/Approved by/.test(r2));
       srv = JSON.parse(await page.evaluate(() => localStorage.getItem('__rrsrv')));
@@ -111,7 +111,9 @@ const txt = (page, id) => page.evaluate((i) => ((document.getElementById(i) || {
       await page.evaluate(() => pbGotoTab('home'));
       await L.waitFor(page, () => !!document.getElementById('homeWork_rrReview'), 15000);
       const c = await txt(page, 'homeWork_rrReview');
-      check('foreman Home: "1 sent back by the office" (' + c + ')', /2 run reports/.test(c) && /1 sent back by the office: see the note/.test(c));
+      // r15.38 (feat_runflow P2/P8): the tile "Run reports to approve" counts both; the Current Work row is for the one sent back
+      const tile = await txt(page, 'homeFmWait');
+      check('foreman Home: "Sent back by the office · 1 run report to fix" row, tile counts 2 (' + c + ' / ' + tile + ')', /^2\s+Run reports to approve/.test(tile) && /Sent back by the office/.test(c) && /1 run report to fix/.test(c) && /office’s note/.test(c));
       await page.click('#homeWork_rrReview'); await sleep(page, 1500);
       const rows = await page.evaluate(() => [...document.querySelectorAll('[id^="cxRev"]')].map(e => e.innerText.replace(/\s+/g, ' ')));
       const bi = rows.findIndex(r => /Sent back by Pat PM: Add the crew hours/.test(r));
@@ -123,8 +125,8 @@ const txt = (page, id) => page.evaluate((i) => ((document.getElementById(i) || {
       await page.screenshot({ path: '/home/claude/feat_pmruns/shots/foreman_sentback.png' });
       const k = await page.evaluate(() => [...document.querySelectorAll('#cxRunProdBox label')].findIndex(l => /Pipe Installed/.test(l.textContent)));
       await page.fill('#cxRunLiveQ' + k, '160'); await page.click('#cxRunApproveBtn'); await sleep(page, 3000);
-      check('approved again: the sent-back note is gone', await page.evaluate(() => window.__rpcLog.some(x => x.fn === 'pb_prod_run_report_review') && !document.getElementById('cxRunSentBack') && /Approved/.test((document.getElementById('cxRunSent') || {}).textContent || '')));
-      await page.click('#cxRunBack'); await sleep(page, 1500);
+      check('approved again: the sent-back note is gone', await page.evaluate(() => window.__rpcLog.some(x => x.fn === 'pb_prod_run_report_review') && !document.getElementById('cxRunSentBack') && /Approved/.test((document.getElementById('cxRunApproved') || {}).textContent || ''))); // r16.08 cleanup: "Approved" said once, in the note under the production
+      await page.click('#cxListBack'); await sleep(page, 1500);
       const rows2 = await page.evaluate(() => [...document.querySelectorAll('[id^="cxRev"]')].map(e => e.innerText.replace(/\s+/g, ' ')));
       const oi = rows2.findIndex(r => /Not approved/.test(r));
       await page.click('#cxRev' + oi); await sleep(page, 1500);
@@ -154,7 +156,7 @@ const txt = (page, id) => page.evaluate((i) => ((document.getElementById(i) || {
       await ctx.addInitScript(MOCK); await page.reload(); await sleep(page, 2000); await M.dismiss(page);
       page.on('pageerror', e => errs.push(String(e)));
       await page.evaluate(() => pbGotoTab('home')); await sleep(page, 2000);
-      await page.click('#homeCxRuns2'); await sleep(page, 1500);
+      await page.evaluate(() => pbCxOpenList('runs')); await sleep(page, 1500); // r16.08 (feat_drtile): the Home run reports tile is gone (New daily reports in its place); the Run reports list is a company door
       const rows = await page.evaluate(() => [...document.querySelectorAll('[id^="cxRun"]')].filter(e => /^cxRun\d+$/.test(e.id)).map(e => e.innerText.replace(/\s+/g, ' ')));
       const di = rows.findIndex(r => /Deleted by Brandon Jones/.test(r));
       check('office list: "Deleted by Brandon Jones", no approve tag on it (' + rows.join(' | ').slice(0, 220) + ')', di >= 0 && !/Not approved|Waiting for a foreman/.test(rows[di]));

@@ -11,7 +11,9 @@ const shot = process.env.PB_SHOT_DIR;
   const out = () => ev(() => { const r = document.querySelector('#pbWtOut-volume .pb-wt-raw .pb-answer-val'), c = document.querySelector('#pbWtOut-volume .pb-wt-comp .pb-answer-val'), m = document.querySelector('#pbWtOut-volume .pb-wt-msg');
     return { raw: r ? Number(r.dataset.tons) : null, rawTxt: r ? r.textContent : null, comp: c ? Number(c.dataset.tons) : null, compTxt: c ? c.textContent : null, msg: m ? m.textContent : null, all: (document.getElementById('volumeResult') || {}).textContent }; });
   const tap = async (sel) => { await ev((q) => document.querySelector(q).scrollIntoView({ block: 'center' }), sel); await page.click(sel); await page.waitForTimeout(80); }; // centred: the fixed tab bar covers the bottom edge
-  const rect = async (l, w, d) => { await page.fill('#volRectL', String(l)); await page.fill('#volRectW', String(w)); await page.fill('#volRectD', String(d)); await tap('#screen-volumeCalc button[onclick="pbCalcVolume()"]'); await page.waitForTimeout(150); };
+  // r15.95 (calclive): calculators answer as you type; the Calculate buttons are gone, so typing is the calculation
+  const live = async (screen) => { await ev((s) => pbCalcLiveRun(s), screen); await page.waitForTimeout(150); };
+  const rect = async (l, w, d) => { await page.fill('#volRectL', String(l)); await page.fill('#volRectW', String(w)); await page.fill('#volRectD', String(d)); await live('volumeCalc'); };
     await ev(() => pbOpenVolumeCalc()); await page.waitForTimeout(300);
 
   // 18.9 yd3 (510.3 ft3) for every bedding preset
@@ -110,11 +112,11 @@ const shot = process.env.PB_SHOT_DIR;
   // Structure Bedding: its own remembered choice
   await ev(() => pbOpenBeddingCalc(null)); await page.waitForTimeout(250);
   await page.fill('#beddingInv', '100'); await page.fill('#beddingDist', '0.5'); await page.fill('#beddingThk', '0.5');
-  await tap('#screen-beddingCalc button[onclick="pbCalcBedding()"]'); await page.waitForTimeout(100);
+  await live('beddingCalc'); await page.waitForTimeout(100);
   L.check('bedding without a pad size: elevations only, no volume', !(await ev(() => document.getElementById('beddingVolBox'))) && /99\.500 ft/.test(await ev(() => document.getElementById('beddingResult').textContent)));
-  await page.fill('#beddingPadL', '6'); await tap('#screen-beddingCalc button[onclick="pbCalcBedding()"]'); await page.waitForTimeout(100);
+  await page.fill('#beddingPadL', '6'); await live('beddingCalc'); await page.waitForTimeout(100);
   L.check('bedding with only the pad length: asks for both', !!(await ev(() => document.getElementById('beddingPadMsg'))));
-  await page.fill('#beddingPadW', '6'); await tap('#screen-beddingCalc button[onclick="pbCalcBedding()"]'); await page.waitForTimeout(300);
+  await page.fill('#beddingPadW', '6'); await live('beddingCalc'); await page.waitForTimeout(300);
   const bt = await ev(() => document.getElementById('beddingResult').textContent);
   L.check('bedding 6 × 6 × 0.5 ft = 0.67 yd³ (estimate), with its own picker (nothing picked)', /Bedding Volume \(estimate\)0\.67 yd³/.test(bt) && /Pick a material/.test(bt), bt.slice(0, 300));
   await tap('#pbWt-bedding button[data-wt="k:pea"]');

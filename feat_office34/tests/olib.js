@@ -191,12 +191,12 @@ const OFFICE = () => {
       }
       if (name === 'weather') {
         const S = g('__dlySrv', { items: [], reports: [], weather: {}, location: null, n: 0 });
-        const newLoc = !!(body.address || typeof body.lat === 'number');
+        const newLoc = !!(body.address || body.place || typeof body.lat === 'number'); // feat_jobcity (r15.6x) weather v2: { place } is geocoded; the answer says location_saved
         if (!S.location && !newLoc) return ok({ ok: false, code: mgr() ? 'pb:need_location' : 'pb:need_location_office', message: 'This job has no location yet. Ask the office to set it.' });
-        if (body.address) S.location = { source: 'geocoded', address: body.address, set_at: new Date().toISOString() }; else if (typeof body.lat === 'number') S.location = { source: body.source, lat: body.lat, lon: body.lon, set_at: new Date().toISOString() };
+        if (body.address || body.place) S.location = { source: 'geocoded', address: body.address || body.place, set_at: new Date().toISOString() }; else if (typeof body.lat === 'number') S.location = { source: body.source, lat: body.lat, lon: body.lon, set_at: new Date().toISOString() };
         const w = { station: 'KMDW', complete: false, retrieved_at: new Date().toISOString(), data: { station: 'KMDW', station_name: 'Chicago Midway', tz: 'America/Chicago', work_date: body.work_date, obs_count: 9, high_f: 64.4, low_f: 46.4, high_c: 18, low_c: 8, precip_in: 0.3, precip_hours_reported: 4, precip_hours_in_day: 24, wind_max_mph: 14, gust_max_mph: 25, conditions: [{ text: 'Light Rain', n: 3 }], complete: false, location_source: S.location.source, location: S.location } };
         S.weather[body.job_number + '|' + body.work_date] = w; s('__dlySrv', S);
-        return ok({ ok: true, cached: false, weather: w, location: { source: S.location.source, address: S.location.address || null } });
+        return ok({ ok: true, cached: false, location_saved: newLoc, weather: w, location: { source: S.location.source, address: S.location.address || null, lat: S.location.lat, lon: S.location.lon } });
       }
       return { data: null, error: { message: 'not mocked' } };
     } };

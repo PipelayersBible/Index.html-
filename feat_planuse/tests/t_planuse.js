@@ -50,6 +50,12 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
   if (fn === 'pb_mat_save') { window.__rpcLog.push({ fn, args: JSON.parse(JSON.stringify(args)) }); { const L = JSON.parse(localStorage.getItem('__mats') || '[]'); L.push(Object.assign({ id: 'n' + L.length, version: 1, unit: 'LF', fig: { status: 'ok', used: 0, ordered: 0, waiting: 0 }, orders: [], uses: [] }, args.p_material)); localStorage.setItem('__mats', JSON.stringify(L)); } return { data: { ok: true, material: Object.assign({ id: 'm' + Date.now(), version: 1, unit: 'yd³' }, args.p_material) }, error: null }; }
   if (fn === 'pb_mat_tickets') return { data: { lines: [] }, error: null };
   if (fn === 'pb_mat_job_settings') return { data: { settings: localStorage.getItem('__noTrench') ? null : { trench_width_ft: 3, bed_thick_ft: 0.5, shade_thick_ft: 1, pipe_od_in: 8.625, version: 1 } }, error: null };
+  if (fn === 'pb_prod_plan_set') { // feat_planfill (Oct 28): the phone sends blank + planned_auto; the server's fill_planned (sql 15) fills an LF item from its pipe materials' Expected
+    const r = await o(fn, args); if (!r || !r.data || !r.data.plan) return r;
+    const mats = JSON.parse(localStorage.getItem('__mats') || '[]'), sum = (k) => mats.filter(m => !m.archived && m.source === 'pipe_footage' && (m.footage_cat || 'pipe') === k && Number(m.expected) > 0 && !(Number(m.each_ft) > 0)).reduce((a, m) => a + Number(m.expected), 0);
+    r.data.plan.categories.forEach(c => { if (c.planned_auto === true && c.planned == null && /^\s*(lf|ft|feet)?\s*$/i.test(String(c.unit || '')) && sum(c.planned_from || c.key) > 0) c.planned = sum(c.planned_from || c.key); });
+    const srv = JSON.parse(localStorage.getItem('__psrv')), co = localStorage.getItem('__company') || 'c1', key = co + '|' + String(args.p_job_number || '').trim().toLowerCase().slice(0, 60); if (srv.plans[key]) { srv.plans[key].plan = r.data.plan; localStorage.setItem('__psrv', JSON.stringify(srv)); }
+    return r; }
   return o(fn, args); }; };
 (async () => {
   const browser = await M.chromium.launch();
@@ -81,10 +87,11 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
     await page.tap('#pjPlanMatUse'); await page.waitForTimeout(2000);
     const saves = await page.evaluate(() => window.__rpcLog.filter(x => /plan/.test(x.fn)).map(x => ({ fn: x.fn, cats: x.args && (x.args.p_plan || {}).categories })));
     const pc = saves.length && saves[saves.length - 1].cats ? saves[saves.length - 1].cats.find(c => c.key === 'pipe') : null;
-    check('one tap saves the plan with Pipe Installed planned 3000 (' + JSON.stringify(saves.map(s => s.fn)) + ' ' + JSON.stringify(pc) + ')', pc && Number(pc.planned) === 3000);
+    // feat_planfill (Oct 28, pre-r15.65): the phone never writes the number; one tap saves Pipe Installed as blank + planned_auto and the server's fill_planned puts in the materials' 3000
+    check('one tap saves the plan with Pipe Installed following the materials: blank Planned, planned_auto true, no typed number (' + JSON.stringify(saves.map(s => s.fn)) + ' ' + JSON.stringify(pc) + ')', saves.length === 1 && pc && pc.planned == null && pc.planned_auto === true);
     check('editor closed after saving', !(await page.$('#ppSaveBtn')));
-    check('note gone; Pipe Installed shows a % (' + await page.evaluate(() => { const r = [...document.querySelectorAll('#pjBody *')].find(e => e.children.length === 0 && /^Pipe Installed/.test(e.textContent.trim())); return r ? r.parentElement.innerText.replace(/\s+/g, ' ') : null; }) + ')',
-      !(await page.$('#pjPlanMat')) && !/no plan/.test(await page.evaluate(() => { const r = [...document.querySelectorAll('#pjBody *')].find(e => e.children.length === 0 && /^Pipe Installed/.test(e.textContent.trim())); return r ? r.parentElement.innerText : 'missing'; })));
+    const pipeRow = () => page.evaluate(() => { const r = [...document.querySelectorAll('#screen-prodJob .pbx-legrow')].find(e => /^Pipe Installed/.test(e.innerText.trim())); return r ? r.innerText.replace(/\s+/g, ' ') : 'missing'; });
+    check('note gone; Pipe Installed shows 3,000 planned and a % (' + await pipeRow() + ')', !(await page.$('#pjPlanMat')) && /\/ 3,000 LF/.test(await pipeRow()) && /\d+%/.test(await pipeRow()) && !/no plan/.test(await pipeRow()));
     // editor's note says to save
     await page.evaluate(() => { const L = JSON.parse(localStorage.getItem('__mats')); localStorage.setItem('__mats', JSON.stringify(L)); });
     await page.evaluate(() => window.pbProdPlanEdit()); await page.waitForTimeout(1500);

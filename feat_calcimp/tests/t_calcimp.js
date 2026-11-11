@@ -63,6 +63,10 @@ const modal = (p) => p.evaluate(() => { const m = document.querySelector('.pb-mo
   try {
     const { ctx, page } = await setup(browser, {}); await ctx.addInitScript(MATMOCK); await page.reload(); await page.waitForTimeout(1500); await page.evaluate(() => pbGotoTab('home')); await page.waitForTimeout(1500);
     page.on('pageerror', e => errs.push(String(e)));
+    // r15.95 (calclive, owner Nov 3): calculators answer as you type; the Calculate button is gone. Leaving the field (blur) settles the live answer.
+    const calc = async () => { await page.evaluate(() => { const a = document.activeElement; if (a && a !== document.body && a.blur) a.blur(); }); await page.waitForTimeout(400); };
+    // r15.70 (feat_matform): the help line sits under "Show math" (<details id="pmfMath">), so read its text rather than innerText
+    const help = () => page.evaluate(() => { const d = document.getElementById('pmfMath'), e = document.getElementById('pmfExpHelp'); return d && e && !d.hidden && !e.hidden ? e.textContent.replace(/\s+/g, ' ').trim() : ''; });
     await page.evaluate(() => localStorage.setItem('__mats', JSON.stringify([{ id: 'bed1', name: 'Bedding rock', category: 'bedding_rock', source: 'bedding_calc', basis: 'volume', unit: 'yd³', expected: 50, alert_pct: 80, trench_width_ft: 3, bed_thick_ft: 0.5, density_tpy: 1.4, extra_pct: 10, use_as: 'bedding', version: 2, archived: false, orders: [], uses: [], fig: { status: 'ok', ordered: 0, used: 0, waiting: 0 } }])));
     await page.click('#homeCxNew'); await page.waitForTimeout(400);
     await page.fill('#cxnJob', '26014'); await page.click('#cxnSave');
@@ -79,12 +83,12 @@ const modal = (p) => p.evaluate(() => { const m = document.querySelector('.pb-mo
     check('no length / width / thickness fields', !(await page.$('#pmf_dl')) && !(await page.$('#pmf_dw')) && !(await page.$('#pmf_dt')));
     const btns = await page.evaluate(() => [...document.querySelectorAll('#pmfCi .pbm-ci-btns button')].map(b => b.textContent));
     check('concrete offers Material Volume only (' + btns.join(', ') + ')', btns.join('|') === 'Material Volume');
-    check('help says how (' + await txt(page, '#pmfExpHelp') + ')', /Use This Amount/.test(await txt(page, '#pmfExpHelp')));
+    check('help says how (' + await help() + ')', /Use This Amount/.test(await help()));
     await page.fill('#pmf_extra_pct', '5');
     await page.tap('#pmfCiOpen_vol'); await page.waitForTimeout(600);
     check('opens Material Volume with no Leave without saving question', (await scr(page)) === 'screen-volumeCalc' && !(await modal(page)));
     check('band names the material (' + await txt(page, '#pbCiBand') + ')', /Getting an amount for\s*Concrete/i.test(await txt(page, '#pbCiBand') || ''));
-    await page.fill('#volRectL', '200'); await page.fill('#volRectW', '24'); await page.fill('#volRectD', '0.5'); await page.tap('#screen-volumeCalc button[onclick="pbCalcVolume()"]'); await page.waitForTimeout(300);
+    await page.fill('#volRectL', '200'); await page.fill('#volRectW', '24'); await page.fill('#volRectD', '0.5'); await calc();
     check('Use This Amount for Concrete under the answer (' + await txt(page, '#ciUse_vol') + ')', /Use This Amount for Concrete/.test(await txt(page, '#ciUse_vol') || '') && /88\.89 yd³ in place/.test(await txt(page, '#ciUse_vol')));
     check('button sits right under the answer box', await page.evaluate(() => { const b = document.getElementById('ciUse_vol'); return b && b.previousElementSibling && b.previousElementSibling.classList.contains('pb-answer-box'); }));
     await page.screenshot({ path: SHOTS + 'calc_band.png' });
@@ -92,17 +96,17 @@ const modal = (p) => p.evaluate(() => { const m = document.querySelector('.pb-mo
     check('back on the job, form still open', (await scr(page)) === 'screen-prodJob' && !!(await page.$('#pmfForm')) && (await val(page, '#pmf_category')) === 'concrete');
     check('Materials tab still selected', await page.evaluate(() => (document.getElementById('pjCxTab_materials') || {}).getAttribute && document.getElementById('pjCxTab_materials').getAttribute('aria-selected') === 'true'));
     check('list shows Material Volume: Rectangular 88.89 yd³ (' + await txt(page, '#pmfCiList') + ')', /Material Volume: Rectangular 88\.89 yd³ in place/.test(await txt(page, '#pmfCiList') || ''));
-    check('Expected = 88.89 + 5% = 93.3 (' + await val(page, '#pmf_expected') + ' | ' + await txt(page, '#pmfExpHelp') + ')', (await val(page, '#pmf_expected')) === '93.3' && /88\.89 yd³ in place \+ 5% = 93\.3 yd³/.test(await txt(page, '#pmfExpHelp')));
+    check('Expected = 88.89 + 5% = 93.3 (' + await val(page, '#pmf_expected') + ' | ' + await help() + ')', (await val(page, '#pmf_expected')) === '93.3' && /88\.89 yd³ in place \+ 5% = 93\.3 yd³/.test(await help()));
     // a second amount
     check('button now says Add another from', /Add another from/.test(await txt(page, '#pmfCi')));
     await page.tap('#pmfCiOpen_vol'); await page.waitForTimeout(600);
     await page.evaluate(() => { document.querySelector('#volShapeToggle button[data-val="cyl"]').click(); }); await page.waitForTimeout(200);
-    await page.fill('#volCylDia', '36'); await page.fill('#volCylL', '27'); await page.tap('#screen-volumeCalc button[onclick="pbCalcVolume()"]'); await page.waitForTimeout(300);
+    await page.fill('#volCylDia', '36'); await page.fill('#volCylL', '27'); await calc();
     await page.tap('#ciUseBtn_vol'); await page.waitForTimeout(800);
     const li = await page.evaluate(() => [...document.querySelectorAll('#pmfCiList li')].map(l => l.innerText.replace(/\s+/g, ' ')));
     check('two amounts listed (' + li.join(' / ') + ')', li.length === 2 && /Cylindrical/.test(li[1]));
     const e2 = Number(await val(page, '#pmf_expected')); const want = Math.round((88.8889 + Math.PI * 1.5 * 1.5 * 27 / 27) * 1.05 * 10) / 10;
-    check('Expected = both + 5% (' + e2 + ' vs ' + want + ') and help says 2 amounts', e2 === want && /2 amounts/.test(await txt(page, '#pmfExpHelp')));
+    check('Expected = both + 5% (' + e2 + ' vs ' + want + ') and help says 2 amounts', e2 === want && /2 amounts/.test(await help()));
     await page.screenshot({ path: SHOTS + 'form_two.png', fullPage: false });
     await page.tap('#pmfCiDel0'); await page.waitForTimeout(300);
     check('Remove the first: only the cylinder left; Expected follows (' + await val(page, '#pmf_expected') + ')', (await page.$$('#pmfCiList li')).length === 1 && (await val(page, '#pmf_expected')) === String(Math.round(Math.PI * 2.25 * 1.05 * 10) / 10));
@@ -120,9 +124,9 @@ const modal = (p) => p.evaluate(() => { const m = document.querySelector('.pb-mo
     await page.check('input[name="pmfPMode"][value="calc"]'); await page.waitForTimeout(300);
     await page.tap('#pmfCiOpen_vol'); await page.waitForTimeout(600);
     await page.evaluate(() => document.querySelector('#volShapeToggle button[data-val="rect"]').click()); await page.waitForTimeout(200);
-    await page.fill('#volRectL', '200'); await page.fill('#volRectW', '24'); await page.fill('#volRectD', '0.25'); await page.tap('#screen-volumeCalc button[onclick="pbCalcVolume()"]'); await page.waitForTimeout(300);
+    await page.fill('#volRectL', '200'); await page.fill('#volRectW', '24'); await page.fill('#volRectD', '0.25'); await calc();
     await page.tap('#ciUseBtn_vol'); await page.waitForTimeout(800);
-    check('asphalt: 44.44 yd³ + 5% × 1.96 = 91.5 tons (' + await val(page, '#pmf_expected') + ' | ' + await txt(page, '#pmfExpHelp') + ')', (await val(page, '#pmf_expected')) === '91.5' && /× 1\.96 t\/yd³ = 91\.5 tons/.test(await txt(page, '#pmfExpHelp')));
+    check('asphalt: 44.44 yd³ + 5% × 1.96 = 91.5 tons (' + await val(page, '#pmf_expected') + ' | ' + await help() + ')', (await val(page, '#pmf_expected')) === '91.5' && /× 1\.96 t\/yd³ = 91\.5 tons/.test(await help()));
     await page.evaluate(() => window.pbMatFormCancel()); await page.waitForTimeout(300);
     // ---- bedding: Add to Expected from Bedding & Shading ----
     await page.evaluate(() => window.pbMatAddExpForm('bed1')); await page.waitForTimeout(400);
@@ -149,7 +153,7 @@ const modal = (p) => p.evaluate(() => { const m = document.querySelector('.pb-mo
     await page.tap('#pmfCiOpen_sb'); await page.waitForTimeout(700);
     check('Structure Bedding opens with the band', (await scr(page)) === 'screen-beddingCalc' && !!(await page.$('#pbCiBand')));
     await page.evaluate(() => { const b = document.querySelector('#beddingRefToggle button[data-val="inv"]'); if (b) b.click(); });
-    await page.fill('#beddingInv', '100'); await page.fill('#beddingDist', '1'); await page.fill('#beddingThk', '0.5'); await page.fill('#beddingPadL', '6'); await page.fill('#beddingPadW', '9'); await page.tap('#screen-beddingCalc button[onclick="pbCalcBedding()"]'); await page.waitForTimeout(300);
+    await page.fill('#beddingInv', '100'); await page.fill('#beddingDist', '1'); await page.fill('#beddingThk', '0.5'); await page.fill('#beddingPadL', '6'); await page.fill('#beddingPadW', '9'); await calc();
     check('Use This Amount under the pad volume (1 yd³) (' + await txt(page, '#ciUse_sb') + ')', /1 yd³ in place/.test(await txt(page, '#ciUse_sb') || ''));
     await page.tap('#ciUseBtn_sb'); await page.waitForTimeout(800);
     check('listed as Structure Bedding: 6 × 9 ft pad (' + await txt(page, '#pmfCiList') + ')', /Structure Bedding: 6 × 9 ft pad/.test(await txt(page, '#pmfCiList') || ''));
@@ -161,7 +165,7 @@ const modal = (p) => p.evaluate(() => { const m = document.querySelector('.pb-mo
     // calculators opened normally: no band, no button
     await page.evaluate(() => pbOpenVolumeCalc()); await page.waitForTimeout(500);
     await page.evaluate(() => document.querySelector('#volShapeToggle button[data-val="rect"]').click()); await page.waitForTimeout(200);
-    await page.fill('#volRectL', '10'); await page.fill('#volRectW', '10'); await page.fill('#volRectD', '1'); await page.tap('#screen-volumeCalc button[onclick="pbCalcVolume()"]'); await page.waitForTimeout(300);
+    await page.fill('#volRectL', '10'); await page.fill('#volRectW', '10'); await page.fill('#volRectD', '1'); await calc();
     check('Material Volume on its own: no band, no Use This Amount', !(await page.$('#pbCiBand')) && !(await page.$('#ciUse_vol')) && /3\.70 yd³/.test(await txt(page, '#volumeResult')));
     check('no page errors (' + errs.slice(0, 3).join(' | ') + ')', errs.length === 0);
     await ctx.close();

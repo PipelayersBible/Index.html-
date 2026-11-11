@@ -10,12 +10,13 @@ const SH = '/home/claude/night/daily/shots/';
     ({ ctx, page } = await T.setup(browser, { who: 'foreman' }));
     await page.evaluate(() => pbOpenInspMine()); await page.waitForTimeout(1500);
     // one item scheduled 3 days ago, still open
-    await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('__dlySrv')); const d = new Date(Date.now() - 3 * 86400000); s.items[0].scheduled_date = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); localStorage.setItem('__dlySrv', JSON.stringify(s)); });
+    // the date is computed, not fixed: the test was written on Oct 24 and must keep passing on any day
+    const ago3 = await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('__dlySrv')); const d = new Date(Date.now() - 3 * 86400000); s.items[0].scheduled_date = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); localStorage.setItem('__dlySrv', JSON.stringify(s)); return new Date(s.items[0].scheduled_date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }); });
     await page.evaluate(() => pbInsMineLoad()); await page.waitForTimeout(1500);
     await page.screenshot({ path: SH + 'p03_list.png', fullPage: true });
     const im = await page.evaluate(() => document.getElementById('screen-inspMine').innerText.replace(/\s+/g, ' '));
     console.log('LIST: ' + im.slice(0, 1200));
-    check('D4 an open item scheduled 3 days ago says past due', /Scheduled Wed, Oct 21, 2026 \u2014 past due/.test(im), im.slice(0, 300));
+    check('D4 an open item scheduled 3 days ago says past due', im.includes('Scheduled ' + ago3 + ' \u2014 past due'), ago3 + ' :: ' + im.slice(0, 300));
     const intro = await page.evaluate(() => (document.querySelector('#screen-inspMine .pbd-intro') || {}).textContent || '');
     const geo = await page.evaluate(() => { const W = window.innerWidth, out = { hscroll: document.documentElement.scrollWidth > W + 1, small: [], wide: [] };
       document.querySelectorAll('#screen-inspMine button, #screen-inspMine input, #screen-inspMine select').forEach(el => { const r = el.getBoundingClientRect(); if (r.height > 0 && (r.height < 44 || r.width < 44)) out.small.push((el.id || el.textContent.trim().slice(0, 25)) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); });
@@ -47,7 +48,9 @@ const SH = '/home/claude/night/daily/shots/';
     await page.evaluate(() => pbInsMineLoad()); await page.waitForTimeout(1200);
     const empty = await page.evaluate(() => document.getElementById('screen-inspMine').innerText.replace(/\s+/g, ' '));
     console.log('EMPTY: ' + empty.slice(0, 600));
-    check('D5 the empty Open list does not repeat the intro sentence', (empty.match(/The office adds inspections and tests to a job and assigns a foreman\./g) || []).length === 1 && /Nothing assigned to you is open\./.test(empty), empty.slice(0, 300));
+    // r15.94: the intro is now the one line "A check-off can’t be changed later." (the "office adds…" explanation was cut); it still must appear once, the empty list says only "Nothing assigned to you is open."
+    const introNow = (await page.evaluate(() => (document.querySelector('#screen-inspMine .pbd-intro') || {}).textContent || '')).trim();
+    check('D5 the empty Open list does not repeat the intro sentence', introNow.length > 0 && empty.split(introNow).length === 2 && /Nothing assigned to you is open\./.test(empty) && !/The office adds inspections/.test(empty), JSON.stringify(introNow) + ' :: ' + empty.slice(0, 300));
     await page.screenshot({ path: SH + 'p03_empty.png', fullPage: true });
     check('no page errors', !page._errors.length, page._errors.join(' | '));
   } catch (e) { check('probe ran to the end', false, e && e.stack); }

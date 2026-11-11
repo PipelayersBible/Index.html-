@@ -57,6 +57,10 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
   try {
     const { ctx, page } = await setup(browser, {}); await ctx.addInitScript(MATMOCK); await page.reload(); await page.waitForTimeout(1500); await page.evaluate(() => pbGotoTab('home')); await page.waitForTimeout(1500);
     page.on('pageerror', e => errs.push(String(e)));
+    // r15.95 (calclive, owner Nov 3): calculators answer as you type; the Calculate button is gone. Leaving the field (blur) settles the live answer.
+    const calc = async () => { await page.evaluate(() => { const a = document.activeElement; if (a && a !== document.body && a.blur) a.blur(); }); await page.waitForTimeout(400); };
+    // r15.70 (feat_matform): the help line sits under "Show math" (<details id="pmfMath">), so read its text rather than innerText
+    const help = () => page.evaluate(() => { const d = document.getElementById('pmfMath'), e = document.getElementById('pmfExpHelp'); return d && e && !d.hidden && !e.hidden ? e.textContent.replace(/\s+/g, ' ').trim() : ''; });
     await page.evaluate(() => localStorage.setItem('__mats', '[]'));
     await page.click('#homeCxNew'); await page.waitForTimeout(400);
     await page.fill('#cxnJob', '26014'); await page.click('#cxnSave');
@@ -84,14 +88,14 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
     // asphalt preset, worked out from dimensions
     await page.evaluate(() => (() => { const c = document.getElementById('pmf_category'); c.value = 'asphalt'; c.dispatchEvent(new Event('change')); })()); await page.waitForTimeout(300);
     check('Asphalt preset: name Asphalt, Type Asphalt, no Which kind (' + await val(page, '#pmf_name') + ')', (await val(page, '#pmf_name')) === 'Asphalt' && (await val(page, '#pmf_category')) === 'asphalt' && !(await page.$('#pmf_bedkind')));
-    check('asphalt: density 1.96 (verify), waste 5%, Expected in tons', (await val(page, '#pmf_density_tpy')) === '1.96' && (await val(page, '#pmf_extra_pct')) === '5' && /Expected in all \(tons\)/.test(await txt(page, '#pmfForm')));
+    check('asphalt: density 1.96 (verify), waste 5%, Expected in tons', (await val(page, '#pmf_density_tpy')) === '1.96' && (await val(page, '#pmf_extra_pct')) === '5' && /Expected \(tons\)/.test(await txt(page, '#pmfForm')));
     check('no estimate parts (Footage from / Used as) for asphalt', !(await page.$('#pmf_footage_cat')) && !/Used as/.test(await txt(page, '#pmfForm')));
     await page.check('input[name="pmfPMode"][value="calc"]'); await page.waitForTimeout(300);
     await page.tap('#pmfCiOpen_vol'); await page.waitForTimeout(600);
-    await page.fill('#volRectL', '200'); await page.fill('#volRectW', '24'); await page.fill('#volRectD', '0.25'); await page.tap('#screen-volumeCalc button[onclick="pbCalcVolume()"]'); await page.waitForTimeout(300);
+    await page.fill('#volRectL', '200'); await page.fill('#volRectW', '24'); await page.fill('#volRectD', '0.25'); await calc();
     await page.tap('#ciUseBtn_vol'); await page.waitForTimeout(900);
-    const ex = await val(page, '#pmf_expected'), help = await txt(page, '#pmfExpHelp');
-    check('Material Volume 200 × 24 × 0.25 ft = 44.44 yd³ + 5% × 1.96 = 91.5 tons (' + ex + ' | ' + help + ')', ex === '91.5' && /44\.44 yd³ in place \+ 5% × 1\.96 t\/yd³ = 91\.5 tons/.test(help));
+    const ex = await val(page, '#pmf_expected'), hp = await help();
+    check('Material Volume 200 × 24 × 0.25 ft = 44.44 yd³ + 5% × 1.96 = 91.5 tons (' + ex + ' | ' + hp + ')', ex === '91.5' && /44\.44 yd³ in place \+ 5% × 1\.96 t\/yd³ = 91\.5 tons/.test(hp));
     await page.screenshot({ path: SHOTS + 'asphalt_form.png', fullPage: false });
     await page.tap('#pmfSave'); await page.waitForTimeout(1200);
     a = await page.evaluate(() => (window.__rpcLog.filter(x => x.fn === 'pb_mat_save').pop() || {}).args);
@@ -100,7 +104,7 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
     await page.evaluate(() => window.pbCxOpenJob('26014', 'materials')); await page.waitForTimeout(1500);
     await page.tap('#pjMatAdd'); await page.waitForTimeout(400);
     await page.selectOption('#pmf_category', 'concrete'); await page.waitForTimeout(300);
-    check('Type Concrete fills the name; Expected in yd³; no density', (await val(page, '#pmf_name')) === 'Concrete' && /Expected in all \(yd³\)/.test(await txt(page, '#pmfForm')) && !(await page.$('#pmf_density_tpy')));
+    check('Type Concrete fills the name; Expected in yd³; no density', (await val(page, '#pmf_name')) === 'Concrete' && /Expected \(yd³\)/.test(await txt(page, '#pmfForm')) && !(await page.$('#pmf_density_tpy')));
     await page.fill('#pmf_expected', '30'); await page.tap('#pmfSave'); await page.waitForTimeout(1200);
     a = await page.evaluate(() => (window.__rpcLog.filter(x => x.fn === 'pb_mat_save').pop() || {}).args);
     check('concrete saves: kind concrete, yd³, 30, no density (' + JSON.stringify(a && a.p_material) + ')', a && a.p_material.kind === 'concrete' && a.p_material.unit === 'yd³' && a.p_material.expected === '30' && a.p_material.density_tpy === '');
@@ -116,7 +120,7 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
     check('Add to Expected offers Use a calculator for asphalt', !!(await page.$('input[name="pmfAddMode"][value="calc"]')) && !(await page.$('input[name="pmfAddMode"][value="dim"]')));
     await page.check('input[name="pmfAddMode"][value="calc"]'); await page.waitForTimeout(300);
     await page.tap('#pmfCiOpen_vol'); await page.waitForTimeout(600);
-    await page.fill('#volRectL', '50'); await page.fill('#volRectW', '24'); await page.fill('#volRectD', '0.25'); await page.tap('#screen-volumeCalc button[onclick="pbCalcVolume()"]'); await page.waitForTimeout(300);
+    await page.fill('#volRectL', '50'); await page.fill('#volRectW', '24'); await page.fill('#volRectD', '0.25'); await calc();
     await page.tap('#ciUseBtn_vol'); await page.waitForTimeout(900);
     const at = await txt(page, '#pmfAddTot');
     check('50 × 24 × 0.25 ft -> 22.9 tons, new total 114.4 (' + at + ')', /= 22\.9 tons/.test(at) && /New total: 114\.4/.test(at));

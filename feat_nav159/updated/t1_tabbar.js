@@ -18,6 +18,8 @@ const st = (p) => p.evaluate(() => {
     modal: getComputedStyle(document.getElementById('pbModalOverlay')).display === 'none' ? null : document.getElementById('pbModalTitle').textContent,
   };
 });
+// r15.95: the Tools tab is labelled "More" (same id pbTabTools, same screen-tools root; Stats still lives under it)
+const TOOLS = 'More';
 const cur = (s) => (s.tabs.find(t => t.current) || {}).label || null;
 const tab = (s, label) => s.tabs.find(t => t.label === label) || {};
 const modalClick = (p, label) => p.evaluate((l) => { const b = [...document.querySelectorAll('#pbModalButtons button')].find(x => x.textContent.trim() === l); if (b) b.click(); return !!b; }, label);
@@ -28,10 +30,10 @@ const modalClick = (p, label) => p.evaluate((l) => { const b = [...document.quer
     const p = await L.newPage(browser, 'u1'); await p.waitForTimeout(600);
     let s = await st(p);
     check('tab bar shown on Home', s.bar);
-    check('tabs in order Home | Calculators | Tools | Reports | Ask', s.tabs.map(t => t.label).join('|') === 'Home|Calculators|Tools|Records|Ask'); // batch 5: Ask tab // UX batch 3: Jobs tab replaced by Calculators
-    check('D7: individual plan, Reports tab hidden', !tab(s, 'Records').shown && tab(s, 'Home').shown && tab(s, 'Calculators').shown && tab(s, 'Tools').shown);
+    check('tabs in order Home | Calculators | More | Records | Ask', s.tabs.map(t => t.label).join('|') === 'Home|Calculators|' + TOOLS + '|Records|Ask'); // r15.95: Tools -> More // batch 5: Ask tab // UX batch 3: Jobs tab replaced by Calculators
+    check('D7: individual plan, Reports tab hidden', !tab(s, 'Records').shown && tab(s, 'Home').shown && tab(s, 'Calculators').shown && tab(s, TOOLS).shown);
     check('Home tab highlighted on Home', cur(s) === 'Home');
-    check('control: Calculators and Tools not locked on the individual plan', !tab(s, 'Calculators').locked && !tab(s, 'Tools').locked);
+    check('control: Calculators and More (Tools) not locked on the individual plan', !tab(s, 'Calculators').locked && !tab(s, TOOLS).locked);
     // Tools: a fresh trail (history cleared only after the move)
     await p.evaluate(() => pbOpenStats()); await p.waitForTimeout(300);
     // UX batch 3: the calculators are the Calculators tab (calcHub)
@@ -47,9 +49,9 @@ const modalClick = (p, label) => p.evaluate((l) => { const b = [...document.quer
     // UX batch 3: Tools is its own screen; Stats lives there (Jobs is inside Reports, contractor only)
     await p.click('#pbTabTools'); await p.waitForTimeout(400);
     s = await st(p);
-    check('Tools tab opens Tools (screen-tools)', s.screen === 'screen-tools' && cur(s) === 'Tools');
+    check('More (Tools) tab opens Tools (screen-tools)', s.screen === 'screen-tools' && cur(s) === TOOLS);
     await p.evaluate(() => pbOpenStats()); await p.waitForTimeout(300);
-    check('Stats highlights Tools', (await st(p)).screen === 'screen-stats' && cur(await st(p)) === 'Tools');
+    check('Stats highlights More (Tools)', (await st(p)).screen === 'screen-stats' && cur(await st(p)) === TOOLS);
     check('there is no Jobs tab', !s.tabs.some(t => t.label === 'Jobs') && await p.evaluate(() => !document.getElementById('pbTabJobs')));
     await p.click('#pbTabHome'); await p.waitForTimeout(400);
     check('Home tab goes Home', (await st(p)).screen === 'screen-home');
@@ -94,7 +96,7 @@ const modalClick = (p, label) => p.evaluate((l) => { const b = [...document.quer
     const q = await ctx2.newPage(); q.on('dialog', d => d.accept()); q._errors = []; q.on('pageerror', e => q._errors.push(e.message));
     await q.goto(L.ORIGIN); await q.waitForTimeout(1500);
     s = await st(q);
-    check('no plan: Tools tab shows locked', tab(s, 'Tools').locked && tab(s, 'Calculators').locked); // UX batch 3: Calculators in place of Jobs
+    check('no plan: More (Tools) tab shows locked', tab(s, TOOLS).locked && tab(s, 'Calculators').locked); // UX batch 3: Calculators in place of Jobs
     check('no plan: Reports shown (locked), not hidden', tab(s, 'Records').shown && tab(s, 'Records').locked);
     check('control: Home tab never locked', !tab(s, 'Home').locked);
     await q.click('#pbTabTools'); await q.waitForTimeout(400);

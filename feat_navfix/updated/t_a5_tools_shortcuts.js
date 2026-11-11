@@ -46,7 +46,7 @@ const noSideScroll = (page) => page.evaluate(() => document.documentElement.scro
       L.check('Home: My Shortcuts shows the D5 defaults in order (Material Volume, Trench, Tenths, Bedding)', JSON.stringify(await tiles(page)) === '["volume","trench","frac","bedding"]');
       L.check('Home: the shortcuts have readable labels and an Edit button', await page.evaluate(() => {
         const t = [...document.querySelectorAll('#homeShortcutsList .pb-sc-tile .name')].map(x => x.textContent);
-        const e = document.getElementById('homeShortcutsEdit'); return t[0] === 'Material Volume' && t[1] === 'Trench Sloping & Shoring' && !!e && e.offsetHeight >= 44; }));
+        const e = document.getElementById('homeShortcutsEdit'); return t[0] === 'Material Volume' && t[1] === 'Trench Sloping' && !!e && e.offsetHeight >= 44; })); // r15.95: "Trench Sloping" (was Trench Sloping & Shoring)
       L.check('Home: no setting is stored just by looking (never set stays never set)', await stored(page, 'a5u') === null);
       await page.click('#homeShortcutsList [data-dest="volume"]'); await sleep(page, 300);
       L.check('a shortcut opens its calculator through the normal opener', await active(page) === 'screen-volumeCalc');
@@ -88,7 +88,7 @@ const noSideScroll = (page) => page.evaluate(() => document.documentElement.scro
         ids: [...document.querySelectorAll('#toolsList [data-dest]')].map(b => b.dataset.dest) }));
       console.log('   Calculators groups:', hub.heads.join(' | '));
       L.check('UX batch 3: calcHub is titled Calculators again', hub.title === 'Calculators');
-      L.check('one list grouped under the old category names (Grade & Elevation, Safety, Pipe & Flow, Structures)', ['Grade & Elevation', 'Safety', 'Pipe & Flow', 'Structures'].every(h => hub.heads.includes(h)));
+      L.check('one list grouped under the category names (Grade & Elevation, Trench & Backfill, Pipe & Flow, Structures, Confined Space)', ['Grade & Elevation', 'Trench & Backfill', 'Pipe & Flow', 'Structures', 'Confined Space'].every(h => hub.heads.includes(h)) && !hub.heads.includes('Safety')); // r15.94 (clean_c): Safety became Trench & Backfill, Confined Space (Ventilation) is its own group
       L.check('the list has all 13 calculators (Ventilation included)', ['rodElev','slopeConv','frac','lift','bedding','trench','vent','pipeWeight','manning','flow','volume','bend','manhole'].every(i => hub.ids.includes(i)));
       // UX batch 3: Quick Run, Education, Confined Space Reference and Stats are on the Tools screen
       await page.evaluate(() => pbGotoTab('tools')); await sleep(page, 300);
@@ -105,7 +105,7 @@ const noSideScroll = (page) => page.evaluate(() => document.documentElement.scro
       L.check('search: fall finds the Slope / Grade Converter', s3.includes('slopeConv'));
       L.check('search: shoring finds Trench Sloping & Shoring first', s4[0] === 'trench');
       L.check('search: HI (Education synonym: height of instrument) finds Rod Reading, as a whole word only', s5.includes('rodElev') && !s5.includes('pipeWeight'));
-      L.check('search: two words (cubic yards) both have to match', JSON.stringify(s6) === '["volume","bedShade"]'); // r15.5.1: Bedding & Shading also gives cubic yards
+      L.check('search: two words (cubic yards) both have to match', JSON.stringify(s6) === '["ccalc","volume","bedShade"]'); // r15.5.1: Bedding & Shading also gives cubic yards // r15.70: the Construction Calculator (cubic yards) too, listed first (Grade & Elevation)
       L.check('search: an Education synonym group (flow rate = gpm) finds Flush / Flow Rate', s7.includes('flow'));
       L.check('while searching, the grouped list is hidden', await page.evaluate(() => getComputedStyle(document.getElementById('toolsAllList')).display === 'none'));
       const none = await searchTools(page, 'xyzzy');
@@ -239,8 +239,10 @@ const noSideScroll = (page) => page.evaluate(() => document.documentElement.scro
     {
       const ctx = await ctxFor(browser, 'a5none', null);
       const page = await openPage(ctx);
-      const t = await page.evaluate(() => [...document.querySelectorAll('#homeShortcutsList .pb-sc-tile')].map(b => [b.dataset.dest, b.classList.contains('locked'), b.textContent]));
-      L.check('signed out with no plan: the default shortcuts show as locked, saying to log in', t.length === 4 && t.every(x => x[1] && /log in first/.test(x[2])));
+      // r15.94 (clean_b): the same lock on every tile is said once, under the tiles (#homeShortcutsLocked); each tile keeps it in its aria-label
+      const t = await page.evaluate(() => [...document.querySelectorAll('#homeShortcutsList .pb-sc-tile')].map(b => [b.dataset.dest, b.classList.contains('locked'), b.getAttribute('aria-label') || '']));
+      const lockLine = await page.evaluate(() => { const e = document.getElementById('homeShortcutsLocked'); return e && e.offsetHeight > 0 ? e.textContent : ''; });
+      L.check('signed out with no plan: the default shortcuts show as locked, saying to log in (once, under the tiles) [' + lockLine + ']', t.length === 4 && t.every(x => x[1] && /log in first/.test(x[2])) && /Locked — log in first/.test(lockLine));
       await page.click('#homeShortcutsList [data-dest="volume"]'); await sleep(page, 300);
       L.check('...tapping one shows Subscription Required and stays Home (the plan is checked first)', await modalTitle(page) === 'Subscription Required' && await active(page) === 'screen-home');
       await L.dismiss(page);

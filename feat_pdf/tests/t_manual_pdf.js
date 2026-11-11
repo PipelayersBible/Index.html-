@@ -18,8 +18,11 @@ const dayOff = (o) => { const d = new Date(); d.setDate(d.getDate() + o); return
     const has = await page.evaluate(() => typeof window.pbOpenNoRun === 'function' && !!document.getElementById('screen-prodNoRun'));
     check('the build has the "Work without a run" screen', has);
     if (!has) { check('(the rest needs the screen)', false); return; }
-    await page.evaluate(() => pbOpenArchive()); await page.waitForTimeout(800);
-    check('foreman: the Reports tab shows "Work without a run"', await T.shown(page, 'archiveNoRunBtn') && /Work without a run/.test(await T.text(page, 'archiveNoRunBtn')));
+    // r15.76: the paperwork rows left Records for Home's "+ New" sheet (same ids, same show/hide rules)
+    await page.evaluate(() => pbGotoTab('home')); await page.waitForTimeout(800);
+    check('foreman: Home’s + New tile lists "Work without a run"', await T.shown(page, 'homeTileNew') && /Work without a run/.test(await T.text(page, 'homeTileNewSub')), await T.text(page, 'homeTileNewSub'));
+    await page.evaluate(() => pbNewSheetOpen()); await page.waitForTimeout(600);
+    check('foreman: the + New sheet shows "Work without a run"', await T.shown(page, 'archiveNoRunBtn') && /Work without a run/.test(await T.text(page, 'archiveNoRunBtn')));
     await page.click('#archiveNoRunBtn'); await page.waitForTimeout(2500);
     check('it opens the form screen', await page.evaluate(() => document.getElementById('screen-prodNoRun').classList.contains('active')));
     const jobOpts = await page.$$eval('#nrJob option', o => o.map(x => x.value + '|' + x.textContent));
@@ -140,7 +143,9 @@ const dayOff = (o) => { const d = new Date(); d.setDate(d.getDate() + o); return
     check('daily report materials: the entry’s pipe (with its size and material) and bedding / shading / spoils estimates', /Pipe installed \(8" C900 PVC\) 200 LF/.test(matUsed) && /Bedding: Pit run gravel \(not on the job list\) \(calculated estimate\) 11\.11 yd³/.test(matUsed) && /Shading: Coarse sand \(calculated estimate\) 35\.67/.test(matUsed), matUsed);
     check('daily report hours: the typed man-hours and equipment hours, labelled as typed', snap && snap.crew.people.some(p => /Crew man-hours \(typed\)/.test(p.name) && p.hours === 24) && snap.crew.equipment.some(p => p.hours === 8) && snap.crew.totals.equipment_h === 8, JSON.stringify(snap && snap.crew));
     // sign it, then its PDF
-    await page.fill('#drName', 'Frank Ortiz'); await page.fill('#drNarrative', 'Laid 200 ft without stakes, Sta 12+00 to 14+00.');
+    // r16.00: the report opens on Narrative; "Next: Hours & Sign" shows the name field and Sign & Send
+    await page.fill('#drNarrative', 'Laid 200 ft without stakes, Sta 12+00 to 14+00.'); await page.click('#dxNextBtn'); await page.waitForTimeout(600);
+    await page.fill('#drName', 'Frank Ortiz');
     for (let i = 0; i < 4; i++) {
       await page.click('#drSignBtn'); await page.waitForTimeout(1500);
       m = await T.modal(page); if (m && /Sign Report/.test(m.buttons.join('|'))) { await T.click(page, '^Sign Report$'); await page.waitForTimeout(2500); m = await T.modal(page); if (m) await T.click(page, '^OK$'); break; }
@@ -152,7 +157,9 @@ const dayOff = (o) => { const d = new Date(); d.setDate(d.getDate() + o); return
     const D = dpdf ? dpdf.raw.replace(/\s+/g, ' ') : '';
     const DL = dpdf ? dpdf.raw : '';
     check('F7: the day total names the plan category ("Thrust blocks 2 EA"), never its key', /Day total \(foreman entries\):[^\n]*Thrust blocks 2 EA/.test(D) && !/thrust_blocks/.test(D), D.match(/Day total.{0,160}/));
-    check('F6: the daily footer shortens the phone UUID and keeps "Generated <date>" on every page', DL.split('\f').filter(p => p.trim()).every(p => /phone record [0-9a-f]{8}…\) · v\d+ · rev [0-9a-f]{8} · Generated [A-Z][a-z]{2} \d{1,2}, 20\d\d/.test(p)), DL.match(/Record daily.{0,200}/));
+    // r15.54: the day's run reports are attached as pages at the end ("ATTACHED 1 OF 1 · PIPE RUN RECORD"); those pages carry the attached record's own footer (Record 9101 · rev …), the daily's pages its own
+    { const PG = DL.split('\f').filter(p => p.trim()), att = PG.findIndex(p => /ATTACHED 1 OF 1 · PIPE RUN RECORD/.test(p)), own = att > 0 ? PG.slice(0, att) : PG, rest = att > 0 ? PG.slice(att) : [];
+      check('F6: the daily footer shortens the phone UUID and keeps "Generated <date>" on every page of the daily; the attached run record (r15.54) follows with its own record footer', own.length >= 1 && own.every(p => /phone record [0-9a-f]{8}…\) · v\d+ · rev [0-9a-f]{8} · Generated [A-Z][a-z]{2} \d{1,2}, 20\d\d/.test(p)) && att > 0 && rest.every(p => /Record 9101 · rev [0-9a-f]{8} · Generated [A-Z][a-z]{2} \d{1,2}, 20\d\d/.test(p)), 'attached at page ' + (att + 1) + ' of ' + PG.length + ' :: ' + (DL.match(/Record daily.{0,200}/) || '')); }
     check('daily report PDF: the entry’s line says it was entered without a run and that there is no grade or cut/fill', /Entered without a run \(manual\): Sta 12\+00\.00 to 14\+00\.00/.test(D) && /\(no run\)/.test(D) && /No grade or cut\/fill: entered without a run, so there are no elevations/.test(D) && /Crew man-hours: 24 h/.test(D), D ? D.slice(D.lastIndexOf('Runs and production'), D.lastIndexOf('Runs and production') + 1200) : 'no pdf (signed: ' + !!rep + ')');
     // ---- offline: saved on the phone, sent when signal returns ----
     await page.evaluate(() => { localStorage.setItem('__rpcMode', 'offline'); pbOpenNoRun(); }); await page.waitForTimeout(2500);
@@ -189,8 +196,9 @@ const dayOff = (o) => { const d = new Date(); d.setDate(d.getDate() + o); return
 
     // ================= PIPELAYER: not offered (his production is held for a foreman) =================
     await fresh({ extra: { __role: 'pipelayer' } });
-    await page.evaluate(() => pbOpenArchive()); await page.waitForTimeout(800);
-    check('pipelayer: no "Work without a run" row', !(await T.shown(page, 'archiveNoRunBtn')));
+    await page.evaluate(() => pbGotoTab('home')); await page.waitForTimeout(800); await page.evaluate(() => pbNewSheetOpen()); await page.waitForTimeout(600); /* r15.76: the + New sheet */
+    check('pipelayer: no "Work without a run" row', !(await T.shown(page, 'archiveNoRunBtn')) && !/Work without a run/.test(await T.text(page, 'homeTileNewSub') || ''));
+    await page.evaluate(() => pbNewSheetClose()); await page.waitForTimeout(200);
     await page.evaluate(() => pbOpenNoRun()); await page.waitForTimeout(1500);
     m = await T.modal(page);
     check('pipelayer: opening it explains a foreman enters it', m && /entered by a foreman/.test(m.msg) && !(await page.evaluate(() => document.getElementById('screen-prodNoRun').classList.contains('active'))), m && m.msg);

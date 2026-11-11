@@ -71,35 +71,45 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
     await page.tap('#pjCxTab_materials'); await page.waitForTimeout(500);
     await T.waitFor(page, () => { const b = document.getElementById('pjMatAdd'); return b && !b.disabled; }, 15000);
     await page.tap('#pjMatAdd'); await page.waitForTimeout(500);
-    const val = (s) => page.inputValue(s), help = () => txt(page, '#pmfExpHelp');
-    check('pipe: Expected in all = the plan\'s 1,200 LF (' + await val('#pmf_expected') + ', ' + await help() + ')', (await val('#pmf_expected')) === '1200' && /1,200 LF \(Pipe Installed planned\)/.test(await help()));
+    // r15.70 (feat_matform, owner Oct 30): the help line lives under "Show math" (<details id="pmfMath">), so innerText is empty while it is folded; read its text and require the details to be shown
+    const val = (s) => page.inputValue(s), help = () => page.evaluate(() => { const d = document.getElementById('pmfMath'), e = document.getElementById('pmfExpHelp'); return d && e && !d.hidden && !e.hidden ? e.textContent.replace(/\s+/g, ' ').trim() : ''; });
+    check('pipe: Expected = the plan\'s 1,200 LF; Show math says where from (' + await val('#pmf_expected') + ', ' + await help() + ')', (await val('#pmf_expected')) === '1200' && /1,200 LF \(Pipe Installed planned\)/.test(await help()));
     await page.evaluate(() => ((re) => { const c = document.getElementById('pmf_category'); if (c.value !== 'bedding') { c.value = 'bedding'; c.dispatchEvent(new Event('change')); } const s = document.getElementById('pmf_bedkind'); const o = [...s.options].find(x => re.test(x.textContent)); s.value = o.value; s.dispatchEvent(new Event('change')); })(/Coarse sand/)); await page.waitForTimeout(400);
-    const yd = Math.round(1200 * 3 * 0.5 / 27 * 1.15 * 10) / 10;
-    check('coarse sand (bedding): 1,200 × 3 × 0.5 ÷ 27 × 1.15 = ' + yd + ' yd³ (' + await val('#pmf_expected') + ' | ' + await help() + ')', (await val('#pmf_expected')) === String(yd) && /3 ft × 0.5 ft ÷ 27 × 1.15/.test(await help()));
+    // r15.70 (feat_matform, owner Oct 30: "Bedding & shading unless changed"): a new aggregate is used as BOTH, so Expected = L × (W × bed + W × (OD + shade) − pipe area) ÷ 27 × 1.15, with the job's OD 8.625 in and 1 ft shading
+    const o = 8.625 / 12, pipeA = Math.PI * o * o / 4, per = (w, bed, sh) => w * bed + w * (o + sh) - pipeA, R1 = (x) => Math.round(x * 10) / 10;
+    const yd = R1(1200 * per(3, 0.5, 1) / 27 * 1.15);
+    check('coarse sand (bedding & shading, the r15.70 default): 1,200 × (3 × 0.5 + 3 × (0.719 + 1) − π × 0.719² ÷ 4) ÷ 27 × 1.15 = ' + yd + ' yd³ (' + await val('#pmf_expected') + ' | ' + await help() + ')', (await val('#pmf_expected')) === String(yd) && /\(3 ft × 0\.5 ft \+ 3 ft × \(0\.719 ft OD \+ 1 ft\) − pipe area\) ÷ 27 × 1\.15/.test(await help()) && /Used as: Bedding & shading/.test(await txt(page, '#pmfUseD summary')));
     await page.screenshot({ path: SHOTS + 'exp_sand.png' });
     await page.check('input[name="pmfBasis"][value="weight"]'); await page.waitForTimeout(400);
-    const dens = Number(await val('#pmf_density_tpy')), tn = Math.round(1200 * 3 * 0.5 / 27 * 1.15 * dens * 10) / 10;
+    const dens = Number(await val('#pmf_density_tpy')), tn = R1(1200 * per(3, 0.5, 1) / 27 * 1.15 * dens);
     check('in tons, by its density ' + dens + ': ' + tn + ' (' + await val('#pmf_expected') + ')', (await val('#pmf_expected')) === String(tn));
     await page.fill('#pmf_trench_width_ft', '4'); await page.waitForTimeout(200);
-    const tn4 = Math.round(1200 * 4 * 0.5 / 27 * 1.15 * dens * 10) / 10;
+    const tn4 = R1(1200 * per(4, 0.5, 1) / 27 * 1.15 * dens);
     check('typing a trench width updates it live: ' + tn4 + ' (' + await val('#pmf_expected') + ')', (await val('#pmf_expected')) === String(tn4));
     await page.fill('#pmf_expected', '150'); await page.fill('#pmf_trench_width_ft', '3.5'); await page.waitForTimeout(200);
     check('his own amount (150) stays when the numbers change; help says how to go back', (await val('#pmf_expected')) === '150' && /Your own amount/.test(await help()));
     await page.fill('#pmf_expected', ''); await page.click('#pmf_name'); await page.waitForTimeout(200);
-    const tn35 = Math.round(1200 * 3.5 * 0.5 / 27 * 1.15 * dens * 10) / 10;
+    const tn35 = R1(1200 * per(3.5, 0.5, 1) / 27 * 1.15 * dens);
     check('cleared: fills in again (' + tn35 + ')', (await val('#pmf_expected')) === String(tn35));
-    await page.check('input[name="pmfUse"][value="shading"]'); await page.waitForTimeout(400);
-    const o = 8.625 / 12, sh = Math.round(1200 * (3.5 * (o + 1) - Math.PI * o * o / 4) / 27 * 1.15 * dens * 10) / 10;
-    check('shading (job OD 8.625 in, 1 ft over): ' + sh + ' (' + await val('#pmf_expected') + ')', (await val('#pmf_expected')) === String(sh));
-    await page.check('input[name="pmfUse"][value="bedding"]'); await page.waitForTimeout(300);
+    // r15.70: "Used as" is a folded details with two boxes (Bedding / Shading), at least one stays on
+    const useAs = async (bed, shade) => { await page.evaluate(() => { const d = document.getElementById('pmfUseD'); if (d && !d.open) d.open = true; }); await page.waitForTimeout(200);
+      if ((await page.isChecked('#pmf_use_bed')) !== bed) await page.click('#pmf_use_bed'); await page.waitForTimeout(200);
+      if ((await page.isChecked('#pmf_use_shade')) !== shade) await page.click('#pmf_use_shade'); await page.waitForTimeout(300); };
+    await useAs(false, true);
+    const sh = R1(1200 * (3.5 * (o + 1) - pipeA) / 27 * 1.15 * dens);
+    check('shading only (job OD 8.625 in, 1 ft over): ' + sh + ', summary says so (' + await val('#pmf_expected') + ' | ' + await txt(page, '#pmfUseD summary') + ')', (await val('#pmf_expected')) === String(sh) && /Used as: Shading only/.test(await txt(page, '#pmfUseD summary')) && !(await page.$('#pmf_bed_thick_ft')));
+    await useAs(true, false);
+    const bd = R1(1200 * 3.5 * 0.5 / 27 * 1.15 * dens);
+    check('bedding only: 1,200 × 3.5 × 0.5 ÷ 27 × 1.15 × ' + dens + ' = ' + bd + ' (' + await val('#pmf_expected') + ' | ' + await help() + ')', (await val('#pmf_expected')) === String(bd) && /× 3\.5 ft × 0\.5 ft ÷ 27 × 1\.15/.test(await help()) && /Used as: Bedding only/.test(await txt(page, '#pmfUseD summary')));
     await page.fill('#pmf_bed_thick_ft', '.5'); await page.fill('#pmf_extra_pct', '15.'); await page.waitForTimeout(200);
     await page.tap('#pmfSave'); await page.waitForTimeout(1200);
     const add = await page.evaluate(() => (window.__rpcLog.filter(x => /^pb_mat_(save|set|put|add)/.test(x.fn)).pop() || {}));
-    check('Add Material sends the filled-in amount (' + JSON.stringify(add.args && (add.args.p_material || add.args).expected) + ')', !!add.fn && JSON.stringify(add.args).includes(String(tn35)));
+    check('Add Material sends the filled-in amount ' + bd + ' as bedding (' + JSON.stringify(add.args && (add.args.p_material || add.args).expected) + ')', !!add.fn && add.args.p_material.expected === String(bd) && add.args.p_material.use_as === 'bedding');
     check('".5" and "15." typed: sent as 0.5 and 15 (the server refuses ".5") (' + JSON.stringify(add.args && add.args.p_material) + ')', add.args && add.args.p_material.bed_thick_ft === '0.5' && add.args.p_material.trench_width_ft === '3.5' && add.args.p_material.extra_pct === '15');
     await page.waitForTimeout(800); if (await page.$('#pmfCancel')) { await page.tap('#pmfCancel'); await page.waitForTimeout(300); } await T.waitFor(page, () => { const b = document.getElementById('pjMatAdd'); return b && !b.disabled; }, 15000);
     await page.tap('#pjMatAdd'); await page.waitForTimeout(400);
-    check('the form says only the name is needed', /Only the name is needed/.test((await txt(page, '#pmfQuick')) || ''));
+    // r15.70 (feat_matform: "No help lines; the math is under Show math"): the "Only the name is needed" banner is gone; Expected is marked Optional and the next check proves a name + amount saves
+    check('r15.70: no "Only the name is needed" banner; Expected is Optional, the math sits under Show math', !(await page.$('#pmfQuick')) && !/Only the name is needed/.test(await txt(page, '#pmfForm')) && (await page.getAttribute('#pmf_expected', 'placeholder')) === 'Optional' && !!(await page.$('#pmfMath summary')));
     await page.fill('#pmf_name', 'Screened sand'); await page.selectOption('#pmf_category', 'bedding'); await page.waitForTimeout(300); await page.selectOption('#pmf_bedkind', 'c:bedding_sand'); await page.waitForTimeout(300);
     await page.fill('#pmf_expected', '40'); await page.tap('#pmfSave'); await page.waitForTimeout(1200);
     const q = await page.evaluate(() => (window.__rpcLog.filter(x => x.fn === 'pb_mat_save').pop() || {}).args);

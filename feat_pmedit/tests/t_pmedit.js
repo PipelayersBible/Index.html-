@@ -56,6 +56,9 @@ const MOCK = () => {
   };
 };
 const txt = (page, id) => page.evaluate((i) => ((document.getElementById(i) || {}).innerText || '').replace(/\s+/g, ' '), id);
+// r15.38 (feat_runflow P4): the office's production is a correction: Enter / Correct Production (and Approve on a waiting run) sit under "More"
+const more = (page) => page.evaluate(() => { const d = document.getElementById('cxRunOffMore'); if (d) d.open = true; });
+const offTap = async (page, id) => { await more(page); await page.tap(id); };
 (async () => {
   const browser = await M.chromium.launch();
   const errs = [];
@@ -79,44 +82,46 @@ const txt = (page, id) => page.evaluate((i) => ((document.getElementById(i) || {
     await ctx.addInitScript(MOCK); await page.reload(); await sleep(page, 2000); await M.dismiss(page);
     page.on('pageerror', e => errs.push(String(e)));
     await page.evaluate(() => pbGotoTab('home')); await sleep(page, 2000);
-    await page.click('#homeCxRuns2'); await sleep(page, 1500);
+    await page.evaluate(() => pbCxOpenList('runs')); await sleep(page, 1500); // r16.08 (feat_drtile): the Home run reports tile is gone (New daily reports in its place); the Run reports list is a company door
     // open the run with no production: rows are listed newest first; find by trying each
     let found = -1;
     for (let k = 0; k < 2 && found < 0; k++) { await page.evaluate((i) => window.pbRrOpen(i), k); await sleep(page, 1500); if (await page.$('#cxRunOffNone')) found = k; else { await page.evaluate(() => window.pbRrClose()); await sleep(page, 600); } }
-    check('office opens a run with no production: "No production entered", Enter Production and Approve Report', found >= 0 && !!(await page.$('#cxRunOffEdit')) && /Enter Production/.test(await txt(page, 'cxRunOffEdit')) && !!(await page.$('#cxRunOffApprove')));
-    await page.tap('#cxRunOffEdit'); await sleep(page, 500);
+    await more(page);
+    check('office opens a run with no production: "Waiting for the foreman to enter production", Enter Production and Approve Report under More (' + await txt(page, 'cxRunOffNone') + ')', found >= 0 && /Waiting for the foreman to enter production/.test(await txt(page, 'cxRunOffNone')) && !!(await page.$('#cxRunOffMore #cxRunOffEdit')) && /Enter Production/.test(await txt(page, 'cxRunOffEdit')) && !!(await page.$('#cxRunOffMore #cxRunOffApprove')));
+    await offTap(page, '#cxRunOffEdit'); await sleep(page, 500);
     const labels = await page.evaluate(() => [...document.querySelectorAll('#cxRunOffForm label')].map(l => l.textContent));
-    check('form: plan names and codes, laterals, hours (' + labels.join(' | ') + ')', labels.includes('Pipe Installed - Main (LF) · 02-100') && labels.includes('Laterals (EA) · 02-200') && labels.some(l => /Crew hours \(h\)/.test(l)) && labels.some(l => /Excavat/.test(l)));
-    const li = labels.indexOf('Laterals (EA) · 02-200'), pi = labels.indexOf('Pipe Installed - Main (LF) · 02-100'), hi = labels.findIndex(l => /Crew hours \(h\)/.test(l));
+    // r16.07: the Crew / Equipment hour boxes left the production form (the daily report has them)
+    check('form: plan names and codes, laterals, no hours box (' + labels.join(' | ') + ')', labels.includes('Pipe Installed - Main (LF) · 02-100') && labels.includes('Laterals (EA) · 02-200') && !labels.some(l => /Crew hours|Equipment hours/.test(l)) && labels.some(l => /Excavat/.test(l)));
+    const li = labels.indexOf('Laterals (EA) · 02-200'), pi = labels.indexOf('Pipe Installed - Main (LF) · 02-100');
     await page.fill('#cxRunOffQ' + pi, 'abc'); await page.tap('#cxRunOffSave'); await sleep(page, 500);
     check('a bad number is refused on the phone', /Pipe Installed - Main: enter a plain number/.test(await txt(page, 'cxRunOffErr')) && !(await page.evaluate(() => window.__rpcLog.some(x => x.fn === 'pb_prod_company_run_prod_save'))));
-    await page.fill('#cxRunOffQ' + pi, '180'); await page.fill('#cxRunOffQ' + li, '3'); await page.fill('#cxRunOffQ' + hi, '16');
+    await page.fill('#cxRunOffQ' + pi, '180'); await page.fill('#cxRunOffQ' + li, '3');
     await page.tap('#cxRunOffSave'); await sleep(page, 1200);
     let a = await page.evaluate(() => (window.__rpcLog.filter(x => x.fn === 'pb_prod_company_run_prod_save').pop() || {}).args);
-    check('saved: pipe 180 LF, laterals 3 EA, hours 16, no version yet (' + JSON.stringify(a && a.p_items) + ')', a && a.p_expect_version === null && JSON.stringify(a.p_items) === JSON.stringify([{ key: 'pipe', qty: 180, unit: 'LF' }, { key: 'laterals', qty: 3, unit: 'EA' }, { key: '_hours', qty: 16, unit: 'h' }].map(x => x.key === '_hours' ? Object.assign(x, { key: a.p_items[2].key }) : x)));
+    check('saved: pipe 180 LF, laterals 3 EA, no hours, version 0 = none when opened (' + JSON.stringify(a && a.p_items) + ')', a && a.p_expect_version === 0 /* r15.57 G1: 0 = it had no production when opened (was null) */ && JSON.stringify(a.p_items) === JSON.stringify([{ key: 'pipe', qty: 180, unit: 'LF' }, { key: 'laterals', qty: 3, unit: 'EA' }]));
     check('shows it: Pipe Installed - Main 180, Laterals 3, entered by you (' + await txt(page, 'cxRunOffProd') + ')', /Pipe Installed - Main 180/.test(await txt(page, 'cxRunOffQty')) && /Laterals 3/.test(await txt(page, 'cxRunOffQty')) && /Entered by you/.test(await txt(page, 'cxRunOffBy')));
-    await page.tap('#cxRunOffEdit'); await sleep(page, 400);
+    await offTap(page, '#cxRunOffEdit'); await sleep(page, 400);
     check('Change Production: the form opens with 180', (await page.inputValue('#cxRunOffQ' + pi)) === '180');
     await page.fill('#cxRunOffQ' + pi, '190');
     await page.tap('#cxRunOffCancel'); await sleep(page, 300);
     check('Cancel keeps 180', /180/.test(await txt(page, 'cxRunOffQty')));
-    await page.tap('#cxRunOffEdit'); await sleep(page, 400); await page.fill('#cxRunOffQ' + pi, '190');
+    await offTap(page, '#cxRunOffEdit'); await sleep(page, 400); await page.fill('#cxRunOffQ' + pi, '190');
     await page.tap('#cxRunOffSave'); await sleep(page, 1200);
     a = await page.evaluate(() => (window.__rpcLog.filter(x => x.fn === 'pb_prod_company_run_prod_save').pop() || {}).args);
     check('the change sends version 1 and 190', a && a.p_expect_version === 1 && a.p_items[0].qty === 190);
-    await page.tap('#cxRunOffApprove'); await sleep(page, 1500);
+    await offTap(page, '#cxRunOffApprove'); await sleep(page, 1500);
     check('Approve Report: approved (' + await txt(page, 'cxRunSent') + ')', await page.evaluate(() => window.__rpcLog.some(x => x.fn === 'pb_prod_run_report_review')) && !(await page.$('#cxRunOffApprove')) && /Approved/.test(await txt(page, 'cxRunSent')));
     await page.screenshot({ path: '/home/claude/feat_pmedit/office_prod.png' });
     // the other run: the foreman's production, changed by the office
     await page.evaluate(() => window.pbRrClose()); await sleep(page, 600);
     await page.evaluate((i) => window.pbRrOpen(i), 1 - found); await sleep(page, 1500);
     check('the foreman’s production shows: Pipe Installed - Main 100, by Brandon Jones (foreman) (' + await txt(page, 'cxRunOffProd') + ')', /Pipe Installed - Main 100/.test(await txt(page, 'cxRunOffQty')) && /Entered by Brandon Jones \(foreman\)/.test(await txt(page, 'cxRunOffBy')));
-    await page.tap('#cxRunOffEdit'); await sleep(page, 400);
+    await offTap(page, '#cxRunOffEdit'); await sleep(page, 400);
     await page.fill('#cxRunOffQ' + pi, '110'); await page.tap('#cxRunOffSave'); await sleep(page, 1200);
     check('changed: 110, "changed by you" (' + await txt(page, 'cxRunOffBy') + ')', /Pipe Installed - Main 110/.test(await txt(page, 'cxRunOffQty')) && /changed by you/.test(await txt(page, 'cxRunOffBy')));
     // stale: someone else changed it
     await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('__rrsrv')); Object.values(s.runs).forEach(x => { if (x.prod && x.prod.entry_id === 'ef') x.prod.version = 9; }); localStorage.setItem('__rrsrv', JSON.stringify(s)); });
-    await page.tap('#cxRunOffEdit'); await sleep(page, 400); await page.fill('#cxRunOffQ' + pi, '111'); await page.tap('#cxRunOffSave'); await sleep(page, 1200);
+    await offTap(page, '#cxRunOffEdit'); await sleep(page, 400); await page.fill('#cxRunOffQ' + pi, '111'); await page.tap('#cxRunOffSave'); await sleep(page, 1200);
     check('someone changed it meanwhile: says so, form kept', /changed this run’s production since you opened it/.test(await txt(page, 'cxRunOffErr')) && !!(await page.$('#cxRunOffForm')));
     await page.tap('#cxRunOffCancel'); await sleep(page, 300);
     // delete

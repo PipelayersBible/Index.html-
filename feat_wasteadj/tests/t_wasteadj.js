@@ -66,8 +66,9 @@ const SPMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) =
     await page.evaluate(() => window.pbMatEdit('a1')); await page.waitForTimeout(500);
     check('editing the asphalt: Type the total, 285.8, waste 5', (await val(page, '#pmf_expected')) === '285.8' && (await val(page, '#pmf_extra_pct')) === '5');
     await page.fill('#pmf_extra_pct', '1'); await page.waitForTimeout(300);
-    let help = await txt(page, '#pmfExpHelp');
-    check('waste 5% -> 1%: Expected 285.8 -> 274.9, and says why (' + await val(page, '#pmf_expected') + ' | ' + help + ')', (await val(page, '#pmf_expected')) === '274.9' && /272\.2 before waste \+ 1% = 274\.9 tons/.test(help || ''));
+    // r15.70 (feat_matform): the help line sits under "Show math" (<details id="pmfMath">), so read its text and require the details to be shown
+    let help = await page.evaluate(() => { const d = document.getElementById('pmfMath'), e = document.getElementById('pmfExpHelp'); return d && e && !d.hidden && !e.hidden ? e.textContent.replace(/\s+/g, ' ').trim() : ''; });
+    check('waste 5% -> 1%: Expected 285.8 -> 274.9, and Show math says why (' + await val(page, '#pmf_expected') + ' | ' + help + ')', (await val(page, '#pmf_expected')) === '274.9' && /272\.2 before waste \+ 1% = 274\.9 tons/.test(help || ''));
     await page.fill('#pmf_extra_pct', '10'); await page.waitForTimeout(300);
     check('then 10%: 299.4 (from the same amount before waste)', (await val(page, '#pmf_expected')) === '299.4');
     await page.fill('#pmf_extra_pct', '5'); await page.waitForTimeout(300);

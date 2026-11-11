@@ -14,7 +14,8 @@ const sleep = (p, ms) => p.waitForTimeout(ms);
 const S = (page) => page.evaluate(() => { const e = window.__debugGetCurrentArchiveEntry(); const s = window.pbLaidSummaryOf(e.id);
   return { id: e.id, from: e.resumedFromId, n: s.n, nOwn: s.nOwn, early: s.early, laidFt: s.laidFt, sessionFt: s.sessionFt, earlierFt: s.earlierFt, far: s.far, marks: Object.keys((e.laid && e.laid.marks) || {}).length,
     log: (e.laid && e.laid.log) || [], pipe: document.getElementById('fpPipeInstalled').value, hint: (document.getElementById('fpLaidHint') || {}).textContent || '', hintShown: !!document.getElementById('fpLaidHint') && !document.getElementById('fpLaidHint').hidden,
-    progress: document.getElementById('laidProgress').textContent, rows: JSON.stringify(e.intervalRows), summary: JSON.stringify(e.summary), segments: JSON.stringify(e.segments || null), report: e.reportText || '' }; });
+    progress: ((d) => (d('laid') || '—') + (d('ses') ? ' (this session ' + d('ses') + ')' : ''))((k) => { const dd = document.querySelector('#laidProgress dd[data-k="' + k + '"]'); return dd ? dd.textContent.replace(/\s+/g, ' ').trim() : ''; }), /* r16.01: the progress is a stats block (Pipe laid x / of y ft · This session · Avg. time · Current time); read as "80 / of 200 ft (this session 60 ft)" */ rows: JSON.stringify(e.intervalRows), summary: JSON.stringify(e.summary), segments: JSON.stringify(e.segments || null), report: e.reportText || '' }; });
+const openProd = (page) => page.evaluate(() => { const c = document.getElementById('resForemanCard'); if (c) c.open = true; }); // r15.94 cleanup A (P4): the Production & Crew entry on Results is a folded card
 const lockForm = async (page) => {
   await page.click('text=Review & Calculate').catch(() => {}); await sleep(page, 500);
   await page.click('button[onclick="pbLock()"]').catch(() => {});
@@ -34,8 +35,8 @@ const lockForm = async (page) => {
     await page.clock.fastForward(8 * 3600000); // Mon 15:00
     await page.evaluate(() => pbLaidMark(8)); await sleep(page, 700);
     let s = await S(page);
-    check('day 1: laid to 80.0, pre-fill 80 (not a resumed run: as before)', s.laidFt === 80 && s.sessionFt === 80 && s.pipe === '80' && /Filled in from the rows marked laid \(80 ft\)/.test(s.hint) && /^Pipe laid: 80 of 200 ft, last/.test(s.progress));
-    await page.fill('#fpForeman', 'Wes'); await page.evaluate(() => pbSaveForemanData()); await sleep(page, 2500); await M.dismiss(page);
+    check('day 1: laid to 80.0, pre-fill 80 (not a resumed run: as before)', s.laidFt === 80 && s.sessionFt === 80 && s.pipe === '80' && /Filled in from the rows marked laid \(80 ft\)/.test(s.hint) && s.progress === '80 / of 200 ft');
+    await openProd(page); await page.fill('#fpForeman', 'Wes'); await page.evaluate(() => pbSaveForemanData()); await sleep(page, 2500); await M.dismiss(page);
     check('day 1: production saved with 80 ft of pipe', await L.waitFor(page, (i) => window.__rpcLog.some(x => x.fn === 'pb_prod_save' && JSON.stringify(x.args).includes('"pipe"') && JSON.stringify(x.args).includes('"qty":80')), 15000));
     await page.evaluate(() => pbGoto('home')); await sleep(page, 300);
     // ---- Tue 06:42: END asks, ended at 80.0 Mon 16:00, Continue Today ----
@@ -54,10 +55,14 @@ const lockForm = async (page) => {
     s = await S(page);
     const before = s;
     check('day 2 starts: rows 0.0-80.0 carried in as laid in an earlier session (9 rows), none stamped on this session', s.early.filter(Boolean).length === 9 && s.early[8] && !s.early[9] && s.n === 9 && s.nOwn === 0 && s.marks === 0);
-    check('day 2 starts: nothing pre-filled (0 ft this session), progress "Pipe laid: 80 of 200 ft (this session 0 ft)"', s.pipe === '' && !s.hintShown && /^Pipe laid: 80 of 200 ft \(this session 0 ft\)/.test(s.progress));
-    check('an earlier row: "Laid earlier", its menu button "Laid in an earlier session" (disabled), next row is 90.0', await page.evaluate(() => {
-      const c = document.querySelector('#resultsBody tr[data-laid-idx="3"]:not([data-laid-strip]) > td:nth-child(2)'), b = document.querySelector('button[data-laid-btn="3"]'), nx = document.querySelector('#resultsBody tr.pb-laid-next:not([data-laid-strip])');
-      return c.dataset.laidTag === 'Laid earlier' && c.closest('tr').classList.contains('pb-laid-early') && b && b.disabled && b.textContent === 'Laid in an earlier session' && nx && nx.dataset.laidIdx === '9'; }));
+    check('day 2 starts: nothing pre-filled (0 ft this session), progress "Pipe laid: 80 of 200 ft (this session 0 ft)"', s.pipe === '' && !s.hintShown && s.progress === '80 / of 200 ft (this session 0 ft)');
+    // r16.13: the distance button opens the row's menu sheet (no Menu column): an earlier row's sheet says "Laid in an earlier session" and offers no Mark / Undo
+    check('an earlier row: "Laid earlier", next row is 90.0', await page.evaluate(() => {
+      const c = document.querySelector('#resultsBody tr[data-laid-idx="3"]:not([data-laid-strip]) > td:nth-child(2)'), nx = document.querySelector('#resultsBody tr.pb-laid-next:not([data-laid-strip])');
+      return c.dataset.laidTag === 'Laid earlier' && c.closest('tr').classList.contains('pb-laid-early') && nx && nx.dataset.laidIdx === '9'; }));
+    await page.evaluate(() => { const b = document.querySelector('#resultsBody tr[data-laid-idx="3"] button[data-gs-key]'); window.pbGsRowMenu(b, 3); }); await sleep(page, 400);
+    check('its row menu: "Laid in an earlier session", no Mark laid / Undo action', await page.evaluate(() => { const ov = document.getElementById('pbModalOverlay'); if (!ov || getComputedStyle(ov).display === 'none') return false; const bt = [...document.querySelectorAll('#pbModalButtons button')].map(b => b.textContent); return /^Distance 30\.0/.test(document.getElementById('pbModalTitle').textContent) && /Laid in an earlier session/.test(document.getElementById('pbModalMessage').textContent) && !bt.some(t => /Mark laid|Undo laid/.test(t)); }));
+    await page.evaluate(() => { const b = [...document.querySelectorAll('#pbModalButtons button')].find(x => x.textContent.trim() === 'Close'); if (b) b.click(); }); await sleep(page, 300);
     // a swipe back on an earlier row does nothing; the menu way neither
     let p = await L.rowPoint(page, 5); await L.touchDrag(page, p.x, p.y, -150, 2); await sleep(page, 500);
     await page.evaluate(() => pbLaidToggleRow(5)); await sleep(page, 500);
@@ -70,7 +75,7 @@ const lockForm = async (page) => {
     check('swipe on 140.0 marks only 90.0-140.0 (6 rows) on this session', s.marks === 6 && s.log.length === 1 && s.log[0].keys.length === 6 && s.n === 15 && s.nOwn === 6);
     check('DAY 2 = 60 ft: pre-filled "Feet of pipe installed" is 60 (not 140)', s.sessionFt === 60 && s.pipe === '60');
     check('…with its note: "this session (60 ft; the 80 ft before them were laid in an earlier session)"', s.hintShown && /rows marked laid this session \(60 ft; the 80 ft before them were laid in an earlier session\)/.test(s.hint));
-    check('progress line: "Pipe laid: 140 of 200 ft (this session 60 ft), last …"', /^Pipe laid: 140 of 200 ft \(this session 60 ft\), last/.test(s.progress));
+    check('progress block: "Pipe laid 140 / of 200 ft · This session 60 ft" (' + s.progress + ')', s.progress === '140 / of 200 ft (this session 60 ft)');
     check('grade rows, summary, segments and the report text unchanged by the marks', s.rows === before.rows && s.summary === before.summary && s.segments === before.segments && s.report === before.report);
     check('live status: laidFt 60 (this session), laidToFt 140 / laidTo 140.0 (the run\'s progress)', await L.waitFor(page, (sid) => window.__rpcLog.some(x => x.fn === 'pb_prod_run_status_put' && x.args.p_status.sessionRef === String(sid) && x.args.p_status.laidFt === 60 && x.args.p_status.laidToFt === 140 && x.args.p_status.laidToStation === '140.0'), 20000, s.id));
     // undo from 120.0 removes only this session's 120-140
@@ -88,7 +93,7 @@ const lockForm = async (page) => {
     await page.evaluate((i) => pbResumeLastRunResults(), 0); await sleep(page, 900); await M.dismiss(page);
     s = await S(page);
     check('END\'s pre-fill on the resumed session ended later: 60, "less the 80 ft laid in an earlier session" (got ' + s.pipe + ')', s.pipe === '60' && /where the run ended \(140\.0, .*\), less the 80 ft laid in an earlier session: 60 ft/.test(s.hint));
-    await page.fill('#fpForeman', 'Wes'); await page.evaluate(() => pbSaveForemanData()); await sleep(page, 2500); await M.dismiss(page);
+    await openProd(page); await page.fill('#fpForeman', 'Wes'); await page.evaluate(() => pbSaveForemanData()); await sleep(page, 2500); await M.dismiss(page);
     check('production for day 2\'s session: 60 ft of pipe (not 140)', await L.waitFor(page, (sid) => window.__rpcLog.some(x => x.fn === 'pb_prod_save' && JSON.stringify(x.args).includes(String(sid)) && /"key":"pipe","qty":60\b/.test(JSON.stringify(x.args))), 15000, s.id)
       && !(await page.evaluate(() => window.__rpcLog.some(x => x.fn === 'pb_prod_save' && /"key":"pipe","qty":140\b/.test(JSON.stringify(x.args))))));
     await page.evaluate(() => pbOpenJobSummary()); await sleep(page, 400); await page.selectOption('#jobSummaryPicker', 'J-INT'); await sleep(page, 600);

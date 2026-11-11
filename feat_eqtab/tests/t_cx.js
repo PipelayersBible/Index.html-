@@ -17,7 +17,7 @@ const hscroll = (p) => p.evaluate(() => document.documentElement.scrollWidth > w
     check('company: company name', (await txt(page, '#homeCoName')) === 'DIG Civil Construction');
     check('company: 6 job cards', await page.evaluate(() => document.querySelectorAll('#homeCxJobs .pbx-job').length) === 6);
     check('company: right now 3 runs / 1 permit', (await txt(page, '#homeCxRuns')) === '3' && (await txt(page, '#homeCxPermits')) === '1');
-    check('company: inbox 2 unread', /^2 Unread reports/.test((await txt(page, '#homeCxInbox')) || ''));
+    check('company: inbox 2 unread', /^2 Management inbox 2 unread/.test((await txt(page, '#homeCxInbox')) || ''), await txt(page, '#homeCxInbox')); // r16.08: the tile is "Management inbox · N unread"
     check('company: material alerts 3', /^3 Material alerts/.test((await txt(page, '#homeCxMat')) || ''));
     check('company: waiting 4 (3 runs, 1 edit)', /^4 Waiting on foremen 3 runs · 1 edit/.test((await txt(page, '#homeCxWait')) || ''));
     check('company: status says updated', /6 jobs · Updated /.test((await txt(page, '#homeCxStatus')) || ''));
@@ -80,7 +80,7 @@ const hscroll = (p) => p.evaluate(() => document.documentElement.scrollWidth > w
     check('tabs: arrow keys move the selection and focus', await page.evaluate(() => __pbCxDebug().tab === 'equipment' && document.activeElement.id === 'pjCxTab_equipment'));
     // ---- Edit project ----
     await page.click('#pjCxEdit'); await page.waitForTimeout(200);
-    check('edit: menu with 5 items (r15.34: Project details), expanded', await page.evaluate(() => document.querySelectorAll('#pjCxMenu .pbx-menu-btn').length === 5 && document.getElementById('pjCxEdit').getAttribute('aria-expanded') === 'true'));
+    check('edit: menu with 6 items (r15.34: Job details; r15.41: Schedule), expanded', await page.evaluate(() => document.querySelectorAll('#pjCxMenu .pbx-menu-btn').length === 6 && /Job details/.test(document.getElementById('pjCxMenu').textContent) && /Schedule/.test(document.getElementById('pjCxMenu').textContent) && document.getElementById('pjCxEdit').getAttribute('aria-expanded') === 'true'), await txt(page, '#pjCxMenu'));
     await page.click('#pjCxEdit_trench'); await page.waitForTimeout(400);
     check('edit: Trench settings opens the job settings form on Materials', await page.evaluate(() => __pbCxDebug().tab === 'materials' && !!document.getElementById('pmfForm')));
     await page.evaluate(() => pbMatFormCancel()); await page.waitForTimeout(200);
@@ -102,8 +102,8 @@ const hscroll = (p) => p.evaluate(() => document.documentElement.scrollWidth > w
     check('offline: 6 jobs from the kept copy', await page.evaluate(() => document.querySelectorAll('#homeCxJobs .pbx-job').length) === 6);
     const st = await txt(page, '#homeCxStatus');
     check('offline: status says copy and its time (' + st + ')', /Copy from .*\d/.test(st || '') || /No signal.*copy from/i.test(st || ''));
-    check('offline: right now from the kept copy, with its age', /copy from/.test((await txt(page, '#homeCxLive')) || ''));
-    check('offline: unread count kept (2)', /^2 Unread/.test((await txt(page, '#homeCxInbox')) || ''));
+    check('offline: right now from the kept copy, with its age', /Copy from .*\d/.test((await txt(page, '#homeCxLive')) || ''), await txt(page, '#homeCxLive')); // r15.94: "Copy from 3:48 AM" (Title Case)
+    check('offline: unread count kept (2)', /^2 Management inbox 2 unread/.test((await txt(page, '#homeCxInbox')) || ''), await txt(page, '#homeCxInbox')); // r16.08 wording
     await page.click('.pbx-job[data-job="24-101"]'); await page.waitForTimeout(1500);
     check('offline: the job opens from the copy', await page.evaluate(() => document.querySelector('.pb-screen.active').id === 'screen-prodJob') && /Elm St water main/.test((await txt(page, '#pjCxHero')) || ''));
     check('offline page errors: none', page._errors.length === 0); if (page._errors.length) console.log(page._errors);

@@ -121,8 +121,9 @@ const CREW = () => { const o = window.__rpc; window.__rpc = async (fn, args) => 
       const lenker = await page.evaluate(() => { const d = [...document.querySelectorAll('#screen-rodElevCalc details.pb-more')].find(x => /Lenker/.test(x.querySelector('summary').textContent)); return d ? d.querySelector('p').textContent.trim() : null; });
       L.check('K8: the Lenker (i) body no longer opens with the question [' + (lenker || '').slice(0, 50) + ']', !!lenker && /^You don't need this: the number on a Lenker rod/.test(lenker));
       await page.evaluate(() => pbOpenSettings()); await page.waitForTimeout(300);
-      const fp = await page.evaluate(() => document.getElementById('settingsHelpPassword').textContent.trim());
-      L.check('K8: Settings › Help "Forgot your password?" body starts "On the Log In screen" [' + fp + ']', fp === 'On the Log In screen, tap Forgot password? (it needs signal).');
+      // r15.94 (cleanup): the Settings › Help section and its "Forgot your password?" fold are gone (fewer explanations); the Log In screen keeps its Forgot password? button
+      const fp = await page.evaluate(() => ({ fold: !!document.getElementById('settingsHelpPassword') || /Forgot your password/.test(document.getElementById('screen-settings').textContent), login: (document.getElementById('forgotPwLink') || {}).textContent }));
+      L.check('K8: Settings no longer carries a "Forgot your password?" explanation; the Log In screen has Forgot password? [' + JSON.stringify(fp) + ']', !fp.fold && fp.login === 'Forgot password?');
       // K7
       await page.evaluate(() => pbGotoTab('tools')); await page.waitForFunction(() => document.querySelectorAll('#toolsAllList .name').length > 0, null, { timeout: 5000 }).catch(() => {}); await page.waitForTimeout(300);
       const tools = await page.evaluate(() => [...document.querySelectorAll('#toolsAllList section')].map(s => ({ h: (s.querySelector('h2') || {}).textContent || '', rows: [...s.querySelectorAll('.name')].map(n => n.textContent.trim()) })));
@@ -135,12 +136,13 @@ const CREW = () => { const o = window.__rpc; window.__rpc = async (fn, args) => 
       // K6
       await page.evaluate(() => pbGotoTab('calculators')); await page.waitForFunction(() => document.querySelectorAll('#toolsList .name').length > 0, null, { timeout: 5000 }).catch(() => {}); await page.waitForTimeout(300);
       await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(100);
+      // r15.94 (clean_c): the groups are Grade & Elevation · Trench & Backfill (was Safety) · Pipe & Flow · Structures · Confined Space (last; its chip keeps the id calcCatBtnSafety)
+      await page.click('#calcCatBtnTrench'); await page.waitForTimeout(900);
+      const jump = await page.evaluate(() => { const s = document.querySelector('#toolsList section[aria-label="Trench & Backfill"]'), h = document.querySelector('#screen-calcHub .pb-header'); const b = s.getBoundingClientRect(), hb = h.getBoundingClientRect(); return { screen: document.querySelector('.pb-screen.active').id, top: Math.round(b.top), headBottom: Math.round(hb.bottom), y: Math.round(scrollY) }; });
+      L.check('K6: "Trench & Backfill" scrolls the tab to its heading (stays on Calculators, heading just under the header) [' + JSON.stringify(jump) + ']', jump.screen === 'screen-calcHub' && jump.y > 0 && jump.top >= jump.headBottom - 2 && jump.top < jump.headBottom + 40);
       await page.click('#calcCatBtnSafety'); await page.waitForTimeout(900);
-      const jump = await page.evaluate(() => { const s = document.querySelector('#toolsList section[aria-label="Safety"]'), h = document.querySelector('#screen-calcHub .pb-header'); const b = s.getBoundingClientRect(), hb = h.getBoundingClientRect(); return { screen: document.querySelector('.pb-screen.active').id, top: Math.round(b.top), headBottom: Math.round(hb.bottom), y: Math.round(scrollY) }; });
-      L.check('K6: "Safety" scrolls the tab to its heading (stays on Calculators, heading just under the header) [' + JSON.stringify(jump) + ']', jump.screen === 'screen-calcHub' && jump.y > 0 && jump.top >= jump.headBottom - 2 && jump.top < jump.headBottom + 40);
-      await page.click('#calcCatBtnStruct'); await page.waitForTimeout(900);
-      const jumpS = await page.evaluate(() => { const s = document.querySelector('#toolsList section[aria-label="Structures"]'), bar = document.getElementById('pbTabBar'); const b = s.getBoundingClientRect(); return { screen: document.querySelector('.pb-screen.active').id, top: Math.round(b.top), barTop: Math.round(bar.getBoundingClientRect().top), atBottom: Math.round(scrollY + innerHeight) >= document.documentElement.scrollHeight - 2 }; });
-      L.check('K6: "Structures" (the last group) scrolls to the page end with its heading on screen above the tab bar [' + JSON.stringify(jumpS) + ']', jumpS.screen === 'screen-calcHub' && jumpS.atBottom && jumpS.top > 62 && jumpS.top < jumpS.barTop - 60);
+      const jumpS = await page.evaluate(() => { const s = document.querySelector('#toolsList section[aria-label="Confined Space"]'), bar = document.getElementById('pbTabBar'); const b = s.getBoundingClientRect(); return { screen: document.querySelector('.pb-screen.active').id, top: Math.round(b.top), barTop: Math.round(bar.getBoundingClientRect().top), atBottom: Math.round(scrollY + innerHeight) >= document.documentElement.scrollHeight - 2, last: [...document.querySelectorAll('#toolsList section')].pop() === s }; });
+      L.check('K6: "Confined Space" (the last group) scrolls to the page end with its heading on screen above the tab bar [' + JSON.stringify(jumpS) + ']', jumpS.screen === 'screen-calcHub' && jumpS.last && jumpS.atBottom && jumpS.top > 62 && jumpS.top < jumpS.barTop - 60);
       await page.screenshot({ path: SHOTS + 'calc_jump_structures.png' });
       await page.click('#calcCatBtnGrade'); await page.waitForTimeout(900);
       const jump2 = await page.evaluate(() => { const s = document.querySelector('#toolsList section[aria-label="Grade & Elevation"]'), h = document.querySelector('#screen-calcHub .pb-header'); return { top: Math.round(s.getBoundingClientRect().top), headBottom: Math.round(h.getBoundingClientRect().bottom) }; });
@@ -158,7 +160,7 @@ const CREW = () => { const o = window.__rpc; window.__rpc = async (fn, args) => 
       // K3: cutsheet rows
       await page.evaluate(() => pbOpenNewRun()); await page.waitForTimeout(300); await L.dismiss(page);
       await page.evaluate(() => pbOpenCutsheetImport()); await page.waitForTimeout(300);
-      await (await page.$('#cutsheetPdfInput')).setInputFiles('/home/claude/test/cutsheet_sample_2.pdf');
+      await (await page.$('#cutsheetPdfInput')).setInputFiles('/home/claude/feat_core33/tests/cutsheet_sample_2.pdf') /* Nov 11 2026: the original fixture never reached the workbench; a 14-row 8" SS sheet with a text layer stands in */;
       await page.waitForFunction(() => /Extracted/.test(document.getElementById('cutsheetPdfStatus').textContent), null, { timeout: 45000 });
       await page.evaluate(() => pbSelectCutsheetSegment('0')); await page.waitForTimeout(400);
       const tbl = await page.evaluate(() => { const w = document.querySelector('#cutsheetRowTable .pb-table-wrap'), rows = [...document.querySelectorAll('#cutsheetRowTable tbody tr')]; const wr = w.getBoundingClientRect(); return { total: rows.length, wrapH: Math.round(wr.height), scrollH: w.scrollHeight, clientH: w.clientHeight, rowH: Math.round(rows[0].getBoundingClientRect().height), maxH: getComputedStyle(w).maxHeight, inv: rows[0].children[6].innerText.replace(/\s+/g, ' ').trim() }; });
@@ -169,14 +171,19 @@ const CREW = () => { const o = window.__rpc; window.__rpc = async (fn, args) => 
       await page.evaluate(() => { document.querySelector('#cutsheetRowTable').scrollIntoView({ block: 'start' }); }); await page.waitForTimeout(200);
       await page.screenshot({ path: SHOTS + 'cutsheet_rows.png' });
       L.check('control: no sideways page scroll on the cutsheet screen', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
-      // K11: the AI photo button offline
+      // K11: a photo of the sheet, offline. r15.87 (feat_cutone): one "Add Cutsheet" input takes a PDF or a photo; a photo can only be
+      // read by AI, so with signal it asks first ("Read with the in-app AI?"); with no signal it says so and asks nothing, sends nothing.
+      const addPhoto = () => page.evaluate(() => { localStorage.setItem('pbAiPrivacyAck', '1'); const png = atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='); const b = new Uint8Array(png.length); for (let i = 0; i < png.length; i++) b[i] = png.charCodeAt(i); pbAddCutsheet({ files: [new File([b], 'sheet.png', { type: 'image/png' })], value: '' }); });
       await page.context().setOffline(true); await page.waitForTimeout(200);
-      await page.evaluate(() => { localStorage.setItem('pbAiPrivacyAck', '1'); window.__picks = 0; document.getElementById('cutsheetAiPhotoInput').addEventListener('click', (e) => { window.__picks++; e.preventDefault(); }); pbCutsheetAiPhotoPick(); }); await page.waitForTimeout(300);
-      const ps = await txt(page, '#cutsheetAiPhotoStatus');
-      L.check('K11: offline, "Read a Photo of the Sheet (AI)" says "No signal… nothing was sent" and never opens the picker [' + ps + ' | picks ' + await page.evaluate(() => window.__picks) + ']', /^No signal\./.test(ps || '') && /nothing was sent/.test(ps || '') && (await page.evaluate(() => window.__picks)) === 0 && !(await modal(page)));
+      await addPhoto(); await page.waitForTimeout(300);
+      const ps = await txt(page, '#cutsheetAiStatus');
+      L.check('K11: offline, a photo added as the cutsheet says "No signal… nothing was sent" and asks no AI question [' + ps + ']', /^No signal\./.test(ps || '') && /nothing was sent/.test(ps || '') && !(await modal(page)));
       await page.context().setOffline(false);
-      await page.evaluate(() => { pbCutsheetAiPhotoPick(); }); await page.waitForTimeout(300);
-      L.check('control: with signal the picker opens', (await page.evaluate(() => window.__picks)) === 1);
+      await addPhoto(); await page.waitForTimeout(300);
+      const mq = await modal(page);
+      L.check('control: with signal the photo asks "Read with the in-app AI?" first (Cancel / Read with AI) [' + JSON.stringify(mq) + ']', !!mq && mq.title === 'Read with the in-app AI?' && mq.buttons.join('|') === 'Cancel|Read with AI');
+      await page.evaluate(() => { const b = [...document.querySelectorAll('#pbModalButtons button')].find(x => x.textContent.trim() === 'Cancel'); if (b) b.click(); }); await page.waitForTimeout(200);
+      L.check('control: Cancel leaves "Not read." and sends nothing', (await txt(page, '#cutsheetPdfStatus')) === 'Not read.');
       L.check('no page errors [' + page._errors.join(' | ') + ']', page._errors.length === 0);
       await page.context().close();
     }

@@ -1,5 +1,7 @@
 // Shared helpers for the overnight "pipe run" probes (390 px wide, like a phone).
 const L = require('/home/claude/test/lib.js');
+// r15.65+: a point starts on Survey Stake; these tests enter invert elevations, so switch Start and End to Invert Elevation first
+const elevMode = (page) => page.evaluate(() => ['start', 'end'].forEach((p) => { const b = document.querySelector('#' + p + 'ModeToggle button[data-val="elev"]'); if (b && !b.classList.contains('active')) b.click(); }));
 const fs = require('fs');
 const SHOTS = '/home/claude/feat_run33/tests/shots/'; fs.mkdirSync(SHOTS, { recursive: true });
 async function newPage390(browser, uid, opts = {}) {
@@ -22,6 +24,7 @@ const smallTargets = (page) => page.evaluate(() => { const out = []; document.qu
 async function lockLenker(page, { start = '100.00', end = '99.00', dist = 100, interval = 10, wt = '0.3', id = '10', stats = false, job = 'JOB-N', type = 'PVC Sch 40', beforeReview = null } = {}) {
   await page.evaluate(() => pbOpenNewRun()); await page.waitForTimeout(300);
   await page.click('#rodToggle button[data-val="lenker"]'); await page.waitForTimeout(100);
+  await elevMode(page);
   await page.fill('#startElev', start); await page.fill('#endElev', end); await page.fill('#totalDist', String(dist)); await page.fill('#interval', String(interval));
   await page.fill('#runWT', wt); await page.selectOption('#runIdSel', id);
   if (stats) { await page.check('#saEnableToggle'); await page.fill('#saJobNumber', job); await page.selectOption('#statsType', type); }
@@ -35,4 +38,4 @@ async function lockLenker(page, { start = '100.00', end = '99.00', dist = 100, i
   return page.evaluate(() => window.__debugGetCurrentArchiveEntry().id);
 }
 const entry = (page, id) => page.evaluate((i) => { const e = window.__debugGetArchive().find(x => x.id === i); return e ? JSON.parse(JSON.stringify(e, (k, v) => k === 'photos' ? undefined : v)) : null; }, id);
-module.exports = { L, fs, SHOTS, newPage390, fill, shot, screen, errText, reviewText, resultsRows, overflow, smallTargets, lockLenker, entry };
+module.exports = { L, fs, SHOTS, newPage390, fill, shot, screen, errText, reviewText, resultsRows, overflow, smallTargets, lockLenker, entry, elevMode };

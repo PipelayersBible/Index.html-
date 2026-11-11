@@ -72,17 +72,24 @@ const MATMOCK = () => { const o = window.__rpc; window.__rpc = async (fn, args) 
     check('Footage from offers the counted item: Laterals (EA) (' + opts.join(', ') + ')', opts.includes('laterals:Laterals (EA)'));
     await page.selectOption('#pmf_footage_cat', 'laterals'); await page.waitForTimeout(400);
     check('a counted item asks for "Length each (ft per EA)"', /Length each \(ft per EA\)/.test(await page.evaluate(() => (document.querySelector('label[for=pmf_each_ft]') || {}).textContent || '')));
-    check('…until it is set, Expected says what it needs (' + await txt(page, '#pmfExpHelp') + ')', (await page.inputValue('#pmf_expected')) === '' && /once the length each/.test((await txt(page, '#pmfExpHelp')) || ''));
+    // r15.70 (feat_matform): the help line sits under "Show math" (<details id="pmfMath">), so read its text rather than innerText
+    const help = () => page.evaluate(() => { const d = document.getElementById('pmfMath'), e = document.getElementById('pmfExpHelp'); return d && e && !d.hidden && !e.hidden ? e.textContent.replace(/\s+/g, ' ').trim() : ''; });
+    check('…until it is set, Expected says what it needs under Show math (' + await help() + ')', (await page.inputValue('#pmf_expected')) === '' && /once the length each/.test(await help()));
     await page.fill('#pmf_each_ft', '25'); await page.waitForTimeout(300);
-    const yd = Math.round(12 * 25 * 3 * 0.5 / 27 * 1.15 * 10) / 10;
-    check('12 laterals × 25 ft = 300 ft × 3 × 0.5 ÷ 27 × 1.15 = ' + yd + ' (' + await page.inputValue('#pmf_expected') + ' | ' + await txt(page, '#pmfExpHelp') + ')', (await page.inputValue('#pmf_expected')) === String(yd) && /300 LF \(Laterals planned 12 EA × 25 ft each\)/.test((await txt(page, '#pmfExpHelp')) || ''));
+    // r15.70 (owner Oct 30): a new aggregate is "Bedding & shading unless changed": L × (W × bed + W × (OD + shade) − pipe area) ÷ 27 × 1.15 (job: W 3, bed 0.5, shade 1, OD 8.625 in)
+    const o = 8.625 / 12, per = 3 * 0.5 + 3 * (o + 1) - Math.PI * o * o / 4, yd = Math.round(12 * 25 * per / 27 * 1.15 * 10) / 10;
+    check('12 laterals × 25 ft = 300 ft × (3 × 0.5 + 3 × (0.719 + 1) − pipe area) ÷ 27 × 1.15 = ' + yd + ' (' + await page.inputValue('#pmf_expected') + ' | ' + await help() + ')', (await page.inputValue('#pmf_expected')) === String(yd) && /300 LF \(Laterals planned 12 EA × 25 ft each\) × \(3 ft × 0\.5 ft \+ 3 ft × \(0\.719 ft OD \+ 1 ft\) − pipe area\) ÷ 27 × 1\.15/.test(await help()));
     await page.screenshot({ path: SHOTS + 'each_ft.png' });
     await page.tap('#pmfSave'); await page.waitForTimeout(1200);
     const a = await page.evaluate(() => (window.__rpcLog.filter(x => x.fn === 'pb_mat_save').pop() || {}).args);
     check('saved with footage_cat laterals and each_ft 25 (' + JSON.stringify(a && a.p_material) + ')', a && a.p_material.footage_cat === 'laterals' && a.p_material.each_ft === '25');
     await page.evaluate(() => { localStorage.setItem('__mats', JSON.stringify([
       { id: 'a2', name: '3in SDR 35', category: 'pipe', source: 'pipe_footage', unit: 'LF', expected: 300, alert_pct: 80, version: 1, footage_cat: 'laterals', each_ft: 25, orders: [], uses: [], fig: { status: 'ok', used: 100, ordered: 0, waiting: 0 } }])); window.pbCxOpenJob('26014', 'materials'); }); await page.waitForTimeout(2500);
-    check('the row says "From the Laterals crews report × 25 ft each"', /Counts Laterals × 25 ft each footage/.test(await txt(page, '#pjMatSec')));
+    // r15.70 (feat_matform): the card's "Counts Laterals × 25 ft each footage" line is gone (no help lines); the item shows on the Overview, where materials sit under their plan item (r15.14), and Edit keeps the length each (next check)
+    await page.tap('#pjCxTab_overview'); await page.waitForTimeout(800);
+    const under = await page.evaluate(() => { const rows = [...document.querySelectorAll('#pjCxHero .pbx-legrow')]; const r = rows.find(x => /^Laterals/.test((x.querySelector('.pbx-leg-n') || {}).textContent || '')); const n = r && r.nextElementSibling; return n && n.classList.contains('pbx-matrows') ? n.innerText.replace(/\s+/g, ' ').trim() : null; });
+    check('the Overview lists the 3in under Laterals; the card has no footage line (r15.70) (' + under + ')', /3in SDR 35/.test(under || '') && !(await page.$('#pjMatSec .pbm-how')));
+    await page.tap('#pjCxTab_materials'); await page.waitForTimeout(500);
     await page.evaluate(() => [...document.querySelectorAll('#pjMatList button')].find(b => /^Edit$/.test(b.textContent.trim())).click()); await page.waitForTimeout(400);
     check('editing it keeps Laterals and 25 ft each', (await page.inputValue('#pmf_footage_cat')) === 'laterals' && (await page.inputValue('#pmf_each_ft')) === '25');
     await page.tap('#pmfCancel'); await page.waitForTimeout(400); await page.tap('#pjMatAdd'); await page.waitForTimeout(400);
