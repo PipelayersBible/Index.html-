@@ -7159,7 +7159,8 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
   #pbApp .pbm-wait { color: var(--pb-text-2); white-space: nowrap; }
   #pbApp .pbm-need, #pbApp .pbm-more, #pbApp .pbm-estkey { font-size: 13px; color: var(--pb-text-2); }
   #pbApp .pb-chip.notsent.pbm-chip { --pb-chip-icon: var(--pb-icon-warn); }
-  #pbApp .pbm-chip { min-height: 24px; font-size: 12.5px; padding: 2px 8px 2px 6px; margin: 2px 4px 2px 0; }
+  #pbApp .pbm-chip { min-height: 24px; font-size: 12.5px; padding: 2px 8px 2px 6px; margin: 2px 4px 2px 0; white-space: normal; max-width: 100%; text-align: left; } /* r16.22: wraps at 320 px / large text instead of a sideways scroll */
+  #pbApp .pbm-chips { min-width: 0; max-width: 100%; }
   #pbApp .pbm-sec .pbm-none { margin: 8px 0 0 0; }
   #pbApp .pbm-list { list-style: none; margin: 10px 0 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
   #pbApp .pbm-row { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 12px; background: var(--pb-raised-1, var(--pb-surface)); border: 1px solid var(--pb-divider); min-width: 0; }
@@ -12675,7 +12676,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.21 · 2026-11-10'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.22 · 2026-11-10'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -17365,16 +17366,29 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return { dpi: PB_PLANS_DPI, w: W, h: H, cols, rows, tw, th, ov: PB_PLANS_OV, tiles };
   }
   window.pbPlansGrid = pbPlansGrid;
-  async function pbPlansJpeg(page, viewport, x, y, w, h) {
+  async function pbPlansCanvas(page, viewport, x, y, w, h) {
     const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
     const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, w, h);
     await page.render({ canvasContext: cx, viewport, transform: [1, 0, 0, 1, -x, -y], background: 'rgba(255,255,255,1)' }).promise;
+    return cv;
+  }
+  async function pbPlansBlob(cv) {
     const blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', 0.85));
     cv.width = cv.height = 0;
     if (!blob) throw new Error('render');
     return blob;
   }
+  async function pbPlansJpeg(page, viewport, x, y, w, h) { return pbPlansBlob(await pbPlansCanvas(page, viewport, x, y, w, h)); }
+  async function pbPlansCut(strip, x, w, h) { /* one tile out of a row strip */
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    cv.getContext('2d').drawImage(strip, x, 0, w, h, 0, 0, w, h);
+    return pbPlansBlob(cv);
+  }
   // one sheet -> [{name, blob}] + its grid
+  // r16.22 (Tommy, Nov 10): each tile ROW is drawn once (a full-width strip) and its tiles are cut out of it: 1 + rows
+  // draws for a sheet instead of 1 + rows x cols (5 instead of 17 for 24x36), so a heavy street sheet takes about a third
+  // of the time on a phone. A strip bigger than a phone canvas allows (~16.7M px on iOS) falls back to one draw per tile.
+  const PB_PLANS_STRIP_MAX = 16000000;
   async function pbPlansRenderPage(pdf, n) {
     const page = await pdf.getPage(n);
     const v1 = page.getViewport({ scale: 1 });
@@ -17382,9 +17396,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const W = Math.floor(vp.width), H = Math.floor(vp.height), g = pbPlansGrid(W, H), files = [];
     const s2 = PB_PLANS_OVERVIEW / Math.max(v1.width, v1.height), vo = page.getViewport({ scale: s2 });
     files.push({ name: 'overview', blob: await pbPlansJpeg(page, vo, 0, 0, Math.ceil(vo.width), Math.ceil(vo.height)) });
-    for (let r = 0; r < g.rows; r++) for (let c = 0; c < g.cols; c++) {
-      const x = Math.min(c * (g.tw - g.ov), Math.max(0, W - g.tw)), y = Math.min(r * (g.th - g.ov), Math.max(0, H - g.th));
-      files.push({ name: 'r' + r + 'c' + c, blob: await pbPlansJpeg(page, vp, x, y, Math.min(g.tw, W), Math.min(g.th, H)) });
+    const tw = Math.min(g.tw, W), th = Math.min(g.th, H), byRow = W * th <= PB_PLANS_STRIP_MAX;
+    for (let r = 0; r < g.rows; r++) {
+      const y = Math.min(r * (g.th - g.ov), Math.max(0, H - g.th));
+      const strip = byRow ? await pbPlansCanvas(page, vp, 0, y, W, th) : null;
+      for (let c = 0; c < g.cols; c++) {
+        const x = Math.min(c * (g.tw - g.ov), Math.max(0, W - g.tw));
+        files.push({ name: 'r' + r + 'c' + c, blob: strip ? await pbPlansCut(strip, x, tw, th) : await pbPlansJpeg(page, vp, x, y, tw, th) });
+      }
+      if (strip) strip.width = strip.height = 0;
     }
     try { page.cleanup(); } catch (e) {}
     return { grid: g, files };
@@ -17401,6 +17421,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     return false;
   }
+  // r16.22: a sheet's tiles go up three at a time
+  async function pbPlansPutAll(prefix, files) {
+    let i = 0, ok = true;
+    const lane = async () => { while (ok && i < files.length) { const f = files[i++]; if (!(await pbPlansPut(prefix + f.name + '.jpg', f.blob))) ok = false; } };
+    await Promise.all([lane(), lane(), lane()]);
+    return ok;
+  }
+  window.pbPlansPutAll = pbPlansPutAll;
   // company accounts only: the office, or a foreman of the company
   function pbPlansCanAdd() {
     try {
@@ -17555,17 +17583,29 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       setTimeout(() => pbPlansToDocs(r0.file, msg), 400);
     }
   };
-  const pbPlansProg = { total: 0, done: 0, start: 0 };
+  // r16.22: time left = sheets left x the average of the last three sheets; time asleep or in the background doesn't count
+  const pbPlansProg = { total: 0, done: 0, at: 0, hid: 0, last: [] };
   async function pbPlansProgStart(files) {
-    pbPlansProg.total = 0; pbPlansProg.done = 0; pbPlansProg.start = Date.now();
+    pbPlansProg.total = 0; pbPlansProg.done = 0; pbPlansProg.at = 0; pbPlansProg.hid = 0; pbPlansProg.last = [];
     for (const f of files) { try { const d = await pdfjsLib.getDocument(Object.assign({ data: new Uint8Array(await f.arrayBuffer()) }, PB_PV_PDFJS)).promise; pbPlansProg.total += d.numPages; try { d.destroy(); } catch (e) {} } catch (e) {} }
-    pbPlansProg.start = Date.now();
   }
+  function pbPlansProgDone() {
+    const P = pbPlansProg; P.done++;
+    if (P.at) { P.last.push(Math.max(0, Date.now() - P.at)); if (P.last.length > 3) P.last.shift(); }
+    P.at = 0;
+  }
+  document.addEventListener('visibilitychange', () => {
+    const P = pbPlansProg;
+    if (document.visibilityState === 'hidden') { if (P.at) P.hid = Date.now(); }
+    else if (P.hid) { P.at += Date.now() - P.hid; P.hid = 0; }
+  });
   function pbPlansEta() {
-    const P = pbPlansProg; if (P.done < 2 || !P.total) return ' · figuring time left';
-    const left = Math.max(0, P.total - P.done) * (Date.now() - P.start) / P.done / 60000;
+    const P = pbPlansProg; if (!P.last.length || !P.total) return ' · figuring time left';
+    const per = P.last.reduce((a, b) => a + b, 0) / P.last.length;
+    const left = Math.max(0, P.total - P.done) * per / 60000;
     return left < 1 ? ' · under a minute left' : ' · about ' + Math.round(left) + ' min left';
   }
+  window.pbPlansEta = pbPlansEta; window.pbPlansProg = pbPlansProg; window.pbPlansProgDone = pbPlansProgDone;
   async function pbPlansSendOne(file, pre, job) {
     let pdf = null;
     try {
@@ -17587,14 +17627,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (b.data.existing && b.data.state !== 'uploading') return Object.assign({ already: true }, rep);
       for (let p = 1; p <= n; p++) {
         if (have.has(p)) continue;
-        pbPlansWait(pre + 'Sending sheet ' + p + ' of ' + n + pbPlansEta() + '. Keep the app open.');
+        pbPlansProg.at = Date.now(); pbPlansProg.hid = 0;
+        pbPlansWait(pre + 'Preparing sheet ' + p + ' of ' + n + pbPlansEta() + '. Keep the app open.');
         const { grid, files } = await pbPlansRenderPage(pdf, sheetPages[p - 1]); // r16.18: plan-size pages only
-        for (const f of files) {
-          if (!(await pbPlansPut(setId + '/p' + p + '/' + f.name + '.jpg', f.blob))) return { net: true, stop: navigator.onLine === false ? 'No signal. It carries on by itself when you’re back online.' : 'Sheet ' + p + ' didn’t send. It tries again by itself.' };
-        }
+        pbPlansWait(pre + 'Sending sheet ' + p + ' of ' + n + pbPlansEta() + '. Keep the app open.');
+        if (!(await pbPlansPutAll(setId + '/p' + p + '/', files))) return { net: true, stop: navigator.onLine === false ? 'No signal. It carries on by itself when you’re back online.' : 'Sheet ' + p + ' didn’t send. It tries again by itself.' };
         const r = await pbDocsRpc('pb_plans_sheet_ready', { p_set: setId, p_page: p, p_grid: grid }, 'Sheet ' + p + ' didn’t send.');
         if (!r.ok) return { net: true, stop: r.line + ' It tries again by itself.' };
-        pbPlansProg.done++;
+        pbPlansProgDone();
       }
       const u = await pbDocsRpc('pb_plans_uploaded', { p_set: setId }, 'Couldn’t finish sending.');
       if (!u.ok) return { stop: u.line };
