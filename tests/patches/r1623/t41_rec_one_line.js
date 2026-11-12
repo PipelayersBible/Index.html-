@@ -1,0 +1,24 @@
+// r16.23: Records filters on one line
+const boot=require('./boot'),mkrun=require('./mkrun');
+(async()=>{const url=process.argv[2];
+const init=`window.__tableOne={subscriptions:{tier:'individual',status:'active'},company_members:{company_id:'c1',role:'foreman',title:'Foreman',companies:{name:'Test Co',status:'active'}}};const now=()=>new Date().toISOString();window.__rpcOverride={pb_prod_access:()=>({member:true,company_id:'c1',manager:false,role:'foreman',server_at:now()}),pb_report_access:()=>({member:true,company_id:'c1',manager:false,role:'foreman',server_at:now()}),pb_run_mine_page:()=>[]};`;
+let {b,p}=await boot(url,{init});
+await p.setViewportSize({width:390,height:844});
+await p.evaluate(()=>{try{pbHideModal()}catch(e){};pbGoto('archive')});await p.waitForTimeout(1200);
+const row=()=>p.evaluate(()=>{const out={};['rpfChips','recPhoneBar','recChips'].forEach(id=>{const e=document.getElementById(id);if(!e)return;const r=e.getBoundingClientRect();out[id]={vis:!!e.offsetParent,h:Math.round(r.height),sw:e.scrollWidth,cw:e.clientWidth,chips:[...e.querySelectorAll('.rpf-chip,.rpf-clearall,.rec-chip')].filter(x=>x.offsetParent).map(x=>{const q=x.getBoundingClientRect();return (x.innerText.trim()||x.querySelector('[aria-label]')?.getAttribute('aria-label'))+'@'+Math.round(q.top)+'/'+Math.round(q.left)+'-'+Math.round(q.right)+'h'+Math.round(q.height)})};});return out;});
+console.log('FEED',JSON.stringify(await row()));
+await p.screenshot({path:'rec1.png',clip:{x:0,y:0,width:390,height:420}});
+await p.click('#recTypeBtn');await p.waitForTimeout(500);
+console.log('MENU',await p.evaluate(()=>[...document.querySelectorAll('#pbModalButtons button')].map(b=>b.id+':'+b.innerText+(b.classList.contains('primary')?'*':''))));
+await p.screenshot({path:'rec2.png'});
+await p.click('#recType_run');await p.waitForTimeout(800);
+console.log('RUNS',JSON.stringify(await row()), await p.evaluate(()=>document.getElementById('recTypeBtn')?.innerText));
+await p.screenshot({path:'rec3.png',clip:{x:0,y:0,width:390,height:420}});
+await p.click('#recChip_phone');await p.waitForTimeout(800);
+console.log('PHONE',JSON.stringify(await row()));
+await p.screenshot({path:'rec4.png',clip:{x:0,y:0,width:390,height:420}});
+await p.click('#recTypeBtnP');await p.waitForTimeout(400);await p.screenshot({path:'rec5.png'});await p.click('#recType_all');await p.waitForTimeout(600);
+console.log('PHONE ALL',JSON.stringify(await row()));
+await p.click('#recChipX_phone');await p.waitForTimeout(600);
+console.log('BACK',JSON.stringify(await row()));
+console.log('ERRS',p.errs);await b.close();})();

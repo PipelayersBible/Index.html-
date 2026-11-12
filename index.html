@@ -7510,6 +7510,20 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
   #pbApp .rec-chip:focus-visible { outline: none; box-shadow: var(--pb-ring); }
   #pbApp #screen-archive .rpf-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 16px 8px; }
   #pbApp #screen-archive .rpf-chips:empty { display: none; }
+  /* r16.23: one line of filters in Records */
+  #pbApp #screen-archive #recChips { display: none; }
+  #pbApp #screen-archive .rpf-chips { flex-wrap: nowrap; gap: 6px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  #pbApp #screen-archive .rpf-chips::-webkit-scrollbar { display: none; }
+  #pbApp #screen-archive .rpf-chip { flex: 0 0 auto; }
+  #pbApp #screen-archive .rpf-chip-b { gap: 3px; padding: 0 8px 0 11px; font-size: 14px; max-width: 170px; }
+  #pbApp #screen-archive .rpf-chip-b .pb-ic { width: 14px; height: 14px; }
+  #pbApp #screen-archive .rpf-chip.on .rpf-chip-b { padding-right: 4px; }
+  #pbApp #screen-archive .rpf-chip-x { min-width: 40px; font-size: 20px; }
+  #pbApp #screen-archive .rec-type .rpf-chip-b, #pbApp #screen-archive .rec-type.on .rpf-chip-b { font-weight: 700; padding-right: 8px; }
+  #pbApp #screen-archive .rec-phone .rpf-chip-b { padding: 0; justify-content: center; min-width: 44px; }
+  #pbApp #screen-archive .rec-phone .rpf-chip-b .pb-ic { width: 20px; height: 20px; color: var(--pb-text); }
+  #pbApp #screen-archive .rec-phone.on .rpf-chip-b { padding: 0 2px 0 10px; }
+  #pbApp #screen-archive .rpf-clearall { flex: 0 0 auto; padding: 0 6px; font-size: 14px; }
   #pbApp #screen-archive .rpf-status { margin: 0 16px 4px; font-size: 13px; color: var(--pb-text-2); }
   #pbApp #screen-archive #recInbox, #pbApp #screen-archive #recMgmt { margin-top: 6px; }
   #pbApp #screen-archive #recMine { margin-top: 4px; margin-bottom: 8px; }
@@ -12676,7 +12690,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.22 · 2026-11-10'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.23 · 2026-11-12'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -61006,8 +61020,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     let h = keys.map(([k, label]) => { const v = pbRpfChipText(R, k);
       return '<span class="rpf-chip' + (v ? ' on' : '') + '" data-k="' + k + '"><button type="button" class="rpf-chip-b" id="rpfChip_' + k + '" aria-haspopup="dialog" onclick="pbRpfSheetOpen(\'' + k + '\')">' + escapeHtml(v || label) + '<svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-chevron-down"/></svg></button>'
         + (v ? '<button type="button" class="rpf-chip-x" id="rpfChipX_' + k + '" aria-label="' + escapeHtml('Clear ' + label.toLowerCase()) + '" onclick="pbRpfClear(\'' + k + '\')">×</button>' : '') + '</span>'; }).join('');
+    if (inRec && recT !== null && typeof window.pbRecTypeChip === 'function') h = window.pbRecTypeChip() + h; /* r16.23: the type, as one dropdown */
     if (inRec && typeof window.pbRecPhoneChip === 'function') h += window.pbRecPhoneChip(false); /* nav95: On this phone is a filter */
-    if (pbRpfActive(inRec && recT !== null ? Object.assign({}, R.f, { types: [] }) : R.f)) h += '<button type="button" class="rpf-clearall" id="rpfClearAll" onclick="pbRpfClearAll()">Clear filters</button>';
+    if (pbRpfActive(inRec && recT !== null ? Object.assign({}, R.f, { types: [] }) : R.f)) h += '<button type="button" class="rpf-clearall" id="rpfClearAll" onclick="pbRpfClearAll()">' + (inRec ? 'Clear' : 'Clear filters') + '</button>';
     return h;
   }
   function pbRpfRowHtml(x, i) {
@@ -68621,7 +68636,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       pbRecFade(box); }
     scr.classList.toggle('rec-out', !uid);
     pbRecSet(pbRecEl('archivePhone'), mode === 'phone');
-    { const pb = pbRecEl('recPhoneBar'), on2 = !!uid && mode === 'phone', w = on2 ? window.pbRecPhoneChip(true) : ''; /* nav95 */
+    { const pb = pbRecEl('recPhoneBar'), on2 = !uid || mode !== 'feed', w = on2 ? window.pbRecTypeChip(true) + (uid && mode === 'phone' ? window.pbRecPhoneChip(true) : '') : ''; /* nav95; r16.23: the type dropdown leads the row */
       if (pb && pb.dataset.sig !== w) { pb.dataset.sig = w; pb.innerHTML = w; } pbRecSet(pb, on2); }
     pbRecSet(pbRecEl('archiveFeedSlot'), mode === 'feed');
     pbRecSet(pbRecEl('recInbox'), mode === 'inbox');
@@ -68774,8 +68789,27 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // Back on those two screens goes Home (it went to Records), unless they were opened from Records or the Reports page.
   { const g = pbRecEl('recMine'), c = pbRecEl('archiveCompat'); if (g && c && g.parentNode !== c) c.appendChild(g); }
   window.pbRecPhoneChip = function(on) {
-    return on ? '<span class="rpf-chip on" data-k="phone"><button type="button" class="rpf-chip-b" id="recChipOn_phone" aria-pressed="true" onclick="pbRecPhoneOff()">On this phone</button><button type="button" class="rpf-chip-x" id="recChipX_phone" aria-label="Clear on this phone" onclick="pbRecPhoneOff()">×</button></span>'
-      : '<span class="rpf-chip" data-k="phone"><button type="button" class="rpf-chip-b" id="recChip_phone" aria-pressed="false" onclick="pbRecPick(\'phone\')">On this phone</button></span>';
+    const ic = '<svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-device"/></svg>'; /* r16.23: a phone icon, named for screen readers */
+    return on ? '<span class="rpf-chip rec-phone on" data-k="phone"><button type="button" class="rpf-chip-b" id="recChipOn_phone" aria-pressed="true" aria-label="On this phone" title="On this phone" onclick="pbRecPhoneOff()">' + ic + '</button><button type="button" class="rpf-chip-x" id="recChipX_phone" aria-label="Clear on this phone" onclick="pbRecPhoneOff()">×</button></span>'
+      : '<span class="rpf-chip rec-phone" data-k="phone"><button type="button" class="rpf-chip-b" id="recChip_phone" aria-pressed="false" aria-label="On this phone" title="On this phone" onclick="pbRecPick(\'phone\')">' + ic + '</button></span>';
+  };
+  // r16.23: the type as one dropdown chip (All, Runs, Permits, Dailies, Tickets, Mgmt reports, Inbox) and its menu
+  function pbRecTypeNow() {
+    const uid = pbRecUid(), chips = pbRecChips(uid), mode = uid ? pbRec.mode : 'phone';
+    let on = null;
+    if (!uid || mode === 'phone') { const v = (pbRecEl('archiveFilterKind') || {}).value || 'all'; on = Object.keys(PB_REC_KIND).find(k => PB_REC_KIND[k] === v) || null; }
+    else on = mode !== 'feed' ? mode : pbRecTypeOf(pbRpfFor(uid));
+    return { chips, on };
+  }
+  window.pbRecTypeChip = function(bar) {
+    const { chips, on } = pbRecTypeNow(), lab = (chips.find(c => c[0] === on) || [])[1] || 'Type';
+    return '<span class="rpf-chip rec-type' + (on && on !== 'all' ? ' on' : '') + '" data-k="rectype"><button type="button" class="rpf-chip-b" id="recTypeBtn' + (bar ? 'P' : '') + '" aria-haspopup="dialog" onclick="pbRecTypeMenu()">' + escapeHtml(lab) + '<svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-chevron-down"/></svg></button></span>';
+  };
+  window.pbRecTypeMenu = function() {
+    const { chips, on } = pbRecTypeNow();
+    pbShowModal('', chips.map(([k, l]) => ({ label: l, primary: k === on, onClick: () => window.pbRecPick(k) })).concat([{ label: 'Close' }]), 'Show');
+    document.querySelectorAll('#pbModalButtons button').forEach((b, i) => { if (chips[i]) { b.id = 'recType_' + chips[i][0]; b.classList.add('pb-gs-act'); } else b.dataset.gsAct = 'close'; });
+    const dlg = pbRecEl('pbModalDialog'); if (dlg) dlg.classList.add('pb-gs-sheet');
   };
   // on: this phone's list, of the type the chips show (a type that list doesn't have: all of it)
   window.pbRecPhoneOn = function() {
