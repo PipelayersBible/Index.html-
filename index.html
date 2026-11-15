@@ -12694,7 +12694,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.25 · 2026-11-14'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.26 · 2026-11-14'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -16818,8 +16818,6 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const pages = trenchy ? ['refTrench', 'refSafety', 'refConfined'] : ['refConfined', 'refSafety', 'refTrench'];
     if (PB_AI_EMERGENCY_RX.some(r => r.test(t))) return { kind: 'emergency', safety: true, local: true, sources: src(pages),
       body: 'If someone is down, not responding, trapped, or a gas alarm is going off:\n- Get out yourself and keep everyone else out.\n- Do NOT go in after them unless you are a trained, equipped rescuer. Untrained rescuers are often the next victims.\n- Call 911 or your emergency number now, then tell your supervisor / entry supervisor.\n- If a permit is open, use EMERGENCY so the entry team and the permit record know.' };
-    if (PB_AI_GONOGO_RX.some(r => r.test(t)) || (PB_AI_GAS_RX.test(t) && PB_AI_ENTER_RX.test(t))) return { kind: 'gonogo', safety: true, local: true, sources: src(pages),
-      body: 'The app’s AI never decides whether a space or trench is safe to enter. Stop and ask your entry supervisor / competent person.\n\nThe pages below explain the rules, but they don’t decide for your site.' };
     return null;
   }
   // ---- ask_v2: one conversation in the same box. Each question joins the current thread and goes with its last 4
