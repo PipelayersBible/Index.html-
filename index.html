@@ -12694,7 +12694,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.26 · 2026-11-14'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.27 · 2026-11-14'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -16895,6 +16895,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const c = draw(PB_AI_PHOTO_PX); let q = 0.8, d = c.toDataURL('image/jpeg', q);
       while (d.length > PB_AI_PHOTO_B64_MAX && q > 0.4) { q -= 0.1; d = c.toDataURL('image/jpeg', q); }
       if (d.length > PB_AI_PHOTO_B64_MAX + 23 || d.indexOf('data:image/jpeg;base64,') !== 0) throw new Error('size');
+      let rot = '';
+      try { const rc = document.createElement('canvas'); rc.width = c.width; rc.height = c.height; const rg = rc.getContext('2d'); rg.translate(rc.width, rc.height); rg.rotate(Math.PI); rg.drawImage(c, 0, 0);
+        let rq = 0.75, rd = rc.toDataURL('image/jpeg', rq); while (rd.length > PB_AI_PHOTO_B64_MAX && rq > 0.4) { rq -= 0.1; rd = rc.toDataURL('image/jpeg', rq); }
+        if (rd.length <= PB_AI_PHOTO_B64_MAX + 23 && rd.indexOf('data:image/jpeg;base64,') === 0) rot = rd.slice(rd.indexOf(',') + 1); rc.width = rc.height = 0; } catch (e) { rot = ''; }
       const t = draw(112), th = t.toDataURL('image/jpeg', 0.6); c.width = c.height = t.width = t.height = 0; // review: free the canvases (iOS canvas memory)
       // feat_plans: 4 overlapping quarters (55% each way) at full detail, sent only with a plan question. Only when the
       // original has more detail than the 1568 px copy (long side over ~2000 px).
@@ -16911,7 +16915,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           if (td.length <= PB_AI_PHOTO_B64_MAX + 23 && td.indexOf('data:image/jpeg;base64,') === 0) tiles.push({ zoom, data: td.slice(td.indexOf(',') + 1) });
         }
       }
-      return { media_type: 'image/jpeg', data: d.slice(d.indexOf(',') + 1), thumb: th, tiles };
+      return { media_type: 'image/jpeg', data: d.slice(d.indexOf(',') + 1), thumb: th, tiles, rot };
     }
   }
   function pbAiAskThumbsRender() {
@@ -16955,13 +16959,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const turns = pbAiAskTurns(), cur = pbAiAskPhotos.slice(0, PB_AI_PHOTOS_MAX);
     const plan = cur.length > 0 && PB_AI_PLAN_RX.test(String(q || '')); // review: this question's words only
     const out = [], tiles = [];
-    cur.forEach(p => { const i = out.length; out.push({ media_type: p.media_type, data: p.data, turn: 0 }); if (plan) (p.tiles || []).forEach(t => tiles.push({ at: i, t })); });
+    const detail = !plan && cur.length === 1;
+    cur.forEach(p => { const i = out.length; out.push({ media_type: p.media_type, data: p.data, turn: 0 }); if (detail && p.rot) tiles.push({ at: i, t: { zoom: 'rot', data: p.rot } }); if (plan || detail) (p.tiles || []).forEach(t => tiles.push({ at: i, t })); });
     turns.forEach((h, k) => (h.photos || []).forEach(p => { if (p.data && out.length < PB_AI_CHAT_PHOTOS) out.push({ media_type: p.media_type, data: p.data, turn: k + 1 }); }));
     let size = out.reduce((n, x) => n + x.data.length, 0); const keep = [];
     tiles.forEach(x => { if (size + x.t.data.length <= PB_AI_SEND_B64) { keep.push(x); size += x.t.data.length; } });
     // each photo's zoomed parts go right after it (the server checks "of" points at an earlier photo of this question)
     const res = []; const at = new Map();
-    out.forEach((x, i) => { at.set(i, res.length); res.push(x); if (x.turn === 0) keep.filter(k => k.at === i).forEach(k => res.push({ media_type: 'image/jpeg', data: k.t.data, turn: 0, zoom: k.t.zoom, of: at.get(i) })); });
+    out.forEach((x, i) => { at.set(i, res.length); res.push(x); if (x.turn === 0) keep.filter(k => k.at === i).forEach(k => res.push(Object.assign({ media_type: 'image/jpeg', data: k.t.data, turn: 0, zoom: k.t.zoom, of: at.get(i) }, detail ? { detail: true } : {}))); });
     return res;
   }
   window.pbAiAskNewChat = function() {
@@ -17357,7 +17362,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (live && pbAiAskHistory.indexOf(live) >= 0) { delete live.streaming; Object.assign(live, done); } // the streamed card becomes the checked answer
       else if (!pbAiAskJoin(done, tid0)) return;
       if (box && box.value.trim() === q) box.value = '';
-      if (sentPhotos.length) { pbAiAskPhotos = pbAiAskPhotos.filter(p => !sentPhotos.includes(p)); sentPhotos.forEach(p => { p.tiles = []; }); pbAiAskThumbsRender(); } // sent: they now belong to the card (feat_plans: later questions send them whole)
+      if (sentPhotos.length) { pbAiAskPhotos = pbAiAskPhotos.filter(p => !sentPhotos.includes(p)); sentPhotos.forEach(p => { p.tiles = []; p.rot = ''; }); pbAiAskThumbsRender(); } // sent: they now belong to the card (feat_plans: later questions send them whole)
       pbAiAskQuotaLine(st); // the card says it was answered; the status keeps only "N of 20 left today"
       pbAiAskRender(); pbAiAskScrollToNewest(false);
     });
