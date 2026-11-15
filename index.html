@@ -12265,7 +12265,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (/\b22\s*(?:1\/2|½)/.test(s)) return 22.5;
     if (/\b11\s*(?:1\/4|¼)/.test(s)) return 11.25;
     m = /(?:^|[\s,(])1\/(4|8|16|32)(?=$|[\s,)])/.exec(s); if (m) return 360 / Number(m[1]);
-    m = /(?:^|[\s,(])(90|45|22\.5|11\.25)(?=$|[\s,)])/.exec(s); return m ? Number(m[1]) : null;
+    m = /(?:^|[\s,(])(90|45|22\.5|11\.25)(?=$|[\s,)])/.exec(s); if (m) return Number(m[1]);
+    m = /(?:^|[\s,(])(22|11)(?=$|[\s,)])/.exec(s); return m ? (m[1] === '22' ? 22.5 : 11.25) : null;
   }
   // The index's pipe type for the run's Pipe type: blank / Other -> PVC SDR 35 (gravity PVC is the main use);
   // Corrugated HDPE -> Prinsco GOLDFLO (owner, Nov 2); Concrete -> none (no standard).
@@ -12275,7 +12276,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbFitLayKind(type, s) {
     if (type === 'bend') {
       const a = pbFitAngleOf(s);
-      if (a === null) return { k: 'bend45', ap: true };
+      if (a === null) return null;
       const k = { 90: 'bend90', 45: 'bend45', 22.5: 'bend22', 11.25: 'bend11' }[a];
       return k ? { k } : null;
     }
@@ -12695,7 +12696,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.31 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.32 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -16686,6 +16687,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       pbStakeAiRender(prefix);
       try { updateStakeDerived(prefix); updateHiStakesDerived(); updateHiCrossCheckBox(); scheduleHiCascade(); } catch (e) { console.error(e); }
       if (/hub/.test(prefix)) { try { pbHubIdents(); } catch (e) {} }
+      try { if (window.pbRsxOrderNow) window.pbRsxOrderNow(); } catch (e) {}
       let fitNote = '';
       try {
         const on = document.getElementById(prefix + 'FitOn'), ty = document.getElementById(prefix + 'FitType'), inf = document.getElementById(prefix + 'FitInfo');
@@ -26066,6 +26068,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   let pbRsxOrderT = null;
   function pbRsxOrderSoon() { clearTimeout(pbRsxOrderT); pbRsxOrderT = setTimeout(() => { try { window.pbXingOrder(); } catch (e) { console.error(e); } }, 150); }
   ['change', 'click'].forEach(t => document.addEventListener(t, (ev) => { const tg = ev.target; if (tg && tg.closest && tg.closest('#screen-input') && document.querySelector('#screen-input .pb-xing-card')) pbRsxOrderSoon(); }, true));
+  document.addEventListener('input', (ev) => { const tg = ev.target; if (!tg || !tg.id || !/(Sta|StaTxt|Station)$/.test(tg.id) || !tg.closest || !tg.closest('#screen-input') || !document.querySelector('#screen-input .pb-xing-card')) return; clearTimeout(pbRsxOrderT); pbRsxOrderT = setTimeout(() => { if (document.activeElement && document.activeElement.closest && document.activeElement.closest('.pb-xing-card') && document.activeElement.id === tg.id) { pbRsxOrderSoon(); return; } try { window.pbXingOrder(); } catch (e) { console.error(e); } }, 900); }, true);
+  window.pbRsxOrderNow = function() { try { if (document.querySelector('#screen-input .pb-xing-card')) window.pbXingOrder(); } catch (e) { console.error(e); } };
   ['pbAddHub', 'pbAddHub2', 'pbAddHubN', 'pbRemoveHub'].forEach(k => { const o = window[k]; if (typeof o === 'function') window[k] = function() { const r = o.apply(this, arguments); try { if (document.querySelector('#screen-input .pb-xing-card')) window.pbXingOrder(); } catch (e) { console.error(e); } return r; }; });
   { const o = window.pbGotoTab; if (typeof o === 'function') window.pbGotoTab = function() { window._pbTabNav = true; try { return o.apply(this, arguments); } finally { window._pbTabNav = false; } }; } // feat_resume 8
   // Collapse All / Expand All: that run's crossings too
