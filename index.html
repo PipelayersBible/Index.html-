@@ -2823,6 +2823,7 @@ html.pb-ask-open .pb-tabbar { z-index: 46; } /* r16.07: over the Ask sheet (45) 
 #pbApp .pb-ai-block { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--pb-divider); }
 #pbApp .pb-ai-stake { margin: 10px 0 4px 0; }
 #pbApp .pb-ai-stake .pb-ai-privacy { margin-top: 4px; }
+#pbApp .pb-ai-filled { box-shadow: 0 0 0 2px var(--pb-warn, #d99a00) !important; }
 #pbApp .pb-ai-review { margin-top: 12px; padding: 12px; border-radius: 12px; background: var(--pb-raised); box-shadow: inset 0 0 0 1px var(--pb-divider); }
 #pbApp .pb-ai-review .pb-row { gap: 8px; }
 #pbApp .pb-ai-review .pb-row > .pb-field { min-width: 0; }
@@ -12694,7 +12695,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.28 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.29 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -16567,8 +16568,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     got.vals.label = pbStakeAiLabel(Object.assign({}, got.vals));
     if (distField && Number.isFinite(startSta) && mySta !== null && Math.abs(mySta - startSta) > 0.001) { got.vals.dist = Math.abs(mySta - startSta); got.distFrom = startSta; }
     pbStakeAiPending[prefix] = Object.assign(got, ctx, { distField });
-    pbAiShow(stNow, Object.keys(got.flags).length ? 'warn' : 'ok', 'Check what AI read.', 'Nothing is filled until you tap Use These.');
     pbStakeAiRender(prefix);
+    const box = document.getElementById(prefix + 'AiStakeReview'); if (box) box.style.display = 'none';
+    pbStakeAiPending[prefix].auto = true;
+    pbStakeAiUse(prefix);
   };
   function pbStakeAiRender(prefix) {
     const box = document.getElementById(prefix + 'AiStakeReview'), p = pbStakeAiPending[prefix];
@@ -16605,6 +16608,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbStakeAiRender(prefix);
     pbAiShow(document.getElementById(prefix + 'AiStakeStatus'), 'info', 'Discarded.', 'Nothing on this point was changed.');
   };
+  // One line listing what the AI read but wasn't sure of, so it can be typed in.
+  function pbStakeAiUnsure(p) {
+    const names = { stakeNum: 'stake number', station: 'station', offset: 'offset', line: 'line', cf: 'cut/fill', stakeElev: 'stake elevation' };
+    const th = p.thought || {}, out = Object.keys(p.flags || {}).filter(k => names[k] && th[k]).map(k => names[k] + ' (it read “' + th[k] + '”)');
+    return out.length ? ' Not sure: ' + out.join(', ') + '.' : '';
+  }
   window.pbStakeAiUse = function(prefix) {
     const p = pbStakeAiPending[prefix];
     const err = document.getElementById(prefix + 'AiRErr');
@@ -16631,7 +16640,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     if (label) { const el = document.getElementById(prefix + 'Label'); plan.push({ name: 'Point label', kind: 'text', id: prefix + 'Label', val: label, cur: el && el.value.trim() ? el.value.trim() : null }); }
     if (dist !== null && p.distField) { const el = document.getElementById(p.distField); const c = el && el.value.trim() !== '' ? Number(el.value) : null; plan.push({ name: p.distField === prefix + 'Station' ? 'Hub station (distance from start)' : 'Total distance', kind: 'num', id: p.distField, val: dist, cur: c }); }
-    if (!plan.length) { showErr('Nothing to fill — type the values from the stake, or Discard.'); return; }
+    if (!plan.length) {
+      if (p.auto) { delete pbStakeAiPending[prefix]; pbStakeAiRender(prefix); pbAiShow(document.getElementById(prefix + 'AiStakeStatus'), 'warn', 'Nothing filled.', 'The AI wasn’t sure of anything on this stake.' + pbStakeAiUnsure(p)); return; }
+      showErr('Nothing to fill — type the values from the stake, or Discard.'); return;
+    }
     const same = x => x.cur === null || (x.kind === 'elev' || x.kind === 'num' ? Math.abs(Number(x.cur) - x.val) < 0.0005 : String(x.cur) === String(x.val));
     const show = (x, v) => x.kind === 'elev' || x.kind === 'num' ? Number(v).toFixed(x.kind === 'num' ? 2 : 3) : String(v);
     const conflicts = plan.filter(x => !same(x));
@@ -16652,11 +16664,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       pbStakeAiRender(prefix);
       try { updateStakeDerived(prefix); updateHiStakesDerived(); updateHiCrossCheckBox(); scheduleHiCascade(); } catch (e) { console.error(e); }
       if (/hub/.test(prefix)) { try { pbHubIdents(); } catch (e) {} }
-      pbAiShow(document.getElementById(prefix + 'AiStakeStatus'), 'ok', 'Filled from the stake photo.', 'Check the numbers before you calculate.');
+      plan.forEach(x => { if (onlyEmpty && x.cur !== null) return; const el = document.getElementById(x.id); if (el) { el.classList.add('pb-ai-filled'); el.addEventListener('input', () => el.classList.remove('pb-ai-filled'), { once: true }); } });
+      const filled = plan.filter(x => !(onlyEmpty && x.cur !== null) && x.kind !== 'sel').map(x => x.name.toLowerCase()).join(', ');
+      pbAiShow(document.getElementById(prefix + 'AiStakeStatus'), p.flags && Object.keys(p.flags).filter(k => k !== 'stakeNum' && k !== 'line').length ? 'warn' : 'ok', 'Filled from the stake photo.', 'Filled: ' + filled + '. Check the outlined boxes against the stake.' + pbStakeAiUnsure(p));
     };
     const switchNote = inElevMode ? '\n\nThis point is set to Invert Elevation; it will switch to Survey Stake.' : '';
     if (conflicts.length) {
-      pbShowModal('Some of these fields already have values you typed:\n\n' + conflicts.map(x => x.name + ': ' + show(x, x.cur) + ' → ' + show(x, x.val)).join('\n') + '\n\nReplace them with what you reviewed, or fill only the empty fields?' + switchNote,
+      pbShowModal('Some of these fields already have values you typed:\n\n' + conflicts.map(x => x.name + ': ' + show(x, x.cur) + ' → ' + show(x, x.val)).join('\n') + '\n\nReplace them with what the AI read, or fill only the empty fields?' + switchNote,
         [{ label: 'Cancel' }, { label: 'Fill Empty Only', onClick: () => apply(true) }, { label: 'Replace', primary: true, onClick: () => apply(false) }], 'Replace What You Typed?');
       return;
     }
