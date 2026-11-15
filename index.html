@@ -12694,7 +12694,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.27 · 2026-11-14'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.28 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -16269,7 +16269,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return { ok: false, code: 'http_' + st, message: 'AI request failed (code ' + st + '). Try again.' };
   }
   // A phone photo, made smaller before it is sent: longest side at most 1600 px, JPEG.
-  async function pbAiPrepImage(file, maxPx) {
+  async function pbAiPrepImage(file, maxPx, opts) {
     maxPx = maxPx || 1600;
     const url = URL.createObjectURL(file);
     try {
@@ -16281,7 +16281,20 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
       let q = 0.82, data = c.toDataURL('image/jpeg', q);
       while (data.length > 3500000 && q > 0.4) { q -= 0.15; data = c.toDataURL('image/jpeg', q); }
-      return { mediaType: 'image/jpeg', data: data.slice(data.indexOf(',') + 1), w: c.width, h: c.height };
+      const extras = [];
+      if (opts && opts.extras) {
+        const jpg = (cv) => { let qq = 0.78, d = cv.toDataURL('image/jpeg', qq); while (d.length > 1400000 && qq > 0.4) { qq -= 0.12; d = cv.toDataURL('image/jpeg', qq); } return d.length <= 1400023 ? d.slice(d.indexOf(',') + 1) : ''; };
+        try { const r = document.createElement('canvas'); r.width = c.width; r.height = c.height; const rg = r.getContext('2d'); rg.translate(r.width, r.height); rg.rotate(Math.PI); rg.drawImage(c, 0, 0);
+          const d = jpg(r); if (d) extras.push({ zoom: 'rot', mediaType: 'image/jpeg', data: d }); r.width = r.height = 0; } catch (e) {}
+        if (Math.max(w, h) > maxPx * 1.25) {
+          const tw = Math.round(w * 0.55), th = Math.round(h * 0.55);
+          [['tl', 0, 0], ['tr', w - tw, 0], ['bl', 0, h - th], ['br', w - tw, h - th]].forEach(([z, x, y]) => {
+            try { const kk = Math.min(1, maxPx / Math.max(tw, th)), t = document.createElement('canvas'); t.width = Math.round(tw * kk); t.height = Math.round(th * kk);
+              t.getContext('2d').drawImage(img, x, y, tw, th, 0, 0, t.width, t.height); const d = jpg(t); if (d) extras.push({ zoom: z, mediaType: 'image/jpeg', data: d }); t.width = t.height = 0; } catch (e) {}
+          });
+        }
+      }
+      return { mediaType: 'image/jpeg', data: data.slice(data.indexOf(',') + 1), w: c.width, h: c.height, extras };
     } finally { URL.revokeObjectURL(url); }
   }
   const PB_AI_PHOTO_FAIL = 'Couldn’t open that photo. Try again, or take it with the camera.';
@@ -16455,6 +16468,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const t = String(w || '').replace(/[’′]/g, "'").replace(/[”″]/g, '"');
     let m = t.match(/(\d+)\s*'\s*-?\s*(\d+)(?:\s+(\d+)\s*\/\s*(\d+))?\s*"?/);
     if (m) return parseInt(m[1], 10) + (parseInt(m[2], 10) + (m[3] ? parseInt(m[3], 10) / parseInt(m[4], 10) : 0)) / 12;
+    m = t.match(/(\d+)\s+(\d{2})(?![\d\/.])/);
+    if (m && !/\d\.\d/.test(t)) return parseInt(m[1], 10) + parseInt(m[2], 10) / 100;
     m = t.match(/(\d+(?:\.\d+)?)/);
     return m ? parseFloat(m[1]) : null;
   }
@@ -16508,18 +16523,37 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbStakeAiStale(prefix, p) {
     return !document.getElementById(prefix + 'ModeToggle') || window._pbPhotoContextGen !== p.photoGen || ((window._pbPointLifecycleGen || {})[prefix] || 0) !== p.life;
   }
+  const pbStakeAiFront = {}; // prefix -> { img, ctx }: a front photo waiting for its back (or Read Now)
   window.pbStakeAiPhoto = async function(prefix, input) {
-    const file = input.files && input.files[0];
+    const files = Array.from(input.files || []).slice(0, 2);
     input.value = '';
-    if (!file) return;
-    const st = document.getElementById(prefix + 'AiStakeStatus'), btn = document.getElementById(prefix + 'AiStakeBtn');
+    if (!files.length) return;
+    const st = document.getElementById(prefix + 'AiStakeStatus');
     const ctx = { photoGen: window._pbPhotoContextGen, life: (window._pbPointLifecycleGen || {})[prefix] || 0 };
-    let img;
-    try { img = await pbAiPrepImage(file); } catch (e) { pbAiShow(st, 'warn', 'Photo not read.', PB_AI_PHOTO_FAIL); return; }
+    const imgs = [];
+    try { for (const f of files) imgs.push(await pbAiPrepImage(f, 1600, { extras: true })); } catch (e) { pbAiShow(st, 'warn', 'Photo not read.', PB_AI_PHOTO_FAIL); return; }
     if (pbStakeAiStale(prefix, ctx)) return;
-    pbAiShow(st, 'info', 'Reading the stake…', '');
+    const waiting = pbStakeAiFront[prefix] && !pbStakeAiStale(prefix, pbStakeAiFront[prefix].ctx) ? pbStakeAiFront[prefix].img : null;
+    delete pbStakeAiFront[prefix];
+    if (waiting) return pbStakeAiRead(prefix, ctx, waiting, imgs[0]);
+    if (imgs.length === 2) return pbStakeAiRead(prefix, ctx, imgs[0], imgs[1]);
+    pbStakeAiFront[prefix] = { img: imgs[0], ctx };
+    pbAiShow(st, 'info', 'Front photo added.', 'Add the back if it has the stake number or hub elevation.');
+    if (st) st.insertAdjacentHTML('beforeend', '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" onclick="pbStakeAiBack(\'' + prefix + '\')">Add Back Photo</button><button type="button" class="pb-btn small" onclick="pbStakeAiReadNow(\'' + prefix + '\')">Read Stake</button></div>');
+  };
+  window.pbStakeAiBack = function(prefix) { const inp = document.getElementById(prefix + 'AiStakePhoto'); if (inp) inp.click(); };
+  window.pbStakeAiReadNow = function(prefix) {
+    const w = pbStakeAiFront[prefix]; delete pbStakeAiFront[prefix];
+    if (!w || pbStakeAiStale(prefix, w.ctx)) return;
+    pbStakeAiRead(prefix, w.ctx, w.img, null);
+  };
+  async function pbStakeAiRead(prefix, ctx, img, back) {
+    const st = document.getElementById(prefix + 'AiStakeStatus'), btn = document.getElementById(prefix + 'AiStakeBtn');
+    pbAiShow(st, 'info', back ? 'Reading the stake (front and back)…' : 'Reading the stake…', '');
     if (btn) btn.disabled = true;
-    const r = await pbAiRequest('stake', { image: { mediaType: img.mediaType, data: img.data } });
+    const images = (img.extras || []).slice(0, 5);
+    if (back) { images.push({ side: 'back', mediaType: back.mediaType, data: back.data }); (back.extras || []).slice(0, 5).forEach(x => images.push(Object.assign({ side: 'back' }, x))); }
+    const r = await pbAiRequest('stake', { image: { mediaType: img.mediaType, data: img.data }, images: images.slice(0, 11) });
     const stNow = document.getElementById(prefix + 'AiStakeStatus'), btnNow = document.getElementById(prefix + 'AiStakeBtn');
     if (btnNow) btnNow.disabled = false;
     if (pbStakeAiStale(prefix, ctx)) return; // the point was removed or a new run started: nothing to fill
@@ -18461,7 +18495,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         <input type="file" accept="image/*" capture="environment" id="${prefix}Photo" style="display:none;" onchange="pbAddPhoto('${prefix}')">
         <div class="pb-rs-photobtns"><button type="button" class="pb-btn ghost small" onclick="document.getElementById('${prefix}Photo').click()">+ Add Photo</button><button type="button" class="pb-btn ghost small pb-ai-stake-btn" id="${prefix}AiStakeBtn" onclick="pbStakeAiPick('${prefix}')">Read Stake w/ AI</button></div>
         <div class="pb-ai-stake" id="${prefix}AiStakeWrap">
-          <input type="file" accept="image/*" id="${prefix}AiStakePhoto" style="display:none;" onchange="pbStakeAiPhoto('${prefix}', this)">
+          <input type="file" accept="image/*" multiple id="${prefix}AiStakePhoto" style="display:none;" onchange="pbStakeAiPhoto('${prefix}', this)">
           <p class="pb-ai-privacy">Sent to Anthropic to be read; not stored by the app. Don’t use AI with confidential job info.</p>
           <div class="pb-ai-status" id="${prefix}AiStakeStatus" aria-live="polite"></div>
           <div class="pb-ai-review" id="${prefix}AiStakeReview" style="display:none;"></div>
