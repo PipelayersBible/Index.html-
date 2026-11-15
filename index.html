@@ -12695,7 +12695,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.30 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.31 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -16513,6 +16513,28 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const other = o.other_text ? String(o.other_text).slice(0, 200) : '';
     return { vals, flags, thought, notes, other };
   }
+  function pbStakeAiSimpleLabel(prefix, got) {
+    const sg = pbStakeAiSeg(prefix), v = got.vals || {}, th = got.thought || {};
+    if (sg.isStart) return 'Start point';
+    if (sg.isEnd) return 'End point';
+    const text = [v.offset, v.line, th.line, got.other].filter(Boolean).join(' ');
+    const up = text.toUpperCase().replace(/^\s*\d+(?:\.\d+)?\s*\/\s*[A-Z]+\b/, ' ');
+    try {
+      const fit = /^(seg\d+)?hub\d+$/.test(prefix) && typeof window.pbCutsheetFitOf === 'function' ? window.pbCutsheetFitOf(text) : null;
+      if (fit) {
+        const ang = /(\d+(?:\.\d+)?)\u00b0/.exec(fit.info || '');
+        if (fit.type === 'bend') return /\bAP\b/.test(fit.info || '') ? 'Angle point' : (ang ? ang[1] + '\u00b0 bend' : 'Bend');
+        if (fit.type === 'other') return fit.info ? String(fit.info).split(',')[0] : 'Fitting';
+        return ({ wye: 'Wye', tee: 'Tee', reducer: 'Reducer', coupling: 'Coupling' })[fit.type] || 'Fitting';
+      }
+    } catch (e) {}
+    const lat = /\bLAT(?:ERAL)?\s?-?\s?#?\s?(\d{1,4}[A-Z]?)\b/.exec(up); if (lat) return 'LAT-' + lat[1];
+    const mh = /\b(?:SS|SD|STM|SAN)?(?:MH|MANHOLE)\s?-?\s?#?\s?(\d{1,4}[A-Z]?)\b/.exec(up); if (mh) return 'MH-' + mh[1];
+    if (/\b(?:SS|SD|STM|SAN)?(?:MH|MANHOLE)\b/.test(up)) return 'Manhole';
+    if (v.station) return 'Sta ' + v.station;
+    if (v.stakeNum) return 'Stake ' + v.stakeNum;
+    return '';
+  }
   function pbStakeAiLabel(v) {
     return [v.stakeNum ? 'Stake ' + v.stakeNum : '', v.station ? 'Sta ' + v.station : '', [v.offset, v.line].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
   }
@@ -16565,7 +16587,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (r.truncated) got.notes.unshift('The AI’s answer was cut off — check every value.');
     const sg = pbStakeAiSeg(prefix), distField = pbStakeAiDistField(prefix, sg);
     const startSta = pbStakeAiStations[sg.start], mySta = pbStakeAiParseStation(got.vals.station);
-    got.vals.label = pbStakeAiLabel(Object.assign({}, got.vals));
+    got.vals.label = pbStakeAiSimpleLabel(prefix, got);
     if (distField && Number.isFinite(startSta) && mySta !== null && Math.abs(mySta - startSta) > 0.001) { got.vals.dist = Math.abs(mySta - startSta); got.distFrom = startSta; }
     pbStakeAiPending[prefix] = Object.assign(got, ctx, { distField });
     pbStakeAiRender(prefix);
