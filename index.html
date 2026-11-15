@@ -11600,7 +11600,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   var PB_XING_MIN_CLR = 12; // inches: a crossing's minimum clearance unless its own box says otherwise
   var PB_XING_ELEV = ['Inv', 'Bop', 'Top'];
   var PB_XING_ALL = ['Sta', 'Util', 'Od', 'Wall', 'Inv', 'Bop', 'Top', 'Clr'];
-  var PB_FIT_TYPES = [['wye', 'Wye'], ['tee', 'Tee'], ['bend', 'Bend'], ['reducer', 'Reducer'], ['coupling', 'Coupling'], ['other', 'Other']];
+  var PB_FIT_TYPES = [['', 'Choose\u2026'], ['wye', 'Wye'], ['tee', 'Tee'], ['bend', 'Bend'], ['reducer', 'Reducer'], ['coupling', 'Coupling'], ['other', 'Other']];
   function pbXingVal(id) { const el = document.getElementById(id); return el ? String(el.value == null ? '' : el.value).trim() : ''; }
   function pbXingNum(id) { const t = pbXingVal(id); if (t === '') return null; const n = Number(t); return Number.isFinite(n) ? n : NaN; }
   // A station typed as feet from the run's start (150) or as stationing (1+50, 1+50.25): feet, null (blank) or NaN.
@@ -11887,7 +11887,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const on = document.getElementById(prefix + 'FitOn'); if (!on) return;
     on.checked = !!fit;
     const t = document.getElementById(prefix + 'FitType'), i = document.getElementById(prefix + 'FitInfo'), row = document.getElementById(prefix + 'FitRow');
-    if (t) t.value = fit && PB_FIT_TYPES.some(x => x[0] === fit.type) ? fit.type : 'wye';
+    if (t) t.value = fit && fit.type && PB_FIT_TYPES.some(x => x[0] === fit.type) ? fit.type : '';
     if (i) i.value = fit && fit.info ? fit.info : '';
     const ly = document.getElementById(prefix + 'FitLay'); if (ly) ly.value = fit && pbFitLay(fit) > 0 ? String(fit.layFt) : ''; /* feat_fitlen */
     try { pbFitLaySetAuto(prefix, !!(fit && pbFitLay(fit) > 0 && fit.layAuto)); } catch (e) {} /* feat_fitlen: typed or filled in, as recorded */
@@ -12695,7 +12695,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.29 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.30 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -16664,9 +16664,21 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       pbStakeAiRender(prefix);
       try { updateStakeDerived(prefix); updateHiStakesDerived(); updateHiCrossCheckBox(); scheduleHiCascade(); } catch (e) { console.error(e); }
       if (/hub/.test(prefix)) { try { pbHubIdents(); } catch (e) {} }
+      let fitNote = '';
+      try {
+        const on = document.getElementById(prefix + 'FitOn'), ty = document.getElementById(prefix + 'FitType'), inf = document.getElementById(prefix + 'FitInfo');
+        const fit = on && !on.checked && ty && typeof window.pbCutsheetFitOf === 'function' ? window.pbCutsheetFitOf([p.vals.offset, p.vals.line, p.thought && p.thought.line, p.other].filter(Boolean).join(' ')) : null;
+        if (fit) {
+          on.checked = true; on.dispatchEvent(new Event('change', { bubbles: true }));
+          ty.value = fit.type; if (inf) inf.value = fit.info || '';
+          ty.dispatchEvent(new Event('change', { bubbles: true }));
+          [on, ty, inf].forEach(el => { if (el) { el.classList.add('pb-ai-filled'); el.addEventListener('input', () => el.classList.remove('pb-ai-filled'), { once: true }); el.addEventListener('change', () => el.classList.remove('pb-ai-filled'), { once: true }); } });
+          fitNote = ' Fitting: ' + pbFitWord(fit.type) + (fit.info ? ' (' + fit.info + ')' : '') + '.';
+        }
+      } catch (e) { console.error(e); }
       plan.forEach(x => { if (onlyEmpty && x.cur !== null) return; const el = document.getElementById(x.id); if (el) { el.classList.add('pb-ai-filled'); el.addEventListener('input', () => el.classList.remove('pb-ai-filled'), { once: true }); } });
       const filled = plan.filter(x => !(onlyEmpty && x.cur !== null) && x.kind !== 'sel').map(x => x.name.toLowerCase()).join(', ');
-      pbAiShow(document.getElementById(prefix + 'AiStakeStatus'), p.flags && Object.keys(p.flags).filter(k => k !== 'stakeNum' && k !== 'line').length ? 'warn' : 'ok', 'Filled from the stake photo.', 'Filled: ' + filled + '. Check the outlined boxes against the stake.' + pbStakeAiUnsure(p));
+      pbAiShow(document.getElementById(prefix + 'AiStakeStatus'), p.flags && Object.keys(p.flags).filter(k => k !== 'stakeNum' && k !== 'line').length ? 'warn' : 'ok', 'Filled from the stake photo.', 'Filled: ' + filled + '.' + fitNote + ' Check the outlined boxes against the stake.' + pbStakeAiUnsure(p));
     };
     const switchNote = inElevMode ? '\n\nThis point is set to Invert Elevation; it will switch to Survey Stake.' : '';
     if (conflicts.length) {
