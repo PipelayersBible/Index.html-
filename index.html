@@ -12838,7 +12838,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.58 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.59 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -16691,6 +16691,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       && (cfWritten === null || Math.abs(cfWritten - cfFeet) < 0.002) && (!cfLetter || (cfLetter[1].toUpperCase() === 'C') === (dir === 'cut'));
     if (cfOk) { vals.cfDir = dir; vals.cfVal = cfFeet; } else { flags.cf = true; if (cf.as_written || Number.isFinite(cfFeet)) thought.cf = String(cf.as_written || ((dir ? dir + ' ' : '') + cfFeet)); }
     const se = o.stake_elevation || {}, seFeet = Number(se.feet), seWritten = pbStakeAiWrittenFeet(se.as_written);
+    if (!sure(se) && /^\s*\(\s*\d{1,5}(?:\.\d{1,3})?\s*\)\s*$/.test(String(se.as_written || '')) && se.feet != null && Number.isFinite(seFeet) && seWritten !== null && Math.abs(seWritten - Math.abs(seFeet)) < 0.002) se.conf = 'high'; /* r16.59: a number in parentheses on the hub lath is the hub elevation */
     if (sure(se) && se.feet != null && Number.isFinite(seFeet) && Math.abs(seFeet) < 30000 && (seWritten === null || Math.abs(seWritten - Math.abs(seFeet)) < 0.002)) vals.stakeElev = seFeet;
     else { flags.stakeElev = true; if (se.as_written || (se.feet != null && Number.isFinite(seFeet))) thought.stakeElev = String(se.as_written || seFeet);
       { const gs = se.feet != null && Number.isFinite(seFeet) ? seFeet : seWritten; if (gs !== null && Number.isFinite(gs) && Math.abs(gs) < 30000) vals.stakeElev = gs; } } /* r16.58: an unsure elevation (e.g. a short (88.10) on the hub lath) is filled and outlined, not left blank */
