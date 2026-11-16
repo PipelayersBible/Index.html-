@@ -1,0 +1,17 @@
+const boot=require('./boot');
+(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/'+(process.argv[2]||'idx41.html'));
+ await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1200);
+ await p.evaluate(()=>pbAddHub());await p.waitForTimeout(300);
+ const L=()=>p.evaluate(()=>{const g=id=>document.getElementById('hub0'+id);return 'type='+g('FitType').value+' brShown='+(g('FitBrW').style.display!=='none')+' label="'+g('FitBrL').textContent+'" br='+g('FitBr').value+' opts='+[...g('FitBr').options].slice(1).map(o=>o.value).join('/')+' info="'+g('FitInfo').value+'" infoShown='+(g('FitInfoW').style.display!=='none')+' lay="'+g('FitLay').value+'" why="'+(g('FitLayWhy').hidden?'':g('FitLayWhy').textContent)+'"';});
+ const id=async v=>{await p.evaluate(v=>{const e=document.getElementById('runIdSel');e.value=[...e.options].find(o=>o.text.trim()===v+'"').value;e.dispatchEvent(new Event('change',{bubbles:true}));},v);await p.waitForTimeout(300);};
+ await p.check('#hub0FitOn');await p.selectOption('#hub0FitType','wye');await p.waitForTimeout(200);console.log('wye no ID:',await L());
+ await id('8');console.log('ID 8:',await L());
+ await p.selectOption('#hub0FitBr','6');await p.waitForTimeout(200);console.log('br 6:',await L());
+ await p.selectOption('#hub0FitBr','4');await p.waitForTimeout(200);console.log('br 4:',await L());
+ await id('10');console.log('ID 10:',await L());
+ await p.selectOption('#hub0FitType','reducer');await p.waitForTimeout(200);console.log('reducer:',await L());
+ await p.selectOption('#hub0FitBr','8');await p.waitForTimeout(200);console.log('red 8:',await L());
+ await p.selectOption('#hub0FitType','tee');await p.waitForTimeout(200);console.log('tee:',await L());
+ await p.selectOption('#hub0FitType','bend');await p.waitForTimeout(200);console.log('bend:',await L());
+ await p.selectOption('#hub0FitType','other');await p.waitForTimeout(200);console.log('other:',await L());
+ console.log('errs',p.errs);await b.close();})();
