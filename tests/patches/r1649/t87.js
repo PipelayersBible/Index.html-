@@ -1,0 +1,11 @@
+const boot=require('./boot');const co=require('./co2');const F=require('./flow');
+(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/'+(process.argv[2]||'idx49.html'),{init:co});const H=F(p);
+ await p.evaluate(()=>window.pbCurJobFetch&&window.pbCurJobFetch(0));await p.waitForTimeout(800);
+ await F.setup(p,H);
+ await H.click('Review & Calculate');await p.waitForTimeout(1500);
+ await H.click('Lock This Run');await p.waitForTimeout(1500);
+ console.log('modal:',await H.modal(),JSON.stringify(await H.modalBtns()));
+ await H.shot('140-jobcheck',false);
+ await H.modalClick('Job 26043 — Wildomar Ridge');await p.waitForTimeout(2500);
+ console.log('after pick:',await H.screen(),await H.modal(),await p.evaluate(()=>document.getElementById('saJobNumber').value));
+ console.log('errs',p.errs);await b.close();})();

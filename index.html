@@ -7287,10 +7287,10 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
       <h1 class="pb-title">Company production</h1>
     </div>
     <div class="pbp-wrap">
-      <p class="pbp-key">Materials: used / ordered / expected</p><!-- clean_b: the lead and the "How % complete" fold are gone; the job page keeps the fold -->
       <p id="pdStatus" class="pb-rpt-status" role="status"></p>
       <div id="pdLive" class="pbp-live"></div><!-- batch 14 F: live now (company account) -->
       <div id="pdSummary" class="pbp-summary"></div>
+      <p class="pbp-key" style="margin-top:12px;">Materials: used / ordered / expected</p><!-- r16.49: with the jobs it describes -->
       <div id="pdJobs" class="pbp-jobs"></div>
       <div class="pb-btn-wrap"><button type="button" class="pb-btn secondary" id="pdRefreshBtn" onclick="pbProdDashLoad()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Refresh</button></div>
     </div>
@@ -11909,7 +11909,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<div class="pb-field"><label for="' + prefix + 'FitType">Fitting type</label><select id="' + prefix + 'FitType">' + PB_FIT_TYPES.map(t => '<option value="' + t[0] + '">' + t[1] + '</option>').join('') + '</select></div>'
       + '<div class="pb-field pb-fit-infow" id="' + prefix + 'FitInfoW" style="display:none;"><label for="' + prefix + 'FitInfo" id="' + prefix + 'FitInfoL">Sizes</label><input type="text" enterkeyhint="next" id="' + prefix + 'FitInfo" maxlength="80" autocomplete="off" placeholder="e.g. 8x6, 45\u00b0"></div>'
       + '<div class="pb-field pb-fit-brw" id="' + prefix + 'FitBrW" style="display:none;"><label for="' + prefix + 'FitBr" id="' + prefix + 'FitBrL">Branch size</label><select id="' + prefix + 'FitBr"><option value="">Pick size</option></select></div>'
-      + '<div class="pb-red-after" id="' + prefix + 'RedW" style="display:none;"><p class="pb-red-line" id="' + prefix + 'RedLine"></p><div class="pb-field"><label for="' + prefix + 'RedWT">Wall after this point</label><div class="pb-unitbox"><input type="number" step="0.001" min="0" inputmode="decimal" enterkeyhint="next" id="' + prefix + 'RedWT" autocomplete="off" placeholder="auto"><span class="pb-unit" aria-hidden="true">ft</span></div></div></div>'
+      + '<div class="pb-red-after" id="' + prefix + 'RedW" style="display:none;"><p class="pb-red-line" id="' + prefix + 'RedLine"></p><div class="pb-field"><label for="' + prefix + 'RedWT">Wall after</label><div class="pb-unitbox"><input type="number" step="0.001" min="0" inputmode="decimal" enterkeyhint="next" id="' + prefix + 'RedWT" autocomplete="off" placeholder="auto"><span class="pb-unit" aria-hidden="true">ft</span></div></div></div>'
       + '<div class="pb-field pb-fit-angw" id="' + prefix + 'FitAngW" style="display:none;"><label for="' + prefix + 'FitAng">Bend angle</label><select id="' + prefix + 'FitAng"><option value="">Pick angle</option><option value="90">90\u00b0</option><option value="45">45\u00b0</option><option value="22.5">22.5\u00b0</option><option value="11.25">11.25\u00b0</option></select></div>'
       + '<div class="pb-field"><label for="' + prefix + 'FitLay">Laying length (ft)</label><div class="pb-fit-layw"><input type="number" step="0.01" min="0" inputmode="decimal" enterkeyhint="next" id="' + prefix + 'FitLay" autocomplete="off"><span class="pb-fit-auto" id="' + prefix + 'FitLayAuto" hidden>auto</span></div><p class="pb-ai-hint" id="' + prefix + 'FitLayWhy" hidden></p></div>' /* feat_fitlen; r16.40: why it's blank */
       + '</div>';
@@ -12843,7 +12843,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.48 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.49 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -20559,7 +20559,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbLaySetupHTML(n) {
     const ids = pbLayIds(n);
     return '<div class="pb-lay-setup" id="' + ids.p + 'Box">'
-      + '<div class="pb-field"><label for="' + ids.len + '">Pipe laying length (ft)</label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.01" id="' + ids.len + '" inputmode="decimal" placeholder="e.g. 20"><span class="pb-unit" aria-hidden="true">ft</span></div>'
+      + '<div class="pb-field"><label for="' + ids.len + '">Laying length<span class="pb-sr"> (ft)</span></label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.01" id="' + ids.len + '" inputmode="decimal" placeholder="e.g. 20"><span class="pb-unit" aria-hidden="true">ft</span></div>'
       + '</div>'
       + '<label class="pb-checkrow pb-lay-check" style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" id="' + ids.use + '"><span class="pb-help" style="margin:0;">Use laying length for intervals</span></label>'
       + '<div class="pb-field pb-lay-divf" id="' + ids.p + 'DivWrap"><label for="' + ids.div + '">Divide each stick</label><select id="' + ids.div + '">'
@@ -41979,7 +41979,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!view.pace) return '';
     const p = view.pace, t = pbProdQtyText(p.hoursUsed) + ' of ' + pbProdQtyText(p.budgetHours) + ' budget hours used (' + pbProdPctText(p.hoursPct) + ')';
     if (p.state === 'nopct') return '<p class="pbp-pace">' + escapeHtml(t) + '</p>';
-    return '<p class="pbp-pace ' + p.state + '"><span class="pb-chip ' + (p.state === 'on' ? 'ok' : 'notsent') + '">' + (p.state === 'on' ? 'On pace' : 'Over the hours pace') + '</span> ' + escapeHtml(t + ' vs ' + pbProdPctText(view.overall) + ' of the work done') + '</p>';
+    return '<p class="pbp-pace ' + p.state + '"><span class="pb-chip ' + (p.state === 'on' ? 'ok' : 'notsent') + '">' + (p.state === 'on' ? 'Hours on budget' : 'Hours over budget') + '</span> ' + escapeHtml(t + ' vs ' + pbProdPctText(view.overall) + ' of the work done') + '</p>';
   }
   function pbProdOverallHtml(view) {
     return view.overall !== null ? '<span class="pbp-overall"><span class="pb-stat-v">' + escapeHtml(pbCxDashOverall(view.overall)) + '</span><span class="pbp-overall-k">complete</span></span>' : '<span class="pbp-overall none">No % yet</span>';
@@ -42102,7 +42102,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const wt = Number(j.waiting) || 0, ew = Number(j.edits_waiting) || 0; // batch 12 D2
       const todayAmt = v.categories.filter(c => c.today).map(c => c.name + ' ' + pbProdQtyText(c.today, c.unit));
       return '<button type="button" class="pbp-job" id="pdJob' + i + '" onclick="pbOpenProdJob(' + i + ')">'
-        + '<span class="pbp-jobhead"><span class="pbp-jobname"><span class="pbp-jobnum">' + escapeHtml(pbProdJobLabel(j.job_number)) + '</span>' + (j.jobsite ? '<span class="pbp-jobsite">' + escapeHtml(j.jobsite) + '</span>' : '') + '</span>' + pbProdOverallHtml(v) + '</span>'
+        + '<span class="pbp-jobhead"><span class="pbp-jobname"><span class="pbp-jobnum">' + escapeHtml(pbProdJobLabel(j.job_number)) + '</span>' + ((j.project_name || j.jobsite) ? '<span class="pbp-jobsite">' + escapeHtml(j.project_name || j.jobsite) + '</span>' : '') + '</span>' + pbProdOverallHtml(v) + '</span>'
         + pbProdBar(v) + pbProdLegend(v)
         + (todayAmt.length ? '<span class="pbp-today">Today: ' + escapeHtml(todayAmt.join(' · ')) + '</span>' : '')
         + pbProdPaceLine(v)
@@ -46735,6 +46735,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!tg.checked) { tg.checked = true; tg.dispatchEvent(new Event('change', { bubbles: true })); }
       jn.dispatchEvent(new Event('change', { bubbles: true }));
     };
+    window.pbCurJobCompany = () => (Array.isArray(pbCj.jobs) ? pbCj.jobs : []); // r16.49: the company's own job list (as last loaded)
     window.pbCurJobChoices = cjChoices; window.pbCurJobFetch = (fresh) => (pbCj.jobs && Date.now() - (pbCj.at || 0) < (fresh || 0)) ? Promise.resolve(false) : cjFetch(); /* feat_foreman 24: at most once a minute */ // feat_office34 O5: the ticket form's job list
     window.__pbCurJob = () => ({ v: pbCj.v, jobs: pbCj.jobs });
   }
@@ -63521,7 +63522,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   window.pbRfAskJob = function(opts) {
     const uid = pbArchiveOwnerUid; if (!pbRrMember(uid)) return false;
-    const jn = document.getElementById('saJobNumber'); if (!jn || String(jn.value || '').trim()) return false;
+    const jn = document.getElementById('saJobNumber'); if (!jn) return false;
+    if (String(jn.value || '').trim()) { // r16.49: a typed job the company doesn't have would start a new job on the office's board
+      const typed = String(jn.value).trim(), co = typeof window.pbCurJobCompany === 'function' ? window.pbCurJobCompany() : [];
+      if ((opts && opts.jobChecked) || !co.length || co.some(j => String(j.job_number || '').trim().toLowerCase() === typed.toLowerCase())) return false;
+      const again = (x) => setTimeout(() => window.pbLock(Object.assign({}, opts || {}, { jobChecked: true }, x || {})), 0);
+      const picks = co.slice(0, 5).map(j => ({ label: 'Job ' + j.job_number + (j.name ? ' — ' + String(j.name).slice(0, 40) : ''), onClick: () => { pbRfSetJob(j); again(); } }));
+      pbShowModal('Job ' + typed + ' isn\u2019t on your company\u2019s job list. Its production would start a new job on the office\u2019s board.', picks.concat([{ label: 'Use ' + typed + ' Anyway', onClick: () => again() }, { label: 'Cancel' }]), 'Check the Job Number');
+      return true;
+    }
     const cur = typeof window.pbCurJobGet === 'function' ? window.pbCurJobGet() : null;
     const resumed = !!window._pbResumingFromEntryId; // review S4: a resumed run with no job is asked (the Current job may be another run's)
     if (cur && cur.job_number && !resumed) { pbRfSetJob(cur); return false; } // the Current job: filled in, nothing asked
