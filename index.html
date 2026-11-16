@@ -12811,7 +12811,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.42 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.43 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -19271,6 +19271,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     scheduleHiCascade();
     const se = getElevVal(prefix+'StakeElev'), cf = getElevVal(prefix+'CutFillVal');
     const el = document.getElementById(prefix+'StakeDerived');
+    if (se === null && activeVal('hiToggle') === 'stakes' && getElevVal(prefix+'StakeReading') !== null && !isPredictedFillMarked(prefix+'StakeReading')) { el.textContent = 'Add the stake elevation to predict the other rod readings.'; return; } // r16.43: a shot with no elevation can't give the HI
     if (se === null || cf === null) { el.textContent=''; return; }
     const mode = document.getElementById(prefix+'CutFill').value;
     const inv = mode === 'cut' ? se - cf : se + cf;
