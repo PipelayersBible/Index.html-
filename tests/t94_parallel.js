@@ -1,0 +1,18 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const b=await chromium.launch({args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});const ctx=await b.newContext({viewport:{width:400,height:850},serviceWorkers:'block',permissions:['camera']});
+ const p=await ctx.newPage();await p.addInitScript({content:fs.readFileSync('/home/claude/rig/fakesb.js','utf8')});await p.addInitScript({content:require('/home/claude/rig/co')});
+ await p.route('**/fonts.googleapis.com/**',r=>r.abort());await p.route('**/nominatim**',r=>r.abort());
+ const errs=[];p.on('pageerror',e=>errs.push(e.message));
+ const S=(sta,el,cf,num)=>({is_stake:true,stake_number:{value:num||'',conf:num?'high':'uncertain'},station:{value:sta||null,conf:sta?'high':'uncertain'},offset:{value:sta?'10/SD':null,conf:sta?'high':'uncertain'},line_label:{value:null,conf:'uncertain'},cut_fill:cf==null?{conf:'uncertain'}:{direction:'cut',feet:cf,as_written:'C-'+cf,to:'IE',conf:'high'},stake_elevation:el==null?{conf:'uncertain'}:{feet:el,as_written:'('+el+')',conf:'high'},other_text:'',uncertain:[]});
+ const R=[S('0+50',null,5.66,''),S('',88.1,null,'101')];let n=0;const t0=Date.now();const log=[];
+ await p.route('**/functions/v1/ai**',async r=>{const k=n++;log.push('req'+k+'@'+(Date.now()-t0));await new Promise(z=>setTimeout(z,3000));await r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,text:JSON.stringify(R[k]),used:k+1,limit:20})});});
+ await p.goto('http://127.0.0.1:8843/cur.html');await p.waitForTimeout(2500);
+ await p.evaluate(()=>{try{localStorage.setItem('pbAiPrivacyAck','1')}catch(e){}});
+ await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1500);
+ await p.evaluate(()=>pbStakeAiPick('start'));await p.waitForTimeout(1500);
+ await p.click('.pb-lc-shot');await p.waitForTimeout(600);log.push('another@'+(Date.now()-t0));await p.click('.pb-lc-more');await p.waitForTimeout(2000);
+ await p.click('.pb-lc-shot');await p.waitForTimeout(600);log.push('use@'+(Date.now()-t0));await p.click('.pb-lc-use');
+ const tu=Date.now();await p.waitForFunction(()=>document.getElementById('startStakeElev').value&&document.getElementById('startStaTxt').value,null,{timeout:15000});
+ console.log('filled',Date.now()-tu,'ms after Use Photos;',log.join(' '));
+ console.log(await p.evaluate(()=>'sta='+document.getElementById('startStaTxt').value+' elev='+document.getElementById('startStakeElev').value+' cf='+document.getElementById('startCutFillVal').value+' photos='+(window._pbPhotos.start||[]).map(x=>x.name).join(',')+' | '+document.getElementById('startAiStakeStatus').innerText.replace(/\s+/g,' ')));
+ console.log('errs',errs);await b.close();})();

@@ -12838,7 +12838,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.61 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.62 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -16730,7 +16730,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbStakeAiPick = function(prefix) {
     const st = document.getElementById(prefix + 'AiStakeStatus');
     if (!pbAiPlanOk()) { pbAiShow(st, 'warn', 'AI not on your plan.', PB_AI_MSG.plan); return; }
-    pbAiEnsurePrivacy(() => { const inp = document.getElementById(prefix + 'AiStakePhoto'); if (window.pbLiveCam && window.pbLiveCam.ok()) window.pbLiveCam.open({ max: 2, review: true, title: 'Front of the stake', onDone: (files) => window.pbStakeAiPhoto(prefix, { files, value: '' }), onFail: () => { if (inp) inp.click(); } }); else if (inp) inp.click(); }); /* r16.61: in-app camera stays open for the back */
+    pbAiEnsurePrivacy(() => { const inp = document.getElementById(prefix + 'AiStakePhoto'); if (window.pbLiveCam && window.pbLiveCam.ok()) { let started = false; window.pbLiveCam.open({ max: 2, review: true, title: 'Front of the stake', onAnother: (f0) => { started = true; window.pbStakeAiPhoto(prefix, { files: [f0], value: '' }); }, onDone: (files) => { if (started && files.length > 1) window.pbStakeAiBackOnly(prefix, files[1]); else if (!started || files.length) window.pbStakeAiPhoto(prefix, { files: started ? files.slice(1) : files, value: '' }); }, onFail: () => { if (inp) inp.click(); } }); } else if (inp) inp.click(); }); /* r16.61: in-app camera stays open for the back */
   };
   function pbStakeAiStale(prefix, p) {
     return !document.getElementById(prefix + 'ModeToggle') || window._pbPhotoContextGen !== p.photoGen || ((window._pbPointLifecycleGen || {})[prefix] || 0) !== p.life;
@@ -16787,24 +16787,24 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   };
   const pbStakeAiLast = {}; // prefix -> { ctx, img, back }: the last read that failed for signal, for Try Again
   window.pbStakeAiRetry = function(prefix) { const l = pbStakeAiLast[prefix]; delete pbStakeAiLast[prefix]; if (l && !pbStakeAiStale(prefix, l.ctx)) pbStakeAiRead(prefix, l.ctx, l.img, l.back); };
-  async function pbStakeAiRead(prefix, ctx, img, back) {
+  async function pbStakeAiRead(prefix, ctx, img, back, only) { /* r16.62: only 'back': the back read on its own while the front's read runs */
     pbStakePend.del(prefix); delete pbStakeAiLast[prefix];
     const st = document.getElementById(prefix + 'AiStakeStatus'), btn = document.getElementById(prefix + 'AiStakeBtn');
-    pbAiShow(st, 'info', back ? 'Reading the stake (front and back)…' : 'Reading the stake…', '');
-    const mySeq = (pbStakeAiSeqN[prefix] = (pbStakeAiSeqN[prefix] || 0) + 1); /* r16.60: a later read (front + back) replaces this one */
-    if (!back) { pbStakeAiAfter[prefix] = { img, ctx }; if (st) st.insertAdjacentHTML('beforeend', '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" onclick="pbStakeAiAddBack(\'' + prefix + '\')">Add Back Photo</button></div>'); }
+    pbAiShow(st, 'info', only === 'back' ? 'Reading the back of the stake…' : back ? 'Reading the stake (front and back)…' : 'Reading the stake…', '');
+    const mySeq = only === 'back' ? null : (pbStakeAiSeqN[prefix] = (pbStakeAiSeqN[prefix] || 0) + 1); /* r16.60: a later read (front + back) replaces this one */
+    if (!back && !only) { pbStakeAiAfter[prefix] = { img, ctx }; if (st) st.insertAdjacentHTML('beforeend', '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" onclick="pbStakeAiAddBack(\'' + prefix + '\')">Add Back Photo</button></div>'); }
     if (btn) btn.disabled = true;
     const images = (img.extras || []).slice(0, 5);
     if (back) { images.push({ side: 'back', mediaType: back.mediaType, data: back.data }); (back.extras || []).slice(0, 5).forEach(x => images.push(Object.assign({ side: 'back' }, x))); }
     const r = await pbAiRequest('stake', { image: { mediaType: img.mediaType, data: img.data }, images: images.slice(0, 11) });
-    if (pbStakeAiSeqN[prefix] !== mySeq) return; /* r16.60: the back came in while this read was running: the front + back read fills the point */
+    if (mySeq !== null && pbStakeAiSeqN[prefix] !== mySeq) return; /* r16.60: the back came in while this read was running: the front + back read fills the point */
     const stNow = document.getElementById(prefix + 'AiStakeStatus'), btnNow = document.getElementById(prefix + 'AiStakeBtn');
     if (btnNow) btnNow.disabled = false;
     if (pbStakeAiStale(prefix, ctx)) return; // the point was removed or a new run started: nothing to fill
     if (!r.ok) {
       const net = /^(offline|timeout|network|dropped|ai_busy|ai_failed|ai_incomplete|unavailable|http_5\d\d)$/.test(r.code || '');
       pbAiShow(stNow, 'warn', 'Stake not read.', r.message + (net ? ' The photos are kept on this point.' : ' Nothing on this point was changed.'));
-      if (net) { pbStakeAiLast[prefix] = { ctx, img, back }; pbStakeAiKeepPhotos(prefix, ctx, [img, back]); if (stNow) stNow.insertAdjacentHTML('beforeend', '<div class="pb-btn-row"><button type="button" class="pb-btn small" onclick="pbStakeAiRetry(\'' + prefix + '\')">Try Again</button></div>'); }
+      if (net) { pbStakeAiLast[prefix] = { ctx, img, back }; pbStakeAiKeepPhotos(prefix, ctx, only === 'back' ? [null, img] : [img, back]); if (stNow) stNow.insertAdjacentHTML('beforeend', '<div class="pb-btn-row"><button type="button" class="pb-btn small" onclick="pbStakeAiRetry(\'' + prefix + '\')">Try Again</button></div>'); }
       return;
     }
     const got = pbStakeAiFromReply(r.text);
@@ -16819,9 +16819,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbStakeAiRender(prefix);
     const box = document.getElementById(prefix + 'AiStakeReview'); if (box) box.style.display = 'none';
     pbStakeAiPending[prefix].auto = true;
+    if (only === 'back') pbStakeAiPending[prefix].fillEmpty = true; /* r16.62: the back adds to the front, never asks */
     pbStakeAiUse(prefix);
-    pbStakeAiKeepPhotos(prefix, ctx, [img, back]);
-    if (!back) { const s2 = document.getElementById(prefix + 'AiStakeStatus'); if (s2) s2.insertAdjacentHTML('beforeend', '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" onclick="pbStakeAiAddBack(\'' + prefix + '\')">Add Back Photo</button></div>'); pbStakeAiAfter[prefix] = { img, ctx }; }
+    pbStakeAiKeepPhotos(prefix, ctx, only === 'back' ? [null, img] : [img, back]);
+    if (!back && !only) { const s2 = document.getElementById(prefix + 'AiStakeStatus'); if (s2) s2.insertAdjacentHTML('beforeend', '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" onclick="pbStakeAiAddBack(\'' + prefix + '\')">Add Back Photo</button></div>'); pbStakeAiAfter[prefix] = { img, ctx }; }
+  };
+  window.pbStakeAiBackOnly = async function(prefix, file) { /* r16.62 */
+    const ctx = { photoGen: window._pbPhotoContextGen, life: (window._pbPointLifecycleGen || {})[prefix] || 0 };
+    let im = null; try { im = await pbAiPrepImage(file, 1600, { extras: true }); } catch (e) { return; }
+    if (pbStakeAiStale(prefix, ctx)) return;
+    pbStakeAiRead(prefix, ctx, im, null, 'back');
   };
   const pbStakeAiSeqN = {}; // r16.60
   const pbStakeAiAfter = {}; // r16.58: a front already read: Add Back Photo reads it again with the back
@@ -17032,6 +17039,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       pbAiShow(document.getElementById(prefix + 'AiStakeStatus'), p.flags && Object.keys(p.flags).filter(k => k !== 'stakeNum' && k !== 'line').length ? 'warn' : 'ok', 'Read from the photo.', 'Check the outlined boxes against the stake.' + pbStakeAiUnsure(p)); void filled; void fitNote; // r16.48: short
     };
     const switchNote = inElevMode ? '\n\nThis point is set to Invert Elevation; it will switch to Survey Stake.' : '';
+    if (conflicts.length && p.fillEmpty) { apply(true); return; }
     if (conflicts.length) {
       pbShowModal('Some of these fields already have values you typed:\n\n' + conflicts.map(x => x.name + ': ' + show(x, x.cur) + ' → ' + show(x, x.val)).join('\n') + '\n\nReplace them with what the AI read, or fill only the empty fields?' + switchNote,
         [{ label: 'Cancel' }, { label: 'Fill Empty Only', onClick: () => apply(true) }, { label: 'Replace', primary: true, onClick: () => apply(false) }], 'Replace What You Typed?');
@@ -70289,7 +70297,7 @@ html.pb-light #pbApp#pbApp #screen-results #resultsBody tr.pb-hubrow { --pb-rs-e
       r.innerHTML = '<img alt="Photo just taken"><div class="pb-lc-rvbar"><button type="button" class="pb-lc-re">Retake</button>' + (more ? '<button type="button" class="pb-lc-more">Another Photo</button>' : '') + '<button type="button" class="pb-lc-use">Use Photo' + (shots.length > 1 ? 's' : '') + '</button></div>';
       r.querySelector('img').src = src; el.appendChild(r);
       r.querySelector('.pb-lc-re').onclick = function () { shots.pop(); var last = strip.lastElementChild; if (last) last.remove(); n.textContent = shots.length ? shots.length + ' of ' + max : ''; done.disabled = !shots.length; done.textContent = shots.length ? 'Done (' + shots.length + ')' : 'Done'; r.remove(); };
-      if (more) r.querySelector('.pb-lc-more').onclick = function () { r.remove(); t.textContent = o.nextTitle || 'Back of the stake'; };
+      if (more) r.querySelector('.pb-lc-more').onclick = function () { r.remove(); t.textContent = o.nextTitle || 'Back of the stake'; if (o.onAnother && shots.length === 1 && !o._sent) { o._sent = true; o.onAnother(shots[0]); } }; /* r16.62: the front starts reading now */
       r.querySelector('.pb-lc-use').onclick = function () { r.remove(); finish(); };
     }
     done.onclick = finish;
