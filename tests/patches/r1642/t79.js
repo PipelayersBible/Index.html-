@@ -1,0 +1,10 @@
+const boot=require('./boot');
+(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/'+(process.argv[2]||'idx42.html'));
+ await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1200);
+ await p.selectOption('#runIdSel',{label:'10"'});await p.selectOption('#runPipeType','Corrugated HDPE');await p.waitForTimeout(400);
+ console.log(await p.evaluate(()=>[...document.querySelector('#runPipeSection .pb-body').children].map(c=>c.tagName+(c.id?'#'+c.id:'')+'.'+c.className).join('\n')));
+ await p.evaluate(()=>document.getElementById('runPipeSection').scrollIntoView());await p.waitForTimeout(200);
+ const box=await p.locator('#runPipeSection').boundingBox();await p.screenshot({path:'/tmp/claude-0/pipe1.png',clip:{x:0,y:box.y,width:400,height:Math.min(box.height,700)}});
+ await p.selectOption('#runIdSel',{label:'Other'}).catch(()=>{});await p.waitForTimeout(300);
+ console.log('other shown:',await p.evaluate(()=>document.getElementById('runIdOtherWrap').style.display));
+ console.log('errs',p.errs);await b.close();})();

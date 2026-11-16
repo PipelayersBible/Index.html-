@@ -1,0 +1,16 @@
+const boot=require('./boot');const fs=require('fs');
+(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/idx41.html');
+ let reply;await p.route('**/functions/v1/ai**', async r=>{await r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,text:JSON.stringify(reply),used:1,limit:60})});});
+ const R=(sta,el,cf,line)=>({is_stake:true,stake_number:{value:'1',conf:'high'},station:{value:sta,conf:'high'},offset:{value:'10/SD',conf:'high'},line_label:{value:line||'',conf:'high'},cut_fill:{direction:'cut',feet:cf,as_written:'C-'+cf,to:'IE',conf:'high'},stake_elevation:{feet:el,as_written:String(el),conf:'high'},other_text:'',uncertain:[]});
+ const S=()=>p.evaluate(()=>['runIdSel','runPipeType','runWT','layLen'].map(i=>i+'='+JSON.stringify(document.getElementById(i).value)).join(' ')+' hub0='+document.getElementById('hub0StaTxt').value+' fit='+document.getElementById('hub0FitType').value+' lay='+document.getElementById('hub0FitLay').value);
+ await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1200);
+ const img={name:'a.jpg',mimeType:'image/jpeg',buffer:fs.readFileSync('/tmp/claude-0/evimg/p12.jpg')};
+ reply=R('1+50',104.26,3.14);await p.setInputFiles('#startAiStakePhoto',[img,img]);await p.waitForTimeout(2000);
+ await p.evaluate(()=>pbAddHub());reply=R('2+12',106.18,2.78,'AP');await p.setInputFiles('#hub0AiStakePhoto',[img,img]);await p.waitForTimeout(2000);
+ await p.selectOption('#runIdSel',{label:'10"'});await p.waitForTimeout(200);await p.selectOption('#runPipeType','Corrugated HDPE');await p.waitForTimeout(200);
+ await p.selectOption('#hub0FitAng','45');await p.waitForTimeout(1500);
+ console.log('before:',await S());
+ await p.reload({waitUntil:'load'});await p.waitForTimeout(3000);
+ await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.offsetParent&&b.textContent.trim()==='Resume');b.click();});await p.waitForTimeout(2000);
+ console.log('after:',await S());
+ console.log('errs',p.errs);await b.close();})();

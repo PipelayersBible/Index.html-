@@ -1,0 +1,13 @@
+const boot=require('./boot');
+(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/'+(process.argv[2]||'idx41.html'));
+ await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1200);
+ const rd=()=>p.evaluate(()=>['start','hub0','end'].map(k=>{const e=document.getElementById(k+'StakeReading');return k+':'+(e?JSON.stringify(e.value)+(e.classList.contains('pb-predicted-fill')?'(pred)':''):'-');}).join(' ')+' | '+[...document.querySelectorAll('#screen-input [id$="StakeReading"]')].map(e=>e.id).join(','));
+ const f=async(id,v)=>{await p.click('#'+id);await p.fill('#'+id,String(v));await p.keyboard.press('Tab');await p.waitForTimeout(300);};
+ await f('startStakeElev','104.26');await f('startCutFillVal','3.14');
+ await p.evaluate(()=>pbAddHub());await p.waitForTimeout(200);
+ await f('hub0Station','62');await f('hub0StakeElev','106.18');await f('hub0CutFillVal','2.78');
+ await f('endStakeElev','105');await f('endCutFillVal','3');await f('totalDist','189');
+ console.log('typed elevs:',await rd());
+ await f('startStakeReading','4.80');await p.waitForTimeout(1000);console.log('start reading:',await rd());
+ console.log('dbg:',await p.evaluate(()=>{const d=window.__dbg;const hi=d.computeHI();return JSON.stringify({hi,c:d.getStakeHICandidates(),lay:d.pbHdLayHi(hi),x:d.computeHiCrossCheck()});}));await p.evaluate(()=>window.__dbg.refreshAllPredictedReadingFills());console.log('after refresh:',await rd());
+ await b.close();})();
