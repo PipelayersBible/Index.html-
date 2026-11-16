@@ -12848,7 +12848,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.50 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.51 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -16707,10 +16707,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbStakeAiSimpleLabel(prefix, got) {
     const sg = pbStakeAiSeg(prefix), v = got.vals || {}, th = got.thought || {};
-    if (sg.isStart) return 'Start point';
-    if (sg.isEnd) return 'End point';
     const text = [v.offset, v.line, th.line, got.other].filter(Boolean).join(' ');
     const up = text.toUpperCase().replace(/^\s*\d+(?:\.\d+)?\s*\/\s*[A-Z]+\b/, ' ');
+    if (sg.isStart || sg.isEnd) { /* r16.51: the stake's MH or lateral number names the run's ends */
+      const m0 = /\b(?:SS|SD|STM|SAN)?(?:MH|MANHOLE)\s?-?\s?#?\s?(\d{1,4}[A-Z]?)\b/.exec(up); if (m0) return 'MH-' + m0[1];
+      const l0 = /\bLAT(?:ERAL)?\s?-?\s?#?\s?(\d{1,4}[A-Z]?)\b/.exec(up); if (l0) return 'LAT-' + l0[1];
+      return sg.isStart ? 'Start point' : 'End point';
+    }
     try {
       const fit = /^(seg\d+)?hub\d+$/.test(prefix) && typeof window.pbCutsheetFitOf === 'function' ? window.pbCutsheetFitOf(text) : null;
       if (fit) {
