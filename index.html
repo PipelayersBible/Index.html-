@@ -9861,6 +9861,9 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
 #pbApp#pbApp #screen-input .pb-section.pb-pt.end > .pb-tag::before { box-shadow: 0 0 0 3px color-mix(in srgb, var(--pb-info) 28%, transparent); }
 #pbApp#pbApp #screen-input .pb-rp-line { margin: 4px 0 10px 0; font-size: 14px; line-height: 1.35; color: var(--pb-text-2); }
 #pbApp#pbApp #screen-input .pb-rp-line.reach { color: var(--pb-warn-text); }
+#pbApp#pbApp #screen-input .pb-rp-line.lay, #pbApp#pbApp #screen-input .pb-rp-line.reach { display: block; margin: 6px 0 8px 0; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--pb-warn-text); background: color-mix(in srgb, var(--pb-warn-text) 12%, transparent); color: var(--pb-warn-text); font-weight: 600; }
+#pbApp#pbApp #screen-input .pb-rp-line.lay::before, #pbApp#pbApp #screen-input .pb-rp-line.reach::before { content: '\26A0\FE0E'; margin-right: 6px; }
+#pbApp#pbApp #screen-input .pb-rp-line.lay strong { color: inherit; }
 #pbApp#pbApp #screen-input .pb-rp-line strong { color: var(--pb-text); font-weight: 700; }
 /* xingrow (owner, Nov 4): a crossing is its own row on Results; a thin red edge on it and on the rows up to 20 ft before it */
 #pbApp#pbApp#pbApp #screen-results #resultsBody tr.pb-xing-near:not([data-laid-strip]):not(.pb-laid) > td:first-child { box-shadow: inset 5px 0 0 var(--pb-danger-line); }
@@ -12811,7 +12814,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.44 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.45 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -19443,8 +19446,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           const se = pbArchInchBad(prefix + 'StakeElev') === null ? getElevVal(prefix + 'StakeElev') : null;
           if (!typed && se !== null && lay - se < -1e-9) {
             const r = getPointReading(prefix, hi);
-            if (r !== null && r >= -1e-9) { txt = 'Stake top is above the instrument. Lay to ' + fmtReading(r, rod) + ' at the invert.'; num = fmtReading(r, rod); cls = 'lay'; }
-            else if (r !== null && fromShots) { txt = 'Out of reach from this setup.'; cls = 'reach'; }
+            if (r !== null && r >= -1e-9) { txt = 'Stake is above the instrument, so it can\u2019t be shot from here. Lay to ' + fmtReading(r, rod) + ' at the invert.'; num = fmtReading(r, rod); cls = 'lay'; }
+            else if (r !== null && fromShots) { txt = 'Above the instrument: out of reach from this setup. Move the instrument.'; cls = 'reach'; }
           }
         } else if (mode === 'elev' && fromShots) {
           const typed = getElevVal(prefix + 'ElevReading') !== null && !isPredictedFillMarked(prefix + 'ElevReading');
@@ -19455,7 +19458,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     if (!txt) { if (ln) ln.remove(); return; }
     if (!ln) { ln = document.createElement('div'); ln.id = prefix + 'RpLine'; }
-    if (anchor.nextElementSibling !== ln) anchor.insertAdjacentElement('afterend', ln);
+    if (anchor.previousElementSibling !== ln) anchor.insertAdjacentElement('beforebegin', ln); // r16.45: a warning right under the rod reading box
     ln.className = 'pb-rp-line ' + cls;
     if (ln.textContent !== txt) { if (num) { ln.textContent = ''; const i = txt.indexOf(num); ln.append(txt.slice(0, i)); const st = document.createElement('strong'); st.textContent = num; ln.append(st, txt.slice(i + num.length)); } else ln.textContent = txt; }
   }

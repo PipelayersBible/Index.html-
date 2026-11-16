@@ -1,0 +1,12 @@
+const boot=require('./boot');
+(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/'+(process.argv[2]||'idx44.html'));
+ await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1200);
+ const f=async(id,v)=>{await p.click('#'+id);await p.fill('#'+id,String(v));await p.keyboard.press('Tab');await p.waitForTimeout(300);};
+ await f('startStakeElev','103.5');await f('startCutFillVal','3.83');
+ await p.evaluate(()=>pbAddHub());await f('hub0Station','62');await f('hub0StakeElev','106.18');await f('hub0CutFillVal','2.78');
+ await p.evaluate(()=>pbAddHub());await f('hub1Station','150');await f('hub1StakeElev','108.63');await f('hub1CutFillVal','3.21');
+ await p.evaluate(()=>pbAddHub());await f('hub2Station','180');await f('hub2StakeElev','110.5');await f('hub2CutFillVal','1.5');
+ await f('startStakeReading','4.36');await p.waitForTimeout(1200);
+ console.log(await p.evaluate(()=>['hub0','hub1','hub2'].map(h=>{const r=document.getElementById(h+'StakeReading'),l=document.getElementById(h+'RpLine');return h+' rd="'+r.value+'" line="'+(l?l.textContent+'" vis='+!!l.offsetParent:'none"');}).join('\n')));
+ await p.evaluate(()=>document.getElementById('hub1StakeReading').scrollIntoView({block:'center'}));await p.waitForTimeout(300);await p.screenshot({path:'/tmp/claude-0/rp.png'});
+ await b.close();})();
