@@ -12838,7 +12838,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.62 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.63 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -70147,7 +70147,8 @@ html.pb-light #pbApp#pbApp #screen-results #resultsBody tr.pb-hubrow { --pb-rs-e
     var listen = function () { if (G.ori) return; G.ori = true; window.addEventListener('deviceorientation', function (e) {
       var h = null; if (typeof e.webkitCompassHeading === 'number' && e.webkitCompassHeading >= 0) h = e.webkitCompassHeading; else if (e.absolute && typeof e.alpha === 'number') h = (360 - e.alpha) % 360;
       if (h !== null && isFinite(h)) { G.head = h; G.headAt = Date.now(); } }, true); };
-    try { var D = window.DeviceOrientationEvent; if (!D) return; if (typeof D.requestPermission === 'function') D.requestPermission().then(function (r) { if (r === 'granted') listen(); }).catch(function () {}); else listen(); } catch (e) {}
+    try { var D = window.DeviceOrientationEvent; if (!D) return; var asked = false; try { asked = localStorage.getItem('pbOriAsked') === '1'; } catch (e) {}
+      if (typeof D.requestPermission === 'function' && !asked) { try { localStorage.setItem('pbOriAsked', '1'); } catch (e) {} D.requestPermission().then(function (r) { if (r === 'granted') listen(); }).catch(function () {}); } else listen(); } catch (e) {} /* r16.63: asked once, ever; after that the compass is used only if the phone still allows it, never asked again */
   }
   // a tap on Run Setup / Run Results starts location; the compass asks on a tap that isn't the camera (two pop-ups at once lose one)
   document.addEventListener('click', function (e) {
