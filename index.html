@@ -12816,7 +12816,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.46 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.47 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -14577,9 +14577,46 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // Raw, unprefixed storage access — used only for identity bootstrapping
   // and the one-time migration below. Every other part of the app must use
   // pbGet/pbSet/pbGetCritical, never these directly.
-  async function pbRawGet(key) { try { return localStorage.getItem(key); } catch(e){ return null; } }
-  async function pbRawSet(key, val) { try { localStorage.setItem(key, val); return true; } catch(e){ return false; } }
-  async function pbRawDelete(key) { try { localStorage.removeItem(key); return true; } catch(e){ return false; } }
+  async function pbRawGet(key) { if (pbBigKey(key)) { try { return await pbBigGet(key); } catch (e) { return null; } } try { return localStorage.getItem(key); } catch(e){ return null; } }
+  async function pbRawSet(key, val) { if (pbBigKey(key)) return pbBigSet(key, val); try { localStorage.setItem(key, val); return true; } catch(e){ return false; } }
+  async function pbRawDelete(key) { if (pbBigKey(key)) return pbBigDelete(key); try { localStorage.removeItem(key); return true; } catch(e){ return false; } }
+  // r16.47: Records (runs with their photos, permits, reports) outgrew localStorage (about 5 MB on an iPhone).
+  // An account's runArchive lives in IndexedDB (far more room); a tiny marker key "<key>@idb" says it moved.
+  // No marker: still in localStorage (read as before; the next save moves it). IndexedDB unavailable: as before.
+  const pbBigKey = (key) => /(^|:)runArchive$/.test(String(key || ''));
+  let pbBigDbP = null;
+  function pbBigDb() {
+    return pbBigDbP || (pbBigDbP = new Promise((ok, no) => {
+      try { const r = indexedDB.open('pb-big', 1); r.onupgradeneeded = () => { try { r.result.createObjectStore('kv'); } catch (e) {} }; r.onsuccess = () => { const d = r.result; d.onversionchange = () => { try { d.close(); } catch (e) {} pbBigDbP = null; }; ok(d); }; r.onerror = () => no(r.error); r.onblocked = () => no(new Error('blocked')); } catch (e) { no(e); }
+    }).catch(e => { pbBigDbP = null; throw e; }));
+  }
+  async function pbBigTx(mode, fn) { const d = await pbBigDb(); return new Promise((ok, no) => { let r; try { const t = d.transaction('kv', mode); r = fn(t.objectStore('kv')); t.oncomplete = () => ok(r ? r.result : undefined); t.onerror = () => no(t.error); t.onabort = () => no(t.error || new Error('abort')); } catch (e) { no(e); } }); }
+  const pbBigMark = (key) => key + '@idb';
+  async function pbBigGet(key) { // throws when the moved value can't be read (a critical read must not see "no records")
+    let moved = false; try { moved = localStorage.getItem(pbBigMark(key)) === '1'; } catch (e) {}
+    if (!moved) return localStorage.getItem(key);
+    const v = await pbBigTx('readonly', st => st.get(key));
+    if (typeof v === 'string') return v;
+    const old = localStorage.getItem(key); return old; // marker but nothing there: the localStorage copy, if any
+  }
+  async function pbBigSet(key, val) {
+    try { await pbBigTx('readwrite', st => st.put(val, key)); }
+    catch (e) { // no IndexedDB: localStorage, as before
+      try { localStorage.setItem(key, val); } catch (x) { return false; }
+      try { localStorage.removeItem(pbBigMark(key)); } catch (x) {}
+      return true;
+    }
+    try { localStorage.setItem(pbBigMark(key), '1'); }
+    catch (e) { try { localStorage.removeItem(key); localStorage.setItem(pbBigMark(key), '1'); } catch (x) { return false; } } // full: the old copy's room takes the marker
+    try { localStorage.removeItem(key); } catch (e) {}
+    return true;
+  }
+  async function pbBigDelete(key) {
+    let ok = true;
+    try { await pbBigTx('readwrite', st => st.delete(key)); } catch (e) { try { ok = localStorage.getItem(pbBigMark(key)) !== '1'; } catch (x) {} }
+    try { localStorage.removeItem(key); localStorage.removeItem(pbBigMark(key)); } catch (e) { ok = false; }
+    return ok;
+  }
 
   let cachedStorageUserId = null;
   // Resolves which user's data bucket to read/write. Prefers the live
@@ -14727,10 +14764,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   async function pbGetFor(uid, key) { return pbRawGet(uid + ':' + key); }
   async function pbSetFor(uid, key, val) { return pbRawSet(uid + ':' + key, val); }
   async function pbGetCriticalFor(uid, key) {
+    if (pbBigKey(key)) return pbBigGet(uid + ':' + key);
     return localStorage.getItem(uid + ':' + key);
   }
   async function pbGetCritical(key) {
     const uid = await pbResolveStorageUserId();
+    if (pbBigKey(key)) return pbBigGet(uid + ':' + key);
     return localStorage.getItem(uid + ':' + key);
   }
   // Stats & Records Info carries over to the next run and the next start-up.
@@ -16405,13 +16444,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       while (data.length > 3500000 && q > 0.4) { q -= 0.15; data = c.toDataURL('image/jpeg', q); }
       const extras = [];
       if (opts && opts.extras) {
-        const jpg = (cv) => { let qq = 0.78, d = cv.toDataURL('image/jpeg', qq); while (d.length > 1400000 && qq > 0.4) { qq -= 0.12; d = cv.toDataURL('image/jpeg', qq); } return d.length <= 1400023 ? d.slice(d.indexOf(',') + 1) : ''; };
+        const jpg = (cv) => { let qq = 0.72, d = cv.toDataURL('image/jpeg', qq); while (d.length > 1400000 && qq > 0.4) { qq -= 0.12; d = cv.toDataURL('image/jpeg', qq); } return d.length <= 1400023 ? d.slice(d.indexOf(',') + 1) : ''; };
         try { const r = document.createElement('canvas'); r.width = c.width; r.height = c.height; const rg = r.getContext('2d'); rg.translate(r.width, r.height); rg.rotate(Math.PI); rg.drawImage(c, 0, 0);
           const d = jpg(r); if (d) extras.push({ zoom: 'rot', mediaType: 'image/jpeg', data: d }); r.width = r.height = 0; } catch (e) {}
         if (Math.max(w, h) > maxPx * 1.25) {
           const tw = Math.round(w * 0.55), th = Math.round(h * 0.55);
           [['tl', 0, 0], ['tr', w - tw, 0], ['bl', 0, h - th], ['br', w - tw, h - th]].forEach(([z, x, y]) => {
-            try { const kk = Math.min(1, maxPx / Math.max(tw, th)), t = document.createElement('canvas'); t.width = Math.round(tw * kk); t.height = Math.round(th * kk);
+            try { const kk = Math.min(1, Math.min(maxPx, 1200) / Math.max(tw, th)), t = document.createElement('canvas'); // r16.47: close-ups at 1200 px t.width = Math.round(tw * kk); t.height = Math.round(th * kk);
               t.getContext('2d').drawImage(img, x, y, tw, th, 0, 0, t.width, t.height); const d = jpg(t); if (d) extras.push({ zoom: z, mediaType: 'image/jpeg', data: d }); t.width = t.height = 0; } catch (e) {}
           });
         }
@@ -16668,6 +16707,34 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return !document.getElementById(prefix + 'ModeToggle') || window._pbPhotoContextGen !== p.photoGen || ((window._pbPointLifecycleGen || {})[prefix] || 0) !== p.life;
   }
   const pbStakeAiFront = {}; // prefix -> { img, ctx }: a front photo waiting for its back (or Read Now)
+  // r16.47: ... and in IndexedDB, keyed by the run draft and point, so a reload (the camera on an iPhone) doesn't lose it.
+  const pbStakePend = (() => {
+    let dbp = null;
+    const db = () => dbp || (dbp = new Promise((ok, no) => { try { const r = indexedDB.open('pb-stake-pending', 1); r.onupgradeneeded = () => { try { r.result.createObjectStore('p'); } catch (e) {} }; r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); } catch (e) { no(e); } }).catch(e => { dbp = null; throw e; }));
+    const tx = async (mode, fn) => { const d = await db(); return new Promise((ok, no) => { const t = d.transaction('p', mode); const r = fn(t.objectStore('p')); t.oncomplete = () => ok(r ? r.result : undefined); t.onerror = () => no(t.error); }); };
+    const draft = () => { try { pbRdFlush(); return pbRd.formId ? pbRd.formUid + ':' + pbRd.formId : null; } catch (e) { return null; } };
+    return {
+      put: (prefix, img) => { const d = draft(); if (!d) return; tx('readwrite', st => st.put({ img, at: Date.now() }, d + ':' + prefix)).catch(() => {}); },
+      del: (prefix) => { const d = draft(); if (!d) return; tx('readwrite', st => st.delete(d + ':' + prefix)).catch(() => {}); },
+      forDraft: async (d) => { const out = {}; try { await tx('readonly', st => { const r = st.openCursor(); r.onsuccess = () => { const c = r.result; if (!c) return; const k = String(c.key); if (k.startsWith(d + ':') && c.value && c.value.img && Date.now() - c.value.at < 12 * 3600e3) out[k.slice(d.length + 1)] = c.value.img; c.continue(); }; return null; }); } catch (e) {} return out; },
+      dropDraft: async (d) => { try { await tx('readwrite', st => { const r = st.openCursor(); r.onsuccess = () => { const c = r.result; if (!c) return; if (String(c.key).startsWith(d + ':') || Date.now() - ((c.value && c.value.at) || 0) > 12 * 3600e3) c.delete(); c.continue(); }; return null; }); } catch (e) {} }
+    };
+  })();
+  function pbStakeAiFrontShow(prefix) {
+    const st = document.getElementById(prefix + 'AiStakeStatus'); if (!st) return;
+    pbAiShow(st, 'info', 'Front photo added.', 'Add the back if it has the stake number or hub elevation.');
+    st.insertAdjacentHTML('beforeend', '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" onclick="pbStakeAiBack(\'' + prefix + '\')">Add Back Photo</button><button type="button" class="pb-btn small" onclick="pbStakeAiReadNow(\'' + prefix + '\')">Read Stake</button></div>');
+  }
+  // A resumed draft: its points' waiting front photos come back, with Add Back Photo / Read Stake.
+  window.pbStakeAiResumeFronts = async function(draftKey, map) {
+    const got = await pbStakePend.forDraft(draftKey);
+    Object.keys(got).forEach(old => {
+      const p = (map && map[old]) || old; if (!document.getElementById(p + 'AiStakeStatus')) return;
+      pbStakeAiFront[p] = { img: got[old], ctx: { photoGen: window._pbPhotoContextGen, life: (window._pbPointLifecycleGen || {})[p] || 0 } };
+      if (p !== old) { pbStakePend.del(old); pbStakePend.put(p, got[old]); }
+      pbStakeAiFrontShow(p);
+    });
+  };
   window.pbStakeAiPhoto = async function(prefix, input) {
     const files = Array.from(input.files || []).slice(0, 2);
     input.value = '';
@@ -16682,8 +16749,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (waiting) return pbStakeAiRead(prefix, ctx, waiting, imgs[0]);
     if (imgs.length === 2) return pbStakeAiRead(prefix, ctx, imgs[0], imgs[1]);
     pbStakeAiFront[prefix] = { img: imgs[0], ctx };
-    pbAiShow(st, 'info', 'Front photo added.', 'Add the back if it has the stake number or hub elevation.');
-    if (st) st.insertAdjacentHTML('beforeend', '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" onclick="pbStakeAiBack(\'' + prefix + '\')">Add Back Photo</button><button type="button" class="pb-btn small" onclick="pbStakeAiReadNow(\'' + prefix + '\')">Read Stake</button></div>');
+    pbStakePend.put(prefix, imgs[0]);
+    pbStakeAiFrontShow(prefix);
   };
   window.pbStakeAiBack = function(prefix) { const inp = document.getElementById(prefix + 'AiStakePhoto'); if (inp) inp.click(); };
   window.pbStakeAiReadNow = function(prefix) {
@@ -16691,7 +16758,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!w || pbStakeAiStale(prefix, w.ctx)) return;
     pbStakeAiRead(prefix, w.ctx, w.img, null);
   };
+  const pbStakeAiLast = {}; // prefix -> { ctx, img, back }: the last read that failed for signal, for Try Again
+  window.pbStakeAiRetry = function(prefix) { const l = pbStakeAiLast[prefix]; delete pbStakeAiLast[prefix]; if (l && !pbStakeAiStale(prefix, l.ctx)) pbStakeAiRead(prefix, l.ctx, l.img, l.back); };
   async function pbStakeAiRead(prefix, ctx, img, back) {
+    pbStakePend.del(prefix); delete pbStakeAiLast[prefix];
     const st = document.getElementById(prefix + 'AiStakeStatus'), btn = document.getElementById(prefix + 'AiStakeBtn');
     pbAiShow(st, 'info', back ? 'Reading the stake (front and back)…' : 'Reading the stake…', '');
     if (btn) btn.disabled = true;
@@ -16701,7 +16771,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const stNow = document.getElementById(prefix + 'AiStakeStatus'), btnNow = document.getElementById(prefix + 'AiStakeBtn');
     if (btnNow) btnNow.disabled = false;
     if (pbStakeAiStale(prefix, ctx)) return; // the point was removed or a new run started: nothing to fill
-    if (!r.ok) { pbAiShow(stNow, 'warn', 'Stake not read.', r.message + ' Nothing on this point was changed.'); return; }
+    if (!r.ok) {
+      const net = /^(offline|timeout|network|dropped|ai_busy|ai_failed|ai_incomplete|unavailable|http_5\d\d)$/.test(r.code || '');
+      pbAiShow(stNow, 'warn', 'Stake not read.', r.message + (net ? ' The photos are kept on this point.' : ' Nothing on this point was changed.'));
+      if (net) { pbStakeAiLast[prefix] = { ctx, img, back }; pbStakeAiKeepPhotos(prefix, ctx, [img, back]); if (stNow) stNow.insertAdjacentHTML('beforeend', '<div class="pb-btn-row"><button type="button" class="pb-btn small" onclick="pbStakeAiRetry(\'' + prefix + '\')">Try Again</button></div>'); }
+      return;
+    }
     const got = pbStakeAiFromReply(r.text);
     if (got.refused) { pbAiShow(stNow, 'warn', 'AI couldn’t read a stake.', got.refused + '. Nothing on this point was changed.'); return; }
     if (got.bad) { pbAiShow(stNow, 'warn', 'Stake not read.', got.bad + ' Nothing on this point was changed.'); return; }
@@ -16721,7 +16796,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   async function pbStakeAiKeepPhotos(prefix, ctx, list) {
     const out = [];
     for (const [k, im] of list.entries()) {
-      if (!im || !im.data) continue;
+      if (!im || !im.data || im.__kept) continue;
+      im.__kept = true;
       try {
         const el = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = 'data:' + (im.mediaType || 'image/jpeg') + ';base64,' + im.data; });
         let w = el.width, h = el.height; const m = 900;
@@ -38947,7 +39023,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!env.ios || !env.standalone || !env.host) return;
       if ((await pbRawGet('pbStandaloneNoticeShown')) === '1') return;
       let has = false;
-      try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i) || ''; if (/:(runArchive|activeConfinedSession)$/.test(k) && (localStorage.getItem(k) || '').length > 2) { has = true; break; } } } catch (e) { return; }
+      try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i) || ''; if ((/:(runArchive|activeConfinedSession)$/.test(k) && (localStorage.getItem(k) || '').length > 2) || /:runArchive@idb$/.test(k)) { has = true; break; } } } catch (e) { return; }
       if (has) { await pbRawSet('pbStandaloneNoticeShown', '1'); return; } // records here already: nothing to warn about
       const ov = document.getElementById('pbModalOverlay');
       if (ov && getComputedStyle(ov).display !== 'none') { if ((tries || 0) < 5) setTimeout(() => pbPushStandaloneNotice((tries || 0) + 1), 3000); return; }
@@ -53868,7 +53944,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbRdPhLast[key] = sig;
     (sig ? pbRdPh.put(key, { photos: m, savedAt: Date.now() }) : pbRdPh.del(key)).catch(e => { delete pbRdPhLast[key]; console.error('Draft photos not saved:', e); });
   }
-  { const rm = pbRd.remove; pbRd.remove = (uid, id) => { rm(uid, id); const key = uid + ':' + id; delete pbRdPhLast[key]; pbRdPh.del(key).catch(() => {}); }; }
+  { const rm = pbRd.remove; pbRd.remove = (uid, id) => { rm(uid, id); const key = uid + ':' + id; delete pbRdPhLast[key]; pbRdPh.del(key).catch(() => {}); try { pbStakePend.dropDraft(key); } catch (e) {} }; }
   function pbRdSchedule() { clearTimeout(pbRd.timer); pbRd.timer = setTimeout(() => { pbRd.timer = null; pbRdTick(); }, 400); }
   function pbRdFlush() { if (pbRd.timer) { clearTimeout(pbRd.timer); pbRd.timer = null; } pbRdTick(); }
   // pbResetRunForm calls this first: the form's draft is saved as it is and kept (it is a draft of its own now).
@@ -53973,6 +54049,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     let rdMap = {};
     try { rdMap = pbRdApply(d, !!rsE) || {}; } catch (e) { ok = false; console.error('Run draft restore failed:', e); } finally { pbRd.restoring = false; }
     const rdGen = pbFormGen;
+    try { setTimeout(() => { if (pbRd.formId === id && pbFormGen === rdGen) window.pbStakeAiResumeFronts(a + ':' + id, rdMap); }, 0); } catch (e) {} // r16.47: fronts waiting for their backs
     pbRdPh.get(a + ':' + id).then(v => {
       if (!v || !v.photos || pbRd.formId !== id || pbRd.formUid !== a || pbFormGen !== rdGen) return;
       let back = 0;
