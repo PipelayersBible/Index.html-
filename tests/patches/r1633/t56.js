@@ -1,0 +1,17 @@
+const boot=require('./boot');
+(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/'+(process.argv[2]||'idx32.html'));
+ await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1200);
+ const f=async(id,v)=>p.evaluate(([id,v])=>{const e=document.getElementById(id);e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));},[id,String(v)]);
+ await f('startStakeElev',100);await f('startCutFillVal',5);await f('endStakeElev',99);await f('endCutFillVal',5);await f('totalDist',400);
+ for(let i=0;i<3;i++) await p.evaluate(()=>pbAddHub());await p.waitForTimeout(400);
+ await f('hub0Station',300);await f('hub1Station',100);await f('hub2Station',200);
+ await f('hub0StakeElev',99.2);await f('hub1StakeElev',99.8);await f('hub2StakeElev',99.5);await f('hub0CutFillVal',5);await f('hub1CutFillVal',5);await f('hub2CutFillVal',5);
+ await p.evaluate(()=>pbXingAdd(1));await p.waitForTimeout(400);
+ const xid=await p.evaluate(()=>document.querySelector('.pb-xing-card').dataset.xingId);await f(xid+'Sta',150);
+ await p.waitForTimeout(1500);
+ console.log(await p.evaluate(()=>[...document.getElementById('hubsContainer').children].map(k=>k.dataset.hubId? k.dataset.hubId+'@'+document.getElementById(k.dataset.hubId+'Station').value : k.classList.contains('pb-xing-card')?'X':(k.className||k.tagName)).join(' | ')));
+ console.log('titles:',await p.evaluate(()=>[...document.querySelectorAll('#hubsContainer [data-hub-id] > .pb-tag')].map(t=>t.innerText.replace(/\s+/g,' ').slice(0,40)).join(' || ')));
+ await f('hub1Station',350);await p.waitForTimeout(800);console.log('after hub1->350:',await p.evaluate(()=>[...document.getElementById('hubsContainer').children].map(k=>k.dataset.hubId? k.dataset.hubId+'@'+document.getElementById(k.dataset.hubId+'Station').value : k.classList.contains('pb-xing-card')?'X':(k.className.includes('slope')?'s('+k.textContent+')':k.className)).join(' ')));
+ await p.evaluate(()=>{const e=document.getElementById('runIdSel');e.value=[...e.options].find(o=>o.text.trim()==='8"').value;e.dispatchEvent(new Event('change',{bubbles:true}));});await f('runBedding',0.5);await f('runTrenchWidth',3);await f('runWT',0.08);await f('interval',25);
+ await p.getByText('Review & Calculate',{exact:true}).click();await p.waitForTimeout(1500);console.log('calc:',await p.evaluate(()=>{const d=[...document.querySelectorAll('.pb-modal-overlay,[role=dialog],[role=alertdialog]')].find(x=>x.offsetParent&&x.innerText.trim());const ss=document.querySelector('.pb-screen.active,[id^=screen-].active');return (ss?ss.id+' ':'')+(d?'MODAL '+d.innerText.replace(/\s+/g,' ').slice(0,200):document.body.innerText.includes('Lock This Run')?'review ok':'?';}));
+ console.log('errs',p.errs.length,p.errs.slice(0,2));await b.close();})();

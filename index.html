@@ -12696,7 +12696,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.32 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.33 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -26036,6 +26036,26 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   // 3. crossings among the hubs: before the first hub past them (and its slope pill); none past: after the last hub;
   // no station yet: at the end. Hubs keep their order. Nothing moves when it is already in place.
+  window.pbHubOrder = function(only) {
+    const runs = only ? [only] : pbXingRunsOnForm();
+    runs.forEach(n => {
+      const host = document.getElementById(n === 1 ? 'hubsContainer' : 'hubsContainer' + n); if (!host) return;
+      const hubs = Array.from(host.children).filter(k => k.matches('[data-hub-id]'));
+      if (hubs.length < 2) return;
+      const ae = document.activeElement;
+      const dist = (h) => numVal(h.dataset.hubId + 'Station');
+      const want = hubs.map((h, i) => ({ h, i, d: dist(h) })).sort((a, b) => ((a.d === null) - (b.d === null)) || (a.d !== null && b.d !== null ? a.d - b.d : 0) || a.i - b.i).map(x => x.h);
+      if (want.every((h, i) => h === hubs[i])) return;
+      if (ae && ae.closest && want.some(h => h.contains(ae)) && /(Station|StaTxt)$/.test(ae.id || '')) return; // still typing a station
+      const tail = hubs[hubs.length - 1].nextSibling;
+      want.forEach(h => { const p = h.previousElementSibling; if (p && p.classList.contains('pb-rs-slope')) p.remove(); host.insertBefore(h, tail); });
+      try { pbRsSlopes(n); } catch (e) { console.error(e); }
+      try { pbHubIdents(); } catch (e) {}
+      if (ae && ae !== document.body && document.activeElement !== ae && document.contains(ae)) { try { ae.focus({ preventScroll: true }); } catch (e) {} }
+    });
+  };
+  let pbHubOrderT = null;
+  document.addEventListener('change', (ev) => { const tg = ev.target; if (!tg || !/hub\d+(Station|StaTxt)$/.test(tg.id || '') || !tg.closest || !tg.closest('#screen-input')) return; clearTimeout(pbHubOrderT); pbHubOrderT = setTimeout(() => { try { window.pbHubOrder(); window.pbXingOrder(); } catch (e) { console.error(e); } }, 250); }, true);
   window.pbXingOrder = function(only) {
     const runs = only ? [only] : pbXingRunsOnForm();
     runs.forEach(n => {
@@ -26069,7 +26089,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbRsxOrderSoon() { clearTimeout(pbRsxOrderT); pbRsxOrderT = setTimeout(() => { try { window.pbXingOrder(); } catch (e) { console.error(e); } }, 150); }
   ['change', 'click'].forEach(t => document.addEventListener(t, (ev) => { const tg = ev.target; if (tg && tg.closest && tg.closest('#screen-input') && document.querySelector('#screen-input .pb-xing-card')) pbRsxOrderSoon(); }, true));
   document.addEventListener('input', (ev) => { const tg = ev.target; if (!tg || !tg.id || !/(Sta|StaTxt|Station)$/.test(tg.id) || !tg.closest || !tg.closest('#screen-input') || !document.querySelector('#screen-input .pb-xing-card')) return; clearTimeout(pbRsxOrderT); pbRsxOrderT = setTimeout(() => { if (document.activeElement && document.activeElement.closest && document.activeElement.closest('.pb-xing-card') && document.activeElement.id === tg.id) { pbRsxOrderSoon(); return; } try { window.pbXingOrder(); } catch (e) { console.error(e); } }, 900); }, true);
-  window.pbRsxOrderNow = function() { try { if (document.querySelector('#screen-input .pb-xing-card')) window.pbXingOrder(); } catch (e) { console.error(e); } };
+  window.pbRsxOrderNow = function() { try { window.pbHubOrder(); if (document.querySelector('#screen-input .pb-xing-card')) window.pbXingOrder(); } catch (e) { console.error(e); } };
   ['pbAddHub', 'pbAddHub2', 'pbAddHubN', 'pbRemoveHub'].forEach(k => { const o = window[k]; if (typeof o === 'function') window[k] = function() { const r = o.apply(this, arguments); try { if (document.querySelector('#screen-input .pb-xing-card')) window.pbXingOrder(); } catch (e) { console.error(e); } return r; }; });
   { const o = window.pbGotoTab; if (typeof o === 'function') window.pbGotoTab = function() { window._pbTabNav = true; try { return o.apply(this, arguments); } finally { window._pbTabNav = false; } }; } // feat_resume 8
   // Collapse All / Expand All: that run's crossings too
