@@ -3970,6 +3970,18 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp #screen-input .pb-pipepair { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 0 12px; align-items: end; }
 #pbApp#pbApp #screen-input .pb-pipepair > .pb-field { margin-left: 0; margin-right: 0; min-width: 0; }
 #pbApp#pbApp #screen-input .pb-pipepair.pb-pipe-auto { grid-template-columns: 1fr 1fr; }
+#pbApp#pbApp #screen-input .pb-pipepair:not(.pb-pipe-auto) { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); } /* r16.48: room for the pipe type */
+#pbApp#pbApp #screen-input .pb-rs-slope:empty { display: none; }
+#pbApp#pbApp #screen-input .pb-rs-slope.pb-rs-slope-bad { color: var(--pb-danger-text); border-color: var(--pb-danger); background: var(--pb-danger-soft); }
+#pbApp#pbApp #screen-input .pb-red-after { grid-column: 1 / -1; margin: 0 0 8px 0; padding: 8px 10px; border: 1px solid var(--pb-divider); border-radius: 8px; }
+#pbApp#pbApp #screen-input .pb-red-after .pb-red-line { margin: 0 0 6px 0; font-weight: 600; color: var(--pb-text); }
+#pbApp#pbApp #screen-input .pb-red-after .pb-field { margin: 0; max-width: 50%; }
+#pbApp#pbApp #screen-results #pbSlForm textarea { width: 100%; box-sizing: border-box; }
+#pbApp#pbApp #screen-input .pb-jobpair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 12px; align-items: end; }
+#pbApp#pbApp #screen-input .pb-jobpair > .pb-field { margin-left: 0; margin-right: 0; min-width: 0; }
+#pbApp#pbApp #screen-input #runStatsSection > .pb-tag { display: none; }
+#pbApp#pbApp #screen-input .pb-job-reset { display: block; margin: 4px 0 0 auto; background: none; border: 0; color: var(--pb-text-2); text-decoration: underline; font: inherit; font-size: 14px; padding: 8px 0; min-height: 40px; cursor: pointer; }
+#pbApp#pbApp #screen-input #statsType { } 
 #pbApp#pbApp #screen-input .pb-pipepair > .pb-field > label { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; min-height: 24px; }
 #pbApp #screen-input .pb-unitbox { position: relative; }
 #pbApp#pbApp #screen-input .pb-unitbox > input { padding-right: 44px; width: 100%; }
@@ -9023,10 +9035,10 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
     <div class="pb-section" id="runStatsSection">
       <div class="pb-tag">Stats &amp; Records Info<button class="pb-remove" onclick="pbResetStatsArchiveFields()">Reset</button></div>
       <div class="pb-body">
-        <div class="pb-field"><label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="saEnableToggle" style="width:auto;" onchange="pbToggleStatsArchiveFields()"> Track extra details for this run</label></div>
-        <p class="pb-help" id="saDisabledNote" style="margin:4px 0 0 0;">Off: saved, but not counted in Stats.</p>
+        <div class="pb-field"><label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="saEnableToggle" style="width:auto;" onchange="pbToggleStatsArchiveFields()"> <span id="saEnableLabel">Add job info and count in Stats</span></label></div>
+        <p class="pb-help" id="saDisabledNote" style="margin:4px 0 0 0;">Off: saved without job info.</p>
         <div id="saFieldsWrap" style="display:none; margin-top:10px;">
-          <p class="pb-help pb-b3-lead0">Carried over from your last run. Check them.</p>
+          <p class="pb-help pb-b3-lead0">From your last run. Check them.</p>
           <div class="pb-field"><label>Jobsite name</label><input type="text" enterkeyhint="next" id="saJobsite" maxlength="200"></div>
           <div class="pb-field"><label>Job number</label><input type="text" enterkeyhint="next" id="saJobNumber" maxlength="200" placeholder="e.g. 24-017"></div>
           <div class="pb-field"><label>Cost code</label><input type="text" enterkeyhint="next" id="saCostCode" maxlength="200" placeholder="e.g. 02-310"></div>
@@ -11122,6 +11134,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       { const aEl = a.el || (n === 1 ? document.querySelector('#screen-input .pb-section.start.pb-pt') : null); box.classList.toggle('pb-rs-early', !!(aEl && aEl.classList.contains('pb-rs-early'))); } /* feat_foldfix2: hidden when the point it starts from is folded */
       const t = pbRsSlopeText(a, b);
       if (box.textContent !== t) box.textContent = t;
+      { const v = parseFloat(String(t).replace('\u2212', '-')); box.classList.toggle('pb-rs-slope-bad', isFinite(v) && Math.abs(v) > 20); } // r16.48: a likely typo shows red
       if (t) { box.removeAttribute('aria-hidden'); box.setAttribute('aria-label', 'Slope ' + t.replace('−', 'minus ')); } else { box.setAttribute('aria-hidden', 'true'); box.removeAttribute('aria-label'); }
     }
     document.querySelectorAll('.pb-rs-slope[data-rs-run="' + n + '"]').forEach(x => { if (!keep.has(x.dataset.rsPair)) x.remove(); });
@@ -11896,6 +11909,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<div class="pb-field"><label for="' + prefix + 'FitType">Fitting type</label><select id="' + prefix + 'FitType">' + PB_FIT_TYPES.map(t => '<option value="' + t[0] + '">' + t[1] + '</option>').join('') + '</select></div>'
       + '<div class="pb-field pb-fit-infow" id="' + prefix + 'FitInfoW" style="display:none;"><label for="' + prefix + 'FitInfo" id="' + prefix + 'FitInfoL">Sizes</label><input type="text" enterkeyhint="next" id="' + prefix + 'FitInfo" maxlength="80" autocomplete="off" placeholder="e.g. 8x6, 45\u00b0"></div>'
       + '<div class="pb-field pb-fit-brw" id="' + prefix + 'FitBrW" style="display:none;"><label for="' + prefix + 'FitBr" id="' + prefix + 'FitBrL">Branch size</label><select id="' + prefix + 'FitBr"><option value="">Pick size</option></select></div>'
+      + '<div class="pb-red-after" id="' + prefix + 'RedW" style="display:none;"><p class="pb-red-line" id="' + prefix + 'RedLine"></p><div class="pb-field"><label for="' + prefix + 'RedWT">Wall after this point</label><div class="pb-unitbox"><input type="number" step="0.001" min="0" inputmode="decimal" enterkeyhint="next" id="' + prefix + 'RedWT" autocomplete="off" placeholder="auto"><span class="pb-unit" aria-hidden="true">ft</span></div></div></div>'
       + '<div class="pb-field pb-fit-angw" id="' + prefix + 'FitAngW" style="display:none;"><label for="' + prefix + 'FitAng">Bend angle</label><select id="' + prefix + 'FitAng"><option value="">Pick angle</option><option value="90">90\u00b0</option><option value="45">45\u00b0</option><option value="22.5">22.5\u00b0</option><option value="11.25">11.25\u00b0</option></select></div>'
       + '<div class="pb-field"><label for="' + prefix + 'FitLay">Laying length (ft)</label><div class="pb-fit-layw"><input type="number" step="0.01" min="0" inputmode="decimal" enterkeyhint="next" id="' + prefix + 'FitLay" autocomplete="off"><span class="pb-fit-auto" id="' + prefix + 'FitLayAuto" hidden>auto</span></div><p class="pb-ai-hint" id="' + prefix + 'FitLayWhy" hidden></p></div>' /* feat_fitlen; r16.40: why it's blank */
       + '</div>';
@@ -11921,7 +11935,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // r16.40: wye / tee / reducer: the main size is the run's Pipe ID; the other size is picked from a list (what the
   // laying-length table has for that pipe and size first). Kept in the fitting's Sizes text as "8x6".
   const PB_FIT_BR_STD = [2, 3, 4, 6, 8, 10, 12, 15, 18, 21, 24, 27, 30, 36, 42, 48];
-  function pbFitBrMain(prefix) { try { const f = getPointIdFt(prefix); return f === null ? null : pbFitSizeKey(Math.round(f * 12 * 1000) / 1000); } catch (e) { return null; } }
+  function pbFitBrMain(prefix) { try { const f = pbPointIdFtIn(prefix); return f === null ? null : pbFitSizeKey(Math.round(f * 12 * 1000) / 1000); } catch (e) { return null; } }
   function pbFitBrRead(info, ty) {
     const s = String(info || '').toUpperCase().replace(/\u00d7/g, 'X'), ab = /(\d+(?:\.\d+)?)\s*"?\s*X\s*(\d+(?:\.\d+)?)/.exec(s);
     if (ab) return pbFitSizeKey(ty === 'reducer' ? Math.min(Number(ab[1]), Number(ab[2])) : ab[2]);
@@ -11941,7 +11955,20 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const key = sizes.join(',');
     if (sel.dataset.sizes !== key) { sel.innerHTML = '<option value="">Pick size</option>' + sizes.map(n => '<option value="' + pbFitSizeKey(n) + '">' + pbFitSizeKey(n) + '"</option>').join(''); sel.dataset.sizes = key; }
     sel.value = cur && Array.from(sel.options).some(o => o.value === cur) ? cur : '';
+    pbRedSync(prefix);
   }
+  // r16.48: the reducer's "after this point" line and its wall (the pipe index's, until typed)
+  function pbRedSync(prefix) {
+    const w = document.getElementById(prefix + 'RedW'), t = document.getElementById(prefix + 'FitType'), sel = document.getElementById(prefix + 'FitBr'), on = document.getElementById(prefix + 'FitOn');
+    if (!w || !t || !sel) return;
+    const show = !!(on && on.checked && t.value === 'reducer' && sel.value);
+    w.style.display = show ? '' : 'none'; if (!show) return;
+    const wt = document.getElementById(prefix + 'RedWT'), ln = document.getElementById(prefix + 'RedLine');
+    let L = null; try { L = pbPipeLookup(pbFitLayPipeType(), Number(sel.value)); } catch (e) {}
+    if (wt && (wt.value === '' || wt.dataset.pbAuto === '1')) { const v = L && L.wallFt ? String(L.wallFt) : ''; if (wt.value !== v) wt.value = v; if (v) wt.dataset.pbAuto = '1'; else delete wt.dataset.pbAuto; }
+    if (ln) ln.textContent = 'Pipe after this point: ' + sel.value + '" ID' + (wt && wt.value ? ', ' + wt.value + ' ft wall' + (wt.dataset.pbAuto === '1' ? ' (auto)' : '') : '');
+  }
+  document.addEventListener('input', (ev) => { const m = ev.target && ev.target.id && /^(.*)RedWT$/.exec(ev.target.id); if (m) { if (ev.isTrusted !== false) delete ev.target.dataset.pbAuto; pbRedSync(m[1]); try { scheduleHiCascade(); } catch (e) {} } }, true);
   function pbFitBrWrite(prefix) {
     const t = document.getElementById(prefix + 'FitType'), sel = document.getElementById(prefix + 'FitBr'), i = document.getElementById(prefix + 'FitInfo'); if (!t || !sel || !i) return;
     const br = sel.value, main = pbFitBrMain(prefix);
@@ -12440,7 +12467,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const el = document.getElementById(prefix + 'FitLay'); if (!el || !pbFitSnap(prefix)) return;
     if (String(el.value || '').trim() !== '' && !pbFitLayIsAuto(prefix)) return;
     const t = document.getElementById(prefix + 'FitType'), i = document.getElementById(prefix + 'FitInfo');
-    let id = null; try { const f = getPointIdFt(prefix); id = f === null ? null : f * 12; } catch (e) { id = null; }
+    let id = null; try { const f = pbPointIdFtIn(prefix); id = f === null ? null : f * 12; } catch (e) { id = null; }
     const brNeed = t && /^(wye|tee|reducer)$/.test(t.value) && !pbFitBrRead(i ? i.value : '', t.value); // r16.40: no guessed branch size
     const v = brNeed ? null : pbFitDefaultLayFt(t ? t.value : '', i ? i.value : '', id, pbFitLayPipeType());
     if (v === null) { if (pbFitLayIsAuto(prefix)) { el.value = ''; pbFitLaySetAuto(prefix, false); } pbFitLayWhy(prefix); return; }
@@ -12452,7 +12479,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     let t = '';
     if (pbFitSnap(prefix) && String(el.value || '').trim() === '') {
       const ty = (document.getElementById(prefix + 'FitType') || {}).value || '', info = (document.getElementById(prefix + 'FitInfo') || {}).value || '';
-      let id = null; try { const f = getPointIdFt(prefix); id = f === null ? null : f * 12; } catch (e) {}
+      let id = null; try { const f = pbPointIdFtIn(prefix); id = f === null ? null : f * 12; } catch (e) {}
       const pipe = pbFitLayPipeType();
       if (!ty) t = 'Choose the fitting type to fill this in.';
       else if (ty === 'bend' && pbFitAngleOf(String(info).toUpperCase()) === null) t = 'Choose the bend angle to fill this in.';
@@ -12816,7 +12843,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.47 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.48 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -14972,7 +14999,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbRunFormOwner = runFormUid;
     const runIdSelEl = document.getElementById('runIdSel');
     if (runIdSelEl && !runIdSelEl.options.length) {
-      runIdSelEl.innerHTML = '<option value="">\u2014 Select \u2014</option>' + PIPE_SIZES.map(s => `<option value="${s}">${s}"</option>`).join('') + '<option value="other">Other</option>';
+      runIdSelEl.innerHTML = '<option value="">Select</option>' + PIPE_SIZES.map(s => `<option value="${s}">${s}"</option>`).join('') + '<option value="other">Other</option>';
     }
     const wt = await pbGet('lastWallThickness');
     const idIn = await pbGet('lastIdInches');
@@ -16323,7 +16350,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!el) return;
     if (!title && !text) { el.className = 'pb-ai-status'; el.innerHTML = ''; return; }
     el.className = 'pb-ai-status pb-alert ' + kind;
-    const q = pbAiQuotaText();
+    const q = pbAiQuota && pbAiQuota.left <= 10 ? pbAiQuotaText() : ''; // r16.48: only when running low
     el.innerHTML = '<strong>' + escapeHtml(title) + '</strong>' + (text ? ' ' + escapeHtml(text) : '') + (q && kind !== 'info' ? '<span class="pb-ai-quota">' + escapeHtml(q) + '</span>' : '');
   }
   // First use on this phone: the privacy line, answered once. (A per-phone convenience: if storage is
@@ -16925,7 +16952,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       } catch (e) { console.error(e); }
       plan.forEach(x => { if (onlyEmpty && x.cur !== null) return; const el = document.getElementById(x.id); if (el) { el.classList.add('pb-ai-filled'); el.addEventListener('input', () => el.classList.remove('pb-ai-filled'), { once: true }); } });
       const filled = plan.filter(x => !(onlyEmpty && x.cur !== null) && x.kind !== 'sel').map(x => x.name.toLowerCase()).join(', ');
-      pbAiShow(document.getElementById(prefix + 'AiStakeStatus'), p.flags && Object.keys(p.flags).filter(k => k !== 'stakeNum' && k !== 'line').length ? 'warn' : 'ok', 'Filled from the stake photo.', 'Filled: ' + filled + '.' + fitNote + ' Check the outlined boxes against the stake.' + pbStakeAiUnsure(p));
+      pbAiShow(document.getElementById(prefix + 'AiStakeStatus'), p.flags && Object.keys(p.flags).filter(k => k !== 'stakeNum' && k !== 'line').length ? 'warn' : 'ok', 'Read from the photo.', 'Check the outlined boxes against the stake.' + pbStakeAiUnsure(p)); void filled; void fitNote; // r16.48: short
     };
     const switchNote = inElevMode ? '\n\nThis point is set to Invert Elevation; it will switch to Survey Stake.' : '';
     if (conflicts.length) {
@@ -18755,7 +18782,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       <div id="${prefix}StakeFields"${st ? '' : ' style="display:none;"'}>
         <div class="pb-row">
           ${elevFieldHTML(prefix+'StakeElev', 'Stake elevation (ft)', arch, 'e.g. 2400.09')}
-          <div class="pb-field"><label>Cut / Fill</label><select id="${prefix}CutFill"><option value="cut">Cut to invert</option><option value="fill">Fill to invert</option></select></div>
+          <div class="pb-field"><label>Cut / Fill</label><select id="${prefix}CutFill"><option value="cut">Cut</option><option value="fill">Fill</option></select></div>
         </div>
         ${elevFieldHTML(prefix+'CutFillVal', 'Cut/fill amount (ft)', arch, 'e.g. 6.09')}
         ${activeVal('rodToggle') !== 'lenker' ? `<div style="margin-top:6px; border-top:1px solid var(--paper-2); padding-top:10px;">${elevFieldHTML(prefix+'StakeReading', 'Rod reading at this stake', arch, 'e.g. 4.80')}</div>` : ''}
@@ -19642,10 +19669,33 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const m = prefix && String(prefix).match(/^seg(\d+)/);
     return m ? parseInt(m[1], 10) : null;
   }
-  function getPointWT(prefix) { const n = segNumFromPrefix(prefix); return n ? numVal('seg' + n + 'WT') : numVal('runWT'); }
+  function getPointWT(prefix) { const r = pbRedAt(prefix, true); if (r) return r.wt; const n = segNumFromPrefix(prefix); return n ? numVal('seg' + n + 'WT') : numVal('runWT'); }
+  // r16.48: reducers. A hub whose fitting is a Reducer with its "reduces to" size picked: the pipe from that point on (in
+  // the same run) is that size, with the wall typed under it or the pipe index's. inclusive = the reducer's own point
+  // counts (the pipe leaving it); not = the pipe arriving at it (a fitting's own main size).
+  function pbRedHubs(n) { try { return (n === 1 ? getAllHubPrefixes() : n === 2 ? getAllHub2Prefixes() : getAllHubPrefixesForSeg(n)).filter(h => { const on = document.getElementById(h + 'FitOn'), t = document.getElementById(h + 'FitType'), b = document.getElementById(h + 'FitBr'); return on && on.checked && t && t.value === 'reducer' && b && b.value; }); } catch (e) { return []; } }
+  function pbRedAt(prefix, inclusive) {
+    const p = String(prefix || ''); if (/^(seg\d+)?start$/.test(p)) return null;
+    const n = segNumFromPrefix(p) || (/^seg(\d+)/.exec(p) ? Number(/^seg(\d+)/.exec(p)[1]) : 1), hubs = pbRedHubs(n); if (!hubs.length) return null;
+    const at = /end$/.test(p) ? numVal(distanceFieldIdForRun(n)) : numVal(p + 'Station'); if (at === null) return null;
+    let best = null, bestAt = -Infinity;
+    hubs.forEach(h => { const hs = numVal(h + 'Station'); if (hs === null) return; if ((hs < at - 1e-6 || (inclusive && h === p)) && hs >= bestAt) { bestAt = hs; best = h; } });
+    if (!best) return null;
+    const br = Number((document.getElementById(best + 'FitBr') || {}).value); if (!(br > 0)) return null;
+    let wt = numVal(best + 'RedWT'); if (wt === null) { try { const L = pbPipeLookup(pbFitLayPipeType(), br); wt = L ? L.wallFt : null; } catch (e) { wt = null; } }
+    return { hub: best, idFt: br / 12, wt };
+  }
+  window.pbRedAt = pbRedAt;
+  function pbRedList() { const out = []; for (let n = 1; n <= MAX_SEG; n++) { if (n > 1 && !segIsActive(n)) continue; pbRedHubs(n).forEach(h => { const r = pbRedAt(h, true), at = numVal(h + 'Station'); if (r && at !== null) out.push({ run: n, atFt: at, idIn: Math.round(r.idFt * 12 * 1000) / 1000, wtFt: r.wt, label: getPointLabel(h, 'Reducer') }); }); } return out; }
+  function pbRedWords(list, run) { return (list || []).filter(x => x && (run === undefined || x.run === run)).sort((a, b) => a.atFt - b.atFt).map(x => ', then ' + x.idIn + '" ID' + (typeof x.wtFt === 'number' ? ' (' + x.wtFt.toFixed(3) + ' ft wall)' : '') + ' after ' + fmt(x.atFt, 1) + ' ft').join(''); }
   function getPointBedding(prefix) { const n = segNumFromPrefix(prefix); return n ? numVal('seg' + n + 'Bedding') : numVal('runBedding'); }
   function getPointTrenchWidth(prefix) { const n = segNumFromPrefix(prefix); return n ? numVal('seg' + n + 'TrenchWidth') : numVal('runTrenchWidth'); }
   function getPointIdFt(prefix) {
+    { const r = pbRedAt(prefix, true); if (r) return r.idFt; } // r16.48: after a reducer
+    return pbPointIdFtIn(prefix);
+  }
+  function pbPointIdFtIn(prefix) { // the pipe arriving at a point (a reducer's own main size)
+    { const r = pbRedAt(prefix, false); if (r) return r.idFt; }
     const n = segNumFromPrefix(prefix);
     const selId = n ? 'seg' + n + 'IdSel' : 'runIdSel';
     const otherId = n ? 'seg' + n + 'IdOther' : 'runIdOther';
@@ -19868,7 +19918,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     document.getElementById('reducerSegmentWrap').style.display = '';
     const seg2IdSelEl = document.getElementById('seg2IdSel');
     if (!seg2IdSelEl.options.length) {
-      seg2IdSelEl.innerHTML = '<option value="">\u2014 Select \u2014</option>' + PIPE_SIZES.map(s => `<option value="${s}">${s}"</option>`).join('') + '<option value="other">Other</option>';
+      seg2IdSelEl.innerHTML = '<option value="">Select</option>' + PIPE_SIZES.map(s => `<option value="${s}">${s}"</option>`).join('') + '<option value="other">Other</option>';
     }
     buildPointFields('seg2start', 'Run 2 Start');
     buildPointFields('seg2end', 'Run 2 End');
@@ -20043,7 +20093,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     document.getElementById('seg' + n + 'Wrap').style.display = '';
     const idSelEl = document.getElementById('seg' + n + 'IdSel');
     if (!idSelEl.options.length) {
-      idSelEl.innerHTML = '<option value="">\u2014 Select \u2014</option>' + PIPE_SIZES.map(s => `<option value="${s}">${s}"</option>`).join('') + '<option value="other">Other</option>';
+      idSelEl.innerHTML = '<option value="">Select</option>' + PIPE_SIZES.map(s => `<option value="${s}">${s}"</option>`).join('') + '<option value="other">Other</option>';
     }
     buildPointFields('seg' + n + 'start', 'Run ' + n + ' Start');
     buildPointFields('seg' + n + 'end', 'Run ' + n + ' End');
@@ -21633,7 +21683,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     const multiRun = runStarts.length > 1;
     const pipeTiles = runStarts.map(r =>
-      `<div class="pb-summary-item"><div class="k">${multiRun ? r.label + ' \u2014 ' : ''}Wall Thickness</div><div class="v">${fmt(r.point.wt,3)} ft${pbPiAWord(pbPiAIsAuto(r.point.id === 'start' ? 'runWT' : r.point.id.replace(/start$/, 'WT')))}</div></div><div class="pb-summary-item"><div class="k">${multiRun ? r.label + ' \u2014 ' : ''}Pipe ID</div><div class="v">${r.point.idFt !== null ? fmt(r.point.idFt*12,2) : '\u2014'}"</div></div>`
+      `<div class="pb-summary-item"><div class="k">${multiRun ? r.label + ' \u2014 ' : ''}Wall Thickness</div><div class="v">${fmt(r.point.wt,3)} ft${pbPiAWord(pbPiAIsAuto(r.point.id === 'start' ? 'runWT' : r.point.id.replace(/start$/, 'WT')))}</div></div><div class="pb-summary-item"><div class="k">${multiRun ? r.label + ' \u2014 ' : ''}Pipe ID</div><div class="v">${r.point.idFt !== null ? fmt(r.point.idFt*12,2) : '\u2014'}"${escapeHtml(pbRedWords(pbRedList(), (/^seg(\d+)/.exec(r.point.id) || [0, 1])[1] * 1))}</div></div>`
     ).join('');
     const segSlopes = calc.segments.filter(s => s.to.station - s.from.station > 0).map(s => fmt(s.slopePct,2)+'%'); // grades only: a reducer junction is a step, not a section
     const multiSeg = segSlopes.length > 1;
@@ -21957,7 +22007,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (isHub && !showAllHubs) return;
       const segM = p.id.match(/^seg(\d+)(start|end)$/);
       const roleLabel = p.id === 'start' ? 'Start' : p.id === 'end' ? 'End' : segM ? 'Run ' + segM[1] + ' ' + (segM[2] === 'start' ? 'Start' : 'End') : 'Hub';
-      html += `<div class="pb-review-item"><span class="k">${roleLabel}${p.label && p.label !== roleLabel ? ' — ' + escapeHtml(p.label) : ''}</span><br>Station ${fmt(p.station,1)} · ${calc.rodUnit === 'lenker' ? 'Elevations (ft)' : calc.rodUnit === 'architect' ? 'Rod readings (ft-in)' : 'Rod readings (ft)'}: BOP ${dispPoint(p,'bop',calc)} · INV ${dispPoint(p,'inv',calc)} · TOP ${dispPoint(p,'top',calc)}${calc.rodUnit !== 'lenker' ? ' · Invert elevation ' + fmt(p.pi,3) + ' ft' : ''}</div>`;
+      const staTxt = (() => { try { if (segM || /^seg/.test(p.id)) return null; const s = pbStStart(1); return s ? 'Sta ' + pbStFmt(s.v + pbStDirOf(1) * p.station) + ' (' + fmt(p.station, 1) + ' ft)' : null; } catch (e) { return null; } })(); // r16.48
+      html += `<div class="pb-review-item"><span class="k">${roleLabel}${p.label && p.label !== roleLabel && !/^(Start|End)( point)?$/i.test(p.label) ? ' — ' + escapeHtml(p.label) : ''}</span><br>${staTxt || 'Station ' + fmt(p.station,1)} · ${calc.rodUnit === 'lenker' ? 'Elevations (ft)' : calc.rodUnit === 'architect' ? 'Rod readings (ft-in)' : 'Rod readings (ft)'}: BOP ${dispPoint(p,'bop',calc)} · INV ${dispPoint(p,'inv',calc)} · TOP ${dispPoint(p,'top',calc)}${calc.rodUnit !== 'lenker' ? ' · Invert elevation ' + fmt(p.pi,3) + ' ft' : ''}</div>`;
     });
     return html;
   }
@@ -22229,8 +22280,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const wt = pbRunSecTxt('runWT');
     const job = pbRunSecJob();
     set('runJobLine', job || 'Not entered');
-    set('runSecJobSum', [job || 'Job not entered', rod, idTxt, wt ? wt + ' ft wall' + pbPiAWord(pbPiAIsAuto('runWT')) : 'wall thickness not entered'].join(sep));
-    const pts = [pbRunSecPoint('start', 'Start')];
+    set('runSecJobSum', [job || 'Job not entered', idTxt, wt ? wt + ' ft wall' + pbPiAWord(pbPiAIsAuto('runWT')) : 'wall thickness not entered'].join(sep));
+    const pts = [rod, pbRunSecPoint('start', 'Start')]; // r16.48: the rod unit sits in this section now
     const hubs = document.querySelectorAll('#hubsContainer > [data-hub-id]').length;
     if (hubs) pts.push(hubs + (hubs === 1 ? ' hub' : ' hubs'));
     pts.push(pbRunSecPoint('end', 'End'));
@@ -22250,8 +22301,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const opt = [bed ? 'Bedding ' + bed + ' ft' : 'Bedding not entered', tw ? 'Trench ' + tw + ' ft wide' : 'Trench width not entered'];
     if (document.getElementById('saEnableToggle').checked) {
       const ty = pbRunSecTxt('statsType');
-      opt.push('Extra details on' + (ty ? ' (' + ty + ')' : ', pipe type not chosen'));
-    } else opt.push('Extra details off');
+      opt.push('Counted in Stats' + (ty ? ' (' + ty + ')' : ''));
+    } else opt.push('Not counted in Stats');
     set('runSecOptSum', opt.join(sep));
     PB_RUN_SECS.forEach(id => {
       const sec = document.getElementById(id);
@@ -22384,16 +22435,21 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const reviewMultiRun = reviewRunStarts.length > 1;
     html += `<div id="reviewPointsWrap">${renderReviewPointsHTML(rcalc, reviewShowAllHubs)}</div>`;
     const { maxDepth, maxPrefix, maxCut, maxExtra } = getMaxStakeCutDepth();
+    let deepHtml = '';
     if (maxDepth >= 5) {
       const depthWork = (maxExtra.wt || maxExtra.bed) ? ` (${maxCut.toFixed(2)} ft cut to invert${maxExtra.wt ? ' + ' + maxExtra.wt.toFixed(2) + ' ft pipe wall' : ''}${maxExtra.bed ? ' + ' + maxExtra.bed.toFixed(2) + ' ft bedding' : ''})` : '';
-      html += `<div class="pb-warn photo"><strong>Deep Trench — Check Sloping</strong>Trench bottom up to ${maxDepth.toFixed(1)} ft. Over 5 ft, OSHA requires sloping, benching or shoring unless in stable rock (1926.652(a)(1)).<br><button class="pb-btn small" style="margin-top:8px;" onclick="pbOpenTrenchCalc('review', ${maxDepth}, '${maxPrefix}')">Check Trench Sloping Calculator</button><details class="pb-more pb-rvw-more"><summary><span>Details</span></summary><p class="pb-help">Based on stake cut data, the trench bottom may be as deep as ${maxDepth.toFixed(1)} ft at one point${depthWork}. OSHA requires "an adequate protective system" (sloping, benching or shoring) unless the excavation is "made entirely in stable rock" (1926.652(a)(1)).</p></details></div>`;
+      deepHtml = `<div class="pb-warn photo"><strong>Deep Trench — Check Sloping</strong>Trench bottom up to ${maxDepth.toFixed(1)} ft. Over 5 ft, OSHA requires sloping, benching or shoring unless in stable rock (1926.652(a)(1)).<br><button class="pb-btn small" style="margin-top:8px;" onclick="pbOpenTrenchCalc('review', ${maxDepth}, '${maxPrefix}')">Check Trench Sloping Calculator</button><details class="pb-more pb-rvw-more"><summary><span>Details</span></summary><p class="pb-help">Based on stake cut data, the trench bottom may be as deep as ${maxDepth.toFixed(1)} ft at one point${depthWork}. OSHA requires "an adequate protective system" (sloping, benching or shoring) unless the excavation is "made entirely in stable rock" (1926.652(a)(1)).</p></details></div>`;
     }
     const xingWarns = pbXingReviewWarns(calc); /* feat_xingalert */
     if (calc.warnings.length === 0 && calc.capabilityNotes.length === 0 && maxDepth < 5 && !xingWarns.length) { // a deep trench is a warning
       html += `<div class="pb-clean">No warnings — data looks clean.</div>`;
     } else {
       html += pbXingReviewWarnHtml(xingWarns); /* feat_xingalert: first, never blocks Lock */
-      calc.warnings.forEach(w => {
+      const rvRank = (w) => w.type === 'typo' ? 0 : (w.type === 'backflow' || w.type === 'backflow-all' || w.type === 'hi-serious') ? 1 : 2;
+      const rvSorted = calc.warnings.map((w, i) => ({ w, i })).sort((a, b) => rvRank(a.w) - rvRank(b.w) || a.i - b.i).map(x => x.w);
+      let deepDone = false;
+      rvSorted.forEach(w => {
+        if (!deepDone && rvRank(w) === 2) { html += deepHtml; deepDone = true; }
         const cls = (w.type === 'photo' || w.type === 'hi-minor') ? 'photo' : '';
         const heading = w.type === 'backflow' || w.type === 'backflow-all' ? 'Backflow Check'
           : w.type === 'photo' ? 'Photo Suggested'
@@ -22412,6 +22468,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       // Capability notes (what can't be calculated, e.g. missing wall thickness or
       // pipe ID) go last — they're non-blocking, so they belong after anything that
       // actually needs a decision, not ahead of it.
+      if (!deepDone) html += deepHtml;
       calc.capabilityNotes.forEach(note => { html += `<div class="pb-warn photo">${escapeHtml(note)}</div>`; });
     }
     html += pbXingReviewHtml(calc); /* feat_crossing */
@@ -22497,7 +22554,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       }
       // feat_r1612 (B05): an edited form of a run that is still open, with work on it: locking would leave a second open run.
       if (prior && runArchive.includes(prior) && !prior.runEndTime && !prior.completed && !prior.incomplete) {
-        pbShowModal(prior.startLabel + ' \u2192 ' + prior.endLabel + ' is still open. Fix a distance or hub with Correct a Distance or Hub on its Results, or end it before locking another run.', [{ label: 'OK', primary: true }], 'Run Still Open');
+        pbShowModal(prior.startLabel + ' \u2192 ' + prior.endLabel + ' is still open, with pipe laid on it. Fix a distance or hub on its Results, or end it before locking another run.', [{ label: 'OK' }, { label: 'Go to Its Results', primary: true, onClick: () => { try { pbGoto('results'); setTimeout(() => { const pn = document.getElementById('correctDistancePanel'); if (!pn || !pn.offsetParent) window.pbToggleCorrectDistance(); }, 100); } catch (e) { console.error(e); } } }], 'Run Still Open'); /* r16.48 */
         return;
       }
     }
@@ -22604,6 +22661,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbLaySetOwner(lockedEntry.id); // the form's layout state now belongs to this record
     pbLastLockedFormGen = intendedFormGen; pbLastLockedFields = intendedFields; pbLastLockedPhotos = pbRunFormPhotos();
     lockedEntry.statsType = saFieldsEnabled() && document.getElementById('statsType') ? document.getElementById('statsType').value : ''; // so a resume can restore it
+    try { const rl = pbRedList(); if (rl.length) lockedEntry.reducers = rl; else delete lockedEntry.reducers; } catch (e) {} // r16.48
     lockedEntry.pipeType = pbPtVal(); if (pbPtAuto()) lockedEntry.pipeTypeAuto = pbPtAuto(); else delete lockedEntry.pipeTypeAuto; pbPtSt.mode = 'kept'; // feat_pipetype: the form now holds a locked run: never inferred again
     lockedEntry.segmentIntervals = { 1: numVal('interval') };
     lockedEntry.turnPoints = pbRunTurnFromForm(); // a run that goes both ways: its two tops' points (null otherwise)
@@ -22826,6 +22884,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const o = timeOnly ? { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' } : { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' };
     try { return new Date(t).toLocaleString(undefined, tz ? Object.assign({ timeZone: tz }, o) : o); } catch (e) { return new Date(t).toLocaleString(undefined, o); }
   }
+  function pbSlByTxt(by, email) { const w = pbSlWhoText(by, email); return w && w !== 'Name not set' ? ' by ' + escapeHtml(w) : ''; } // r16.48
   function pbSlWhoText(by, email) {
     if (!by) return 'not recorded';
     try { if (sbUser && sbUser.id === by) return pbRptBy(by); const n = typeof window.pbAcCrewName === 'function' ? window.pbAcCrewName(by) : ''; return n || 'A crew member'; } catch (x) {} /* r15.48 access: the crew name this phone holds (as the foreman screens show it); an email only for oneself */
@@ -22842,11 +22901,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return k;
   }
   function pbSlForRow(e, idx) { return pbSlItems(e).filter(x => { const f = pbSlStaOf(x); return typeof f === 'number' && isFinite(f) && pbSlRowIdx(e, f) === idx; }); }
-  function pbSlStaText(ft, pdf) { return typeof ft === 'number' && isFinite(ft) ? 'Sta ' + (pdf ? pbRptSta(ft) : fmt(ft, 1)) : ''; }
-  function pbSlWhere(x, pdf) {
+  function pbSlStaText(ft, pdf, e) {
+    if (!(typeof ft === 'number' && isFinite(ft))) return '';
+    try { const st = e ? pbStRowStaFn(e)({ stationFt: ft, pointId: '' }) : ''; if (st) return 'Sta ' + st + ' (' + fmt(ft, 1) + ' ft)'; } catch (x) {} // r16.48: the run's own station
+    return 'Sta ' + (pdf ? pbRptSta(ft) : fmt(ft, 1));
+  }
+  function pbSlWhere(x, pdf, e) {
     const d = x.d;
-    if (x.type === 'utility') return typeof d.sta === 'number' ? pbSlStaText(d.sta, pdf) : '';
-    if (x.type === 'rework') { const a = typeof d.from === 'number' ? pbSlStaText(d.from, pdf) : '', b = typeof d.to === 'number' ? (pdf ? pbRptSta(d.to) : fmt(d.to, 1)) : ''; return a && b ? a + ' to ' + b : a || (b ? 'to Sta ' + b : ''); }
+    if (x.type === 'utility') return typeof d.sta === 'number' ? pbSlStaText(d.sta, pdf, e) : '';
+    if (x.type === 'rework') { const a = typeof d.from === 'number' ? pbSlStaText(d.from, pdf, e) : '', b = typeof d.to === 'number' ? (pdf ? pbRptSta(d.to) : fmt(d.to, 1)) : ''; return a && b ? a + ' to ' + b : a || (b ? 'to Sta ' + b : ''); }
     return '';
   }
   // One line: what it was (used on screen, in the grade-row note and the text report).
@@ -22856,7 +22919,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       p.push(pbSlOpt(PB_SL_DELAY, d.reason)[1]); p.push(pbSlH(d.hours) + ' h');
       if (typeof d.start === 'number') p.push((pdf ? pbRptDt(d.start, { tz, time: true }) : pbSlDt(d.start, tz, true)) + (typeof d.end === 'number' ? ' to ' + (pdf ? pbRptDt(d.end, { tz, time: true }) : pbSlDt(d.end, tz, true)) : ''));
     } else if (x.type === 'utility') {
-      p.push(pbSlOpt(PB_SL_WHAT, d.what)[1]); const w = pbSlWhere(x, pdf); if (w) p.push(w);
+      p.push(pbSlOpt(PB_SL_WHAT, d.what)[1]); const w = pbSlWhere(x, pdf, e); if (w) p.push(w);
       p.push(d.damaged === 'yes' ? 'DAMAGED' : 'not damaged'); if (d.notified) p.push('notified: ' + d.notified);
     } else if (x.type === 'rework') {
       p.push(pbSlOpt(PB_SL_REWORK, d.reason)[1]); const w = pbSlWhere(x, pdf); if (w) p.push(w); p.push(pbSlH(d.hours) + ' h');
@@ -23040,7 +23103,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbSlSelect(id, list, val, blank) { return '<select id="' + id + '">' + (blank ? '<option value="">' + blank + '</option>' : '') + list.map(o => '<option value="' + o[0] + '"' + (o[0] === val ? ' selected' : '') + '>' + escapeHtml(o[1]) + '</option>').join('') + '</select>'; }
   function pbSlStaPicker(e, id, ft, label) {
     const rows = (e.intervalRows || []), match = typeof ft === 'number' ? rows.find(r => Math.abs(pbSlRowFt(r) - ft) < 0.005) : null;
-    const opts = '<option value="">Not given</option>' + rows.filter(r => isFinite(pbSlRowFt(r))).map(r => '<option value="' + pbSlRowFt(r) + '"' + (match === r ? ' selected' : '') + '>Sta ' + escapeHtml(r.station) + (r.label ? ' (' + escapeHtml(r.label) + ')' : '') + '</option>').join('')
+    const staOf = (() => { try { return pbStRowStaFn(e); } catch (x) { return () => ''; } })(); // r16.48: the run's stations
+    const opts = '<option value="">Not given</option>' + rows.filter(r => isFinite(pbSlRowFt(r))).map(r => { const st = staOf(r); return '<option value="' + pbSlRowFt(r) + '"' + (match === r ? ' selected' : '') + '>' + (st ? 'Sta ' + escapeHtml(st) + ' \u00b7 ' + escapeHtml(r.station) + ' ft' : 'Sta ' + escapeHtml(r.station)) + (r.label ? ' (' + escapeHtml(pbRowStripName(e, r) || r.label) + ')' : '') + '</option>'; }).join('')
       + '<option value="other"' + (typeof ft === 'number' && !match ? ' selected' : '') + '>Another station (type it)</option>';
     return '<div class="pb-field"><label for="' + id + '">' + label + '</label><select id="' + id + '" onchange="pbSlStaChanged(\'' + id + '\')">' + opts + '</select></div>'
       + '<div class="pb-field" id="' + id + 'OtherWrap"' + (typeof ft === 'number' && !match ? '' : ' style="display:none;"') + '><label for="' + id + 'Ft">Station, ft from this run’s start</label><input type="number" inputmode="decimal" step="0.1" id="' + id + 'Ft" value="' + (typeof ft === 'number' && !match ? ft : '') + '" placeholder="e.g. 86"></div>';
@@ -23337,8 +23401,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return '<div class="pb-sl-item" id="pbSlItem' + i + '" data-sl-type="' + x.type + '" data-sl-id="' + escapeHtml(x.id) + '">'
         + '<div class="pb-sl-head">' + pbSlIcon(x.type) + '<span class="pb-sl-label">' + escapeHtml(T.label) + '</span><span class="pb-sl-num">#' + (i + 1) + '</span></div>'
         + '<div class="pb-sl-sum">' + escapeHtml(pbSlSummary(e, x)) + '</div>'
-        + '<div class="pb-sl-meta">Saved ' + escapeHtml(pbSlDt(x.at, x.tz)) + ' by ' + escapeHtml(pbSlWhoText(x.by, x.byEmail))
-        + (x.editedAt ? ' · edited ' + escapeHtml(pbSlDt(x.editedAt, x.editedTz)) + ' by ' + escapeHtml(pbSlWhoText(x.editedBy, x.editedByEmail)) : '') + '</div>'
+        + '<div class="pb-sl-meta">Saved ' + escapeHtml(pbSlDt(x.at, x.tz)) + pbSlByTxt(x.by, x.byEmail)
+        + (x.editedAt ? ' · edited ' + escapeHtml(pbSlDt(x.editedAt, x.editedTz)) + pbSlByTxt(x.editedBy, x.editedByEmail) : '') + '</div>'
         + (pbSlAfterEnd(e, x) ? '<div class="pb-sl-meta pb-sl-late">' + escapeHtml(pbSlAfterEnd(e, x)[0].toUpperCase() + pbSlAfterEnd(e, x).slice(1)) + '</div>' : '')
         + ((x.photos || []).length ? '<div class="pb-sl-photos">' + x.photos.map((p, k) => '<span class="pb-sl-ph"><img src="' + pbSafePhotoUrl(p && p.url) + '" alt="Photo ' + (k + 1) + ' of entry ' + (i + 1) + '"></span>').join('') + '</div>' : '')
         + (hist.length ? '<details class="pb-sl-hist"><summary>Earlier versions (' + hist.length + ')</summary><ol>' + hist.map(h => '<li>' + escapeHtml(pbSlSummary(e, { type: x.type, d: h.d || {}, tz: h.tz, photos: [] })) + ' <span class="pb-sl-when">(saved ' + escapeHtml(pbSlDt(h.at, h.tz)) + ' by ' + escapeHtml(pbSlWhoText(h.by, h.byEmail)) + ')</span></li>').join('') + '</ol></details>' : '')
@@ -23457,7 +23521,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (m) { const pi = entry && entry.pointInputs ? entry.pointInputs[id] : null; name = pi && pi.label ? pi.label : ''; }
     else name = r.label === 'start' ? (entry && entry.startLabel) || '' : (entry && entry.endLabel) || '';
     name = String(name).trim();
-    return !name || /^(Run \d+ )?(Start|End)$/i.test(name) ? role : role + ' \u2014 ' + name;
+    return !name || /^(Run \d+ )?(Start|End)( point)?$/i.test(name) ? role : role + ' \u2014 ' + name; // r16.48: "Start point" too
   }
   // cleanup A: the kinds of lock flags, for the folded heading (display only)
   function pbFlagKinds(ws) { const K = { 'backflow': 'Backflow', 'backflow-all': 'Backflow', 'photo': 'Slope change', 'hi-minor': 'HI', 'hi-serious': 'HI', 'same-station': 'Same station', 'typo': 'Check numbers', 'layout': 'Pipe layout', 'unverified': 'Stakes not checked' }; const k = Array.from(new Set(ws.map(w => K[w.type] || 'Check'))); return k.length ? ': ' + k.join(' \u00b7 ') : ''; }
@@ -25298,7 +25362,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return (segSl.length > 1 ? `<div class="pb-summary-item" style="grid-column: 1 / -1;"><div class="k">Slope %</div><div class="v">${segSl.map(s => fmt(s.slopePct,2) + '%').join(' / ')}</div></div>`
       : `<div class="pb-summary-item"><div class="k">Slope</div><div class="v">${segSl.length ? fmt(segSl[0].slopePct,2) + '%' : entry.summary ? fmt(entry.summary.overallSlopePct,2) + '%' : '\u2014'}</div></div>`) +
       `<div class="pb-summary-item"><div class="k">Distance</div><div class="v">${fmt(entry.completedDistance !== undefined ? entry.completedDistance : entry.distance,1)} ft${entry.incomplete ? ' (incomplete)' : ''}</div></div>` +
-      pipeInfo.map(p => `<div class="pb-summary-item"><div class="k">${escapeHtml(p.label)} \u2014 Wall Thickness</div><div class="v">${p.wtFt !== null ? fmt(p.wtFt,3) + ' ft' + pbPiAWord(p.wtAuto) : '\u2014'}</div></div><div class="pb-summary-item"><div class="k">${escapeHtml(p.label)} \u2014 Pipe ID</div><div class="v">${p.idIn !== null ? fmt(p.idIn,2) + '"' : '\u2014'}</div></div>`).join('');
+      pipeInfo.map(p => `<div class="pb-summary-item"><div class="k">${escapeHtml(p.label)} \u2014 Wall Thickness</div><div class="v">${p.wtFt !== null ? fmt(p.wtFt,3) + ' ft' + pbPiAWord(p.wtAuto) : '\u2014'}</div></div><div class="pb-summary-item"><div class="k">${escapeHtml(p.label)} \u2014 Pipe ID</div><div class="v">${p.idIn !== null ? fmt(p.idIn,2) + '"' : '\u2014'}${escapeHtml(pbRedWords(entry.reducers, pipeInfo.length > 1 ? ((/(\d+)$/.exec(p.label || '') || [0, 1])[1] * 1) : undefined))}</div></div>`).join('');
   }
   window.pbAddInterval = function() {
     const errEl = document.getElementById('addIntervalError');
@@ -26752,9 +26816,17 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   // Edit Run Data: the form with THIS run on it. After a restart (or once another run was started) it is rebuilt from
   // the record first; a run typed on the form but not locked is asked about.
-  window.pbEditRunData = function() {
+  window.pbEditRunData = function(seen) {
     if (pbRefuseWhileCorrectionSaving()) return;
     const entry = getCurrentArchiveEntry();
+    // r16.48: an open run with work on it can't be locked again from the form; say so before the edit, not after
+    if (seen !== true && entry && entry.kind === 'run' && runArchive.includes(entry) && !entry.runEndTime && !entry.completed && !entry.incomplete && !pbReplaceablePriorRun(entry)) {
+      pbShowModal('Pipe is already laid on this run, so its stake numbers can\u2019t be changed. A distance or a hub\u2019s station can be fixed.', [
+        { label: 'Just Look', onClick: () => window.pbEditRunData(true) },
+        { label: 'Fix a Distance or Hub', primary: true, onClick: () => { try { const pn = document.getElementById('correctDistancePanel'); if (!pn || pn.style.display === 'none' || !pn.offsetParent) window.pbToggleCorrectDistance(); setTimeout(() => { const el = document.getElementById('correctDistancePanel'); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 50); } catch (e) { console.error(e); } } }
+      ], 'Run Already Started');
+      return;
+    }
     const holds = !!entry && pbLastLockedEntryId === entry.id && pbLastLockedFormGen === pbFormGen;
     if (!entry || entry.kind !== 'run' || holds || window._pbResumingFromEntryId || pbLayOldRule(entry)) { pbGoto('input'); return; }
     const go = () => { try { pbLoadRunIntoForm(entry); } catch (e) { console.error(e); } pbGoto('input'); };
@@ -48466,7 +48538,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const ownN = hist.filter(c => !c.sessionLabel).length, earlierN = hist.length - ownN;
     if (!e.incomplete) R.banner('LOCKED RECORD' + (e.runEndTime ? ': RUN ENDED' : '') + (ownN ? ' \u00b7 ' + ownN + (ownN === 1 ? ' CORRECTION' : ' CORRECTIONS') + ' AFTER LOCK' : '') + (earlierN ? ' \u00b7 ' + earlierN + ' FROM EARLIER SESSION' + (earlierN === 1 ? '' : 'S') : ''), hist.length || (e.warnings || []).length || e.depthFlagged ? 'warn' : 'ok', 'Locked ' + pbRptDt(e.lockTime) + (e.runEndTime ? ' \u00b7 ended ' + pbRptDt(e.runEndTime) : '') + ' \u00b7 ' + pbRfPdfSentShort(e)); /* feat_runflow P8 */
     const s = e.summary || null, pipe = s && s.pipeInfo && s.pipeInfo.length ? s.pipeInfo : [];
-    const pipeTxt = pipe.map(p => (p.label !== 'Pipe' ? p.label + ': ' : '') + (p.idIn !== null && p.idIn !== undefined ? p.idIn.toFixed(2) + '" ID' : 'ID not recorded') + ', ' + (p.wtFt !== null && p.wtFt !== undefined ? p.wtFt.toFixed(3) + "' wall" + pbPiAWord(p.wtAuto) : 'wall not recorded')).join('; ');
+    const pipeTxt = pipe.map(p => (p.label !== 'Pipe' ? p.label + ': ' : '') + (p.idIn !== null && p.idIn !== undefined ? p.idIn.toFixed(2) + '" ID' : 'ID not recorded') + ', ' + (p.wtFt !== null && p.wtFt !== undefined ? p.wtFt.toFixed(3) + "' wall" + pbPiAWord(p.wtAuto) : 'wall not recorded') + pbRedWords(e.reducers, pipe.length > 1 ? ((/(\d+)$/.exec(p.label || '') || [0, 1])[1] * 1) : undefined)).join('; ');
     R.kv([
       ['Run', (e.startLabel || 'Start') + ' to ' + (e.endLabel || 'End')], ['Distance', pbDistanceText(e) + (hist.some(c => c.type !== 'hub' && c.type !== 'layout') ? ' (corrected; see history)' : '')],
       ['Overall slope', s ? (pbRptNum(s.overallSlopePct, 2) !== '\u2014' && s.overallSlopePct >= 0 ? '+' : '') + pbRptNum(s.overallSlopePct, 2) + '% (+ = rising toward end)' : null], ['Start / end invert', s ? (s.startInv !== undefined ? s.startInv : '\u2014') + ' / ' + (s.endInv !== undefined ? s.endInv : '\u2014') + ' ft' : null],
@@ -63428,7 +63500,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (on && fJ.parentNode !== tf.parentNode) { tf.parentNode.insertBefore(fJ, tf); tf.parentNode.insertBefore(fS, tf); }
       if (!on && fJ.parentNode === tf.parentNode) { pbRfHome0.jParent.insertBefore(fJ, pbRfHome0.jNext); pbRfHome0.jParent.insertBefore(fS, fJ); }
       if (lab) { const t = on ? 'Job number (required)' : pbRfHome0.jLab; if (lab.textContent !== t) lab.textContent = t; }
-      if (note) { const t = on ? 'Off: the run is still saved and its report still goes to ' + pbRfToWhom(pbArchiveOwnerUid) + ', but it isn’t counted in Stats. Turn on to add the pipe type or notes.' : pbRfHome0.note; if (t && note.textContent !== t) note.textContent = t; }
+      if (note) { const t = on ? 'Off: still saved and sent, not counted in Stats.' : pbRfHome0.note; { const L = document.getElementById('saEnableLabel'); const lt = on ? 'Count in Stats and add notes' : 'Add job info and count in Stats'; if (L && L.textContent !== lt) L.textContent = lt; } /* r16.48 */ if (t && note.textContent !== t) note.textContent = t; }
       const hide = (el, h) => { const f = el && el.closest('.pb-field'); if (f && (f.style.display === 'none') !== h) f.style.display = h ? 'none' : ''; };
       hide(cc, on); hide(pl, !!(A && A.pipelayer)); hide(cr, !!(A && (A.crew || A.crewFrom === 'pick')));
       let line = document.getElementById('pbRfWhoLine');
@@ -69749,6 +69821,38 @@ html.pb-light #pbApp#pbApp #screen-confinedActive .cp-em-elapsed .pb-answer-val 
 /* fills in the (darker) light status colours take white text */
 html.pb-light #pbApp#pbApp #screen-confinedActive .cp-roster-row > .cp-tog-in { color: #FFFFFF; }
 html.pb-light #pbApp .pbx-badge.warn { color: #FFFFFF; }
+</style>
+<!-- r16.48:runsetup-layout -->
+<script>
+// r16.48: Run Setup's Job & Pipe, organized: Job details, then Pipe, then Bedding / Shading / Materials; the Rod Unit
+// opens Points & Instrument. Display only: it moves elements and writes no value.
+(function () {
+  'use strict';
+  function apply() {
+    try {
+      var grp = document.getElementById('runJobGroup'), pipe = document.getElementById('runPipeSection'), bed = document.getElementById('runBedRow');
+      if (grp && pipe && grp.nextElementSibling !== pipe) grp.parentNode.insertBefore(pipe, grp.nextElementSibling);
+      if (pipe && bed && pipe.nextElementSibling !== bed) pipe.parentNode.insertBefore(bed, pipe.nextElementSibling);
+      var rod = document.getElementById('rodToggle'), rodSec = rod && rod.closest('.pb-section'), pts = document.getElementById('runSecPoints');
+      if (rodSec && pts && rodSec.parentNode !== pts) { var sm = pts.querySelector(':scope > summary'); if (sm) pts.insertBefore(rodSec, sm.nextSibling); }
+      var st = document.getElementById('statsType'), sf = st && st.closest('.pb-field'); if (sf && sf.style.display !== 'none') sf.style.display = 'none'; // Pipe > Pipe type is the one (they mirror)
+      var pl = document.getElementById('saPipelayer'), cr = document.getElementById('saCrew'), fp = pl && pl.closest('.pb-field'), fc = cr && cr.closest('.pb-field');
+      if (fp && fc && !(fp.parentNode.classList && fp.parentNode.classList.contains('pb-jobpair'))) { var pr = document.createElement('div'); pr.className = 'pb-jobpair'; fc.parentNode.insertBefore(pr, fc); pr.appendChild(fc); pr.appendChild(fp); }
+      var wrap = document.getElementById('saFieldsWrap');
+      if (wrap && !document.getElementById('pbJobReset')) { var b = document.createElement('button'); b.type = 'button'; b.id = 'pbJobReset'; b.className = 'pb-job-reset'; b.textContent = 'Clear job info'; b.addEventListener('click', function () { if (typeof window.pbResetStatsArchiveFields === 'function') window.pbResetStatsArchiveFields(); }); wrap.appendChild(b); }
+      var sc = document.getElementById('screen-input'), ack = false; try { ack = localStorage.getItem('pbAiPrivacyAck') === '1'; } catch (e) {}
+      if (sc) sc.classList.toggle('pb-ai-acked', ack);
+    } catch (e) { console.error('r16.48 layout', e); }
+  }
+  window.pbRunSetupLayout = apply;
+  (window.pbScreenHooks = Array.isArray(window.pbScreenHooks) ? window.pbScreenHooks : []).push(function (name) { if (name === 'input') setTimeout(apply, 0); });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(apply, 50); }); else setTimeout(apply, 50);
+  document.addEventListener('click', function () { setTimeout(apply, 400); }, true);
+})();
+</script>
+<style>
+#pbApp#pbApp #screen-input.pb-ai-acked .pb-ai-privacy { display: none; } /* r16.48: said once, at the first AI use */
+#pbApp#pbApp #screen-input #runSecPoints > .pb-section:has(#rodToggle) { margin-top: 0; }
 </style>
 </body>
 </html>
