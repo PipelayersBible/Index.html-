@@ -12746,7 +12746,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.38 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.39 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -16732,7 +16732,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       plan.push({ name: 'Cut / Fill', kind: 'sel', id: prefix + 'CutFill', val: cfDir, cur: curElev(prefix + 'CutFillVal') !== null && sel ? sel.value : null });
     }
     if (label) { const el = document.getElementById(prefix + 'Label'); plan.push({ name: 'Point label', kind: 'text', id: prefix + 'Label', val: label, cur: el && el.value.trim() ? el.value.trim() : null }); }
-    if (dist !== null && p.distField) { const el = document.getElementById(p.distField); const c = el && el.value.trim() !== '' ? Number(el.value) : null; plan.push({ name: p.distField === prefix + 'Station' ? 'Hub station (distance from start)' : 'Total distance', kind: 'num', id: p.distField, val: dist, cur: c }); }
+    const staEl = station && pbStakeAiParseStation(station) !== null ? document.getElementById(prefix + 'StaTxt') : null;
+    if (staEl) { const c = staEl.value.trim(); plan.push({ name: 'Station', kind: 'sta', id: staEl.id, val: station, cur: c && pbStakeAiParseStation(c) !== null && Math.abs(pbStakeAiParseStation(c) - pbStakeAiParseStation(station)) > 0.0005 ? c : null }); }
+    else if (dist !== null && p.distField) { const el = document.getElementById(p.distField); const c = el && el.value.trim() !== '' ? Number(el.value) : null; plan.push({ name: p.distField === prefix + 'Station' ? 'Hub station (distance from start)' : 'Total distance', kind: 'num', id: p.distField, val: dist, cur: c }); }
     if (!plan.length) {
       if (p.auto) { delete pbStakeAiPending[prefix]; pbStakeAiRender(prefix); pbAiShow(document.getElementById(prefix + 'AiStakeStatus'), 'warn', 'Nothing filled.', 'The AI wasn’t sure of anything on this stake.' + pbStakeAiUnsure(p)); return; }
       showErr('Nothing to fill — type the values from the stake, or Discard.'); return;
@@ -16750,6 +16752,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       plan.forEach(x => {
         if (onlyEmpty && x.cur !== null) return;
         if (x.kind === 'elev') { setOrClearElevField(x.id, x.val, archNow); setPredictedFillMarker(x.id, false); }
+        else if (x.kind === 'sta') {
+          const el = document.getElementById(x.id), w = el && el.closest('.pb-st-wrap');
+          if (w && w.dataset.stMode !== 'sta') { const b = w.querySelector('.pb-st-tog button[data-st="sta"]'); if (b) b.click(); }
+          if (el) { el.value = x.val; el.dispatchEvent(new Event('change', { bubbles: true })); }
+        }
         else { const el = document.getElementById(x.id); if (el) el.value = x.kind === 'num' ? x.val.toFixed(2) : x.val; }
       });
       if (sg.isStart && sta !== null) pbStakeAiStations[prefix] = sta;
@@ -53585,7 +53592,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // the restored date, times and site details first. Writes are queued per form, each one reading the list
   // stored now, so a failed write leaves the stored list exactly as it was.
   const PB_DRAFT_CAP = 10;
-  const PB_DRAFT_PHOTO_NOTE = 'Photos are not kept in drafts.';
+  const PB_DRAFT_PHOTO_NOTE = 'Photos are not kept in drafts.'; // permit drafts; run drafts keep their point photos (pbRdPh)
   function pbDraftWhen(ms) {
     try {
       const d = new Date(ms), now = new Date();
@@ -53709,7 +53716,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       startedAt: runLifecycleStartTime ? runLifecycleStartTime.getTime() : null,
       statsAt: statsRunStartTime ? statsRunStartTime.getTime() : null,
       photoCount, cutsheet: cs && cs.aiText.length < 200000 ? cs : null, st: pbStDraftSnap(), pa: pbPiAAutoIds(), pt: pbPtAuto(), /* feat_results2: st; feat_pipeauto: pa */
-      rs: window._pbResumingFromEntryId ? { from: window._pbResumingFromEntryId } : undefined }; /* feat_r1612 (B10): the run this form continues */
+      rs: window._pbResumingFromEntryId ? { from: window._pbResumingFromEntryId } : undefined, /* feat_r1612 (B10): the run this form continues */
+      phs: pbRdPhSig(pbRdFormPhotos()) || undefined };
   }
   function pbRdTyped(d) {
     const v = (f) => f && !f.pred ? (f.raw ? [f.raw.ft, f.raw.inch, f.raw.frac] : f.val) : null;
@@ -53765,7 +53773,29 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (core === pbRd.lastJson && pbRd.state !== 'failed') return;
     pbRd.lastJson = core; snap.savedAt = Date.now(); snap.id = pbRd.formId;
     pbRd.write(a, snap);
+    pbRdPhSave(a, snap.id);
   }
+  // r16.38: a run draft keeps its point photos, on this phone, in IndexedDB (too big for the draft list in localStorage).
+  const pbRdPh = (() => {
+    let dbp = null;
+    const db = () => dbp || (dbp = new Promise((ok, no) => { try { const r = indexedDB.open('pb-draft-photos', 1); r.onupgradeneeded = () => { try { r.result.createObjectStore('p'); } catch (e) {} }; r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); } catch (e) { no(e); } }).catch(e => { dbp = null; throw e; }));
+    const tx = async (mode, fn) => { const d = await db(); return new Promise((ok, no) => { const t = d.transaction('p', mode); const r = fn(t.objectStore('p')); t.oncomplete = () => ok(r ? r.result : undefined); t.onerror = () => no(t.error); t.onabort = () => no(t.error); }); };
+    return { put: (k, v) => tx('readwrite', st => st.put(v, k)), get: (k) => tx('readonly', st => st.get(k)), del: (k) => tx('readwrite', st => st.delete(k)) };
+  })();
+  const pbRdPhLast = {}; // key -> signature last saved
+  function pbRdFormPhotos() {
+    const out = {};
+    pbRunFormPhotos().forEach(([k, l]) => { const keep = l.filter(ph => ph && ph.url && !ph.displayOnly).map(ph => ({ url: ph.url, name: ph.name || '', captureId: ph.captureId || '' })); if (keep.length) out[k] = keep; });
+    return out;
+  }
+  function pbRdPhSig(m) { return Object.keys(m).sort().map(k => k + ':' + m[k].map(x => x.captureId || x.url.length + '/' + x.url.slice(-24)).join(',')).join(';'); }
+  function pbRdPhSave(uid, id) {
+    const m = pbRdFormPhotos(), sig = pbRdPhSig(m), key = uid + ':' + id;
+    if (pbRdPhLast[key] === sig) return;
+    pbRdPhLast[key] = sig;
+    (sig ? pbRdPh.put(key, { photos: m, savedAt: Date.now() }) : pbRdPh.del(key)).catch(e => { delete pbRdPhLast[key]; console.error('Draft photos not saved:', e); });
+  }
+  { const rm = pbRd.remove; pbRd.remove = (uid, id) => { rm(uid, id); const key = uid + ':' + id; delete pbRdPhLast[key]; pbRdPh.del(key).catch(() => {}); }; }
   function pbRdSchedule() { clearTimeout(pbRd.timer); pbRd.timer = setTimeout(() => { pbRd.timer = null; pbRdTick(); }, 400); }
   function pbRdFlush() { if (pbRd.timer) { clearTimeout(pbRd.timer); pbRd.timer = null; } pbRdTick(); }
   // pbResetRunForm calls this first: the form's draft is saved as it is and kept (it is a draft of its own now).
@@ -53818,6 +53848,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     for (let n = 2; n <= MAX_SEG; n++) { const k = n; steps.splice(1, 0, () => { if (segIsActive(k)) pbToggleIdOther('seg' + k); }); if (k >= 3) steps.push(() => { if (segIsActive(k)) updateSegDerived(k); }); }
     steps.push(() => scheduleHiCascade());
     steps.forEach(f => { try { f(); } catch (e) { console.error('Draft restore step failed:', e); } });
+    return map;
   }
   // The form holds typed work that is NOT kept as a draft (save failed, the cap, or not saved yet).
   function pbRdFormUnsaved() { return pbHomeRunDraft() && !pbRd.formSaved(); }
@@ -53866,7 +53897,21 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     } else pbResetRunForm(); // the run on the form now (a saved draft) is kept
     pbRd.restoring = true;
     let ok = true;
-    try { pbRdApply(d, !!rsE); } catch (e) { ok = false; console.error('Run draft restore failed:', e); } finally { pbRd.restoring = false; }
+    let rdMap = {};
+    try { rdMap = pbRdApply(d, !!rsE) || {}; } catch (e) { ok = false; console.error('Run draft restore failed:', e); } finally { pbRd.restoring = false; }
+    const rdGen = pbFormGen;
+    pbRdPh.get(a + ':' + id).then(v => {
+      if (!v || !v.photos || pbRd.formId !== id || pbRd.formUid !== a || pbFormGen !== rdGen) return;
+      let back = 0;
+      Object.keys(v.photos).forEach(old => {
+        const p = rdMap[old] || old; if (!document.getElementById(p + 'PhotoList')) return;
+        const cur = window._pbPhotos[p] = window._pbPhotos[p] || [];
+        (v.photos[old] || []).forEach(ph => { if (ph && ph.url && !cur.some(c => c.url === ph.url)) { cur.push({ url: ph.url, name: ph.name || '', captureId: ph.captureId || ('cap-' + Date.now().toString(36) + '-d' + (++back)) }); back++; } });
+        renderPhotoList(p);
+      });
+      if (back && pbRd.note) { pbRd.note.photos = 0; pbRd.note.photosBack = Object.keys(v.photos).reduce((t, k) => t + (v.photos[k] || []).length, 0); }
+      pbRdRefresh(); pbRdSchedule();
+    }).catch(e => console.error('Draft photos not read:', e));
     const now = pbRdSnapshot();
     const whole = ok && pbRdTyped(now) === pbRdTyped(d);
     pbRd.formUid = a; pbRd.formId = id; pbRd.lastJson = whole ? pbRdCore(now) : null; pbRd.state = 'saved'; pbRd.savedAt = d.savedAt;
@@ -53902,8 +53947,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const base = 'Leave without saving? This run’s entries will be lost.'; /* feat_resume 8 (owner): one line */
     if (pbRd.state === 'full' && !pbRd.formSaved()) return 'Leave without saving? ' + pbRdFullWords() + ' It stays on the run form for now, but it is lost when another run is started or the app is closed.';
     if (pbRd.formUid === null || pbRd.formUid !== pbRd.account()) return base;
-    if (pbRd.formSaved()) return 'This run is not locked. Its draft is saved on this phone (' + pbDraftWhen(pbRd.savedAt) + ') and stays in your drafts on Home and Run Setup. ' + PB_DRAFT_PHOTO_NOTE;
-    if (pbRd.state === 'saving' || (pbRd.state === 'saved' && pbRd.formId !== null)) return 'This run is not locked. Its draft is being saved on this phone \u2014 wait a moment. ' + PB_DRAFT_PHOTO_NOTE;
+    if (pbRd.formSaved()) return 'This run is not locked. Its draft is saved on this phone (' + pbDraftWhen(pbRd.savedAt) + ') and stays in your drafts on Home and Run Setup.';
+    if (pbRd.state === 'saving' || (pbRd.state === 'saved' && pbRd.formId !== null)) return 'This run is not locked. Its draft is being saved on this phone \u2014 wait a moment.';
     if (pbRd.state === 'failed') return 'Leave without saving? This run is NOT locked and its draft could NOT be saved on this phone, so it is lost when another run is started or the app is closed. ' + pbSaveAdvice(true);
     return base;
   }
@@ -53930,8 +53975,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (live) {
       bad = pbRd.state === 'failed';
       const n = pbRd.note;
-      html = '<span class="pb-chip draft">Draft · not locked</span><span class="pb-rd-line">' + pbDraftEsc(pbRd.state === 'saved' && pbRd.savedAt ? 'Saved on this phone at ' + pbDraftWhen(pbRd.savedAt) + '. ' : pbRd.state === 'failed' ? 'NOT saved on this phone — kept only until the app is closed. ' + pbSaveAdvice(true) + ' ' : 'Saving on this phone… ') + (pbRunFormPhotos().length ? PB_DRAFT_PHOTO_NOTE : '') + '</span>'
-        + (n ? '<span class="pb-rd-line pb-rd-restored">' + pbDraftEsc('Resumed from the draft saved ' + pbDraftWhen(n.savedAt) + '. Check every value before Review & Calculate.' + (n.photos ? ' ' + n.photos + ' photo' + (n.photos > 1 ? 's were' : ' was') + ' on the form and ' + (n.photos > 1 ? 'are' : 'is') + ' not in the draft — add ' + (n.photos > 1 ? 'them' : 'it') + ' again.' : '') + (n.whole ? '' : ' Some values may not have come back exactly — check every field.')) + '</span>' : '')
+      html = '<span class="pb-chip draft">Draft · not locked</span><span class="pb-rd-line">' + pbDraftEsc(pbRd.state === 'saved' && pbRd.savedAt ? 'Saved on this phone at ' + pbDraftWhen(pbRd.savedAt) + '. ' : pbRd.state === 'failed' ? 'NOT saved on this phone — kept only until the app is closed. ' + pbSaveAdvice(true) + ' ' : 'Saving on this phone… ') + '</span>'
+        + (n ? '<span class="pb-rd-line pb-rd-restored">' + pbDraftEsc('Resumed from the draft saved ' + pbDraftWhen(n.savedAt) + '. Check every value before Review & Calculate.' + (n.photos ? ' ' + n.photos + ' photo' + (n.photos > 1 ? 's were' : ' was') + ' on the form and ' + (n.photos > 1 ? 'are' : 'is') + ' not in the draft — add ' + (n.photos > 1 ? 'them' : 'it') + ' again.' : '') + (n.photosBack ? ' Its ' + n.photosBack + ' photo' + (n.photosBack > 1 ? 's are' : ' is') + ' back.' : '') + (n.whole ? '' : ' Some values may not have come back exactly — check every field.')) + '</span>' : '')
         + (bad ? '<button type="button" class="pb-btn small" id="runDraftRetry" onclick="pbRdRetry()">Retry Save</button>' : '');
     } else if (full) {
       bad = true;
@@ -53942,7 +53987,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (re) html = '<span class="pb-chip draft">Resuming</span><span class="pb-rd-line">' + pbDraftEsc('Resuming ' + re.startLabel + ' \u2192 ' + re.endLabel + (re.stoppedAtStation ? ' (stopped at ' + re.stoppedAtStation + ')' : '') + ' \u2014 Lock to continue it.') + '</span>';
     }
     if (others.length) {
-      html += '<span class="pb-rd-line pb-draft-head">' + pbDraftEsc((others.length === 1 ? '1 other run draft' : others.length + ' other run drafts') + ' kept on this phone' + (pbRd.mine(a).length >= PB_DRAFT_CAP ? ' (the most: ' + PB_DRAFT_CAP + ')' : '') + '. ' + PB_DRAFT_PHOTO_NOTE) + '</span>'
+      html += '<span class="pb-rd-line pb-draft-head">' + pbDraftEsc((others.length === 1 ? '1 other run draft' : others.length + ' other run drafts') + ' kept on this phone' + (pbRd.mine(a).length >= PB_DRAFT_CAP ? ' (the most: ' + PB_DRAFT_CAP + ')' : '') + '.') + '</span>'
         + '<div class="pb-draft-list" id="runDraftList">' + pbDraftRowsHTML('run', others, pbRdSummary, 'pbRdResume', 'pbRdDiscardAsk') + '</div>';
     }
     box.hidden = !html;
@@ -54146,7 +54191,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const permits = pa && !confinedPermit && pbScreenAccessAllowed('confinedHub') ? pbPmd.others(pa) : []; // none while a permit is active
     if (runs.length) html += '<p class="pb-draft-sec">Run drafts · not locked</p><div class="pb-draft-list" id="homeRunDrafts">' + pbDraftRowsHTML('homeRun', runs, pbRdSummary, 'pbRdResume', 'pbRdDiscardAsk') + '</div>';
     if (permits.length) html += '<p class="pb-draft-sec">Permit drafts · not active</p><div class="pb-draft-list" id="homePermitDrafts">' + pbDraftRowsHTML('homePermit', permits, pbPmdSummary, 'pbPmdResume', 'pbPmdDiscardAsk') + '</div>';
-    if (html) html += '<p class="pb-help pb-draft-note">Drafts are kept on this phone for this account. ' + PB_DRAFT_PHOTO_NOTE + '</p>';
+    if (html) html += '<p class="pb-help pb-draft-note">Drafts are kept on this phone for this account. Permit drafts don\u2019t keep photos.</p>';
     pbSetHtml(box, html);
     box.hidden = !html;
   }
