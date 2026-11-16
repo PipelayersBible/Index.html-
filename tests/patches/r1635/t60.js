@@ -1,0 +1,16 @@
+const boot=require('./boot');
+(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/idx35.html');
+ await p.route('**/functions/v1/ai**', async r=>{const reply={is_stake:true,stake_number:{value:'3865',conf:'high'},station:{value:null,conf:'uncertain'},offset:{value:'10/SD',conf:'high'},line_label:{value:'AP',conf:'high'},cut_fill:{direction:'cut',feet:3.14,as_written:'C-3.14',to:'IE',conf:'high'},stake_elevation:{feet:104.26,as_written:'104.26',conf:'high'},other_text:'',uncertain:[]};
+   await r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,text:JSON.stringify(reply),used:1,limit:60})});});
+ await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1200);
+ await p.evaluate(()=>{const e=document.getElementById('runIdSel');e.value=[...e.options].find(o=>o.text.trim()==='8"').value;e.dispatchEvent(new Event('change',{bubbles:true}));});
+ await p.evaluate(()=>pbAddHub());await p.waitForTimeout(300);
+ const fs=require('fs');const img={name:'a.jpg',mimeType:'image/jpeg',buffer:fs.readFileSync('/tmp/claude-0/evimg/p12.jpg')};
+ await p.setInputFiles('#hub0AiStakePhoto',[img,img]);await p.waitForTimeout(2500);
+ const st=()=>p.evaluate(()=>[document.getElementById('hub0FitType').value,'info='+document.getElementById('hub0FitInfo').value,'angle shown='+(document.getElementById('hub0FitAngW').style.display!=='none'),'ang='+document.getElementById('hub0FitAng').value,'lay='+document.getElementById('hub0FitLay').value,'infoBox='+(document.getElementById('hub0FitInfoW').style.display!=='none')+':'+document.getElementById('hub0FitInfoL').textContent].join(' | '));
+ console.log('after AI:',await st());
+ await p.selectOption('#hub0FitAng','22.5');await p.waitForTimeout(400);console.log('pick 22.5:',await st());
+ await p.selectOption('#hub0FitAng','90');await p.waitForTimeout(400);console.log('pick 90:',await st());
+ await p.selectOption('#hub0FitAng','45');await p.waitForTimeout(400);console.log('typed AP 45:',await st());
+ await p.selectOption('#hub0FitType','wye');await p.waitForTimeout(400);console.log('wye:',await st());await p.selectOption('#hub0FitType','other');await p.waitForTimeout(300);console.log('other:',await st());await p.selectOption('#hub0FitType','coupling');await p.waitForTimeout(300);console.log('coupling:',await st());
+ console.log('errs',p.errs.length,p.errs.slice(0,2));await b.close();})();

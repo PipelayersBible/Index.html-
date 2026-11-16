@@ -11871,7 +11871,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return '<label class="pb-checkrow pb-fit-check" style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" value="" id="' + prefix + 'FitOn"><span>This hub is a fitting</span></label>'
       + '<div class="pb-xing-g2 pb-fit-row" id="' + prefix + 'FitRow" style="display:none;">'
       + '<div class="pb-field"><label for="' + prefix + 'FitType">Fitting</label><select id="' + prefix + 'FitType">' + PB_FIT_TYPES.map(t => '<option value="' + t[0] + '">' + t[1] + '</option>').join('') + '</select></div>'
-      + '<div class="pb-field"><label for="' + prefix + 'FitInfo">Size / angle</label><input type="text" enterkeyhint="next" id="' + prefix + 'FitInfo" maxlength="80" autocomplete="off" placeholder="e.g. 8x6, 45\u00b0"></div>'
+      + '<div class="pb-field pb-fit-infow" id="' + prefix + 'FitInfoW" style="display:none;"><label for="' + prefix + 'FitInfo" id="' + prefix + 'FitInfoL">Sizes</label><input type="text" enterkeyhint="next" id="' + prefix + 'FitInfo" maxlength="80" autocomplete="off" placeholder="e.g. 8x6, 45\u00b0"></div>'
       + '<div class="pb-field pb-fit-angw" id="' + prefix + 'FitAngW" style="display:none;"><label for="' + prefix + 'FitAng">Bend angle</label><select id="' + prefix + 'FitAng"><option value="">Pick angle</option><option value="90">90\u00b0</option><option value="45">45\u00b0</option><option value="22.5">22.5\u00b0</option><option value="11.25">11.25\u00b0</option></select></div>'
       + '<div class="pb-field"><label for="' + prefix + 'FitLay">Laying length (ft)</label><div class="pb-fit-layw"><input type="number" step="0.01" min="0" inputmode="decimal" enterkeyhint="next" id="' + prefix + 'FitLay" autocomplete="off"><span class="pb-fit-auto" id="' + prefix + 'FitLayAuto" hidden>auto</span></div></div>' /* feat_fitlen */
       + '</div>';
@@ -11881,6 +11881,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const t = document.getElementById(prefix + 'FitType'), w = document.getElementById(prefix + 'FitAngW'), a = document.getElementById(prefix + 'FitAng'), i = document.getElementById(prefix + 'FitInfo');
     if (!t || !w || !a) return;
     const bend = t.value === 'bend'; w.style.display = bend ? '' : 'none';
+    { const iw = document.getElementById(prefix + 'FitInfoW'), il = document.getElementById(prefix + 'FitInfoL'), ty = t.value;
+      const show = ty === 'wye' || ty === 'tee' || ty === 'reducer' || ty === 'other';
+      if (iw) iw.style.display = show ? '' : 'none';
+      if (il) il.textContent = ty === 'other' ? 'What is it' : 'Sizes';
+      if (i) i.placeholder = ty === 'other' ? 'e.g. gate valve' : ty === 'reducer' ? 'e.g. 12x8' : 'e.g. 8x6'; }
     if (!bend) return;
     let ang = null; try { ang = pbFitAngleOf(String(i ? i.value : '').toUpperCase()); } catch (e) {}
     const v = ang === null ? '' : String(ang);
@@ -11898,7 +11903,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true }));
       return;
     }
-    m = /^(.*)(FitType|FitInfo|FitOn)$/.exec(tg.id); if (m) pbFitAngSync(m[1]);
+    m = /^(.*)(FitType|FitInfo|FitOn)$/.exec(tg.id);
+    if (m && m[2] === 'FitType' && tg.value !== 'bend') { const i = document.getElementById(m[1] + 'FitInfo'); if (i && /^\s*(?:AP\b)?\s*(?:\d+(?:\.\d+)?\s*\u00b0?)?\s*$/i.test(i.value) && i.value.trim()) { i.value = ''; i.dispatchEvent(new Event('input', { bubbles: true })); } }
+    if (m) pbFitAngSync(m[1]);
   }, true);
   document.addEventListener('input', (ev) => { const m = /^(.*)FitInfo$/.exec((ev.target && ev.target.id) || ''); if (m) pbFitAngSync(m[1]); }, true);
   (window.pbScreenHooks = Array.isArray(window.pbScreenHooks) ? window.pbScreenHooks : []).push(function (name) { if (name === 'input') setTimeout(pbFitAngAll, 0); });
@@ -12724,7 +12731,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.34 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.35 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
