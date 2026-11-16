@@ -1,0 +1,12 @@
+const boot=require('./boot');
+(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/'+(process.argv[2]||'idx40.html'));
+ await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1200);
+ await p.evaluate(()=>pbAddHub());await p.waitForTimeout(300);
+ const L=()=>p.evaluate(()=>'type='+document.getElementById('hub0FitType').value+' ang='+document.getElementById('hub0FitAng').value+' lay="'+document.getElementById('hub0FitLay').value+'" why="'+(document.getElementById('hub0FitLayWhy').hidden?'':document.getElementById('hub0FitLayWhy').textContent)+'"');
+ await p.check('#hub0FitOn');await p.waitForTimeout(200);console.log('on:',await L());
+ await p.selectOption('#hub0FitType','bend');await p.waitForTimeout(200);console.log('bend:',await L());
+ await p.selectOption('#hub0FitAng','45');await p.waitForTimeout(200);console.log('45, no ID:',await L());
+ await p.evaluate(()=>{const e=document.getElementById('runIdSel');e.value=[...e.options].find(o=>o.text.trim()==='8"').value;e.dispatchEvent(new Event('change',{bubbles:true}));});await p.waitForTimeout(300);console.log('ID 8:',await L());
+ await p.selectOption('#runPipeType','Concrete');await p.waitForTimeout(300);console.log('concrete:',await L());
+ await p.fill('#hub0FitLay','0.5');await p.waitForTimeout(200);console.log('typed:',await L());
+ console.log('errs',p.errs);await b.close();})();

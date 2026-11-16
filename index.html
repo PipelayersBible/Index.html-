@@ -11888,7 +11888,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<div class="pb-field"><label for="' + prefix + 'FitType">Fitting type</label><select id="' + prefix + 'FitType">' + PB_FIT_TYPES.map(t => '<option value="' + t[0] + '">' + t[1] + '</option>').join('') + '</select></div>'
       + '<div class="pb-field pb-fit-infow" id="' + prefix + 'FitInfoW" style="display:none;"><label for="' + prefix + 'FitInfo" id="' + prefix + 'FitInfoL">Sizes</label><input type="text" enterkeyhint="next" id="' + prefix + 'FitInfo" maxlength="80" autocomplete="off" placeholder="e.g. 8x6, 45\u00b0"></div>'
       + '<div class="pb-field pb-fit-angw" id="' + prefix + 'FitAngW" style="display:none;"><label for="' + prefix + 'FitAng">Bend angle</label><select id="' + prefix + 'FitAng"><option value="">Pick angle</option><option value="90">90\u00b0</option><option value="45">45\u00b0</option><option value="22.5">22.5\u00b0</option><option value="11.25">11.25\u00b0</option></select></div>'
-      + '<div class="pb-field"><label for="' + prefix + 'FitLay">Laying length (ft)</label><div class="pb-fit-layw"><input type="number" step="0.01" min="0" inputmode="decimal" enterkeyhint="next" id="' + prefix + 'FitLay" autocomplete="off"><span class="pb-fit-auto" id="' + prefix + 'FitLayAuto" hidden>auto</span></div></div>' /* feat_fitlen */
+      + '<div class="pb-field"><label for="' + prefix + 'FitLay">Laying length (ft)</label><div class="pb-fit-layw"><input type="number" step="0.01" min="0" inputmode="decimal" enterkeyhint="next" id="' + prefix + 'FitLay" autocomplete="off"><span class="pb-fit-auto" id="' + prefix + 'FitLayAuto" hidden>auto</span></div><p class="pb-ai-hint" id="' + prefix + 'FitLayWhy" hidden></p></div>' /* feat_fitlen; r16.40: why it's blank */
       + '</div>';
   }
   // The Bend angle list follows the fitting type and Size / angle (both ways).
@@ -11901,6 +11901,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (iw) iw.style.display = show ? '' : 'none';
       if (il) il.textContent = ty === 'other' ? 'What is it' : 'Sizes';
       if (i) i.placeholder = ty === 'other' ? 'e.g. gate valve' : ty === 'reducer' ? 'e.g. 12x8' : 'e.g. 8x6'; }
+    try { setTimeout(() => pbFitLayWhy(prefix), 0); } catch (e) {}
     if (!bend) return;
     let ang = null; try { ang = pbFitAngleOf(String(i ? i.value : '').toUpperCase()); } catch (e) {}
     const v = ang === null ? '' : String(ang);
@@ -12391,9 +12392,26 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const t = document.getElementById(prefix + 'FitType'), i = document.getElementById(prefix + 'FitInfo');
     let id = null; try { const f = getPointIdFt(prefix); id = f === null ? null : f * 12; } catch (e) { id = null; }
     const v = pbFitDefaultLayFt(t ? t.value : '', i ? i.value : '', id, pbFitLayPipeType());
-    if (v === null) { if (pbFitLayIsAuto(prefix)) { el.value = ''; pbFitLaySetAuto(prefix, false); } return; }
-    el.value = fmt(v, 2); pbFitLaySetAuto(prefix, true);
+    if (v === null) { if (pbFitLayIsAuto(prefix)) { el.value = ''; pbFitLaySetAuto(prefix, false); } pbFitLayWhy(prefix); return; }
+    el.value = fmt(v, 2); pbFitLaySetAuto(prefix, true); pbFitLayWhy(prefix);
   }
+  // r16.40: a blank laying length says why it wasn't filled in.
+  function pbFitLayWhy(prefix) {
+    const w = document.getElementById(prefix + 'FitLayWhy'), el = document.getElementById(prefix + 'FitLay'); if (!w || !el) return;
+    let t = '';
+    if (pbFitSnap(prefix) && String(el.value || '').trim() === '') {
+      const ty = (document.getElementById(prefix + 'FitType') || {}).value || '', info = (document.getElementById(prefix + 'FitInfo') || {}).value || '';
+      let id = null; try { const f = getPointIdFt(prefix); id = f === null ? null : f * 12; } catch (e) {}
+      const pipe = pbFitLayPipeType();
+      if (!ty) t = 'Choose the fitting type to fill this in.';
+      else if (ty === 'bend' && pbFitAngleOf(String(info).toUpperCase()) === null) t = 'Choose the bend angle to fill this in.';
+      else if (ty === 'other') t = '';
+      else if (id === null) t = 'Choose the Pipe ID to fill this in.';
+      else if (pbFitDefaultLayFt(ty, info, id, pipe) === null) t = 'No laying length on file for this ' + (pipe && pipe !== 'Other' ? pipe + ' ' : '') + 'fitting. Type it from the fitting.';
+    }
+    w.textContent = t; w.hidden = !t;
+  }
+  document.addEventListener('input', (ev) => { const m = ev.target && ev.target.id && /^(.+)FitLay$/.exec(ev.target.id); if (m) pbFitLayWhy(m[1]); }, true);
   // What sets it off: a person's change to a hub's fitting fields (that hub), to a run's Pipe ID (that run's hubs) or to
   // the Pipe type / Stats details (every hub); cutsheet import calls pbFitLayAutoFill itself. Never a Resume, Edit Run
   // Data or draft restore (those fill the form without events), so a record's stored value is never recomputed.
@@ -12746,7 +12764,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.39 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.40 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
