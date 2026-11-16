@@ -9043,7 +9043,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
         <div class="pb-field"><label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="saEnableToggle" style="width:auto;" onchange="pbToggleStatsArchiveFields()"> <span id="saEnableLabel">Add job info and count in Stats</span></label></div>
         <p class="pb-help" id="saDisabledNote" style="margin:4px 0 0 0;">Off: saved without job info.</p>
         <div id="saFieldsWrap" style="display:none; margin-top:10px;">
-          <p class="pb-help pb-b3-lead0">From your last run. Check them.</p>
+          <p class="pb-help pb-b3-lead0" id="saLastRunNote">From your last run</p>
           <div class="pb-field"><label>Jobsite name</label><input type="text" enterkeyhint="next" id="saJobsite" maxlength="200"></div>
           <div class="pb-field"><label>Job number</label><input type="text" enterkeyhint="next" id="saJobNumber" maxlength="200" placeholder="e.g. 24-017"></div>
           <div class="pb-field"><label>Cost code</label><input type="text" enterkeyhint="next" id="saCostCode" maxlength="200" placeholder="e.g. 02-310"></div>
@@ -12848,7 +12848,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.51 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.52 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -63508,7 +63508,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const A = pbRfAuto(), on = !!A, lab = fJ.querySelector('label'), note = document.getElementById('saDisabledNote');
       if (on && fJ.parentNode !== tf.parentNode) { tf.parentNode.insertBefore(fJ, tf); tf.parentNode.insertBefore(fS, tf); }
       if (!on && fJ.parentNode === tf.parentNode) { pbRfHome0.jParent.insertBefore(fJ, pbRfHome0.jNext); pbRfHome0.jParent.insertBefore(fS, fJ); }
-      if (lab) { const t = on ? 'Job number (required)' : pbRfHome0.jLab; if (lab.textContent !== t) lab.textContent = t; }
+      if (lab) { const t = on ? 'Job number' : pbRfHome0.jLab; /* r16.52 */ if (lab.textContent !== t) lab.textContent = t; }
       if (note) { const t = on ? 'Off: still saved and sent, not counted in Stats.' : pbRfHome0.note; { const L = document.getElementById('saEnableLabel'); const lt = on ? 'Count in Stats and add notes' : 'Add job info and count in Stats'; if (L && L.textContent !== lt) L.textContent = lt; } /* r16.48 */ if (t && note.textContent !== t) note.textContent = t; }
       const hide = (el, h) => { const f = el && el.closest('.pb-field'); if (f && (f.style.display === 'none') !== h) f.style.display = h ? 'none' : ''; };
       hide(cc, on); hide(pl, !!(A && A.pipelayer)); hide(cr, !!(A && (A.crew || A.crewFrom === 'pick')));
@@ -69856,7 +69856,9 @@ html.pb-light #pbApp .pbx-badge.warn { color: #FFFFFF; }
       var pl = document.getElementById('saPipelayer'), cr = document.getElementById('saCrew'), fp = pl && pl.closest('.pb-field'), fc = cr && cr.closest('.pb-field');
       if (fp && fc && !(fp.parentNode.classList && fp.parentNode.classList.contains('pb-jobpair'))) { var pr = document.createElement('div'); pr.className = 'pb-jobpair'; fc.parentNode.insertBefore(pr, fc); pr.appendChild(fc); pr.appendChild(fp); }
       var wrap = document.getElementById('saFieldsWrap');
-      if (wrap && !document.getElementById('pbJobReset')) { var b = document.createElement('button'); b.type = 'button'; b.id = 'pbJobReset'; b.className = 'pb-job-reset'; b.textContent = 'Clear job info'; b.addEventListener('click', function () { if (typeof window.pbResetStatsArchiveFields === 'function') window.pbResetStatsArchiveFields(); }); wrap.appendChild(b); }
+      if (wrap && !document.getElementById('pbJobReset')) { var b = document.createElement('button'); b.type = 'button'; b.id = 'pbJobReset'; b.className = 'pb-job-reset'; b.textContent = 'Clear'; b.addEventListener('click', function () { if (typeof window.pbResetStatsArchiveFields === 'function') window.pbResetStatsArchiveFields(); }); wrap.appendChild(b); }
+      var lead = document.getElementById('saLastRunNote'), rb = document.getElementById('pbJobReset'); /* r16.52: one line: From your last run · Clear */
+      if (wrap && lead && rb) { var lr = document.getElementById('pbJobLastRow'); if (!lr) { lr = document.createElement('div'); lr.id = 'pbJobLastRow'; lr.className = 'pb-job-lastrow'; wrap.insertBefore(lr, wrap.firstChild); } if (lead.parentNode !== lr) lr.appendChild(lead); if (rb.parentNode !== lr) lr.appendChild(rb); }
       var sc = document.getElementById('screen-input'), ack = false; try { ack = localStorage.getItem('pbAiPrivacyAck') === '1'; } catch (e) {}
       if (sc) sc.classList.toggle('pb-ai-acked', ack);
     } catch (e) { console.error('r16.48 layout', e); }
@@ -69870,6 +69872,24 @@ html.pb-light #pbApp .pbx-badge.warn { color: #FFFFFF; }
 <style>
 #pbApp#pbApp #screen-input.pb-ai-acked .pb-ai-privacy { display: none; } /* r16.48: said once, at the first AI use */
 #pbApp#pbApp #screen-input #runSecPoints > .pb-section:has(#rodToggle) { margin-top: 0; }
+</style>
+<style>
+/* r16.52: Job details compact: job number | jobsite side by side, Clear beside "From your last run", no empty gaps */
+#pbApp#pbApp #screen-input #runStatsSection > .pb-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 12px; }
+#pbApp#pbApp #screen-input #runStatsSection > .pb-body > * { grid-column: 1 / -1; min-width: 0; }
+#pbApp#pbApp #screen-input #runStatsSection > .pb-body > .pb-field:has(#saJobNumber),
+#pbApp#pbApp #screen-input #runStatsSection > .pb-body > .pb-field:has(#saJobsite) { grid-column: auto; margin-left: 0; margin-right: 0; }
+#pbApp#pbApp #screen-input #pbRfWhoLine { margin-top: 0; margin-bottom: 0; }
+#pbApp#pbApp #screen-input #saFieldsWrap { margin-top: 0 !important; }
+#pbApp#pbApp #screen-input #runStatsSection > .pb-body > .pb-field:has(#saEnableToggle) { margin-bottom: 2px; }
+#pbApp#pbApp #screen-input .pb-job-lastrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 2px; }
+#pbApp#pbApp #screen-input .pb-job-lastrow .pb-b3-lead0 { margin: 0; }
+#pbApp#pbApp #screen-input .pb-job-lastrow .pb-job-reset { margin: 0; min-height: 40px; padding: 0 2px; flex: none; }
+#pbApp#pbApp #screen-input .pb-jobpair:not(:has(> .pb-field:nth-child(2):not([style*="display: none"]))),
+#pbApp#pbApp #screen-input .pb-jobpair:not(:has(> .pb-field:nth-child(1):not([style*="display: none"]))) { grid-template-columns: minmax(0, 1fr); }
+#pbApp#pbApp #screen-input #saBeddingMirror:empty { display: none; }
+#pbApp#pbApp.pb-text-big #screen-input #runStatsSection > .pb-body > .pb-field:has(#saJobNumber),
+#pbApp#pbApp.pb-text-big #screen-input #runStatsSection > .pb-body > .pb-field:has(#saJobsite) { grid-column: 1 / -1; }
 </style>
 </body>
 </html>
