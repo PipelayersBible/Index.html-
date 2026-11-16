@@ -1,0 +1,21 @@
+const boot=require('./boot');const co=require('./co');const F=require('./flow');
+(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/'+(process.argv[2]||'cur.html'),{init:co});const H=F(p);
+ await F.setup(p,H);
+ await H.click('Review & Calculate');await p.waitForTimeout(1500);
+ await H.click('Lock This Run');await p.waitForTimeout(2500);
+ const rowMenu=async(d)=>{await p.evaluate(d=>{const e=[...document.querySelectorAll('#screen-results [aria-label]')].find(e=>e.getAttribute('aria-label').startsWith('Distance '+d+' '));e.click();},d);await p.waitForTimeout(600);};
+ await rowMenu('301.0');await H.modalClick('Mark laid to here (and the rows before)');await p.waitForTimeout(600);
+ await H.click('Delay');await p.selectOption('#pbSlReason',{label:'Waiting on inspector'});await H.click('Start Delay');await p.waitForTimeout(1200);await H.click('End Delay');await p.waitForTimeout(500);
+ await H.click('Utility Found');await p.selectOption('#pbSlWhat',{label:'Water'});await H.click('Save Entry');await p.waitForTimeout(600);
+ await H.click('End Run and Send Report');await p.waitForTimeout(1500);
+ for(let i=0;i<4;i++){const m=await H.modal();if(!m)break;const bt=await H.modalBtns();console.log('MODAL',m,bt);await H.modalClick(bt[bt.length-1]);}
+ console.log('screen',await H.screen());
+ await p.evaluate(()=>{window.__rpcLog.length=0;window.__rpcArgs=[];});
+ await H.click('Daily report');await p.waitForTimeout(2000);
+ console.log('screen',await H.screen(),'modal',await H.modal());
+ await H.shot('70-daily');
+ console.log('rpcs',await p.evaluate(()=>JSON.stringify(window.__rpcArgs.map(x=>x[0]))));
+ const ta=await p.evaluate(()=>{const t=[...document.querySelectorAll('#screen-dailyReport textarea')].find(t=>t.offsetParent);return t&&t.id;});console.log('ta',ta);await p.fill('#'+ta,"Laid 301 ft of 8 in SDR 35 from MH-1 to MH-2. Inspector late 30 min.");
+ await H.click('Next: Hours & Sign');await p.waitForTimeout(800);await H.shot('71-daily-hours');
+ console.log('hours btns',JSON.stringify(await H.btns()));
+ console.log('errs',p.errs);await b.close();})();

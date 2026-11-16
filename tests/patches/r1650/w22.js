@@ -1,0 +1,13 @@
+const boot=require('./boot');const co=require('./co');const F=require('./flow');
+(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/cur.html',{init:co});const H=F(p);
+ await p.evaluate(()=>{pbOpenSettings();});await p.waitForTimeout(800);
+ await p.evaluate(()=>{const b=[...document.querySelectorAll('#screen-settings button')].find(b=>b.textContent.trim()==='Extra Large');b.click();});await p.waitForTimeout(500);
+ await p.evaluate(()=>pbGoto('home'));await p.waitForTimeout(800);
+ await F.setup(p,H);
+ await H.sel('hub1FitType','Reducer');await H.sel('hub1FitBr','6"');await p.waitForTimeout(300);
+ await p.evaluate(()=>document.getElementById('runSecJob').scrollIntoView());await p.waitForTimeout(300);await H.shot('190-xl-job',false);
+ await p.evaluate(()=>document.querySelector('[data-hub-id="hub1"]').scrollIntoView());await p.waitForTimeout(300);await H.shot('191-xl-hub',false);
+ await H.click('Review & Calculate');await p.waitForTimeout(1500);await H.click('Lock This Run');await p.waitForTimeout(2500);
+ await H.shot('192-xl-results',false);
+ await p.evaluate(()=>window.scrollBy(0,700));await p.waitForTimeout(300);await H.shot('193-xl-results2',false);
+ console.log('errs',p.errs);await b.close();})();
