@@ -12838,7 +12838,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.59 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.60 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -16791,10 +16791,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbStakePend.del(prefix); delete pbStakeAiLast[prefix];
     const st = document.getElementById(prefix + 'AiStakeStatus'), btn = document.getElementById(prefix + 'AiStakeBtn');
     pbAiShow(st, 'info', back ? 'Reading the stake (front and back)…' : 'Reading the stake…', '');
+    const mySeq = (pbStakeAiSeqN[prefix] = (pbStakeAiSeqN[prefix] || 0) + 1); /* r16.60: a later read (front + back) replaces this one */
+    if (!back) { pbStakeAiAfter[prefix] = { img, ctx }; if (st) st.insertAdjacentHTML('beforeend', '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" onclick="pbStakeAiAddBack(\'' + prefix + '\')">Add Back Photo</button></div>'); }
     if (btn) btn.disabled = true;
     const images = (img.extras || []).slice(0, 5);
     if (back) { images.push({ side: 'back', mediaType: back.mediaType, data: back.data }); (back.extras || []).slice(0, 5).forEach(x => images.push(Object.assign({ side: 'back' }, x))); }
     const r = await pbAiRequest('stake', { image: { mediaType: img.mediaType, data: img.data }, images: images.slice(0, 11) });
+    if (pbStakeAiSeqN[prefix] !== mySeq) return; /* r16.60: the back came in while this read was running: the front + back read fills the point */
     const stNow = document.getElementById(prefix + 'AiStakeStatus'), btnNow = document.getElementById(prefix + 'AiStakeBtn');
     if (btnNow) btnNow.disabled = false;
     if (pbStakeAiStale(prefix, ctx)) return; // the point was removed or a new run started: nothing to fill
@@ -16820,6 +16823,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbStakeAiKeepPhotos(prefix, ctx, [img, back]);
     if (!back) { const s2 = document.getElementById(prefix + 'AiStakeStatus'); if (s2) s2.insertAdjacentHTML('beforeend', '<div class="pb-btn-row"><button type="button" class="pb-btn ghost small" onclick="pbStakeAiAddBack(\'' + prefix + '\')">Add Back Photo</button></div>'); pbStakeAiAfter[prefix] = { img, ctx }; }
   };
+  const pbStakeAiSeqN = {}; // r16.60
   const pbStakeAiAfter = {}; // r16.58: a front already read: Add Back Photo reads it again with the back
   window.pbStakeAiAddBack = function(prefix) { const a = pbStakeAiAfter[prefix]; if (!a || pbStakeAiStale(prefix, a.ctx)) return; pbStakeAiFront[prefix] = { img: a.img, ctx: a.ctx }; const inp = document.getElementById(prefix + 'AiStakePhoto'); if (inp) inp.click(); };
   // r16.58: Read All Stake Photos: take the photos as fast as you walk, pick them all, and the app reads them (3 at a time),

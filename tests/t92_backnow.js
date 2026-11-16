@@ -1,0 +1,14 @@
+const boot=require('/home/claude/rig/boot');const F=require('/home/claude/rig/flow');
+(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/cur.html',{init:require('/home/claude/rig/co')});const H=F(p);
+ const errs=[];p.on('pageerror',e=>errs.push(e.message));
+ const S=(sta,el,cf,line,num)=>({is_stake:true,stake_number:{value:num||'',conf:num?'high':'low'},station:{value:sta||'',conf:sta?'high':'low'},offset:{value:'10/SD',conf:'high'},line_label:{value:line||'',conf:'high'},cut_fill:cf==null?{conf:'low'}:{direction:'cut',feet:cf,as_written:'C-'+cf,to:'IE',conf:'high'},stake_elevation:el==null?{conf:'low'}:{feet:el,as_written:'('+el+')',conf:'low'},other_text:'',uncertain:[]});
+ const R=[S('0+50',null,5.66,'',''),S('0+50',88.1,5.66,'','')];let n=0;
+ await p.route('**/functions/v1/ai**',async r=>{const k=n++;await new Promise(z=>setTimeout(z,k===0?3000:800));await r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,text:JSON.stringify(R[k]),used:k+1,limit:20})});});
+ await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1500);
+ await p.evaluate(()=>{try{localStorage.setItem('pbAiPrivacyAck','1')}catch(e){}});
+ await p.setInputFiles('#startAiStakePhoto',[H.img('p12')]);await p.waitForTimeout(700);
+ console.log('while reading:',await p.evaluate(()=>document.getElementById('startAiStakeStatus').innerText.replace(/\s+/g,' ')));
+ await p.evaluate(()=>{document.getElementById('startAiStakePhoto').addEventListener('click',e=>e.preventDefault(),{once:true});[...document.querySelectorAll('#startAiStakeStatus button')].find(x=>/Back/.test(x.textContent)).click();});
+ await p.setInputFiles('#startAiStakePhoto',[H.img('p13')]);await p.waitForTimeout(4500);
+ console.log('done:',await p.evaluate(()=>document.getElementById('startAiStakeStatus').innerText.replace(/\s+/g,' ')+' | sta='+document.getElementById('startStaTxt').value+' elev='+document.getElementById('startStakeElev').value+' cf='+document.getElementById('startCutFillVal').value+' photos='+(window._pbPhotos.start||[]).length),'reqs',n,'errs',errs);
+ await b.close();})();
