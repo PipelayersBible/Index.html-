@@ -12838,7 +12838,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.54 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.55 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -15080,6 +15080,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     await pbRunAccountLoadHooks(runFormUid, { login: !!pbLoginInProgress, sameAccount: !!keepRunForm }); // UX batch 2: per-account shortcuts, jobs
   }
   window.pbToggleStatsArchiveFields = function() {
+    { const tg = document.getElementById('saEnableToggle'); if (tg && !tg.checked) tg.checked = true; } /* r16.55: the app tracks every run; no Count in Stats box */
     const on = document.getElementById('saEnableToggle').checked;
     document.getElementById('saFieldsWrap').style.display = on ? '' : 'none';
     document.getElementById('saDisabledNote').style.display = on ? 'none' : '';
@@ -34734,7 +34735,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return false;
   }
   function saFieldsEnabled() {
-    return document.getElementById('saEnableToggle').checked;
+    const tg = document.getElementById('saEnableToggle'); if (tg && !tg.checked) { tg.checked = true; try { window.pbToggleStatsArchiveFields(); } catch (e) {} } /* r16.55 */
+    return true;
   }
   // Regenerates an already-locked entry's report text and correctly clears
   // its sent status — used everywhere something meaningfully changes an
@@ -69906,6 +69908,8 @@ html.pb-light #pbApp .pbx-badge.warn { color: #FFFFFF; }
       if (wrap && !document.getElementById('pbJobReset')) { var b = document.createElement('button'); b.type = 'button'; b.id = 'pbJobReset'; b.className = 'pb-job-reset'; b.textContent = 'Clear'; b.addEventListener('click', function () { if (typeof window.pbResetStatsArchiveFields === 'function') window.pbResetStatsArchiveFields(); }); wrap.appendChild(b); }
       var lead = document.getElementById('saLastRunNote'), rb = document.getElementById('pbJobReset'); /* r16.52: one line: From your last run · Clear */
       if (wrap && lead && rb) { var lr = document.getElementById('pbJobLastRow'); if (!lr) { lr = document.createElement('div'); lr.id = 'pbJobLastRow'; lr.className = 'pb-job-lastrow'; wrap.insertBefore(lr, wrap.firstChild); } if (lead.parentNode !== lr) lr.appendChild(lead); if (rb.parentNode !== lr) lr.appendChild(rb); }
+      { var jnF = document.getElementById('saJobNumber'), fJ0 = jnF && jnF.closest('.pb-field'), lr0 = document.getElementById('pbJobLastRow'); /* r16.55: company: From your last run · Clear sits above the job */
+        if (fJ0 && lr0 && wrap) { var top = fJ0.parentNode !== wrap ? fJ0 : wrap.firstChild; if (top && lr0.nextSibling !== top && lr0 !== top) top.parentNode.insertBefore(lr0, top); } }
       var sc = document.getElementById('screen-input'), ack = false; try { ack = localStorage.getItem('pbAiPrivacyAck') === '1'; } catch (e) {}
       if (sc) sc.classList.toggle('pb-ai-acked', ack);
     } catch (e) { console.error('r16.48 layout', e); }
@@ -70014,6 +70018,18 @@ html.pb-light #pbApp .pbx-badge.warn { color: #FFFFFF; }
 <style>
 /* r16.54: Light: a fitting hub's orange (#A65300) read as a lighter shade of the hub brown (#775600); a clear orange now */
 :where(html.pb-light) #pbApp :is(#screen-input, #screen-results) { --pb-fit-c: #E8590C; }
+</style>
+<style>
+/* r16.55: no Count in Stats box: every run is tracked, the notes box is always there */
+/* Light: hubs back to the app's gold (the brand text color #775600 had been used, which reads dark brown) */
+html.pb-light #pbApp#pbApp :is(#screen-input, #screen-results) { --hub-c: var(--pbl-yellow, #F5BF1F); }
+html.pb-light #pbApp#pbApp #screen-results #resultsBody tr.pb-hubrow { --pb-rs-edge: var(--pbl-yellow, #F5BF1F); } /* Results hub rows: the same gold */
+/* point stripes 50% thicker (4px -> 6px) */
+#pbApp#pbApp#pbApp #screen-input :is(.pb-section.start, .pb-section.hub, .pb-section.end, .pb-hub-card, .pb-xing-card, .pb-add-hub-section, .pb-add-xing-section) { border-left-width: 6px !important; }
+/* a fitting hub: what the card colors (photo count, outlined boxes) takes the fitting orange */
+#pbApp#pbApp #screen-input .pb-hub-card.pb-hub-fit .pb-photo-count { color: var(--pb-fit-c); }
+#pbApp#pbApp #screen-input .pb-hub-card.pb-hub-fit .pb-ai-filled { box-shadow: 0 0 0 2px var(--pb-fit-c) !important; }
+#pbApp#pbApp #screen-input .pb-field:has(> label > #saEnableToggle), #pbApp#pbApp #screen-input #saDisabledNote { display: none !important; }
 </style>
 </body>
 </html>
