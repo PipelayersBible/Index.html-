@@ -11324,9 +11324,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const w = b.closest('.pb-st-wrap'), p = w && w.dataset.stPt; if (!p) return;
     w.dataset.stTouched = '1';
     pbStSetMode(p, b.dataset.st);
-    if (b.dataset.st === 'sta') { const el = document.getElementById(p + 'StaTxt'); if (el && !el.value.trim()) pbStSync(); else pbStFromText(p); }
+    if (b.dataset.st === 'sta') {
+      const el = document.getElementById(p + 'StaTxt'), dEl = document.getElementById(pbStDistId(p)), n = pbStRunOf(p), s = pbStStart(n), d = dEl ? numVal(dEl.id) : null;
+      if (el && dEl && s && d !== null && w.dataset.stLast === 'dist') { el.value = pbStFmt(s.v + pbStDirOf(n) * d); dEl.dataset.stFrom = dEl.value; } // the distance typed last: the station follows it
+      else if (el && !el.value.trim()) pbStSync(); else pbStFromText(p);
+    }
+    delete w.dataset.stLast;
     pbStOut(p);
   });
+  // Which box of a point was typed in last: switching back to Station keeps a distance typed after the station.
+  document.addEventListener('input', (ev) => { const el = ev.target, w = el && el.closest && el.closest('#screen-input .pb-st-wrap'); if (!w || pbRsBusy) return; if (/StaTxt$/.test(el.id)) w.dataset.stLast = 'sta'; else if (el.closest('.pb-st-dist')) w.dataset.stLast = 'dist'; }, true);
   // Run Setup errors: an unreadable station, no Start station, a point outside the run (stations before the Start / past the End).
   function pbStWho(p) { const l = getPointLabel(p, ''); return pbStIsEnd(p) ? 'End Point' + (l ? ' (' + l + ')' : '') : 'The hub' + (pbStTxt(p) ? ' at Sta ' + pbStTxt(p) : '') + (l ? ' (' + l + ')' : ''); }
   function pbStPointErr(p) {
@@ -12739,7 +12746,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.36 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.37 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -16638,7 +16645,27 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const box = document.getElementById(prefix + 'AiStakeReview'); if (box) box.style.display = 'none';
     pbStakeAiPending[prefix].auto = true;
     pbStakeAiUse(prefix);
+    pbStakeAiKeepPhotos(prefix, ctx, [img, back]);
   };
+  // The stake photos the AI read go on the point's own photos (seen on Run Setup, saved with the run, in its report).
+  async function pbStakeAiKeepPhotos(prefix, ctx, list) {
+    const out = [];
+    for (const [k, im] of list.entries()) {
+      if (!im || !im.data) continue;
+      try {
+        const el = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = 'data:' + (im.mediaType || 'image/jpeg') + ';base64,' + im.data; });
+        let w = el.width, h = el.height; const m = 900;
+        if (w >= h && w > m) { h = Math.round(h * m / w); w = m; } else if (h > w && h > m) { w = Math.round(w * m / h); h = m; }
+        const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(el, 0, 0, w, h);
+        out.push({ url: c.toDataURL('image/jpeg', 0.72), name: k ? 'Stake back' : 'Stake front', captureId: 'cap-' + Date.now().toString(36) + '-ai' + k + '-' + Math.random().toString(36).slice(2, 7) });
+      } catch (e) {}
+    }
+    if (!out.length || pbStakeAiStale(prefix, ctx)) return;
+    window._pbPhotos[prefix] = window._pbPhotos[prefix] || [];
+    out.forEach(ph => window._pbPhotos[prefix].push(ph));
+    renderPhotoList(prefix);
+    if (pbCurrentScreen === 'input') { try { pbStampFormEdit(); pbNoteFormEdit(); } catch (e) {} }
+  }
   function pbStakeAiRender(prefix) {
     const box = document.getElementById(prefix + 'AiStakeReview'), p = pbStakeAiPending[prefix];
     if (!box) return;
@@ -18589,7 +18616,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         <div class="pb-rs-photobtns"><button type="button" class="pb-btn ghost small" onclick="document.getElementById('${prefix}Photo').click()">+ Add Photo</button><button type="button" class="pb-btn ghost small pb-ai-stake-btn" id="${prefix}AiStakeBtn" onclick="pbStakeAiPick('${prefix}')">Read Stake w/ AI</button></div>
         <div class="pb-ai-stake" id="${prefix}AiStakeWrap">
           <input type="file" accept="image/*" multiple id="${prefix}AiStakePhoto" style="display:none;" onchange="pbStakeAiPhoto('${prefix}', this)">
-          <p class="pb-ai-privacy">Sent to Anthropic to be read; not stored by the app. Don’t use AI with confidential job info.</p>
+          <p class="pb-ai-privacy">Sent to Anthropic to be read, and kept with this point’s photos. Don’t use AI with confidential job info.</p>
           <div class="pb-ai-status" id="${prefix}AiStakeStatus" aria-live="polite"></div>
           <div class="pb-ai-review" id="${prefix}AiStakeReview" style="display:none;"></div>
         </div>
