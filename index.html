@@ -9086,7 +9086,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
         </div>
         <div class="pb-field" id="runIdOtherWrap" style="display:none;"><label for="runIdOther">Custom ID<span class="pb-sr"> (inches)</span></label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.01" id="runIdOther" inputmode="decimal" placeholder="e.g. 10.5"><span class="pb-unit" aria-hidden="true">in</span></div></div>
         <div class="pb-row pb-pipepair pb-pipe-auto" id="runWTRow">
-          <div class="pb-field"><label for="runWT">Wall thickness<span class="pb-sr"> (ft)</span><span class="pb-req"> (required)</span></label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.001" id="runWT" inputmode="decimal" placeholder="e.g. 0.08" aria-required="true"><span class="pb-unit" aria-hidden="true">ft</span></div></div>
+          <div class="pb-field"><label for="runWT">Wall thickness<span class="pb-sr"> (ft)</span></label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.001" id="runWT" inputmode="decimal" placeholder="e.g. 0.08" aria-required="true"><span class="pb-unit" aria-hidden="true">ft</span></div></div>
         </div>
         <label class="pb-checkrow pb-remember" style="display:flex; align-items:center; gap:8px; margin:8px 16px 0 16px; cursor:pointer;">
           <input type="checkbox" id="runRememberWtId" style="margin-top:0;">
@@ -12811,7 +12811,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.43 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.44 · 2026-11-15'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -20446,6 +20446,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const iv = document.getElementById(ids.iv);
       if (!anchor || !iv) continue;
       anchor.insertAdjacentHTML('afterend', pbLaySetupHTML(n));
+      if (n === 1) { const row = document.getElementById('runWTRow'), lf = document.getElementById(ids.len) && document.getElementById(ids.len).closest('.pb-field'); if (row && lf) row.appendChild(lf); } // r16.43: laying length beside the wall thickness
       [ids.use, ids.len, ids.div].forEach(id => { const el = document.getElementById(id); ['input', 'change'].forEach(t => el.addEventListener(t, pbLayRefreshSetup)); if (n === 1) ['input', 'change'].forEach(t => el.addEventListener(t, pbLaySaveRemembered)); }); // the app fills these in without events (Resume, Reuse), so only a person's change is saved
     }
     pbLayRefreshSetup();
