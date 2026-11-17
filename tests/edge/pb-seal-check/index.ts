@@ -2,7 +2,7 @@
 // Called every 10 minutes by pg_cron (pb_prod.seal_check_kick) only while a seal has no check yet.
 // For each new seal it downloads the PDF from run-seals, computes its SHA-256 itself, asks two outside time-stamp
 // authorities (RFC 3161: DigiCert and FreeTSA) to stamp that SHA-256, and records the result in pb_prod.run_seal_checks
-// (insert-only). A time-stamp token proves the file's fingerprint existed at that time, independent of this server.
+// (insert-only); r16.85: also time-stamps each finished day of the admin access log (pb_audit.log_days). A time-stamp token proves the file's fingerprint existed at that time, independent of this server.
 // Protected by the shared secret header x-pb-push-secret (vault push_cron_secret), like pb-backup. Logs counts only.
 const url = () => Deno.env.get('SUPABASE_URL')!, key = () => Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const hdr = (x: Record<string, string> = {}) => ({ apikey: key(), Authorization: `Bearer ${key()}`, ...x });
@@ -75,6 +75,18 @@ Deno.serve(async (req) => {
       pn++; if (!ph.name.endsWith(sha + '.jpg')) pbad++;
     } catch (_e) { /* tried again next time */ }
   }
-  console.log(JSON.stringify({ seal_check: n, mismatched: bad, waiting: list.length - n, photos_checked: pn, photos_mismatched: pbad }));
+  // r16.85: each finished day of the admin access log: the database's fingerprint of that day's entries, time-stamped outside
+  const dt = await rpc('pb_audit_day_todo', {});
+  const days = Array.isArray(dt.data) ? dt.data as { day: string; n: number; sha: string }[] : [];
+  let dn = 0;
+  for (const d of days) {
+    if (!/^[0-9a-f]{64}$/.test(String(d.sha || ''))) continue;
+    const bytes = new Uint8Array(32); for (let i = 0; i < 32; i++) bytes[i] = parseInt(d.sha.slice(i * 2, i * 2 + 2), 16);
+    const tsa = await stamp(bytes);
+    if (!tsa.some((t) => t.ok)) continue; // no outside stamp: tried again next hour
+    const put = await rpc('pb_audit_day_put', { p_day: d.day, p_sha: d.sha, p_tsa: tsa });
+    if (put.ok && (put.data as { ok?: boolean })?.ok) dn++;
+  }
+  console.log(JSON.stringify({ seal_check: n, mismatched: bad, waiting: list.length - n, photos_checked: pn, photos_mismatched: pbad, log_days_stamped: dn, log_days_due: days.length }));
   return empty();
 });
