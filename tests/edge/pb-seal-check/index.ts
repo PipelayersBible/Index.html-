@@ -63,6 +63,18 @@ Deno.serve(async (req) => {
     await rpc('pb_seal_check_put', { p_seal: sl.id, p_sha: sha, p_bytes: bytes, p_tsa: tsa });
     n++; if (sha !== sl.sha256) bad++;
   }
-  console.log(JSON.stringify({ seal_check: n, mismatched: bad, waiting: list.length - n }));
+  const pt = await rpc('pb_photo_check_todo', { p_limit: 20 });
+  const photos = Array.isArray(pt.data) ? pt.data as { name: string; at: string }[] : [];
+  let pn = 0, pbad = 0;
+  for (const ph of photos) {
+    try {
+      const r = await fetch(`${url()}/storage/v1/object/run-photos/${ph.name.split('/').map(encodeURIComponent).join('/')}`, { headers: hdr() });
+      if (!r.ok) continue;
+      const buf = await r.arrayBuffer(), sha = hex(await crypto.subtle.digest('SHA-256', buf));
+      await rpc('pb_photo_check_put', { p_name: ph.name, p_sha: sha, p_bytes: buf.byteLength, p_at: ph.at });
+      pn++; if (!ph.name.endsWith(sha + '.jpg')) pbad++;
+    } catch (_e) { /* tried again next time */ }
+  }
+  console.log(JSON.stringify({ seal_check: n, mismatched: bad, waiting: list.length - n, photos_checked: pn, photos_mismatched: pbad }));
   return empty();
 });
