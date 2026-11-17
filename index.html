@@ -12871,7 +12871,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.72 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.73 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -38689,7 +38689,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const removed = !!(plan && !beta && plan.removed && !plan.individual); /* r16.72: removed from a company: offer their own plan */
       if (line && removed) {
         line.hidden = false; line.classList.add('ended');
-        line.innerHTML = '<span>You’re no longer part of ' + escapeHtml(plan.removed.company || 'your company') + '. Want your own plan to keep the AI tools?</span>'
+        line.innerHTML = '<span>You’re no longer part of ' + escapeHtml(plan.removed.company || 'your company') + '. Would you like to sign up for an individual plan?</span>'
           + (plan.requested ? '<span>Request sent. You’ll be contacted to set it up.</span>'
             : '<span class="pb-beta-acts"><button type="button" class="pb-btn small" data-own="1">My Own Plan</button><button type="button" class="pb-btn ghost small" data-own="0">Not Now</button></span>');
         line.querySelectorAll('[data-own]').forEach((b) => { b.onclick = async () => {
@@ -38709,7 +38709,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
             const graceLeft = plan.trial_ends_at ? Math.max(0, Math.ceil((new Date(plan.trial_ends_at).getTime() + 3 * 864e5 - Date.now()) / 864e5)) : 0;
             const what = plan.closed || !graceLeft ? 'Your records are safe. New runs and reports wait on this phone and send once your company starts a plan.'
               : 'New runs and reports stop sending to your company in ' + (graceLeft === 1 ? '1 day' : graceLeft + ' days') + ' unless it starts a plan. Nothing is lost.';
-            const own = plan.individual ? '<span>You have your own plan, so your AI tools keep working.</span>'
+            const own = plan.individual ? '<span>You have an individual plan.</span>'
               : plan.requested ? '<span>Request sent. You’ll be contacted to set it up.</span>'
               : '<span class="pb-beta-acts"><button type="button" class="pb-btn small" data-plan="company">Company Plan</button><button type="button" class="pb-btn ghost small" data-plan="individual">My Own Plan</button></span>';
             line.innerHTML = '<span class="pb-beta-chip">Beta ended</span><span>' + what + '</span>' + own;
