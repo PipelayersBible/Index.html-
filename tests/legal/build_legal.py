@@ -36,6 +36,13 @@ priv = rep(priv, "| Confined space permits | While the account is open. Users ca
     "| Confined space permits | While the account is open |")
 priv = rep(priv, "Your company cannot see who sent it through the Service.",
     "Your company cannot see who sent it through the Service. Our hosting provider's logs, kept for up to 7 days, could match a report to a phone; we do not look unless the law requires it.")
+priv = rep(priv, "| Stripe | Payments for paid plans | Billing details and card information |",
+    "| DigiCert and FreeTSA (time-stamp services) | Independent time stamps for sealed run PDFs | Only the PDF\u2019s fingerprint (a SHA-256 hash value), never its contents |\n| Stripe | Payments for paid plans | Billing details and card information |")
+priv = rep(priv, "| Change history | Who created, edited, approved, sent back or removed a record, and when | The Service |",
+    "| Change history | Who created, edited, approved, sent back or removed a record, and when; for runs, the difference between your phone\u2019s clock and the server\u2019s when the run reached the company | The Service |")
+terms = rep(terms, "Later edits create a new sealed version; earlier versions are kept.",
+    "Later edits create a new sealed version; earlier versions are kept. The server also re-reads each sealed copy, records the fingerprint it computes, and may obtain time stamps for that fingerprint from independent time-stamp services.")
+priv = rep(priv, "password (stored only in scrambled form), login records |", "password (stored only in scrambled form), login records, and the two-step login key if you turn it on (kept by our login provider) |")
 CSS = """:root{--bg:#f6f7f9;--fg:#15181d;--mut:#5b6472;--card:#fff;--line:#e2e5ea;--acc:#c2410c}
 @media (prefers-color-scheme:dark){:root{--bg:#0f1115;--fg:#e8eaee;--mut:#9aa3b2;--card:#171a20;--line:#2a2f38;--acc:#fb923c}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
