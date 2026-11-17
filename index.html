@@ -12869,7 +12869,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.69 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.70 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -38770,20 +38770,23 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       async function load() {
         let r; try { r = await sbClient.rpc('pb_owner_overview'); } catch (e) { r = { error: e }; }
         if (!r || r.error || !r.data || !r.data.ok) { list.innerHTML = '<p class="pb-fb-st">Couldn’t load. Check signal and open it again.</p>'; return; }
-        const cos = r.data.companies || [];
-        list.innerHTML = cos.length ? cos.map((c) => {
+        const cos = r.data.companies || [], T = r.data.totals || null, ft = (n) => Math.round(Number(n) || 0).toLocaleString() + ' ft';
+        const tot = T ? '<div class="pb-own-co"><div class="nm">All companies</div><div class="ln">' + ft(T.laid_ft) + ' laid · ' + ft(T.laid_ft_30) + ' in the last 30 days · ' + (T.runs || 0) + ' runs · ' + (T.companies || 0) + ' compan' + (T.companies === 1 ? 'y' : 'ies') + '</div></div>' : ''; /* r16.70 */
+        list.innerHTML = tot + (cos.length ? cos.map((c) => {
           const beta = c.plan === 'trial', left = beta && c.trial_ends_at ? Math.ceil((new Date(c.trial_ends_at) - Date.now()) / 86400000) : null, ended = beta && left !== null && left <= 0;
           const ai = Object.entries(c.ai || {}).filter(([f]) => f !== 'gonogo_q').sort((a, b) => b[1] - a[1]).map(([f, n]) => n + ' ' + (FEAT[f] || f)).join(' · ');
           const ev = Object.entries(c.events || {}).filter(([e]) => e.startsWith('scr:') && !/^scr:(home|settings)$/.test(e)).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([e, n]) => SCR(e) + ' ' + n).join(' · ');
           const fb = Object.entries(c.events || {}).filter(([e]) => e.startsWith('feedback:')).reduce((a, [, n]) => a + n, 0);
           return '<div class="pb-own-co" data-id="' + escapeHtml(c.id) + '"><div class="nm">' + escapeHtml(c.name || '') + ' <span class="ch' + (beta ? (ended ? ' ended' : '') : ' paid') + '">' + (beta ? (ended ? 'Beta ended' : 'Beta · ' + left + (left === 1 ? ' day' : ' days') + ' left') : 'Paid') + '</span></div>'
             + '<div class="ln">' + c.users + ' user' + (c.users === 1 ? '' : 's') + ' · ' + c.active_7d + ' active this week · used on ' + c.active_days + ' of the last 30 days</div>'
+            + '<div class="ln">Laid: ' + ft(c.laid_ft) + ' (' + ft(c.laid_ft_30) + ' in 30 days) · ' + (c.runs || 0) + ' runs · ' + (c.photos || 0) + ' photos · ' + (c.reports_30 || 0) + ' reports in 30 days</div>'
+            + '<div class="ln">Last used: ' + (c.last_active ? new Date(c.last_active + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'not yet') + '</div>'
             + '<div class="ln">AI, 30 days: ' + (ai || 'none') + ' · $' + Number(c.ai_usd || 0).toFixed(2) + '</div>'
             + (ev ? '<div class="ln">Most used: ' + escapeHtml(ev) + '</div>' : '')
             + '<div class="ln">Plan sets: ' + c.plan_sets + (c.plan_sheets ? ' (' + c.plan_sheets + ' sheets)' : '') + ' · Feedback: ' + Math.max(c.feedback || 0, fb) + '</div>'
             + (beta ? '<div class="acts"><button type="button" class="pb-btn ghost small" data-act="extend">Add 30 Days</button><button type="button" class="pb-btn small" data-act="paid">Make Paid</button></div>' : '')
             + '</div>';
-        }).join('') : '<p class="pb-fb-st">No companies yet.</p>';
+        }).join('') : '<p class="pb-fb-st">No companies yet.</p>');
         list.querySelectorAll('[data-act]').forEach((b) => { b.onclick = async () => {
           const id = b.closest('.pb-own-co').dataset.id, paid = b.dataset.act === 'paid';
           if (paid && !(await new Promise((ok) => pbShowModal('Switch this company to paid? Its parked plan sets start reading now.', [{ label: 'Cancel', onClick: () => ok(false) }, { label: 'Make Paid', primary: true, onClick: () => ok(true) }])))) return;
