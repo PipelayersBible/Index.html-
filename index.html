@@ -12871,7 +12871,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.79 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.80 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -62976,8 +62976,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!L.length) { pbAlert('No sealed copy yet. The crew member’s phone makes one after the run ends and reaches the company.', 'Sealed Originals'); return; }
     const when = (v) => { const d = new Date(v); return isFinite(d.getTime()) ? d.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''; };
     const btns = L.slice(0, 6).map(sl => ({ label: 'Version ' + sl.version + ' · ' + when(sl.made_at || sl.sealed_at), primary: sl === L[0], onClick: () => { window.pbRrSealGet(sl, x); } }));
+    const c0 = L[0] && L[0].server_check, chk = !c0 ? '\n\nThe server checks each new sealed copy within about 10 minutes.' : c0.matches ? '\n\nNewest version: the server re-read the file and its fingerprint matches' + (Array.isArray(c0.tsa) && c0.tsa.length ? '; time-stamped by ' + c0.tsa.join(' and ') + ' (outside time-stamp services)' : '') + '.' : '\n\nNewest version: the server\u2019s check of this file did NOT match. Report it from Settings.'; /* r16.80 */
     btns.push({ label: 'Close' });
-    pbShowModal('Made on the crew member’s phone when the run was finished' + (L.length > 1 ? ', and again after each edit' : '') + '. Locked on the server: nobody at your company can change or delete them in the app.' + (L.length > 6 ? '\n\nShowing the newest 6 of ' + L.length + '.' : ''), btns, 'Sealed Originals');
+    pbShowModal('Made on the crew member’s phone when the run was finished' + (L.length > 1 ? ', and again after each edit' : '') + '. Locked on the server: nobody at your company can change or delete them in the app.' + chk + (L.length > 6 ? '\n\nShowing the newest 6 of ' + L.length + '.' : ''), btns, 'Sealed Originals');
   };
   window.pbRrSealGet = async function(sl, x) {
     let blob = null;
@@ -63026,7 +63027,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const r = await pbPermitRpc('pb_prod_run_record_put', { p_entry_id: t.id, p_record: t.rec, p_expect_uid: uid, p_access_company: acc.companyId }, 30000);
         if (pbRr.uid !== uid) break;
         const msg = String((r.error && r.error.message) || ''), code = (msg.match(/pb:\w+/) || [''])[0];
-        if (!r.error && r.data && r.data.ok === true) { try { if (await pbRrPhotosUp(uid, t)) again = true; } catch (x) { console.error('Run photo upload:', x); } /* r16.75 */ sent[t.id] = t.h; if (t.e.reportRefused) { delete t.e.reportRefused; learned = true; } if (typeof window.pbR57AfterPut === 'function') window.pbR57AfterPut(t.e); /* r15.57 */ if (typeof window.pbRrNoteSent === 'function' && window.pbRrNoteSent(t.e, r.data)) learned = true; continue; }
+        if (!r.error && r.data && r.data.ok === true) { try { await pbPermitRpc('pb_prod_run_clock', { p_entry_id: t.id, p_phone_at: new Date().toISOString() }, 10000); } catch (x) {} /* r16.80 */ try { if (await pbRrPhotosUp(uid, t)) again = true; } catch (x) { console.error('Run photo upload:', x); } /* r16.75 */ sent[t.id] = t.h; if (t.e.reportRefused) { delete t.e.reportRefused; learned = true; } if (typeof window.pbR57AfterPut === 'function') window.pbR57AfterPut(t.e); /* r15.57 */ if (typeof window.pbRrNoteSent === 'function' && window.pbRrNoteSent(t.e, r.data)) learned = true; continue; }
         if (navigator.onLine === false || /failed to fetch|networkerror|load failed|no client|timeout/i.test(msg)) break;
         if (code === 'pb:not_company_member' || code === 'pb:company_changed') { if (code === 'pb:not_company_member' && typeof window.pbR57Refuse === 'function') todo.forEach(x => { if (window.pbR57Refuse(x.e, code)) learned = true; }); /* r15.57: said on Home and in Records */ pbRr.pauseUntil = Date.now() + 6 * 3600000; break; }
         if (code === 'pb:too_big' || code === 'pb:bad_record' || code === 'pb:photo_data') { sent[t.id] = t.h; if (typeof window.pbR57Refuse === 'function' && window.pbR57Refuse(t.e, code)) learned = true; /* r15.57: kept on the run and said */ continue; } // never resent as is
