@@ -1164,6 +1164,8 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
 #pbApp .pb-beta-line .pb-beta-chip { font-weight: 700; color: #14171C; background: var(--pbl-yellow, #F5BF1F); border-radius: 999px; padding: 2px 10px; font-size: 13px; }
 #pbApp .pb-beta-line.ended .pb-beta-chip { background: var(--pb-danger-soft, #fde2e1); color: var(--pb-danger-text, #8a1c1c); }
 #pbApp .pb-beta-line[hidden], .pb-fb-pill[hidden] { display: none !important; }
+#pbApp .pb-beta-line.ended { padding: 12px 14px; border-radius: 14px; background: var(--pb-surface, #fff); box-shadow: var(--pb-elev-1); color: var(--pb-text); }
+#pbApp .pb-beta-acts { display: flex; gap: 8px; width: 100%; } #pbApp .pb-beta-acts .pb-btn { flex: 1; margin: 0; }
 .pb-fb-pill { position: fixed; left: 14px; bottom: calc(14px + var(--pb-shell-h, 0px)); z-index: 39; border: 0; border-radius: 999px; padding: 9px 14px; font: 600 14px/1 'Inter', sans-serif; color: #14171C; background: var(--pbl-yellow, #F5BF1F); box-shadow: 0 4px 14px rgba(0,0,0,.28); }
 html.pb-kb-open .pb-fb-pill, html.pb-fb-open .pb-fb-pill { display: none !important; }
 .pb-fb { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; justify-content: center; }
@@ -12869,7 +12871,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.70 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.71 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -38686,9 +38688,25 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const line = document.getElementById('pbBetaLine');
       if (line) {
         line.hidden = !beta; line.classList.toggle('ended', ended);
-        if (beta) line.innerHTML = ended
-          ? '<span class="pb-beta-chip">Beta ended</span><span>Your records are all here. AI and new plan sets are off until your company starts a plan.</span>'
-          : '<span class="pb-beta-chip">Beta</span><span>' + (plan.days_left === 1 ? '1 day left' : (plan.days_left || 0) + ' days left') + '</span>';
+        if (beta) { /* r16.71: the end of the beta: a company plan, or the person's own plan meanwhile */
+          if (!ended) line.innerHTML = '<span class="pb-beta-chip">Beta</span><span>' + (plan.days_left === 1 ? '1 day left' : (plan.days_left || 0) + ' days left') + '</span>';
+          else {
+            const graceLeft = plan.trial_ends_at ? Math.max(0, Math.ceil((new Date(plan.trial_ends_at).getTime() + 3 * 864e5 - Date.now()) / 864e5)) : 0;
+            const what = plan.closed || !graceLeft ? 'Your records are safe. New runs and reports wait on this phone and send once your company starts a plan.'
+              : 'New runs and reports stop sending to your company in ' + (graceLeft === 1 ? '1 day' : graceLeft + ' days') + ' unless it starts a plan. Nothing is lost.';
+            const own = plan.individual ? '<span>You have your own plan, so your AI tools keep working.</span>'
+              : plan.requested ? '<span>Request sent. You’ll be contacted to set it up.</span>'
+              : '<span class="pb-beta-acts"><button type="button" class="pb-btn small" data-plan="company">Company Plan</button><button type="button" class="pb-btn ghost small" data-plan="individual">My Own Plan</button></span>';
+            line.innerHTML = '<span class="pb-beta-chip">Beta ended</span><span>' + what + '</span>' + own;
+            line.querySelectorAll('[data-plan]').forEach((b) => { b.onclick = async () => {
+              if (!sbClient || navigator.onLine === false) { pbAlert('Needs signal. Try again when you have it.', 'Needs Signal'); return; }
+              b.disabled = true; let r; try { r = await sbClient.rpc('pb_plan_request', { p_kind: b.dataset.plan }); } catch (e) { r = { error: e }; }
+              if (!r || r.error || !r.data || !r.data.ok) { b.disabled = false; pbAlert('Not sent. Try again.', 'Not Sent'); return; }
+              plan = Object.assign({}, plan, { requested: true }); try { localStorage.setItem(planKey(), JSON.stringify(plan)); } catch (e) {}
+              window.pbTrack('plan_request:' + b.dataset.plan); pbBetaRender();
+            }; });
+          }
+        }
       }
       let pill = document.getElementById('pbFbPill');
       if (!pill && beta) { pill = document.createElement('button'); pill.type = 'button'; pill.id = 'pbFbPill'; pill.className = 'pb-fb-pill'; pill.textContent = 'Feedback'; pill.onclick = () => window.pbFeedbackOpen(); document.body.appendChild(pill); }
@@ -38769,10 +38787,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const list = ov.querySelector('#pbOwnList'), st = ov.querySelector('#pbOwnSt');
       async function load() {
         let r; try { r = await sbClient.rpc('pb_owner_overview'); } catch (e) { r = { error: e }; }
+        let rq = null; try { rq = await sbClient.rpc('pb_owner_plan_requests'); } catch (e) {} /* r16.71 */
+        const reqs = rq && !rq.error && rq.data && rq.data.ok ? rq.data.requests || [] : [];
         if (!r || r.error || !r.data || !r.data.ok) { list.innerHTML = '<p class="pb-fb-st">Couldn’t load. Check signal and open it again.</p>'; return; }
         const cos = r.data.companies || [], T = r.data.totals || null, ft = (n) => Math.round(Number(n) || 0).toLocaleString() + ' ft';
         const tot = T ? '<div class="pb-own-co"><div class="nm">All companies</div><div class="ln">' + ft(T.laid_ft) + ' laid · ' + ft(T.laid_ft_30) + ' in the last 30 days · ' + (T.runs || 0) + ' runs · ' + (T.companies || 0) + ' compan' + (T.companies === 1 ? 'y' : 'ies') + '</div></div>' : ''; /* r16.70 */
-        list.innerHTML = tot + (cos.length ? cos.map((c) => {
+        const reqHtml = reqs.length ? '<div class="pb-own-co"><div class="nm">Plan requests</div>' + reqs.map((q) => '<div class="ln" data-uid="' + escapeHtml(q.user_id) + '">' + escapeHtml(q.who || q.email || 'Someone') + (q.company ? ' (' + escapeHtml(q.company) + ')' : '') + ' wants ' + (q.kind === 'company' ? 'a company plan: use Make Paid on the company' : 'their own plan')
+          + (q.email && q.email !== q.who ? ' · ' + escapeHtml(q.email) : '') + (q.kind === 'individual' ? ' <button type="button" class="pb-btn small" data-on="1" style="width:auto;display:inline-block;margin-left:6px">Turn On</button>' : '') + '</div>').join('') + '</div>' : '';
+        list.innerHTML = reqHtml + tot + (cos.length ? cos.map((c) => {
           const beta = c.plan === 'trial', left = beta && c.trial_ends_at ? Math.ceil((new Date(c.trial_ends_at) - Date.now()) / 86400000) : null, ended = beta && left !== null && left <= 0;
           const ai = Object.entries(c.ai || {}).filter(([f]) => f !== 'gonogo_q').sort((a, b) => b[1] - a[1]).map(([f, n]) => n + ' ' + (FEAT[f] || f)).join(' · ');
           const ev = Object.entries(c.events || {}).filter(([e]) => e.startsWith('scr:') && !/^scr:(home|settings)$/.test(e)).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([e, n]) => SCR(e) + ' ' + n).join(' · ');
@@ -38787,6 +38809,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
             + (beta ? '<div class="acts"><button type="button" class="pb-btn ghost small" data-act="extend">Add 30 Days</button><button type="button" class="pb-btn small" data-act="paid">Make Paid</button></div>' : '')
             + '</div>';
         }).join('') : '<p class="pb-fb-st">No companies yet.</p>');
+        list.querySelectorAll('[data-on]').forEach((b) => { b.onclick = async () => {
+          const uid = b.closest('[data-uid]').dataset.uid; b.disabled = true;
+          let r; try { r = await sbClient.rpc('pb_owner_individual_on', { p_user: uid }); } catch (e) { r = { error: e }; }
+          if (!r || r.error || !r.data || !r.data.ok) { pbAlert('Not changed. Check signal and try again.', 'Not Changed'); b.disabled = false; return; }
+          load();
+        }; });
         list.querySelectorAll('[data-act]').forEach((b) => { b.onclick = async () => {
           const id = b.closest('.pb-own-co').dataset.id, paid = b.dataset.act === 'paid';
           if (paid && !(await new Promise((ok) => pbShowModal('Switch this company to paid? Its parked plan sets start reading now.', [{ label: 'Cancel', onClick: () => ok(false) }, { label: 'Make Paid', primary: true, onClick: () => ok(true) }])))) return;
