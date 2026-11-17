@@ -12871,7 +12871,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.75 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.76 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -62803,6 +62803,84 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return c;
   }
   window.pbRrPhotosIn = pbRrPhotosIn;
+  // r16.76 (Tommy, Nov 16): a sealed original of each finished run. Made on the crew member's phone from the run as it is
+  // there (photos and all), once the company has the run; uploaded to run-seals/<uid>/runs/<run>/<time>-<sha>.pdf, where
+  // nobody can change or delete it, and its SHA-256 fingerprint is recorded on the server (pb_run_seal_add). A run edited
+  // after that is sealed again as the next version; every version is kept. The office opens them from the run (Sealed Originals).
+  const PB_SEAL_VOL = /^(report|emailed|email|sent|r57)/i;
+  function pbRrSealKey(rec) { const c = JSON.parse(JSON.stringify(rec)); Object.keys(c).forEach(k => { if (PB_SEAL_VOL.test(k)) delete c[k]; }); if (c.pbOffice) delete c.pbOffice.send; return pbHashText(JSON.stringify(c)); }
+  async function pbSha256Hex(buf) { const h = await crypto.subtle.digest('SHA-256', buf); return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, '0')).join(''); }
+  let pbSealBusy = false;
+  async function pbRrSealOne(uid, e, key) {
+    const made = new Date();
+    let doc; try { const unreadable = await pbPreflightPdfImages([e], () => {}); doc = pbRptMakeSafe(e, { unreadable }); } catch (x) { console.error('Sealed copy:', x); return 'fail'; }
+    try { doc.setProperties({ title: pbPdfSafe(pbRptKindName(e) + ': ' + pbRptEntryLabel(e) + ' (sealed original)'), subject: pbPdfSafe('Sealed original, made on the crew member’s phone ' + made.toISOString()), creator: pbRptBuild() }); } catch (x) {}
+    const buf = doc.output('arraybuffer'), sha = await pbSha256Hex(buf);
+    const ts = made.toISOString().replace(/[-:]/g, '').replace(/\..*$/, '');
+    const path = pbRrPhotoPath(uid, e.id, 'x').replace(/x\.jpg$/, ts + '-' + sha.slice(0, 16) + '.pdf');
+    if (!sbUser || sbUser.id !== uid || navigator.onLine === false) return 'stop';
+    let msg = '';
+    try { const { error } = await sbClient.storage.from('run-seals').upload(path, new Blob([buf], { type: 'application/pdf' }), { contentType: 'application/pdf', upsert: false }); msg = error ? String(error.message || error.error || error) : ''; } catch (x) { msg = String(x && x.message || x); }
+    if (msg && !/exists|duplicate/i.test(msg)) return /fetch|network|load failed|timeout/i.test(msg) ? 'stop' : 'fail';
+    const r = await pbPermitRpc('pb_run_seal_add', { p_entry_id: String(e.id), p_path: path, p_sha256: sha, p_bytes: buf.byteLength, p_key: key, p_made_at: made.toISOString(), p_build: String(window.PB_APP_BUILD || '') }, 30000);
+    if (!r.error && r.data && r.data.ok) return 'ok';
+    const m = String((r.error && r.error.message) || '');
+    return /failed to fetch|networkerror|load failed|timeout/i.test(m) ? 'stop' : 'fail';
+  }
+  async function pbRrSealPass(uid) {
+    if (pbSealBusy || !uid || uid === 'shared' || pbArchiveOwnerUid !== uid || archiveLoadFailed || !sbClient || !sbClient.storage || !sbUser || sbUser.id !== uid || navigator.onLine === false) return;
+    if (pbCurrentScreen === 'results' || pbCurrentScreen === 'input') return; // not while he's running pipe
+    if (typeof pdfLibReady === 'function' && !pdfLibReady()) return;
+    if (!(window.crypto && crypto.subtle)) return;
+    const acc = pbProdAccMem.get(uid); if (!acc || !acc.member || !acc.companyId) return;
+    const sent = pbRr.uid === uid ? pbRr.sent : null; if (!sent) return;
+    pbSealBusy = true; let more = false;
+    try {
+      let seals = {}; try { seals = JSON.parse((await pbGetFor(uid, 'rrSeals')) || '{}') || {}; } catch (x) { seals = {}; }
+      const since = Date.now() - PB_RR_DAYS * 86400000; let did = false, changed = false;
+      for (const e of runArchive) {
+        if (!e || e.kind !== 'run' || !(e.completed || e.incomplete) || !sent[String(e.id)]) continue;
+        if (typeof window.pbRfEndHeld === 'function' && window.pbRfEndHeld(e)) continue;
+        const t = (e.lockTime instanceof Date ? e.lockTime : new Date(e.lockTime)).getTime(); if (!(isFinite(t) && t > since)) continue;
+        let rec; try { rec = pbRrOfficeCopy(e); } catch (x) { continue; }
+        if (sent[String(e.id)] !== pbHashText(JSON.stringify([rec, acc.companyId]))) continue; // the company has an older copy: sealed after it gets this one
+        const id = String(e.id), key = pbRrSealKey(rec), s = seals[id] || {};
+        if (s.k === key || (s.n || 0) >= 30 || (s.fail && Date.now() - s.fail < 30 * 60000)) continue;
+        if (did) { more = true; break; }
+        did = true;
+        const r = await pbRrSealOne(uid, e, key);
+        if (r === 'ok') { seals[id] = { k: key, n: (s.n || 0) + 1, at: Date.now() }; changed = true; }
+        else if (r === 'fail') { seals[id] = Object.assign({}, s, { fail: Date.now() }); changed = true; }
+        else break;
+      }
+      if (changed) { const ks = Object.keys(seals); if (ks.length > 300) ks.sort((a, b) => (seals[a].at || 0) - (seals[b].at || 0)).slice(0, ks.length - 300).forEach(k => delete seals[k]); await pbSetFor(uid, 'rrSeals', JSON.stringify(seals)); }
+    } finally { pbSealBusy = false; }
+    if (more) setTimeout(() => { pbRrSealPass(uid).catch(x => console.error('Sealed copy:', x)); }, 20000);
+  }
+  window.pbRrSealPass = pbRrSealPass;
+  // the office: a run's sealed originals, each checked against its fingerprint when opened
+  window.pbRrSeals = async function() {
+    const O = pbRoFor(pbArchiveOwnerUid), x = O.open; if (!x || !x.id) return;
+    if (!sbClient || navigator.onLine === false) { pbAlert('Sealed originals open with signal.', 'No Signal'); return; }
+    const r = await pbPermitRpc('pb_run_seals_list', { p_run_id: x.id }, 20000);
+    if (r.error || !r.data || !Array.isArray(r.data.seals)) { pbAlert('Couldn’t load the sealed originals. Try again.', 'Sealed Originals'); return; }
+    const L = r.data.seals;
+    if (!L.length) { pbAlert('No sealed copy yet. The crew member’s phone makes one after the run ends and reaches the company.', 'Sealed Originals'); return; }
+    const when = (v) => { const d = new Date(v); return isFinite(d.getTime()) ? d.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''; };
+    const btns = L.slice(0, 6).map(sl => ({ label: 'Version ' + sl.version + ' · ' + when(sl.made_at || sl.sealed_at), primary: sl === L[0], onClick: () => { window.pbRrSealGet(sl, x); } }));
+    btns.push({ label: 'Close' });
+    pbShowModal('Made on the crew member’s phone when the run was finished' + (L.length > 1 ? ', and again after each edit' : '') + '. They can’t be changed or deleted.' + (L.length > 6 ? '\n\nShowing the newest 6 of ' + L.length + '.' : ''), btns, 'Sealed Originals');
+  };
+  window.pbRrSealGet = async function(sl, x) {
+    let blob = null;
+    try { pbRptBusy('Getting the sealed original…'); const { data } = await sbClient.storage.from('run-seals').download(sl.path); blob = data || null; } catch (e) { blob = null; } finally { pbRptBusy(null); }
+    if (!blob) { pbAlert('Couldn’t get that file. Try again with signal.', 'Sealed Original'); return; }
+    let ok = false; try { ok = (await pbSha256Hex(await blob.arrayBuffer())) === sl.sha256; } catch (e) { ok = false; }
+    const name = 'sealed-run-' + String(x.job_number || 'job').replace(/[^A-Za-z0-9_-]+/g, '-') + '-v' + sl.version + '.pdf';
+    const save = () => { const f = new Blob([blob], { type: 'application/pdf' }); if (typeof pbFxIosApp === 'function' && pbFxIosApp() && typeof pbHandFileToPhone === 'function') { pbHandFileToPhone(f, name).catch(() => {}); return; } const u = URL.createObjectURL(f), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 60000); };
+    if (ok) { save(); pbAlert('Matches its fingerprint: this is the original, unchanged.\n\nFingerprint ' + sl.sha256.slice(0, 16) + '…', 'Sealed Original'); }
+    else pbShowModal('This file doesn’t match the fingerprint recorded when it was sealed. Don’t rely on it, and report it from Settings.', [{ label: 'Save Anyway', onClick: save }, { label: 'Close', primary: true }], 'Doesn’t Match');
+  };
   async function pbRrLoadSent(uid) {
     if (pbRr.uid === uid && pbRr.sent) return pbRr.sent;
     let m = {}; try { const raw = await pbGetFor(uid, 'rrSent'); const p = raw ? JSON.parse(raw) : null; if (p && typeof p === 'object') m = p; } catch (x) { m = {}; }
@@ -62818,6 +62896,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (typeof pbAuthBackgroundOk === 'function' && !pbAuthBackgroundOk()) return;
     const acc = pbProdAccMem.get(uid); if (!acc || !acc.member || !acc.companyId) return; // not in a company: nobody to send to
     const sent = await pbRrLoadSent(uid); if (pbRr.uid !== uid) return;
+    setTimeout(() => { pbRrSealPass(uid).catch(x => console.error('Sealed copy:', x)); }, 15000); /* r16.76 */
     { const recent = runArchive.filter(e => e && e.kind === 'run' && (() => { const t = (e.lockTime instanceof Date ? e.lockTime : new Date(e.lockTime)).getTime(); return isFinite(t) && t > Date.now() - 3 * 86400000; })()).sort((x, y) => new Date(y.lockTime) - new Date(x.lockTime)); if (recent.length) await window.pbCrewAutoLinkFor(uid, [recent[0].id]); }
     const since = Date.now() - PB_RR_DAYS * 86400000;
     const runs = runArchive.filter(e => e && e.kind === 'run' && e.id !== undefined && e.id !== null && /^[A-Za-z0-9_.:-]{1,60}$/.test(String(e.id)) && !(typeof window.pbRfEndHeld === 'function' && window.pbRfEndHeld(e)) /* review S1: sent once the end is saved */
@@ -62961,7 +63040,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }, [9000, 30000, 90000, 300000][k]);
     tryAt(0);
   });
-  window.__pbRrDebug = { copy: (id) => { const e = runArchive.find(x => x && x.id === id); return e ? pbRrOfficeCopy(e) : null; }, send: () => pbRrSend(), state: () => ({ uid: pbRr.uid, sent: pbRr.sent ? Object.assign({}, pbRr.sent) : null, pauseUntil: pbRr.pauseUntil }) };
+  window.__pbRrDebug = { copy: (id) => { const e = runArchive.find(x => x && x.id === id); return e ? pbRrOfficeCopy(e) : null; }, send: () => pbRrSend(), open: (o) => { pbRoFor(pbArchiveOwnerUid).open = o; }, run: () => runArchive.find(x => x && x.kind === 'run') /* r16.76 test */, state: () => ({ uid: pbRr.uid, sent: pbRr.sent ? Object.assign({}, pbRr.sent) : null, pauseUntil: pbRr.pauseUntil }) };
   window.pbAccountLoadHooks.push((uid) => { if (pbRr.uid !== uid) { clearTimeout(pbRr.timer); pbRr = { uid: null, sent: null, busy: false, pauseUntil: 0, timer: null, asked: {} }; } pbRrSoon(8000); });
   window.addEventListener('online', () => { pbRr.pauseUntil = 0; pbRrSoon(7000); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pbRrSoon(5000); });
@@ -63079,7 +63158,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + (x.reviewed_at || window.pbRrAqHas(x.id) ? '<p class="pbx-note" id="cxRunApproved">' + pbCxCheck() + pbCxE(x.reviewed_at ? ' Approved ' + pbRoWhen({ locked_at: x.reviewed_at }) : ' Approved on this phone · it sends when there’s signal') + '</p>' /* feat_rrflow 6 */ + (typeof pbLvIsForeman === 'function' && pbLvIsForeman(pbArchiveOwnerUid) ? pbDfRunDailyHtml(x) /* feat_dailyflow */ : '') /* feat_dailyx */ : '<p class="pb-warn pbp-manmsg" id="cxRunApproveErr" role="alert" style="display:none"></p><button type="button" class="pb-btn" id="cxRunApproveBtn" onclick="pbRrApprove()">Approve Report</button>') + '</section>' : '';
     if (approve.indexOf('id="cxRunApproved"') >= 0) h = h.replace(new RegExp('(<p class="pbx-note" id="cxRun' + 'Sent">[^<]*?) · Approved(</p>)'), '$1$2'); /* r16.08 cleanup */
     // feat_pdfview (owner, Oct 24): the report is read on the PDF viewer screen (View Run Report); Download / Share / the text are there
-    const pdf = '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="' + (approve.indexOf('id="dxRunDaily"') >= 0 ? 'pb-btn secondary small' : 'pb-btn small') /* feat_dailyflow: one primary */ + '" id="cxRunView" onclick="pbRrView()">View Run Report</button></div>'
+    const pdf = '<div class="pb-save-offer-btns" style="margin:8px 0"><button type="button" class="' + (approve.indexOf('id="dxRunDaily"') >= 0 ? 'pb-btn secondary small' : 'pb-btn small') /* feat_dailyflow: one primary */ + '" id="cxRunView" onclick="pbRrView()">View Run Report</button><button type="button" class="pb-btn ghost small" id="cxRunSeals" onclick="pbRrSeals()">Sealed Originals</button></div>'
       /* feat_runflow P5: the photo count is in the summary block (cxRunSum) */;
     if (canProd) {
       h += approve + pbRrSetupHtml(O, x) + '<section id="cxRunReport" style="margin-top:14px">' + pdf + '</section>' + pbRrSendBackHtml(O, x, true) /* r15.48 access */
