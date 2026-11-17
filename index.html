@@ -7930,6 +7930,9 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
   #pbApp .pb-sl-startnow { margin: 4px 0 10px; font-size: 15px; font-weight: 600; color: var(--pb-text-2); }
   #pbApp .pb-sl-pause { position: fixed; left: 0; right: 0; top: 0; bottom: var(--pb-tb-h, 72px); z-index: 44; display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: color-mix(in srgb, var(--pb-bg, #08090B) 94%, transparent); }
   #pbApp .pb-sl-pause[hidden] { display: none; }
+  #pbApp .pb-sl-pause.pb-brk { background: var(--pb-bg, #08090B); z-index: 45; } /* r16.88: a break hides the grade sheet completely */
+  html.pb-on-break #pbApp #screen-results > :not(#pbBrk) { visibility: hidden; }
+  #pbApp .pb-lstat-brk { display: flex; align-items: center; }
   #pbApp .pb-sl-pcard { width: 100%; max-width: 380px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 28px 20px 18px; border-radius: 18px; background: var(--pb-raised); border: 2px solid var(--pb-brand); }
   #pbApp .pb-sl-pcard h2 { margin: 0; font-size: 26px; }
   #pbApp .pb-sl-pic .pb-ic { width: 40px; height: 40px; color: var(--pb-brand); }
@@ -12938,7 +12941,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.87 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.88 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -44290,6 +44293,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // Current time = since the last own mark this session, ticking every second while Results shows this run; null
   // before the first mark and once the run is ended.
   const PB_LS_GAP = 60 * 60000, PB_LS_STICK = /(^|,)(joint|finalend|boundary)(,|$)/;
+  function pbBrkList(entry, now) { const L = Array.isArray(entry && entry.breaks) ? entry.breaks.filter(b => b && b.start && b.end && b.end > b.start).map(b => [b.start, b.end]) : []; if (entry && entry.onBreak && entry.onBreak.start) L.push([entry.onBreak.start, now || Date.now()]); return L; }
+  function pbBrkOverlap(B, a, b) { let ms = 0; B.forEach(([s, e]) => { const x = Math.max(a, s), y = Math.min(b, e); if (y > x) ms += y - x; }); return ms; }
+  window.pbBrkList = pbBrkList; window.pbBrkOverlap = pbBrkOverlap;
   function pbLaidStats(entry, S) {
     const own = []; S.laid.forEach((t, i) => { if (t !== null && t !== undefined && !(S.early && S.early[i])) own.push(i); });
     const times = [...new Set(own.map(i => S.laid[i]))].sort((a, b) => a - b);
@@ -44298,12 +44304,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const tF = times[0], tL = times[times.length - 1];
       const noLay = !S.rows.some(r => r && r.layoutKind && /(^|,)(joint|mid|q1|q3|finalend)(,|$)/.test(String(r.layoutKind))); // fix1: no pipe layout -> per row
       sticks = own.filter(i => S.laid[i] > tF && S.laid[i] <= tL && (noLay ? !!S.rows[i] : PB_LS_STICK.test(String((S.rows[i] && S.rows[i].layoutKind) || '')))).length;
-      for (let k = 1; k < times.length; k++) { const g = times[k] - times[k - 1]; if (g <= PB_LS_GAP) ms += g; }
+      const BK = pbBrkList(entry); /* r16.88: breaks don't count */
+      for (let k = 1; k < times.length; k++) { const g = times[k] - times[k - 1] - pbBrkOverlap(BK, times[k - 1], times[k]); if (g > 0 && g <= PB_LS_GAP) ms += g; }
       if (sticks >= 1 && ms > 0) avg = ms / sticks;
     }
     const ended = !!(entry && (entry.completed || entry.incomplete));
     const st = entry ? (typeof entry.runStartTime === 'number' ? entry.runStartTime : new Date(entry.lockTime).getTime()) : NaN;
-    return { avg, sticks, ms, lastOwn: ended ? null : (S.lastOwn !== null && S.lastOwn !== undefined ? S.lastOwn : (Number.isFinite(st) ? st : null)), ended };
+    let lastOwn = ended ? null : (S.lastOwn !== null && S.lastOwn !== undefined ? S.lastOwn : (Number.isFinite(st) ? st : null));
+    if (lastOwn !== null) lastOwn += pbBrkOverlap(pbBrkList(entry), lastOwn, Date.now()); /* r16.88: Current time stops during a break */
+    return { avg, sticks, ms, lastOwn, ended };
   }
   // fix_foldcount (owner, Nov 5): the folded bars count pipes and fittings, not rows (no pipe layout on the run: rows)
   function pbLaidFoldCount(entry, S, a, b) {
@@ -44334,6 +44343,50 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (a && a.textContent !== t) { a.textContent = t; if (b) b.textContent = pbLsDurWords(ms); }
   }
   function pbLsStart() { const el = pbProdEl('laidProgress'); if (!pbLsLive(el)) { pbLsStop(); return; } pbLsTick(); if (!pbLsT) pbLsT = setInterval(pbLsTick, 1000); }
+  window.pbBreakStart = function() {
+    const entry = getCurrentArchiveEntry(); if (!entry || entry.kind !== 'run' || entry.onBreak || entry.completed || entry.incomplete) return;
+    if (entry.slPause) { pbAlert('The run is paused for a delay. End the delay first.', 'Paused'); return; }
+    return pbRunOnEntry(entry, async () => {
+      entry.onBreak = { start: Date.now(), by: (sbUser && sbUser.id) || pbArchiveOwnerUid || null };
+      const ok = await saveRunArchive(); if (!ok) delete entry.onBreak;
+      pbBreakPaint(true); try { pbRenderShell(); } catch (e) {} return ok;
+    });
+  };
+  window.pbBreakEnd = function() {
+    const entry = getCurrentArchiveEntry(); if (!entry || !entry.onBreak) return;
+    const ob = entry.onBreak, prior = Array.isArray(entry.breaks) ? entry.breaks.slice() : undefined;
+    return pbRunOnEntry(entry, async () => {
+      const end = Math.max(Date.now(), ob.start + 1000);
+      entry.breaks = (prior || []).concat([{ start: ob.start, end, by: ob.by || null }]).slice(-200); delete entry.onBreak;
+      const ok = await saveRunArchive(); if (!ok) { entry.onBreak = ob; if (prior === undefined) delete entry.breaks; else entry.breaks = prior; }
+      pbBreakPaint(true); try { pbRenderShell(); } catch (e) {}
+      try { if (getCurrentArchiveEntry() === entry && pbCurrentScreen === 'results') renderResultsTable(entry); } catch (e) {}
+      return ok;
+    });
+  };
+  let pbBrkKey = '';
+  function pbBreakPaint(force) {
+    const e = pbCurrentScreen === 'results' ? getCurrentArchiveEntry() : null, b = e && e.kind === 'run' ? e.onBreak : null;
+    let el = document.getElementById('pbBrk');
+    if (!b) { if (el && !el.hidden) el.hidden = true; document.documentElement.classList.remove('pb-on-break'); pbBrkKey = ''; return; }
+    const scr = document.getElementById('screen-results'); if (!scr) return;
+    if (!el) { el = document.createElement('div'); el.id = 'pbBrk'; el.className = 'pb-sl-pause pb-brk'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'pbBrkH'); scr.appendChild(el); }
+    const m = Math.max(0, Math.floor((Date.now() - b.start) / 60000)), key = e.id + '|' + b.start + '|' + m;
+    if (force || key !== pbBrkKey || el.hidden) {
+      pbBrkKey = key;
+      const at = new Date(b.start).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), age = m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') + ' min';
+      el.innerHTML = '<div class="pb-sl-pcard"><h2 id="pbBrkH">On Break</h2><p class="pb-sl-ptime">Since ' + escapeHtml(at) + ' \u00b7 ' + escapeHtml(age) + '</p><p class="pb-help">The run\u2019s clock is stopped and the grade sheet is hidden until the break ends.</p><button type="button" class="pb-btn" id="pbBrkEnd" onclick="pbBreakEnd()">End Break</button></div>';
+    }
+    if (el.hidden) el.hidden = false;
+    document.documentElement.classList.add('pb-on-break');
+  }
+  window.pbBreakPaint = pbBreakPaint;
+  setInterval(() => { try { pbBreakPaint(false); } catch (e) {} }, 1000);
+  (window.pbActiveBarProviders = Array.isArray(window.pbActiveBarProviders) ? window.pbActiveBarProviders : []).push(() => {
+    const e = getCurrentArchiveEntry(); if (!e || e.kind !== 'run' || !e.onBreak) return null;
+    const m = Math.max(0, Math.floor((Date.now() - e.onBreak.start) / 60000));
+    return { id: 'brk', text: 'On break \u00b7 ' + m + ' min', go: 'End', warn: true, screen: 'results', onClick: () => { try { window.pbResumeLastRunResults(); } catch (er) { pbGoto('results'); } } };
+  });
   function pbLaidStatsPaint(entry, S) {
     const el = pbProdEl('laidProgress'); if (!el) return;
     if (!entry || !S || (!S.n && (entry.completed || entry.incomplete || !(S.total > 0)))) { pbLsStop(); el.hidden = true; el.textContent = ''; delete el.dataset.entryId; delete el.dataset.lastOwn; return; }
@@ -44342,7 +44395,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     el.innerHTML = col('laid', 'Pipe laid', escapeHtml(pbProdQtyText(S.laidFt)) + '<span class="pb-lstat-of"><span aria-hidden="true"> / </span><span class="pb-sr"> of </span>' + escapeHtml(pbProdQtyText(S.total)) + '</span>' + ft)
       + (S.earlierFt > 0 ? col('ses', 'This session', escapeHtml(pbProdQtyText(S.sessionFt)) + ft) : '')
       + col('avg', 'Avg. time', pbLsDd(T.avg))
-      + col('cur', 'Current time', pbLsDd(T.lastOwn === null ? null : Math.max(0, Date.now() - T.lastOwn)), true);
+      + col('cur', 'Current time', pbLsDd(T.lastOwn === null ? null : Math.max(0, Date.now() - T.lastOwn)), true)
+      + (!T.ended && !entry.slPause ? '<div class="pb-lstat pb-lstat-brk" data-k="brk"><button type="button" class="pb-btn ghost small" id="pbBrkBtn" onclick="pbBreakStart()" aria-label="Pause for a break">Break</button></div>' : ''); /* r16.88 */
     el.dataset.entryId = String(entry.id);
     if (T.lastOwn === null) delete el.dataset.lastOwn; else el.dataset.lastOwn = String(T.lastOwn);
     el.hidden = false;
@@ -44379,6 +44433,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   async function pbLaidApply(entryId, idx, on, confirmed, src) {
     const e0 = runArchive.find(x => x && x.id === entryId);
+    if (e0 && e0.onBreak) { pbAlert('End the break first.', 'On Break'); return false; } /* r16.88 */
     let S0 = null; try { S0 = e0 ? pbLaidSummary(e0) : null; } catch (e) { S0 = null; }
     const adds = !!(on && S0 && S0.rows[idx] && S0.laid[idx] === null && !(S0.early && S0.early[idx]));
     const fl = pbLaidInflight && pbLaidInflight.entryId === entryId ? pbLaidInflight.upto : -1;
@@ -49270,6 +49325,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       R.section('checks', 'Check shots (' + C.length + ')', { keep: 30, intro: 'Rod readings taken on the laid pipe, compared with the grade sheet\u2019s target for that row (device time). TOP = top of pipe, BOP = bottom of pipe, INV = invert. On grade = within ' + (window.PB_CS_TOL || 0.02).toFixed(2) + ' ft. ' + (off ? off + ' shot' + (off === 1 ? ' was' : 's were') + ' off grade.' : 'Every shot was on grade.') + (C.some(c => c.unit === 'lenker') ? ' Lenker rod: the values are elevations.' : '') });
       const rd = (v, u) => fmtReading(v, u === 'lenker' ? 'engineer' : u);
       R.table({ head: ['Dist.', 'On', 'Read', 'Target', 'Result', 'Taken (device time)'], body: C.map(c => { const r0 = window.pbCsResult(c.diff); return [c.sta, String(c.ref || '').toUpperCase(), rd(c.rod, c.unit), rd(c.target, c.unit), r0.ok ? r0.txt : { content: r0.txt, _accent: true }, pbRptDt(c.at, { sec: true })]; }), fontSize: 8.5 });
+    }
+    // --- r16.88: breaks
+    if (Array.isArray(e.breaks) && e.breaks.length) {
+      const B = e.breaks.filter(b => b && b.start && b.end), tot = B.reduce((t, b) => t + (b.end - b.start), 0), mins = (ms) => Math.max(1, Math.round(ms / 60000)) + ' min';
+      R.section('breaks', 'Breaks (' + B.length + ', ' + mins(tot) + ')', { keep: 26, intro: 'Breaks taken with the Break button (device time). The run\u2019s clock was stopped and the grade sheet hidden during each one; break time is left out of the time-per-pipe stats.' });
+      R.table({ head: ['Started', 'Ended', 'Length'], body: B.map(b => [pbRptDt(b.start, { sec: true }), pbRptDt(b.end, { sec: true }), mins(b.end - b.start)]), fontSize: 8.5 });
     }
     // --- r16.77: values read from stake photos by AI
     if (Array.isArray(e.aiReads) && e.aiReads.length) {
