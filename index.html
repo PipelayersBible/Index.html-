@@ -12871,7 +12871,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.71 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.72 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -38686,7 +38686,22 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     function pbBetaRender() {
       const beta = !!(plan && plan.plan === 'trial'), ended = beta && !!plan.expired;
       const line = document.getElementById('pbBetaLine');
-      if (line) {
+      const removed = !!(plan && !beta && plan.removed && !plan.individual); /* r16.72: removed from a company: offer their own plan */
+      if (line && removed) {
+        line.hidden = false; line.classList.add('ended');
+        line.innerHTML = '<span>You’re no longer part of ' + escapeHtml(plan.removed.company || 'your company') + '. Want your own plan to keep the AI tools?</span>'
+          + (plan.requested ? '<span>Request sent. You’ll be contacted to set it up.</span>'
+            : '<span class="pb-beta-acts"><button type="button" class="pb-btn small" data-own="1">My Own Plan</button><button type="button" class="pb-btn ghost small" data-own="0">Not Now</button></span>');
+        line.querySelectorAll('[data-own]').forEach((b) => { b.onclick = async () => {
+          if (!sbClient || navigator.onLine === false) { pbAlert('Needs signal. Try again when you have it.', 'Needs Signal'); return; }
+          const yes = b.dataset.own === '1'; b.disabled = true;
+          let r; try { r = yes ? await sbClient.rpc('pb_plan_request', { p_kind: 'individual' }) : await sbClient.rpc('pb_removed_dismiss'); } catch (e) { r = { error: e }; }
+          if (!r || r.error || !r.data || !r.data.ok) { b.disabled = false; pbAlert('Not sent. Try again.', 'Not Sent'); return; }
+          plan = yes ? Object.assign({}, plan, { requested: true }) : Object.assign({}, plan, { removed: null });
+          try { localStorage.setItem(planKey(), JSON.stringify(plan)); } catch (e) {}
+          window.pbTrack(yes ? 'plan_request:individual_removed' : 'plan_request:dismissed'); pbBetaRender();
+        }; });
+      } else if (line) {
         line.hidden = !beta; line.classList.toggle('ended', ended);
         if (beta) { /* r16.71: the end of the beta: a company plan, or the person's own plan meanwhile */
           if (!ended) line.innerHTML = '<span class="pb-beta-chip">Beta</span><span>' + (plan.days_left === 1 ? '1 day left' : (plan.days_left || 0) + ' days left') + '</span>';
