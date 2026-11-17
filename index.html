@@ -12869,7 +12869,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.68 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.69 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -38579,7 +38579,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!sbClient || typeof sbClient.rpc !== 'function') { await pbSupPatch(uid, it.cid, { why: 'offline', whyAt: Date.now() }); return 'offline'; }
       if (!sbUser || sbUser.id !== uid) return 'stop';
       if (!(await pbLiveSessionIs(uid))) { await pbSupPatch(uid, it.cid, { why: 'wrong_account', whyAt: Date.now() }); return 'stop'; }
-      const r = await pbReportRpc('pb_feedback_send', { p_client_message_id: it.cid, p_kind: it.kind === 'idea' ? 'idea' : 'problem', p_body: it.body, p_app_build: it.build, p_screen: it.screen, p_expect_uid: uid }); /* r16.66: problem or idea */
+      const r = await pbReportRpc('pb_feedback_send', { p_client_message_id: it.cid, p_kind: it.kind === 'idea' ? 'idea' : 'problem', p_body: it.body, p_app_build: it.build, p_screen: it.screen, p_expect_uid: uid, p_phone: it.phone || null }); /* r16.69: phone */ /* r16.66: problem or idea */
       if (!sbUser || sbUser.id !== uid) return 'stop'; // another account signed in meanwhile: the message stays queued (same id, sent once)
       const c = pbReportClassify(r);
       if (c.ok && r.data && r.data.ok !== false) {
@@ -38719,11 +38719,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + '<div class="pb-fb-top"><span id="pbFbTitle">Send Feedback</span><button type="button" class="pb-fb-x" aria-label="Close" id="pbFbX">&times;</button></div>'
         + '<div class="pb-fb-seg" role="group" aria-label="Kind"><button type="button" data-k="problem">Problem</button><button type="button" data-k="idea">Idea</button></div>'
         + '<textarea id="pbFbText" maxlength="3000" aria-label="Feedback"></textarea>'
+        + '<input id="pbFbPhone" type="tel" inputmode="tel" autocomplete="tel" maxlength="30" placeholder="Your phone (optional), if you’re OK with a call" aria-label="Your phone (optional)">'
         + '<button type="button" class="pb-btn" id="pbFbSend">Send</button>'
         + '<p class="pb-fb-st" id="pbFbSt" role="status"></p>'
         + '<button type="button" class="pb-fb-link" id="pbFbPast">Past reports</button></div>';
       document.body.appendChild(ov); document.documentElement.classList.add('pb-fb-open');
-      const ta = ov.querySelector('#pbFbText'), st = ov.querySelector('#pbFbSt'), send = ov.querySelector('#pbFbSend');
+      const ta = ov.querySelector('#pbFbText'), st = ov.querySelector('#pbFbSt'), send = ov.querySelector('#pbFbSend'), ph = ov.querySelector('#pbFbPhone');
+      const phKey = 'pbFbPhone:' + (sbUser ? sbUser.id : ''); try { ph.value = localStorage.getItem(phKey) || ''; } catch (e) {}
       const setK = (x) => { k = x; ov.querySelectorAll('.pb-fb-seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.k === k))); ta.placeholder = k === 'idea' ? 'What would make the app better?' : 'What happened? What did you expect?'; };
       setK(k);
       ov.querySelectorAll('.pb-fb-seg button').forEach((b) => { b.onclick = () => setK(b.dataset.k); });
@@ -38739,7 +38741,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         if (!uid || uid === 'shared') { st.textContent = 'Log in to send feedback.'; return; }
         if (send.disabled) return; send.disabled = true;
         try {
-          const item = { cid: pbGenerateClientRunId(), kind: k, body: text.slice(0, PB_SUP_MAX_BODY), build: PB_APP_BUILD, screen: pbSupScreenLabel(from).slice(0, 60), at: new Date().toISOString(), st: 'queued', why: '' };
+          const phone = ph.value.trim().slice(0, 30); try { if (phone) localStorage.setItem(phKey, phone); else localStorage.removeItem(phKey); } catch (e) {}
+          const item = { cid: pbGenerateClientRunId(), kind: k, phone, body: text.slice(0, PB_SUP_MAX_BODY), build: PB_APP_BUILD, screen: pbSupScreenLabel(from).slice(0, 60), at: new Date().toISOString(), st: 'queued', why: '' };
           const saved = await pbSupEdit(uid, (q) => q.concat([item]));
           if (!saved) { st.textContent = 'Couldn’t save it on this phone. ' + pbSaveAdvice(); return; }
           window.pbTrack('feedback:' + k);

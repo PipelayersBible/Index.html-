@@ -16,10 +16,10 @@ const init=require('/home/claude/rig/co')+`;(function(){window.__rpcOverride=Obj
  await p.screenshot({path:'/tmp/claude-0/t95_home.png'});
  await p.click('#pbFbPill');await p.waitForTimeout(300);
  await p.click('.pb-fb-seg button[data-k="idea"]');
- await p.fill('#pbFbText','Add a button to copy last run setup');
+ await p.fill('#pbFbText','Add a button to copy last run setup');await p.fill('#pbFbPhone','(951) 555-0142');
  await p.screenshot({path:'/tmp/claude-0/t95_sheet.png'});
  await p.click('#pbFbSend');await p.waitForTimeout(1200);
- console.log('sheet status:',await p.evaluate(()=>{const s=document.getElementById('pbFbSt');return s?s.textContent:'(closed)'}),'| sent:',JSON.stringify(await p.evaluate(()=>(window.__fb||[]).map(x=>({k:x.p_kind,b:x.p_body,s:x.p_screen})))));
+ console.log('sheet status:',await p.evaluate(()=>{const s=document.getElementById('pbFbSt');return s?s.textContent:'(closed)'}),'| sent:',JSON.stringify(await p.evaluate(()=>(window.__fb||[]).map(x=>({k:x.p_kind,b:x.p_body,s:x.p_screen,ph:x.p_phone})))));
  await p.evaluate(()=>window.pbUseFlush());await p.waitForTimeout(500);
  console.log('usage sent:',JSON.stringify(await p.evaluate(()=>window.__useSent||[])));
  // owner page
