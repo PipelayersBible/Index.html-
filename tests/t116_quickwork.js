@@ -1,0 +1,13 @@
+const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');
+(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/cur.html',{init:co});await p.waitForTimeout(3500);
+ await p.evaluate(()=>pbGoto('home'));await p.waitForTimeout(800);
+ console.log('home tile shown:',await p.evaluate(()=>{const t=document.getElementById('homeTileNoRun');return t&&t.style.display!=='none';}));
+ await p.click('#homeTileNoRun');await p.waitForTimeout(1200);
+ const st=()=>p.evaluate(()=>({screen:[...document.querySelectorAll('.pb-screen.active')].map(s=>s.id).join(','),more:document.getElementById('nrMore')?document.getElementById('nrMore').open:null,feet:!!document.getElementById(document.querySelector('#nrWhereCard input[inputmode=decimal]')?document.querySelector('#nrWhereCard input[inputmode=decimal]').id:'x'),order:[...document.querySelectorAll('#nrForm section, #nrForm details')].map(e=>e.id).join('>')}));
+ console.log('form:',JSON.stringify(await st()));
+ await p.click('#nrMore summary');await p.waitForTimeout(200);
+ await p.evaluate(()=>{const el=document.querySelector('#nrNote');el.value='laser crew, 120 ft';el.dispatchEvent(new Event('input',{bubbles:true}));});
+ await p.evaluate(()=>pbNrRender(true));await p.waitForTimeout(200);
+ console.log('after open + redraw:',JSON.stringify(await st()));
+ await p.setViewportSize({width:390,height:800});await p.evaluate(()=>{document.getElementById('nrMore').open=false;window.pbNrMoreToggle(false);window.scrollTo(0,0);});await p.waitForTimeout(300);await p.screenshot({path:'/tmp/claude-0/qw.png',fullPage:true});
+ console.log('errs',p.errs.slice(0,3));await b.close();})();

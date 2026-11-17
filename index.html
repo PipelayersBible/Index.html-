@@ -4871,6 +4871,10 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div><div class="name">Quick Run</div><div class="sub">Basic grade calculations</div></div>
       <div>&rsaquo;</div>
     </div>
+    <div class="pb-home-tile" role="button" tabindex="0" data-pb-a11y-btn="1" id="homeTileNoRun" style="display:none;" onclick="pbRecFromHome('norun')">
+      <div><div class="name">Log Work Without a Run</div><div class="sub">Footage, photos and a note: for laser crews or work not set up as a run</div></div>
+      <div>&rsaquo;</div>
+    </div>
     <div class="pb-home-tile" role="button" tabindex="0" data-pb-a11y-btn="1" id="homeTileNewPermit" onclick="pbHomeStartPermit()">
       <div><div class="name">Confined Space Permit</div><div class="sub">Start a new confined space entry permit</div></div>
       <div>&rsaquo;</div>
@@ -12934,7 +12938,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.86 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.87 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -66204,6 +66208,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<section class="pbnr-card" id="nrWhereCard"><h3 class="pbnr-h3">Where and how much pipe</h3>'
       + '<div class="pbd-two">' + fld('staFrom', 'Station from', 'type="text" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" enterkeyhint="next" placeholder="e.g. 10+00"') + fld('staTo', 'Station to', 'type="text" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" enterkeyhint="next" placeholder="e.g. 12+50"') + '</div>'
       + fld('feet', 'Footage installed (LF)', 'type="text" inputmode="decimal" autocomplete="off"') + '</section>'
+      + '<details class="pbnr-more" id="nrMore"' + (pbNrMoreOpen(F, edit) ? ' open' : '') + ' ontoggle="pbNrMoreToggle(this.open)"><summary class="pbnr-h3" style="cursor:pointer;margin:12px 0;">More details: materials, production quantities, hours</summary>'
       + '<section class="pbnr-card" id="nrMatCard"><h3 class="pbnr-h3">Pipe, bedding and shading</h3>' + (L ? '' : '<p class="pbnr-help" id="nrMatHelp">' + (jobNow ? 'Material list loads with signal. Type names meanwhile.' : 'Pick the job first.') + '</p>')
       + pick('pipe', 'Pipe material', 'pipe')
       + '<div class="pbd-two">' + fld('size', 'Pipe size (in)', 'type="text" inputmode="decimal" autocomplete="off" maxlength="12"') + fld('od', 'Pipe OD (in)', 'type="text" inputmode="decimal" autocomplete="off" ' + ph(S.od_in, '"')) + '</div>'
@@ -66215,6 +66220,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + cats.map(c => c.key === 'pipe' ? '<p class="pbnr-help" id="nrQpipe"><strong>' + pbNrEsc(c.name) + ' (LF):</strong> the footage above.</p>'
         : '<div class="pb-field"><label for="nrQ_' + pbNrEsc(c.key) + '">' + pbNrEsc(c.name + (c.unit ? ' (' + c.unit + ')' : '')) + '</label><input id="nrQ_' + pbNrEsc(c.key) + '" data-nrq="' + pbNrEsc(c.key) + '" data-unit="' + pbNrEsc(c.unit) + '" type="text" inputmode="decimal" autocomplete="off" value="' + pbNrEsc(F.q[c.key] || '') + '" oninput="pbNrInput()"></div>').join('')
       + '<div class="pbd-two">' + fld('manH', 'Crew man-hours', 'type="text" inputmode="decimal" autocomplete="off"', 'Laborers and operators, all together.') + fld('eqH', 'Equipment hours', 'type="text" inputmode="decimal" autocomplete="off"') + '</div></section>'
+      + '</details>'
       + '<section class="pbnr-card" id="nrNoteCard"><h3 class="pbnr-h3">Who, notes and photos</h3>'
       + fld('by', 'Entered by (foreman name)', 'type="text" maxlength="200" autocomplete="name"')
       + '<div class="pb-field"><label for="nrNote">Note (optional)</label><textarea id="nrNote" rows="3" maxlength="1000" oninput="pbNrInput()">' + pbNrEsc(F.f.note) + '</textarea></div>'
@@ -66600,7 +66606,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   };
 
   // ---------------- Reports tab row, account switches, start-up ----------------
-  function pbNrShowRows() { const b = pbNrEl('archiveNoRunBtn'); if (b) b.style.display = pbNrAcc(pbArchiveOwnerUid).ok ? '' : 'none'; }
+  function pbNrShowRows() { const ok = pbNrAcc(pbArchiveOwnerUid).ok; const b = pbNrEl('archiveNoRunBtn'); if (b) b.style.display = ok ? '' : 'none'; const t = pbNrEl('homeTileNoRun'); if (t) t.style.display = ok ? '' : 'none'; /* r16.87 */ }
+  // r16.87: "More details" folds the materials, production and hours cards
+  function pbNrMoreOpen(F, edit) {
+    if (F.more === true || edit) return true;
+    const f = F.f || {}, has = (v) => v !== undefined && v !== null && String(v).trim() !== '';
+    if (['pipeTyped', 'size', 'od', 'bedTyped', 'bedThk', 'shadeTyped', 'shadeThk', 'width', 'manH', 'eqH'].some(k => has(f[k]))) return true;
+    if (['pipe', 'bed', 'shade'].some(k => has(f[k]) && f[k] !== 't|' && f[k] !== '')) return true;
+    return !!(F.q && Object.keys(F.q).some(k => has(F.q[k])));
+  }
+  window.pbNrMoreToggle = function(open) { if (pbNrF) pbNrF.more = !!open; };
   const pbNrOrigJobRender = window.pbProdJobRender;
   window.pbProdJobRender = function() {
     const r = pbNrOrigJobRender.apply(this, arguments);
