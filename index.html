@@ -12871,7 +12871,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.74 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.75 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -62723,15 +62723,18 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbRrIsBinary(v) { return typeof v === 'string' && /^data:/.test(v) && v.length > 200; }
   // A deep copy with photo / file data left out: strings in arrays are dropped, objects holding one are dropped from their
   // array, and a field holding one becomes null. Counts what was left out.
+  function pbRrPhotoPath(uid, entryId, sha) { return uid + '/runs/' + String(entryId).replace(/[^A-Za-z0-9_.-]/g, '_') + '/' + sha + '.jpg'; } /* r16.75 */
   function pbRrOfficeCopy(e) {
-    let left = 0;
-    const walk = (v) => {
+    let left = 0; const refs = [], owner = pbArchiveOwnerUid; /* r16.75: where each photo was, so the office copy can put it back */
+    const ref = (path, url, o) => { try { const sha = pbPhotoSha(url); refs.push(Object.assign({ p: path, sha, path: pbRrPhotoPath(owner, e.id, sha) }, o || {})); } catch (x) {} };
+    const walk = (v, path) => {
+      path = path || [];
       if (Array.isArray(v)) {
         const out = [];
-        v.forEach(x => {
-          if (pbRrIsBinary(x)) { left++; return; }
-          if (x && typeof x === 'object' && !Array.isArray(x) && Object.values(x).some(pbRrIsBinary)) { left++; return; }
-          out.push(walk(x));
+        v.forEach((x, i) => {
+          if (pbRrIsBinary(x)) { left++; ref(path.concat(i), x); return; }
+          if (x && typeof x === 'object' && !Array.isArray(x) && Object.values(x).some(pbRrIsBinary)) { left++; const f = Object.keys(x).find(k => pbRrIsBinary(x[k])), o = {}; Object.keys(x).forEach(k => { if (!pbRrIsBinary(x[k])) o[k] = x[k]; }); ref(path.concat(i), x[f], { f, o }); return; }
+          out.push(walk(x, path.concat(i)));
         });
         return out;
       }
@@ -62739,9 +62742,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const o = {};
         Object.keys(v).forEach(k => {
           const x = v[k];
-          if (pbRrIsBinary(x)) { left++; o[k] = null; return; }
+          if (pbRrIsBinary(x)) { left++; o[k] = null; ref(path.concat(k), x, { set: 1 }); return; }
           if (k === 'b64' && typeof x === 'string' && x.length > 200) { left++; o[k] = null; return; }
-          o[k] = walk(x);
+          o[k] = walk(x, path.concat(k));
         });
         return o;
       }
@@ -62753,12 +62756,53 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const lt = e.lockTime instanceof Date ? e.lockTime : new Date(e.lockTime);
     const wd = isFinite(lt.getTime()) ? lt.getFullYear() + '-' + String(lt.getMonth() + 1).padStart(2, '0') + '-' + String(lt.getDate()).padStart(2, '0') : '';
     rec.pbOffice = { laidFt, photosLeftOut: left, workDate: wd, send: !!(e.reportSendWanted && (e.completed || e.incomplete)) }; // r15.2: Send Report
+    if (refs.length && owner && owner !== 'shared') rec.pbOffice.photos = refs.slice(0, 200); /* r16.75: the photos themselves go to run-photos */
     if (e.rfForeman && typeof e.rfForeman === 'object' && (e.rfForeman.id || e.rfForeman.none)) rec.pbOffice.foremanId = e.rfForeman.none ? 'none' : String(e.rfForeman.id); /* r15.48 access: the server sends the report to him (sql/48); 'none': the office only */
     delete rec.reportForeman; delete rec.reportRefused; delete rec.rptFm; /* r15.57: phone-only; feat_rptfm */ if (typeof window.pbAcStripSl === 'function') window.pbAcStripSl(rec); /* r15.48 access: no Site Log emails in the company's copy */
     if (e.rfWho && typeof e.rfWho === 'object') { ['who', 'whoRole', 'foreman'].forEach(k => { if (e.rfWho[k]) rec.pbOffice[k] = e.rfWho[k]; }); } delete rec.rfWho; // feat_runflow P6 / review S3: names as stamped at End, never the live ones (a name or crew change re-uploads nothing)
     if (typeof window.pbRfEndHeld === 'function' && window.pbRfEndHeld(e)) rec.pbOffice.send = false; // review S1: an end not saved on the phone yet is not sent
     return rec;
   }
+  // r16.75 (Tommy): every photo in a run goes to the company with it (run-photos/<uid>/runs/<run>/<sha>.jpg), once each.
+  async function pbRrPhotosUp(uid, t) {
+    const list = (t.rec && t.rec.pbOffice && t.rec.pbOffice.photos) || []; if (!list.length || !sbClient || !sbClient.storage) return false;
+    let done = {}; try { done = JSON.parse((await pbGetFor(uid, 'rrPhotosUp')) || '{}') || {}; } catch (x) { done = {}; }
+    const urls = new Map(); const look = (v) => { if (pbRrIsBinary(v)) { try { urls.set(pbPhotoSha(v), v); } catch (x) {} return; } if (Array.isArray(v)) v.forEach(look); else if (v && typeof v === 'object') Object.keys(v).forEach(k => look(v[k])); };
+    look(t.e);
+    let n = 0, more = false;
+    for (const ph of list) {
+      if (done[ph.path]) continue;
+      if (n >= 20) { more = true; break; }
+      if (!sbUser || sbUser.id !== uid || navigator.onLine === false) return true;
+      const url = urls.get(ph.sha); if (!url) continue;
+      n++;
+      try {
+        const blob = await (await fetch(url)).blob();
+        const { error } = await sbClient.storage.from('run-photos').upload(ph.path, blob, { contentType: blob.type || 'image/jpeg', upsert: false });
+        if (!error || /exists|duplicate/i.test(String(error.message || error.error || ''))) done[ph.path] = Date.now();
+        else { more = true; break; }
+      } catch (x) { more = true; break; }
+    }
+    const ks = Object.keys(done); if (ks.length > 2000) ks.sort((a, b) => done[a] - done[b]).slice(0, ks.length - 2000).forEach(k => delete done[k]);
+    await pbSetFor(uid, 'rrPhotosUp', JSON.stringify(done));
+    return more;
+  }
+  // r16.75: an office copy's photos, put back where they were (for its PDF)
+  async function pbRrPhotosIn(rec) {
+    const list = rec && rec.pbOffice && Array.isArray(rec.pbOffice.photos) ? rec.pbOffice.photos : [];
+    if (!list.length || !sbClient || !sbClient.storage) return rec;
+    const c = JSON.parse(JSON.stringify(rec));
+    const toUrl = (blob) => new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.onerror = () => ok(null); fr.readAsDataURL(blob); });
+    const got = await Promise.all(list.map(async (ph) => { try { const { data } = await sbClient.storage.from('run-photos').download(ph.path); return data ? await toUrl(data) : null; } catch (x) { return null; } }));
+    list.forEach((ph, i) => {
+      const url = got[i]; if (!url || !Array.isArray(ph.p) || !ph.p.length) return;
+      let at = c; for (let k = 0; k < ph.p.length - 1; k++) { at = at == null ? null : at[ph.p[k]]; } if (at == null) return;
+      const last = ph.p[ph.p.length - 1], val = ph.f ? Object.assign({}, ph.o || {}, { [ph.f]: url }) : url;
+      if (Array.isArray(at) && !ph.set) at.splice(Math.min(Number(last), at.length), 0, val); else at[last] = val;
+    });
+    return c;
+  }
+  window.pbRrPhotosIn = pbRrPhotosIn;
   async function pbRrLoadSent(uid) {
     if (pbRr.uid === uid && pbRr.sent) return pbRr.sent;
     let m = {}; try { const raw = await pbGetFor(uid, 'rrSent'); const p = raw ? JSON.parse(raw) : null; if (p && typeof p === 'object') m = p; } catch (x) { m = {}; }
@@ -62795,7 +62839,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const r = await pbPermitRpc('pb_prod_run_record_put', { p_entry_id: t.id, p_record: t.rec, p_expect_uid: uid, p_access_company: acc.companyId }, 30000);
         if (pbRr.uid !== uid) break;
         const msg = String((r.error && r.error.message) || ''), code = (msg.match(/pb:\w+/) || [''])[0];
-        if (!r.error && r.data && r.data.ok === true) { sent[t.id] = t.h; if (t.e.reportRefused) { delete t.e.reportRefused; learned = true; } if (typeof window.pbR57AfterPut === 'function') window.pbR57AfterPut(t.e); /* r15.57 */ if (typeof window.pbRrNoteSent === 'function' && window.pbRrNoteSent(t.e, r.data)) learned = true; continue; }
+        if (!r.error && r.data && r.data.ok === true) { try { if (await pbRrPhotosUp(uid, t)) again = true; } catch (x) { console.error('Run photo upload:', x); } /* r16.75 */ sent[t.id] = t.h; if (t.e.reportRefused) { delete t.e.reportRefused; learned = true; } if (typeof window.pbR57AfterPut === 'function') window.pbR57AfterPut(t.e); /* r15.57 */ if (typeof window.pbRrNoteSent === 'function' && window.pbRrNoteSent(t.e, r.data)) learned = true; continue; }
         if (navigator.onLine === false || /failed to fetch|networkerror|load failed|no client|timeout/i.test(msg)) break;
         if (code === 'pb:not_company_member' || code === 'pb:company_changed') { if (code === 'pb:not_company_member' && typeof window.pbR57Refuse === 'function') todo.forEach(x => { if (window.pbR57Refuse(x.e, code)) learned = true; }); /* r15.57: said on Home and in Records */ pbRr.pauseUntil = Date.now() + 6 * 3600000; break; }
         if (code === 'pb:too_big' || code === 'pb:bad_record' || code === 'pb:photo_data') { sent[t.id] = t.h; if (typeof window.pbR57Refuse === 'function' && window.pbR57Refuse(t.e, code)) learned = true; /* r15.57: kept on the run and said */ continue; } // never resent as is
@@ -63393,6 +63437,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     let doc;
     try {
       await say('Making the PDF…');
+      try { if (e && e.pbOffice && Array.isArray(e.pbOffice.photos) && e.pbOffice.photos.length && typeof window.pbRrPhotosIn === 'function') { await say('Making the PDF: getting ' + e.pbOffice.photos.length + ' photos…'); e = await window.pbRrPhotosIn(e); } } catch (x) { console.error('Run photos:', x); } /* r16.75 */
       const unreadable = await pbPreflightPdfImages([e], () => {});
       doc = pbRptMakeSafe(e, { unreadable });
     } finally { say(null); }
