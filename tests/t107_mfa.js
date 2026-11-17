@@ -1,4 +1,4 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
+const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co')+require('/home/claude/rig/mgr');const F=require('/home/claude/rig/flow');
 (async()=>{const {b,p}=await boot('http://127.0.0.1:8843/cur.html',{init:co});const H=F(p);
  await p.waitForTimeout(1500);
  // mock the MFA API on the app's client

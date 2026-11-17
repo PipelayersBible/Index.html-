@@ -12872,7 +12872,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.84 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.85 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -63016,7 +63016,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const box = document.getElementById('settingsMfa'); if (!box) return;
     if (!sbClient || !sbUser || !sbClient.auth || !sbClient.auth.mfa) { box.innerHTML = ''; return; }
     const f = await pbMfaFactor();
-    box.innerHTML = '<div class="pb-help" style="margin:0 0 6px;"><strong>Two-step login</strong>: ' + (f ? 'On. You enter a code from your authenticator app after each login.' : 'Off. Turn it on so a stolen password alone can’t get into this account.') + '</div>'
+    let mgr = false; try { const a = typeof pbProdAccMem !== 'undefined' && pbProdAccMem.get(sbUser.id); mgr = !!(a && a.manager); } catch (e) {}
+    if (!f && !mgr) { box.innerHTML = ''; return; } // r16.85: crew accounts don't see it
+    box.innerHTML = '<div class="pb-help" style="margin:0 0 6px;"><strong>Two-step login</strong>: ' + (f ? 'On. You enter a code from your authenticator app after each login.' : 'Off. Recommended for owners and managers, who can see the whole company’s records: with it on, a stolen password alone can’t get in. On an iPhone the Passwords app makes the codes; on Android use an authenticator app.') + '</div>'
       + (f ? '<button type="button" class="pb-btn ghost small" id="pbMfaOff">Turn Off</button>' : '<button type="button" class="pb-btn small" id="pbMfaOn">Turn On Two-Step Login</button>');
     const on = box.querySelector('#pbMfaOn'), off = box.querySelector('#pbMfaOff');
     if (on) on.addEventListener('click', () => window.pbMfaEnroll());
