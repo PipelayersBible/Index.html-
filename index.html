@@ -12871,7 +12871,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.73 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.74 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -48365,7 +48365,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     R.kv = (pairs, op) => {
       op = op || {};
       const cols = op.cols || 2, rows = [];
-      const list = pairs.filter(Boolean);
+      let list = pairs.filter(Boolean), emptyLabels = [];
+      if (op.collapse) { emptyLabels = list.filter(p => p[1] === null || p[1] === undefined || p[1] === '').map(p => p[0]); list = list.filter(p => !(p[1] === null || p[1] === undefined || p[1] === '')); } /* r16.74: empty fields said once, in one line */
       for (let i = 0; i < list.length; i += cols) {
         const row = [];
         for (let j = 0; j < cols; j++) {
@@ -48379,7 +48380,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       }
       const lw = op.labelW || (cols === 1 ? 44 : 30), vw = (PB_RPT.CW - lw * cols) / cols;
       const columns = []; for (let j = 0; j < cols; j++) { columns.push({ cellWidth: lw }); columns.push({ cellWidth: vw }); }
-      R.table({ body: rows, columns, fontSize: op.fontSize || 9, keep: op.keep || 14, after: op.after });
+      if (rows.length) R.table({ body: rows, columns, fontSize: op.fontSize || 9, keep: op.keep || 14, after: op.after });
+      if (emptyLabels.length) R.para('Not recorded: ' + emptyLabels.join(', ') + '.', { size: 8.5, color: PB_RPT.MUTED });
     };
     // Status banner: danger = solid accent with white text; warn = accent frame; ok = grey frame.
     R.banner = (text, tone, sub) => {
@@ -48485,9 +48487,54 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     R.photosSection = (op) => {
       op = op || {};
       const rec = R.rec; if (!rec.photos.length) return;
-      R.section('photos', 'Photos (' + rec.photos.length + ')', { keep: 92, intro: (op.intro || 'Each photo has the number used in the body of this report. "Referenced on" gives the page that mentions it (in the PDF, tap it to jump back). A photo that could not be included keeps its number and says why.') + ' Checking a photo: where no "Printed as" row appears, the image in this PDF is the original photo file; extract it (for example with pdfimages -all) and its SHA-256 matches the one printed. Where a "Printed as" row appears, the PDF holds a shrunk copy: its printed SHA-256 belongs to the original, which is not in this PDF: the original is kept on the phone that took it (and in the record\u2019s cloud backup, where one was made), and only it can be checked against that SHA-256.' });
+      if (op.howto) { (R.howto = R.howto || []).push('Photos: ' + (op.intro || 'Each photo has the number used in the body of this report.') + ' Checking a photo: where no "Printed as" line appears, the image in this PDF is the original photo file; extract it (for example with pdfimages -all) and its SHA-256 matches the one printed. Where a "Printed as" line appears, the PDF holds a shrunk copy: its printed SHA-256 belongs to the original, which is kept on the phone that took it (and in the record\u2019s cloud backup, where one was made).'); }
+      R.section('photos', 'Photos (' + rec.photos.length + ')', op.howto ? { keep: 120, intro: op.short || 'Grouped by where each was taken. How to check a photo is in How to read this record.' } : { keep: 92, intro: (op.intro || 'Each photo has the number used in the body of this report. "Referenced on" gives the page that mentions it (in the PDF, tap it to jump back). A photo that could not be included keeps its number and says why.') + ' Checking a photo: where no "Printed as" row appears, the image in this PDF is the original photo file; extract it (for example with pdfimages -all) and its SHA-256 matches the one printed. Where a "Printed as" row appears, the PDF holds a shrunk copy: its printed SHA-256 belongs to the original, which is not in this PDF: the original is kept on the phone that took it (and in the record\u2019s cloud backup, where one was made), and only it can be checked against that SHA-256.' });
       const boxW = 96, boxH = 74, infoX = G.ML + boxW + 5, infoW = G.CW - boxW - 5;
-      rec.photos.forEach(ph => {
+      const gone = rec.photos.filter(ph => ph.missing && !ph.url); /* r16.74: photos with no file here are listed together */
+      const done = new Set();
+      if (Array.isArray(op.groups)) { /* r16.74: per point: heading, then its photos two across with their details under each */
+        const gw = (G.CW - 6) / 2, gh = 56, LS = 7.6, lh = pbRptLh(LS);
+        const all = op.groups.reduce((a, g) => a.concat((g.photos || []).filter(ph => ph && !(ph.missing && !ph.url))), []);
+        const nv = (v) => v === null || v === undefined || v === '' ? 'not recorded' : String(v);
+        const F = [['taken', (p) => p.info.takenLabel || 'Taken'], ['attached', (p) => p.info.attachedLabel || 'Attached'], ['by', () => 'Attached by'], ['backup', () => 'Backup']];
+        const same = {}; F.forEach(([k, lab]) => { const v = all.length ? nv(all[0].info[k]) : null, l = all.length ? lab(all[0]) : null; if (all.length > 1 && all.every(p => nv(p.info[k]) === v && lab(p) === l)) same[k] = [l, v]; });
+        const sk = Object.keys(same);
+        if (sk.length) R.para('For every photo below: ' + sk.map(k => same[k][0] + ': ' + same[k][1]).join('. ') + '.', { size: 8, color: G.MUTED }); /* r16.74: said once, not under each photo */
+        const lines = (ph) => { const out = []; const add = (k, v) => { R.font(LS, 'normal'); R.split(k + ': ' + nv(v), gw).forEach(l => out.push(l)); };
+          add('Shows', ph.info.shows); F.forEach(([k, lab]) => { if (!same[k]) add(lab(ph), ph.info[k]); });
+          if (ph.info.belongs && /; also /.test(ph.info.belongs)) add('Also used for', ph.info.belongs.split('; also ').slice(1).join('; '));
+          if (ph.url) add('SHA-256', pbPhotoSha(ph.url));
+          if (ph.url && !ph.missing && R.o.unreadable && R.o.unreadable.small && R.o.unreadable.small.has(ph.url)) add('Printed as', 'a smaller copy (the original stays on the phone)');
+          return out; };
+        op.groups.forEach(g => {
+          const list = (g.photos || []).filter(ph => ph && !done.has(ph.key) && !(ph.missing && !ph.url)); if (!list.length) return;
+          list.forEach(ph => done.add(ph.key));
+          for (let i = 0; i < list.length; i += 2) {
+            const pair = list.slice(i, i + 2), L = pair.map(lines), blockH = (i === 0 ? 8 : 2) + 5 + gh + 2 + Math.max(...L.map(x => x.length)) * lh + 4;
+            R.ensure(blockH);
+            if (i === 0) { R.font(10.5, 'bold'); doc.text(g.title, G.ML, R.y + 4); if (g.sub) { R.font(8.5, 'normal', G.MUTED); doc.text(g.sub, G.ML + G.CW, R.y + 4, { align: 'right' }); } R.y += 7; }
+            const top = R.y;
+            pair.forEach((ph, k) => {
+              const x = G.ML + k * (gw + 6);
+              R.anchor(ph.key);
+              R.font(9, 'bold'); doc.text('Photo ' + ph.n, x, top + 3.6);
+              const back = R.map && R.map.refs[ph.key] ? R.map.refs[ph.key] : null;
+              if (back) { R.font(8, 'normal', G.ACCENT); doc.text('ref. p. ' + back, x + gw, top + 3.6, { align: 'right' }); }
+              const iy = top + 5;
+              if (ph.missing) { doc.setFillColor(244, 244, 244); doc.setDrawColor(120, 120, 120); doc.rect(x, iy, gw, 24, 'FD'); R.font(8.5, 'bold', G.ACCENT); doc.text('NOT INCLUDED', x + 2, iy + 5); R.font(8, 'normal'); R.split(ph.missing, gw - 4).slice(0, 4).forEach((l, j) => doc.text(l, x + 2, iy + 9 + j * pbRptLh(8))); }
+              else {
+                const src = (R.o.unreadable && R.o.unreadable.small && R.o.unreadable.small.get(ph.url)) || ph.url;
+                const dm = R.imgDims(src) || { w: 4, h: 3 }, sc = Math.min(gw / dm.w, gh / dm.h), w = dm.w * sc, h = dm.h * sc;
+                if (R.final) { try { doc.addImage(src, /^data:image\/png/i.test(src) ? 'PNG' : 'JPEG', x, iy, w, h, 'pb' + pbPhotoSha(ph.url).slice(0, 20)); } catch (e) { doc.setDrawColor(150, 150, 150); doc.rect(x, iy, w, h); } }
+                doc.setDrawColor(150, 150, 150); doc.setLineWidth(0.2); doc.rect(x, iy, w, h);
+              }
+              R.font(LS, 'normal', G.INK); L[k].forEach((l, j) => doc.text(l, x, iy + gh + 3 + j * lh));
+            });
+            R.y = top + 5 + gh + 2 + Math.max(...L.map(x => x.length)) * lh + 4;
+          }
+        });
+      }
+      rec.photos.filter(ph => !(ph.missing && !ph.url) && !done.has(ph.key)).forEach(ph => {
         const rows = [['Shows', ph.info.shows], ['Belongs to', ph.info.belongs], [ph.info.takenLabel || 'Taken', ph.info.taken], [ph.info.attachedLabel || 'Attached', ph.info.attached], ['Attached by', ph.info.by], ['Backup', ph.info.backup], ph.url ? ['SHA-256', (ph.missing ? '(of the stored, damaged data) ' : '(of the original photo file) ') + pbPhotoSha(ph.url)] : null, (ph.url && !ph.missing && R.o.unreadable && R.o.unreadable.small && R.o.unreadable.small.has(ph.url)) ? ['Printed as', (() => { const d = R.imgDims(ph.url), od = R.o.unreadable.origDims && R.o.unreadable.origDims.get(ph.url), same = d && od && d.w === od.w && d.h === od.h; return (same ? 'a compressed copy (same ' + d.w + ' x ' + d.h + ' px, fewer bytes)' : 'a smaller copy' + (d ? ' (' + d.w + ' x ' + d.h + ' px)' : '') + (od ? ' of the original (' + od.w + ' x ' + od.h + ' px)' : '')) + ' to keep this PDF small. The SHA-256 above is of the original photo, which stays on the phone that took it (and in the record\u2019s cloud backup, where one was made).'; })()] : null].filter(Boolean);
         R.font(9, 'normal');
         let infoH = 0; const laid = rows.map(([k, v]) => { const L = R.split(v === null || v === undefined || v === '' ? 'not recorded' : String(v), infoW - 24); R.font(8.5, 'bold'); const K = R.split(k, 22.5); R.font(9, 'normal'); const n = Math.max(L.length, K.length); infoH += n * pbRptLh(9) + 1.2; return [K, L, v === null || v === undefined || v === '', n]; });
@@ -48515,6 +48562,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         laid.forEach(([K, L, none, n]) => { R.font(8.5, 'bold', G.MUTED); K.forEach((k, i) => doc.text(k, infoX, yy + 3.2 + i * pbRptLh(9))); R.font(9, 'normal', none ? G.FAINT : G.INK); L.forEach((l, i) => doc.text(l, infoX + 24, yy + 3.2 + i * pbRptLh(9))); yy += n * pbRptLh(9) + 1.2; }); // labels wrap in their own column
         R.y = top + blockH;
       });
+      if (gone.length) {
+        R.sub('Photos not included (' + gone.length + ')');
+        const why = Array.from(new Set(gone.map(ph => String(ph.missing || '').trim()).filter(Boolean)));
+        why.forEach(w => R.para(w, { size: 9 }));
+        gone.forEach(ph => R.anchor(ph.key));
+        const nv = (v) => v === null || v === undefined || v === '' ? { content: 'not recorded', _muted: true } : String(v);
+        R.table({ head: ['Photo', 'Shows', 'Belongs to', ph0(gone).takenLabel || 'Taken', ph0(gone).attachedLabel || 'Attached', 'Attached by', 'Backup'],
+          body: gone.map(ph => ['Photo ' + ph.n, nv(ph.info.shows), nv(ph.info.belongs), nv(ph.info.taken), nv(ph.info.attached), nv(ph.info.by), nv(ph.info.backup)]), fontSize: 8.5, keep: 20 });
+      }
+      function ph0(list) { return (list[0] && list[0].info) || {}; }
     };
     // Signature / attestation block: what the app recorded, plus lines for a wet signature.
     R.signatures = (title, blocks, note) => {
@@ -48747,9 +48804,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
 
     if (m.anon) R.para('The fingerprint shows whether two copies hold the same content. Nothing in this file records when, where or by whom the report was made.', { size: 9, color: G.MUTED });
     else R.para('The fingerprint shows whether two copies are the same record; it is computed on the phone and does not by itself prove when the record was made. The record\u2019s own timestamps (above), its change history and, for backed-up records, the server\u2019s received time are what show that. ' + pbRptTzLine(), { size: 9, color: G.MUTED });
+    if (typeof R.afterIntegrity === 'function') R.afterIntegrity(); /* r16.74 */
+    R.afterIntegrity = null; R.howto = []; // never carried into the next record of a multi-record PDF
   }
   // ---------- Pipe run record ----------
-  const PB_RPT_NOT_TIME = 'not recorded (the app does not keep a photo\u2019s own capture time)';
+  const PB_RPT_NOT_TIME = 'not recorded separately; the date, time and location stamp printed on the photo (where it has one) is from the phone that took it'; /* r16.74: photos are stamped since r16.56 */
   function pbRptRowName(entry, r) {
     if (!r) return '';
     const pi = r.pointId && entry.pointInputs ? entry.pointInputs[r.pointId] : null;
@@ -48873,15 +48932,27 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!e.incomplete) R.banner('LOCKED RECORD' + (e.runEndTime ? ': RUN ENDED' : '') + (ownN ? ' \u00b7 ' + ownN + (ownN === 1 ? ' CORRECTION' : ' CORRECTIONS') + ' AFTER LOCK' : '') + (earlierN ? ' \u00b7 ' + earlierN + ' FROM EARLIER SESSION' + (earlierN === 1 ? '' : 'S') : ''), hist.length || (e.warnings || []).length || e.depthFlagged ? 'warn' : 'ok', 'Locked ' + pbRptDt(e.lockTime) + (e.runEndTime ? ' \u00b7 ended ' + pbRptDt(e.runEndTime) : '') + ' \u00b7 ' + pbRfPdfSentShort(e)); /* feat_runflow P8 */
     const s = e.summary || null, pipe = s && s.pipeInfo && s.pipeInfo.length ? s.pipeInfo : [];
     const pipeTxt = pipe.map(p => (p.label !== 'Pipe' ? p.label + ': ' : '') + (p.idIn !== null && p.idIn !== undefined ? p.idIn.toFixed(2) + '" ID' : 'ID not recorded') + ', ' + (p.wtFt !== null && p.wtFt !== undefined ? p.wtFt.toFixed(3) + "' wall" + pbPiAWord(p.wtAuto) : 'wall not recorded') + pbRedWords(e.reducers, pipe.length > 1 ? ((/(\d+)$/.exec(p.label || '') || [0, 1])[1] * 1) : undefined)).join('; ');
+    { /* r16.74: at a glance: the numbers someone skimming needs, in one strip */
+      const Lg = pbRptLaid(e), rl = Lg ? rows.filter(r => typeof Lg.marks[pbRptLaidKey(r)] === 'number') : [], farL = rl.length ? rl[rl.length - 1] : null;
+      const fq = e.foreman && e.foreman.feetPipeInstalled !== undefined && e.foreman.feetPipeInstalled !== null && e.foreman.feetPipeInstalled !== '' ? e.foreman.feetPipeInstalled : null;
+      const glance = [['Distance', pbDistanceText(e) + (hist.some(c => c.type !== 'hub' && c.type !== 'layout') ? ' (corrected)' : '')], ['Laid', Lg ? (farL ? 'to Sta ' + pbRptSta(pbRptRowStaFt(farL)) : 'none marked') : '—'],
+        ['Slope (+ = rising)', s && pbRptNum(s.overallSlopePct, 2) !== '—' ? (s.overallSlopePct >= 0 ? '+' : '') + pbRptNum(s.overallSlopePct, 2) + '%' : '—'],
+        ['Inverts, start / end (ft)', s ? (s.startInv !== undefined ? s.startInv : '—') + ' / ' + (s.endInv !== undefined ? s.endInv : '—') : '—'],
+        ['Pipe installed', fq !== null ? fq + ' ft' : '—'], ['Photos', String(R.rec.photos.length) + ((Number(e.photoCount) || 0) > R.rec.photos.length ? ' of ' + Number(e.photoCount) : '')]];
+      R.table({ head: glance.map(g => g[0]), body: [glance.map(g => ({ content: g[1], _bold: true }))], fontSize: 10.5, keep: 18 });
+    }
     R.kv([
-      ['Run', (e.startLabel || 'Start') + ' to ' + (e.endLabel || 'End')], ['Distance', pbDistanceText(e) + (hist.some(c => c.type !== 'hub' && c.type !== 'layout') ? ' (corrected; see history)' : '')],
-      ['Overall slope', s ? (pbRptNum(s.overallSlopePct, 2) !== '\u2014' && s.overallSlopePct >= 0 ? '+' : '') + pbRptNum(s.overallSlopePct, 2) + '% (+ = rising toward end)' : null], ['Start / end invert', s ? (s.startInv !== undefined ? s.startInv : '\u2014') + ' / ' + (s.endInv !== undefined ? s.endInv : '\u2014') + ' ft' : null],
+      ['Run', (e.startLabel || 'Start') + ' to ' + (e.endLabel || 'End')],
       ['Pipe', (e.statsType ? e.statsType + ' \u00b7 ' : '') + (pipeTxt || 'not recorded')], ['Bedding volume', e.beddingVolumeYd3 !== null && e.beddingVolumeYd3 !== undefined ? e.beddingVolumeYd3.toFixed(1) + ' cu yd (calculated)' + pbVolumeScopeNote(e) + (e.beddingVolumeIncomplete ? ', partial' : '') : null],
       ['Jobsite', e.jobsite || null], ['Job / cost code', [e.jobNumber ? '#' + e.jobNumber : '', e.costCode ? 'cost code ' + e.costCode : ''].filter(Boolean).join(' \u00b7 ') || null],
       ['Pipelayer', pbRfPdfWho(e, 'pipelayer')], ...pbRptFmRows(e), /* feat_runflow P6; feat_rptfm: the foreman by name */
       ['Run form opened', e.runStartTime ? pbRptDt(e.runStartTime) : null], ['Locked', pbRptDt(e.lockTime)],
       ['Run ended', e.runEndTime ? pbRptDt(e.runEndTime) + pbEaRptSuffix(e, ' (time entered after the fact)') : 'not ended in the app'], ['Elapsed run time', e.durationMin !== null && e.durationMin !== undefined ? (t => t.chained ? t.session + ' this session; ' + t.total + ' total, all sessions' : t.session + (t.continued ? ' this session (continued later)' : ''))(pbRunTimeText(e)) : null]
-    ], { cols: 2 });
+    ], { cols: 2, collapse: true });
+    /* r16.74: when it ended and whether it was sent stay on page 1 */
+    if (e.runEndTime) R.para('Ended: ' + pbRptDt(e.runEndTime) + pbEaRptSuffix(e, ' (entered after the fact)') + (e.durationMin !== null && e.durationMin !== undefined ? (t => t.chained ? '  (' + t.session + ' this session; ' + t.total + ' total, all sessions)' : t.continued ? '  (' + t.session + ' this session; continued later)' : '  (' + t.session + ' total)')(pbRunTimeText(e)) : ''), { size: 9 });
+    { const l = pbEaRptLine(e); if (l) R.para(l, { size: 9 }); } // batch 17 END
+    R.para(pbRfPdfSentLine(e), { size: 9 }); // feat_runflow P8: sent in the app, and emailed, said apart
     const alerts = [];
     if (e.depthFlagged) alerts.push('WARNING: trench 5 ft or deeper indicated by stake data. A protective system is required (OSHA 29 CFR 1926.652).');
     (e.warnings || []).forEach(w => alerts.push('Flagged at lock: ' + String(w.text || '').replace(/\s*Would you like to flip the run\?\s*$/, '')));
@@ -48898,27 +48969,6 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     R.callout('Warnings, corrections and notices', alerts, alerts.some(a => /^WARNING|Flagged|ended early/.test(a)) ? 'danger' : 'warn');
     if (!alerts.length) R.para('No warnings, corrections or notices recorded for this run.', { size: 9.5, color: G.MUTED });
     R.contents();
-    // --- timeline
-    R.section('timeline', 'Record timeline', { keep: 30, intro: 'Every recorded time for this run, oldest first. Device time is the phone\u2019s clock when it happened. The server-received column is filled only where a server recorded a time.' });
-    const ev = [];
-    if (e.runStartTime) ev.push([e.runStartTime, 'Run form opened on this phone (the app\u2019s "Run started" time; not when pipe laying began)', 'not recorded']);
-    ev.push([e.lockTime, 'Run locked on this phone: this record was created', 'not recorded']);
-    rows.forEach(r => { if (r.addedTime) ev.push([r.addedTime, 'Point added after lock at Sta ' + pbRptSta(pbRptRowStaFt(r)), 'not recorded']); });
-    notes.forEach(n => { if (n.time) ev.push([n.time, 'Field note last saved at ' + pbRptNoteSta(e, n) + ((n.photos || []).length ? ' (it holds ' + pbRptPlural(n.photos.length, 'photo') + ')' : ''), 'not recorded']); });
-    hist.forEach(c => ev.push([c.time, 'Correction: ' + pbRptCorrWords(c).what + (c.sessionLabel ? ' (earlier session ' + c.sessionLabel + ')' : ''), 'not recorded']));
-    if (e.foreman && e.foreman.enteredAt) ev.push([e.foreman.enteredAt, 'Foreman production saved' + (e.foreman.enteredBy ? ' (name typed on it: ' + e.foreman.enteredBy + ')' : ''), 'not recorded']);
-    (e.crewLog || []).forEach(p => (p.log || []).forEach(l => { if (l && l.time) ev.push([l.time, 'Crew log: ' + p.name + ' (' + p.type + ') ' + String(l.action || '').toLowerCase() + (l.enteredAfter ? ' (entered after the fact)' : ''), 'not recorded']); }));
-    { const Ld = pbRptLaid(e); if (Ld) Ld.log.forEach(x => ev.push([x.at, (x.a === 'undo' ? 'Laid marks undone from ' : 'Rows marked laid to ') + pbRptStaTxt(x.to) + (Array.isArray(x.keys) ? ' (' + pbRptPlural(x.keys.length, 'row') + ')' : ''), pbRptBy(x.by)])); }
-    pbEaRptEvents(e).forEach(x => ev.push(x)); // batch 17 END: the left-open run's question and the typed end
-    if (e.runEndTime) ev.push([e.runEndTime, 'Run ended' + (pbEndEntryOf(e) ? ' (time typed on this phone ' + pbEaRptWhenWord(pbEndEntryOf(e)) + ')' : e.endTimeEntered ? ' (end time entered after the fact)' : ''), 'not recorded']);
-    (Array.isArray(e.endTimeChanges) ? e.endTimeChanges : []).forEach(c => { if (c && typeof c.at === 'number') ev.push([c.at, 'End time adjusted (' + pbRptDt(c.from, { time: true }) + ' to ' + pbRptDt(c.to, { time: true }) + ')', 'not recorded']); });
-    let server = null; try { if (pbProd && pbProd.st) { const x = pbProdSessions().find(q => q.e === e), it = x && pbProd.st.items[x.cid]; if (it && it.at) server = it; } } catch (x) {}
-    if (server) ev.push([server.at, 'Production confirmed by the company server' + (server.v ? ' (version ' + server.v + ')' : ''), pbRptBy(typeof sbUser !== 'undefined' && sbUser ? sbUser.id : null), /* feat_runsetup (13) */ server.crew && server.crew.serverAt ? pbRptDt(server.crew.serverAt, { sec: true }) : null]);
-    ev.sort((a, b) => pbRptMs(a[0]) - pbRptMs(b[0]));
-    R.table({ head: ['Device time', 'Event', 'By (as recorded)', 'Server received'], body: ev.map(x => [pbRptDt(x[0], { sec: true }), x[1], x[2], x[3] ? x[3] : { content: 'not known', _muted: true }]), columns: [{ cellWidth: 48 }, { cellWidth: 'auto' }, { cellWidth: 33 }, { cellWidth: 22 }] });
-    if (e.runEndTime) R.para('Ended: ' + pbRptDt(e.runEndTime) + pbEaRptSuffix(e, ' (entered after the fact)') + (e.durationMin !== null && e.durationMin !== undefined ? (t => t.chained ? '  (' + t.session + ' this session; ' + t.total + ' total, all sessions)' : t.continued ? '  (' + t.session + ' this session; continued later)' : '  (' + t.session + ' total)')(pbRunTimeText(e)) : ''), { size: 9 });
-    { const l = pbEaRptLine(e); if (l) R.para(l, { size: 9 }); } // batch 17 END
-    R.para(pbRfPdfSentLine(e), { size: 9 }); // feat_runflow P8: sent in the app, and emailed, said apart
     // --- job and crew
     R.section('job', 'Job, crew and notes', { keep: 30 });
     R.kv([
@@ -48983,7 +49033,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       };
     }
     const pbPdfSta = pbStRowStaFn(e), pbPdfHasSta = rows.some(r => !!pbPdfSta(r)); /* feat_results2 */
-    const head = ['Dist.'].concat(pbPdfHasSta ? ['Station'] : [], ['Point']).concat(['BOP']).concat(showSg ? ['Subgrade'] : []).concat(['INV', 'TOP']).concat(showElev ? ['Elev.'] : []).concat(showVer ? ['Shot'] : []).concat(laid ? [laidHead] : []).concat(['Source', 'Notes']);
+    const head = ['Dist.'].concat(pbPdfHasSta ? ['Station'] : [], ['Point']).concat(['BOP rod']).concat(showSg ? ['Subgrade rod'] : []).concat(['INV rod', 'TOP rod']).concat(showElev ? ['Invert elev.'] : []) /* r16.74 */.concat(showVer ? ['Shot'] : []).concat(laid ? [laidHead] : []).concat(['Source', 'Notes']);
     const bandsOut = [];
     const body = rows.map(r => {
       const name = pbRptRowName(e, r), bits = [];
@@ -49033,7 +49083,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (fixedW > room) Object.keys(numCols).forEach(k => { if (numCols[k].cellWidth) numCols[k].cellWidth = Math.floor(numCols[k].cellWidth * room / fixedW * 10) / 10; }); }
     R.table({ head, body, columnStyles: numCols, fontSize: 8.5, rowNotes: bandsOut });
     if (foot.length) foot.forEach((t, i) => R.para('[' + (i + 1) + '] ' + t, { size: 9, after: 0.6 }));
-    R.para(PB_RPT_SRC_LEGEND + (showVer ? ' Shot = the rod reading taken at that point in the field, the one that checks the HI (Yes = shot there, reading not saved on runs locked before r16.00); blank = not shot there, the readings at that point are predicted from the HI.' : '') + (e.cutsheetAiText ? ' This run was built with an AI-read cutsheet (see the AI-recreated cutsheet section); which points came from it is not recorded.' : '') + (laid ? ' Laid = when the row was marked laid on the phone (phone time; the year and time zone are in the column heading when all marks share them). One swipe marks several rows at once: they share one time; the first row of the swipe says "N-row swipe" and the stations it marked, and the others say "(swipe)"; "not marked" = never marked laid.' : ''), { size: 9, color: G.MUTED, keep: true, lead: 'Grade sheet legend (the table is on the previous page)' });
+    (R.howto = R.howto || []).unshift('Grade sheet: ' + PB_RPT_SRC_LEGEND + (showVer ? ' Shot = the rod reading taken at that point in the field, the one that checks the HI (Yes = shot there, reading not saved on runs locked before r16.00); blank = not shot there, the readings at that point are predicted from the HI.' : '') + (e.cutsheetAiText ? ' This run was built with an AI-read cutsheet (see the AI-recreated cutsheet section); which points came from it is not recorded.' : '') + (laid ? ' Laid = when the row was marked laid on the phone (phone time; the year and time zone are in the column heading when all marks share them). One swipe marks several rows at once: they share one time; the first row of the swipe says "N-row swipe" and the stations it marked, and the others say "(swipe)"; "not marked" = never marked laid.' : '')); R.para('Stake = from a stake (bold rows); Calculated = worked out by the app. Every column is explained in How to read this record, at the end.', { size: 8.5, color: G.MUTED });
     if (laid) {
       R.section('laid', 'Laid progress', { keep: 30, intro: 'Rows marked laid on the grade sheet, as recorded on the phone (device time). Rows marked together share one time. An undo removes the marks from that row on; it is kept here.' });
       const rowsLaid = rows.filter(r => typeof laid.marks[pbRptLaidKey(r)] === 'number');
@@ -49094,14 +49144,40 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       R.section('aicut', 'AI-recreated cutsheet (used to build this run)', { keep: 30, intro: 'Read by AI, not extracted from the PDF\u2019s real text. The original PDF was offered as a direct download when this run was created; it is not stored in the app\u2019s archive, so it is not reproduced here.' });
       R.para(e.cutsheetAiText, { size: 9, lh: 4.2 });
     }
+    /* r16.74: the full timeline, after the work it records */
+    // --- timeline
+    R.section('timeline', 'Record timeline', { keep: 30, intro: 'Every recorded time for this run, oldest first. Device time is the phone\u2019s clock when it happened. The server-received column is filled only where a server recorded a time.' });
+    const ev = [];
+    const phoneBy = (() => { const O = e.pbOffice && typeof e.pbOffice === 'object' ? e.pbOffice : null; if (O && O.who) return O.who + ' (phone account)'; let u = null; try { u = typeof sbUser !== 'undefined' && sbUser ? sbUser.id : null; } catch (x) {} const n = u ? pbRptBy(u) : ''; return n && !/^(not recorded|Name not set)$/.test(n) ? n + ' (phone account)' : 'the phone\u2019s account'; })(); /* r16.74 */
+    if (e.runStartTime) ev.push([e.runStartTime, 'Run form opened on this phone (the app\u2019s "Run started" time; not when pipe laying began)', phoneBy]);
+    ev.push([e.lockTime, 'Run locked on this phone: this record was created', phoneBy]);
+    rows.forEach(r => { if (r.addedTime) ev.push([r.addedTime, 'Point added after lock at Sta ' + pbRptSta(pbRptRowStaFt(r)), phoneBy]); });
+    notes.forEach(n => { if (n.time) ev.push([n.time, 'Field note last saved at ' + pbRptNoteSta(e, n) + ((n.photos || []).length ? ' (it holds ' + pbRptPlural(n.photos.length, 'photo') + ')' : ''), phoneBy]); });
+    hist.forEach(c => ev.push([c.time, 'Correction: ' + pbRptCorrWords(c).what + (c.sessionLabel ? ' (earlier session ' + c.sessionLabel + ')' : ''), phoneBy]));
+    if (e.foreman && e.foreman.enteredAt) ev.push([e.foreman.enteredAt, 'Foreman production saved', e.foreman.enteredBy ? e.foreman.enteredBy + ' (typed)' : phoneBy]);
+    (e.crewLog || []).forEach(p => (p.log || []).forEach(l => { if (l && l.time) ev.push([l.time, 'Crew log: ' + p.name + ' (' + p.type + ') ' + String(l.action || '').toLowerCase() + (l.enteredAfter ? ' (entered after the fact)' : ''), phoneBy]); }));
+    { const Ld = pbRptLaid(e); if (Ld) Ld.log.forEach(x => ev.push([x.at, (x.a === 'undo' ? 'Laid marks undone from ' : 'Rows marked laid to ') + pbRptStaTxt(x.to) + (Array.isArray(x.keys) ? ' (' + pbRptPlural(x.keys.length, 'row') + ')' : ''), pbRptBy(x.by)])); }
+    pbEaRptEvents(e).forEach(x => ev.push(x)); // batch 17 END: the left-open run's question and the typed end
+    if (e.runEndTime) ev.push([e.runEndTime, 'Run ended' + (pbEndEntryOf(e) ? ' (time typed on this phone ' + pbEaRptWhenWord(pbEndEntryOf(e)) + ')' : e.endTimeEntered ? ' (end time entered after the fact)' : ''), phoneBy]);
+    (Array.isArray(e.endTimeChanges) ? e.endTimeChanges : []).forEach(c => { if (c && typeof c.at === 'number') ev.push([c.at, 'End time adjusted (' + pbRptDt(c.from, { time: true }) + ' to ' + pbRptDt(c.to, { time: true }) + ')', phoneBy]); });
+    let server = null; try { if (pbProd && pbProd.st) { const x = pbProdSessions().find(q => q.e === e), it = x && pbProd.st.items[x.cid]; if (it && it.at) server = it; } } catch (x) {}
+    if (server) ev.push([server.at, 'Production confirmed by the company server' + (server.v ? ' (version ' + server.v + ')' : ''), pbRptBy(typeof sbUser !== 'undefined' && sbUser ? sbUser.id : null), /* feat_runsetup (13) */ server.crew && server.crew.serverAt ? pbRptDt(server.crew.serverAt, { sec: true }) : null]);
+    ev.sort((a, b) => pbRptMs(a[0]) - pbRptMs(b[0]));
+    R.table({ head: ['Device time', 'Event', 'By', 'Server received'], body: ev.map(x => [pbRptDt(x[0], { sec: true }), x[1], x[2], x[3] ? x[3] : { content: '\u2014', _muted: true }]), columns: [{ cellWidth: 48 }, { cellWidth: 'auto' }, { cellWidth: 33 }, { cellWidth: 22 }] });
     // --- photos, signature, integrity
     const want = Number(e.photoCount) || 0, have = R.rec.photos.length;
     for (let k = have; k < want; k++) R.photo(null, { shows: 'not recorded', belongs: 'This run (the record counts ' + want + ' photos)' }, 'The run records ' + want + ' photos but only ' + have + ' are on this phone. Photos are not backed up, so a missing one stays on the phone that took it.');
-    R.photosSection();
+    { /* r16.74: each point's stake photos together, under its name and station */
+      const groups = [];
+      rows.forEach(r => { const ps = rowPhotos.get(r) || []; if (!ps.length) return; const name = pbRptRowName(e, r); groups.push({ title: (name || 'Point') + ' \u00b7 Sta ' + pbRptSta(pbRptRowStaFt(r)), sub: pbRowIsStake(e, r) ? 'Stake' : '', photos: ps }); });
+      notes.forEach(n => { const ps = notePhotos.get(n) || []; if (ps.length) groups.push({ title: 'Field note \u00b7 ' + pbRptNoteSta(e, n), photos: ps }); });
+      R.photosSection({ groups, howto: true });
+    }
     R.signatures('Attestation', [
       { role: 'Foreman', recorded: (fmA => [fmA && fmA.name ? fmA.name + ' (' + fmA.src + ')' : '', e.foreman && e.foreman.enteredBy ? 'name typed on the production entry: ' + e.foreman.enteredBy + ' (saved ' + pbRptDt(e.foreman.enteredAt) + '; who saved it is not recorded)' : ''].filter(Boolean).join('; ') || 'no foreman production entry')(pbRptFm(e)) /* feat_rptfm */, statement: 'I reviewed this run record, its corrections and the production quantities above, and they are correct to the best of my knowledge.' },
       { role: 'Pipelayer', recorded: e.pipelayer ? e.pipelayer + ' (typed on the run)' : 'not recorded' }
     ], 'The app records typed names, not signatures. Sign here when a signed copy is required.');
+    R.afterIntegrity = () => { if (!(R.howto && R.howto.length)) return; R.section('howto', 'How to read this record', { keep: 30 }); R.howto.forEach(t => { const k = t.indexOf(': '); R.para(t.slice(k + 2), { size: 8.5, lead: t.slice(0, k) }); }); }; /* r16.74 */
     pbRptIntegrity(R, e, fp, [['Photos in this record', R.rec.photos.length + ' (' + R.rec.photos.filter(p => p.missing).length + ' not included)'], ['Record backup', e.supabaseId ? 'Cloud copy exists (photos are not in it)' : 'No cloud copy known on this phone']]);
   }
   // Wording for one correction: what changed, from, to.
