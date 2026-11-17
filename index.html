@@ -12838,7 +12838,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.63 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.64 · 2026-11-16'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -16471,7 +16471,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const jpg = (cv) => { let qq = 0.72, d = cv.toDataURL('image/jpeg', qq); while (d.length > 1400000 && qq > 0.4) { qq -= 0.12; d = cv.toDataURL('image/jpeg', qq); } return d.length <= 1400023 ? d.slice(d.indexOf(',') + 1) : ''; };
         try { const r = document.createElement('canvas'); r.width = c.width; r.height = c.height; const rg = r.getContext('2d'); rg.translate(r.width, r.height); rg.rotate(Math.PI); rg.drawImage(c, 0, 0);
           const d = jpg(r); if (d) extras.push({ zoom: 'rot', mediaType: 'image/jpeg', data: d }); r.width = r.height = 0; } catch (e) {}
-        if (Math.max(w, h) > maxPx * 1.25) {
+        if (false && Math.max(w, h) > maxPx * 1.25) { /* r16.64: no close-up quarters (same accuracy in the stake eval, faster and cheaper) */
           const tw = Math.round(w * 0.55), th = Math.round(h * 0.55);
           [['tl', 0, 0], ['tr', w - tw, 0], ['bl', 0, h - th], ['br', w - tw, h - th]].forEach(([z, x, y]) => {
             try { const kk = Math.min(1, Math.min(maxPx, 1200) / Math.max(tw, th)), t = document.createElement('canvas'); // r16.47: close-ups at 1200 px t.width = Math.round(tw * kk); t.height = Math.round(th * kk);
