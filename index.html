@@ -12871,7 +12871,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.82 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.83 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -38788,7 +38788,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + '<div class="pb-fb-top"><span id="pbFbTitle">Send Feedback</span><button type="button" class="pb-fb-x" aria-label="Close" id="pbFbX">&times;</button></div>'
         + '<div class="pb-fb-seg" role="group" aria-label="Kind"><button type="button" data-k="problem">Problem</button><button type="button" data-k="idea">Idea</button></div>'
         + '<textarea id="pbFbText" maxlength="3000" aria-label="Feedback"></textarea>'
-        + '<input id="pbFbPhone" type="tel" inputmode="tel" autocomplete="tel" maxlength="30" placeholder="Your phone (optional), if you’re OK with a call" aria-label="Your phone (optional)">'
+        + '<input id="pbFbPhone" type="tel" inputmode="tel" autocomplete="tel" maxlength="30" placeholder="Your phone (optional), if you’re OK with a call" aria-label="Your phone (optional)">' + '<p class="pb-help" style="margin:6px 0 0;">We use feedback to fix and improve the app. We won’t quote you or use your name without asking first.</p>' /* r16.83 */
         + '<button type="button" class="pb-btn" id="pbFbSend">Send</button>'
         + '<p class="pb-fb-st" id="pbFbSt" role="status"></p>'
         + '<button type="button" class="pb-fb-link" id="pbFbPast">Past reports</button></div>';
@@ -62901,6 +62901,19 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (more) setTimeout(() => { pbRrSealPass(uid).catch(x => console.error('Sealed copy:', x)); }, 20000);
   }
   window.pbRrSealPass = pbRrSealPass;
+
+  // r16.83 (legal review: crew notice; CA SB 947 from 2027): a company member is told once, plainly, what the company sees.
+  window.pbCrewNoticeCheck = function() {
+    try {
+      const uid = sbUser && sbUser.id; if (!uid || document.getElementById('pbTermsSheet') || document.getElementById('pbMfaSheet') || document.getElementById('pbCrewNotice')) return;
+      let ok = null; try { ok = localStorage.getItem('pbCrewNotice:' + uid); } catch (e) {} if (ok === '1') return;
+      if (pbTermsLs.get('pbTermsOk:' + uid) !== PB_TERMS_KEY && !pbTermsLs.get('pbTermsPend:' + uid)) return; // after the Terms
+      const acc = pbProdAccMem.get(uid); if (!acc || !acc.member || !acc.companyId || acc.manager) return;
+      const ov = document.getElementById('pbModalOverlay'); if (pbCurrentScreen !== 'home' || (ov && getComputedStyle(ov).display !== 'none')) return; // never over another question
+      pbShowModal('Your company can see the work you record in this app: your runs and their reports, photos (with the time, place and direction stamped on them), run notes, delays, production and footage, permits and daily reports, and when each was made or changed.\n\nYour location is used only while Run Setup or Run Results is open, to stamp photos. The app doesn’t track where you go.\n\nYour company decides how it uses these records. The Privacy Policy is in Settings.', [{ label: 'Got It', primary: true, onClick: () => { try { localStorage.setItem('pbCrewNotice:' + uid, '1'); } catch (e) {} } }], 'What Your Company Sees');
+    } catch (e) {}
+  };
+  (window.pbScreenHooks = Array.isArray(window.pbScreenHooks) ? window.pbScreenHooks : []).push(function (name) { if (name === 'home') setTimeout(() => window.pbCrewNoticeCheck(), 1500); });
 
   // r16.81 (legal review): two-step login (an authenticator app code). Turned on in Settings; once on, the app asks for
   // the code after each login before the account is used, and admin pages need it (server: pb_support.admin_ok).
