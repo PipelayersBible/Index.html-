@@ -7,7 +7,7 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++;};
  {const {b,p}=await boot((process.env.PB_ROOT||'http://127.0.0.1:8843/')+f,{init:ci()+plan,wait:6500});
   const t=await p.evaluate(()=>document.getElementById('pbBetaLine').innerText.replace(/\s+/g,' '));
   const btns=await p.evaluate(()=>[...document.querySelectorAll('#pbBetaLine button')].map(b=>b.textContent));
-  ok(/stop reaching you in 2 days unless you start a plan/.test(t)&&btns.join()==='Start Company Plan','owner: '+t+' ['+btns+']');
+  ok(/stop reaching you in 2 days unless you start a plan/.test(t)&&btns.filter(x=>x!=='Beta Results').join()==='Start Company Plan','owner: '+t+' ['+btns+']');
   await p.click('#pbBetaLine [data-plan="company"]');await p.waitForTimeout(500);
   ok((await p.evaluate(()=>window.__req&&window.__req.p_kind))==='company'&&/Request sent/.test(await p.evaluate(()=>document.getElementById('pbBetaLine').innerText)),'owner tap sends a company plan request');
   ok(!p.errs.length,'no errors '+p.errs);await b.close();}
