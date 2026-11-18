@@ -6123,7 +6123,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
       <div class="pb-tag">BOP / INV / TOP</div>
       <div class="pb-body">
         <div class="pb-review-item" data-edu-id="bop-bottom-of-pipe"><span class="k">BOP (Bottom of Pipe)</span><br>Elevation: INV − wall thickness. Engineer's/Architect's Rod reading: INV reading + wall thickness (reads HIGHER, not lower).</div>
-        <div class="pb-review-item" data-edu-id="top-top-of-pipe"><span class="k">TOP (Top of Pipe)</span><br>Elevation: INV + pipe ID + wall thickness. Engineer's/Architect's Rod reading: INV reading − (ID + wall thickness) (reads LOWER, not higher).</div>
+        <div class="pb-review-item" data-edu-id="top-top-of-pipe"><span class="k">TOP (Top of Pipe)</span><br>Elevation: BOP + the pipe's outside diameter (OD), which is INV − wall thickness + OD. The app uses the real OD for the run's pipe type and size (15" SDR 35 is 15.30" OD, 12" ductile iron 13.20"); with no OD on file for the type or size, OD = pipe size + 2 × wall thickness. Engineer's/Architect's Rod reading: INV reading + wall thickness − OD (reads LOWER, not higher).</div>
         <div class="pb-review-item" data-edu-id="why-bop-top-flip-direction-on-engineer-s-archite"><span class="k">Why BOP/TOP flip direction on Engineer's/Architect's Rod</span><br>Reading = HI − elevation. Since HI is fixed, a HIGHER elevation always gives a SMALLER reading. TOP is physically highest, so it reads lowest. BOP is physically lowest, so it reads highest.</div>
       </div>
     </div>
@@ -11899,7 +11899,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (a && b) {
         const sp = b.stationFt - a.stationFt, inv = sp > eps ? a.piFt + (b.piFt - a.piFt) * (o.abs - a.stationFt) / sp : a.piFt;
         const p = pbXingPipeOf(entry, run.n) || {}, wt = typeof p.wtFt === 'number' ? p.wtFt : null, idf = typeof p.idIn === 'number' ? p.idIn / 12 : null;
-        o.our = { inv, bop: wt !== null ? inv - wt : null, top: wt !== null && idf !== null ? inv + idf + wt : null };
+        o.our = { inv, bop: wt !== null ? inv - wt : null, top: wt !== null && idf !== null ? (typeof p.odIn === 'number' && p.odIn > 0 ? inv - wt + p.odIn / 12 : inv + idf + wt) : null };
         const cb = typeof cx.bop === 'number' ? cx.bop : null, ct = typeof cx.top === 'number' ? cx.top : null, ob = o.our.bop, ot = o.our.top;
         if (cb !== null && ot !== null && cb >= ot - 1e-9) { o.pos = 'above'; o.clrFt = cb - ot; }
         else if (ct !== null && ob !== null && ct <= ob + 1e-9) { o.pos = 'below'; o.clrFt = ob - ct; }
@@ -12715,6 +12715,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   var PB_OD_IPS = { 1.5: 1.9, 2: 2.375, 2.5: 2.875, 3: 3.5, 4: 4.5, 5: 5.563, 6: 6.625, 8: 8.625, 10: 10.75, 12: 12.75, 14: 14, 16: 16, 18: 18, 20: 20, 24: 24, 30: 30, 36: 36 };
   var PB_OD_CORR = { 4: 4.8, 6: 7.1, 8: 9.3, 10: 11.9, 12: 14.7, 15: 17.6, 18: 21.4, 24: 28.2, 30: 34.7, 36: 40.6, 42: 47.5, 48: 54.1, 60: 66.8 };
   // OD in inches for a pipe type (Run Setup's Pipe type; blank = PVC SDR 35) and nominal size, or null when not known.
+  var pbLegacyTopGen = null; // bughunt: the form generation holding a record locked before r16.90 (its TOP = INV + size + wall)
+  function pbTopPreOd(entry) { const pi = entry && entry.summary && Array.isArray(entry.summary.pipeInfo) ? entry.summary.pipeInfo : []; return !!entry && entry.kind === 'run' && pi.some(x => x && typeof x.wtFt === 'number' && typeof x.idIn === 'number') && !pi.some(x => x && typeof x.odIn === 'number'); } // had a TOP, and no OD recorded
   function pbPipeOdIn(type, sizeIn, wFt) {
     const t = String(type || ''), d = Math.round(Number(sizeIn) * 1000) / 1000; if (!(d > 0)) return null;
     const g = (tbl, max) => (tbl[d] && (!max || d <= max)) ? tbl[d] : null;
@@ -12738,6 +12740,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const w = (wt === null || wt === undefined || !Number.isFinite(wt)) ? null : wt;
     let t = ''; try { t = pbFitLayPipeType(); } catch (e) { t = ''; }
     const od = pbPipeOdIn(t, idFt * 12, w);
+    if (pbLegacyTopGen !== null && pbLegacyTopGen === pbFormGen) return w === null ? null : idFt + 2 * w; // bughunt: a pre-r16.90 record's own form
     if (od && (w === null || od / 12 - 2 * w > 0)) return od / 12;
     return w === null ? null : idFt + 2 * w;
   }
@@ -12929,7 +12932,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       wtFt: r.point.wt,
       ...(pbPiAIsAuto(r.n === 1 ? 'runWT' : 'seg' + r.n + 'WT') ? { wtAuto: true } : {}), /* feat_pipeauto: filled in by the app */
       idIn: r.point.idFt !== null ? r.point.idFt * 12 : null,
-      ...((() => { const o = r.point.idFt !== null && r.point.wt !== null ? pbPipeOdFt(r.point.idFt, r.point.wt) : null; return o !== null ? { odIn: Math.round(o * 12 * 1000) / 1000 } : {}; })()), /* r16.90: OD used for TOP */
+      ...((() => { const o = r.point.idFt !== null && r.point.wt !== null && !(pbLegacyTopGen !== null && pbLegacyTopGen === pbFormGen) ? pbPipeOdFt(r.point.idFt, r.point.wt) : null; return o !== null ? { odIn: Math.round(o * 12 * 1000) / 1000 } : {}; })()), /* r16.90: OD used for TOP */
       beddingFt: (r.point.bedding !== null && r.point.bedding !== undefined) ? r.point.bedding : null,
       trenchWidthFt: (r.point.trenchWidth !== null && r.point.trenchWidth !== undefined) ? r.point.trenchWidth : null
     }));
@@ -13038,7 +13041,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.96 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.97 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -13506,7 +13509,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbUrlSessionDone.then(pbTellAuthLinkOutcome);
   }
   function pbTellAuthLinkOutcome() {
-    if (pbUrlAuth.failed || pbUrlSessionFailed === 'expired') pbAlertAfterOpen('That email link has expired or was already used. If you were resetting your password, tap \u201cForgot password?\u201d on the Log In screen to get a new link.', 'Link Expired');
+    if (pbUrlAuth.failed || pbUrlSessionFailed === 'expired') pbAlertAfterOpen('That email link has expired or was already used. To set your password, tap \u201cForgot password?\u201d on Log In and enter the email the invite (or reset) went to. A new link comes by email.', 'Link Expired'); /* beta audit 01: invites too */
     else if (pbUrlSessionFailed === 'network' || (pbUrlAuth.tokens && !sbClient)) pbAlertAfterOpen('The email link couldn\u2019t be opened \u2014 no signal. Open the link from the email again once you have signal.', 'Link Not Opened');
     else if (pbUrlAuth.tokens && !pbUrlSetsPassword) pbAlertAfterOpen('This email link doesn\u2019t sign in on this phone by itself, so nothing changed. To use that account, log in with its email and password.', 'Link Not Used');
     pbShowRecoveryIfPending();
@@ -14817,7 +14820,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbBigMark = (key) => key + '@idb';
   async function pbBigGet(key) { // throws when the moved value can't be read (a critical read must not see "no records")
     let moved = false; try { moved = localStorage.getItem(pbBigMark(key)) === '1'; } catch (e) {}
-    if (!moved) return localStorage.getItem(key);
+    if (!moved) {
+      const ls = localStorage.getItem(key); if (ls !== null) return ls;
+      let v = null; try { v = await pbBigTx('readonly', st => st.get(key)); } catch (e) { v = null; } /* offline audit 04: the marker was wiped, the records weren't */
+      if (typeof v === 'string') { try { localStorage.setItem(pbBigMark(key), '1'); } catch (e) {} return v; }
+      return null;
+    }
     const v = await pbBigTx('readonly', st => st.get(key));
     if (typeof v === 'string') return v;
     const old = localStorage.getItem(key); return old; // marker but nothing there: the localStorage copy, if any
@@ -16529,6 +16537,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     noClient: 'Can’t reach the login service right now, so AI can’t be used. Check your signal and try again.',
     signedOut: 'Log in to use AI. You’re signed out on this phone, or your login has expired.',
     daily: () => 'You’ve hit today’s limit. It resets tomorrow.', // v20: one line, whichever allowance ran out
+    betaEnded: 'The beta has ended, so AI reading is off until your company starts a plan. Everything else still works.', // beta audit 03
     tooBig: 'That file is too big to send. Try a smaller photo, or a PDF with fewer pages.',
     busy: 'The AI is busy right now. Try again in a minute.',
     failed: 'The AI couldn’t read that. Try again, or with a clearer photo.',
@@ -16645,7 +16654,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     if (st === 401) return { ok: false, code: 'signed_out', message: PB_AI_MSG.signedOut };
     if (st === 403) return { ok: false, code: 'plan', message: PB_AI_MSG.plan };
-    if (st === 429) { const lim = Number(j && j.limit) || (pbAiQuota && pbAiQuota.limit) || 20; if (!(j && j.mode === 'analysis')) pbAiQuota = { left: 0, limit: lim }; return { ok: false, code: 'daily_limit', message: PB_AI_MSG.daily(lim) }; }
+    if (st === 429) { const lim = Number(j && j.limit) || (pbAiQuota && pbAiQuota.limit) || 20; if (!(j && j.mode === 'analysis')) pbAiQuota = { left: 0, limit: lim };
+      { let bp = null; try { bp = typeof window.pbPlanNow === 'function' ? window.pbPlanNow() : null; } catch (e) { bp = null; } /* beta audit 03: an ended beta is not "today's limit" */
+        const endMs = bp && bp.plan === 'trial' && bp.trial_ends_at ? new Date(bp.trial_ends_at).getTime() : NaN;
+        if (bp && bp.plan === 'trial' && !bp.individual && (bp.expired || (Number.isFinite(endMs) && endMs <= Date.now()))) return { ok: false, code: 'daily_limit', ended: true, message: PB_AI_MSG.betaEnded }; } /* same code: every caller treats it as the limit (not a signal problem) */
+      return { ok: false, code: 'daily_limit', message: PB_AI_MSG.daily(lim) }; }
     if (st === 413) return { ok: false, code: 'too_big', message: PB_AI_MSG.tooBig };
     if (st === 404) return { ok: false, code: 'not_available', message: PB_AI_MSG.notYet };
     if (st === 502) return { ok: false, code: err || 'ai_failed', message: err === 'ai_busy' ? PB_AI_MSG.busy : err === 'ai_incomplete' ? PB_AI_MSG.incomplete : PB_AI_MSG.failed };
@@ -21828,7 +21841,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const run = pbRunOfPointId(s.from.id), sz = s.idFt !== null && s.idFt !== undefined ? Math.round(s.idFt * 12 * 1000) / 1000 : null, min = sz !== null ? PB_MIN_SLOPE[sz] : undefined;
       if (min === undefined || lowSeen.has(run) || !(s.to.station - s.from.station > 0) || Math.abs(s.slopePct) >= min - 1e-9) return;
       lowSeen.add(run);
-      warnings.push({ type: 'low-slope', heading: 'Low Slope \u2014 Check The Plans', text: `${Math.abs(s.slopePct).toFixed(2)}% from ${s.from.label} to ${s.to.label} is flatter than the usual minimum for ${sz}" sewer (${min < 0.1 ? min : min.toFixed(2)}%, Ten States Standards). If the plans don\u2019t call for it, a stake may be misread or mistyped.` });
+      warnings.push({ type: 'low-slope', heading: 'Low Slope \u2014 Check The Plans', text: `${(() => { const a = Math.abs(s.slopePct); let d = 2; while (d < 4 && +a.toFixed(d) >= min - 1e-9) d++; return a.toFixed(d); })()}% from ${s.from.label} to ${s.to.label} is flatter than the usual minimum for ${sz}" sewer (${min < 0.1 ? min : min.toFixed(2)}%, Ten States Standards). If the plans don\u2019t call for it, a stake may be misread or mistyped.` });
     });
     segments.forEach((s, idx) => {
       if (Math.abs(s.slopePct) > 20) {
@@ -22966,6 +22979,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbLock = async function(opts) {
     if (!lastCalc) return;
     if (pbLockInFlight) return;
+    if (!(opts && opts.ai2nd)) window._pbAiNo2nd = false; // bughunt: only the Lock "Lock Without It" answered
     if (pbRefuseWhileCorrectionSaving()) return;
     if (typeof window.pbRrFixLock === 'function' && window.pbRrFixLock(opts)) return; /* feat_rrflow 1: a sent-back run is fixed on the same report */
     // Edit Run Data, then Review again with nothing changed, builds a new
@@ -23030,10 +23044,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!(opts && opts.fmAsked) && typeof window.pbR57AskForeman === 'function' && window.pbR57AskForeman(opts)) return; /* r15.57: no foreman picked: asked once per form */
     if (!(opts && opts.jobAsked) && typeof window.pbRfAskJob === 'function' && window.pbRfAskJob(opts)) return; // feat_runflow P6: a company run needs its job
     if (!(opts && (opts.aiChecked || opts.ai2nd))) { const ai = pbAiReadsNow(); if (ai.length) { let hc = null; try { hc = computeHiCrossCheck(); } catch (e) { hc = null; }
-      if (hc && hc.candidates.length < 2) {
+      if (hc && hc.candidates.length < 2 && activeVal('rodToggle') !== 'lenker') { const nShot = hc.candidates.filter(c => c && c.prefix).length; // bughunt: no rod shots on a Lenker run
         const shot = new Set(hc.candidates.map(c => c.prefix).filter(Boolean)), all = ['start'].concat(getAllHubPrefixes(), ['end']).concat(getAllActiveSegPrefixes()).filter(p => document.getElementById(p + 'ModeToggle') && activeVal(p + 'ModeToggle') === 'stake' && !shot.has(p));
         const aiP = new Set(Object.keys(typeof window.pbStakeAiProvOf === 'function' ? window.pbStakeAiProvOf() || {} : {})), pickL = all.filter(p => aiP.has(p)), tgt = (pickL.includes('end') ? 'end' : pickL[pickL.length - 1]) || (all.includes('end') ? 'end' : all[all.length - 1]) || null;
-        if (tgt) { window._pbAiNo2nd = false; pbShowModal('Stake values were read from ' + (ai.length === 1 ? '1 photo' : ai.length + ' photos') + ' by AI, and only one stake has a rod shot, so nothing can catch a misread cut or elevation. Shoot the rod on ' + escapeHtml(getPointLabel(tgt, tgt === 'end' ? 'the End stake' : 'one more stake')) + ' and type the reading: the app checks the two shots against each other.', [{ label: 'Go Back' }, { label: 'Lock Without It', onClick: () => { window._pbAiNo2nd = true; pbLock(Object.assign({}, opts || {}, { ai2nd: true })); } }, { label: 'Add a Rod Shot', primary: true, onClick: () => { try { pbGoto('input'); } catch (e) {} setTimeout(() => { try { window.pbGoToField(tgt + 'StakeReading'); } catch (e) {} }, 250); } }], 'One More Rod Shot'); return; }
+        if (tgt) { window._pbAiNo2nd = false; pbShowModal('Stake values were read from ' + (ai.length === 1 ? '1 photo' : ai.length + ' photos') + ' by AI, and ' + (nShot ? 'only one stake has a rod shot' : 'no stake has a rod shot') + ', so nothing can catch a misread cut or elevation. Shoot the rod on ' + getPointLabel(tgt, tgt === 'end' ? 'the End stake' : 'one more stake') + ' and type the reading: the app checks the two shots against each other.', [{ label: 'Go Back' }, { label: 'Lock Without It', onClick: () => { window._pbAiNo2nd = true; pbLock(Object.assign({}, opts || {}, { ai2nd: true })); } }, { label: 'Add a Rod Shot', primary: true, onClick: () => { try { pbGoto('input'); } catch (e) {} setTimeout(() => { try { window.pbGoToField(tgt + 'StakeReading'); } catch (e) {} }, 250); } }], 'One More Rod Shot'); return; }
       }
     } }
     if (!(opts && opts.aiChecked)) { const ai = pbAiReadsNow(); if (ai.length) { const nv = ai.reduce((a, x) => a + x.fields.length, 0); pbShowModal(nv + ' value' + (nv === 1 ? ' was' : 's were') + ' read from ' + (ai.length === 1 ? '1 stake photo' : ai.length + ' stake photos') + ' by AI. Check them against the stakes before you lock.', [{ label: 'Go Back' }, { label: 'I Checked Them', primary: true, onClick: () => { window._pbAiCheckedAt = Date.now(); pbLock(Object.assign({}, opts || {}, { aiChecked: true })); } }], 'Check the AI Readings'); return; } } /* r16.77 */
@@ -23518,7 +23532,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     document.addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && open(ev)) ev.preventDefault(); });
   })();
   (function () { // feat_r1614: one "No signal" line per screen; the per-card signal lines hide while there is none
-    const PH = /^(loads with signal\.?|couldn\u2019t load\.?|couldn't load\.?|couldn\u2019t load crew runs\.?|active runs and permits load with signal\.?|sign in with signal to see the latest\.?|no signal\..*|loads with signal \u2014.*)$/i;
+    const PH = /^(loads with signal\.?|couldn\u2019t load\.?|couldn't load\.?|couldn\u2019t load crew runs\.?|active runs and permits load with signal\.?|sign in with signal to see the latest\.?|no signal\.(?!.*(as of|last copy|nothing was|still here|try again|save again|syncs when|wasn\u2019t sent|was not sent)).*|loads with signal \u2014.*)$/i; /* offline audit 01: a line that says what happened, or how old a copy is, stays */
     let mo = null, t = null;
     const tidy = () => {
       t = null; const off = navigator.onLine === false; document.documentElement.classList.toggle('pb-nosig', off);
@@ -27062,6 +27076,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
 
     pbFormGen++;
     if (opts && opts.open) pbOpenNewRun(); else pbResetRunForm();
+    pbLegacyTopGen = !(opts && opts.open) && pbTopPreOd(entry) ? pbFormGen : null; // bughunt: its own form keeps its TOP
     if (entry.rodUnit) {
       const btn = document.querySelector('#rodToggle button[data-val="' + entry.rodUnit + '"]');
       if (btn) btn.click();
@@ -30461,7 +30476,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         return;
       }
       if (thresholdResult.unsafe) {
-        pbAlert('OUTSIDE PERMIT LIMITS — Under this permit, entrants exit the space and no one enters until the entry supervisor resolves it and a new reading inside the limits is logged.\n\n' + thresholdResult.problems.join('\n') + '\n\nAlso: this reading did NOT save (storage may be full or unavailable) \u2014 your entered values are still in the form below. Try saving again once the space is evacuated.', 'Outside Permit Limits \u2014 Not Saved');
+        pbAlert('OUTSIDE PERMIT LIMITS — Under this permit, entrants exit the space and no one enters until the entry supervisor resolves it and a new reading inside the limits is logged.\n\n' + thresholdResult.problems.join('\n') + '\n\nAlso: this reading did NOT save (storage may be full or unavailable) \u2014 your entered values are still in the form below. Try saving it again.', 'Outside Permit Limits \u2014 Not Saved');
       } else {
         pbAlert('This air test reading did NOT save. Storage may be full or unavailable. Try again \u2014 your entered values are still in the form below.', 'Reading Not Saved');
       }
@@ -39064,10 +39079,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
             const graceLeft = plan.trial_ends_at ? Math.max(0, Math.ceil((new Date(plan.trial_ends_at).getTime() + 3 * 864e5 - Date.now()) / 864e5)) : 0;
             const what = plan.closed || !graceLeft ? 'Your records stay in your company\u2019s account. New runs and reports wait on this phone and send once your company starts a plan.'
               : 'New runs and reports stop sending to your company in ' + (graceLeft === 1 ? '1 day' : graceLeft + ' days') + ' unless it starts a plan. Nothing is deleted.';
-            const own = plan.individual ? '<span>You have an individual plan.</span>'
+            const office = !!(sbCachedSubscription && sbCachedSubscription.companyRole === 'Company account'); /* beta audit 04: the company account itself */
+            const whatOffice = plan.closed || !graceLeft ? 'Your records stay in your account. Your crew\u2019s new runs and reports wait on their phones and come in once you start a plan.'
+              : 'Your crew\u2019s new runs and reports stop reaching you in ' + (graceLeft === 1 ? '1 day' : graceLeft + ' days') + ' unless you start a plan. Nothing is deleted.';
+            const own = office ? (plan.requested ? '<span>Request sent. You\u2019ll be contacted to set it up.</span>' : '<span class="pb-beta-acts"><button type="button" class="pb-btn small" data-plan="company">Start Company Plan</button></span>')
+              : plan.individual ? '<span>You have an individual plan.</span>'
               : plan.requested ? '<span>Request sent. You’ll be contacted to set it up.</span>'
               : '<span class="pb-beta-acts"><button type="button" class="pb-btn small" data-plan="company">Company Plan</button><button type="button" class="pb-btn ghost small" data-plan="individual">My Own Plan</button></span>';
-            line.innerHTML = '<span class="pb-beta-chip">Beta ended</span><span>' + what + '</span>' + own;
+            line.innerHTML = '<span class="pb-beta-chip">Beta ended</span><span>' + (office ? whatOffice : what) + '</span>' + own;
             line.querySelectorAll('[data-plan]').forEach((b) => { b.onclick = async () => {
               if (!sbClient || navigator.onLine === false) { pbAlert('Needs signal. Try again when you have it.', 'Needs Signal'); return; }
               b.disabled = true; let r; try { r = await sbClient.rpc('pb_plan_request', { p_kind: b.dataset.plan }); } catch (e) { r = { error: e }; }
@@ -45282,7 +45301,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbLiveSendSoon(ms) { clearTimeout(pbLiveQ.timer); pbLiveQ.timer = setTimeout(() => { pbLiveSend(); }, typeof ms === 'number' ? ms : 3000); }
   async function pbLiveSend() {
     const uid = pbLiveQ.uid, q = pbLiveQ.q;
-    if (!uid || !q || pbLiveQ.busy || !Object.keys(q.pending).length) return;
+    if (pbLiveQ.busy) { pbLiveQ.more = true; return; } /* offline audit 02 */
+    if (!uid || !q || !Object.keys(q.pending).length) return;
     if (!sbClient || typeof sbClient.rpc !== 'function' || !sbUser || sbUser.id !== uid || navigator.onLine === false) return; // no signal: waits, never a failure
     if (Date.now() < pbLiveQ.pauseUntil) return;
     if (!pbAuthBackgroundOk()) { pbLiveSendSoon(60000); return; }
@@ -45308,7 +45328,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       }
       await pbLiveSaveQ(uid);
     } catch (e) { console.error('Live status send failed:', e); }
-    finally { pbLiveQ.busy = false; if (again) pbLiveSendSoon(Math.max(5000, pbLiveQ.pauseUntil - Date.now() + 500)); }
+    finally { pbLiveQ.busy = false; const more = !!pbLiveQ.more; pbLiveQ.more = false; if (again) pbLiveSendSoon(Math.max(5000, pbLiveQ.pauseUntil - Date.now() + 500)); else if (more) pbLiveSendSoon(1500); } /* offline audit 02 */
   }
   window.__pbLiveDebug = () => ({ uid: pbLiveQ.uid, q: pbLiveQ.q ? JSON.parse(JSON.stringify(pbLiveQ.q)) : null, pauseUntil: pbLiveQ.pauseUntil });
   function pbLiveCheckCurrent() { try { const e = getCurrentArchiveEntry(); if (e) pbLiveNoteRun(e); } catch (x) {} }
@@ -54255,7 +54275,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     st.className = 'pbc-status' + (pbCmSt.busy || pbCmSt.loading ? '' : pbCmSt.msgKind ? ' ' + pbCmSt.msgKind : '');
     pbCmEl('crCompany').textContent = D && D.company_name ? String(D.company_name) : '';
     const seats = D && Number.isFinite(+D.seats) ? +D.seats : null, inc = D && Number.isFinite(+D.seats_included) ? +D.seats_included : null;
-    pbCmEl('crSeats').textContent = seats == null ? '' : seats + ' member' + (seats === 1 ? '' : 's') + (inc != null ? ' (your plan includes ' + inc + ')' : '');
+    const bp = typeof window.pbPlanNow === 'function' ? window.pbPlanNow() : null, bSeats = bp && bp.plan === 'trial' && bp.limits && Number.isFinite(+bp.limits.seats) ? +bp.limits.seats - 1 : null; /* beta audit 02: the beta's own number */
+    pbCmEl('crSeats').textContent = seats == null ? '' : bSeats != null ? seats + ' of ' + bSeats + ' people in the beta (plus the company account)' : seats + ' member' + (seats === 1 ? '' : 's') + (inc != null ? ' (your plan includes ' + inc + ')' : '');
     const inv = pbCmEl('crInvites');
     inv.textContent = D && Number.isFinite(+D.invites_today) ? (+D.invites_today) + ' of ' + (+D.invite_limit || 30) + ' invites used in the last 24 hours' : '';
     const wrap = pbCmEl('screen-crewMembers'); if (wrap) wrap.classList.toggle('pbc-busy', !!pbCmSt.busy);
@@ -63458,7 +63479,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       for (const e of runArchive) {
         if (!e || e.kind !== 'run' || !(e.completed || e.incomplete) || !sent[String(e.id)]) continue;
         if (typeof window.pbRfEndHeld === 'function' && window.pbRfEndHeld(e)) continue;
-        const t = (e.lockTime instanceof Date ? e.lockTime : new Date(e.lockTime)).getTime(); if (!(isFinite(t) && t > since)) continue;
+        const t = (e.lockTime instanceof Date ? e.lockTime : new Date(e.lockTime)).getTime(); if (!(isFinite(t) && t > since) && !e.reportSendWanted) continue; /* offline audit 03 */
         let rec; try { rec = pbRrOfficeCopy(e); } catch (x) { continue; }
         if (sent[String(e.id)] !== pbHashText(JSON.stringify([rec, acc.companyId]))) continue; // the company has an older copy: sealed after it gets this one
         const id = String(e.id), key = pbRrSealKey(rec), s = seals[id] || {};
@@ -63712,7 +63733,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbRrSoon(ms) { clearTimeout(pbRr.timer); pbRr.timer = setTimeout(() => { pbRrSend().catch(e => console.error('Crew run send failed:', e)); }, typeof ms === 'number' ? ms : 4000); }
   async function pbRrSend() {
     const uid = pbArchiveOwnerUid;
-    if (!uid || uid === 'shared' || pbRr.busy || archiveLoadFailed) return;
+    if (pbRr.busy) { pbRr.more = true; return; } /* offline audit 02: runs again right after the send going now */
+    if (!uid || uid === 'shared' || archiveLoadFailed) return;
     if (!sbClient || typeof sbClient.rpc !== 'function' || !sbUser || sbUser.id !== uid || navigator.onLine === false) return;
     if (pbRr.uid === uid && Date.now() < pbRr.pauseUntil) return;
     if (typeof pbAuthBackgroundOk === 'function' && !pbAuthBackgroundOk()) return;
@@ -63722,7 +63744,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     { const recent = runArchive.filter(e => e && e.kind === 'run' && (() => { const t = (e.lockTime instanceof Date ? e.lockTime : new Date(e.lockTime)).getTime(); return isFinite(t) && t > Date.now() - 3 * 86400000; })()).sort((x, y) => new Date(y.lockTime) - new Date(x.lockTime)); if (recent.length) await window.pbCrewAutoLinkFor(uid, [recent[0].id]); }
     const since = Date.now() - PB_RR_DAYS * 86400000;
     const runs = runArchive.filter(e => e && e.kind === 'run' && e.id !== undefined && e.id !== null && /^[A-Za-z0-9_.:-]{1,60}$/.test(String(e.id)) && !(typeof window.pbRfEndHeld === 'function' && window.pbRfEndHeld(e)) /* review S1: sent once the end is saved */
-      && (() => { const t = (e.lockTime instanceof Date ? e.lockTime : new Date(e.lockTime)).getTime(); return isFinite(t) && t > since; })());
+      && ((e.reportSendWanted && !e.reportSentAt && (e.completed || e.incomplete)) /* offline audit 03: a report he sent goes whatever the phone's clock said */ || (() => { const t = (e.lockTime instanceof Date ? e.lockTime : new Date(e.lockTime)).getTime(); return isFinite(t) && t > since; })()));
     const todo = [], held = [];
     for (const e of runs) {
       let rec; try { rec = pbRrOfficeCopy(e); } catch (x) { continue; }
@@ -63762,7 +63784,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (pbRr.uid === uid) await pbSetFor(uid, 'rrSent', JSON.stringify(sent));
       if (learned && pbArchiveOwnerUid === uid) { try { await saveRunArchive(); } catch (x) {} try { window.pbRenderHome(); } catch (x) {} try { if (pbCurrentScreen === 'archive') renderArchiveList(); } catch (x) {} again = true; }
       again = again || todo.length >= PB_RR_MAX_PER_PASS;
-    } finally { pbRr.busy = false; if (again) pbRrSoon(5000); }
+    } finally { pbRr.busy = false; const more = !!pbRr.more; pbRr.more = false; if (more) pbRrSoon(1500); else if (again) pbRrSoon(5000); } /* offline audit 02 */
   }
   // r16.15 (Tommy, Nov 9): a reinstalled phone gets its runs back. The company account keeps every run a crew member
   // locks (pb_prod.run_records); runs this phone doesn't have are added to Records, and each run locked with a pipe
@@ -63951,7 +63973,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbCvListHtml(st) {
     const L = st && Array.isArray(st.list) ? st.list : null;
     if (!L) return '';
-    if (!L.length) return '<p class="pbd-dim" id="cvEmpty">No crew runs today. A run shows here once your foreman or a crew member locks it and their phone has signal.</p>';
+    if (!L.length) { /* beta audit 05: no foreman picked yet: say so */
+      let noFm = false; try { const uid = pbArchiveOwnerUid, a = pbProdAccMem.get(uid), CL = pbCrew && pbCrew.uid === uid ? pbCrew.links : null; noFm = !!(a && a.role === 'pipelayer' && CL && typeof CL === 'object' && !(CL.my_foreman && CL.my_foreman.id)); } catch (e) { noFm = false; }
+      if (noFm) return '<p class="pbd-dim" id="cvEmpty">You haven\u2019t picked your foreman yet, so no crew runs show here. Pick him in My production.</p><div class="pb-btn-wrap"><button type="button" class="pb-btn secondary" id="cvPickFm" onclick="pbOpenProdMine()">Open My Production</button></div>';
+      return '<p class="pbd-dim" id="cvEmpty">No crew runs today. A run shows here once your foreman or a crew member locks it and their phone has signal.</p>'; }
     return '<div class="cv-runs" role="list">' + L.map((x, i) => {
       const laid = Number(x.laid_ft), dist = Number(x.distance_ft);
       const prog = Number.isFinite(laid) && laid > 0 ? 'Laid ' + pbCvFt(laid) + (Number.isFinite(dist) && dist > 0 ? ' of ' + pbCvFt(dist) : '') + ' ft' : Number.isFinite(dist) && dist > 0 ? pbCvFt(dist) + ' ft' : '';

@@ -1,6 +1,6 @@
 // beta audit 03: after the beta ends, a stake photo read refused by the server (429) says the beta ended, not "resets tomorrow"
 const boot=require('/home/claude/rig/boot');const F=require('/home/claude/rig/flow');
-const co=require('/home/claude/rig/co').replace("'3'","'2'");const f=process.argv[2]||'cur.html';const ended=process.argv[3]!=='live';
+const co=require('/home/claude/rig/co');const f=process.argv[2]||'cur.html';const ended=process.argv[3]!=='live';
 const ends=ended?new Date(Date.now()-2*864e5).toISOString():new Date(Date.now()+5*864e5).toISOString();
 const init=co+`;window.__rpcOverride.pb_my_plan=()=>({ok:true,plan:'trial',trial_ends_at:'${ends}',expired:${ended},closed:false,individual:false,requested:false,days_left:0});`;
 (async()=>{const {b,p}=await boot('http://127.0.0.1:8843/'+f,{init,wait:6000});const H=F(p);

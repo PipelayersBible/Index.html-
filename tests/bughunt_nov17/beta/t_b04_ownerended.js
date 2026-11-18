@@ -1,6 +1,6 @@
 // beta audit 04: the company account's ended-beta line speaks to the company (one Start Company Plan button), crew unchanged
 const boot=require('/home/claude/rig/boot');const ci=require('./coinit');
-const co=require('/home/claude/rig/co').replace("'3'","'2'");const f=process.argv[2]||'cur.html';
+const co=require('/home/claude/rig/co');const f=process.argv[2]||'cur.html';
 const plan=`;window.__rpcOverride.pb_my_plan=()=>({ok:true,plan:'trial',trial_ends_at:new Date(Date.now()-864e5).toISOString(),expired:true,closed:false,individual:false,requested:false,days_left:0});window.__rpcOverride.pb_plan_request=(a)=>{window.__req=a;return {ok:true};};`;
 let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++;};
 (async()=>{
