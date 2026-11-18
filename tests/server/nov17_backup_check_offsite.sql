@@ -1,0 +1,7 @@
+-- APPLIED Nov 17 2026 (migration backup_check_includes_offsite_nov17): the 10:00 UTC backup check now also reports the
+-- off-site (Backblaze B2) copy: not set up (missing secret), more than 6 h behind, or saved without Object Lock.
+-- pb_backup.offsite_health(p_now) returns null or one line; pb_backup.health() = coalesce(backup problem, offsite problem).
+-- Tested in a rolled-back block: both messages come out and check_due() turns true. Live: null (all copied).
+-- Also APPLIED Nov 17 (migration notify_kicks_send_secret_nov17): pb_reports.kick() / pb_billing.feedback_kick() send
+-- x-pb-push-secret; notify-report v9 / feedback-notify v7 refuse calls without it (tests/edge/notify-report/README.md).
+-- Also APPLIED Nov 17 (migration run_photo_seal_scope_nov17): see tests/patches/r1689/server_run_photo_seal_scope_APPLIED.sql.
