@@ -11340,6 +11340,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (ev !== null) { pbStDir[n] = ev > s.v ? 1 : -1; return pbStDir[n]; }
     if (pbStDir[n]) return pbStDir[n];
     for (const p of pbStHubs(n)) { const v = sv(p); if (v !== null) return v > s.v ? 1 : -1; }
+    if (n > 1 && (depth || 0) < 6) return pbStDirOf(n - 1, (depth || 0) + 1); // grade2 audit 01: Run N continues the run before it
     return 1;
   }
   function pbStTogHTML(mode) {
@@ -13043,7 +13044,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.99 · 2026-11-18'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r17.00 · 2026-11-18'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -20011,7 +20012,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const n = segNumFromPrefix(p) || (/^seg(\d+)/.exec(p) ? Number(/^seg(\d+)/.exec(p)[1]) : 1), hubs = pbRedHubs(n); if (!hubs.length) return null;
     const at = /end$/.test(p) ? numVal(distanceFieldIdForRun(n)) : numVal(p + 'Station'); if (at === null) return null;
     let best = null, bestAt = -Infinity;
-    hubs.forEach(h => { const hs = numVal(h + 'Station'); if (hs === null) return; if ((hs < at - 1e-6 || (inclusive && h === p)) && hs >= bestAt) { bestAt = hs; best = h; } });
+    const order = /^seg\d+hub|^hub/.test(p) ? (n === 1 ? getAllHubPrefixes() : n === 2 ? getAllHub2Prefixes() : getAllHubPrefixesForSeg(n)) : null, myAt = order ? order.indexOf(p) : -1; // grade2 audit 02
+    hubs.forEach(h => { const hs = numVal(h + 'Station'); if (hs === null) return; const sameBefore = myAt !== -1 && h !== p && Math.abs(hs - at) <= 1e-6 && order.indexOf(h) !== -1 && order.indexOf(h) < myAt; if ((hs < at - 1e-6 || sameBefore || (inclusive && h === p)) && hs >= bestAt) { bestAt = hs; best = h; } });
     if (!best) return null;
     const br = Number((document.getElementById(best + 'FitBr') || {}).value); if (!(br > 0)) return null;
     let wt = numVal(best + 'RedWT'); if (wt === null) { try { const L = pbPipeLookup(pbFitLayPipeType(), br); wt = L ? L.wallFt : null; } catch (e) { wt = null; } }
@@ -22098,7 +22100,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // stakes at the same boundary station, so ground is looked up per run.
   function pbRunOfPointId(id) { const m = /^seg(\d+)/.exec(id || ''); return m ? parseInt(m[1], 10) : 1; }
   function interpGroundForRun(points, run, station, side) {
-    const own = points.filter(p => p.run === run);
+    const rs = points.runStart ? points.runStart[run] : undefined; // grade2 audit 03: the stake at this run's start station (the previous End) is its ground too
+    const own = points.filter(p => p.run === run || (rs !== undefined && Math.abs(p.station - rs) < 1e-6));
     return interpGroundElev(own.length >= 2 ? own : points, station, side);
   }
   // Net backfill volume (trench minus the SUBMERGED part of the pipe) over one
@@ -22186,8 +22189,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     });
     const netCutFill = totalCut - totalFill;
     // bughunt grade 07: every unstaked point lies between staked ground of its own run: no gap in the ground line
+    groundPoints.runStart = {}; calc.points.forEach(p => { const m = /^seg(\d+)start$/.exec(p.id || ''); if (m && Number.isFinite(p.station)) groundPoints.runStart[Number(m[1])] = p.station; }); // grade2 audit 03
+    const ownG = (g, run) => g.run === run || (groundPoints.runStart[run] !== undefined && Math.abs(g.station - groundPoints.runStart[run]) < 1e-6);
     if (!allStaked && unstakedPts.length && unstakedPts.every(u => u.station !== null && Number.isFinite(u.station)
-      && groundPoints.some(g => g.run === u.run && g.station <= u.station + 1e-9) && groundPoints.some(g => g.run === u.run && g.station >= u.station - 1e-9))) allStaked = true;
+      && groundPoints.some(g => ownG(g, u.run) && g.station <= u.station + 1e-9) && groundPoints.some(g => ownG(g, u.run) && g.station >= u.station - 1e-9))) allStaked = true;
     let volumeYd3 = null;
     let volumeIncomplete = false; // true when a volume could not be determined despite real, known cut/fill data existing for this run — whether because the whole run lacks the coverage needed to even attempt a calculation (no trench width anywhere, not every point staked, fewer than 2 ground points), or because specific intervals within an otherwise-eligible run had to be excluded. Distinct from volumeYd3 being null simply because this run never had cut/fill data to begin with (hasCutFillData false), which is not an incompleteness — there is nothing to be incomplete about.
     const anyTrenchWidth = calc.segments.some(s => s.trenchWidth !== null && s.trenchWidth !== undefined && Number.isFinite(s.trenchWidth) && s.trenchWidth > 0);
@@ -59053,9 +59058,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (fill) opts = Object.assign({}, opts, { job: fill.job, date: fill.date });
     if (!a.foreman && !fill) { pbAlert('Foremen write and sign daily reports.', 'Foremen Only'); return; }
     const st = await pbDlyLoad(uid); if (!st) { pbAlert('This phone’s daily reports couldn’t be read, so nothing will be overwritten. Try again.', 'Daily Report'); return; }
-    const today = await pbFmOpenDay(uid), jobs = pbDlyJobsToday(uid, today); /* feat_foreman 2 */
+    const today = await pbFmOpenDay(uid), nd = opts.date || opts.fill ? null : pbFmNightDay(today), jobs = pbDlyJobsToday(uid, nd ? nd.day : today); /* feat_foreman 2; daily2 02: night shift */
+    if (nd && !opts.job) opts = Object.assign({}, opts, { job: nd.job });
     const cj = typeof window.pbCurJobGet === 'function' ? window.pbCurJobGet() : null; if (cj && cj.job_number && !jobs.some(j => pbDlyKey(j.n) === pbDlyKey(cj.job_number))) jobs.unshift({ n: cj.job_number, s: cj.name || '' }); /* feat_dailyx: the current job first */
-    const pick = opts.job ? (jobs.find(j => pbDlyKey(j.n) === pbDlyKey(opts.job)) || { n: String(opts.job).trim(), s: '' }) : cj && cj.job_number ? (jobs.find(j => pbDlyKey(j.n) === pbDlyKey(cj.job_number)) || jobs[0]) : jobs[0], day = opts.date && opts.date <= [today, pbTkToday(), pbFmToday()].sort().pop() ? opts.date : today;
+    const pick = opts.job ? (jobs.find(j => pbDlyKey(j.n) === pbDlyKey(opts.job)) || { n: String(opts.job).trim(), s: '' }) : cj && cj.job_number ? (jobs.find(j => pbDlyKey(j.n) === pbDlyKey(cj.job_number)) || jobs[0]) : jobs[0], day = opts.date && opts.date <= [today, pbTkToday(), pbFmToday()].sort().pop() ? opts.date : nd && pbDlyKey(nd.job) === pbDlyKey(opts.job) ? nd.day : today;
     await pbDxNarrFlush(); pbDx.tab = opts.tab === 'report' ? 'report' : 'notes'; pbDx.edit = null; pbDx.locOpen = false;
     if (typeof window.pbR95FillUi === 'function') window.pbR95FillUi(fill); /* roles95 */
     pbDlyView = { job: pick ? pick.n : '', jobsite: pick ? pick.s : '', date: day, snap: null, building: false, msg: '', weather: null, wMsg: '', wBusy: false, server: null, sig: null, amend: null };
@@ -59065,8 +59071,23 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbGoto('dailyReport');
     pbDlySigInit();
     pbDlyPick();
+    if (nd && pbDlyView.date === nd.day) { try { pbDxToast('Opened on ' + pbDlyDayText(nd.day) + ': your shift\u2019s run started then. Change the date for today\u2019s report.'); } catch (e) {} } /* daily2 02 */
     pbDlySyncSoon(500);
   };
+  // daily2 02: before noon (company time), a run on this phone that started yesterday and ended today or is still open,
+  // whose job has no signed report for yesterday: that day and job (else null)
+  function pbFmNightDay(today) {
+    try {
+      const tz = pbFmCoTz(); let hr = 12; try { hr = Number(new Intl.DateTimeFormat('en-US', { timeZone: tz || undefined, hour: '2-digit', hourCycle: 'h23' }).format(new Date())) % 24; } catch (e) { hr = new Date().getHours(); }
+      if (!(hr < 12)) return null;
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(today || ''); if (!m) return null;
+      const y = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3] - 1)).toISOString().slice(0, 10);
+      const runs = (runArchive || []).filter(e => e && e.kind === 'run' && e.runStartTime && pbFmDay(e.runStartTime) === y && (e.runEndTime ? pbFmDay(e.runEndTime) === today : !(e.completed || e.incomplete)))
+        .sort((a, b) => (Number(b.runEndTime) || Date.now()) - (Number(a.runEndTime) || Date.now()));
+      const r = runs.find(e => e.jobNumber && !pbDlyMineFor(e.jobNumber, y).some(x => x.state !== 'discarded' && x.state !== 'replaced'));
+      return r ? { day: y, job: String(r.jobNumber).trim() } : null;
+    } catch (e) { return null; }
+  }
   function pbDlyMineFor(job, date) { const k = pbDlyKey(job); return pbDly.st ? pbDly.st.reports.filter(r => pbDlyKey(r.jobNumber) === k && r.workDate === date).sort((a, b) => (a.signedAt || 0) - (b.signedAt || 0)) : []; }
   window.pbDlyPick = async function() {
     await pbDxNarrFlush(); /* feat_dailyx: what was typed for the day being left is kept first */
@@ -59435,7 +59456,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + '<span class="pb-chip ' + (r.state === 'sent' ? 'calculated' : (r.state === 'refused' || r.state === 'blocked') ? 'overdue' : 'notsent') + ' pbd-chip" id="drState_' + escapeHtml(r.cid) + '">' + ({ sent: 'Sent to the company' + (r.version ? ' (v' + r.version + ')' : ''), refused: 'Not accepted', blocked: 'Held back', discarded: 'Not sent (discarded)', replaced: 'Replaced by an amendment' }[r.state] || 'Waiting to send') + '</span>'
       + (r.why ? ' <span class="pbd-why" id="drWhy_' + escapeHtml(r.cid) + '">' + escapeHtml(r.why) + '</span>' : '') + pbDlyRefusedActs('report', r)
       + ' <button type="button" class="pb-btn secondary small" id="drPdf_' + escapeHtml(r.cid) + '" onclick="pbDlyLocalPdf(' + escapeHtml(JSON.stringify(r.cid)) + ')">PDF</button></p>').join('')
-      + (V.amend || !mine.some(r => r.state === 'sent' || r.state === 'waiting' || r.state === 'blocked') ? '' : '<div class="pb-btn-wrap pbd-bw"><button type="button" class="pb-btn ghost" id="drAmendBtn" onclick="pbDlyAmendStart()">Add an Amendment</button></div>') + '</div>';
+      + (V.amend || !mine.some(r => r.state === 'sent' || r.state === 'waiting' || r.state === 'blocked') ? '' : pbDlyChangedSince(mine) + '<div class="pb-btn-wrap pbd-bw"><button type="button" class="pb-btn ghost" id="drAmendBtn" onclick="pbDlyAmendStart()">Add an Amendment</button></div>') + '</div>';
     else if (serverHas) h += '<div class="pb-warn photo" id="drOtherPhone"><strong>Already signed on another phone</strong>A report for this job and day was signed from your account on another phone. Add an amendment there, or here once this phone has it.</div>';
     const active = mine.filter(r => r.state !== 'discarded' && r.state !== 'replaced');
     if (active.length && !V.amend) { body.innerHTML = h + (() => { try { return pbDpSignedHtml(mine); } catch (e) { return ''; } })() /* feat_dailyplus */ + (() => { try { return pbDaSignedHtml(mine); } catch (e) { return ''; } })() /* feat_dailyattach */; return; }
@@ -59482,6 +59503,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     try { pbDpRender(); } catch (e) { console.error(e); } // feat_dailyplus
     try { pbDaRender(); } catch (e) { console.error(e); } // feat_dailyattach
   };
+  function pbDlyChangedSince(mine) { /* daily2 04 */
+    try {
+      const V = pbDlyView, S = V.snap, last = mine.filter(r => r.state !== 'discarded' && r.state !== 'replaced' && r.snapshot).pop(); if (!S || V.building || !last) return '';
+      const L = last.snapshot; if (!L.app || L.app !== S.app) return ''; // a report signed by another build is laid out differently
+      const diff = [['runs', 'runs and production'], ['crew', 'crew hours'], ['materials', 'materials']].filter(([k]) => pbJsonbText(L[k] === undefined ? null : L[k]) !== pbJsonbText(S[k] === undefined ? null : S[k])).map(x => x[1]);
+      if (!diff.length) return '';
+      return '<div class="pb-warn" id="drChangedSince"><strong>The day\u2019s records changed after you signed (' + escapeHtml(diff.join(', ')) + ').</strong>' + escapeHtml('The company has the signed version. Add an Amendment so it matches.') + '</div>';
+    } catch (e) { return ''; }
+  }
   window.pbDlyAmendStart = function() {
     const mine = pbDlyMineFor(pbDlyView.job, pbDlyView.date).filter(r => r.state === 'sent' || r.state === 'waiting' || r.state === 'blocked'), last = mine[mine.length - 1]; if (!last) return;
     pbDlyView.amend = { prevCid: last.cid, prevServerId: last.serverId || null, version: (last.version || (last.snapshot && last.snapshot.amendment && last.snapshot.amendment.version) || mine.length) + 1 };
@@ -59779,7 +59809,19 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbDxDayDef() { const h = pbDxRunSpanH(); return h > 8 ? String(Math.min(16, Math.round(h * 2) / 2)) : '8'; }
   window.pbDxDayDef = pbDxDayDef;
-  const pbDxHvC = (p, eq) => { const v = pbDxHv(p, !!eq); return v === '' && (p.hours === undefined || p.hours === null) ? (eq ? pbEhDefRun(p) : pbDxDayDef()) : v; }; // feat_crew8: a full day unless he changes it; feat_eqhrs: 0 on a day the runs log machines, else 8 less its Broke Down hours
+  function pbDxElseH(p) { /* daily2 01: hours this person already has on his other signed reports for this date */
+    try {
+      const V = pbDlyView, st = pbDly.st; if (!st || !V || !V.date || !p || V.amend) return 0;
+      const last = {}; st.reports.filter(r => r && r.snapshot && r.workDate === V.date && pbDlyKey(r.jobNumber) !== pbDlyKey(V.job) && r.state !== 'discarded' && r.state !== 'replaced' && pbDpSameCo(r))
+        .forEach(r => { const k = pbDlyKey(r.jobNumber); if (!last[k] || (r.signedAt || 0) > (last[k].signedAt || 0)) last[k] = r; });
+      const nk = pbDxNk(p.name), uid = p.me ? pbArchiveOwnerUid : p.user_id; let h = 0;
+      Object.keys(last).forEach(k => { const P = last[k].snapshot.crew_today && Array.isArray(last[k].snapshot.crew_today.people) ? last[k].snapshot.crew_today.people : [];
+        P.forEach(q => { if (q && typeof q.hours === 'number' && isFinite(q.hours) && ((uid && q.user_id === uid) || pbDxNk(q.name) === nk)) h += q.hours; }); });
+      return Math.max(0, h);
+    } catch (e) { return 0; }
+  }
+  const pbDxDayDefFor = (p) => { const def = Number(pbDxDayDef()) || 8, e = pbDxElseH(p); return e > 0 ? String(Math.max(0, Math.round((def - e) * 2) / 2)) : String(def); };
+  const pbDxHvC = (p, eq) => { const v = pbDxHv(p, !!eq); return v === '' && (p.hours === undefined || p.hours === null) ? (eq ? pbEhDefRun(p) : pbDxDayDefFor(p)) : v; }; /* daily2 01: less his hours on today's other report(s) */ // feat_crew8: a full day unless he changes it; feat_eqhrs: 0 on a day the runs log machines, else 8 less its Broke Down hours
   function pbDxCrewRow(p, i, ids) {
     const tag = pbDpCrewTag(p, ids), v = pbDxHvC(p);
     return '<li class="dp-item dp-eqrow" id="dpCrew_' + i + '"><span class="dp-eqtx"><span class="dp-nm">' + escapeHtml(p.name) + '</span>' + (tag ? '<span class="dp-sub">' + escapeHtml(tag) + '</span>' : '') + pbDfTag(p) + '</span>' /* feat_dailyfill */
@@ -59818,6 +59860,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return '<section class="pbd-card' + pbDxSecCls('dpCrew') + '" id="dpCrew" aria-labelledby="dpCrewH">' + pbDxHead('dpCrew', 'dpCrewH', 'Crew Today', 'dpCrewN', pbDxCrewHead(d)) + '<div class="dx-body" id="dpCrewBody">'
       + (n ? '<ul class="dp-chips dp-eqrows" id="dpCrewList">' + d.crew.map((p, i) => pbDxCrewRow(p, i, ids)).join('') + '</ul>' : '') + pbDxLogLines(false)
       + (cs.length ? '<div class="dp-sug" id="dpCrewSug" role="group" aria-label="Add from your crew">' + cs.map((p, i) => '<button type="button" class="dp-sugb" id="dpCrewSug_' + i + '" onclick="pbDpAddSugg(\'crew\',' + i + ')"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>' + escapeHtml(p.name) + '</button>').join('') + '</div>' : '')
+      + (d.crew.some(p => (p.hours === undefined || p.hours === null) && pbDxHv(p, false) === '' && pbDxElseH(p) > 0) ? '<p class="pbd-dim" id="dxCrewElse">' + escapeHtml('Hours already on today\u2019s other report(s) are taken off the full day for the people on them. Change any box that is wrong.') + '</p>' : '') /* daily2 01 */
       + pbDpAddRow('crew', 'Add a name', false) + '</div></section>';
   }
   // ---- "Other hours" (the earlier form) folds into the crew's and the equipment's hours, once per draft ----
@@ -61176,6 +61219,22 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   { const o = window.pbCeHours; window.pbCeHours = function(i, v) { const d = pbDpDraft(), q = d && d.equip[i]; const r = o.apply(this, arguments); pbDfMine(d);
       if (q && q.rf && !q.rfEdited && String(q.hours || '') !== String(q.rfH || '')) { q.rfEdited = true; const t = document.querySelector('#dpEq_' + i + ' .dp-rf'); if (t) t.remove(); } return r; }; }
   { const o = window.pbDpRemove; window.pbDpRemove = function(kind, i) { try { const d = pbDpDraft(), x = d && (kind === 'Crew' ? d.crew[i] : d.equip[i]); if (x) { d.rfGone = (Array.isArray(d.rfGone) ? d.rfGone : []).concat([kind === 'Crew' ? pbDfCk(x) : pbDfEk(x)]).slice(-200); if (kind === 'Crew' && x.me) d.meGone = true; /* feat_crew8 */ } } catch (e) {} return o.apply(this, arguments); }; }
+  { const o = window.pbDpRemove; window.pbDpRemove = async function(kind, i) { /* daily2 03: Undo */
+      let d = null, x = null, rf, me; try { d = pbDpDraft(); x = d && (kind === 'Crew' ? d.crew[i] : d.equip[i]); x = x ? JSON.parse(JSON.stringify(x)) : null; rf = d && Array.isArray(d.rfGone) ? d.rfGone.slice() : undefined; me = d ? d.meGone : undefined; } catch (e) { x = null; }
+      const r = await o.apply(this, arguments);
+      if (x && d) { try { pbDpUndoBar('Removed ' + (kind === 'Crew' ? x.name : pbDpEqName(x)) + '.', () => {
+        const d2 = pbDpDraft(); if (!d2 || d2.k !== d.k) return; const L = kind === 'Crew' ? d2.crew : d2.equip;
+        if (L.some(y => JSON.stringify(y) === JSON.stringify(x))) return; L.splice(Math.min(i, L.length), 0, x);
+        if (rf === undefined) delete d2.rfGone; else d2.rfGone = rf; if (me === undefined) delete d2.meGone; else d2.meGone = me;
+        pbDpTouch(d2).catch(() => {}); pbDpRender(); }); } catch (e) { console.error(e); } }
+      return r; }; }
+  function pbDpUndoBar(text, undo) {
+    try { const old = document.getElementById('dxUndo'); if (old) old.remove(); const tm = document.getElementById('dxToast'); if (tm) tm.remove();
+      const o = document.createElement('div'); o.id = 'dxUndo'; o.className = 'dx-toast'; o.setAttribute('role', 'status'); o.style.cssText = 'display:flex;align-items:center;gap:12px;';
+      const t = document.createElement('span'); t.style.flex = '1'; t.textContent = text; const b = document.createElement('button'); b.type = 'button'; b.id = 'dxUndoBtn'; b.className = 'pb-btn small'; b.textContent = 'Undo'; b.style.cssText = 'min-height:44px;min-width:88px;width:auto;margin:0;flex:none;';
+      let done = false; b.addEventListener('click', () => { if (done) return; done = true; o.remove(); undo(); });
+      o.appendChild(t); o.appendChild(b); (document.getElementById('pbApp') || document.body).appendChild(o); setTimeout(() => { try { o.remove(); } catch (e) {} }, 8000); } catch (e) {}
+  }
   // ---- B: on the screen ----
   function pbDfRunLine(x) { const f = pbDfSnapRun(x), t = pbDfSumLine(f); return t ? '<br><span class="pbd-dim dx-fm" id="dxFm_' + escapeHtml(String(x.id)) + '">' + escapeHtml('Your side: ' + t) + '</span>' : ''; }
   function pbDfAttLine(it) {
