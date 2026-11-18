@@ -1,0 +1,21 @@
+const L=require('./lib');
+// Lenker rod, C900 12 in, bedding + trench width: volumes and subgrade by hand
+(async()=>{const T=await L();const {p,H,S}=T;
+ await T.newRun();
+ console.log('pipe types:',JSON.stringify(await T.E(()=>[...document.getElementById('runPipeType').options].map(o=>o.value+'|'+o.text))));
+ await p.click('#rodToggle button[data-val="lenker"]');await p.waitForTimeout(400);
+ await T.set('runPipeType','PVC C900');
+ await T.set('runIdSel','12');
+ await T.set('runBedding','0.5');await T.set('runTrenchWidth','3');
+ await T.photo('start',S('0+00',100.00,5.00,'MH-1','1'));
+ await T.photo('end',S('1+00',101.00,5.00,'MH-2','2'),'p05');
+ await T.set('interval','25');
+ console.log('form:',JSON.stringify(await T.form(['runWT','runIdSel','runBedding','runTrenchWidth','totalDist','interval'])));
+ const c=await T.calc();console.log(JSON.stringify(c).slice(0,1500));
+ await T.lock();
+ console.log('table:\n'+(await T.table()).split('\n').filter(l=>/¦/.test(l)).join('\n'));
+ console.log('summary:',(await p.evaluate(()=>document.getElementById('summaryGrid').innerText)).replace(/\s*\n+\s*/g,' | '));
+ const e=await T.entry();console.log('vol',e.volumeYd3,e.volumeIncomplete,'bed',e.beddingVolumeYd3,'net',e.netCutFill,'depthFlag',e.depthFlagged);
+ console.log(JSON.stringify(e.intervalRows.map(r=>[r.station,r.bop,r.inv,r.top,r.sgDisp,r.elevation])));
+ const txt=await L.pdf(T,'/tmp/claude-0/bughunt/grade/tests/g3.pdf')||'';require('fs').writeFileSync('/tmp/claude-0/bughunt/grade/tests/g3.txt',txt);
+ console.log('errs',p.errs.slice(0,5));await T.b.close();})();

@@ -1,0 +1,15 @@
+const L=require('./lib');(async()=>{const {b,p,H}=await L({file:process.env.FILE||'cur.html'});
+ const D=(s)=>p.evaluate(x=>{const r=window.__dbg(x);return r===undefined?null:JSON.parse(JSON.stringify(r));},s);
+ await H.lock({cpJobNumber:'24-017',cpAtmoInterval:'15'});
+ await H.read(20.9,0,0,0);
+ console.log('live good',JSON.stringify(await D('pbLivePermitNow(pbArchiveOwnerUid)')));
+ await H.read(19.4,0,0,0);
+ console.log('live bad',JSON.stringify(await D('pbLivePermitNow(pbArchiveOwnerUid)')));
+ console.log('obs time type',await D('typeof confinedLastObservation.time+" "+(confinedLastObservation.time instanceof Date)'));
+ await p.reload({waitUntil:'load'});await p.waitForTimeout(3500);
+ console.log('after reload: permit?',await D('!!confinedPermit'),'obs',JSON.stringify(await D('confinedLastObservation')));
+ console.log('obs time type',await D('confinedLastObservation?typeof confinedLastObservation.time+" "+(confinedLastObservation.time instanceof Date):null'));
+ console.log('live after reload',JSON.stringify(await D('pbLivePermitNow(pbArchiveOwnerUid)')));
+ console.log('banner',await p.evaluate(()=>{const e=document.getElementById('cpUnsafeBanner');return e.style.display!=='none';}));
+ console.log('home urgent', await p.evaluate(()=>document.body.innerText.includes('OUTSIDE PERMIT LIMITS')));
+ console.log('errs',p.errs);await b.close();})();

@@ -1,0 +1,10 @@
+const L=require('./lib');(async()=>{const {b,p,H}=await L({file:process.env.FILE||'cur.html',v:1});
+ const D=(s)=>p.evaluate(x=>{const r=window.__dbg(x);return r===undefined?null:JSON.parse(JSON.stringify(r));},s);
+ console.log(await H.lock({cpJobNumber:'24-017',cpStart:'00:01',cpEnd:'00:05'}));
+ console.log(JSON.stringify(await H.read(20.9,0,0,0)));
+ await p.evaluate(()=>{document.getElementById('cpRosterName').value='Ed Entrant';document.getElementById('cpRosterRole').value='Entrant';return pbAddRosterPerson();});await p.waitForTimeout(600);
+ await p.evaluate(()=>pbToggleRosterStatus(2));await p.waitForTimeout(900);
+ console.log('checkin modal:',await H.modal(),await H.modalBtns());
+ console.log('roster',JSON.stringify(await D('confinedRoster.map(r=>[r.name,r.status,r.log])')));
+ console.log(await p.evaluate(()=>document.getElementById('cpStatusGrid').innerText.slice(0,500)));
+ console.log('errs',p.errs);await b.close();})();

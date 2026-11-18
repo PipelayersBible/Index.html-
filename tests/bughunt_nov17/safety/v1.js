@@ -1,0 +1,18 @@
+const L=require('./lib');const mkrun=require('/home/claude/rig/mkrun');
+(async()=>{const {b,p,H}=await L({file:'fixed.html',init:require('/home/claude/rig/co_fm.js')});
+ await p.setViewportSize({width:390,height:800});
+ await H.lock({cpJobNumber:'24-017',cpAtmoInterval:'15',cpCommInterval:'10'});
+ await H.read(20.9,0,0,0);await H.read(19.4,11,12,30);
+ await p.evaluate(()=>{document.getElementById('cpRosterName').value='Ed Entrant';document.getElementById('cpRosterRole').value='Entrant';return pbAddRosterPerson();});await p.waitForTimeout(600);
+ await p.evaluate(()=>window.scrollTo(0,0));
+ const ov=await p.evaluate(()=>{const w=document.documentElement.clientWidth;return [...document.querySelectorAll('#screen-confinedActive *')].filter(e=>e.offsetParent&&e.getBoundingClientRect().right>w+2&&e.getBoundingClientRect().width>0).slice(0,8).map(e=>e.tagName+'#'+e.id+'.'+e.className+' r='+Math.round(e.getBoundingClientRect().right));});
+ console.log('overflow permit',ov,'scrollW',await p.evaluate(()=>document.documentElement.scrollWidth));
+ await p.screenshot({path:'v_permit1.png'});
+ await p.evaluate(()=>window.scrollTo(0,700));await p.waitForTimeout(300);await p.screenshot({path:'v_permit2.png'});
+ await p.evaluate(()=>window.pbOpenDailyReport({tab:'report'}));await p.waitForTimeout(4000);
+ await p.evaluate(()=>{document.querySelectorAll('#screen-dailyReport details').forEach(d=>d.open=true);['drPermits','drRuns','dpCrew','dpEquip'].forEach(id=>{try{pbDxTog(id,true);}catch(e){}});});await p.waitForTimeout(600);
+ const ov2=await p.evaluate(()=>{const w=document.documentElement.clientWidth;return [...document.querySelectorAll('#screen-dailyReport *')].filter(e=>e.offsetParent&&e.getBoundingClientRect().right>w+2).slice(0,8).map(e=>e.tagName+'#'+e.id+'.'+e.className+' r='+Math.round(e.getBoundingClientRect().right));});
+ console.log('overflow daily',ov2);
+ console.log(await p.evaluate(()=>document.getElementById('drBody').innerText.slice(0,1500)));
+ await p.screenshot({path:'v_daily.png',fullPage:true});
+ console.log('errs',p.errs);await b.close();})();

@@ -1,0 +1,10 @@
+const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
+(async()=>{const {b,p}=await boot('http://127.0.0.1:8865/cur.html',{init:co});const H=F(p);
+ await p.setViewportSize({width:390,height:800});await p.waitForTimeout(500);
+ console.log('screen',await H.screen());
+ await p.screenshot({path:'/tmp/claude-0/bughunt/critic/shots/fm_home.png',fullPage:true});
+ console.log('BTNS',JSON.stringify(await H.btns()));
+ console.log('TEXT',await p.evaluate(()=>{const s=[...document.querySelectorAll('[id^=screen-]')].find(x=>x.offsetParent);return s.innerText.replace(/\n+/g,' | ').slice(0,2500)}));
+ console.log('screens',await p.evaluate(()=>[...document.querySelectorAll('[id^=screen-]')].map(x=>x.id).join(' ')));
+ console.log('small targets',await p.evaluate(()=>{const s=[...document.querySelectorAll('button,a,[role=button],select,input')].filter(b=>b.offsetParent);const sm=s.filter(b=>{const r=b.getBoundingClientRect();return r.height<44||r.width<44});return sm.length+'/'+s.length+' '+sm.slice(0,15).map(b=>(b.textContent||b.id).trim().slice(0,20)+':'+Math.round(b.getBoundingClientRect().width)+'x'+Math.round(b.getBoundingClientRect().height)).join(', ')}));
+ console.log('errs',p.errs.slice(0,5));await b.close();})();
