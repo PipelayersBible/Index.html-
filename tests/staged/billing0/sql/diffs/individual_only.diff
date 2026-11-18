@@ -1,0 +1,9 @@
+--- live/individual_only.sql (pg_get_functiondef, live Nov 17)
++++ new/individual_only.sql (after 01-05)
+@@ -4,5 +4,5 @@
+  STABLE SECURITY DEFINER
+  SET search_path TO ''
+ AS $function$
+-  select pb_billing.has_individual(p_user) and not exists (select 1 from pb_billing.company_of(p_user) x where not x.expired)
++  select pb_billing.has_individual(p_user) and not exists (select 1 from pb_billing.company_of(p_user) x where not x.expired and not pb_billing.read_only(x.company_id)) -- billing Phase 0
+ $function$

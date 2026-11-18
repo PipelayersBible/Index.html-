@@ -8,8 +8,10 @@ def rep(old, new, n=1):
 # Billing Phase 0 (Nov 17, applies to r16.96; needs sql/01-03 of feat/billing0 on the server):
 # (1) Settings > Beta Accounts (app owner only, as today): "Make Paid" opens a short form (legal name, billing email, people
 #     counted now, price shown, monthly/yearly, founder lock yes/no with its end date, plan reading add-on, signer) that calls
-#     pb_owner_make_paid; a "Billing due" list (who to invoice, people, amount, period, billing email, seller); per paid company
-#     Paid / Past Due / Read-Only / Cancel, Plan Reading On/Off, and Hand Over (pb_owner_company_handover) for every company.
+#     pb_owner_make_paid; a "Billing due" list (who to invoice, people, amount, period, billing email, seller, past-due companies
+#     with the day they lock, yearly catch-ups); per paid company Paid / Read-Only Now / Cancel Plan / Catch-up Paid,
+#     Plan Reading On/Off, and Hand Over (pb_owner_company_handover) for every company. Round 2 (owner, Nov 18): past due and
+#     read-only are automatic on the server (from the paid-through date), so there is no Past Due button.
 # (2) Home: a paid company that is read-only shows "Plan paused" (pb_my_plan.paused), like the ended beta.
 # (3) Records refused with pb:beta_ended while the plan is paused wait on the phone with plan wording (not "beta ended").
 
@@ -55,12 +57,12 @@ rep("""    // the app owner's Beta Accounts
     const PB_BILL_MSG = {
       'pb:not_allowed': 'Only the app owner can do that. If you use two-step login, enter your code first.',
       'pb:founder_late': 'The founder price is only for a beta company that commits before its beta ends.',
-      'pb:already_paid': 'This company already has a paid plan. Use Paid, Past Due, Read-Only or Cancel.',
+      'pb:already_paid': 'This company already has a paid plan. Use Paid, Read-Only Now or Cancel Plan.',
       'pb:period_changed': 'That invoice was already marked paid. The list is refreshed.',
       'pb:not_member': 'Invite them to the company in Crew first, then hand it over once they have joined.',
       'pb:owns_other': 'That person already owns another company.', 'pb:same_owner': 'That person already owns the company.',
       'pb:not_paid': 'Plan reading is only for paid companies.', 'pb:no_account': 'Use Make Paid first.',
-      'pb:company_inactive': 'That company isn’t active.', 'pb:bad_email': 'Type the billing email.', 'pb:no_signer': 'Type the name of the person who signed the order.',
+      'pb:company_inactive': 'That company isn’t active.', 'pb:no_catchup': 'Nothing to catch up: the people now fit in the paid seats.', 'pb:bad_email': 'Type the billing email.', 'pb:no_signer': 'Type the name of the person who signed the order.',
     };
     async function pbBillRpc(fn, args) {
       if (!sbClient || typeof sbClient.rpc !== 'function' || navigator.onLine === false) return { ok: false, message: 'Needs signal. Try again when you have it.' };
@@ -71,16 +73,18 @@ rep("""    // the app owner's Beta Accounts
       const missing = /PGRST202|could not find the function|does not exist/i.test(m);
       return { ok: false, code, message: (d && d.message) || PB_BILL_MSG[code] || (missing ? 'The billing server isn’t set up yet. Nothing was changed.' : 'Not changed. Check signal and try again.') };
     }
-    const pbBillChip = (a) => { const st = a.read_only && a.state !== 'read_only' ? 'read_only' : a.state; return '<span class="ch' + (st === 'active' ? ' paid' : st === 'past_due' ? '' : ' ended') + '">' + ({ active: 'Paid', past_due: 'Past due', read_only: 'Read-only', canceled: 'Canceled' }[st] || 'Paid') + '</span>'; };
+    const pbBillChip = (a) => { const st = a.state; return '<span class="ch' + (st === 'active' ? ' paid' : st === 'past_due' ? '' : ' ended') + '">' + (st === 'past_due' ? 'Past due · ' + (Number(a.days_to_lock) === 1 ? '1 day' : (Number(a.days_to_lock) || 0) + ' days') + ' left' : ({ active: 'Paid', read_only: 'Read-only', canceled: 'Canceled' }[st] || 'Paid')) + '</span>'; };
+    const pbCatchLine = (a) => { const c = a.catchup || {}; return Number(c.cents) > 0 ? 'Catch-up: ' + c.people + ' above the paid seats × ' + c.months + ' month' + (c.months === 1 ? '' : 's') + ' left × ' + pbMoney(a.seat_cents) + ' = <b>' + pbMoney(c.cents) + '</b>' : Number(c.monthly_next_invoice) > 0 ? c.monthly_next_invoice + ' above the paid seats: on the next invoice' : ''; };
     function pbBillLines(bc) {
       if (!bc) return '';
       const a = bc.account, login = '<div class="ln">Company login: ' + escapeHtml(bc.owner_login || 'unknown') + ' · ' + (Number(bc.seats_used) || 0) + ' people counted (the company login is free)</div>';
       if (!a) return bc.plan === 'paid' ? '<div class="ln">No billing record (made paid before billing). Make Paid records the deal.</div>' + login : login;
       const n = a.next || {}, per = a.interval === 'year' ? 'a year' : 'a month';
       return '<div class="ln"><b>' + escapeHtml(a.legal_name || '') + '</b> · ' + escapeHtml(a.billing_email || '') + (a.order_signed_by ? ' · signed by ' + escapeHtml(a.order_signed_by) : '') + '</div>'
-        + '<div class="ln">Next invoice: ' + pbDay(n.from) + ' – ' + pbDay(n.to) + ' · ' + (Number(n.seats) || 0) + ' people · <b>' + pbMoney(n.amount_cents) + '</b> ' + per + (a.paid_through ? ' · paid through ' + pbDay(a.paid_through) : ' · first invoice not paid yet') + '</div>'
-        + (a.state === 'past_due' ? '<div class="ln">' + (a.read_only ? 'Grace is over: read-only. New runs and reports wait on the crew’s phones.' : 'Past due: read-only after ' + pbDay(a.grace_until) + '.') + '</div>' : '')
-        + (a.state === 'read_only' ? '<div class="ln">Read-only: new runs and reports wait on the crew’s phones until it’s paid. Nothing is deleted.</div>' : '')
+        + '<div class="ln">Paid through ' + pbDay(a.paid_through) + ' · next invoice ' + pbDay(n.from) + ' – ' + pbDay(n.to) + ' · ' + (Number(n.seats) || 0) + ' people · <b>' + pbMoney(n.amount_cents) + '</b> ' + per + '</div>'
+        + '<div class="ln">Paid seats: ' + (Number(a.seats_capacity) || 0) + ' · people now: ' + (Number(a.seats_used) || 0) + (pbCatchLine(a) ? ' · ' + pbCatchLine(a) : '') + '</div>'
+        + (a.state === 'past_due' ? '<div class="ln"><b>Not paid for the next period.</b> Goes read-only on ' + pbDay(a.lock_on) + ' unless you press Paid.</div>' : '')
+        + (a.state === 'read_only' ? '<div class="ln">' + (a.stored_state === 'read_only' ? 'Read-only (you set it): ' : 'Read-only since ' + pbDay(a.lock_on) + ' (not paid): ') + 'new runs and reports wait on the crew’s phones until you press Paid. Nothing is deleted.</div>' : '')
         + (a.state === 'canceled' ? '<div class="ln">Canceled: ' + (a.read_only ? 'read-only now.' : 'open until ' + pbDay(a.cancel_at) + ', then read-only.') + ' Nothing is deleted.</div>' : '')
         + (a.founder_until ? '<div class="ln">Founder price locked until ' + pbDay(a.founder_until) + (a.founder_set_by ? ' (set ' + pbDay(a.founder_set_at) + ' by ' + escapeHtml(a.founder_set_by) + ')' : '') + '</div>' : '')
         + '<div class="ln">Plan reading add-on: ' + (a.plan_reading ? 'on · ' + (a.plan_reading_cents == null ? 'price not set (not on the invoice)' : pbMoney(a.plan_reading_cents) + ' a month') : 'off (plan sets stay parked)') + '</div>' + login;
@@ -91,8 +95,8 @@ rep("""    // the app owner's Beta Accounts
       const a = bc && bc.account;
       if (beta) return '<div class="acts">' + b('extend', 'Add 30 Days', true) + b('paid', 'Make Paid') + b('handover', 'Hand Over', true) + '</div>';
       if (!a || a.state === 'canceled') return '<div class="acts">' + b('paid', 'Make Paid') + b('handover', 'Hand Over', true) + '</div>';
-      return '<div class="acts pb-bill-acts">' + b('b_paid', 'Paid') + (a.state === 'past_due' ? b('b_active', 'Not Past Due', true) : b('b_past', 'Past Due', true))
-        + (a.state === 'read_only' ? b('b_active', 'Not Read-Only', true) : b('b_ro', 'Read-Only', true)) + b('b_cancel', 'Cancel Plan', true)
+      return '<div class="acts pb-bill-acts">' + b('b_paid', 'Paid') + (a.stored_state === 'read_only' ? b('b_active', 'Not Read-Only', true) : b('b_ro', 'Read-Only Now', true)) + b('b_cancel', 'Cancel Plan', true)
+        + (a.catchup && Number(a.catchup.cents) > 0 ? b('b_catch', 'Catch-up Paid') : '')
         + (a.plan_reading ? b('pr_off', 'Plan Reading Off', true) : b('pr_on', 'Plan Reading On', true)) + b('handover', 'Hand Over', true) + '</div>';
     }
     function pbBillDue(B) {
@@ -100,8 +104,10 @@ rep("""    // the app owner's Beta Accounts
       const set = B.settings || {}, due = Array.isArray(B.due) ? B.due : [], seller = typeof set.seller_legal_name === 'string' && set.seller_legal_name ? set.seller_legal_name : '';
       return '<div class="pb-own-co" id="pbBillDue"><div class="nm">Billing due</div>'
         + '<div class="ln">Seller on invoices: ' + (seller ? escapeHtml(seller) : '<b>not set yet</b>') + ' · ' + pbMoney(pbNum(set.base_cents, 9900)) + ' a month includes ' + pbNum(set.base_seats, 5) + ' people, ' + pbMoney(pbNum(set.seat_cents, 1200)) + ' each extra · yearly = ' + pbNum(set.yearly_months, 10) + ' months</div>'
-        + (due.length ? due.map((d) => '<div class="pb-bill-due" data-id="' + escapeHtml(d.company_id) + '"><div class="hd">' + escapeHtml(d.legal_name || d.name || '') + (d.state && d.state !== 'active' ? ' <span class="ch' + (d.state === 'past_due' ? '' : ' ended') + '">' + (d.state === 'past_due' ? 'Past due' : d.state === 'read_only' ? 'Read-only' : 'Canceled') + '</span>' : '') + '</div>'
+        + (due.length ? due.map((d) => '<div class="pb-bill-due" data-id="' + escapeHtml(d.company_id) + '"><div class="hd">' + escapeHtml(d.legal_name || d.name || '') + (d.state && d.state !== 'active' ? ' ' + pbBillChip(d) : '') + '</div>'
+            + (d.state === 'past_due' ? '<div class="ln"><b>Locks (read-only) on ' + pbDay(d.lock_on) + '</b> unless you press Paid</div>' : d.state === 'read_only' ? '<div class="ln"><b>Read-only now</b> · press Paid once it’s paid</div>' : '')
             + '<div class="ln">' + pbDay(d.from) + ' – ' + pbDay(d.to) + ' · ' + (Number(d.seats) || 0) + ' people · <b>' + pbMoney(d.amount_cents) + '</b> ' + (d.interval === 'year' ? 'for the year' : 'for the month') + (d.founder ? ' · founder price' : '') + '</div>'
+            + (d.catchup && Number(d.catchup.cents) > 0 ? '<div class="ln">Catch-up now: ' + d.catchup.people + ' above the paid seats × ' + d.catchup.months + ' months × ' + pbMoney(pbNum(set.seat_cents, 1200)) + ' = <b>' + pbMoney(d.catchup.cents) + '</b></div>' : '')
             + '<div class="ln">Send to ' + escapeHtml(d.billing_email || '') + (d.tax_state ? ' · billing state ' + escapeHtml(d.tax_state) : '') + (d.plan_reading_price_missing ? ' · plan reading price not set' : '') + '</div></div>').join('')
           : '<div class="ln">Nothing to invoice in the next ' + pbNum(set.invoice_ahead_days, 7) + ' days.</div>') + '</div>';
     }
@@ -135,7 +141,9 @@ rep("""    // the app owner's Beta Accounts
         const m = base + Math.max(0, seats - bs) * sc + (pr && prc != null ? prc : 0);
         body.querySelector('#pbMpPrice').innerHTML = (iv === 'year' ? '<b>' + pbMoney(m * ym) + '</b> a year (' + ym + ' months of ' + pbMoney(m) + ')' : '<b>' + pbMoney(m) + '</b> a month')
           + '<br>' + pbMoney(base) + ' includes ' + bs + ' people, ' + seats + ' counted' + (seats > bs ? ' (' + (seats - bs) + ' extra at ' + pbMoney(sc) + ')' : '') + (pr && prc != null ? ', plan reading ' + pbMoney(prc) : '')
-          + (body.querySelector('#pbMpFounder').checked ? '<br>Founder price locked until ' + pbDay(until) : '') + '<br>People added later are billed from the next invoice.';
+          + (body.querySelector('#pbMpFounder').checked ? '<br>Founder price locked until ' + pbDay(until) : '')
+          + '<br>Paid seats: ' + Math.max(seats, bs) + '. Someone added into a free paid seat costs nothing; above them: ' + (iv === 'year' ? 'a catch-up for the months left.' : 'on the next invoice.')
+          + '<br>If Paid isn’t pressed for the next period by its start, the company goes past due, then read-only ' + pbNum(set.grace_days, 7) + ' days later.';
       };
       const setIv = (x) => { iv = x; body.querySelectorAll('[data-iv]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.iv === iv))); price(); };
       body.querySelectorAll('[data-iv]').forEach((b) => { b.onclick = () => setIv(b.dataset.iv); });
@@ -154,7 +162,7 @@ rep("""    // the app owner's Beta Accounts
         if (!d.ok) { st.textContent = d.message; return; }
         const n = (d.account && d.account.next) || {}, dbl = Array.isArray(d.individual_plans_to_stop) ? d.individual_plans_to_stop : [];
         body.innerHTML = '<p><b>' + escapeHtml(name) + ' is paid.</b></p>'
-          + '<div class="pb-bill-price">First invoice: ' + pbDay(n.from) + ' – ' + pbDay(n.to) + ' · ' + (Number(n.seats) || 0) + ' people · <b>' + pbMoney(n.amount_cents) + '</b>' + (d.account && d.account.founder_until ? '<br>Founder price locked until ' + pbDay(d.account.founder_until) : '') + '</div>'
+          + '<div class="pb-bill-price">First invoice: ' + pbDay(d.account && d.account.period_start) + ' – ' + pbDay(d.account && d.account.paid_through) + ' · ' + (Number(n.seats) || 0) + ' people · <b>' + pbMoney(n.amount_cents) + '</b>' + (d.account && d.account.founder_until ? '<br>Founder price locked until ' + pbDay(d.account.founder_until) : '') + '<br>Next invoice due by ' + pbDay(d.account && d.account.paid_through) + ' (press Paid when it’s paid).</div>'
           + '<p class="pb-bill-note">Company login: <b>' + escapeHtml(d.owner_login || 'unknown') + '</b>. If that’s a superintendent and not the company’s owner, use Hand Over.</p>'
           + (dbl.length ? '<div class="pb-bill-sec">Also paying for their own plan</div>' + dbl.map((x) => '<div class="ln" data-uid="' + escapeHtml(x.user_id) + '">' + escapeHtml(x.email || 'Someone') + ' <button type="button" class="pb-btn small ghost" data-off="1" style="width:auto;display:inline-block;margin-left:6px">Turn Off Their Plan</button></div>').join('') : '')
           + '<button type="button" class="pb-btn" id="pbMpDone">Done</button><p class="pb-fb-st" id="pbMpSt2" role="status"></p>';
@@ -228,12 +236,12 @@ rep("""        list.querySelectorAll('[data-act]').forEach((b) => { b.onclick = 
           if (act === 'paid') { if (!B) { pbAlert('The billing server isn’t set up yet. Nothing was changed.', 'Not Changed'); return; } pbMakePaidForm(c, bc, B, load); return; }
           if (act === 'handover') { pbHandOverForm(c, bc, load); return; }
           const ask = (msg, label) => new Promise((ok) => pbShowModal(msg, [{ label: 'Back', onClick: () => ok(false) }, { label, primary: true, onClick: () => ok(true) }]));
-          const grace = B && B.settings ? pbNum(B.settings.grace_days, 7) : 7, n = (a && a.next) || {};
+          const n = (a && a.next) || {};
           let fn = null, args = null;
           if (act === 'extend') { fn = 'pb_owner_company_set'; args = { p_company: id, p_plan: 'trial', p_days: 30 }; }
-          else if (act === 'b_paid') { if (!(await ask('Mark ' + nm + '’s invoice for ' + pbDay(n.from) + ' – ' + pbDay(n.to) + ' (' + pbMoney(n.amount_cents) + ') as paid?', 'Paid'))) return; fn = 'pb_owner_billing_paid'; args = { p_company: id, p_from: n.from, p_amount_cents: n.amount_cents }; }
-          else if (act === 'b_past') { if (!(await ask(nm + ' is past due? They get ' + grace + ' days, then the company goes read-only: new runs and reports wait on the crew’s phones. Nothing is deleted.', 'Past Due'))) return; fn = 'pb_owner_billing_state'; args = { p_company: id, p_state: 'past_due' }; }
-          else if (act === 'b_ro') { if (!(await ask('Make ' + nm + ' read-only now? New runs and reports wait on the crew’s phones until you press Paid. Nothing is deleted.', 'Read-Only'))) return; fn = 'pb_owner_billing_state'; args = { p_company: id, p_state: 'read_only' }; }
+          else if (act === 'b_paid') { if (!(await ask('Mark ' + nm + '’s invoice for ' + pbDay(n.from) + ' – ' + pbDay(n.to) + ' (' + (Number(n.seats) || 0) + ' people, ' + pbMoney(n.amount_cents) + ') as paid? Paid through moves to ' + pbDay(n.to) + '.', 'Paid'))) return; fn = 'pb_owner_billing_paid'; args = { p_company: id, p_from: a.paid_through, p_seats: Number(n.seats) || 0, p_amount_cents: n.amount_cents }; }
+          else if (act === 'b_catch') { const c = a.catchup || {}; if (!(await ask('Catch-up paid for ' + c.people + ' more ' + (c.people === 1 ? 'person' : 'people') + ' (' + pbMoney(c.cents) + ')? Paid seats become ' + (Number(a.seats_used) || 0) + ' until ' + pbDay(a.paid_through) + '.', 'Catch-up Paid'))) return; fn = 'pb_owner_billing_catchup_paid'; args = { p_company: id, p_seats: Number(a.seats_used) || 0, p_amount_cents: c.cents }; }
+          else if (act === 'b_ro') { if (!(await ask('Make ' + nm + ' read-only now? New runs and reports wait on the crew’s phones until you press Paid or Not Read-Only. Nothing is deleted.', 'Read-Only Now'))) return; fn = 'pb_owner_billing_state'; args = { p_company: id, p_state: 'read_only' }; }
           else if (act === 'b_cancel') { if (!(await ask('Cancel ' + nm + '’s plan? It stays open ' + (a && a.paid_through ? 'until ' + pbDay(a.paid_through) : 'until today') + ', then goes read-only. Nothing is deleted.', 'Cancel Plan'))) return; fn = 'pb_owner_billing_state'; args = { p_company: id, p_state: 'canceled' }; }
           else if (act === 'b_active') { fn = 'pb_owner_billing_state'; args = { p_company: id, p_state: 'active' }; }
           else if (act === 'pr_on' || act === 'pr_off') {

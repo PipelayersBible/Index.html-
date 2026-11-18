@@ -31,12 +31,25 @@ const SERVER=`;(function(){
   {id:'e0000000-0000-4000-8000-00000000000e',name:'Ended Co',plan:'trial',trial_ends_at:new Date(Date.now()-5*864e5).toISOString(),owner_login:'boss@ended.test',seats_used:2,members:2,founder_ok:false,people:people(2),account:null},
   {id:'d0000000-0000-4000-8000-00000000000d',name:'DIG Civil',plan:'paid',trial_ends_at:null,owner_login:'dig@dig.test',seats_used:3,members:3,founder_ok:false,people:people(3),account:null},
   {id:'f0000000-0000-4000-8000-00000000000f',name:'Paid Pipe',plan:'paid',trial_ends_at:null,owner_login:'own@paid.test',seats_used:6,members:6,founder_ok:false,people:people(6),
-   account:{legal_name:'Paid Pipe LLC',billing_email:'ap@paid.test',state:'active',read_only:false,interval:'month',yearly_months:10,base_cents:9900,base_seats:5,seat_cents:1200,plan_reading:false,plan_reading_cents:null,
-    founder_until:iso(addM(today,11)),founder_set_by:'tommy@admin.test',founder_set_at:iso(addM(today,-1)),order_signed_by:'Pat Paid, Owner',period_start:iso(addM(today,-1)),paid_through:iso(today),seats_paid:6}}]};
- const next=(c)=>{const a=c.account,from=a.paid_through||a.period_start,to=iso(addM(new Date(from+'T12:00:00'),a.interval==='year'?12:1)),s=a.paid_through?c.seats_used:Math.max(a.seats_paid,c.seats_used);
-  a.next={from,to,seats:s,amount_cents:amount(a,s),founder:!!a.founder_until&&from<a.founder_until,due:a.state!=='canceled'&&new Date(from+'T00:00:00')<=new Date(Date.now()+7*864e5)};return a;};
+   account:{legal_name:'Paid Pipe LLC',billing_email:'ap@paid.test',stored_state:'active',interval:'month',yearly_months:10,base_cents:9900,base_seats:5,seat_cents:1200,plan_reading:false,plan_reading_cents:null,grace_days:7,
+    founder_until:iso(addM(today,11)),founder_set_by:'tommy@admin.test',founder_set_at:iso(addM(today,-1)),order_signed_by:'Pat Paid, Owner',period_start:iso(addM(today,-1)),paid_through:iso(new Date(Date.now()+3*864e5)),seats_paid:6}},
+  {id:'a0000000-0000-4000-8000-00000000000a',name:'Late Co',plan:'paid',trial_ends_at:null,owner_login:'own@late.test',seats_used:4,members:4,founder_ok:false,people:people(4),
+   account:{legal_name:'Late Co Inc',billing_email:'ap@late.test',stored_state:'active',interval:'month',yearly_months:10,base_cents:9900,base_seats:5,seat_cents:1200,plan_reading:false,plan_reading_cents:null,grace_days:7,
+    founder_until:null,order_signed_by:'Lee Late',period_start:iso(addM(today,-2)),paid_through:iso(new Date(Date.now()-2*864e5)),seats_paid:4}},
+  {id:'b0000000-0000-4000-8000-00000000000b',name:'Year Co',plan:'paid',trial_ends_at:null,owner_login:'own@year.test',seats_used:7,members:7,founder_ok:false,people:people(7),
+   account:{legal_name:'Year Co LLC',billing_email:'ap@year.test',stored_state:'active',interval:'year',yearly_months:10,base_cents:9900,base_seats:5,seat_cents:1200,plan_reading:false,plan_reading_cents:null,grace_days:7,
+    founder_until:null,order_signed_by:'Yan Year',period_start:iso(addM(today,-3)),paid_through:iso(addM(today,9)),seats_paid:6}}]};
+ const D0=()=>iso(new Date()),dd=(a,b)=>Math.round((new Date(a+'T12:00:00')-new Date(b+'T12:00:00'))/864e5);
+ const next=(c)=>{const a=c.account,from=a.paid_through,to=iso(addM(new Date(from+'T12:00:00'),a.interval==='year'?12:1)),s=c.seats_used,t=D0();
+  const lock=iso(new Date(new Date(from+'T12:00:00').getTime()+a.grace_days*864e5));
+  a.state=a.stored_state==='canceled'?'canceled':a.stored_state==='read_only'?'read_only':t>=lock?'read_only':t>=from?'past_due':'active';
+  a.read_only=a.state==='read_only';a.lock_on=lock;a.days_to_lock=a.state==='past_due'?dd(lock,t):null;a.seats_used=c.seats_used;a.seats_capacity=Math.max(a.seats_paid,a.base_seats);
+  a.extra=Math.max(0,c.seats_used-a.seats_capacity);const months=Math.max(0,Math.ceil(dd(a.paid_through,t)/30.44));
+  a.catchup={people:a.interval==='year'?a.extra:0,months,cents:a.interval==='year'&&a.state==='active'?a.extra*a.seat_cents*months:0,monthly_next_invoice:a.interval==='month'?a.extra:0};
+  a.next={from,to,seats:s,amount_cents:amount(a,s),founder:!!a.founder_until&&from<a.founder_until,due:a.state!=='canceled'&&(a.state!=='active'||a.catchup.cents>0||new Date(from+'T00:00:00')<=new Date(Date.now()+7*864e5))};return a;};
  const view=()=>{S.companies.forEach(c=>{if(c.account)next(c);});return {ok:true,settings:set,companies:JSON.parse(JSON.stringify(S.companies)),
-  due:S.companies.filter(c=>c.account&&c.account.next.due).map(c=>Object.assign({company_id:c.id,name:c.name},c.account.next,{legal_name:c.account.legal_name,billing_email:c.account.billing_email,interval:c.account.interval,state:c.account.state,tax_state:'CA',plan_reading_price_missing:c.account.plan_reading&&c.account.plan_reading_cents==null}))};};
+  due:S.companies.filter(c=>c.account&&c.account.next.due).map(c=>Object.assign({company_id:c.id,name:c.name},c.account.next,{legal_name:c.account.legal_name,billing_email:c.account.billing_email,interval:c.account.interval,state:c.account.state,tax_state:'CA',plan_reading_price_missing:c.account.plan_reading&&c.account.plan_reading_cents==null,
+   lock_on:c.account.lock_on,days_to_lock:c.account.days_to_lock,paid_through:c.account.paid_through,seats_paid:c.account.seats_paid,extra:c.account.extra,catchup:c.account.catchup})).sort((x,y)=>(x.state==='active')-(y.state==='active'))};};
  const by=(id)=>S.companies.find(c=>c.id===id);
  Object.assign(window.__rpcOverride,{
   pb_support_is_admin:()=>true,
@@ -44,11 +57,12 @@ const SERVER=`;(function(){
   pb_owner_plan_requests:()=>({ok:true,requests:[]}),
   pb_owner_billing:()=>window.__noBilling?null:view(),
   pb_owner_make_paid:(a)=>{const c=by(a.p_company);if(a.p_founder&&!c.founder_ok)return {ok:false,code:'pb:founder_late'};
-   c.account={legal_name:a.p_legal_name,billing_email:a.p_billing_email.toLowerCase(),state:'active',read_only:false,interval:a.p_interval,yearly_months:10,base_cents:9900,base_seats:5,seat_cents:1200,plan_reading:!!a.p_plan_reading,plan_reading_cents:null,
-    founder_until:a.p_founder?iso(addM(today,12)):null,founder_set_by:a.p_founder?'tommy@admin.test':null,founder_set_at:a.p_founder?iso(today):null,order_signed_by:a.p_signed_by,period_start:iso(today),paid_through:null,seats_paid:c.seats_used};
+   c.account={legal_name:a.p_legal_name,billing_email:a.p_billing_email.toLowerCase(),stored_state:'active',grace_days:7,interval:a.p_interval,yearly_months:10,base_cents:9900,base_seats:5,seat_cents:1200,plan_reading:!!a.p_plan_reading,plan_reading_cents:null,
+    founder_until:a.p_founder?iso(addM(today,12)):null,founder_set_by:a.p_founder?'tommy@admin.test':null,founder_set_at:a.p_founder?iso(today):null,order_signed_by:a.p_signed_by,period_start:iso(today),paid_through:iso(addM(today,a.p_interval==='year'?12:1)),seats_paid:c.seats_used};
    c.plan='paid';c.trial_ends_at=null;return {ok:true,account:next(c),owner_login:c.owner_login,individual_plans_to_stop:[{user_id:c.people[1].user_id,email:c.people[1].email}]};},
-  pb_owner_billing_state:(a)=>{const c=by(a.p_company);c.account.state=a.p_state;c.account.grace_until=a.p_state==='past_due'?new Date(Date.now()+7*864e5).toISOString():null;c.account.read_only=a.p_state==='read_only';return {ok:true,account:next(c)};},
-  pb_owner_billing_paid:(a)=>{const c=by(a.p_company);const n=next(c).next;if(a.p_from!==n.from)return {ok:false,code:'pb:period_changed'};c.account.paid_through=n.to;c.account.state='active';c.account.read_only=false;return {ok:true,account:next(c)};},
+  pb_owner_billing_state:(a)=>{const c=by(a.p_company);if(!['active','read_only','canceled'].includes(a.p_state))return {ok:false,code:'pb:bad_state'};c.account.stored_state=a.p_state;return {ok:true,account:next(c)};},
+  pb_owner_billing_paid:(a)=>{const c=by(a.p_company);const n=next(c).next;if(a.p_from!==c.account.paid_through)return {ok:false,code:'pb:period_changed'};c.account.paid_through=n.to;c.account.seats_paid=a.p_seats==null?c.seats_used:a.p_seats;if(c.account.stored_state==='read_only')c.account.stored_state='active';return {ok:true,account:next(c)};},
+  pb_owner_billing_catchup_paid:(a)=>{const c=by(a.p_company);c.account.seats_paid=a.p_seats;return {ok:true,account:next(c)};},
   pb_owner_plan_reading_set:(a)=>{const c=by(a.p_company);c.account.plan_reading=a.p_on;return {ok:true,sets:0,account:next(c)};},
   pb_owner_individual_off:()=>({ok:true}),
   pb_owner_company_handover:(a)=>{const c=by(a.p_company);const w=c.people.find(x=>x.user_id===a.p_new_owner);const old=c.owner_login;c.owner_login=w.email;c.people=c.people.filter(x=>x!==w).concat([{user_id:'old',email:old,role:'pm',title:a.p_old_owner_title}]);return {ok:true,from_email:old,to_email:w.email,new_owner_was:w.role,old_owner_title:a.p_old_owner_title};},
@@ -61,13 +75,17 @@ const SERVER=`;(function(){
  const C='c0000000-0000-4000-8000-00000000000c',E='e0000000-0000-4000-8000-00000000000e',DIG='d0000000-0000-4000-8000-00000000000d',P='f0000000-0000-4000-8000-00000000000f';
  const due=await txt(p,'#pbBillDue');console.log('  billing due:',due);
  ok(/Billing due/.test(due)&&/Paid Pipe LLC/.test(due)&&/\$111\.00/.test(due)&&/6 people/.test(due)&&/ap@paid\.test/.test(due)&&/founder price/.test(due),'Billing due lists who to invoice: legal name, period, people, amount, email');
+ ok(/Late Co Inc Past due · 5 days left/.test(due)&&/Locks \(read-only\) on/.test(due)&&due.indexOf('Late Co Inc')<due.indexOf('Paid Pipe LLC'),'Billing due warns first: past-due company with days left and its lock date (automatic, no button)');
+ ok(/Year Co LLC/.test(due)&&/Catch-up now: 1 above the paid seats × 9 months × \$12\.00 = \$108\.00/.test(due),'Billing due shows a yearly catch-up (1 extra × 9 months × $12)');
  ok(/Seller on invoices: not set yet/.test(due),'seller name is a setting (not set yet), not hard-coded');
  const cC=await card(p,C);console.log('  beta card:',cC);
  ok(/Add 30 Days/.test(cC)&&/Make Paid/.test(cC)&&/Hand Over/.test(cC)&&/6 people counted/.test(cC)&&/super@acme\.test/.test(cC),'beta card: Add 30 Days / Make Paid / Hand Over, people counted, company login');
  const cD=await card(p,DIG);ok(/No billing record/.test(cD)&&/Make Paid/.test(cD)&&!/Past Due/.test(cD),'legacy paid company: no billing record, Make Paid offered, no state buttons');
  const cP=await card(p,P);console.log('  paid card:',cP);
- ok(/Paid Pipe LLC/.test(cP)&&/Next invoice/.test(cP)&&/\$111\.00 a month/.test(cP)&&/Founder price locked until/.test(cP)&&/tommy@admin\.test/.test(cP)&&/Plan reading add-on: off/.test(cP),'paid card: deal, next invoice, founder lock (who, until), plan reading off');
- ok(['Paid','Past Due','Read-Only','Cancel Plan','Plan Reading On','Hand Over'].every(t=>cP.includes(t)),'paid card: Paid / Past Due / Read-Only / Cancel Plan / Plan Reading On / Hand Over');
+ ok(/Paid Pipe LLC/.test(cP)&&/Paid through/.test(cP)&&/next invoice/.test(cP)&&/\$111\.00 a month/.test(cP)&&/Paid seats: 6 · people now: 6/.test(cP)&&/Founder price locked until/.test(cP)&&/tommy@admin\.test/.test(cP)&&/Plan reading add-on: off/.test(cP),'paid card: paid through, next invoice, paid seats, founder lock (who, until), plan reading off');
+ ok(['Paid','Read-Only Now','Cancel Plan','Plan Reading On','Hand Over'].every(t=>cP.includes(t))&&!/Past Due/.test(cP)&&!/Catch-up Paid/.test(cP),'paid card: Paid / Read-Only Now / Cancel Plan / Plan Reading On / Hand Over (no Past Due button)');
+ const cL=await card(p,'a0000000-0000-4000-8000-00000000000a');ok(/Past due · 5 days left/.test(cL)&&/Not paid for the next period/.test(cL)&&/Goes read-only on/.test(cL),'past-due card: chip with days left and the lock date');
+ const cY=await card(p,'b0000000-0000-4000-8000-00000000000b');ok(/Catch-up: 1 above the paid seats/.test(cY)&&/Catch-up Paid/.test(cY),'yearly card: catch-up line and Catch-up Paid');
  await p.screenshot({path:SHOTS+'/owner_list_light.png',fullPage:false});
  // Make Paid form on the beta
  await clickAct(p,C,'paid');
@@ -91,22 +109,24 @@ const SERVER=`;(function(){
  await p.evaluate(()=>document.querySelector('#pbMakePaid [data-off]').click());await p.waitForTimeout(400);
  ok((await rpcs(p,'pb_owner_individual_off')).length===1&&/turned off/.test(await txt(p,'#pbMakePaid')),'Turn Off Their Plan calls pb_owner_individual_off');
  await p.click('#pbMpDone');await p.waitForTimeout(800);
- ok(/Acme Pipeline Inc/.test(await card(p,C))&&/Past Due/.test(await card(p,C)),'list reloaded: Acme now shows its deal and the paid buttons');
+ ok(/Acme Pipeline Inc/.test(await card(p,C))&&/Read-Only Now/.test(await card(p,C)),'list reloaded: Acme now shows its deal and the paid buttons');
  // founder lock not offered for an ended beta
  await clickAct(p,E,'paid');
  ok(await p.evaluate(()=>document.getElementById('pbMpFounder').disabled)&&/not offered: the beta has ended/.test(await txt(p,'#pbMakePaid')),'ended beta: founder lock not offered');
  await p.evaluate(()=>document.querySelector('#pbMakePaid .pb-fb-x').click());await p.waitForTimeout(300);
- // Past Due -> Paid on the paid company
- await clickAct(p,P,'b_past');const m1=await modal(p);console.log('  past due modal:',m1);
- ok(/7 days/.test(m1||'')&&/read-only/.test(m1||'')&&/Nothing is deleted/.test(m1||''),'Past Due asks first: 7 days, then read-only, nothing deleted');
- await modalClick(p,'Past Due');await p.waitForTimeout(800);
- ok(JSON.stringify((await rpcs(p,'pb_owner_billing_state')).pop())===JSON.stringify({p_company:P,p_state:'past_due'})&&/Past due/.test(await card(p,P))&&/Not Past Due/.test(await card(p,P)),'Past Due recorded; chip "Past due", undo offered');
- await clickAct(p,P,'b_paid');const m2=await modal(p);console.log('  paid modal:',m2);
+ // Paid on the past-due company: moves paid-through one period; Read-Only Now; Catch-up Paid
+ const L='a0000000-0000-4000-8000-00000000000a',Y='b0000000-0000-4000-8000-00000000000b';
+ const ptL=await p.evaluate(()=>window.__srv.companies.find(c=>c.name==='Late Co').account.paid_through);
+ await clickAct(p,L,'b_paid');const m2=await modal(p);console.log('  paid modal:',m2);
  await modalClick(p,'Paid');await p.waitForTimeout(800);
  const pd=(await rpcs(p,'pb_owner_billing_paid')).pop()||{};
- ok(/\$111\.00/.test(m2||'')&&pd.p_company===P&&/^\d{4}-\d{2}-\d{2}$/.test(pd.p_from)&&pd.p_amount_cents===11100&&/Paid/.test(await card(p,P))&&!/Not Past Due/.test(await card(p,P)),'Paid records the listed period (p_from) and clears Past Due');
- await clickAct(p,P,'b_ro');await modalClick(p,'Read-Only');await p.waitForTimeout(800);
- ok(/Read-only/.test(await card(p,P))&&/Not Read-Only/.test(await card(p,P)),'Read-Only recorded');
+ ok(/\$99\.00/.test(m2||'')&&/Paid through moves to/.test(m2||'')&&pd.p_company===L&&pd.p_from===ptL&&pd.p_seats===4&&pd.p_amount_cents===9900&&!/Past due/.test(await card(p,L)),'Paid sends the current paid-through date and seats; the past due clears');
+ await clickAct(p,P,'b_ro');const m1=await modal(p);await modalClick(p,'Read-Only Now');await p.waitForTimeout(800);
+ ok(/read-only now/i.test(m1||'')&&JSON.stringify((await rpcs(p,'pb_owner_billing_state')).pop())===JSON.stringify({p_company:P,p_state:'read_only'})&&/Read-only \(you set it\)/.test(await card(p,P))&&/Not Read-Only/.test(await card(p,P)),'Read-Only Now recorded; card says you set it, undo offered');
+ await clickAct(p,P,'b_active');await p.waitForTimeout(800);ok(/Read-Only Now/.test(await card(p,P)),'Not Read-Only undoes it');
+ await clickAct(p,Y,'b_catch');const m7=await modal(p);await modalClick(p,'Catch-up Paid');await p.waitForTimeout(800);
+ const cu=(await rpcs(p,'pb_owner_billing_catchup_paid')).pop()||{};
+ ok(/\$108\.00/.test(m7||'')&&cu.p_company===Y&&cu.p_seats===7&&cu.p_amount_cents===10800&&!/Catch-up Paid/.test(await card(p,Y))&&/Paid seats: 7/.test(await card(p,Y)),'Catch-up Paid sets the paid seats to the people now');
  await clickAct(p,P,'b_cancel');const m3=await modal(p);await modalClick(p,'Cancel Plan');await p.waitForTimeout(800);
  ok(/stays open/.test(m3||'')&&(await rpcs(p,'pb_owner_billing_state')).pop().p_state==='canceled'&&/Canceled/.test(await card(p,P))&&/Make Paid/.test(await card(p,P)),'Cancel Plan asks, records canceled, then offers Make Paid again');
  // plan reading on for Acme (now paid)

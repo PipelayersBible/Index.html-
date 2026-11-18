@@ -35,6 +35,10 @@ begin
 --   added people billed from the next invoice / no credit for removals, founder lock (12 months at $99 + $12) only for a beta
 --   company that commits BEFORE its beta ends, no AI add-on, plan reading add-on only for PAID companies (price = setting),
 --   individual plans by hand only, 7 days' grace then read-only through the beta's existing lock, no card surcharge.
+-- Round 2 (owner, Nov 18): past due and read-only are AUTOMATIC, computed on every read from paid_through + grace_days
+--   (no cron, nothing can be missed); Paid moves paid_through one period; a manual Read-Only Now stays. Paid seats per
+--   period: adding someone into a free paid seat costs nothing; above the paid seats a yearly plan shows a catch-up
+--   (extra people x months left x seat price), a monthly plan bills them from the next invoice. AI stops while read-only (04).
 --
 -- Additive: new tables pb_billing.settings / accounts / events and new functions. Changed existing functions (each diffed
 -- against its live definition in sql/diffs/, proven equivalent for every company without a billing row):
@@ -62,7 +66,7 @@ insert into pb_billing.settings (key, value, note) values
   ('base_seats',         '5'::jsonb,    'People included in the base price. The company login is never counted.'),
   ('seat_cents',         '1200'::jsonb, 'Each person over base_seats, per month.'),
   ('yearly_months',      '10'::jsonb,   'A yearly invoice = this many months of the monthly price.'),
-  ('grace_days',         '7'::jsonb,    'Days after Past Due before the company goes read-only.'),
+  ('grace_days',         '7'::jsonb,    'Days after the paid-through date before an unpaid company goes read-only (copied onto each account).'),
   ('founder_months',     '12'::jsonb,   'How long a founder price is locked.'),
   ('plan_reading_cents', 'null'::jsonb, 'Plan reading add-on, per month. Not decided yet (null = price not set).'),
   ('invoice_ahead_days', '7'::jsonb,    'Billing due lists a period this many days before it starts.')
@@ -88,7 +92,7 @@ create table if not exists pb_billing.accounts (
   billing_address    jsonb not null default '{}'::jsonb,      -- {line1, city, state, postal_code, country}; sales tax follows it
   tax_status         text not null default 'taxable' check (tax_status in ('taxable', 'exempt')),
   seller_legal_name  text,                                     -- the seller at Make Paid (setting), null while not formed
-  seats_paid         integer not null check (seats_paid between 0 and 1000),   -- people on the last invoice
+  seats_paid         integer not null check (seats_paid between 0 and 1000),   -- paid seats for the current period (free slots = paid - used)
   base_seats         integer not null check (base_seats between 1 and 100),
   base_cents         integer not null check (base_cents between 0 and 10000000),
   seat_cents         integer not null check (seat_cents between 0 and 1000000),
@@ -97,10 +101,11 @@ create table if not exists pb_billing.accounts (
   collection         text not null default 'invoice' check (collection in ('invoice', 'card_auto')),
   plan_reading       boolean not null default false,           -- the add-on; off = plan sets stay parked, as in the beta
   plan_reading_cents integer check (plan_reading_cents between 0 and 10000000),  -- null = price not set yet
-  state              text not null default 'active' check (state in ('active', 'past_due', 'read_only', 'canceled')),
+  state              text not null default 'active' check (state in ('active', 'read_only', 'canceled')),  -- stored: what Tommy set
+                                                               -- (past due / read-only after grace are computed: pb_billing.state_of)
   period_start       date not null,                            -- first day of the first billed period (the anchor)
-  paid_through       date,                                     -- end (exclusive) of the last period marked paid; null = first invoice unpaid
-  grace_until        timestamptz,
+  paid_through       date not null,                            -- end (exclusive) of the period paid for; set to the first period's end at Make Paid
+  grace_days         integer not null default 7 check (grace_days between 0 and 30),
   cancel_at          timestamptz,
   founder_until      date,                                     -- founder price locked until this date (null = no lock)
   founder_set_by     uuid,
@@ -140,13 +145,23 @@ language sql stable security definer set search_path to '' as $$
             and not exists (select 1 from public.company_members m2 where m2.user_id = i.user_id and m2.company_id = p_company))
 $$;
 
+-- The account's state, computed on read (UTC dates): canceled (stored) | read_only (stored by Tommy, or grace over) |
+-- past_due (today is on/after paid_through, within grace_days) | active.
+create or replace function pb_billing.state_of(a pb_billing.accounts) returns text
+language sql stable set search_path to '' as $$
+  select case when a.state = 'canceled' then 'canceled'
+              when a.state = 'read_only' then 'read_only'
+              when current_date >= a.paid_through + a.grace_days then 'read_only'
+              when current_date >= a.paid_through then 'past_due'
+              else 'active' end
+$$;
+
 -- Read-only = the lock the ended beta uses: new company records refused with pb:beta_ended, phones keep them queued, nothing
 -- deleted. No billing row (a beta, or the one legacy paid company) = never read-only here.
 create or replace function pb_billing.read_only(p_company uuid) returns boolean
 language sql stable security definer set search_path to '' as $$
   select exists (select 1 from pb_billing.accounts a where a.company_id = p_company
-                 and (a.state = 'read_only'
-                      or (a.state = 'past_due' and a.grace_until is not null and a.grace_until <= now())
+                 and (pb_billing.state_of(a) = 'read_only'
                       or (a.state = 'canceled' and coalesce(a.cancel_at, now()) <= now())))
 $$;
 
@@ -177,17 +192,35 @@ language sql immutable set search_path to '' as $$
           * case when a.billing_interval = 'year' then a.yearly_months else 1 end)::int
 $$;
 
--- What an account shows on the owner's screen, including the next invoice: the period after paid_through (or the first
--- period), people counted NOW (added people are billed from the next invoice; removals give no credit for a paid period).
+-- Months (whole or part) from p_from up to p_to; 0 when p_to is not after p_from.
+create or replace function pb_billing.months_left(p_from date, p_to date) returns integer
+language sql immutable set search_path to '' as $$
+  select case when p_to <= p_from then 0 else (extract(year from age(p_to, p_from)) * 12 + extract(month from age(p_to, p_from))
+              + case when extract(day from age(p_to, p_from)) > 0 then 1 else 0 end)::int end
+$$;
+
+-- What an account shows on the owner's screen. Next invoice = the period starting at paid_through, people counted NOW.
+-- Paid seats: capacity = greatest(seats_paid, base_seats); people above it are "extra": a yearly plan shows a catch-up
+-- (extra x months left x seat price), a monthly plan bills them on the next invoice. Removing someone frees a seat (no credit).
 create or replace function pb_billing.account_json(a pb_billing.accounts) returns jsonb
 language plpgsql stable security definer set search_path to '' as $$
-declare v_used int := pb_billing.seats_used(a.company_id); v_from date := coalesce(a.paid_through, a.period_start);
-  v_to date := pb_billing.period_after(coalesce(a.paid_through, a.period_start), a.billing_interval);
-  v_bill int := case when a.paid_through is null then greatest(a.seats_paid, pb_billing.seats_used(a.company_id)) else pb_billing.seats_used(a.company_id) end;
+declare v_used int := pb_billing.seats_used(a.company_id); v_from date := a.paid_through;
+  v_to date := pb_billing.period_after(a.paid_through, a.billing_interval);
+  v_bill int := pb_billing.seats_used(a.company_id);
+  v_st text := pb_billing.state_of(a); v_lock date := a.paid_through + a.grace_days;
+  v_cap int := greatest(a.seats_paid, a.base_seats);
+  v_extra int := greatest(0, pb_billing.seats_used(a.company_id) - greatest(a.seats_paid, a.base_seats));
+  v_months int := pb_billing.months_left(current_date, a.paid_through);
+  v_catch int := 0;
 begin
+  if a.billing_interval = 'year' and v_st = 'active' then v_catch := v_extra * a.seat_cents * v_months; end if;
   return jsonb_build_object('legal_name', a.legal_name, 'billing_email', a.billing_email, 'billing_contact', a.billing_contact,
     'billing_address', a.billing_address, 'tax_state', a.billing_address->>'state', 'seller_legal_name', a.seller_legal_name,
-    'state', a.state, 'read_only', pb_billing.read_only(a.company_id), 'grace_until', a.grace_until, 'cancel_at', a.cancel_at,
+    'state', v_st, 'stored_state', a.state, 'read_only', pb_billing.read_only(a.company_id), 'cancel_at', a.cancel_at,
+    'lock_on', v_lock, 'days_to_lock', case when v_st = 'past_due' then v_lock - current_date end, 'grace_days', a.grace_days,
+    'seats_capacity', v_cap, 'extra', v_extra,
+    'catchup', jsonb_build_object('people', case when a.billing_interval = 'year' then v_extra else 0 end, 'months', v_months,
+      'cents', v_catch, 'monthly_next_invoice', case when a.billing_interval = 'month' then v_extra else 0 end),
     'interval', a.billing_interval, 'yearly_months', a.yearly_months, 'base_cents', a.base_cents, 'base_seats', a.base_seats,
     'seat_cents', a.seat_cents, 'plan_reading', a.plan_reading, 'plan_reading_cents', a.plan_reading_cents,
     'plan_reading_price_missing', a.plan_reading and a.plan_reading_cents is null,
@@ -197,7 +230,8 @@ begin
     'period_start', a.period_start, 'paid_through', a.paid_through, 'seats_paid', a.seats_paid, 'seats_used', v_used,
     'next', jsonb_build_object('from', v_from, 'to', v_to, 'seats', v_bill, 'amount_cents', pb_billing.amount_cents(a, v_bill),
       'founder', a.founder_until is not null and v_from < a.founder_until,
-      'due', a.state <> 'canceled' and v_from <= current_date + pb_billing.setting_int('invoice_ahead_days', 7)));
+      'due', v_st <> 'canceled' and (v_st in ('past_due', 'read_only') or v_catch > 0
+               or v_from <= current_date + pb_billing.setting_int('invoice_ahead_days', 7))));
 end $$;
 
 -- ---------------------------------------------------------------------------------------------------------------------
@@ -270,7 +304,7 @@ begin
   if not found then return jsonb_build_object('ok', false, 'code', 'pb:not_found'); end if;
   if v_co.status <> 'active' then return jsonb_build_object('ok', false, 'code', 'pb:company_inactive'); end if;
   if exists (select 1 from pb_billing.accounts x where x.company_id = p_company and x.state <> 'canceled') then
-    return jsonb_build_object('ok', false, 'code', 'pb:already_paid', 'message', 'This company already has a paid plan. Use Paid, Past Due, Read-Only or Cancel.');
+    return jsonb_build_object('ok', false, 'code', 'pb:already_paid', 'message', 'This company already has a paid plan. Use Paid, Read-Only Now or Cancel Plan.');
   end if;
   if p_legal_name is null or length(btrim(p_legal_name)) not between 1 and 200 then return jsonb_build_object('ok', false, 'code', 'pb:bad_name', 'message', 'Type the company''s legal name.'); end if;
   if p_billing_email is null or btrim(p_billing_email) !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' or length(btrim(p_billing_email)) > 254 then return jsonb_build_object('ok', false, 'code', 'pb:bad_email', 'message', 'Type the billing email.'); end if;
@@ -290,14 +324,14 @@ begin
   v_months := pb_billing.setting_int('founder_months', 12);
   insert into pb_billing.accounts (company_id, legal_name, billing_email, billing_contact, billing_address, seller_legal_name,
       seats_paid, base_seats, base_cents, seat_cents, billing_interval, yearly_months, plan_reading, plan_reading_cents,
-      state, period_start, paid_through, founder_until, founder_set_by, founder_set_at, order_signed_by, order_signed_at,
+      state, period_start, paid_through, grace_days, founder_until, founder_set_by, founder_set_at, order_signed_by, order_signed_at,
       terms_version, created_by)
     values (p_company, btrim(p_legal_name), lower(btrim(p_billing_email)), nullif(btrim(coalesce(p_contact, '')), ''),
       coalesce(p_address, '{}'::jsonb), pb_billing.setting('seller_legal_name') #>> '{}',
       p_seats, pb_billing.setting_int('base_seats', 5), pb_billing.setting_int('base_cents', 9900), pb_billing.setting_int('seat_cents', 1200),
       p_interval, pb_billing.setting_int('yearly_months', 10), coalesce(p_plan_reading, false),
       case when p_plan_reading then pb_billing.setting_int('plan_reading_cents', null) end,
-      'active', current_date, null,
+      'active', current_date, pb_billing.period_after(current_date, p_interval), greatest(0, least(pb_billing.setting_int('grace_days', 7), 30)),
       case when p_founder then (current_date + make_interval(months => v_months))::date end,
       case when p_founder then auth.uid() end, case when p_founder then now() end,
       btrim(p_signed_by), now(), p_terms_version, auth.uid())
@@ -306,8 +340,8 @@ begin
       billing_address = excluded.billing_address, seller_legal_name = excluded.seller_legal_name, seats_paid = excluded.seats_paid,
       base_seats = excluded.base_seats, base_cents = excluded.base_cents, seat_cents = excluded.seat_cents,
       billing_interval = excluded.billing_interval, yearly_months = excluded.yearly_months, plan_reading = excluded.plan_reading,
-      plan_reading_cents = excluded.plan_reading_cents, state = 'active', period_start = excluded.period_start, paid_through = null,
-      grace_until = null, cancel_at = null, founder_until = excluded.founder_until, founder_set_by = excluded.founder_set_by,
+      plan_reading_cents = excluded.plan_reading_cents, state = 'active', period_start = excluded.period_start, paid_through = excluded.paid_through,
+      grace_days = excluded.grace_days, cancel_at = null, founder_until = excluded.founder_until, founder_set_by = excluded.founder_set_by,
       founder_set_at = excluded.founder_set_at, order_signed_by = excluded.order_signed_by, order_signed_at = excluded.order_signed_at,
       terms_version = excluded.terms_version, updated_at = now()
     returning * into a;
@@ -334,52 +368,87 @@ begin
     'individual_plans_to_stop', v_double);
 end $$;
 
--- Past Due (grace from the settings, 7 days), Read-Only now, Cancel (read-only once what was paid runs out), or Active
--- (undo without recording a payment). companies.status is never touched.
+-- Read-Only Now (Tommy's manual lock), Cancel (read-only once what was paid runs out), or Active (undo either). Past due is
+-- never set by hand: it is computed from paid_through. companies.status is never touched.
 create or replace function public.pb_owner_billing_state(p_company uuid, p_state text, p_note text default null)
 returns jsonb language plpgsql security definer set search_path to '' as $$
 declare a pb_billing.accounts;
 begin
   if not pb_support.admin_ok(auth.uid(), auth.jwt()->>'aal') then raise exception 'pb:not_allowed'; end if;
-  if p_state is null or p_state not in ('active', 'past_due', 'read_only', 'canceled') then return jsonb_build_object('ok', false, 'code', 'pb:bad_state'); end if;
+  if p_state is null or p_state not in ('active', 'read_only', 'canceled') then return jsonb_build_object('ok', false, 'code', 'pb:bad_state'); end if;
   update pb_billing.accounts x set state = p_state,
-      grace_until = case when p_state = 'past_due' then
-                      case when x.state = 'past_due' and x.grace_until is not null then x.grace_until   -- pressing it again never adds days
-                           else now() + make_interval(days => greatest(0, least(pb_billing.setting_int('grace_days', 7), 30))) end end,
-      cancel_at = case when p_state = 'canceled' then coalesce(x.cancel_at, greatest(now(), coalesce(x.paid_through, current_date)::timestamptz)) end,
+      cancel_at = case when p_state = 'canceled' then coalesce(x.cancel_at, greatest(now(), x.paid_through::timestamptz)) end,
       updated_at = now()
     where x.company_id = p_company returning * into a;
   if not found then return jsonb_build_object('ok', false, 'code', 'pb:no_account'); end if;
   insert into pb_billing.events (company_id, kind, detail, actor)
-    values (p_company, 'state', jsonb_build_object('state', p_state, 'grace_until', a.grace_until, 'cancel_at', a.cancel_at, 'note', left(p_note, 300)), auth.uid());
+    values (p_company, 'state', jsonb_build_object('state', p_state, 'cancel_at', a.cancel_at, 'note', left(p_note, 300)), auth.uid());
   perform pb_audit.admin_note('company_billing_state', p_company, null, jsonb_build_object('state', p_state));
   return jsonb_build_object('ok', true, 'account', pb_billing.account_json(a));
 end $$;
 
--- Paid: the invoice for the listed period was paid. p_from must be the period Billing Due showed (pressing Paid twice, or on
--- a stale screen, records nothing). Clears Past Due / Read-Only. A canceled account is not reopened here (Make Paid again).
-create or replace function public.pb_owner_billing_paid(p_company uuid, p_from date, p_amount_cents integer default null, p_note text default null)
+-- Paid: the invoice for the next period was paid; paid_through moves one period (month or year) and the paid seats become
+-- the people billed (p_seats, the count Billing Due showed; default: people now). p_from must equal the current paid_through
+-- (pressing Paid twice, or on a stale screen, records nothing). It ends past due / grace read-only by moving paid_through,
+-- and clears a manual Read-Only Now. A canceled account is not reopened here (Make Paid again).
+create or replace function public.pb_owner_billing_paid(p_company uuid, p_from date, p_seats integer default null, p_amount_cents integer default null, p_note text default null)
 returns jsonb language plpgsql security definer set search_path to '' as $$
-declare a pb_billing.accounts; v_from date; v_to date; v_seats int; v_amount int;
+declare a pb_billing.accounts; v_from date; v_to date; v_seats int; v_amount int; v_was text;
 begin
   if not pb_support.admin_ok(auth.uid(), auth.jwt()->>'aal') then raise exception 'pb:not_allowed'; end if;
   select * into a from pb_billing.accounts x where x.company_id = p_company for update;
   if not found then return jsonb_build_object('ok', false, 'code', 'pb:no_account'); end if;
   if a.state = 'canceled' then return jsonb_build_object('ok', false, 'code', 'pb:canceled', 'message', 'This plan is canceled. Use Make Paid to start it again.'); end if;
-  v_from := coalesce(a.paid_through, a.period_start);
+  v_from := a.paid_through; v_was := pb_billing.state_of(a);
   if p_from is distinct from v_from then
     return jsonb_build_object('ok', false, 'code', 'pb:period_changed', 'message', 'That period was already marked paid. Refresh.', 'account', pb_billing.account_json(a));
   end if;
   v_to := pb_billing.period_after(v_from, a.billing_interval);
-  v_seats := case when a.paid_through is null then greatest(a.seats_paid, pb_billing.seats_used(p_company)) else pb_billing.seats_used(p_company) end;
+  v_seats := greatest(0, least(coalesce(p_seats, pb_billing.seats_used(p_company)), 1000));
   v_amount := pb_billing.amount_cents(a, v_seats);
-  update pb_billing.accounts x set paid_through = v_to, seats_paid = v_seats, state = 'active', grace_until = null, updated_at = now()
+  update pb_billing.accounts x set paid_through = v_to, seats_paid = v_seats, state = 'active', updated_at = now()
     where x.company_id = p_company returning * into a;
   insert into pb_billing.events (company_id, kind, detail, actor) values (p_company, 'paid',
-    jsonb_build_object('from', v_from, 'to', v_to, 'seats', v_seats, 'amount_cents', v_amount, 'received_cents', p_amount_cents, 'note', left(p_note, 300)), auth.uid());
+    jsonb_build_object('from', v_from, 'to', v_to, 'seats', v_seats, 'amount_cents', v_amount, 'received_cents', p_amount_cents, 'was', v_was, 'note', left(p_note, 300)), auth.uid());
   perform pb_audit.admin_note('company_billing_paid', p_company, null, jsonb_build_object('from', v_from, 'to', v_to, 'amount_cents', v_amount));
   return jsonb_build_object('ok', true, 'account', pb_billing.account_json(a));
 end $$;
+
+-- Catch-up Paid (yearly plan): the catch-up invoice for the people above the paid seats was paid; the paid seats become
+-- p_seats (the people billed, at most the people now) for the rest of the period. Nothing else changes.
+create or replace function public.pb_owner_billing_catchup_paid(p_company uuid, p_seats integer, p_amount_cents integer default null, p_note text default null)
+returns jsonb language plpgsql security definer set search_path to '' as $$
+declare a pb_billing.accounts; v_was int; v_used int;
+begin
+  if not pb_support.admin_ok(auth.uid(), auth.jwt()->>'aal') then raise exception 'pb:not_allowed'; end if;
+  select * into a from pb_billing.accounts x where x.company_id = p_company for update;
+  if not found then return jsonb_build_object('ok', false, 'code', 'pb:no_account'); end if;
+  v_used := pb_billing.seats_used(p_company); v_was := a.seats_paid;
+  if p_seats is null or p_seats <= greatest(a.seats_paid, a.base_seats) or p_seats > v_used then
+    return jsonb_build_object('ok', false, 'code', 'pb:no_catchup', 'message', 'Nothing to catch up: the people now fit in the paid seats.', 'account', pb_billing.account_json(a));
+  end if;
+  update pb_billing.accounts x set seats_paid = p_seats, updated_at = now() where x.company_id = p_company returning * into a;
+  insert into pb_billing.events (company_id, kind, detail, actor) values (p_company, 'catchup_paid',
+    jsonb_build_object('seats_from', v_was, 'seats_to', p_seats, 'until', a.paid_through, 'received_cents', p_amount_cents, 'note', left(p_note, 300)), auth.uid());
+  perform pb_audit.admin_note('company_billing_catchup', p_company, null, jsonb_build_object('seats_from', v_was, 'seats_to', p_seats));
+  return jsonb_build_object('ok', true, 'account', pb_billing.account_json(a));
+end $$;
+
+-- One line for the operator: companies past due (with the day they lock) and companies that locked in the last 3 days
+-- because nothing was paid. Null when there is nothing to say. Used by the 10:00 UTC check (sql/05, optional).
+create or replace function pb_billing.alert_text() returns text
+language sql stable security definer set search_path to '' as $$
+  select 'billing, not the backup (the fix line below does not apply): ' || string_agg(x.line, '; ' order by x.lock_on)
+         || '. Open Settings > Beta Accounts and press Paid once it is paid.'
+  from (select a.legal_name || case when current_date < a.paid_through + a.grace_days
+                 then ' is past due since ' || to_char(a.paid_through, 'Mon DD') || ' and locks (read-only) on '
+                      || to_char(a.paid_through + a.grace_days, 'Mon DD') || ' (' || (a.paid_through + a.grace_days - current_date) || ' days left)'
+                 else ' locked (read-only) on ' || to_char(a.paid_through + a.grace_days, 'Mon DD') || ': not paid' end line,
+               a.paid_through + a.grace_days lock_on
+        from pb_billing.accounts a
+        where a.state = 'active' and current_date >= a.paid_through and current_date < a.paid_through + a.grace_days + 3) x
+  having count(*) > 0
+$$;
 
 -- The owner's billing screen: settings, every active company (with who would be billed and whether the founder price is
 -- still possible), and Billing Due (who to invoice now, seats, amount, period).
@@ -403,8 +472,11 @@ begin
     'due', coalesce((select jsonb_agg(jsonb_build_object('company_id', x->>'id', 'name', x->>'name') || (x->'account'->'next')
                        || jsonb_build_object('legal_name', x->'account'->>'legal_name', 'billing_email', x->'account'->>'billing_email',
                             'interval', x->'account'->>'interval', 'state', x->'account'->>'state', 'tax_state', x->'account'->>'tax_state',
-                            'plan_reading_price_missing', x->'account'->'plan_reading_price_missing')
-                       order by x->'account'->'next'->>'from')
+                            'plan_reading_price_missing', x->'account'->'plan_reading_price_missing',
+                            'lock_on', x->'account'->'lock_on', 'days_to_lock', x->'account'->'days_to_lock',
+                            'paid_through', x->'account'->'paid_through', 'seats_paid', x->'account'->'seats_paid',
+                            'extra', x->'account'->'extra', 'catchup', x->'account'->'catchup')
+                       order by (x->'account'->>'state') = 'active', x->'account'->'next'->>'from')
                      from jsonb_array_elements(v_cos) x where x->'account' is not null and (x->'account'->'next'->>'due')::boolean), '[]'::jsonb));
 end $$;
 
@@ -448,18 +520,21 @@ end $$;
 
 -- Helpers are reached only through the security-definer functions above (authenticated has no USAGE on pb_billing anyway).
 revoke all on function pb_billing.setting(text), pb_billing.setting_int(text, integer), pb_billing.seats_used(uuid),
+  pb_billing.state_of(pb_billing.accounts), pb_billing.months_left(date, date), pb_billing.alert_text(),
   pb_billing.read_only(uuid), pb_billing.writes_closed(uuid), pb_billing.plan_reading_on(uuid),
   pb_billing.period_after(date, text), pb_billing.amount_cents(pb_billing.accounts, integer), pb_billing.account_json(pb_billing.accounts)
   from public, anon, authenticated;
 revoke all on function public.pb_owner_make_paid(uuid, text, text, integer, text, boolean, boolean, text, jsonb, text, text) from public, anon;
 revoke all on function public.pb_owner_billing_state(uuid, text, text) from public, anon;
-revoke all on function public.pb_owner_billing_paid(uuid, date, integer, text) from public, anon;
+revoke all on function public.pb_owner_billing_paid(uuid, date, integer, integer, text) from public, anon;
+revoke all on function public.pb_owner_billing_catchup_paid(uuid, integer, integer, text) from public, anon;
 revoke all on function public.pb_owner_billing() from public, anon;
 revoke all on function public.pb_owner_billing_setting_set(text, jsonb) from public, anon;
 revoke all on function public.pb_owner_individual_off(uuid, text) from public, anon;
 grant execute on function public.pb_owner_make_paid(uuid, text, text, integer, text, boolean, boolean, text, jsonb, text, text) to authenticated;
 grant execute on function public.pb_owner_billing_state(uuid, text, text) to authenticated;
-grant execute on function public.pb_owner_billing_paid(uuid, date, integer, text) to authenticated;
+grant execute on function public.pb_owner_billing_paid(uuid, date, integer, integer, text) to authenticated;
+grant execute on function public.pb_owner_billing_catchup_paid(uuid, integer, integer, text) to authenticated;
 grant execute on function public.pb_owner_billing() to authenticated;
 grant execute on function public.pb_owner_billing_setting_set(text, jsonb) to authenticated;
 grant execute on function public.pb_owner_individual_off(uuid, text) to authenticated;
@@ -538,6 +613,6 @@ grant execute on function public.pb_owner_company_handover(uuid, uuid, text) to 
   r2 := public.pb_owner_make_paid(C, 'Acme Pipeline Inc', 'ap@acme.test', null, 'month', true, false, 'Olive Owner, President');
   if r2->>'owner_login' <> 'b0t-' || O || '@test.invalid' or (r2->'account'->'next'->>'seats')::int <> 7 then raise exception 'FAIL h15 %', r2; end if;
   res := res || jsonb_build_object('handover', r - 'from' - 'to' - 'from_email' - 'to_email', 'seats', n, 'after_make_paid_amount', r2->'account'->'next'->'amount_cents');
-  res := res || jsonb_build_object('defs', (select jsonb_object_agg(p.proname, md5(rtrim(pg_get_functiondef(p.oid), E'\n'))) from pg_proc p join pg_namespace n2 on n2.oid = p.pronamespace where (n2.nspname, p.proname) in (('pb_billing','beta_closed_guard'),('public','pb_my_plan'),('public','pb_owner_company_set'),('public','pb_plans_uploaded'),('public','pb_plans_svc_take'),('public','pb_plans_svc_more'))));
+  res := res || jsonb_build_object('defs', (select jsonb_object_agg(p.proname, md5(rtrim(pg_get_functiondef(p.oid), E'\n'))) from pg_proc p join pg_namespace n2 on n2.oid = p.pronamespace where (n2.nspname, p.proname) in (('pb_billing','beta_closed_guard'),('public','pb_my_plan'),('public','pb_owner_company_set'),('public','pb_plans_uploaded'),('public','pb_plans_svc_take'),('public','pb_plans_svc_more'),('public','ai_try_consume'),('pb_billing','individual_only'),('public','ai_has_paid_plan'),('public','pb_backup_health'),('pb_backup','check_kick'))));
   raise notice 'RESULT: %', res;
 end $T$;

@@ -71,3 +71,34 @@ end $function$;
 create trigger pb_member_removed after delete on public.company_members for each row execute function pb_billing.on_member_removed();
 create trigger pb_trial_seats before insert on public.company_members for each row execute function pb_billing.trial_seats_guard();
 create table pb_prod.site_log (id uuid primary key default gen_random_uuid(), user_id uuid not null, company_id uuid not null, client_item_id text not null, kind text not null check (kind in ('delay','utility','rework','equip')), job_key text not null default '', data jsonb not null);
+-- round 2: AI and the operator check
+create schema pb_backup;
+create function auth.role() returns text language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role', '') $$;
+create table public.ai_usage (user_id uuid, day date, feature text, count integer, primary key (user_id, day, feature));
+CREATE OR REPLACE FUNCTION pb_billing.individual_limits() RETURNS jsonb LANGUAGE sql IMMUTABLE SET search_path TO '' AS $function$
+  select '{"stake": 15, "ask": 5, "other": 3, "month": 200}'::jsonb
+$function$;
+CREATE OR REPLACE FUNCTION pb_crew.require_service() RETURNS void LANGUAGE plpgsql STABLE SET search_path TO '' AS $function$
+begin
+  if coalesce((select auth.role()), '') <> 'service_role' then raise exception 'pb:service_only'; end if;
+end $function$;
+CREATE OR REPLACE FUNCTION public.ai_feature_limit(p_user uuid, p_feature text) RETURNS integer LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
+  select case when x.expired then 0 else coalesce((pb_billing.trial_limits()->>p_feature)::int, (pb_billing.trial_limits()->>'other')::int) end
+  from pb_billing.company_of(p_user) x where x.plan = 'trial' and not (x.expired and pb_billing.has_individual(p_user))
+$function$;
+CREATE OR REPLACE FUNCTION public.ai_daily_limit(p_user uuid) RETURNS integer LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public' AS $function$
+  select case
+    when exists (select 1 from pb_billing.company_of(p_user) x where x.plan = 'trial') then
+      case when not exists (select 1 from pb_billing.company_of(p_user) x where x.expired) then 30
+           when pb_billing.has_individual(p_user) then 10 else 0 end
+    when exists (select 1 from public.company_members m join public.companies c on c.id = m.company_id
+                 where m.user_id = p_user and c.status = 'active') then 100
+    when exists (select 1 from public.companies o where o.owner_user_id = p_user and o.status = 'active') then 100
+    when exists (select 1 from public.subscriptions s where s.user_id = p_user and s.tier = 'individual' and s.status = 'active') then 10
+    else 0 end;
+$function$;
+create table pb_backup.runs (id bigserial primary key, started_at timestamptz default now(), finished_at timestamptz, status text, files int, bytes bigint, error text, alerted_at timestamptz);
+create table pb_prod.pass_errors (id bigserial primary key, at timestamptz default now());
+create function pb_prod.note_error(a text, b text, c text) returns void language sql as $$ select $$;
+create function pb_backup.health(p_now timestamptz default now()) returns text language sql stable as $$ select null::text $$;   -- stub: backups fine
+create function pb_backup.check_due(p_now timestamptz default now()) returns boolean language sql stable as $$ select pb_backup.health(p_now) is not null $$;

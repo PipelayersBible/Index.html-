@@ -1,0 +1,11 @@
+--- live/check_kick.sql (pg_get_functiondef, live Nov 17)
++++ new/check_kick.sql (after 01-05)
+@@ -9,7 +9,7 @@
+ -- read the call as a full backup and email the owners).
+ declare v_secret text;
+ begin
+-  if not pb_backup.check_due(now()) then return; end if;
++  if not (pb_backup.check_due(now()) or pb_billing.alert_text() is not null) then return; end if; -- billing Phase 0: or a company is past due / just locked
+   begin
+     execute 'select ds.decrypted_secret from vault.decrypted_secrets ds where ds.name = ''push_cron_secret'' limit 1' into v_secret;
+     if v_secret is null or length(v_secret) < 16 then return; end if;

@@ -1,0 +1,9 @@
+--- live/ai_has_paid_plan.sql (pg_get_functiondef, live Nov 17)
++++ new/ai_has_paid_plan.sql (after 01-05)
+@@ -6,5 +6,5 @@
+ AS $function$
+ /* pb_sec S12 owner; Nov 16: an ended trial has no AI */
+   select exists (select 1 from public.subscriptions s where s.user_id = p_user and s.tier = 'individual' and s.status = 'active')
+-      or exists (select 1 from pb_billing.company_of(p_user) x where not x.expired);
++      or exists (select 1 from pb_billing.company_of(p_user) x where not x.expired and not pb_billing.read_only(x.company_id)); -- billing Phase 0: a read-only paid company has no company AI
+ $function$

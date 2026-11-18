@@ -125,21 +125,104 @@ Nothing applied, deployed, committed or pushed. Live SQL: read-only selects + ro
   with the newrun helper's r16.94 page as its "before" page (base94.html): **27 PASS, 0 FAIL, exit 0** on cur.html (reg/cur/t123_newrunshort_94.txt).
 - New: tests/t127_billing0.js 36/36 PASS on cur.html.
 
+
+## Round 2 (owner's answers, Nov 18) — what changed
+1. **AI stops while read-only** (new `sql/04_ai_readonly.sql`). The live `ai_try_consume` now refuses company AI (returns -1)
+   for a member or owner of a read-only company, the same way an ended beta is refused. `pb_billing.individual_only` and
+   `ai_has_paid_plan` treat a read-only company like an ended one, so someone with their own individual plan keeps the
+   individual limits. Each change is one condition (diffs in sql/diffs/). For companies without a billing row
+   `read_only()` is false, so nothing changes for them. AI keeps working during the 7 grace days and comes back as soon as
+   Paid is pressed. Assumption: the `ai` edge function's cap goes through `ai_try_consume`. I did not read the `ai` edge
+   function's code.
+2. **Automatic past due and read-only, computed on read (no cron).**
+   - The account keeps `paid_through` (the end of the period paid for) and `grace_days` (7, copied from the setting).
+     `pb_billing.state_of(account)`: today >= paid_through means past_due; today >= paid_through + 7 means read_only. A
+     stored state (Read-Only Now, or canceled) overrides that. Every read uses it: the write guard, `pb_my_plan`, the AI
+     gates, plan reading and Billing due. Nothing has to run on schedule, so nothing can be missed.
+   - Make Paid sets `paid_through` to the end of the first period. Paid moves it one period (month or year) and sets the
+     paid seats. It is safe to press twice: `p_from` must equal the current `paid_through`. It also clears a manual
+     Read-Only Now. If a company is two periods behind, one press leaves it past due until the second.
+   - The Past Due button is gone, and the server refuses `past_due` as a hand-set state. Read-Only Now / Not Read-Only
+     stay. Cancel is unchanged (open until paid_through, then read-only).
+   - Consequence: the first invoice (sent at Make Paid) is not tracked separately. If it is never paid, the company locks 7
+     days after the first period ends, unless Tommy uses Read-Only Now earlier.
+   - **Warning before anyone locks:** Billing due lists past-due companies first, with "Past due · N days left" and
+     "Locks (read-only) on DATE unless you press Paid". It also lists read-only companies and companies with a catch-up.
+   - **Operator email:** `sql/05_billing_alert_in_check.sql` (OPTIONAL) adds `pb_billing.alert_text()` to
+     `pb_backup_health`'s problem text and to `check_kick`'s condition. It needs no edge function change, and sends at most
+     one email a day (pb-backup's check key is per day). Caveat: pb-backup wraps the text in its backup email (subject
+     "Backup check: ...", a backup "How to fix" line, and "Nothing in the app is affected; this is only the copy of the
+     data"). The billing text says the fix line does not apply, but the wrapper is misleading. Proper wording needs a small
+     pb-backup change, not done. The in-app list works either way.
+3. **Cancel:** unchanged (open until the end of what they paid for).
+4. **Paid seats / catch-up.**
+   - `seats_paid` = the seats paid for this period; capacity = greatest(seats_paid, 5 included).
+   - Someone added into a free paid seat costs nothing. Removing someone frees the seat for the rest of the period (no credit).
+   - Above capacity: a **yearly** plan shows a catch-up of extra people × months left (whole or part) × $12, in Billing due
+     and on the card. **Catch-up Paid** (`pb_owner_billing_catchup_paid`) raises the paid seats to the people now.
+   - A **monthly** plan shows "N above the paid seats: on the next invoice"; the next invoice bills the people at that time.
+- App patch: Billing due rows show state chips with days left, the lock date and catch-up lines. Cards show "Paid through",
+  "Paid seats: N · people now: M", the catch-up line, "Not paid for the next period. Goes read-only on DATE unless you
+  press Paid" and "Read-only (you set it)" / "Read-only since DATE (not paid)". Buttons: Paid (sends the current
+  paid_through and seats) / Read-Only Now (or Not Read-Only) / Cancel Plan / Catch-up Paid (only when there is one) /
+  Plan Reading / Hand Over. The Make Paid form explains paid seats and the automatic lock.
+- Tests: local harness t01 (01+04+05, now with auto past due, auto read-only, AI stop and individual-plan exception, Paid,
+  stale Paid, monthly extra, removal frees a seat, yearly catch-up 1 × 12 × $12 = $144, Catch-up Paid, free seat refilled,
+  Read-Only Now, past_due refused by hand, Cancel, operator check text), t02, t03: all PASS. sql/local/mkdiffs.sh applies
+  01–05 as plain migrations; 11 changed-function diffs in sql/diffs/. The md5s of the five new live originals were checked
+  against live before editing. t127: 40/40 PASS (new: past-due warning first in Billing due, yearly catch-up line + Catch-up
+  Paid, Paid args, Read-Only Now, no Past Due button).
+- **Live round-2 run: not done.** The client cancelled the block with 01+04+05, and the smaller 01+04 block too. Small
+  probes of the new AI and check functions alone ran fine. The trigger isn't identifiable, and I didn't try to get around
+  it. The round-1 live passes (01 as it was then, 03) still stand for the unchanged parts: guard, `pb_my_plan` and plan gate
+  md5s are unchanged.
+  **Ready for the main session to run (rolled back, no GRANT/REVOKE):** `sql/tests/live_t01.sql` (01+04+05, all checks)
+  and `sql/tests/live_t02.sql` (01+02 hand-over). Paste the file as one query; success is an error whose text starts with
+  `RESULT: {` (the block always rolls back), and a check that fails says `FAIL <n> ...`. In the RESULT, `defs` should show:
+  ai_try_consume 5d17951b, individual_only cf72e10b, ai_has_paid_plan 8e41b913, pb_backup_health 19bad253,
+  check_kick 3df6654a, beta_closed_guard 9019562e, pb_my_plan c8ab2a61, pb_owner_company_set d4a5fdc1 (= sql/new/).
+
+### Round 2 regression (patched cur.html vs pristine base.html, r16.96)
+- Full suite (reg/cur2, 23:22–23:37): every test has the same exit code as base (all 0, except t123 = 1 on both, the fixture
+  issue above; t124 26/26). The only output differences are run ids, timestamps, timings and seal fingerprints.
+- **Runner bug found and fixed:** t110/t111/t112 save their export into my folder (rewritten path) but unzip
+  `/tmp/claude-0/export1NN.zip` through an unrewritten `cd /tmp/claude-0 && ... ../export1NN.zip`. So their manifest lines
+  came from whichever helper wrote that shared file last, in round 1 too. On cur2, t111 showed "app build r16.97" from
+  another helper's 23:16 run. reg/run.sh now rewrites those to reg's own out folder. Re-run: t111 and t112 identical
+  between base and cur, both reading their own export ("app build r16.96").
+- t108/t110 re-runs: exit 1 on BOTH base and cur ("Target crashed" / "no button Lock This Run"). The machine was at load
+  average ~40 with 1 GB free from other helpers' suites. In the full cur2 run (lower load) both passed (exit 0) on base and
+  cur. The patch doesn't touch runs or exports.
+- **The repo moved to r16.97 at 22:53** (/home/claude/index.html-/index.html). `patches/01_billing0.py` applies cleanly to
+  r16.97 (base97.html -> cur97.html), the syntax check passes, and t127 is 40/40 PASS on cur97.html. The full regression
+  was run on r16.96 only.
+
 ## DECISIONS FOR THE OWNER
 
 Only choices that are still open. Each has a recommendation, and what happens if you don't decide.
 
-1. **AI while a paid company is read-only.** Today an ended beta gets 0 AI calls, but a paid company that goes read-only (7 days past due, or canceled) keeps its 100 AI calls a day per person: `ai_has_paid_plan` only looks at `companies.plan`. Recommendation: stop AI too while read-only, so it matches the ended beta. That is a one-line change to `ai_has_paid_plan` (`and not pb_billing.read_only(company)`), and I can add it next round. If you don't decide: AI keeps working while read-only.
-2. **Should an unpaid invoice go read-only on its own?** Right now nothing happens until you press Past Due. After that the 7 days of grace run and the company goes read-only by itself. Recommendation: keep it manual for the first companies, because hand invoicing has check and ACH delays. If you don't decide: manual.
-3. **Cancel: at the end of the paid period, or right away?** As built, Cancel Plan keeps the company open until the date it has paid through, then it goes read-only. Nothing is refunded and nothing is deleted. Recommendation: keep it that way. It matches Terms 7.3 and the "no refunds" line. If you don't decide: as built.
-4. **People added to a yearly plan.** "Billed from the next invoice" means a yearly customer's extra people wait until renewal, which can be up to 12 months of free seats. Recommendation: for yearly customers, send a short true-up invoice when someone is added, for the months left (I can add a "true-up" line to Billing due). Accept the gap for the first one or two yearly companies. If you don't decide: extra people are billed at renewal.
+1–4. Decided by the owner on Nov 18 and built (see Round 2): AI stops while read-only; past due and read-only are automatic; cancel at the end of the paid period; yearly catch-up only above the paid seats.
 5. **Founder window and Add 30 Days.** The founder price is offered only while the beta is still running (the server checks `trial_ends_at > now`). Add 30 Days moves that end date, so it also extends the founder window. Recommendation: that's fine. Use Add 30 Days on purpose if a company needs a few more days to sign. If you don't decide: as built.
 6. **DIG Civil (your own paid test company).** It was made paid before billing existed, so it has no billing row. It is never read-only and it keeps plan reading. Recommendation: leave it as it is (it's yours). Run Make Paid on it only if you want it on Billing due. If you don't decide: it stays as it is.
 7. **Plan reading add-on price.** The setting `plan_reading_cents` is empty. Turning the add-on on now gives plan reading with no charge on the invoice, and the screen says "price not set". Recommendation: set the price (`pb_owner_billing_setting_set('plan_reading_cents', <cents>)`) before you turn it on for anyone. Plan sets stay parked for every paid company without the add-on. If you don't decide: plan reading stays off (parked) for every new paid company.
 8. **Seller's legal name.** The setting `seller_legal_name` is empty, and Billing due shows "Seller on invoices: not set yet". Once the LLC is formed, set it once (`pb_owner_billing_setting_set('seller_legal_name', '"<exact legal name>"')`). Each new account records the seller that was set when it signed. Recommendation: form the LLC and open its Stripe account before the first Make Paid. If you don't decide: accounts are recorded with no seller name.
-9. **Applying the hand-over function.** Claude's tool here cancels any rolled-back live test that builds an ownership-transfer function, so 02 is proven only on the local copy of the database. Recommendation: before applying, approve one rolled-back live run of `sql/tests/live_t02.sql`, or apply 01–03 to a Supabase branch first. If you don't decide: 01 and 03 have live proof; 02 has local proof only.
+9. **Live proof before applying.** Claude's tool here cancels the round-2 rolled-back blocks: 01+04+05, and 02 the hand-over. Recommendation: run `sql/tests/live_t01.sql` and `sql/tests/live_t02.sql` once from the main session (both roll back), or apply 01–05 to a Supabase branch first. If you don't decide: 03 and the round-1 version of 01 have live proof; the round-2 changes and 02 have local proof only.
+10. **Billing lines in the 10:00 UTC operator email (sql/05).** This works without touching pb-backup, but the email still says "Backup check" and carries a backup fix line and "Nothing in the app is affected". Recommendation: apply 05 now, because a warning in odd packaging beats no warning, and change pb-backup's check email wording later (about 10 lines). If you don't decide: 05 is not applied, and warnings are only in Beta Accounts › Billing due.
 
 Other items, not choices: the Terms/Privacy edits in PLAN.md section 8, the order form and the CA seller's permit are still needed before the first invoice. PB_APP_BUILD is bumped by the release step.
+
+## DONE (round 2, Nov 18)
+The owner's four answers are built. (1) AI stops while a paid company is read-only (sql/04: one condition each in
+ai_try_consume / individual_only / ai_has_paid_plan); an individual plan keeps working. (2) Past due and read-only are
+automatic, computed on every read from paid_through + 7 grace days, with no cron. Paid moves paid_through one period; the
+Past Due button is gone; Read-Only Now stays. Billing due lists past-due companies first with days left and the lock date.
+Optional sql/05 puts the same warning in the 10:00 UTC operator email without changing pb-backup, but inside pb-backup's
+backup wording (caveat above). (3) Cancel unchanged. (4) Paid seats: a free paid seat costs nothing; above them a yearly
+plan shows a catch-up (extra × months left × $12) with Catch-up Paid, and a monthly plan bills them on the next invoice.
+Local harness: t01/t02/t03 PASS. 11 changed-function diffs, with the five new live originals md5-checked. t127 40/40 (on
+r16.96 and on r16.97). Regression matches base. The round-2 live rolled-back run was cancelled by this client (twice), so
+sql/tests/live_t01.sql (01+04+05) and live_t02.sql (hand-over) are ready for the main session to run. Nothing was
+applied, deployed, committed or pushed.
 
 ## DONE
 Built billing Phase 0 against live r16.96 / rogfassochneycezecxa. Nothing applied, deployed, committed or pushed. On live I

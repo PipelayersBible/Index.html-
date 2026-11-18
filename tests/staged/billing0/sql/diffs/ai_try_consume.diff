@@ -1,0 +1,12 @@
+--- live/ai_try_consume.sql (pg_get_functiondef, live Nov 17)
++++ new/ai_try_consume.sql (after 01-05)
+@@ -7,6 +7,9 @@
+ declare used integer; lim integer; t record; cused integer; today date := (now() at time zone 'utc')::date; L jsonb; mused integer;
+ begin
+   perform pg_advisory_xact_lock(hashtextextended(p_user::text, 0));
++  -- billing Phase 0 (owner, Nov 18): a paid company that is read-only (unpaid past grace, Read-Only Now, or canceled) has no
++  -- company AI, like an ended beta; a person with their own individual plan keeps its limits (pb_billing.individual_only)
++  if exists (select 1 from pb_billing.company_of(p_user) x where pb_billing.read_only(x.company_id)) and not pb_billing.has_individual(p_user) then return -1; end if;
+   -- Nov 16: trial companies: each feature has its own daily limit, plus one cap for the whole company
+   select * into t from pb_billing.company_of(p_user) x where x.plan = 'trial' and not (x.expired and pb_billing.has_individual(p_user));
+   if found then
