@@ -5,3 +5,6 @@
 -- Also APPLIED Nov 17 (migration notify_kicks_send_secret_nov17): pb_reports.kick() / pb_billing.feedback_kick() send
 -- x-pb-push-secret; notify-report v9 / feedback-notify v7 refuse calls without it (tests/edge/notify-report/README.md).
 -- Also APPLIED Nov 17 (migration run_photo_seal_scope_nov17): see tests/patches/r1689/server_run_photo_seal_scope_APPLIED.sql.
+-- Also APPLIED Nov 17 (migration crew_notice_acks_nov17): pb_legal.notice_acks (insert-only, RLS on, no grants) and
+-- public.pb_notice_ack(p_notice, p_version, p_phone_at, p_build) for the crew notice "Got It" (client in r16.96 patch).
+-- Tested rolled back as a pipelayer: first call ok, second {already:true}, table not readable by users.
