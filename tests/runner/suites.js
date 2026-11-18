@@ -71,6 +71,10 @@ for (const t of suites.find((s) => s.name === 'perf').tests) SKIP[t] = PERF;
 
 // Run, but known to fail on the live build because of an open app bug (key = test id, value = the bug).
 const XFAIL = {
+  'bughunt_nov17/grade2/tests/t04_step_exact.js': 'open bug, grade2 audit 04 (not in any release yet; held back from r17.02 because it broke the Edit Run Data reload check, grade2/ref/run_lock.js; patches up to r17.02 '
+    + 'carry grade2 01-03 only): Architect\'s rod, a Run 2 Start set from a measured step is calculated from its Invert box, '
+    + 'which is rounded to 1/16 in, so its readings can show a sixteenth off (BOP 6\'-11 15/16" instead of 6\'-11 7/8"). '
+    + 'Fix: /tmp/claude-0/audit/grade2/patches/04_step_start_exact.py.',
 };
 
 // How a test is judged. Default: 'verdict' if the test (or a ./lib it requires) prints PASS/FAIL lines or sets an exit code,
@@ -82,6 +86,8 @@ const JUDGE = {
 // (key = test id; replace: [[regex, token]], drop: [regex]).
 const ms = (re) => [re, (m, k) => k + 'N']; // keep the label, drop a measured number
 const NORMALIZE = {
+  // the order of the start-up RPC calls is a race; compare the set
+  'bughunt_nov17/sync/t03_roles.js': { replace: [[/^(rpcs: )(.*)$/gm, (m, a, b) => a + b.split(' ').sort().join(' ')]] },
   // break / run lengths come from real waits around a backdated start: 29 or 30 min depending on the seconds
   'bughunt_nov17/new/a12.js': { replace: [[/\b(29|30) min\b/g, '~30 min'], [/\b1h (29|30)m\b/g, '1h ~30m']] },
   // laid-pace stats in ms measured from real time: compare them to the second
