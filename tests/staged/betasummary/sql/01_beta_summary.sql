@@ -48,6 +48,11 @@ begin
   if v_co.plan = 'trial' then
     v_kind := 'beta'; v_from := v_co.created_at; v_to := least(coalesce(v_co.trial_ends_at, now()), now());
     if v_to < v_from then v_to := v_from; end if;
+  elsif exists (select 1 from pb_billing.accounts a where a.company_id = v_co.id and a.beta_ended_at is not null) then
+    -- Nov 18 (owner): a company made paid after its beta keeps its beta window
+    v_kind := 'beta'; v_from := v_co.created_at;
+    select least(a.beta_ended_at, now()) into v_to from pb_billing.accounts a where a.company_id = v_co.id;
+    if v_to < v_from then v_to := v_from; end if;
   else
     v_kind := 'last_30_days'; v_to := now(); v_from := now() - interval '30 days';
   end if;
@@ -167,8 +172,8 @@ begin
     -- people of the company now who used the app or sent a record in the window
     'active', (select count(distinct u) from (
         select x.user_id u from pb_billing.usage x where x.user_id = any(v_users) and x.day between d_from and d_to
-        union select unnest(coalesce((select array_agg(z) from jsonb_array_elements_text(coalesce(foot->'runs_users', '[]'::jsonb)) z), '{}')::uuid[])
-        union select unnest(coalesce((select array_agg(z) from jsonb_array_elements_text(coalesce(caught->'site_users', '[]'::jsonb)) z), '{}')::uuid[])
+        union select unnest(coalesce((select array_agg(z) from jsonb_array_elements_text(case when jsonb_typeof(foot->'runs_users') = 'array' then foot->'runs_users' else '[]'::jsonb end) z), '{}')::uuid[])
+        union select unnest(coalesce((select array_agg(z) from jsonb_array_elements_text(case when jsonb_typeof(caught->'site_users') = 'array' then caught->'site_users' else '[]'::jsonb end) z), '{}')::uuid[])
         union select dr.foreman_uid from pb_daily.reports dr where dr.company_id = v_co.id and dr.work_date between d_from and d_to) y
       where y.u = any(v_users) and y.u is distinct from v_co.owner_user_id)
   ) into crew;
