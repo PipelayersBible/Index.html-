@@ -1,0 +1,10 @@
+--- live/pb_plans_svc_more.sql (pg_get_functiondef, live Nov 17)
++++ new/pb_plans_svc_more.sql (after 01-03)
+@@ -4,6 +4,6 @@
+  STABLE SECURITY DEFINER
+  SET search_path TO ''
+ AS $function$
+-  select exists (select 1 from pb_plans.sheets h join pb_plans.sets s on s.id = h.set_id where h.state = 'queued' and s.state in ('uploading','reading'))
++  select exists (select 1 from pb_plans.sheets h join pb_plans.sets s on s.id = h.set_id where h.state = 'queued' and s.state in ('uploading','reading') and pb_billing.plan_reading_on(s.company_id))
+       or exists (select 1 from pb_plans.issues where state = 'candidate')
+ $function$

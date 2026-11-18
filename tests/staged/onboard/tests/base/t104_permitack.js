@@ -1,0 +1,10 @@
+const boot=require('/home/claude/rig/boot');const co=require('/tmp/claude-0/feat/onboard/tests/rig_local/co');const F=require('/home/claude/rig/flow');
+(async()=>{const {b,p}=await boot('http://127.0.0.1:8878/index.html',{init:co});const H=F(p);
+ await p.evaluate(()=>pbGoto('confinedPermit'));await p.waitForTimeout(800);
+ await p.evaluate(()=>window.pbLockConfinedPermit());await p.waitForTimeout(400);
+ console.log('first:',JSON.stringify(await H.modal()));
+ await H.modalClick('I Understand');await p.waitForTimeout(800);
+ const m2=await H.modal();console.log('after:',JSON.stringify(m2||'').slice(0,160));
+ const err=await p.evaluate(()=>{const e=document.getElementById('cpError');return e?e.textContent.slice(0,160):null;});console.log('cpError:',err);
+ const lbl=await p.evaluate(()=>[...document.querySelectorAll('#screen-confinedPermit label')].map(l=>l.textContent).find(t=>/Maximum CO/.test(t)));console.log('label:',lbl);
+ console.log('errs',p.errs.slice(0,3));await b.close();})();

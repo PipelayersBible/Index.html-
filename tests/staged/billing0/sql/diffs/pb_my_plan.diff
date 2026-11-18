@@ -1,0 +1,12 @@
+--- live/pb_my_plan.sql (pg_get_functiondef, live Nov 17)
++++ new/pb_my_plan.sql (after 01-03)
+@@ -6,7 +6,8 @@
+ AS $function$
+   select coalesce(
+     (select jsonb_build_object('ok', true, 'plan', x.plan, 'trial_ends_at', x.trial_ends_at, 'expired', x.expired,
+-      'closed', pb_billing.beta_closed(x.company_id), 'individual', pb_billing.has_individual(auth.uid()),
++      'closed', pb_billing.writes_closed(x.company_id), 'individual', pb_billing.has_individual(auth.uid()),
++      'paused', pb_billing.read_only(x.company_id),
+       'requested', exists (select 1 from pb_billing.plan_requests r where r.user_id = auth.uid() and r.done_at is null),
+       'days_left', case when x.plan = 'trial' then greatest(0, ceil(extract(epoch from (x.trial_ends_at - now())) / 86400))::int end,
+       'limits', case when x.plan = 'trial' then pb_billing.trial_limits() end)

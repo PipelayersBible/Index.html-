@@ -1,0 +1,25 @@
+  -- 02: Hand Over (company login moves to the real owner; the superintendent stays as Superintendent)
+  insert into public.company_members (company_id, user_id, role) values (C, M5, 'pipelayer');   -- beta now full: owner + 6 members = 7 seats
+  if pg_temp.err(format('insert into public.company_members (company_id, user_id, role) values (%L, %L, %L)', C, XU, 'pipelayer')) <> 'pb:trial_seats' then raise exception 'FAIL h0 seat cap'; end if;
+  perform pg_temp.act(S);
+  if pg_temp.err(format('select public.pb_owner_company_handover(%L, %L)', C, O)) <> 'pb:not_allowed' then raise exception 'FAIL h1 non-admin'; end if;
+  perform pg_temp.act(A);
+  if (public.pb_owner_company_handover(C, XU))->>'code' <> 'pb:not_member' then raise exception 'FAIL h2 non-member'; end if;
+  if (public.pb_owner_company_handover(C, O, 'boss'))->>'code' <> 'pb:bad_title' then raise exception 'FAIL h3 title'; end if;
+  if (public.pb_owner_company_handover(C, S))->>'code' <> 'pb:same_owner' then raise exception 'FAIL h4 same'; end if;
+  n := pb_billing.seats_used(C);
+  r := public.pb_owner_company_handover(C, O);   -- the real owner O (a foreman member) takes over a FULL beta
+  if not (r->>'ok')::boolean or r->>'new_owner_was' <> 'foreman' then raise exception 'FAIL h5 %', r; end if;
+  if (select owner_user_id from public.companies where id = C) <> O then raise exception 'FAIL h6 owner'; end if;
+  if exists (select 1 from public.company_members where user_id = O) then raise exception 'FAIL h7 new owner still a member'; end if;
+  if (select role || '/' || title from public.company_members where user_id = S and company_id = C) <> 'pm/superintendent' then raise exception 'FAIL h8 super'; end if;
+  if exists (select 1 from pb_billing.left_company where user_id = O) then raise exception 'FAIL h9 new owner got a removed offer'; end if;
+  if pb_billing.seats_used(C) <> n then raise exception 'FAIL h10 seats changed % -> %', n, pb_billing.seats_used(C); end if;
+  if (select company_id from pb_billing.company_of(S)) <> C or (select company_id from pb_billing.company_of(O)) <> C then raise exception 'FAIL h11 company access'; end if;
+  if (select plan || '/' || status from public.companies where id = C) <> 'trial/active' then raise exception 'FAIL h12 plan touched'; end if;
+  if not exists (select 1 from pb_billing.events where company_id = C and kind = 'handover') or not exists (select 1 from pb_audit.admin_log where company_id = C and op = 'company_handover') then raise exception 'FAIL h13 log'; end if;
+  if (public.pb_owner_company_handover(C, O))->>'code' <> 'pb:same_owner' then raise exception 'FAIL h14 repeat'; end if;
+  -- Make Paid afterwards shows the new owner's login
+  r2 := public.pb_owner_make_paid(C, 'Acme Pipeline Inc', 'ap@acme.test', null, 'month', true, false, 'Olive Owner, President');
+  if r2->>'owner_login' <> 'b0t-' || O || '@test.invalid' or (r2->'account'->'next'->>'seats')::int <> 7 then raise exception 'FAIL h15 %', r2; end if;
+  res := res || jsonb_build_object('handover', r - 'from' - 'to' - 'from_email' - 'to_email', 'seats', n, 'after_make_paid_amount', r2->'account'->'next'->'amount_cents');

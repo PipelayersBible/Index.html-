@@ -1,0 +1,45 @@
+  -- 03: plan reading only for a PAID company with the add-on; the worker no longer reads a beta's uploading sheets
+  if (res->>'leak_before_fix')::boolean is not true then raise exception 'FAIL p0 leak not reproduced'; end if;
+  r := public.pb_plans_svc_take(6);
+  if exists (select 1 from jsonb_array_elements(r) j where (j->>'sheet_id')::bigint = SH) then raise exception 'FAIL p1 beta sheet still read'; end if;
+  if (select state from pb_plans.sheets where id = SH) <> 'queued' then raise exception 'FAIL p1b sheet touched'; end if;
+  perform pg_temp.act(S);
+  r := public.pb_plans_uploaded(SET1);
+  if not coalesce((r->>'parked')::boolean, false) or (select state from pb_plans.sets where id = SET1) <> 'parked' then raise exception 'FAIL p2 beta upload not parked %', r; end if;
+  perform pg_temp.act(A);
+  -- paid WITHOUT the add-on: stays parked, new uploads park too
+  r := public.pb_owner_make_paid(C, 'Acme Pipeline Inc', 'ap@acme.test', null, 'month', false, false, 'Jane Smith');
+  if not (r->>'ok')::boolean or (select state from pb_plans.sets where id = SET1) <> 'parked' then raise exception 'FAIL p3 make paid unparked %', r; end if;
+  insert into pb_plans.sets (id, company_id, created_by, job_key, job_number, title, pages, sha256, state, created_at)
+    values (SET2, C, S, 'b0job', 'B0JOB', 'B0 plans 2', 1, repeat('b', 64), 'uploading', '2000-01-02');
+  insert into pb_plans.sheets (set_id, page, state, grid) values (SET2, 1, 'queued', '{"tiles":["r0c0"]}');
+  r := public.pb_plans_svc_take(6);
+  if exists (select 1 from jsonb_array_elements(r) j where j->>'set_id' in (SET1::text, SET2::text)) then raise exception 'FAIL p4 paid without add-on read'; end if;
+  perform pg_temp.act(S); r := public.pb_plans_uploaded(SET2); perform pg_temp.act(A);
+  if (select state from pb_plans.sets where id = SET2) <> 'parked' then raise exception 'FAIL p5 paid upload not parked'; end if;
+  -- the add-on: refused for a beta / non-admin; on for the paid company starts reading; price not set is flagged
+  if (public.pb_owner_plan_reading_set(D, true))->>'code' <> 'pb:not_paid' then raise exception 'FAIL p6 beta add-on'; end if;
+  perform pg_temp.act(S);
+  if pg_temp.err(format('select public.pb_owner_plan_reading_set(%L, true)', C)) <> 'pb:not_allowed' then raise exception 'FAIL p6b non-admin'; end if;
+  perform pg_temp.act(A);
+  r := public.pb_owner_plan_reading_set(C, true);
+  if not (r->>'ok')::boolean or (r->>'sets')::int <> 2 or not (r->'account'->>'plan_reading_price_missing')::boolean
+     or (select count(*) from pb_plans.sets where company_id = C and state = 'reading') <> 2 then raise exception 'FAIL p7 on %', r; end if;
+  r := public.pb_plans_svc_take(6);
+  if not exists (select 1 from jsonb_array_elements(r) j where (j->>'sheet_id')::bigint = SH) then raise exception 'FAIL p8 add-on sheet not read %', r; end if;
+  -- read-only stops reading; off parks
+  perform public.pb_owner_billing_state(C, 'read_only');
+  if pb_billing.plan_reading_on(C) then raise exception 'FAIL p9 read-only still reads'; end if;
+  perform public.pb_owner_billing_state(C, 'active');
+  r := public.pb_owner_plan_reading_set(C, false);
+  if (select count(*) from pb_plans.sets where company_id = C and state = 'reading') <> 0 or pb_billing.plan_reading_on(C) then raise exception 'FAIL p10 off %', r; end if;
+  -- the add-on price, once set, is on the invoice: yearly (99 + 49) x 10
+  perform public.pb_owner_billing_setting_set('plan_reading_cents', '4900');
+  insert into pb_plans.sets (company_id, created_by, job_key, job_number, title, pages, sha256, state) values (B, XU2, 'b0b', 'B0B', 'B plans', 1, repeat('c', 64), 'parked');
+  r := public.pb_owner_make_paid(B, 'Ended Co LLC', 'pay@ended.test', null, 'year', false, true, 'Bob Lee, Owner');
+  if (r->'account'->'next'->>'amount_cents')::int <> 148000 or (select state from pb_plans.sets where company_id = B) <> 'reading' then raise exception 'FAIL p11 %', r; end if;
+  -- the legacy paid company is unchanged: plan reading on, never read-only
+  if not pb_billing.plan_reading_on(DIG) or pb_billing.read_only(DIG) then raise exception 'FAIL p12 legacy'; end if;
+  -- Make Paid button of r16.96 (company_set 'paid') no longer gives plan reading
+  if (public.pb_owner_company_set(D, 'paid', null))->>'code' <> 'pb:use_make_paid' then raise exception 'FAIL p13'; end if;
+  res := res || jsonb_build_object('plan_reading', 'ok', 'yearly_with_addon', r->'account'->'next'->'amount_cents');

@@ -1,0 +1,11 @@
+--- live/pb_plans_svc_take.sql (pg_get_functiondef, live Nov 17)
++++ new/pb_plans_svc_take.sql (after 01-03)
+@@ -11,7 +11,7 @@
+     where state = 'reading' and claimed_at < now() - interval '6 minutes';
+   with pick as (
+     select h.id from pb_plans.sheets h join pb_plans.sets s on s.id = h.set_id
+-    where h.state = 'queued' and s.state in ('uploading', 'reading')
++    where h.state = 'queued' and s.state in ('uploading', 'reading') and pb_billing.plan_reading_on(s.company_id)
+     order by s.created_at, h.page limit greatest(1, least(p_n, 6)) for update of h skip locked),
+   upd as (update pb_plans.sheets h set state = 'reading', claimed_at = now(), tries = h.tries + 1 from pick where h.id = pick.id returning h.id)
+   select array_agg(id) into v_ids from upd;

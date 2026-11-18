@@ -1,0 +1,12 @@
+--- live/pb_plans_uploaded.sql (pg_get_functiondef, live Nov 17)
++++ new/pb_plans_uploaded.sql (after 01-03)
+@@ -11,7 +11,8 @@
+   select count(*) into v_missing from pb_plans.sheets where set_id = p_set and state = 'waiting';
+   if v_missing > 0 then return jsonb_build_object('ok', false, 'code', 'pb:missing', 'missing', v_missing); end if;
+   -- Nov 16: a beta company's sets wait, viewable, until it pays (pb_owner_company_set turns them to reading)
+-  select exists (select 1 from public.companies c where c.id = v_s.company_id and c.plan = 'trial') into v_trial;
++  -- billing Phase 0: also a paid company without the plan reading add-on (or read-only); Make Paid / Plan Reading On read them
++  select not pb_billing.plan_reading_on(v_s.company_id) into v_trial;
+   if v_trial then
+     update pb_plans.sets set state = 'parked' where id = p_set and state = 'uploading';
+     return jsonb_build_object('ok', true, 'parked', true);

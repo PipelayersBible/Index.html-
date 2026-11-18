@@ -1,0 +1,7 @@
+  -- 03 pre: prove the live leak with the CURRENT functions: a beta company's sheet, queued while its set is still uploading
+  insert into pb_plans.sets (id, company_id, created_by, job_key, job_number, title, pages, sha256, state, created_at)
+    values (SET1, C, S, 'b0job', 'B0JOB', 'B0 plans', 1, repeat('a', 64), 'uploading', '2000-01-01');
+  insert into pb_plans.sheets (set_id, page, state, grid) values (SET1, 1, 'queued', '{"tiles":["r0c0"]}') returning id into SH;
+  r := public.pb_plans_svc_take(6);
+  res := res || jsonb_build_object('leak_before_fix', exists (select 1 from jsonb_array_elements(r) j where (j->>'sheet_id')::bigint = SH));
+  update pb_plans.sheets set state = 'queued', tries = 0, claimed_at = null where id = SH;

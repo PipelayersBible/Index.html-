@@ -1,0 +1,118 @@
+  -- 01: Make Paid, billing due, past due -> read-only, paid, cancel, settings, individual off, equivalence
+  perform pg_temp.act(M1); r := public.pb_my_plan();
+  if (r - 'paused') <> before_plan or (r->>'paused')::boolean then raise exception 'FAIL 0a beta my_plan changed % vs %', r, before_plan; end if;
+  if pg_temp.w(B, XU2) <> 'pb:beta_ended' then raise exception 'FAIL 0 ended beta writes'; end if;
+  perform pg_temp.act(S);
+  if pg_temp.err(format('select public.pb_owner_make_paid(%L, %L, %L, null, %L, false, false, %L)', C, 'Acme', 'ap@acme.test', 'month', 'J Smith')) <> 'pb:not_allowed' then raise exception 'FAIL 1 non-admin'; end if;
+  perform pg_temp.act(A);
+  r := public.pb_owner_company_set(C, 'paid', null);
+  if r->>'code' <> 'pb:use_make_paid' or (select plan from public.companies where id = C) <> 'trial' then raise exception 'FAIL 2 company_set paid %', r; end if;
+  r := public.pb_owner_company_set(D, 'trial', 30);
+  if not (r->>'ok')::boolean or (r->>'trial_ends_at')::timestamptz < now() + interval '32 days' then raise exception 'FAIL 2b add 30 days %', r; end if;
+  r := public.pb_owner_make_paid(C, 'Acme Pipeline Inc', 'ap@acme.test', 5, 'month', true, false, 'Jane Smith, President');
+  if r->>'code' <> 'pb:seats_low' or (r->>'seats_used')::int <> 6 then raise exception 'FAIL 3 seats_low %', r; end if;
+  r := public.pb_owner_make_paid(C, ' Acme Pipeline Inc ', 'AP@Acme.test', null, 'month', true, false, 'Jane Smith, President', '{"state":"CA","postal_code":"92223"}');
+  if not (r->>'ok')::boolean then raise exception 'FAIL 4 make paid %', r; end if;
+  if (r->'account'->'next'->>'amount_cents')::int <> 11100 or (r->'account'->'next'->>'seats')::int <> 6 or (r->'account'->>'founder_until')::date <> (current_date + interval '12 months')::date
+     or r->'account'->>'billing_email' <> 'ap@acme.test' or r->'account'->>'legal_name' <> 'Acme Pipeline Inc'
+     or jsonb_array_length(r->'individual_plans_to_stop') <> 1 or r->'individual_plans_to_stop'->0->>'user_id' <> M2::text
+     or r->>'owner_login' <> 'b0t-' || S || '@test.invalid' or (r->'account'->>'seller_legal_name') is not null then raise exception 'FAIL 4b %', r; end if;
+  if (select founder_set_by from pb_billing.accounts where company_id = C) <> A then raise exception 'FAIL 4c founder who'; end if;
+  if (select plan || '/' || status || '/' || coalesce(trial_ends_at::text, '-') from public.companies where id = C) <> 'paid/active/-' then raise exception 'FAIL 4d company row'; end if;
+  if exists (select 1 from pb_billing.plan_requests where company_id = C and done_at is null) then raise exception 'FAIL 4e request open'; end if;
+  res := res || jsonb_build_object('make_paid', r->'account'->'next', 'founder_until', r->'account'->'founder_until');
+  r := public.pb_owner_make_paid(C, 'Acme', 'ap@acme.test', null, 'month', false, false, 'Jane Smith');
+  if r->>'code' <> 'pb:already_paid' then raise exception 'FAIL 5 twice %', r; end if;
+  r := public.pb_owner_make_paid(B, 'Ended Co LLC', 'pay@ended.test', null, 'year', true, false, 'Bob Lee, Owner');
+  if r->>'code' <> 'pb:founder_late' then raise exception 'FAIL 6 founder after the beta ended %', r; end if;
+  r := public.pb_owner_make_paid(B, 'Ended Co LLC', 'pay@ended.test', null, 'year', false, false, 'Bob Lee, Owner');
+  if not (r->>'ok')::boolean or (r->'account'->'next'->>'amount_cents')::int <> 99000 or (r->'account'->'next'->>'to')::date <> (current_date + interval '1 year')::date
+     or (r->'account'->>'founder_until') is not null then raise exception 'FAIL 6b yearly %', r; end if;
+  if pg_temp.w(B, XU2) <> 'no error' then raise exception 'FAIL 6c ended beta writes again once paid'; end if;
+  r := public.pb_owner_billing();
+  if (select count(*) from jsonb_array_elements(r->'due') x where x->>'company_id' in (C::text, B::text)) <> 2 then raise exception 'FAIL 7 due %', r->'due'; end if;
+  if (select (x->>'amount_cents')::int from jsonb_array_elements(r->'due') x where x->>'company_id' = C::text) <> 11100
+     or (select (x->>'founder')::boolean from jsonb_array_elements(r->'due') x where x->>'company_id' = C::text) is not true
+     or (select x->>'tax_state' from jsonb_array_elements(r->'due') x where x->>'company_id' = C::text) <> 'CA'
+     or (select (x->>'founder_ok')::boolean from jsonb_array_elements(r->'companies') x where x->>'id' = D::text) is not true
+     or (r->'settings'->>'base_cents')::int <> 9900 or r->'settings'->'seller_legal_name' <> 'null'::jsonb then raise exception 'FAIL 7b billing %', r; end if;
+  res := res || jsonb_build_object('due_rows', (select jsonb_agg(x - 'billing_email') from jsonb_array_elements(r->'due') x where x->>'company_id' in (C::text, B::text)));
+  -- paid + active writes; past due keeps writing during grace and never touches companies.status
+  if pg_temp.w(C, M1) <> 'no error' then raise exception 'FAIL 8 paid writes'; end if;
+  r := public.pb_owner_billing_state(C, 'past_due', 'invoice 1 late');
+  tt := (r->'account'->>'grace_until')::timestamptz;
+  if r->'account'->>'state' <> 'past_due' or tt < now() + interval '6 days 23 hours' or tt > now() + interval '7 days 1 hour' or (r->'account'->>'read_only')::boolean then raise exception 'FAIL 9 past due %', r; end if;
+  r := public.pb_owner_billing_state(C, 'past_due', 'again');
+  if (r->'account'->>'grace_until')::timestamptz <> tt then raise exception 'FAIL 9b second press added days'; end if;
+  if pg_temp.w(C, M1) <> 'no error' then raise exception 'FAIL 9c grace writes'; end if;
+  if (select status from public.companies where id = C) <> 'active' then raise exception 'FAIL 9d status changed'; end if;
+  -- grace over: read-only like the ended beta; members keep their company
+  update pb_billing.accounts set grace_until = now() - interval '1 minute' where company_id = C;
+  if pg_temp.w(C, M1) <> 'pb:beta_ended' then raise exception 'FAIL 10 read-only after grace'; end if;
+  if (select company_id from pb_billing.company_of(M1)) is distinct from C then raise exception 'FAIL 10b member lost company'; end if;
+  perform pg_temp.act(M1); r := public.pb_my_plan(); perform pg_temp.act(A);
+  if r->>'plan' <> 'paid' or not (r->>'closed')::boolean or not (r->>'paused')::boolean then raise exception 'FAIL 10c my_plan %', r; end if;
+  res := res || jsonb_build_object('my_plan_paused', r);
+  -- Paid: stale period refused; right period clears it and moves paid_through
+  r := public.pb_owner_billing_paid(C, current_date - 1);
+  if r->>'code' <> 'pb:period_changed' then raise exception 'FAIL 11 stale %', r; end if;
+  r := public.pb_owner_billing_paid(C, current_date, 11100);
+  if not (r->>'ok')::boolean or r->'account'->>'state' <> 'active' or (r->'account'->>'paid_through')::date <> (current_date + interval '1 month')::date
+     or (r->'account'->>'seats_paid')::int <> 6 or (r->'account'->'next'->>'due')::boolean then raise exception 'FAIL 11b paid %', r; end if;
+  r2 := public.pb_owner_billing_paid(C, current_date);
+  if r2->>'code' <> 'pb:period_changed' then raise exception 'FAIL 11c double paid %', r2; end if;
+  if pg_temp.w(C, M1) <> 'no error' then raise exception 'FAIL 11d writes after paid'; end if;
+  -- a person added mid-period is billed from the next invoice; removing one gives no credit for the paid period
+  insert into public.company_members (company_id, user_id, role) values (C, M5, 'pipelayer');
+  r := public.pb_owner_billing();
+  select x into r2 from jsonb_array_elements(r->'companies') x where x->>'id' = C::text;
+  if (r2->'account'->'next'->>'seats')::int <> 7 or (r2->'account'->'next'->>'amount_cents')::int <> 12300
+     or (r2->'account'->'next'->>'from')::date <> (current_date + interval '1 month')::date or (r2->'account'->>'seats_paid')::int <> 6 then raise exception 'FAIL 12 true-up %', r2; end if;
+  delete from public.company_members where company_id = C and user_id = M3;
+  r := public.pb_owner_billing(); select x into r2 from jsonb_array_elements(r->'companies') x where x->>'id' = C::text;
+  if (r2->'account'->'next'->>'seats')::int <> 6 or (r2->'account'->>'paid_through')::date <> (current_date + interval '1 month')::date then raise exception 'FAIL 12b removal %', r2; end if;
+  -- Read-only now, back to active
+  r := public.pb_owner_billing_state(C, 'read_only');
+  if pg_temp.w(C, M1) <> 'pb:beta_ended' or not (r->'account'->>'read_only')::boolean then raise exception 'FAIL 13 read-only'; end if;
+  r := public.pb_owner_billing_state(C, 'active');
+  if pg_temp.w(C, M1) <> 'no error' then raise exception 'FAIL 13b active again'; end if;
+  -- Cancel: keeps working until what was paid runs out, then read-only; leaves Billing Due
+  r := public.pb_owner_billing_state(C, 'canceled', 'owner emailed');
+  if (r->'account'->>'cancel_at')::timestamptz::date <> (current_date + interval '1 month')::date or (r->'account'->>'read_only')::boolean then raise exception 'FAIL 14 cancel %', r; end if;
+  if pg_temp.w(C, M1) <> 'no error' then raise exception 'FAIL 14b paid period still open'; end if;
+  update pb_billing.accounts set cancel_at = now() - interval '1 minute' where company_id = C;
+  if pg_temp.w(C, M1) <> 'pb:beta_ended' then raise exception 'FAIL 14c canceled closes'; end if;
+  r := public.pb_owner_billing();
+  if exists (select 1 from jsonb_array_elements(r->'due') x where x->>'company_id' = C::text) then raise exception 'FAIL 14d canceled still due'; end if;
+  if (public.pb_owner_billing_paid(C, current_date + 30))->>'code' <> 'pb:canceled' then raise exception 'FAIL 14e paid on canceled'; end if;
+  if (select status from public.companies where id = C) <> 'active' then raise exception 'FAIL 14f status'; end if;
+  -- settings
+  if (public.pb_owner_billing_setting_set('nope', '1'))->>'code' <> 'pb:bad_key' or (public.pb_owner_billing_setting_set('base_cents', '-1'))->>'code' <> 'pb:bad_value'
+     or (public.pb_owner_billing_setting_set('grace_days', '1.5'))->>'code' <> 'pb:bad_value' then raise exception 'FAIL 15 setting checks'; end if;
+  r := public.pb_owner_billing_setting_set('seller_legal_name', '"Test Seller LLC"');
+  if r->'settings'->>'seller_legal_name' <> 'Test Seller LLC' then raise exception 'FAIL 15b %', r; end if;
+  r := public.pb_owner_billing_setting_set('plan_reading_cents', '4900');
+  if (r->'settings'->>'plan_reading_cents')::int <> 4900 then raise exception 'FAIL 15c'; end if;
+  perform pg_temp.act(S);
+  if pg_temp.err('select public.pb_owner_billing_setting_set(''base_cents'', ''1'')') <> 'pb:not_allowed' or pg_temp.err('select public.pb_owner_billing()') <> 'pb:not_allowed'
+     or pg_temp.err(format('select public.pb_owner_billing_state(%L, %L)', C, 'active')) <> 'pb:not_allowed'
+     or pg_temp.err(format('select public.pb_owner_billing_paid(%L, %L)', C, current_date)) <> 'pb:not_allowed'
+     or pg_temp.err(format('select public.pb_owner_individual_off(%L)', M2)) <> 'pb:not_allowed' then raise exception 'FAIL 15d non-admin'; end if;
+  perform pg_temp.act(A);
+  -- individual off
+  r := public.pb_owner_individual_off(M2, 'company paid');
+  if not (r->>'ok')::boolean or (select status from public.subscriptions where user_id = M2) <> 'canceled' then raise exception 'FAIL 16 individual off'; end if;
+  -- equivalence for every company without a billing row: legacy paid company and a beta
+  if pb_billing.read_only(DIG) or pb_billing.writes_closed(DIG) or not pb_billing.plan_reading_on(DIG) or pb_billing.plan_reading_on(D) then raise exception 'FAIL 17 legacy/beta flags'; end if;
+  perform pg_temp.act((select owner_user_id from public.companies where id = DIG)); r := public.pb_my_plan();
+  if (r - 'paused') <> before_dig or (r->>'paused')::boolean then raise exception 'FAIL 17b my_plan legacy % vs %', r, before_dig; end if;
+  perform pg_temp.act((select user_id from public.company_members where company_id = DIG limit 1)); r := public.pb_my_plan();
+  if (r - 'paused') <> before_dig_m then raise exception 'FAIL 17c my_plan legacy member'; end if;
+  res := res || jsonb_build_object('legacy_my_plan_same', true);
+--@local-only-begin  (grants are not sent to live: GRANT/REVOKE needs a confirmation this client cannot give)
+  set local role anon;
+  begin perform public.pb_owner_billing(); e := 'no error'; exception when others then e := sqlerrm; end;
+  reset role;
+  if e not like 'permission denied%' then raise exception 'FAIL 18 anon %', e; end if;
+--@local-only-end
+  res := res || jsonb_build_object('events', (select count(*) from pb_billing.events where company_id in (C, B)), 'audit', (select count(*) from pb_audit.admin_log where company_id in (C, B)));

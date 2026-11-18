@@ -1,0 +1,26 @@
+declare
+  A uuid := 'c3e7cdde-d744-4924-9508-dc991e1b68c3';           -- the app owner's admin account (pb_support.admins)
+  DIG uuid := 'd01a4a5f-312a-418f-9172-ea9aec9784b5';         -- the legacy paid company
+  S uuid := gen_random_uuid(); O uuid := gen_random_uuid(); M1 uuid := gen_random_uuid(); M2 uuid := gen_random_uuid();
+  M3 uuid := gen_random_uuid(); M4 uuid := gen_random_uuid(); M5 uuid := gen_random_uuid(); I1 uuid := gen_random_uuid();
+  XU uuid := gen_random_uuid(); XU2 uuid := gen_random_uuid();
+  C uuid := gen_random_uuid(); B uuid := gen_random_uuid(); D uuid := gen_random_uuid();
+  SET1 uuid := gen_random_uuid(); SET2 uuid := gen_random_uuid(); SH bigint;
+  r jsonb; r2 jsonb; e text; res jsonb := '{}'::jsonb; before_plan jsonb; before_dig jsonb; before_dig_m jsonb; n int; dd date; tt timestamptz;
+begin
+  create function pg_temp.act(u uuid) returns void language sql as $a$ select set_config('request.jwt.claims', json_build_object('sub', u, 'role', 'authenticated', 'aal', 'aal2')::text, true) $a$;
+  create function pg_temp.err(q text) returns text language plpgsql as $e$ begin execute q; return 'no error'; exception when others then return sqlerrm; end $e$;
+  create function pg_temp.w(c uuid, u uuid) returns text language sql as $w$ select pg_temp.err(format('insert into pb_prod.site_log (user_id, company_id, client_item_id, kind, data) values (%L, %L, %L, %L, %L)', u, c, gen_random_uuid()::text, 'delay', '{}')) $w$;
+  -- test people and companies (rolled back on live)
+  insert into auth.users (id, email, aud, role) select u, 'b0t-' || u || '@test.invalid', 'authenticated', 'authenticated' from unnest(array[S, O, M1, M2, M3, M4, M5, I1, XU, XU2]) u;
+  insert into public.companies (id, name, owner_user_id, status, plan, trial_ends_at) values
+    (C, 'B0 Test Pipeline', S, 'active', 'trial', now() + interval '10 days'),   -- in its beta, run by superintendent S
+    (B, 'B0 Ended Beta', XU2, 'active', 'trial', now() - interval '5 days'),      -- beta ended 5 days ago (closed)
+    (D, 'B0 Other Beta', XU, 'active', 'trial', now() + interval '3 days');
+  insert into public.company_members (company_id, user_id, role) values (C, O, 'foreman'), (C, M1, 'pipelayer'), (C, M2, 'pipelayer'), (C, M3, 'pipelayer'), (C, M4, 'pipelayer');
+  insert into pb_crew.invitations (company_id, user_id, role, invited_by, status) values (C, I1, 'pipelayer', S, 'pending');
+  insert into public.subscriptions (user_id, tier, status) values (M2, 'individual', 'active');
+  insert into pb_billing.plan_requests (user_id, company_id, kind) values (O, C, 'company');
+  perform pg_temp.act(M1); before_plan := public.pb_my_plan();
+  perform pg_temp.act((select owner_user_id from public.companies where id = DIG)); before_dig := public.pb_my_plan();
+  perform pg_temp.act((select user_id from public.company_members where company_id = DIG limit 1)); before_dig_m := public.pb_my_plan();

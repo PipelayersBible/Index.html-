@@ -1,0 +1,1 @@
+module.exports=require('./co2').replace("role:'foreman'","role:'pipelayer'").replace("pb_my_name_get:",`pb_prod_crew_links:()=>({role:'pipelayer',my_foreman:{id:'4fc9c8ae-2951-4c2b-8a8b-f5f09236a84e',name:'Brandon Jones'},history:[],server_at:new Date().toISOString()}),\n pb_my_name_get:`);

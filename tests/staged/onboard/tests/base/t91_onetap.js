@@ -1,0 +1,14 @@
+const boot=require('/home/claude/rig/boot');const F=require('/home/claude/rig/flow');const fs=require('fs');
+(async()=>{const {b,p}=await boot('http://127.0.0.1:8878/index.html',{init:require('/tmp/claude-0/feat/onboard/tests/rig_local/co')});const H=F(p);
+ const errs=[];p.on('pageerror',e=>errs.push(e.message));
+ const S=(sta,el,cf,line,num)=>({is_stake:true,stake_number:{value:num||'',conf:num?'high':'low'},station:{value:sta||'',conf:sta?'high':'low'},offset:{value:'10/SD',conf:'high'},line_label:{value:line||'',conf:'high'},cut_fill:cf==null?{conf:'low'}:{direction:'cut',feet:cf,as_written:'C-'+cf,to:'IE',conf:'high'},stake_elevation:el==null?{conf:'low'}:{feet:el,as_written:String(el),conf:'high'},other_text:'',uncertain:[]});
+ const lo=S('0+50',null,5.66,'','');lo.stake_elevation={feet:88.10,as_written:'(88.10)',conf:'low'};const R=[lo,S('1+50',103.4,3.61,'MH-1','3860')];let n=0,lens=[];
+ await p.route('**/functions/v1/ai**',async r=>{lens.push(JSON.parse(r.request().postData()).images.length);const k=n++;await r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,text:JSON.stringify(R[k]),used:k+1,limit:20})});});
+ await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1500);
+ await p.evaluate(()=>{try{localStorage.setItem('pbAiPrivacyAck','1')}catch(e){}});
+ await p.setInputFiles('#startAiStakePhoto',[H.img('p12')]);await p.waitForTimeout(2500);
+ console.log('after 1 photo:',await p.evaluate(()=>document.getElementById('startAiStakeStatus').innerText.replace(/\s+/g,' ')+' | sta='+document.getElementById('startStaTxt').value+' elev='+document.getElementById('startStakeElev').value),'reqs',n);
+ await p.evaluate(()=>{const b=[...document.querySelectorAll('#startAiStakeStatus button')].find(x=>/Back/.test(x.textContent));window.__inpClicked=0;document.getElementById('startAiStakePhoto').addEventListener('click',e=>{window.__inpClicked++;e.preventDefault();},{once:true});b.click();});
+ await p.setInputFiles('#startAiStakePhoto',[H.img('p13')]);await p.waitForTimeout(2500);
+ console.log('after back:',await p.evaluate(()=>document.getElementById('startAiStakeStatus').innerText.replace(/\s+/g,' ')+' | elev='+document.getElementById('startStakeElev').value+' photos='+(window._pbPhotos.start||[]).length),'reqs',n,'imgs per req',lens);
+ console.log('errs',errs);await b.close();})();

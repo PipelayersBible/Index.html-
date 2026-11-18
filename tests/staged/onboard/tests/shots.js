@@ -1,0 +1,12 @@
+const {chromium}=require('/opt/npm-tools/node_modules/playwright');const boot=require('./boot_ob');
+const IOS='Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
+(async()=>{const srv=require('./obsrv')();const b=await chromium.launch();
+ const tok=srv.call('pb_onboard_link_make',srv.OFFICE,{p_role:'pipelayer',p_name:'Mike'}).token;
+ const S=(await boot(b,'http://127.0.0.1:8878/cur.html#join='+tok,srv,{ua:IOS,signedOut:true,wait:4500})).p;
+ await S.screenshot({path:'../shots/b_homestep.png'});
+ await S.click('#pbObHereBtn');await S.waitForTimeout(400);await S.screenshot({path:'../shots/c_joinform.png'});
+ await S.check('#pbObTerms');await S.click('#pbObJoinBtn');await S.waitForTimeout(3500);await S.screenshot({path:'../shots/c_done.png'});
+ const H=(await boot(b,'http://127.0.0.1:8878/cur.html',srv,{ua:IOS,signedOut:true,standalone:true,wait:3500})).p;
+ await H.evaluate(()=>pbOpenLogin());await H.waitForTimeout(500);await H.screenshot({path:'../shots/login.png',fullPage:true});
+ await H.click('#loginJoinBtn');await H.waitForTimeout(300);await H.screenshot({path:'../shots/codesheet.png'});
+ await b.close();})();
