@@ -16,7 +16,7 @@
  */
 'use strict';
 
-const PB_SW_BUILD = 'r17.00 · 2026-11-18';
+const PB_SW_BUILD = 'r17.01 · 2026-11-18';
 const PB_SB_URL = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'; // the page's supabase-js <script src> (crossorigin), read from the page by mksw.py
 const PB_SHELL_PREFIX = 'pb-shell-';
 const PB_SHELL = PB_SHELL_PREFIX + PB_SW_BUILD.replace(/[^A-Za-z0-9.]+/g, '-');
@@ -87,12 +87,20 @@ self.addEventListener('activate', (event) => {
 function pbNetFirst(event, req, page) {
   const ok = page ? pbPageOk : pbLibOk;
   const net = fetch(req);
-  event.waitUntil(net.then((res) => (ok(res) ? pbShellPut(req.url, res.clone()) : null)).catch(() => {}));
+  // perf audit 02: the app page counts as answered only once ALL of it is here (a good one is read whole, then shown).
+  const whole = net.then(async (res) => {
+    if (!(page && pbPageOk(res))) { if (ok(res)) await pbShellPut(req.url, res.clone()); return res; }
+    const copy = res.clone(), read = res.clone(); // res itself stays unread: with nothing kept it is what is shown, streamed
+    const body = await read.blob();
+    event.waitUntil(pbShellPut(req.url, copy)); // the copy for the next open is replaced even when this answer comes too late
+    return new Response(body, { status: res.status, statusText: res.statusText, headers: res.headers });
+  });
+  event.waitUntil(whole.catch(() => {}));
   event.respondWith((async () => {
     const wait = Date.now() < pbSlowUntil ? 0 : PB_NET_WAIT_MS;
     let timer = null;
     const first = await Promise.race([
-      net.then((res) => ({ res }), (err) => ({ err })),
+      whole.then((res) => ({ res }), (err) => ({ err })),
       new Promise((r) => { timer = setTimeout(() => r({ late: true }), wait); }),
     ]);
     if (timer) clearTimeout(timer);
@@ -103,7 +111,7 @@ function pbNetFirst(event, req, page) {
     if (kept) { if (page && !first.res && (wait > 0 || first.err)) pbSlowUntil = Date.now() + 60000; return kept; }
     if (first.res) return first.res;
     if (first.err) throw first.err;
-    return net; // nothing kept yet: wait for the network, as without a worker
+    return net; // nothing kept yet: the network's own answer, streamed as without a worker (perf audit 02: not the read-whole copy)
   })());
 }
 self.addEventListener('fetch', (event) => {
