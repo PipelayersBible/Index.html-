@@ -1,0 +1,34 @@
+const L=require('./lib2');(async()=>{const {b,p,H}=await L({perms:['geolocation'],geo:{latitude:33.6,longitude:-117.2,accuracy:20}});
+ const T=(s)=>p.evaluate(id=>{const e=document.getElementById(id);return e?(e.offsetParent?e.innerText:'[hidden] '+e.innerText).slice(0,600):null;},s);
+ console.log('LOCK',JSON.stringify(await H.lock({cpJobNumber:'24-017',cpAtmoInterval:'15',cpCommInterval:'5',cpEmergContactName:'Boss',cpEmergContactNum:'555-867-5309'}).catch(e=>e.message)));
+ console.log('READ',JSON.stringify(await H.read(20.9,0,0,0)));
+ console.log('ADD',JSON.stringify(await H.addPerson('Ed Entrant')));
+ console.log('CHECKIN',JSON.stringify(await H.checkin('Ed Entrant')));
+ console.log('roster',JSON.stringify(await H.D('confinedRoster.map(r=>[r.name,r.role,r.status])')));
+ console.log('timers',JSON.stringify(await H.D('[!!confinedCommTimer,!!confinedAtmoTimer,confinedCommStarted]')));
+ const t0=Date.now();await p.evaluate(()=>pbTriggerEmergency());const t1=Date.now();
+ console.log('NAV after emergency',JSON.stringify(await H.nav()),'ms',t1-t0);
+ await p.waitForTimeout(3500);
+ console.log('modal after em',await H.modal());
+ console.log('SCRIPT',await T('cpEmergencyScript'));
+ console.log('KEY',await T('cpEmergencyKeyInfo'));
+ console.log('TEXT',await T('cpTextWrap'));
+ await p.evaluate(()=>pbEmText('main'));await p.waitForTimeout(300);
+ console.log('NAV2',JSON.stringify((await H.nav()).map(x=>decodeURIComponent(x.h))));
+ console.log('timers during em',JSON.stringify(await H.D('[!!confinedCommTimer,!!confinedAtmoTimer,confinedEmergencyIncidents]')));
+ await p.screenshot({path:'l1_em.png',fullPage:false});
+ // reload
+ await H.reload();
+ console.log('after reload screen',await H.screen(),'modal',await H.modal());
+ console.log('panel',await T('cpEmergencyPanel').then(x=>x&&x.slice(0,300)));
+ console.log('restoredNote',await T('cpEmergencyRestoredNote'));
+ console.log('elapsed',await T('cpEmergencyElapsed'));
+ console.log('timers after reload',JSON.stringify(await H.D('[!!confinedCommTimer,!!confinedAtmoTimer,confinedEmergencyIncidents,confinedPermit.emergencyDials,confinedPermit.emergencyTexts,confinedPermit.emergencyFixes]')));
+ console.log('TEXT after reload',await T('cpTextWrap'));
+ // resolve
+ await p.evaluate(()=>{document.getElementById('cpEmergencyOutcomeNote').value='rescued';pbDismissEmergencyPanel('resolved');});await p.waitForTimeout(500);
+ console.log('resolve modal',await H.modal(),await H.modalBtns());
+ await H.modalClick('Incident Resolved').catch(async e=>{const bt=await H.modalBtns();console.log('btns',bt);await H.modalClick(bt[bt.length-1]);});
+ await p.waitForTimeout(800);
+ console.log('after resolve',JSON.stringify(await H.D('[!!confinedCommTimer,!!confinedAtmoTimer,confinedEmergencyIncidents]')),'modal',await H.modal());
+ console.log('errs',p.errs);await b.close();})();
