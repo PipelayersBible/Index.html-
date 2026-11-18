@@ -3911,6 +3911,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 #pbApp#pbApp #screen-confinedActive #cpSummaryGrid .pb-summary-item:first-child { border-top: none; padding-top: 0; }
 #pbApp#pbApp #screen-confinedActive #cpSummaryGrid .pb-summary-item .v { font-size: 16px; font-weight: 500; line-height: 1.45; overflow-wrap: anywhere; }
 /* closeout: the four reasons as a 2 x 2 choice, separate from the emergency controls */
+#pbApp#pbApp #screen-confinedActive.is-closed:has(#cpEmergencyPanel:not([style*="none"])) > .pb-btn-wrap:has(.pb-emergency-btn), #pbApp#pbApp #screen-confinedActive.is-closed:has(#cpEmergencyPanel:not([style*="none"])) > .pb-rescue { display: block !important; } /* cs2 01: kept emergency panel */
 #pbApp #screen-confinedActive.is-closed > .pb-btn-wrap:has(.pb-emergency-btn), #pbApp #screen-confinedActive.is-closed #cpDialInfo, #pbApp #screen-confinedActive.is-closed #cpDialEdit, #pbApp #screen-confinedActive.is-closed > .pb-rescue, #pbApp #screen-confinedActive.is-closed #cpTopPanel, #pbApp #screen-confinedActive.is-closed #cpRosterSection, #pbApp #screen-confinedActive.is-closed #cpActionRow, #pbApp #screen-confinedActive.is-closed #cpRecentSection, #pbApp #screen-confinedActive.is-closed #cpFullLogsHead, #pbApp #screen-confinedActive.is-closed #cpAtmoLogSection, #pbApp #screen-confinedActive.is-closed #cpCommLogSection, #pbApp #screen-confinedActive.is-closed #cpDetailsHead, #pbApp #screen-confinedActive.is-closed #cpLockband, #pbApp #screen-confinedActive.is-closed #cpSummaryGrid, #pbApp #screen-confinedActive.is-closed #cpCloseSection, #pbApp #screen-confinedActive.is-closed #cpWindowBanner, #pbApp #screen-confinedActive.is-closed #cpUnsafeBanner { display: none !important; } /* feat_permit32 P1: a closed permit shows a closed screen */
 #pbApp#pbApp #screen-confinedActive #cpCloseoutReasonToggle { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; }
 #pbApp #screen-confinedActive .cp-tc-set { min-height: 44px; padding: 12px 0; } #pbApp #screen-confinedActive .cp-hist summary { min-height: 44px; display: flex; align-items: center; } /* feat_permit32 P5 */
@@ -6454,7 +6455,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
     <div class="pb-section" data-edu-id="entry-conditions">
       <div class="pb-tag">Entry Conditions</div>
       <div class="pb-body">
-        <div class="pb-review-item" data-edu-id="common-reference-range"><span class="k">Common reference range</span><br>OSHA counts these as a hazardous atmosphere (1926.1202): "Atmospheric oxygen concentration below 19.5 percent or above 23.5 percent" and "Flammable gas, vapor, or mist in excess of 10 percent of its lower flammable limit (LFL)" (the LEL on your meter). Toxic gases: H2S 10 ppm is the OSHA construction PEL (8-hour time-weighted average, 1926.55 Table 1). CO 25 ppm is the Cal/OSHA PEL (8-hour time-weighted average, 8 CCR 5155 Table AC-1) and the app's default; NIOSH recommends 35 ppm and the federal OSHA PEL is 50 ppm (1926.55 Table 1). This app's automatic evacuation alarm checks every reading against the permit's limits — any limit left blank uses the app's alarm defaults (O2 19.5%–23.5%, LEL 10%, H2S 10 ppm, CO 25 ppm). Enter your own site-specific limits when your program or the space calls for different ones, and keep using your meter's built-in alarm too.</div>
+        <div class="pb-review-item" data-edu-id="common-reference-range"><span class="k">Common reference range</span><br>OSHA counts these as a hazardous atmosphere (1926.1202): "Atmospheric oxygen concentration below 19.5 percent or above 23.5 percent" and "Flammable gas, vapor, or mist in excess of 10 percent of its lower flammable limit (LFL)" (the LEL on your meter). Toxic gases: H2S 10 ppm is the OSHA construction PEL (8-hour time-weighted average, 1926.55 Table 1). CO 25 ppm is the Cal/OSHA PEL (8-hour time-weighted average, 8 CCR 5155 Table AC-1) and the app's default; NIOSH recommends 35 ppm and the federal OSHA PEL is 50 ppm (1926.55 Table 1). The permit compares every reading you log with its limits and shows a red notice when one is outside them (it does not sound an alarm) — any limit left blank uses the app's defaults (O2 19.5%–23.5%, LEL 10%, H2S 10 ppm, CO 25 ppm). Enter your own site-specific limits when your program or the space calls for different ones, and keep using your meter's built-in alarm too.</div>
       </div>
     </div>
   </div>
@@ -8889,6 +8890,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
         EMERGENCY STILL OPEN &mdash; details hidden. Hiding them did not end the incident or restart any reminder.
         <div><button type="button" class="pb-btn small" style="margin-top:8px;" onclick="pbHideEmergencyDetails(false)">Show Details</button></div>
       </div>
+      <div class="pb-btn-wrap" style="padding-top:12px;"><button type="button" class="pb-emergency-btn cp-em-again" id="cpEmCallAgain" onclick="pbTriggerEmergency()">Call 911 again</button></div>
       <div id="cpEmergencyDetails">
       <div id="cpTextWrap" style="display:none;">
         <button type="button" class="pb-btn" id="cpText911Btn" onclick="pbEmText('main')">Text 911</button>
@@ -13041,7 +13043,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.97 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.98 · 2026-11-18'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -17358,6 +17360,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbAiAskEmergency = function() {
     if (window.pbAskSheetOpen()) window.pbAskSheetClose();
     window.pbTriggerEmergency();
+    try { if ((confinedPermit || pbClosedEmergencyShown) && pbCurrentScreen !== 'confinedActive') pbShellOpenPermitUrgent('cpEmergencyPanel'); } catch (e) {} // cs2 05: after the call
   };
   // Any move to another screen (an alarm, a session ending, a red line) closes the sheet first.
   window.pbScreenHooks = Array.isArray(window.pbScreenHooks) ? window.pbScreenHooks : [];
@@ -30831,6 +30834,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     buttons.push({ label: 'No \u2014 they stayed out', primary: true });
     pbShowModal(p.name + (strong ? ' must NOT enter the space.' : ' isn\u2019t allowed in under this permit right now.') + '\n\n' + b.texts.join('\n\n') + '\n\nAttendant: keep ' + p.name + ' out of the space.' + (b.attendant && !pbOtherAttendantOutside(p.name) ? ' If ' + p.name + ' goes in, NO attendant is outside the space.' : '') + '\n\nDid ' + p.name + ' enter anyway?', buttons, strong ? 'DO NOT ENTER' : 'Permit Does Not Allow Entry');
   }
+  // cs2 03: what follows "entered while the permit did not allow entry": the app's own order only for the attendant
+  // rule / no attendant outside / an open emergency; for a reading, what the permit says, and the rescue line.
+  function pbAgainstExitText(l) {
+    return /attendant|emergency/i.test(String(l && l.reason || '')) ? 'Get them out as soon as it is safe \u2014 do not go in after them.'
+      : 'Under this permit, entrants exit the space. If someone goes down, do not go in after them \u2014 call for trained rescue.';
+  }
   // " — ENTERED AGAINST PERMIT (...)" for a roster log row, or ''.
   function pbAgainstBlockText(l) {
     return l && l.againstBlock ? ' \u2014 ENTERED AGAINST PERMIT' + (l.reason ? ' (' + l.reason + ')' : '') + (l.noAttendantOutside ? ' \u2014 NO ATTENDANT OUTSIDE' : '') : '';
@@ -30905,7 +30914,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           await pbPersistRosterPending(sid, owner);
           renderRosterList();
           if (keepOut) return;
-          pbAlertKeepingEvacuate(p.name + ' is counted INSIDE the space' + (newLogEntry.againstBlock ? ', entered while the permit did not allow entry (' + newLogEntry.reason + '). Get them out as soon as it is safe \u2014 do not go in after them.' : '.') + (newLogEntry.noAttendantOutside ? '\n\nNO ATTENDANT IS OUTSIDE THE SPACE \u2014 ' + (pbRosterEntryConflict(p).attendant ? p.name + ' was the attendant.' : 'the attendant is inside too, or none is on the roster.') + ' Get a qualified attendant to the entrance now and reassign the attendant role.' : '')
+          pbAlertKeepingEvacuate(p.name + ' is counted INSIDE the space' + (newLogEntry.againstBlock ? ', entered while the permit did not allow entry (' + newLogEntry.reason + '). ' + pbAgainstExitText(newLogEntry) : '.') + (newLogEntry.noAttendantOutside ? '\n\nNO ATTENDANT IS OUTSIDE THE SPACE \u2014 ' + (pbRosterEntryConflict(p).attendant ? p.name + ' was the attendant.' : 'the attendant is inside too, or none is on the roster.') + ' Get a qualified attendant to the entrance now and reassign the attendant role.' : '')
             + '\n\n' + (gone ? 'This check-in did NOT save: the permit was changed in another tab or window, so it can\u2019t be saved here. It is kept on this screen \u2014 Close Out this permit here to keep it in Records.'
               : 'This check-in did NOT save to the permit yet (storage may be full or unavailable). It is retried automatically; the red banner stays until it saves. ' + pbSaveAdvice(true) + (rec.stored ? '' : ' The phone had no room to keep it either \u2014 do NOT close the app, reload or log out until the banner goes away.'))
             + ' If they did not go in, tap Check Out.', 'Check-In Not Saved');
@@ -30934,7 +30943,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         pbConfinedRepairIfNeeded(tokGen, sid);
         pbAlertKeepingEvacuate(p.name + '\u2019s check-out did NOT save' + (gone ? ': the permit was changed in another tab or window.' : '. Storage may be full or unavailable.') + ' ' + p.name + ' is still shown INSIDE \u2014 try again.', 'Status Not Saved'); // an evacuation instruction on screen stays first
       } else if (newLogEntry.againstBlock && pbSessionIs(sid)) {
-        pbAlertKeepingEvacuate(p.name + ' is recorded INSIDE the space, entered while the permit did not allow entry (' + newLogEntry.reason + '). They count in the headcount and the emergency script. Get them out as soon as it is safe \u2014 do not go in after them.' + (newLogEntry.noAttendantOutside ? '\n\nNO ATTENDANT IS OUTSIDE THE SPACE \u2014 ' + (pbRosterEntryConflict(p).attendant ? p.name + ' was the attendant.' : 'the attendant is inside too, or none is on the roster.') + ' Get a qualified attendant to the entrance now and reassign the attendant role.' : ''), 'Entered Against Block');
+        pbAlertKeepingEvacuate(p.name + ' is recorded INSIDE the space, entered while the permit did not allow entry (' + newLogEntry.reason + '). They count in the headcount and the emergency script. ' + pbAgainstExitText(newLogEntry) + (newLogEntry.noAttendantOutside ? '\n\nNO ATTENDANT IS OUTSIDE THE SPACE \u2014 ' + (pbRosterEntryConflict(p).attendant ? p.name + ' was the attendant.' : 'the attendant is inside too, or none is on the roster.') + ' Get a qualified attendant to the entrance now and reassign the attendant role.' : ''), 'Entered Against Permit');
       }
     }
       } finally { confinedRosterPendingToggles.delete(p); }
@@ -31195,7 +31204,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const declSession = confinedPermit ? confinedPermit.sessionId : null;
     saveActiveConfinedSession().then(savedOk => {
       if (!savedOk) showConfinedEmergencySaveFailure('declare', declSession);
-      else { try { pbEmPushNow(); } catch (e) {} } /* feat_emlink S6: the declaration goes up at once, after the dial and the save */
+      else { try { pbEmPushNow(); } catch (e) {} try { if (typeof window.__pbLivePermitTick === 'function') window.__pbLivePermitTick(); } catch (e) {} } /* feat_emlink S6: the declaration goes up at once, after the dial and the save; cs2 06: the live board too */
     });
   };
   window.pbDismissEmergencyPanel = function(outcome) {
@@ -31255,7 +31264,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       }
       saveActiveConfinedSession().then(savedOk => {
         if (!savedOk) showConfinedEmergencySaveFailure('dismiss', sid, incident);
-        else pbClearSavedOutcomeNote();
+        else { pbClearSavedOutcomeNote(); try { if (typeof window.__pbLivePermitTick === 'function') window.__pbLivePermitTick(); } catch (e) {} } // cs2 06
       });
     }, kind === 'mistake' ? 'Activated by Mistake' : kind === 'resolved' ? 'Incident Resolved' : 'Dismiss Emergency');
   };
@@ -31429,6 +31438,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // EVACUATE alert above all): it waits until that alert is closed. Reminders
   // due together are shown as ONE message, so neither hides the other.
   function pbModalOpen() { const ov = document.getElementById('pbModalOverlay'); return !!ov && getComputedStyle(ov).display !== 'none'; }
+  function pbReminderModal(msg, title) { // cs2 04
+    pbShowModal(msg, [{ label: 'EMERGENCY \u2014 Call ' + pbDialNumberNow(), onClick: () => window.pbTriggerEmergency() }, { label: 'OK', primary: true }], title);
+    try { const b = document.querySelector('#pbModalButtons button'); if (b && /^EMERGENCY/.test(b.textContent)) { b.style.background = 'var(--rod-red)'; b.style.color = '#fff'; b.style.borderColor = '#7a1e1a'; b.style.fontWeight = '700'; } } catch (e) {} // solid red, as the screen's EMERGENCY button
+  }
   function pbShowReminder(kind, message, title) {
     const ours = pbModalOpen() && pbReminderShownMsg !== null && document.getElementById('pbModalMessage').textContent === pbReminderShownMsg;
     if (pbModalOpen() && !ours) {
@@ -31438,7 +31451,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     pbReminderShown = (ours ? pbReminderShown.filter(r => r.kind !== kind) : []).concat([{ kind, message, title }]);
     pbReminderShownMsg = pbReminderShown.map(r => r.message).join('\n\n');
-    pbAlert(pbReminderShownMsg, (pbReminderShown && pbReminderShown.length > 1) ? 'Air Test and Communication Check Due' : title); // feat_permit32 P6
+    pbReminderModal(pbReminderShownMsg, (pbReminderShown && pbReminderShown.length > 1) ? 'Air Test and Communication Check Due' : title); // feat_permit32 P6
   }
   function pbFlushReminders() {
     if (pbModalOpen()) return;
@@ -31448,7 +31461,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbReminderQueue = [];
     if (!due.length) return;
     pbReminderShown = due; pbReminderShownMsg = due.map(r => r.message).join('\n\n');
-    pbAlert(pbReminderShownMsg, due.length > 1 ? 'Air Test and Communication Check Due' : due[due.length - 1].title); // feat_permit32 P6
+    pbReminderModal(pbReminderShownMsg, due.length > 1 ? 'Air Test and Communication Check Due' : due[due.length - 1].title); // feat_permit32 P6
   }
   // A reminder interval can be set AFTER the permit is locked (permit.lateReminders). It only starts a repeating reminder:
   // it never changes the locked interval fields, the air limits, or the entry freshness rule (which still reads atmoInterval alone).
@@ -31607,7 +31620,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       // alarms. The schedule keeps running, so it sounds again once someone is in.
       if (!confinedRoster.some(r => r.status === 'in')) { confinedCommNextDue = new Date(Date.now() + ms); return ms; }
       pbPlayAlarm('comm');
-      pbShowReminder('comm', 'Communication check due — check in with the entrant(s) now.', 'Communication Check');
+      pbShowReminder('comm', 'Communication check due — check in with the entrant(s) now. If an entrant doesn\u2019t answer, tap EMERGENCY.', 'Communication Check');
       // Tapping OK is not a check: it stays due (00:00) and sounds again every
       // minute until a check is logged, which restarts this timer.
       return Math.min(PB_OVERDUE_REPEAT_MS, ms);
@@ -32526,6 +32539,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbTxSet(el, text) { if (el && el.textContent !== text) el.textContent = text; } // unchanged text is not rewritten (nor announced again)
   // The Text block on the emergency panel (live permit and kept panel).
   function pbTxRender() {
+    try { const ca = document.getElementById('cpEmCallAgain'); if (ca) { const t = 'Call ' + pbDialNumberNow() + ' again'; if (ca.textContent !== t) ca.textContent = t; } } catch (e) {} // cs2 01
     const wrap = document.getElementById('cpTextWrap'); if (!wrap) return;
     let f = null; try { f = confinedPermit ? pbTxFactsLive() : pbClosedEmergencyShown ? pbTxFactsKept() : null; } catch (e) { f = null; }
     if (!f) { wrap.style.display = 'none'; return; }
@@ -39100,7 +39114,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       let pill = document.getElementById('pbFbPill');
       const fbOn = !!sbUser; /* r16.92: every signed-in account */
       if (!pill && fbOn) { pill = document.createElement('button'); pill.type = 'button'; pill.id = 'pbFbPill'; pill.className = 'pb-fb-pill'; pill.textContent = 'Feedback'; pill.onclick = () => window.pbFeedbackOpen(); document.body.appendChild(pill); }
-      if (pill) pill.hidden = !fbOn || ['appProblem', 'appProblems', 'login', 'auth'].includes(typeof pbCurrentScreen === 'string' ? pbCurrentScreen : '');
+      if (pill) pill.hidden = !fbOn || ['appProblem', 'appProblems', 'login', 'auth', 'confinedActive'].includes(typeof pbCurrentScreen === 'string' ? pbCurrentScreen : '');
     }
     let planAt = 0; /* bughunt 03: when the server was last asked */
     async function pbPlanLoad(again) {
@@ -42213,6 +42227,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbProdUnitKey(u) { const k = String(u == null ? '' : u).trim().toLowerCase().replace(/\.$/, ''); return /^(lf|l\.f|ft|feet|foot|lin\.? ?ft|linear (feet|ft))$/.test(k) ? 'lf' : k; } /* office review F-06: FT / feet = LF */
   // plan: { categories: [{ key, name, unit, planned, weight, hours }], budget_hours } or null (no plan saved: the six defaults)
   // sums: [{ key, unit, done, today, week, n }] as the server returns them (one row per category and unit)
+  function pbProdTodayOf(D, j) { /* office2 04: the copy's "today" is an earlier day: nothing is reported today in it */
+    const t = D && D.today ? String(D.today).slice(0, 10) : '';
+    if (!j || !t || t === pbTkToday()) return j;
+    return Object.assign({}, j, { reporters_today: 0, cats: Array.isArray(j.cats) ? j.cats.map(c => c && typeof c === 'object' ? Object.assign({}, c, { today: 0 }) : c) : j.cats });
+  }
+  window.pbProdTodayOf = pbProdTodayOf;
   function pbProdJobView(plan, sums) {
     const cats = (plan && Array.isArray(plan.categories) ? plan.categories : PB_PROD_DEFAULT_CATS).filter(c => c && typeof c.key === 'string' && c.key);
     const rows = (Array.isArray(sums) ? sums : []).filter(r => r && typeof r.key === 'string').map(r => ({ key: r.key, unit: String(r.unit || ''), done: pbProdNumOrNull(r.done) || 0, today: pbProdNumOrNull(r.today) || 0, week: pbProdNumOrNull(r.week) || 0, n: pbProdNumOrNull(r.n) || 0 }));
@@ -42824,7 +42844,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbProdDashRender = function() {
     const st = pbProdEl('pdStatus'), list = pbProdEl('pdJobs'), sum = pbProdEl('pdSummary');
     if (!st || !list) return;
-    const D = pbPd.data, jobs = D && Array.isArray(D.jobs) ? D.jobs.filter(j => j && typeof j === 'object') : null;
+    const D = pbPd.data, jobs = D && Array.isArray(D.jobs) ? D.jobs.filter(j => j && typeof j === 'object').map(j => pbProdTodayOf(D, j)) : null; /* office2 04 */
     let s = '';
     if (pbPd.busy && !jobs) s = 'Loading company production…';
     else if (pbPd.busy) s = 'Updating…';
@@ -42913,7 +42933,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbProdJobRender = function() {
     const head = pbProdEl('pjHead'), st = pbProdEl('pjStatus'), body = pbProdEl('pjBody');
     if (!head || !body) return;
-    const job = pbPj.job, D = pbPj.data;
+    const job = pbPj.job, D = pbProdTodayOf(pbPj.data, pbPj.data); /* office2 04 */
     if (!job) { head.innerHTML = ''; body.innerHTML = ''; return; }
     head.innerHTML = '<h2 class="pbp-h">' + escapeHtml(pbProdJobLabel(job.job_number)) + '</h2>' + (job.jobsite || (D && D.jobsite) ? '<p class="pbp-sub">' + escapeHtml((D && D.jobsite) || job.jobsite) + '</p>' : '');
     let s = pbPj.busy ? (D && !D.partial ? 'Updating…' : 'Loading the job…') : pbPj.msg ? pbPj.msg + (D && pbPj.at ? ' Showing the copy from ' + pbProdTimeText(pbPj.at) + '.' : D ? ' Showing the dashboard totals.' : '') : pbPj.cached ? 'Copy from ' + pbProdTimeText(pbPj.at) + '.' : pbPj.at ? 'Updated ' + pbProdTimeText(pbPj.at) + '.' : '';
@@ -43040,7 +43060,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbPmJobEdit = function() {
     if (!pbPj.pms) return;
     if (navigator.onLine === false) { pbAlert('No signal. Assigning PMs and supers needs signal.', 'PMs & Supers'); return; }
-    pbPj.pmEdit = new Set(pbPj.pms.assigned.filter(x => x && x.user_id && x.current !== false).map(x => x.user_id)); pbPj.pmMsg = ''; pbPmJobPaint();
+    pbPj.pmEdit = new Set(pbPj.pms.assigned.filter(x => x && x.user_id && x.current !== false).map(x => x.user_id)); pbPj.pmBase = new Set(pbPj.pmEdit); pbPj.pmMsg = ''; pbPmJobPaint(); /* office2 02: what the edit started from */
   };
   window.pbPmJobTick = function(i, on) {
     const c = pbPj.pms && Array.isArray(pbPj.pms.candidates) ? pbPj.pms.candidates.filter(x => x && x.user_id)[i] : null;
@@ -43054,12 +43074,26 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (ids.length > 10) { pbPj.pmMsg = 'Up to 10 PMs and supers per job.'; pbPmJobPaint(); return; }
     if (!(sbClient && sbUser && sbUser.id === uid && (await pbLiveSessionIs(uid))) || navigator.onLine === false) { pbPj.pmMsg = 'No signal. Nothing was changed; try again when you have signal.'; pbPmJobPaint(); return; }
     pbPj.pmBusy = true; pbPmJobPaint();
-    let r; try { r = await pbPermitRpc('pb_job_pms_set', { p_job_number: job.job_number, p_user_ids: ids, p_expect_uid: uid }, 30000); } finally { if (pbPj.job === job) pbPj.pmBusy = false; }
+    let kept = []; /* office2 02: another manager may have changed the list since this page loaded it */
+    let r; try {
+      const base = pbPj.pmBase instanceof Set ? pbPj.pmBase : null;
+      const g = base ? await pbPermitRpc('pb_job_pms_get', { p_job_number: job.job_number }, 30000) : null;
+      if (pbPj.job === job && g && !g.error && g.data && g.data.ok === true && Array.isArray(g.data.assigned)) {
+        const now = g.data.assigned.filter(x => x && x.user_id && x.current !== false), mine = new Set(ids);
+        const added = ids.filter(id => !base.has(id)), removed = [...base].filter(id => !mine.has(id));
+        const fin = new Set(now.map(x => x.user_id).filter(id => !removed.includes(id))); added.forEach(id => fin.add(id));
+        kept = now.filter(x => !base.has(x.user_id) && !removed.includes(x.user_id)).map(pbPmName);
+        ids.length = 0; fin.forEach(id => ids.push(id));
+        if (ids.length > 10) { pbPj.pmBusy = false; pbPj.pms = Object.assign({}, pbPj.pms, g.data); pbPj.pmMsg = 'Up to 10 PMs and supers per job (someone else added some meanwhile). Nothing was changed.'; pbPmJobPaint(); return; }
+      }
+      if (pbPj.job !== job) return;
+      r = await pbPermitRpc('pb_job_pms_set', { p_job_number: job.job_number, p_user_ids: ids, p_expect_uid: uid }, 30000); } finally { if (pbPj.job === job) pbPj.pmBusy = false; }
     if (pbPj.job !== job) return;
     const d = r && r.data, m = String((r && r.error && r.error.message) || '');
     if (d && d.ok === true && Array.isArray(d.assigned)) {
-      pbPj.pms = Object.assign({}, pbPj.pms, d); pbPj.pmEdit = null;
-      pbPj.pmMsg = d.assigned.length ? 'Saved. ' + pbPmCountTxt(d.assigned) + ' on this job.' : 'Saved. No PM or super on this job: alerts go to every PM and super in the company.' /* feat_office B1 */;
+      pbPj.pms = Object.assign({}, pbPj.pms, d); pbPj.pmEdit = null; pbPj.pmBase = null;
+      pbPj.pmMsg = (d.assigned.length ? 'Saved. ' + pbPmCountTxt(d.assigned) + ' on this job.' : 'Saved. No PM or super on this job: alerts go to every PM and super in the company.' /* feat_office B1 */)
+        + (kept.length ? ' ' + kept.join(', ') + (kept.length === 1 ? ' was' : ' were') + ' added by someone else meanwhile and ' + (kept.length === 1 ? 'is' : 'are') + ' kept.' : ''); /* office2 02 */
       pbPmJobPaint(); return;
     }
     pbPj.pmMsg = (d && d.code === 'pb:owner_only') ? 'Only the owner, a PM or a superintendent can take another PM or super off this job. Nothing was changed.'
@@ -63115,7 +63149,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       else if (!jobs.length) h = '<div class="pbx-empty" id="homeCxNoJobs"><p><strong>No jobs yet</strong></p><p>Tap New job to add one.</p></div>';
       else {
         const shown = X.allJobs ? jobs : jobs.slice(0, PB_CX_JOBS_MAX);
-        h = shown.map((j, i) => pbCxJobCard(j, i, L, A)).join('') + (jobs.length > shown.length ? '<button type="button" class="pbx-link pbx-more" id="homeCxAllJobs" onclick="pbCxAllJobs()">Show all ' + jobs.length + ' jobs</button>' : '');
+        h = shown.map((j, i) => pbCxJobCard(pbProdTodayOf(D.data, j), i, L, A)).join('') /* office2 04 */ + (jobs.length > shown.length ? '<button type="button" class="pbx-link pbx-more" id="homeCxAllJobs" onclick="pbCxAllJobs()">Show all ' + jobs.length + ' jobs</button>' : '');
       }
       pbSetHtml(el, h);
     }
@@ -64132,7 +64166,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (O.open) return pbRoDetailHtml(O);
     const s = O.list ? pbCxAge(O.busy, O.msg, O.at, false) : O.msg || (pbCxOnline() ? 'Loading…' : 'No signal. Crew runs load with signal.');
     const S = pbRoSeenSet(uid);
-    let h = '<p class="pbx-note">Last 60 days. Photos stay on the crew’s phone.</p>';
+    let h = '<p class="pbx-note">Last 60 days. Photos come with each report and are in its PDF.</p>'; /* office2 03: r16.75 sends them */
     if (O.list) h += O.list.length ? '<div class="pbx-rows">' + O.list.map((x, i) => '<button type="button" class="pbx-row" id="cxRun' + i + '" onclick="pbRrOpen(' + i + ')"><span class="pbx-row-tx">'
         + '<span class="pbx-row-h">' + window.pbRfNewDot(!S.has(pbRoSeenKey(x))) + pbCxE(pbProdJobLabel(x.job_number || '') + (x.label ? ' · ' + x.label : '')) + '</span>'
         + '<span class="pbx-row-s">' + pbCxE([x.who, x.role === 'foreman' ? 'foreman' : x.role === 'pipelayer' ? 'pipelayer' : '', pbRoWhen(x)].filter(Boolean).join(' · ')) + '</span>'
@@ -65526,7 +65560,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return { wait, mats, live };
   }
   function pbCxHeroHtml(C) {
-    const job = pbPj.job, D = pbPj.data;
+    const job = pbPj.job, D = pbProdTodayOf(pbPj.data, pbPj.data); /* office2 04 */
     const v = pbProdJobView(D.plan || null, D.cats);
     const today = v.categories.filter(c => c.today).map(c => c.name + ' ' + pbProdQtyText(c.today, c.unit))
       .concat(...v.categories.map(c => (c.otherUnits || []).filter(o => o.today).map(o => c.name + ' ' + pbProdQtyText(o.today, o.unit))))
@@ -65830,9 +65864,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   };
   // feat_office34 O9: Project details (name, address, start date) — the New job wizard's step-1 fields, editable afterwards.
   // Server: public.pb_prod_job_info_set (feat_office34/sql/35_job_info_set.sql), the same guards as pb_prod_job_create.
+  let pbCxInfoBase = null; /* office2 01: what the form opened with */
   window.pbCxInfoForm = function(v, err) {
     const job = pbPj.job; if (!job) return;
     const dj = pbCxKnownJob(job.job_number) || {};
+    if (!v) pbCxInfoBase = { key: job.job_key, name: String(dj.project_name || '').trim(), addr: String(dj.address || '').trim(), start: dj.start_date ? String(dj.start_date).slice(0, 10) : '' };
     v = v || { name: dj.project_name || '', addr: dj.address || '', start: dj.start_date ? String(dj.start_date).slice(0, 10) : '' };
     const cur = Object.assign({}, v);
     pbShowModal((err ? err + ' ' : '') + 'Shown on the Home card, the job page and report headers.', [{ label: 'Cancel' }, { label: 'Save', primary: true, onClick: () => pbCxInfoSave(cur) }], 'Job details · ' + pbProdJobLabel(job.job_number));
@@ -65854,6 +65890,18 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (v.start && !/^\d{4}-\d{2}-\d{2}$/.test(v.start)) return again('The start date isn’t a date. Pick one, or leave it empty.');
     if (navigator.onLine === false) return again('No signal.');
     if (!(sbClient && typeof sbClient.rpc === 'function' && sbUser && sbUser.id === uid && (await pbLiveSessionIs(uid)))) return again('Sign in with signal to change the job details.');
+    { const B = pbCxInfoBase && pbCxInfoBase.key === job.job_key ? pbCxInfoBase : null; /* office2 01: another manager may have changed them since this copy loaded */
+      const fr = B ? await pbPermitRpc('pb_prod_company_dashboard', { p_today: pbTkToday() }, 30000) : null;
+      if (!sbUser || sbUser.id !== uid || !pbPj.job || pbPj.job.job_key !== job.job_key) return;
+      const fj = fr && !fr.error && fr.data && Array.isArray(fr.data.jobs) ? fr.data.jobs.find(j => j && j.job_key === job.job_key) : null;
+      if (B && fj) {
+        const now = { name: String(fj.project_name || '').trim(), addr: String(fj.address || '').trim(), start: fj.start_date ? String(fj.start_date).slice(0, 10) : '' };
+        const lbl = { name: 'the job name', addr: 'the City, State', start: 'the start date' }, clash = [];
+        ['name', 'addr', 'start'].forEach(k => { if (now[k] !== B[k]) { if (v[k] === B[k]) v[k] = now[k]; else if (v[k] !== now[k]) clash.push(k); } });
+        const dj0 = pbCxKnownJob(job.job_number); if (dj0) Object.assign(dj0, { project_name: now.name || null, address: now.addr || null, start_date: now.start || null });
+        pbCxInfoBase = Object.assign({ key: job.job_key }, now);
+        if (clash.length) return window.pbCxInfoForm(v, 'Someone else changed ' + clash.map(k => lbl[k] + ' meanwhile (now “' + (now[k] || 'empty') + '”)').join(' and ') + '. Check it, then Save again.');
+      } }
     const r = await pbPermitRpc('pb_prod_job_info_set', { p_job_number: job.job_number, p_project_name: v.name || null, p_address: v.addr || null, p_start_date: v.start || null, p_expect_uid: uid }, 30000);
     if (!sbUser || sbUser.id !== uid || !pbPj.job || pbPj.job.job_key !== job.job_key) return;
     const m = String((r && r.error && r.error.message) || '');
