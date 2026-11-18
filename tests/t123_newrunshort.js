@@ -21,7 +21,7 @@ const st=(p)=>p.evaluate(()=>({more:document.getElementById('runSecMore').open,s
  const after=await formInfo(p);
  console.log(`empty New Run at 390 px: before ${before.h}px, ${before.inputs} inputs + ${before.selects} dropdowns, ${before.buttons} buttons; after ${after.h}px, ${after.inputs} inputs + ${after.selects} dropdowns, ${after.buttons} buttons`);
  ok(after.h<=before.h-350,'empty form at least 350 px shorter (r16.96: wall and intervals back under the pipe) ('+(before.h-after.h)+' px, '+Math.round(100*(before.h-after.h)/before.h)+'%)');
- const ids=new Set(after.ids);const missing=before.ids.filter(i=>!ids.has(i));ok(missing.length===0,'every original control id still on the form ('+before.ids.length+' ids)'+(missing.length?' missing: '+missing.join(','):''));
+ const ids=new Set(after.ids);const missing=before.ids.filter(i=>!ids.has(i)&&!/^pbA11y/.test(i)); /* pbA11y* ids are auto-numbered at start-up */ok(missing.length===0,'every original control id still on the form ('+before.ids.length+' ids)'+(missing.length?' missing: '+missing.join(','):''));
  let s=await st(p);ok(!s.more&&!s.seg,'More settings and Additional runs start closed');
  ok(/Engineer’s rod/.test(s.sum)&&/HI from stake shots/.test(s.sum)&&/trench not set/.test(s.sum)&&!/interval/.test(s.sum),'closed line states rod, HI, trench (r16.96: no interval/wall there): "'+s.sum+'"');
  ok(await p.evaluate(()=>{const e=document.getElementById('runSecMoreSum');return e.checkVisibility()&&e.scrollWidth<=e.clientWidth+1;}),'closed line is shown whole (wraps, not cut off)');
