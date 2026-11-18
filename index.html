@@ -4995,6 +4995,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <div class="pb-body">
         <div class="pb-w10-rows" role="group" aria-label="App support">
           <button type="button" class="pb-edu-row pb-tool-row" id="settingsReportProblemBtn" data-ic="warn" onclick="pbFeedbackOpen()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Send Feedback</span><span class="sub">A problem or an idea, straight to the app&rsquo;s owner</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
+          <a class="pb-edu-row pb-tool-row" id="settingsSupportEmail" data-ic="people" href="mailto:admin@pipelayersbible.com?subject=The%20Pipelayer%27s%20Bible%20help" style="text-decoration:none;color:inherit"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Email Support</span><span class="sub">admin@pipelayersbible.com</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></a>
           <button type="button" class="pb-edu-row pb-tool-row" id="settingsBetaBtn" data-ic="people" hidden onclick="pbOwnerOpen()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Beta Accounts</span><span class="sub">Start betas, see how each company uses the app (app owner only)</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
           <button type="button" class="pb-edu-row pb-tool-row" id="settingsAppProblemsBtn" data-ic="people" hidden onclick="pbOpenAppProblems()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">App problems</span><span class="sub">Reports from people using the app (app owner only)</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
           <button type="button" class="pb-edu-row pb-tool-row" id="settingsDocsReviewBtn" data-ic="people" hidden onclick="pbOpenDocsReview()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Documents review</span><span class="sub">Shared documents to check (app owner only)</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
@@ -13037,7 +13038,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.95 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.96 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -22698,16 +22699,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     function nrMoreOdd() {
       const odd = [], rodV = activeVal('rodToggle');
       if (rodV !== 'lenker' && activeVal('hiToggle') !== 'stakes') odd.push('hi');
-      const wt = v('runWT');
-      if (wt !== '' && !pbPiAIsAuto('runWT') && nrWtMem !== undefined) {
-        const rem = document.getElementById('runRememberWtId');
-        if (!(rem && rem.checked && nrWtMem !== '' && Number(wt) === Number(nrWtMem))) odd.push('wt:' + wt);
-      }
-      const c = pbLayCfg(1), r = pbLayRemembered || { on: false, len: null, div: 'halves' };
-      if (c.len !== null && !c.lenAuto && !same(c.len, r.len)) odd.push('len:' + c.len);
-      if (c.on !== !!r.on || (c.on && c.div !== (r.div || 'halves'))) odd.push('lay:' + c.on + c.div);
-      const iv = document.getElementById('interval');
-      if (iv && v('interval') !== '10' && !(iv.dataset.rsAuto !== undefined && iv.value === iv.dataset.rsAuto)) odd.push('iv:' + v('interval'));
+      // r16.96: wall, laying length and intervals sit under the pipe now (always in view), not in this fold
       const bs = document.getElementById('runBeddingSection');
       if (bs) bs.querySelectorAll('input, select').forEach(el => {
         if (el.type === 'hidden' || el.type === 'file') return;
@@ -22727,10 +22719,6 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         else if (src === 'bm') { let hi = null; try { hi = computeHI(); } catch (e) {} p.push(hi !== null && isFinite(hi) ? 'HI ' + fmtReading(hi, rodV) + ' (benchmark)' : 'HI from benchmark, not entered'); }
         else { let hi = null; try { hi = getElevVal('hiDirect'); } catch (e) {} p.push(hi !== null && isFinite(hi) ? 'HI ' + (isArch() ? toArch(hi) : fmt(hi, 2)) + ' (typed)' : 'HI typed, not entered'); }
       }
-      const wt = v('runWT'); p.push(wt ? wt + ' ft wall' + pbPiAWord(pbPiAIsAuto('runWT')) : 'wall thickness not entered');
-      const c = pbLayCfg(1);
-      if (c.len !== null) p.push(c.len + ' ft laying length' + pbPiAWord(c.lenAuto));
-      p.push(pbLayRunSecWords() || (v('interval') ? v('interval') + ' ft interval' : 'interval not entered'));
       const bed = document.getElementById('runBedRowSum'), bt = bed ? String(bed.textContent || '').trim() : '';
       p.push(bt && bt !== 'Not set' ? 'Trench: ' + bt : 'trench not set');
       if (!same(numVal('totalDist'), numVal('endSta'))) p.push(v('totalDist') ? 'total ' + v('totalDist') + ' ft' : 'total distance not entered');
@@ -63492,14 +63480,27 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbCrewNoticeCheck = function() {
     try {
       const uid = sbUser && sbUser.id; if (!uid || document.getElementById('pbTermsSheet') || document.getElementById('pbMfaSheet') || document.getElementById('pbCrewNotice')) return;
-      let ok = null; try { ok = localStorage.getItem('pbCrewNotice:' + uid); } catch (e) {} if (ok === '2') return;
+      pbCrewNoticeAckSend(uid); /* r16.96: a "Got It" that couldn't be sent yet */
+      let ok = null; try { ok = localStorage.getItem('pbCrewNotice:' + uid); } catch (e) {} if (ok === '3') return;
       if (pbTermsLs.get('pbTermsOk:' + uid) !== PB_TERMS_KEY && !pbTermsLs.get('pbTermsPend:' + uid)) return; // after the Terms
       const acc = pbProdAccMem.get(uid); if (!acc || !acc.member || !acc.companyId || acc.manager) return;
       const ov = document.getElementById('pbModalOverlay'); if (pbCurrentScreen !== 'home' || (ov && getComputedStyle(ov).display !== 'none')) return; // never over another question
-      pbShowModal('Your company can see the work you record in this app: your runs and their reports, photos (with the time, place and direction stamped on them), run notes, delays, breaks taken with the Break button, how long pipes took, check shots, production and footage, permits and daily reports, and when each was made or changed.\n\nYour location is used only while Run Setup or Run Results is open, to stamp photos. The app doesn’t track where you go.\n\nYour company decides how it uses these records. The Privacy Policy is in Settings.', [{ label: 'Got It', primary: true, onClick: () => { try { localStorage.setItem('pbCrewNotice:' + uid, '2'); } catch (e) {} } }], 'What Your Company Sees');
+      pbShowModal('Your company can see the work you record in this app: your runs and their reports, photos (with the time, place and direction stamped on them), run notes, delays, breaks taken with the Break button, how long pipes took, check shots, production and footage, permits and daily reports, and when each was made or changed. Crew members linked to the same foreman can see a read-only copy of the crew\u2019s runs (the grade numbers and when rows were marked laid).\n\nYour location is used only while Run Setup or Run Results is open, to stamp photos. The app doesn’t track where you go.\n\nYour company decides how it uses these records. The Privacy Policy is in Settings.', [{ label: 'Got It', primary: true, onClick: () => { try { localStorage.setItem('pbCrewNotice:' + uid, '3'); localStorage.setItem('pbCrewNoticeAck:' + uid, JSON.stringify({ v: '3', at: new Date().toISOString() })); } catch (e) {} pbCrewNoticeAckSend(uid); } }], 'What Your Company Sees');
     } catch (e) {}
   };
   (window.pbScreenHooks = Array.isArray(window.pbScreenHooks) ? window.pbScreenHooks : []).push(function (name) { if (name === 'home') setTimeout(() => window.pbCrewNoticeCheck(), 1500); });
+  // r16.96: the server's record that this person was shown the crew notice (pb_notice_ack, insert-only). Kept on the phone until sent.
+  let pbCrewAckBusy = false;
+  async function pbCrewNoticeAckSend(uid) {
+    let p = null; try { p = JSON.parse(localStorage.getItem('pbCrewNoticeAck:' + uid) || 'null'); } catch (e) { p = null; }
+    if (!p || !p.v || pbCrewAckBusy || !sbClient || typeof sbClient.rpc !== 'function' || navigator.onLine === false) return;
+    pbCrewAckBusy = true;
+    try {
+      const r = await sbClient.rpc('pb_notice_ack', { p_notice: 'crew_notice', p_version: String(p.v), p_phone_at: p.at || null, p_build: String(window.PB_APP_BUILD || '').slice(0, 60) });
+      if (r && !r.error && r.data && r.data.ok) { try { localStorage.removeItem('pbCrewNoticeAck:' + uid); } catch (e) {} }
+    } catch (e) { /* tried again on the next Home visit */ } finally { pbCrewAckBusy = false; }
+  }
+  window.pbCrewNoticeAckSend = pbCrewNoticeAckSend;
 
   // r16.81 (legal review): two-step login (an authenticator app code). Turned on in Settings; once on, the app asks for
   // the code after each login before the account is used, and admin pages need it (server: pb_support.admin_ok).
@@ -71647,8 +71648,10 @@ html.pb-light #pbApp .pbx-badge.warn { color: #FFFFFF; }
         var chk = document.getElementById('layUse'), lc = chk && chk.closest('.pb-lay-check'), dw = document.getElementById('layDivWrap'), md = document.getElementById('layMode');
         [lc, dw, md].forEach(function (x) { if (x && x.parentNode !== body) body.appendChild(x); });
       }
-      var mo = document.getElementById('runSecMore'), ls = document.getElementById('runLengthSection'); /* r16.95: Intervals and Trench design live in More settings */
-      if (mo && ls && ls.parentNode === mo) [ic, bed].forEach(function (x) { if (x && x.parentNode !== mo) mo.insertBefore(x, ls); });
+      var ws = document.getElementById('runWallSection'); if (ws && ws.parentNode !== pc) pc.appendChild(ws); /* r16.96: wall & laying length under the pipe */
+      var mo = document.getElementById('runSecMore'), ls = document.getElementById('runLengthSection'); /* r16.95: Trench design lives in More settings (r16.96: Intervals back under the pipe) */
+      if (mo && ls && ls.parentNode === mo) [bed].forEach(function (x) { if (x && x.parentNode !== mo) mo.insertBefore(x, ls); });
+      if (ic && ic.closest('#runSecMore') && pc.parentNode) pc.parentNode.insertBefore(ic, pc.nextElementSibling);
       var order = [grp, pc, ic, bed].filter(function (x) { return x && !x.closest('#runSecMore'); });
       for (var i = 1; i < order.length; i++) if (order[i - 1].nextElementSibling !== order[i]) order[i - 1].parentNode.insertBefore(order[i], order[i - 1].nextElementSibling);
       if (!wired) { wired = true; var scr = document.getElementById('screen-input'); if (scr) { scr.addEventListener('input', sums); scr.addEventListener('change', sums); } }
