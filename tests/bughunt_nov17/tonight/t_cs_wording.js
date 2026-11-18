@@ -1,4 +1,4 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');
 // r16.90 record-only permit: no "evacuated" order left in the reading alerts.
 const URL=process.env.PB_URL||'http://127.0.0.1:8843/cur.html';
 (async()=>{const {b,p}=await boot(URL,{init:co});

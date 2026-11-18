@@ -1,5 +1,5 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
-module.exports=async function(opts={}){const {b,p}=await boot('http://127.0.0.1:8843/'+(opts.file||'cur.html'),{init:(opts.init||co)+(opts.extra||'')});const H=F(p);
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');const F=require(__dirname+'/../../rig/flow');
+module.exports=async function(opts={}){const {b,p}=await boot((process.env.PB_ROOT||'http://127.0.0.1:8843/')+(opts.file||'cur.html'),{init:(opts.init||co)+(opts.extra||'')});const H=F(p);
  H.lock=async(over={})=>{
   await p.evaluate(()=>pbGoto('confinedPermit'));await p.waitForTimeout(800);
   const d=new Date();const pad=n=>String(n).padStart(2,'0');const date=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());

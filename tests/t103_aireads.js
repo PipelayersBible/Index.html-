@@ -1,5 +1,5 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');const fs=require('fs');
-(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/cur.html',{init:co});const H=F(p);
+const boot=require(__dirname+'/rig/boot');const co=require(__dirname+'/rig/co');const F=require(__dirname+'/rig/flow');const fs=require('fs');
+(async()=>{const {b,p}=await boot((process.env.PB_URL||'http://127.0.0.1:8843/cur.html'),{init:co});const H=F(p);
  const hook=()=>p.evaluate(()=>{const J=window.jspdf&&window.jspdf.jsPDF;if(!J)return 'nojspdf';J.API.save=function(n){window.__pdfs=(window.__pdfs||[]).concat([{n,d:this.output('datauristring')}]);return this;};return 'ok';});
  await (async()=>{let stake=null;await p.route('**/functions/v1/ai**', async r=>{await r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,text:JSON.stringify(stake),used:1,limit:60})});});
  const S=(sta,el,cf,line,num)=>({is_stake:true,stake_number:{value:num,conf:'high'},station:{value:sta,conf:'high'},offset:{value:'10/SD',conf:'high'},line_label:{value:line,conf:'high'},cut_fill:{direction:'cut',feet:cf,as_written:'C-'+cf,to:'IE',conf:'high'},stake_elevation:{feet:el,as_written:String(el),conf:'high'},other_text:'',uncertain:[]});
@@ -31,5 +31,5 @@ const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/c
  await p.evaluate(()=>{const J=window.jspdf&&window.jspdf.jsPDF;J.API.save=function(n){window.__pdfTxt=null;window.__pdfDoc=this;return this;};});
  await p.evaluate(()=>window.pbDownloadArchivePDF(0));await p.waitForTimeout(6000);
  const t=await p.evaluate(()=>{const d=window.__pdfDoc;if(!d)return 'no pdf';const raw=d.output();const i=raw.indexOf('stake photos by AI');return i<0?'section missing':'found section; changed note: '+(/changed\)/.test(raw)||raw.indexOf('(changed)')>=0);});
- console.log('pdf:',t);const b64=await p.evaluate(()=>{const a=new Uint8Array(window.__pdfDoc.output('arraybuffer'));let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s);});fs.writeFileSync('/tmp/claude-0/t103.pdf',Buffer.from(b64,'base64'));
+ console.log('pdf:',t);const b64=await p.evaluate(()=>{const a=new Uint8Array(window.__pdfDoc.output('arraybuffer'));let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s);});fs.writeFileSync(((process.env.PB_OUT||'/tmp/claude-0')+'/t103.pdf'),Buffer.from(b64,'base64'));
 console.log('errs',p.errs.slice(0,3));await b.close();})();

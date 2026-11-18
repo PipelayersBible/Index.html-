@@ -11,7 +11,7 @@ const L=require('./lib');
  const idx=await T.E(()=>getCurrentArchiveEntry().intervalRows.findIndex(r=>r.pointId==='hub0'));
  await T.E((i)=>{pbLaidApply(currentRunArchiveId,i,true,true,'test');},idx);await p.waitForTimeout(1500);
  // an older log entry (no ft) must still resolve to the row
- const txt=await L.pdf(T,'/tmp/claude-0/bughunt/grade/tests/t06.pdf')||'';
+ const txt=await L.pdf(T,((process.env.PB_OUT||'/tmp/claude-0/bughunt/grade/tests')+'/t06.pdf'))||'';
  const ls=txt.split('\n').filter(l=>/laid to|Laid to/.test(l)).map(l=>l.replace(/\s+/g,' ').trim());console.log(ls.join('\n'));
  const ok=ls.length>=3&&ls.every(l=>/0\+65\.25/.test(l));
  console.log(ok?'PASS':'FAIL','errs',p.errs.slice(0,3));await T.b.close();process.exit(ok?0:1);})();

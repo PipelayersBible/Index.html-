@@ -3,7 +3,7 @@ const {launch}=require('./srv');const co=require('./co_ok');const F=require('./f
 const init=co+`;(()=>{const now=Date.now();const sheet={jobNumber:'24-017',jobsite:'Test',startLabel:'MH-1',endLabel:'MH-2',rodUnit:'ft',intervalRows:[{station:'0.0',stationFt:0,pointId:'start',bop:'4.80',inv:'5.47'},{station:'10.0',stationFt:10,bop:'4.90',inv:'5.57'}],laid:{marks:{'p:start':now-600000}}};
  window.__rpcOverride.pb_prod_crew_view_list=()=>window.__cvGone?{runs:[]}:{runs:[{id:'aaaaaaaa-0000-4000-8000-000000000001',who:'Brandon Jones',job_number:'24-017',label:'MH-1 to MH-2',laid_ft:10,distance_ft:100,ended:false,updated_at:new Date(now-300000).toISOString()}]};
  window.__rpcOverride.pb_prod_crew_view_get=()=>window.__cvGone?{__err:'pb:removed'}:{who:'Brandon Jones',updated_at:new Date(now-300000).toISOString(),ended:false,sheet};})();`;
-(async()=>{const {b,ctx,p,S,page}=await launch('http://127.0.0.1:8877/'+(process.env.PG||'cur.html'),{init});
+(async()=>{const {b,ctx,p,S,page}=await launch((process.env.PB_ROOT||'http://127.0.0.1:8877/')+(process.env.PG||'cur.html'),{init});
  const txt=async(pg)=>(await pg.evaluate(()=>{const s=document.getElementById('screen-crewView');return s&&s.offsetParent?s.innerText:'(crew view not shown)';})).replace(/\s+/g,' ').slice(0,700);
  console.log('home btn shown online:',await p.evaluate(()=>{const e=document.getElementById('homeCrewView');return !!e&&e.style.display!=='none';}));
  await p.evaluate(()=>window.pbCvOpen());await p.waitForTimeout(1500);await p.evaluate(()=>window.pbCvOpenRun(0));await p.waitForTimeout(1500);

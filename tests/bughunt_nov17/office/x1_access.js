@@ -7,7 +7,7 @@ window.__rpcOverride.pb_prod_company_live_permits=()=>({server_at:new Date().toI
  await p.evaluate(()=>window.pbOpenProdDashboard());await p.waitForTimeout(2500);
  console.log('as manager:',await L.scr(p),'|',((await L.txt(p,'#pdLive'))||'').slice(0,330));
  console.log('ovf',JSON.stringify(await L.ovf(p)));
- await p.screenshot({path:'/tmp/claude-0/bughunt/office/shots/x1_dash.png',fullPage:true});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/office/shots')+'/x1_dash.png'),fullPage:true});
  const keys=()=>p.evaluate(async()=>{const ls=Object.keys(localStorage).filter(k=>/board|dash|company|prodCache|mat:/i.test(k));let idb=[];try{const dbs=await indexedDB.databases();idb=dbs.map(d=>d.name);}catch(e){}return {ls,idb};});
  console.log('kept copies:',JSON.stringify(await keys()));
  // demote: server now says not a manager (a foreman)

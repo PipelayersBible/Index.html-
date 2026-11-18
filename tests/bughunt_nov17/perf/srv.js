@@ -8,7 +8,7 @@ const net = require('net'), http = require('http'), https = require('https'), fs
 const PORT = +process.env.PORT || 8884, ROOT = process.env.ROOT || '/tmp/claude-0/audit/perf';
 const ST = { kbps: 0, rtt: 0, hang: false, maxage: 600, log: [] };
 const gzCache = new Map();
-const FAKESB = Buffer.from(fs.readFileSync('/home/claude/rig/fakesb.js', 'utf8') + '\n/*' + crypto.randomBytes(34000).toString('base64') + '*/\n');
+const FAKESB = Buffer.from(fs.readFileSync(__dirname+'/../../rig/fakesb.js', 'utf8') + '\n/*' + crypto.randomBytes(34000).toString('base64') + '*/\n');
 const FAKESB_GZ = zlib.gzipSync(FAKESB);
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.css': 'text/css', '.pdf': 'application/pdf', '.jpg': 'image/jpeg' };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

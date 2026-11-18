@@ -1,11 +1,11 @@
 // Debug one scenario: node ref/one.js SEED [PAGE]  -> points app vs reference, then the mismatches
 'use strict';
 const fs = require('fs'), path = require('path');
-const boot = require('/home/claude/rig/boot'), co = require('/home/claude/rig/co');
+const boot = require(__dirname+'/../../../rig/boot'), co = require(__dirname+'/../../../rig/co');
 const { gen } = require('./gen'), { compare } = require('./compare'), { compute } = require('./refcalc');
 const SEED = +process.argv[2], PAGE = process.argv[3] || 'cur.html';
 (async () => {
-  const { b, p } = await boot('http://127.0.0.1:8843/' + PAGE, { init: co });
+  const { b, p } = await boot((process.env.PB_ROOT||'http://127.0.0.1:8843/') + PAGE, { init: co });
   await p.evaluate(src => window.__ev(src), fs.readFileSync(path.join(__dirname, 'driver.js'), 'utf8'));
   const sc = process.env.SC ? JSON.parse(fs.readFileSync(process.env.SC, 'utf8')) : gen(SEED);
   if (process.env.SHOW) console.log(JSON.stringify(sc));

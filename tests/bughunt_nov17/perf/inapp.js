@@ -1,7 +1,7 @@
 // In-app interaction costs on a throttled CPU (network fast; these are CPU/storage bound).
 // usage: node inapp.js <variant> <cpu>   ->  JSON on stdout
-const P = require('./perf'); const L = require('/tmp/claude-0/audit/offline/rig/lib'); const F = require('/home/claude/rig/flow');
-const PL = require('/home/claude/rig/co_pl');
+const P = require('./perf'); const L = require(__dirname+'/../offline/rig/lib'); const F = require(__dirname+'/../../rig/flow');
+const PL = require(__dirname+'/../../rig/co_pl');
 const V = process.argv[2] || 'base', CPU = +process.argv[3] || 4, URL = P.ORIGIN + '/' + V + '/';
 const NRUNS = +process.env.NRUNS || 30, NPHOTOS = +process.env.NPHOTOS || 200;
 const out = { V, CPU }; const T0 = Date.now(); const step = (n) => console.error(Math.round((Date.now() - T0) / 1000) + 's ' + n);

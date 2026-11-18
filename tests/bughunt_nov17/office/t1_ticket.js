@@ -14,5 +14,5 @@ const L=require('./lib');
  await read('garbage',{status:200,body:{ok:true,text:'sorry',used:2,limit:5}});
  await read('weird',{status:200,body:{ok:true,text:JSON.stringify({is_ticket:true,type:'concrete',fields:{ticketNo:12345,date:'11/17/2026',time:'25:99',qty:'9.5 yd',supplier:{a:1}},conf:{ticketNo:'high',qty:'high'}}),used:3,limit:5}});
  console.log('review:',((await L.txt(p,'#tkAiReview'))||'(none)').slice(0,600));
- await p.screenshot({path:'/tmp/claude-0/bughunt/office/shots/t1_ticket.png',fullPage:true});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/office/shots')+'/t1_ticket.png'),fullPage:true});
  console.log('ovf',JSON.stringify(await L.ovf(p)),'errs',p.errs);await b.close();})();

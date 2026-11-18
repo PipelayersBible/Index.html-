@@ -1,5 +1,5 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co')+require('/home/claude/rig/mgr');const F=require('/home/claude/rig/flow');
-(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/cur.html',{init:co});const H=F(p);
+const boot=require(__dirname+'/rig/boot');const co=require(__dirname+'/rig/co')+require(__dirname+'/rig/mgr');const F=require(__dirname+'/rig/flow');
+(async()=>{const {b,p}=await boot((process.env.PB_URL||'http://127.0.0.1:8843/cur.html'),{init:co});const H=F(p);
  await p.waitForTimeout(1500);
  // mock the MFA API on the app's client
  await p.evaluate(()=>{window.__mfa={factors:[],aal:{currentLevel:'aal1',nextLevel:'aal1'},verified:[]};const M=window.__mfa;
@@ -25,5 +25,5 @@ const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/c
  console.log('login sheet:',await p.evaluate(()=>{const d=document.getElementById('pbMfaSheet');return d?d.innerText.slice(0,80):null;}));
  await p.fill('#pbMfaIn','123456');await p.click('#pbMfaGo');await p.waitForTimeout(600);
  console.log('sheet gone:',await p.evaluate(()=>!document.getElementById('pbMfaSheet')));
- await p.screenshot({path:'/tmp/claude-0/mfa.png'});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0')+'/mfa.png')});
  console.log('errs',p.errs.slice(0,3));await b.close();})();

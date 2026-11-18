@@ -1,8 +1,8 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
-(async()=>{const {b,p}=await boot('http://127.0.0.1:8865/cur.html',{init:co});const H=F(p);
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');const F=require(__dirname+'/../../rig/flow');
+(async()=>{const {b,p}=await boot((process.env.PB_URL||'http://127.0.0.1:8865/cur.html'),{init:co});const H=F(p);
  await p.setViewportSize({width:390,height:800});await p.waitForTimeout(500);
  console.log('screen',await H.screen());
- await p.screenshot({path:'/tmp/claude-0/bughunt/critic/shots/fm_home.png',fullPage:true});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/critic/shots')+'/fm_home.png'),fullPage:true});
  console.log('BTNS',JSON.stringify(await H.btns()));
  console.log('TEXT',await p.evaluate(()=>{const s=[...document.querySelectorAll('[id^=screen-]')].find(x=>x.offsetParent);return s.innerText.replace(/\n+/g,' | ').slice(0,2500)}));
  console.log('screens',await p.evaluate(()=>[...document.querySelectorAll('[id^=screen-]')].map(x=>x.id).join(' ')));

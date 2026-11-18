@@ -1,6 +1,6 @@
 // patch 01 test: every control's accessible-name attributes are identical before/after, on start-up and after the
 // screens that add fields (New Run with 4 hubs, Review, lock, Records, a calculator); and start-up script time drops.
-const P=require('./perf');const L=require('/tmp/claude-0/audit/offline/rig/lib');
+const P=require('./perf');const L=require(__dirname+'/../offline/rig/lib');
 const A=process.env.A||'index.html',B=process.env.B||'p01.html';
 const dump=(p)=>p.evaluate(()=>{const o=[];document.querySelectorAll('input,select,textarea,label,[role],[tabindex],[aria-labelledby],[aria-describedby]').forEach((e,i)=>{o.push([e.tagName,e.id,e.getAttribute('aria-label'),e.getAttribute('aria-labelledby'),e.getAttribute('aria-describedby'),e.getAttribute('for'),e.getAttribute('role'),e.getAttribute('data-pb-ctx')].join('|'));});return {list:o,unnamed:window.pbA11yUnnamed().length};});
 const CNT=`(function(){for(const C of [HTMLInputElement,HTMLSelectElement,HTMLTextAreaElement]){const d=Object.getOwnPropertyDescriptor(C.prototype,'labels');Object.defineProperty(C.prototype,'labels',{configurable:true,get(){window.__lblCalls=(window.__lblCalls||0)+1;return d.get.call(this);}});}})();`;

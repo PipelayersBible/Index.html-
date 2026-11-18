@@ -1,4 +1,4 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');const F=require(__dirname+'/../../rig/flow');
 // r16.90 TOP = BOP + real OD, but the crossing clearance still used INV + nominal size + wall. 12" DI (OD 13.20"):
 // a water line 12.2" above the OLD top is really only ~11.7" above the pipe's real top, under its 12" minimum.
 const URL=process.env.PB_URL||'http://127.0.0.1:8843/cur.html';

@@ -8,7 +8,7 @@ window.__rpcOverride.pb_push_prefs_set=(a)=>{(window.__pp=window.__pp||[]).push(
  console.log('==',role,'\n '+[...new Set(rows)].join('\n '));
  console.log('status:',(await L.txt(p,'#screen-notifications')).slice(0,500));
  console.log('ovf',JSON.stringify(await L.ovf(p)),'errs',p.errs);
- await p.screenshot({path:'/tmp/claude-0/bughunt/office/shots/n1_'+role+'.png',fullPage:true});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/office/shots')+'/n1_')+role+'.png',fullPage:true});
  // toggle the first visible type switch
  const id=await p.evaluate(()=>{const i=[...document.querySelectorAll('#screen-notifications input[type=checkbox]')].find(e=>e.offsetParent&&/notifType/.test(e.id));if(!i)return null;i.click();return i.id;});
  await p.waitForTimeout(1200);

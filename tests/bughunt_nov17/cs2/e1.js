@@ -8,7 +8,7 @@ const L=require('./lib2');(async()=>{const {b,p,H}=await L({});let fail=0;const 
  ok(vis.some(v=>v.inView),'a call button is on screen right after EMERGENCY');
  const pill=await p.evaluate(()=>{const e=document.getElementById('pbFbPill');return !!(e&&!e.hidden&&getComputedStyle(e).display!=='none'&&e.getClientRects().length);});
  ok(!pill,'no Feedback pill over the active permit / emergency panel');
- await p.screenshot({path:'/tmp/claude-0/audit/cs2/t/e1_'+(process.env.FILE||'cur')+(process.env.DARK?'_dark':'')+'.png'});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/audit/cs2/t')+'/e1_')+(process.env.FILE||'cur')+(process.env.DARK?'_dark':'')+'.png'});
  const again=vis.find(v=>/again/i.test(v.t));
  if(again){await p.click('#cpEmCallAgain');await p.waitForTimeout(500);}
  const nav=await H.nav();console.log(JSON.stringify(nav.map(x=>x.h)));

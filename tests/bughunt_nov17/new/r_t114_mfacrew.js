@@ -1,5 +1,5 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');
-async function run(factors,aal,label){const {b,p}=await boot('http://127.0.0.1:8861/cur.html',{init:co});await p.waitForTimeout(1500);
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');
+async function run(factors,aal,label){const {b,p}=await boot((process.env.PB_URL||'http://127.0.0.1:8861/cur.html'),{init:co});await p.waitForTimeout(1500);
  await p.evaluate(([fs,aal])=>{window.__mfaApi={listFactors:async()=>({data:{totp:fs}}),getAuthenticatorAssuranceLevel:async()=>({data:aal}),enroll:async()=>({}),challengeAndVerify:async()=>({data:{}}),unenroll:async()=>({data:{}})};},[factors,aal]);
  await p.evaluate(()=>pbGoto('settings'));await p.waitForTimeout(1500);
  console.log(label,'settings:',JSON.stringify(await p.evaluate(()=>document.getElementById('settingsMfa').innerText)),'code sheet:',await p.evaluate(()=>!!document.getElementById('pbMfaSheet')));

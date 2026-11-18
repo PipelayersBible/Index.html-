@@ -11,7 +11,7 @@ const L=require('./lib');
  await H.click('Review & Calculate');await p.waitForTimeout(1500);
  console.log('screen',await H.screen(),'modal',await H.modal());
  console.log('review:',(await p.evaluate(()=>{const s=[...document.querySelectorAll('[id^=screen-]')].find(x=>x.offsetParent);return s.innerText;})).replace(/\n+/g,' | ').slice(0,3500));
- await H.click('Lock This Run');await p.waitForTimeout(800);await H.modalClick('I Checked Them').catch(()=>{});await p.waitForTimeout(2500);
+ await H.click('Lock This Run');await p.waitForTimeout(800);await H.modalClick('Lock Without It').catch(()=>{});await p.waitForTimeout(600);await H.modalClick('I Checked Them').catch(()=>{});await p.waitForTimeout(2500);
  console.log('screen',await H.screen(),'modal',await H.modal());
  console.log('table:\n'+await T.table());
  console.log('summary:',(await p.evaluate(()=>document.getElementById('summaryGrid').innerText)).replace(/\n+/g,' | '));

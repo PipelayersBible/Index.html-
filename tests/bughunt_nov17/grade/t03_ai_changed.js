@@ -2,7 +2,7 @@
 const L=require('./lib');
 (async()=>{const T=await L();const {p,H,S}=T;
  await T.newRun();await H.sel('runIdSel','8"');
- await p.click('#rodToggle button[data-val="architect"]');await p.waitForTimeout(400);
+ await p.evaluate(()=>{document.getElementById('runSecMore').open=true;});/* r16.95: rod is under More settings */await p.click('#rodToggle button[data-val="architect"]');await p.waitForTimeout(400);
  await T.photo('start',S('1+00',2589.06,2.33,'MH-1','101'));
  await H.f('startStakeReading_ft','4');await H.f('startStakeReading_in','3');
  await T.photo('end',S('2+00',2590.11,2.87,'MH-2','103'),'p05');

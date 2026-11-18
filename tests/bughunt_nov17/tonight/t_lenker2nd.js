@@ -1,4 +1,4 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');const F=require(__dirname+'/../../rig/flow');
 // r16.90 second shot: a Lenker run (no stake rod reading, no HI) must not be asked for one, nor recorded as locked without it.
 const URL=process.env.PB_URL||'http://127.0.0.1:8843/cur.html';
 (async()=>{const {b,p}=await boot(URL,{init:co});const H=F(p);

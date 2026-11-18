@@ -1,6 +1,6 @@
 // storage full: IndexedDB refuses the Records write (QuotaExceededError) and localStorage is full too
 const {launch}=require('./srv');const co=require('./co_ok');const F=require('./flow');const L=require('./lib');
-(async()=>{const {b,ctx,p,S,page}=await launch('http://127.0.0.1:8877/'+(process.env.PG||'cur.html'),{init:co});const H=F(p);
+(async()=>{const {b,ctx,p,S,page}=await launch((process.env.PB_ROOT||'http://127.0.0.1:8877/')+(process.env.PG||'cur.html'),{init:co});const H=F(p);
  await L.newRun(p,100);await L.lock(p);
  await p.evaluate(()=>{const put=IDBObjectStore.prototype.put;IDBObjectStore.prototype.put=function(v,k){if(window.__full&&this.transaction.db.name==='pb-big'){const t=this.transaction;setTimeout(()=>{try{t.abort();}catch(e){}},0);throw new DOMException('quota','QuotaExceededError');}return put.apply(this,arguments);};
    const si=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(window.__full&&String(v).length>200)throw new DOMException('quota','QuotaExceededError');return si.apply(this,arguments);};window.__full=true;});

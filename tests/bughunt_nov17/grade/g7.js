@@ -1,4 +1,4 @@
-const L=require('./lib');const R=require('/home/claude/rig/resume');
+const L=require('./lib');const R=require(__dirname+'/../../rig/resume');
 // end a run short at 200 ft, check volume clip, then resume and check the continued sheet
 (async()=>{const T=await L();const {p,H,S}=T;
  await T.newRun();await H.sel('runIdSel','8"');await T.set('runBedding','0.5');await T.set('runTrenchWidth','3');
@@ -28,5 +28,5 @@ const L=require('./lib');const R=require('/home/claude/rig/resume');
  await T.lock();console.log('screen',await H.screen(),'modal',await H.modal());
  const e2=await T.entry();console.log('resumed entry: dist',e2.distance,'resumedFrom',e2.resumedFromId,'vol',e2.volumeYd3,'rows',JSON.stringify(e2.intervalRows.map(r=>[r.station,r.pointId||'',r.inv,r.elevation])));
  const S2=await T.E(()=>{const s=pbLaidSummary(getCurrentArchiveEntry());return {n:s.n,laidFt:s.laidFt,earlierFt:s.earlierFt,sessionFt:s.sessionFt,total:s.total,far:s.far,next:s.next,early:s.early};});console.log('laid2',JSON.stringify(S2));
- const txt=await L.pdf(T,'/tmp/claude-0/bughunt/grade/tests/g7.pdf')||'';require('fs').writeFileSync('/tmp/claude-0/bughunt/grade/tests/g7.txt',txt);
+ const txt=await L.pdf(T,((process.env.PB_OUT||'/tmp/claude-0/bughunt/grade/tests')+'/g7.pdf'))||'';require('fs').writeFileSync(((process.env.PB_OUT||'/tmp/claude-0/bughunt/grade/tests')+'/g7.txt'),txt);
  console.log('errs',p.errs.slice(0,5));await T.b.close();})();

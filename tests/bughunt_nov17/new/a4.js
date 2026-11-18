@@ -17,7 +17,7 @@ const mk=require('./mk');
  // real break
  await p.evaluate(()=>window.scrollTo(0,600));
  await p.click('#pbBrkBtn');await p.waitForTimeout(1500);
- await p.screenshot({path:'/tmp/claude-0/bughunt/new/t/brk390.png'});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/new/t')+'/brk390.png')});
  console.log('vis leak:',JSON.stringify(await p.evaluate(()=>{const scr=document.getElementById('screen-results');const out=[];scr.querySelectorAll('*').forEach(el=>{if(el.closest('#pbBrk'))return;const cs=getComputedStyle(el);if(cs.visibility==='visible'&&el.offsetParent!==null&&el.getClientRects().length)out.push(el.tagName+'#'+el.id+'.'+String(el.className).slice(0,30));});return out.slice(0,10);})));
  console.log('cover rect',JSON.stringify(await p.evaluate(()=>{const o=document.getElementById('pbBrk');const r=o.getBoundingClientRect();const c=o.querySelector('.pb-sl-pcard').getBoundingClientRect();const cs=getComputedStyle(o);return {pos:cs.position,z:cs.zIndex,r:[r.left,r.top,r.width,r.height],card:[c.left,c.top,c.width,c.height],scrollY:window.scrollY};})));
  // other things visible outside screen-results while on break
@@ -28,9 +28,9 @@ const mk=require('./mk');
  // go home
  await p.evaluate(()=>window.pbGoto('home'));await p.waitForTimeout(1500);
  console.log('home: on-break class',await p.evaluate(()=>document.documentElement.classList.contains('pb-on-break')),'bar:',JSON.stringify(await p.evaluate(()=>{const a=[...document.querySelectorAll('[class*=activebar],[id*=ActiveBar]')].map(x=>x.innerText).join('|');return a;})));
- await p.screenshot({path:'/tmp/claude-0/bughunt/new/t/brkhome.png'});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/new/t')+'/brkhome.png')});
  // reload
  await p.reload({waitUntil:'load'});await p.waitForTimeout(3500);
  console.log('after reload: screen',await H.screen().catch(()=>null),'cur',await p.evaluate(()=>{const e=window.__pbCsEntry();return e?{id:e.id,onBreak:e.onBreak}:null;}),'bar:',JSON.stringify(await p.evaluate(()=>[...document.querySelectorAll('[class*=activebar],[id*=ActiveBar]')].map(x=>x.innerText).join('|'))));
- await p.screenshot({path:'/tmp/claude-0/bughunt/new/t/brkreload.png'});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/new/t')+'/brkreload.png')});
  console.log('errs',p.errs.slice(0,5));await b.close();})();

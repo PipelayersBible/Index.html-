@@ -1,14 +1,14 @@
 // lib2: lib.js + nav capture (tel:/sms:/mailto:), reload, offline, D()
-const {chromium}=require('playwright');const fs=require('fs');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
+const {chromium}=require('playwright');const fs=require('fs');const co=require(__dirname+'/../../rig/co');const F=require(__dirname+'/../../rig/flow');
 const NAV=`(()=>{window.__nav=window.__nav||[];const oc=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){const h=this.getAttribute('href')||'';if(/^(tel|sms|mailto):/i.test(h)){(window.__nav=window.__nav||[]).push({h,t:Date.now()});try{const a=JSON.parse(sessionStorage.getItem('__nav')||'[]');a.push({h,t:Date.now()});sessionStorage.setItem('__nav',JSON.stringify(a));}catch(e){}return;}return oc.call(this);};})();`;
 module.exports=async function(opts={}){
  const b=await chromium.launch();
- const ctx=await b.newContext({viewport:{width:390,height:844},colorScheme:(opts.dark||process.env.DARK?'dark':'light'),serviceWorkers:'block',permissions:opts.perms||[],geolocation:opts.geo||undefined,isMobile:true,hasTouch:true,userAgent:'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36'});
- await ctx.route(/supabase-js/,r=>r.fulfill({contentType:'application/javascript',body:fs.readFileSync('/home/claude/rig/fakesb.js','utf8')}));
+ const ctx=await b.newContext({viewport:{width:390,height:844},colorScheme:(opts.dark||process.env.DARK?'dark':'light'),serviceWorkers:'block',permissions:opts.perms||[],geolocation:opts.geo||undefined,isMobile:true,hasTouch:true,userAgent:'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36'});await require(__dirname+'/../../rig/env').applyClock(ctx);
+ await ctx.route(/supabase-js/,r=>r.fulfill({contentType:'application/javascript',body:fs.readFileSync(__dirname+'/../../rig/fakesb.js','utf8')}));
  await ctx.route(/supabase\.co/,r=>r.fulfill({status:200,contentType:'application/json',body:'null'}));
  await ctx.addInitScript((opts.init||co)+(opts.extra||'')+NAV);
  const p=await ctx.newPage();p.errs=[];p.on('pageerror',e=>p.errs.push(e.message));p.on('dialog',d=>{p.errs.push('DIALOG '+d.type()+' '+d.message());d.accept();});
- const url='http://127.0.0.1:8843/'+(opts.file||process.env.FILE||'cur.html');
+ const url=(process.env.PB_ROOT||'http://127.0.0.1:8843/')+(opts.file||process.env.FILE||'cur.html');
  await p.goto(url,{waitUntil:'load'});await p.waitForTimeout(opts.wait||3000);
  const H=F(p);H.ctx=ctx;H.b=b;
  H.D=(s)=>p.evaluate(x=>{const r=window.__dbg(x);return r===undefined?null:JSON.parse(JSON.stringify(r));},s);

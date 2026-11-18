@@ -1,6 +1,6 @@
 // The Terms sheet must not cover a live confined space permit (it is asked once the permit is closed).
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
-const URL_=process.env.URL||'http://127.0.0.1:8864/cur.html';
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');const F=require(__dirname+'/../../rig/flow');
+const URL_=process.env.URL||process.env.PB_URL||'http://127.0.0.1:8864/cur.html';
 (async()=>{const {b,p}=await boot(URL_,{init:co});const H=F(p);
  await p.evaluate(()=>pbGoto('confinedPermit'));await p.waitForTimeout(800);
  const d=new Date();const pad=n=>String(n).padStart(2,'0');const date=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());

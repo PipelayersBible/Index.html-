@@ -4,7 +4,7 @@ const UID='00000000-0000-4000-8000-000000000001';
 const rep={cid:'dr-off-1',jobNumber:'24-017',jobsite:'Test Sewer',workDate:new Date(Date.now()-3600e3).toISOString().slice(0,10),snapshot:{v:1,job_number:'24-017',sections:{}},sha:'a'.repeat(64),signedName:'Test Foreman',signedAt:Date.now()-3600e3,tz:'America/Los_Angeles',signature:null,state:'waiting',why:'',clockOk:true,co:'11111111-1111-4111-8111-111111111111',version:1};
 const init=co+`;try{if(!localStorage.getItem('${UID}:foremanDaily'))localStorage.setItem('${UID}:foremanDaily',JSON.stringify({v:1,checks:[],reports:[${JSON.stringify(rep)}],items:{},weather:{},co:'11111111-1111-4111-8111-111111111111'}));localStorage.setItem('pbAiPrivacyAck','1');}catch(e){}
 window.__rpcOverride.pb_report_access=()=>({member:true,manager:false,company_id:'11111111-1111-4111-8111-111111111111'});`;
-(async()=>{const {b,ctx,p,S,page}=await launch('http://127.0.0.1:8877/'+(process.env.PG||'cur.html'),{init});const H=F(p);
+(async()=>{const {b,ctx,p,S,page}=await launch((process.env.PB_ROOT||'http://127.0.0.1:8877/')+(process.env.PG||'cur.html'),{init});const H=F(p);
  // server: idempotent on the client ids, like the real functions
  const seen={};S.handlers.pb_daily_submit=(a)=>{if(seen[a.p_client_report_id])return Object.assign({again:true},seen[a.p_client_report_id]);return seen[a.p_client_report_id]={ok:true,id:'srv-'+Object.keys(seen).length,version:1,received_at:new Date().toISOString()};};
  const tks={};S.handlers.pb_ticket_save=(a)=>{tks[a.p_client_ticket_id]=(tks[a.p_client_ticket_id]||0)+1;return {ok:true,id:'tk-'+a.p_client_ticket_id,version:1};};

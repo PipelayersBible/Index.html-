@@ -7,6 +7,6 @@ const init=L.co+`;window.__rpcOverride.pb_my_plan=()=>({ok:true,plan:'trial',day
  console.log('feedback sheet open:',await p.evaluate(()=>!!document.getElementById('pbFbSheet')));
  await p.evaluate(()=>window.pbOpenAppProblems());await p.waitForTimeout(600); // any app alert (stands in for a timer-driven permit alert)
  const h=await p.evaluate(()=>{const m=document.getElementById('pbModalOverlay'),btn=[...m.querySelectorAll('button')].find(b=>b.offsetParent);if(!btn)return {found:false};const r=btn.getBoundingClientRect(),el=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {found:true,text:m.innerText.replace(/\s+/g,' ').slice(0,80),onTop:el===btn||btn.contains(el),zModal:getComputedStyle(m).zIndex,zSheet:getComputedStyle(document.getElementById('pbFbSheet')).zIndex};});
- console.log(JSON.stringify(h));await p.screenshot({path:'/tmp/claude-0/bughunt/office/shots/b5_feedback_modal.png'});
+ console.log(JSON.stringify(h));await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/office/shots')+'/b5_feedback_modal.png')});
  const ok=h.found&&h.onTop;console.log(ok?'PASS':'FAIL: an app dialog raised while the Feedback sheet is open is hidden behind it');
  await b.close();process.exit(ok?0:1);})();

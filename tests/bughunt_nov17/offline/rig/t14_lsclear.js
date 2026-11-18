@@ -1,6 +1,6 @@
 // localStorage is wiped but IndexedDB is kept (a cleaner app / "clear cookies" on some browsers): are Records kept?
 const {launch}=require('./srv');const co=require('./co_ok');const F=require('./flow');const L=require('./lib');
-(async()=>{const {b,ctx,p,S,page}=await launch('http://127.0.0.1:8877/'+(process.env.PG||'cur.html'),{init:co});
+(async()=>{const {b,ctx,p,S,page}=await launch((process.env.PB_ROOT||'http://127.0.0.1:8877/')+(process.env.PG||'cur.html'),{init:co});
  await L.newRun(p,100);await L.lock(p);const r=await L.rows(p);await L.markLaid(p,r[6]);await p.waitForTimeout(1000);
  const id=await p.evaluate(()=>window.__pbRrDebug.run().id);
  await p.evaluate(()=>localStorage.clear());await p.close({runBeforeUnload:false});

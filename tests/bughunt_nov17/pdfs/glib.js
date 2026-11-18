@@ -1,5 +1,5 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
-module.exports=async(opts={})=>{const {b,p}=await boot('http://127.0.0.1:8843/'+(process.env.PG||'cur.html'),{init:opts.init||co});const H=F(p);
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');const F=require(__dirname+'/../../rig/flow');
+module.exports=async(opts={})=>{const {b,p}=await boot((process.env.PB_ROOT||'http://127.0.0.1:8843/')+(process.env.PG||'cur.html'),{init:opts.init||co});const H=F(p);
  const T={b,p,H,stake:null};
  await p.route('**/functions/v1/ai**', async r=>{await r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,text:JSON.stringify(T.stake),used:1,limit:60})});});
  T.S=(sta,el,cf,line,num,dir)=>({is_stake:true,stake_number:{value:num,conf:'high'},station:{value:sta,conf:'high'},offset:{value:'10/SD',conf:'high'},line_label:{value:line,conf:'high'},cut_fill:{direction:dir||'cut',feet:cf,as_written:(dir==='fill'?'F-':'C-')+cf,to:'IE',conf:'high'},stake_elevation:{feet:el,as_written:String(el),conf:'high'},other_text:'',uncertain:[]});
@@ -9,7 +9,7 @@ module.exports=async(opts={})=>{const {b,p}=await boot('http://127.0.0.1:8843/'+
  T.addHub=async()=>{await T.E(()=>{pbAddHub();});await p.waitForTimeout(200);};
  T.calc=()=>T.E(()=>{const c=buildCalc();return c.errors&&c.errors.length?{errors:c.errors}:{rod:c.rodUnit,hi:c.hi,hiLay:c.hiLay,total:c.totalDist,pts:c.points.map(x=>({id:x.id,st:x.station,pi:x.pi,rd:x.reading,wt:x.wt,idFt:x.idFt})),segs:c.segments.map(s=>s.slopePct),rows:c.rows.map(r=>[r.station,r.pi,r.bp,r.tp,r.invReading,r.bopReading,r.topReading,r.hubId]),warn:c.warnings.map(w=>w.text),notes:c.capabilityNotes};});
  T.form=(ids)=>T.E((ids)=>{const o={};ids.forEach(i=>{const e=document.getElementById(i);o[i]=e?e.value:null});o.rod=activeVal('rodToggle');o.hi=activeVal('hiToggle');return o;},ids);
- T.lock=async()=>{await H.click('Review & Calculate');await p.waitForTimeout(1500);const m=await H.modal();if(m)console.log('modal@review:',m);await H.click('Lock This Run');await p.waitForTimeout(800);await H.modalClick('I Checked Them').catch(()=>{});await p.waitForTimeout(2500);};
+ T.lock=async()=>{await H.click('Review & Calculate');await p.waitForTimeout(1500);const m=await H.modal();if(m)console.log('modal@review:',m);await H.click('Lock This Run');await p.waitForTimeout(800);await H.modalClick('Lock Without It').catch(()=>{});await p.waitForTimeout(600);await H.modalClick('I Checked Them').catch(()=>{});await p.waitForTimeout(2500);};
  T.table=()=>p.evaluate(()=>[...document.querySelectorAll('#resultsTable tr')].map(tr=>[...tr.children].map(td=>td.innerText.replace(/\s+/g,' ').trim()).join(' ¦ ')).join('\n'));
  T.entry=()=>T.E(()=>getCurrentArchiveEntry());
  T.set=async(id,v)=>{await p.evaluate(([id,v])=>{const e=document.getElementById(id);e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));},[id,String(v)]);await p.waitForTimeout(200);};

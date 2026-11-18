@@ -1,9 +1,9 @@
 // fails on r16.88, passes on fix.html: manager boxes appear once the access answer arrives while Settings is open
 // (first login on a phone: no saved access answer, pb_prod_access answers after 4 s)
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const mgr=require('/home/claude/rig/mgr');
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');const mgr=require(__dirname+'/../../rig/mgr');
 const slow=";Object.defineProperty(window,'supabase',{configurable:true,get(){return undefined;},set(v){const cc=v.createClient;v.createClient=function(){const c=cc.apply(this,arguments);const r=c.rpc;c.rpc=(n,a)=>n==='pb_prod_access'?new Promise(x=>setTimeout(x,4000)).then(()=>r(n,a)):r(n,a);return c;};Object.defineProperty(window,'supabase',{value:v,writable:true,configurable:true});}});";
 (async()=>{
- const {b,p}=await boot('http://127.0.0.1:8861/'+(process.env.PG||'cur.html'),{init:co+mgr+slow,wait:50});
+ const {b,p}=await boot((process.env.PB_ROOT||'http://127.0.0.1:8861/')+(process.env.PG||'cur.html'),{init:co+mgr+slow,wait:50});
  await p.evaluate(()=>{window.__mfaApi={listFactors:async()=>({data:{totp:[]}}),getAuthenticatorAssuranceLevel:async()=>({data:{currentLevel:'aal1',nextLevel:'aal1'}}),enroll:async()=>({}),challengeAndVerify:async()=>({data:{}}),unenroll:async()=>({data:{}})};});
  await p.evaluate(()=>pbGoto('settings'));await p.waitForTimeout(1500);
  const g0=await p.evaluate(()=>[document.getElementById('settingsMfa').innerText.slice(0,40),document.getElementById('settingsAdminLog').innerText.slice(0,40)]);

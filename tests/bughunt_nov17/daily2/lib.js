@@ -1,6 +1,6 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');module.exports.co=co;
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');const F=require(__dirname+'/../../rig/flow');module.exports.co=co;
 const JOB=`;window.__rpcOverride=Object.assign(window.__rpcOverride||{},{pb_prod_member_jobs:()=>({jobs:[{job_number:'24-017',project_name:'Test Sewer'},{job_number:'24-020',project_name:'Elm St Water'}]})});`;
-module.exports.boot=async(extra='',opts={})=>{const r=await boot('http://127.0.0.1:8843/'+(process.env.PG||'curT.html'),Object.assign({init:co+JOB+extra},opts));r.H=F(r.p);await r.p.setViewportSize({width:390,height:844});return r;};
+module.exports.boot=async(extra='',opts={})=>{const r=await boot((process.env.PB_ROOT||'http://127.0.0.1:8843/')+(process.env.PG||'curT.html'),Object.assign({init:co+JOB+extra},opts));r.H=F(r.p);await r.p.setViewportSize({width:390,height:844});return r;};
 module.exports.mkrun=async function(p,o={}){const dist=o.dist||100;
  await p.evaluate(()=>pbGoto('home'));await p.waitForTimeout(400);
  await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1200);
@@ -25,7 +25,7 @@ module.exports.mkrun=async function(p,o={}){const dist=o.dist||100;
 module.exports.txt=(p,sel)=>p.evaluate(s=>{const e=document.querySelector(s||'.pb-screen.active');return e?e.innerText:'';},sel);
 module.exports.modal=(p)=>p.evaluate(()=>{const t=document.getElementById('pbModalTitle');if(!t||!t.offsetParent)return null;return t.textContent+' | '+(document.getElementById('pbModalMessage')||{}).innerText+' | '+[...document.querySelectorAll('#pbModalDialog button')].filter(b=>b.offsetParent).map(b=>b.textContent.trim()).join(',');});
 module.exports.mclick=async(p,t)=>{await p.evaluate(t=>{const b=[...document.querySelectorAll('#pbModalDialog button')].find(b=>b.offsetParent&&b.textContent.trim()===t);if(!b)throw new Error('no modal btn '+t);b.click();},t);await p.waitForTimeout(700);};
-module.exports.shot=(p,n)=>p.screenshot({path:'/tmp/claude-0/audit/daily2/out/'+n+'.png',fullPage:true});
+module.exports.shot=(p,n)=>p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/audit/daily2/out')+'/')+n+'.png',fullPage:true});
 module.exports.ev=(p,s)=>p.evaluate(s=>window.__dEval(s),s);
 // crew via UI on the current run; then shift log times by evaluating
 module.exports.crew=async(p,name,type,cat)=>{await p.evaluate(([n,t,c])=>{document.getElementById('crewLogAddForm').style.display='';document.getElementById('crewLogName').value=n;document.getElementById('crewLogType').value=t;window.pbFmCrewTypeChanged&&pbFmCrewTypeChanged();if(c)document.getElementById('crewLogCategory').value=c;},[name,type,cat]);await p.evaluate(()=>pbAddCrewLogEntry(true));await p.waitForTimeout(900);};
@@ -42,10 +42,10 @@ module.exports.sign=async(p,name,narr)=>{await p.evaluate(([n,t])=>{const a=docu
 module.exports.setEnd=(p,end)=>module.exports.ev(p,`(()=>{const e=runArchive.slice().sort((a,b)=>b.id-a.id)[0];e.runEndTime=${end};(e.crewLog||[]).forEach(c=>{const l=c.log[c.log.length-1];if(l&&/Checked Out/.test(l.action)&&l.time>${end})l.time=${end};});return saveRunArchive();})()`);
 // boot with a controlled clock and/or timezone: o.time (ms or ISO), o.tz (IANA), o.offline
 module.exports.boot2=async(extra='',o={})=>{const {chromium}=require('playwright');const fs=require('fs');const b=await chromium.launch();
- const ctx=await b.newContext({viewport:{width:390,height:844},colorScheme:(process.env.DARK?'dark':'light'),serviceWorkers:'block',timezoneId:o.tz||undefined});
- await ctx.route(/supabase-js/,r=>r.fulfill({contentType:'application/javascript',body:fs.readFileSync('/home/claude/rig/fakesb.js','utf8')}));
+ const ctx=await b.newContext({viewport:{width:390,height:844},colorScheme:(process.env.DARK?'dark':'light'),serviceWorkers:'block',timezoneId:o.tz||undefined});await require(__dirname+'/../../rig/env').applyClock(ctx);
+ await ctx.route(/supabase-js/,r=>r.fulfill({contentType:'application/javascript',body:fs.readFileSync(__dirname+'/../../rig/fakesb.js','utf8')}));
  await ctx.route(/supabase\.co/,r=>r.fulfill({status:200,contentType:'application/json',body:'null'}));
  await ctx.addInitScript(co+JOB+extra);const p=await ctx.newPage();p.errs=[];p.on('pageerror',e=>p.errs.push(e.message));
  if(o.time)await p.clock.install({time:new Date(o.time)});
- await p.goto('http://127.0.0.1:8843/'+(process.env.PG||'curT.html'),{waitUntil:'load'});await p.waitForTimeout(3000);return {b,p,ctx,H:F(p)};};
-module.exports.pdfText=async(p,expr,name)=>{const b64=await p.evaluate(async(expr)=>{const doc=await window.__dEval(expr);const a=new Uint8Array(doc.output('arraybuffer'));let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s);},expr);const f='/tmp/claude-0/audit/daily2/out/'+name+'.pdf';require('fs').writeFileSync(f,Buffer.from(b64,'base64'));return require('child_process').execSync('pdftotext -layout '+f+' -').toString();};
+ await p.goto((process.env.PB_ROOT||'http://127.0.0.1:8843/')+(process.env.PG||'curT.html'),{waitUntil:'load'});await p.waitForTimeout(3000);return {b,p,ctx,H:F(p)};};
+module.exports.pdfText=async(p,expr,name)=>{const b64=await p.evaluate(async(expr)=>{const doc=await window.__dEval(expr);const a=new Uint8Array(doc.output('arraybuffer'));let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s);},expr);const f=((process.env.PB_OUT||'/tmp/claude-0/audit/daily2/out')+'/')+name+'.pdf';require('fs').writeFileSync(f,Buffer.from(b64,'base64'));return require('child_process').execSync('pdftotext -layout '+f+' -').toString();};

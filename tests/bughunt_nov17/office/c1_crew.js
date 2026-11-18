@@ -14,7 +14,7 @@ window.__fnOverride={'crew-admin':(b)=>{return (window.__fnReply||(()=>({ok:true
  await p.evaluate(()=>window.pbOpenCrewMembers());await p.waitForTimeout(1500);
  console.log('screen',await L.scr(p),'ovf',JSON.stringify(await L.ovf(p)));
  console.log((await L.txt(p,'#screen-crewMembers')).slice(0,2500));
- await p.screenshot({path:'/tmp/claude-0/bughunt/office/shots/c1_crew.png',fullPage:true});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/office/shots')+'/c1_crew.png'),fullPage:true});
  // actions
  const act=async(uid,a)=>{await p.evaluate(([uid,a])=>{document.querySelector('[data-uid="'+uid+'"] [data-crew-act="'+a+'"]').click();},[uid,a]);await p.waitForTimeout(400);return L.modal(p);};
  for(const [uid,a,yes] of [['u2','role','Make Pipelayer'],['u2','manager','Remove Manager'],['u2','pm','Make Project manager'],['u2','super','Make Superintendent'],['u4','role','Make Foreman'],['u4','role-pipelayer','Make Pipelayer'],['u4','super','Make Superintendent'],['u5','pm','Make Project manager'],['u5','role','Make Foreman'],['u3','resend','Resend Invite'],['u2','remove','Remove from Company']]){

@@ -1,5 +1,5 @@
 // realistic office fixtures: job 26014 detail etc.
-module.exports=`;(function(){const D=${require('fs').readFileSync('/home/claude/rig/dash.json','utf8')};const J=D.jobs[1];
+module.exports=`;(function(){const D=${require('fs').readFileSync(__dirname+'/../../rig/dash.json','utf8')};const J=D.jobs[1];
 window.__rpcOverride.pb_prod_job_detail=(a)=>{const k=String(a.p_job_number).trim().toLowerCase();const j=D.jobs.find(x=>x.job_key===k)||J;return Object.assign({},j,{today:a.p_today,server_at:new Date().toISOString(),
  days:[{date:'2026-11-05',key:'pipe',qty:300},{date:'2026-11-05',key:'excavation',qty:300},{date:'2026-11-04',key:'pipe',qty:420.5},{date:'2026-11-04',key:'_manhours',qty:40},{date:'2026-11-03',key:'demo',qty:800}],
  reporters:[{name:'Rick Foreman',email:'rick@x.co',entries:5,last_at:'2026-11-07T02:54:55Z'}],

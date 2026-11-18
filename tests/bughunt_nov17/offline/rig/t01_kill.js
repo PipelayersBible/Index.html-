@@ -1,7 +1,7 @@
 // phone dies right after actions: are laid marks / break / end kept?
 const {launch}=require('./srv');const co=require('./co_ok');const L=require('./lib');const F=require('./flow');
 const W=+process.argv[2]||100;
-(async()=>{const {b,ctx,p,S,page}=await launch('http://127.0.0.1:8877/cur.html',{init:co});const H=F(p);
+(async()=>{const {b,ctx,p,S,page}=await launch((process.env.PB_URL||'http://127.0.0.1:8877/cur.html'),{init:co});const H=F(p);
  await L.newRun(p,100);await L.lock(p);await ctx.setOffline(true);
  const r=await L.rows(p);
  await L.markLaid(p,r[4]);await p.waitForTimeout(1500);

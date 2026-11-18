@@ -30,5 +30,5 @@ const L=require('./lib');
   await T.E(()=>{pbApplyCorrectDistance();});await p.waitForTimeout(2500);console.log('modal',await H.modal());for(const b of ['OK','Apply','Yes','Continue']){await H.modalClick(b).catch(()=>{});}await p.waitForTimeout(1500);console.log('modal',await H.modal());await H.modalClick('OK').catch(()=>{});
   await rows('hub corrected');
   console.log('table:\n'+(await T.table()).split('\n').filter(l=>/¦|Stake|Shot/.test(l)).join('\n'));}
- const txt=await L.pdf(T,'/tmp/claude-0/bughunt/grade/tests/g4.pdf')||'';require('fs').writeFileSync('/tmp/claude-0/bughunt/grade/tests/g4.txt',txt);
+ const txt=await L.pdf(T,((process.env.PB_OUT||'/tmp/claude-0/bughunt/grade/tests')+'/g4.pdf'))||'';require('fs').writeFileSync(((process.env.PB_OUT||'/tmp/claude-0/bughunt/grade/tests')+'/g4.txt'),txt);
  console.log('errs',p.errs.slice(0,5));await T.b.close();})();

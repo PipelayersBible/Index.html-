@@ -1,6 +1,6 @@
 // A run restored from the account (reinstall / second phone) must not be sealed again as a new "original".
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
-const URL_=process.env.URL||'http://127.0.0.1:8864/cur.html';
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');const F=require(__dirname+'/../../rig/flow');
+const URL_=process.env.URL||process.env.PB_URL||'http://127.0.0.1:8864/cur.html';
 (async()=>{const {b,p}=await boot(URL_,{init:co+`;window.__seals=[];window.__rpcOverride.pb_prod_run_clock=()=>({ok:true});window.__rpcOverride.pb_run_seal_add=(a)=>{window.__seals.push(a);return {ok:true,version:window.__seals.length,sealed_at:new Date().toISOString()};};window.__rpcOverride.pb_run_mine_page=()=>window.__mine||[];`});const H=F(p);
  await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1200);
  const f=async(id,v)=>p.evaluate(([id,v])=>{const e=document.getElementById(id);e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));},[id,String(v)]);

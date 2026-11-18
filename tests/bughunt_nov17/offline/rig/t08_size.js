@@ -1,6 +1,6 @@
 // how big is one run with AI stake photos in Records (IndexedDB), and what does a save cost
 const {launch}=require('./srv');const co=require('./co_ok');const F=require('./flow');const L=require('./lib');
-(async()=>{const {b,ctx,p,S}=await launch('http://127.0.0.1:8877/'+(process.env.PG||'cur.html'),{init:co});const H=F(p);
+(async()=>{const {b,ctx,p,S}=await launch((process.env.PB_ROOT||'http://127.0.0.1:8877/')+(process.env.PG||'cur.html'),{init:co});const H=F(p);
  const {setStake,S:St}=await F.setup(p,H);
  await H.click('Review & Calculate');await p.waitForTimeout(1500);
  await L.lock(p);

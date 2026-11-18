@@ -9,7 +9,7 @@ const L=require('./lib');
  // mark laid to the hub row
  const idx=await T.E(()=>getCurrentArchiveEntry().intervalRows.findIndex(r=>r.pointId==='hub0'));
  await T.E((i)=>{pbLaidApply(currentRunArchiveId,i,true,true,'test');},idx);await p.waitForTimeout(1500);
- const txt=await L.pdf(T,'/tmp/claude-0/bughunt/grade/tests/t02.pdf')||'';
+ const txt=await L.pdf(T,((process.env.PB_OUT||'/tmp/claude-0/bughunt/grade/tests')+'/t02.pdf'))||'';
  const bad=[/Sta 0\+65\.25/,/Sta 1\+50\.00/,/Sta 0\+00\.00/,/stationing is not recorded/].filter(r=>r.test(txt)).map(String);
  const good=[/Angle point · Sta 11\+80\.05/,/to Sta 11\+80\.05/,/12\+45\.30/].filter(r=>!r.test(txt)).map(String);
  console.log('wrong text present:',bad,'expected text missing:',good);

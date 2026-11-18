@@ -1,7 +1,7 @@
 // shared: boot + create a locked run with 2 fittings (bend at hub0, wye at hub1). opts: {init, unit, pipeType}
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');const F=require(__dirname+'/../../rig/flow');
 module.exports=async function mk(opts={}){
- const url='http://127.0.0.1:8861/'+(process.env.PG||'cur.html');
+ const url=(process.env.PB_ROOT||'http://127.0.0.1:8861/')+(process.env.PG||'cur.html');
  const {b,p}=await boot(url,{init:(opts.init||co)});const H=F(p);
  if(opts.norun)return {b,p,H};
  let stake=null;await p.route('**/functions/v1/ai**', async r=>{await r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,text:JSON.stringify(stake),used:1,limit:60})});});
@@ -19,7 +19,7 @@ module.exports=async function mk(opts={}){
  await H.sel('hub1FitBr','6"');
  stake=S('4+51',104.26,3.83,'MH-2','3863');await p.setInputFiles('#endAiStakePhoto',[H.img('p05')]);await p.waitForTimeout(2500);
  await H.click('Review & Calculate');await p.waitForTimeout(1500);
- await H.click('Lock This Run');await p.waitForTimeout(800);await H.modalClick('I Checked Them').catch(()=>{});await p.waitForTimeout(2500);
+ await H.click('Lock This Run');await p.waitForTimeout(800);await H.modalClick('Lock Without It').catch(()=>{});await p.waitForTimeout(600);await H.modalClick('I Checked Them').catch(()=>{});await p.waitForTimeout(2500);
  const rowMenu=async(d)=>{await p.evaluate(d=>{const e=[...document.querySelectorAll('#screen-results [aria-label]')].find(e=>e.getAttribute('aria-label').startsWith('Distance '+d+' '));e.click();},d);await p.waitForTimeout(600);};
  const dists=await p.evaluate(()=>[...document.querySelectorAll('#screen-results [aria-label^="Distance "]')].map(e=>e.getAttribute('aria-label').split(' ')[1]));
  return {b,p,H,rowMenu,dists};

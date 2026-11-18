@@ -18,7 +18,7 @@ const line=(p)=>p.evaluate(()=>{const l=document.getElementById('pbBetaLine');re
  };
  for(const [k,v] of Object.entries(cases)){const {b,p}=await L.boot(L.URL,{init:mk(v),wait:6000});
   console.log(k,'=>',await line(p),'| pill:',await p.evaluate(()=>{const x=document.getElementById('pbFbPill');return !!(x&&!x.hidden);}),'| ovf',JSON.stringify(await L.ovf(p)),'errs',p.errs.length?p.errs:'');
-  await p.screenshot({path:'/tmp/claude-0/bughunt/office/shots/b1_'+k.replace(/\W+/g,'_')+'.png'});
+  await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/office/shots')+'/b1_')+k.replace(/\W+/g,'_')+'.png'});
   await b.close();}
  // stale cache: plan cached as active with 3 days left, now offline 10 days later
  {const cached={ok:true,plan:'trial',expired:false,days_left:3,trial_ends_at:iso(-7)};

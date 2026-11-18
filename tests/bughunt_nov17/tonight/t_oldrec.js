@@ -1,4 +1,4 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');const F=require(__dirname+'/../../rig/flow');
 // A run locked before r16.90 (TOP = INV + size + wall, no odIn), still open after the update: adding an interval,
 // and Edit Run Data -> Review -> Lock (Replace) with nothing changed, must keep the run's TOP as locked.
 const URL=process.env.PB_URL||'http://127.0.0.1:8843/cur.html';

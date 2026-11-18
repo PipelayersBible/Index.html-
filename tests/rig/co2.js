@@ -1,0 +1,1 @@
+module.exports=require('./co').replace("pb_my_name_get:","pb_prod_member_jobs:()=>({jobs:[{job_number:'26043',project_name:'Wildomar Ridge'},{job_number:'26014',project_name:'Sundance Sewer Improvement'}]}),\n pb_my_name_get:");

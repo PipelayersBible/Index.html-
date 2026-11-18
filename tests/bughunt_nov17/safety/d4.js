@@ -1,6 +1,6 @@
 // Weather race: the weather asked for one day must never land on (or be cached for) another day or job.
-const L=require('./lib');const mkrun=require('/home/claude/rig/mkrun');
-(async()=>{const {b,p,H}=await L({file:process.env.FILE||'cur.html',init:require('/home/claude/rig/co_fm.js')});
+const L=require('./lib');const mkrun=require(__dirname+'/../../rig/mkrun');
+(async()=>{const {b,p,H}=await L({file:process.env.FILE||'cur.html',init:require(__dirname+'/../../rig/co_fm.js')});
  const D=(s)=>p.evaluate(x=>{const r=window.__dbg(x);return r===undefined?null:JSON.parse(JSON.stringify(r));},s);
  await mkrun(p,100);
  await p.evaluate(()=>{const s=(id,v)=>{const e=document.getElementById(id);if(e){e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));}};s('saJobNumber','24-017');s('saJobsite','Test Sewer');});

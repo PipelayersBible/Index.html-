@@ -13,5 +13,5 @@ const mk=require('./mk');
  if(pick){await H.modalClick(pick);await p.waitForTimeout(1500);console.log('next modal:',JSON.stringify(await H.modal()),JSON.stringify(await H.modalBtns()));}
  console.log('screen',await H.screen().catch(()=>null));
  console.log('entries',JSON.stringify(await p.evaluate(()=>window.__ra().filter(e=>e.kind==='run').map(e=>({id:e.id,completed:e.completed,incomplete:e.incomplete,end:e.runEndTime,onBreak:e.onBreak,breaks:e.breaks,cur:window.__cur()})))));
- await p.screenshot({path:'/tmp/claude-0/bughunt/new/t/a5.png'});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/new/t')+'/a5.png')});
  console.log('errs',p.errs.slice(0,5));await b.close();})();

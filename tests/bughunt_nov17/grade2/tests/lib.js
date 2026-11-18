@@ -1,7 +1,7 @@
 // shared: boot the page (PG env, default cur.html) on port 8881, load the driver, fill a scenario, return the calc
 const fs=require('fs'),path=require('path');
-const boot=require('/home/claude/rig/boot'),co=require('/home/claude/rig/co');
-module.exports=async()=>{const PG=process.env.PG||'cur.html';const {b,p}=await boot('http://127.0.0.1:8843/'+PG,{init:co});
+const boot=require(__dirname+'/../../../rig/boot'),co=require(__dirname+'/../../../rig/co');
+module.exports=async()=>{const PG=process.env.PG||'cur.html';const {b,p}=await boot((process.env.PB_ROOT||'http://127.0.0.1:8843/')+PG,{init:co});
  await p.evaluate(src=>window.__ev(src),fs.readFileSync(path.join(__dirname,'..','ref','driver.js'),'utf8'));
  const T={b,p,PG};
  T.run=sc=>p.evaluate(sc=>{window.__g2fill(sc);return window.__g2calc();},sc);

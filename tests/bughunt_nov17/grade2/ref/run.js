@@ -2,17 +2,17 @@
 // Generates scenarios FROM..TO-1, drives the app's form through each, compares every row with the reference.
 'use strict';
 const fs = require('fs'), path = require('path');
-const boot = require('/home/claude/rig/boot'), co = require('/home/claude/rig/co');
+const boot = require(__dirname+'/../../../rig/boot'), co = require(__dirname+'/../../../rig/co');
 const { gen } = require('./gen'), { compare } = require('./compare');
 const FROM = +(process.argv[2] || 0), TO = +(process.argv[3] || 50), PAGE = process.argv[4] || 'cur.html', W = +(process.argv[5] || 4);
 const DRV = fs.readFileSync(path.join(__dirname, 'driver.js'), 'utf8');
-const OUT = process.env.OUT || path.join(__dirname, '..', 'runs_' + PAGE.replace(/\W/g, '_') + '.jsonl');
+const OUT = process.env.OUT || path.join(process.env.PB_OUT || path.join(__dirname, '..'), 'runs_' + PAGE.replace(/\W/g, '_') + '.jsonl');
 (async () => {
   const seeds = []; for (let s = FROM; s < TO; s++) seeds.push(s);
   let rowsT = 0, valsT = 0, runsT = 0, badRuns = 0; const kinds = {};
   fs.writeFileSync(OUT, '');
   const worker = async () => {
-    const { b, p } = await boot('http://127.0.0.1:8843/' + PAGE, { init: co });
+    const { b, p } = await boot((process.env.PB_ROOT||'http://127.0.0.1:8843/') + PAGE, { init: co });
     await p.evaluate(src => window.__ev(src), DRV);
     while (seeds.length) {
       const s = seeds.shift(); const sc = gen(s);

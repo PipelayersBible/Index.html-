@@ -3,7 +3,7 @@
 // must not move, and the station text of a row must be the same stake's station as before.
 'use strict';
 const fs = require('fs'), path = require('path');
-const boot = require('/home/claude/rig/boot'), co = require('/home/claude/rig/co');
+const boot = require(__dirname+'/../../../rig/boot'), co = require(__dirname+'/../../../rig/co');
 const { gen } = require('./gen');
 const FROM = +(process.argv[2] || 0), TO = +(process.argv[3] || 50), PAGE = process.argv[4] || 'cur.html', W = +(process.argv[5] || 4);
 const DRV = fs.readFileSync(path.join(__dirname, 'driver.js'), 'utf8');
@@ -11,7 +11,7 @@ const DRV = fs.readFileSync(path.join(__dirname, 'driver.js'), 'utf8');
   const seeds = []; for (let s = FROM; s < TO; s++) seeds.push(s);
   let n = 0, rows = 0, bad = 0; const kinds = {};
   const worker = async () => {
-    const { b, p } = await boot('http://127.0.0.1:8843/' + PAGE, { init: co });
+    const { b, p } = await boot((process.env.PB_ROOT||'http://127.0.0.1:8843/') + PAGE, { init: co });
     await p.evaluate(src => window.__ev(src), DRV);
     while (seeds.length) {
       const s = seeds.shift(); const sc = gen(s, { nRuns: 1 });

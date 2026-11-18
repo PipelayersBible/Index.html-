@@ -1,12 +1,12 @@
 const {chromium}=require('playwright');const fs=require('fs');
-(async()=>{const b=await chromium.launch({args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});const ctx=await b.newContext({viewport:{width:400,height:850},serviceWorkers:'block',permissions:['camera']});
- const p=await ctx.newPage();await p.addInitScript({content:fs.readFileSync('/home/claude/rig/fakesb.js','utf8')});await p.addInitScript({content:require('/home/claude/rig/co')});
+(async()=>{const b=await chromium.launch({args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});const ctx=await b.newContext({viewport:{width:400,height:850},serviceWorkers:'block',permissions:['camera']});await require(__dirname+'/rig/env').applyClock(ctx);
+ const p=await ctx.newPage();await p.addInitScript({content:fs.readFileSync(__dirname+'/rig/fakesb.js','utf8')});await p.addInitScript({content:require(__dirname+'/rig/co')});
  await p.route('**/fonts.googleapis.com/**',r=>r.abort());await p.route('**/nominatim**',r=>r.abort());
  const errs=[];p.on('pageerror',e=>errs.push(e.message));
  const S=(sta,el,cf,num)=>({is_stake:true,stake_number:{value:num||'',conf:num?'high':'uncertain'},station:{value:sta||null,conf:sta?'high':'uncertain'},offset:{value:sta?'10/SD':null,conf:sta?'high':'uncertain'},line_label:{value:null,conf:'uncertain'},cut_fill:cf==null?{conf:'uncertain'}:{direction:'cut',feet:cf,as_written:'C-'+cf,to:'IE',conf:'high'},stake_elevation:el==null?{conf:'uncertain'}:{feet:el,as_written:'('+el+')',conf:'high'},other_text:'',uncertain:[]});
  const R=[S('0+50',null,5.66,''),S('',88.1,null,'101')];let n=0;const t0=Date.now();const log=[];
  await p.route('**/functions/v1/ai**',async r=>{const k=n++;log.push('req'+k+'@'+(Date.now()-t0));await new Promise(z=>setTimeout(z,3000));await r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,text:JSON.stringify(R[k]),used:k+1,limit:20})});});
- await p.goto('http://127.0.0.1:8843/cur.html');await p.waitForTimeout(2500);
+ await p.goto((process.env.PB_URL||'http://127.0.0.1:8843/cur.html'));await p.waitForTimeout(2500);
  await p.evaluate(()=>{try{localStorage.setItem('pbAiPrivacyAck','1')}catch(e){}});
  await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1500);
  await p.evaluate(()=>pbStakeAiPick('start'));await p.waitForTimeout(1500);

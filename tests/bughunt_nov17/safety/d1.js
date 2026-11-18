@@ -1,5 +1,5 @@
-const L=require('./lib');const mkrun=require('/home/claude/rig/mkrun');
-(async()=>{const {b,p,H}=await L({init:require('/home/claude/rig/co_fm.js')});
+const L=require('./lib');const mkrun=require(__dirname+'/../../rig/mkrun');
+(async()=>{const {b,p,H}=await L({init:require(__dirname+'/../../rig/co_fm.js')});
  p.on('console',m=>{if(m.type()==='error')console.log('CONSOLE',m.text().slice(0,300));});
  await mkrun(p,100);
  await p.evaluate(()=>{const s=(id,v)=>{const e=document.getElementById(id);if(e){e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));}};s('saJobNumber','24-017');s('saJobsite','Test Sewer');});

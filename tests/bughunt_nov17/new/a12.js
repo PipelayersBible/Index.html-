@@ -17,9 +17,9 @@ const mk=require('./mk');
  // open the ended run's Results
  await p.evaluate(()=>window.pbResumeLastRunResults());await p.waitForTimeout(2500);
  console.log('results of the ended run:',JSON.stringify(await st()));
- await p.screenshot({path:'/tmp/claude-0/bughunt/new/t/a12.png'});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/new/t')+'/a12.png')});
  if(await p.evaluate(()=>{const o=document.getElementById('pbBrk');return !!o&&!o.hidden;})){await p.click('#pbBrkEnd');await p.waitForTimeout(1200);console.log('after End Break:',JSON.stringify(await st()));}
  await p.evaluate(()=>{const J=window.jspdf.jsPDF;J.API.save=function(n){window.__pdfDoc=this;return this;};});await p.evaluate(()=>window.pbDownloadArchivePDF(0));await p.waitForTimeout(6000);
- const b64=await p.evaluate(()=>{const a=new Uint8Array(window.__pdfDoc.output('arraybuffer'));let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s);});require('fs').writeFileSync('/tmp/claude-0/bughunt/new/t/a12.pdf',Buffer.from(b64,'base64'));
- console.log(require('child_process').execSync('pdftotext -layout /tmp/claude-0/bughunt/new/t/a12.pdf - | grep -A6 "^ *Breaks (" | tail -8; pdftotext -layout /tmp/claude-0/bughunt/new/t/a12.pdf - | grep -i -m3 "ended\\b.*202"').toString());
+ const b64=await p.evaluate(()=>{const a=new Uint8Array(window.__pdfDoc.output('arraybuffer'));let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s);});require('fs').writeFileSync(((process.env.PB_OUT||'/tmp/claude-0/bughunt/new/t')+'/a12.pdf'),Buffer.from(b64,'base64'));
+ console.log(require('child_process').execSync(((O)=>'pdftotext -layout '+O+'/a12.pdf - | grep -A6 "^ *Breaks (" | tail -8; pdftotext -layout '+O+'/a12.pdf - | grep -i -m3 "ended\\b.*202"')(process.env.PB_OUT||'/tmp/claude-0/bughunt/new/t')).toString());
  console.log('errs',p.errs.slice(0,5));await b.close();})();

@@ -4,7 +4,7 @@
 //  2. the record loaded back into the form (Edit Run Data's loader) must calculate exactly A again.
 'use strict';
 const fs = require('fs'), path = require('path');
-const boot = require('/home/claude/rig/boot'), co = require('/home/claude/rig/co');
+const boot = require(__dirname+'/../../../rig/boot'), co = require(__dirname+'/../../../rig/co');
 const { gen } = require('./gen');
 const FROM = +(process.argv[2] || 0), TO = +(process.argv[3] || 20), PAGE = process.argv[4] || 'cur.html', W = +(process.argv[5] || 3);
 const DRV = fs.readFileSync(path.join(__dirname, 'driver.js'), 'utf8');
@@ -23,7 +23,7 @@ async function modals(p, log) {
   let n = 0, rows = 0, bad = 0;
   const worker = async () => {
     let B = null, used = 0;
-    const fresh = async () => { if (B) await B.b.close(); B = await boot('http://127.0.0.1:8843/' + PAGE, { init: co }); await B.p.evaluate(src => window.__ev(src), DRV); used = 0; };
+    const fresh = async () => { if (B) await B.b.close(); B = await boot((process.env.PB_ROOT||'http://127.0.0.1:8843/') + PAGE, { init: co }); await B.p.evaluate(src => window.__ev(src), DRV); used = 0; };
     await fresh();
     while (seeds.length) {
       const s = seeds.shift(); if (used >= 6) await fresh(); used++;

@@ -1,5 +1,5 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
-(async()=>{const {b,p}=await boot('http://127.0.0.1:8862/'+(process.env.PG||'cur.html')+'',{init:co});const H=F(p);
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');const F=require(__dirname+'/../../rig/flow');
+(async()=>{const {b,p}=await boot((process.env.PB_ROOT||'http://127.0.0.1:8862/')+(process.env.PG||'cur.html')+'',{init:co});const H=F(p);
  let stake=null;await p.route('**/functions/v1/ai**', async r=>{await r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,text:JSON.stringify(stake),used:1,limit:60})});});
  const S=(sta,el,cf,line,num)=>({is_stake:true,stake_number:{value:num,conf:'high'},station:{value:sta,conf:'high'},offset:{value:'10/SD',conf:'high'},line_label:{value:line,conf:'high'},cut_fill:{direction:'cut',feet:cf,as_written:'C-'+cf,to:'IE',conf:'high'},stake_elevation:{feet:el,as_written:String(el),conf:'high'},other_text:'',uncertain:[]});
  await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1500);
@@ -14,7 +14,7 @@ const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/c
  await H.sel('hub1FitBr','6"');
  stake=S('4+51',104.26,3.83,'MH-2','3863');await p.setInputFiles('#endAiStakePhoto',[H.img('p05')]);await p.waitForTimeout(2500);
  await H.click('Review & Calculate');await p.waitForTimeout(1500);
- await H.click('Lock This Run');await p.waitForTimeout(800);await H.modalClick('I Checked Them').catch(()=>{});await p.waitForTimeout(2500);
+ await H.click('Lock This Run');await p.waitForTimeout(800);await H.modalClick('Lock Without It').catch(()=>{});await p.waitForTimeout(600);await H.modalClick('I Checked Them').catch(()=>{});await p.waitForTimeout(2500);
  // counted box before laying
  await p.evaluate(()=>{const s=[...document.querySelectorAll('#screen-results summary')].find(s=>/Production & Crew/.test(s.textContent));s&&s.click();});await p.waitForTimeout(400);
  console.log('counted (none laid):',JSON.stringify(await p.evaluate(()=>{const h=document.getElementById('fpCounted');return h&&!h.hidden?h.innerText:null;})));
@@ -40,6 +40,6 @@ const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/c
  console.log('job materials block:',JSON.stringify(await p.evaluate(()=>{const d=document.createElement('div');d.innerHTML=window.__pbMatFitHtml({job_number:'24-017'});return d.innerText;})));
  // PDF section
  await p.evaluate(()=>{const J=window.jspdf.jsPDF;J.API.save=function(n){window.__pdfDoc=this;return this;};});await p.evaluate(()=>window.pbDownloadArchivePDF(0));await p.waitForTimeout(6000);
- const t=await p.evaluate(()=>{const d=window.__pdfDoc;if(!d)return 'no pdf';const raw=d.output();return raw.indexOf('Check shots')<0?'missing':'found; LOW: '+(raw.indexOf('LOW')>=0);});console.log('pdf:',t);{const b64=await p.evaluate(()=>{const a=new Uint8Array(window.__pdfDoc.output('arraybuffer'));let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s);});require('fs').writeFileSync('/tmp/claude-0/t115.pdf',Buffer.from(b64,'base64'));}
- await p.setViewportSize({width:390,height:800});await rowMenu(mid);await H.modalClick('New check shot');await p.waitForTimeout(400);await p.evaluate(()=>{const J=window.jspdf.jsPDF;const d=window.__pdfDoc;const a=new Uint8Array(d.output('arraybuffer'));window.__pdfb=a.length;});await p.screenshot({path:'/tmp/claude-0/cs.png'});
+ const t=await p.evaluate(()=>{const d=window.__pdfDoc;if(!d)return 'no pdf';const raw=d.output();return raw.indexOf('Check shots')<0?'missing':'found; LOW: '+(raw.indexOf('LOW')>=0);});console.log('pdf:',t);{const b64=await p.evaluate(()=>{const a=new Uint8Array(window.__pdfDoc.output('arraybuffer'));let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s);});require('fs').writeFileSync(((process.env.PB_OUT||'/tmp/claude-0')+'/t115.pdf'),Buffer.from(b64,'base64'));}
+ await p.setViewportSize({width:390,height:800});await rowMenu(mid);await H.modalClick('New check shot');await p.waitForTimeout(400);await p.evaluate(()=>{const J=window.jspdf.jsPDF;const d=window.__pdfDoc;const a=new Uint8Array(d.output('arraybuffer'));window.__pdfb=a.length;});await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0')+'/cs.png')});
  console.log('errs',p.errs.slice(0,3));await b.close();})();

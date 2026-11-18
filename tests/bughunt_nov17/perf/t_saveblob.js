@@ -1,7 +1,7 @@
 // patch 03 test: a laid mark's save no longer makes a second copy of all of Records (a Blob as big as the archive),
 // and the size messages still work (a forced failed save says "about N MB").
 // usage: node t_saveblob.js <page>  -> exit 0 when no archive-sized Blob is made
-const P=require('./perf');const L=require('/tmp/claude-0/audit/offline/rig/lib');const F=require('/home/claude/rig/flow');
+const P=require('./perf');const L=require(__dirname+'/../offline/rig/lib');const F=require(__dirname+'/../../rig/flow');
 const PG=process.argv[2]||'p04.html';let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++;};
 const HOOK=`(function(){const B=window.Blob;window.__bigBlobs=0;window.Blob=function(parts,o){try{const n=(parts||[]).reduce((a,p)=>a+(typeof p==='string'?p.length:0),0);if(n>20000)window.__bigBlobs++;}catch(e){}return new B(parts,o);};window.Blob.prototype=B.prototype;})();`;
 (async()=>{const {b,ctx}=await P.launch({sw:false,init:HOOK});const p=await P.page(ctx,1);await P.open(p,P.ORIGIN+'/'+PG);await p.waitForTimeout(2500);

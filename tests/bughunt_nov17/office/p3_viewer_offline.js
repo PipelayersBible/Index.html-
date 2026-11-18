@@ -1,7 +1,7 @@
 // Plan sheet viewer: with no signal it must say so, and load by itself when signal is back.
 const L=require('./lib');
 const grid={dpi:150,w:5400,h:3600,cols:4,rows:4,tw:1545,th:1095,ov:260,tiles:['r0c0','r0c1','r1c0','r1c1']};
-const init='('+require('/home/claude/rig/pm_plans').toString()+')();'+`window.__rpcOverride.pb_terms_status=()=>({terms:'1.0',privacy:'1.0',at:new Date().toISOString()});try{localStorage.setItem('pbCrewNotice:00000000-0000-4000-8000-000000000001','1');}catch(e){}
+const init='('+require(__dirname+'/../../rig/pm_plans').toString()+')();'+`window.__rpcOverride.pb_terms_status=()=>({terms:'1.0',privacy:'1.0',at:new Date().toISOString()});try{localStorage.setItem('pbCrewNotice:00000000-0000-4000-8000-000000000001','${require(__dirname+'/../../rig/env').NOTICE}');}catch(e){}
 window.__rpcOverride.pb_plans_sheets=()=>({ok:true,set:{id:'S1',title:'Water Sewer',pages:1,state:'ready'},sheets:[{page:1,sheet:'C-1',title:'PLAN AND PROFILE',grid:${JSON.stringify(grid)},state:'done',issues:0}]});`;
 (async()=>{const {b,p}=await L.boot(L.URL,{init,wait:4500});
  await p.evaluate(()=>window.pbPlanSetOpen('S1'));await p.waitForTimeout(800);

@@ -1,5 +1,5 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const mgr=require('/home/claude/rig/mgr');
-async function run(init,wait,label){const {b,p}=await boot('http://127.0.0.1:8861/cur.html',{init,wait});
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');const mgr=require(__dirname+'/../../rig/mgr');
+async function run(init,wait,label){const {b,p}=await boot((process.env.PB_URL||'http://127.0.0.1:8861/cur.html'),{init,wait});
  await p.evaluate(()=>{window.__mfaApi={listFactors:async()=>({data:{totp:[]}}),getAuthenticatorAssuranceLevel:async()=>({data:{currentLevel:'aal1',nextLevel:'aal1'}}),enroll:async()=>({}),challengeAndVerify:async()=>({data:{}}),unenroll:async()=>({data:{}})};});
  await p.evaluate(()=>pbGoto('settings'));await p.waitForTimeout(1500);
  const g=()=>p.evaluate(()=>[document.getElementById('settingsMfa').innerText.slice(0,60),document.getElementById('settingsAdminLog').innerText.slice(0,40)]);

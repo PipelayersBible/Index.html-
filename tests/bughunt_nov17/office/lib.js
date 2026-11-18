@@ -1,8 +1,8 @@
 process.env.NODE_PATH='/opt/npm-tools/node_modules';require('module').Module._initPaths();
 const {chromium}=require('playwright');const fs=require('fs');
-const co=require('/home/claude/rig/co');const mgr=require('/home/claude/rig/mgr');const F=require('/home/claude/rig/flow');
-const URL='http://127.0.0.1:8866/'+(process.env.PAGE||'cur.html');
-async function boot(url,opts={}){const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:390,height:800},serviceWorkers:'block'});
+const co=require(__dirname+'/../../rig/co');const mgr=require(__dirname+'/../../rig/mgr');const F=require(__dirname+'/../../rig/flow');
+const URL=(process.env.PB_ROOT||'http://127.0.0.1:8866/')+(process.env.PAGE||'cur.html');
+async function boot(url,opts={}){const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:390,height:800},serviceWorkers:'block'});await require(__dirname+'/../../rig/env').applyClock(ctx);
  await ctx.route(/supabase-js/,r=>r.fulfill({contentType:'application/javascript',body:fs.readFileSync(__dirname+'/fakesb.js','utf8')}));
  await ctx.route(/supabase\.co/,r=>r.fulfill({status:200,contentType:'application/json',body:'null'}));
  if(opts.init)await ctx.addInitScript(opts.init);const p=await ctx.newPage();p.errs=[];p.on('pageerror',e=>p.errs.push(e.message));

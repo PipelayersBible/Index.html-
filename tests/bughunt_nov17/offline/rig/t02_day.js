@@ -1,6 +1,6 @@
 // a day offline: lock, laid marks, break, end + send report; then signal back
 const {launch}=require('./srv');const co=require('./co_ok');const L=require('./lib');const F=require('./flow');
-(async()=>{const {b,ctx,p,S,page}=await launch('http://127.0.0.1:8877/'+(process.env.PG||'cur.html'),{init:co});const H=F(p);
+(async()=>{const {b,ctx,p,S,page}=await launch((process.env.PB_ROOT||'http://127.0.0.1:8877/')+(process.env.PG||'cur.html'),{init:co});const H=F(p);
  await ctx.setOffline(true);
  await L.newRun(p,100);await L.lock(p);
  const r=await L.rows(p);

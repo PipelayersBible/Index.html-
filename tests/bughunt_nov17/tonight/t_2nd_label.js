@@ -1,4 +1,4 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');const F=require(__dirname+'/../../rig/flow');
 // r16.90 second shot: the stake's name shows as typed (6" LAT & MH), not HTML-escaped.
 // was: "Lock Without It", then Go Back at "Check the AI Readings", add the second rod shot, lock: the record must NOT say aiNo2nd.
 const URL=process.env.PB_URL||'http://127.0.0.1:8843/cur.html';

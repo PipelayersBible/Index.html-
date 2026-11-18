@@ -16,7 +16,7 @@ const init=L.co+`;(function(){const d=(n)=>new Date(Date.now()+n*864e5).toISOStr
  await p.evaluate(()=>window.pbOwnerOpen());await p.waitForTimeout(1000);
  console.log((await L.txt(p,'#pbOwnList')));
  console.log('ovf',JSON.stringify(await L.ovf(p)));
- await p.screenshot({path:'/tmp/claude-0/bughunt/office/shots/b3_owner.png'});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/office/shots')+'/b3_owner.png')});
  // start a beta: errors
  await p.click('#pbOwnStart');console.log('empty:',await L.txt(p,'#pbOwnSt'));
  await p.fill('#pbOwnName','New Co');await p.fill('#pbOwnEmail','not-an-email');
@@ -28,7 +28,7 @@ const init=L.co+`;(function(){const d=(n)=>new Date(Date.now()+n*864e5).toISOStr
  // make paid: modal, cancel
  await p.evaluate(()=>document.querySelector('[data-id="c1"] [data-act="paid"]').click());await p.waitForTimeout(500);
  console.log('paid modal:',await L.modal(p));
- await p.screenshot({path:'/tmp/claude-0/bughunt/office/shots/b3_owner_modal.png'});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/office/shots')+'/b3_owner_modal.png')});
  const top=await p.evaluate(()=>{const m=[...document.querySelectorAll('.pb-modal-overlay')].find(x=>x.offsetParent);if(!m)return 'no overlay';const r=m.getBoundingClientRect();const el=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);const btn=[...m.querySelectorAll('button')].find(b=>b.textContent.trim()==='Make Paid');const br=btn.getBoundingClientRect();const hit=document.elementFromPoint(br.left+br.width/2,br.top+br.height/2);return 'button hit: '+(hit===btn||btn.contains(hit))+' z(modal)='+getComputedStyle(m).zIndex+' z(sheet)='+getComputedStyle(document.getElementById('pbOwnerSheet')).zIndex;});
  console.log('modal above sheet?',top);
  await L.modalClick(p,'Make Paid');await p.waitForTimeout(600);console.log('sets:',JSON.stringify(await p.evaluate(()=>window.__sets)));

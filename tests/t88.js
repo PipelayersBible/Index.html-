@@ -1,5 +1,5 @@
-const boot=require('./boot');const F=require('./flow');
-(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/cur.html',{init:require('./co')});const H=F(p);
+const boot=require('./rig/boot');const F=require('./rig/flow');
+(async()=>{const {b,p}=await boot((process.env.PB_URL||'http://127.0.0.1:8843/cur.html'),{init:require('./rig/co')});const H=F(p);
  const errs=[];p.on('pageerror',e=>errs.push(e.message));
  const R=await F.setup(p,H);
  const lab=()=>p.evaluate(()=>['startLabel','hub0Label','hub1Label','endLabel'].map(i=>i+'="'+((document.getElementById(i)||{}).value||'')+'"').join(' '));

@@ -1,7 +1,7 @@
 // a busy month of runs with AI stake photos: what does one laid mark cost, and what does storage hold
 const {launch}=require('./srv');const co=require('./co_ok');const F=require('./flow');const L=require('./lib');
 const N=+process.argv[2]||40;
-(async()=>{const {b,ctx,p,S,page}=await launch('http://127.0.0.1:8877/'+(process.env.PG||'cur.html'),{init:co});const H=F(p);
+(async()=>{const {b,ctx,p,S,page}=await launch((process.env.PB_ROOT||'http://127.0.0.1:8877/')+(process.env.PG||'cur.html'),{init:co});const H=F(p);
  await F.setup(p,H);await H.click('Review & Calculate');await p.waitForTimeout(1500);await L.lock(p);await p.waitForTimeout(1500);
  const info=await p.evaluate(async(N)=>{const uid='00000000-0000-4000-8000-000000000001',key=uid+':runArchive';
    const db=await new Promise((ok,no)=>{const r=indexedDB.open('pb-big',1);r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error);});

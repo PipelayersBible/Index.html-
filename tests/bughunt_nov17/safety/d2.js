@@ -1,5 +1,5 @@
-const L=require('./lib');const mkrun=require('/home/claude/rig/mkrun');const fs=require('fs');
-(async()=>{const {b,p,H}=await L({init:require('/home/claude/rig/co_fm.js'),extra:`;window.__sub=[];window.__rpcOverride.pb_daily_submit=(a)=>{window.__sub.push(a);return {ok:true,id:'srv-'+window.__sub.length,version:window.__sub.length,received_at:new Date().toISOString(),server_sha256:a.p_sha256};};`});
+const L=require('./lib');const mkrun=require(__dirname+'/../../rig/mkrun');const fs=require('fs');
+(async()=>{const {b,p,H}=await L({init:require(__dirname+'/../../rig/co_fm.js'),extra:`;window.__sub=[];window.__rpcOverride.pb_daily_submit=(a)=>{window.__sub.push(a);return {ok:true,id:'srv-'+window.__sub.length,version:window.__sub.length,received_at:new Date().toISOString(),server_sha256:a.p_sha256};};`});
  p.on('console',m=>{if(m.type()==='error')console.log('CONSOLE',m.text().slice(0,300));});
  const D=(s)=>p.evaluate(x=>{const r=window.__dbg(x);return r===undefined?null:JSON.parse(JSON.stringify(r));},s);
  await mkrun(p,100);

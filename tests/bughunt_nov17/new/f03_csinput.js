@@ -1,6 +1,6 @@
 // fails on r16.88 (dbg.html), passes on fix.html: check-shot entry on an architect rod + tolerance display
 const mk=require('./mk');
-(async()=>{const {b,p,H}=await mk({arch:true,pre:async(p)=>{await p.click('#rodToggle button[data-val="architect"]');await p.waitForTimeout(300);}});
+(async()=>{const {b,p,H}=await mk({arch:true,pre:async(p)=>{await p.evaluate(()=>{document.getElementById('runSecMore').open=true;});/* r16.95: rod is under More settings */await p.click('#rodToggle button[data-val="architect"]');await p.waitForTimeout(300);}});
  let ok=true;const say=(n,c,x)=>{console.log((c?'ok   ':'FAIL ')+n+(x!==undefined?' :: '+x:''));if(!c)ok=false;};
  const near=(a,b)=>a!==null&&Math.abs(a-b)<1e-6;
  const P=await p.evaluate(()=>Object.fromEntries(['4.36','-4.36','.5','7-3 1/2',"7'-3 1/2\"",'7 3 1/2',"7' 3.5\"",'7-3-1/2',"7' 3-1/2\"","4.36'",'4.36 ft','94"','3 1/2"','7-13','7-3 1/0','abc','—','',"7'-11 15/16\"","0'-3\""].map(s=>[s,pbCsParse(s)])));

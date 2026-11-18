@@ -12,7 +12,7 @@ const init=L.co+L.mgr+`;(function(){const now=new Date().toISOString();
  await p.evaluate(()=>window.pbCxOpenJob('26014','materials'));await p.waitForTimeout(3000);
  console.log('screen',await L.scr(p),'ovf',JSON.stringify(await L.ovf(p)));
  const sec=()=>L.txt(p,'#pjMatSec');console.log(((await sec())||'(no section)').slice(0,900));
- await p.screenshot({path:'/tmp/claude-0/bughunt/office/shots/m1_mat.png',fullPage:true});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/office/shots')+'/m1_mat.png'),fullPage:true});
  // record use on m2
  await p.evaluate(()=>window.pbMatUsedForm('m2'));await p.waitForTimeout(400);
  console.log('use form:',((await sec())||'').slice(0,300));
@@ -28,10 +28,10 @@ const init=L.co+L.mgr+`;(function(){const now=new Date().toISOString();
  await p.evaluate(()=>window.pbAskFromTab());await p.waitForTimeout(500);
  await p.fill('#aiAskBox','do a material takeoff for job 26014 from the plans');await p.click('#aiAskBtn');await p.waitForTimeout(1500);
  console.log('ask card:',((await L.txt(p,'#aiAskHistory'))||'').slice(0,500));
- await p.screenshot({path:'/tmp/claude-0/bughunt/office/shots/m1_ask_prop.png'});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/office/shots')+'/m1_ask_prop.png')});
  await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(x=>x.offsetParent&&x.textContent.trim()==='Review in Job Materials');b&&b.click();});await p.waitForTimeout(2500);
  console.log('takeoff panel:',await L.txt(p,'#pjMatTk'));
- await p.screenshot({path:'/tmp/claude-0/bughunt/office/shots/m1_takeoff.png',fullPage:true});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/office/shots')+'/m1_takeoff.png'),fullPage:true});
  for(const k of [0,1,2,3]){const id=await p.evaluate((k)=>{const b=document.getElementById('pjMatTkSet'+k)||document.getElementById('pjMatTkAdd'+k);if(!b)return null;b.click();return b.id;},k);await p.waitForTimeout(500);if(!id){console.log(k,'no button');continue;}
   const f=await p.evaluate(()=>{const g=(i)=>{const e=document.getElementById(i);return e?e.value:undefined;};return {name:g('pmf_name'),expected:g('pmf_expected'),unit:g('pmf_unit'),cat:g('pmf_category'),src:g('pmf_source')};});
   await p.evaluate(()=>{window.__calls=[];return window.pbMatFormSave();});await p.waitForTimeout(700);

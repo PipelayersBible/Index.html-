@@ -1,6 +1,6 @@
 // two tabs on the same account, same open run: marks in both
 const {launch}=require('./srv');const co=require('./co_ok');const L=require('./lib');const F=require('./flow');
-(async()=>{const {b,ctx,p,S,page}=await launch('http://127.0.0.1:8877/'+(process.env.PG||'cur.html'),{init:co});
+(async()=>{const {b,ctx,p,S,page}=await launch((process.env.PB_ROOT||'http://127.0.0.1:8877/')+(process.env.PG||'cur.html'),{init:co});
  await L.newRun(p,100);await L.lock(p);
  const p2=await page();
  await p2.evaluate(()=>pbResumeLastRunResults());await p2.waitForTimeout(2000);

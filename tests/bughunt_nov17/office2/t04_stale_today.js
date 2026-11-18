@@ -1,6 +1,6 @@
 // Office laptop: the dashboard was loaded yesterday afternoon (2 crew members reported, 300 LF pipe that day).
 // This morning there is no signal; Home and Company production show the saved copy. They must not call yesterday "today".
-const L=require('./lib');const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const mgr=require('/home/claude/rig/mgr');
+const L=require('./lib');const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');const mgr=require(__dirname+'/../../rig/mgr');
 const y=(()=>{const d=new Date(Date.now()-86400000);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
 const extra=`;(function(){const o=window.__rpcOverride.pb_prod_company_dashboard;window.__rpcOverride.pb_prod_company_dashboard=(a)=>{const d=JSON.parse(JSON.stringify(o(a)));d.today='${y}';d.server_at=new Date(Date.now()-86400000).toISOString();d.jobs.forEach(j=>{if(j.job_key==='26014'){j.reporters_today=2;j.last_work_date='${y}';j.last_at=new Date(Date.now()-86400000).toISOString();j.cats.forEach(c=>{if(c.key==='pipe'){c.today=300;}});}});return d;};})();`;
 (async()=>{const {b,p}=await L.open(extra,{w:1280});let fail=0;

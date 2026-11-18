@@ -1,6 +1,6 @@
 // CPU profile of one action (CDP Profiler) -> top functions by self time.
 // usage: node prof.js <variant> <what: search|laid|newrun|load> [cpu]
-const P = require('./perf'); const L = require('/tmp/claude-0/audit/offline/rig/lib'); const F = require('/home/claude/rig/flow');
+const P = require('./perf'); const L = require(__dirname+'/../offline/rig/lib'); const F = require(__dirname+'/../../rig/flow');
 const V = process.argv[2] || 'base', WHAT = process.argv[3] || 'search', CPU = +process.argv[4] || 1, URL = P.ORIGIN + '/' + V + (V.endsWith('.html') ? '' : '/');
 function top(profile, n = 25) {
   const self = new Map(), byId = new Map(profile.nodes.map((x) => [x.id, x]));

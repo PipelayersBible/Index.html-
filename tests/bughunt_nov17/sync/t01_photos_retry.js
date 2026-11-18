@@ -1,6 +1,6 @@
 // Run photos: more than 20 in a run, or an upload that fails once, must still all reach the company.
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const mkrun=require('/home/claude/rig/mkrun');
-const URL_=process.env.URL||'http://127.0.0.1:8864/cur.html';
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');const mkrun=require(__dirname+'/../../rig/mkrun');
+const URL_=process.env.URL||process.env.PB_URL||'http://127.0.0.1:8864/cur.html';
 (async()=>{const {b,p}=await boot(URL_,{init:co});
  await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1200);
  const f=async(id,v)=>p.evaluate(([id,v])=>{const e=document.getElementById(id);e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));},[id,String(v)]);

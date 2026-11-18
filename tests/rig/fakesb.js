@@ -7,11 +7,11 @@
     ['select','eq','neq','in','is','gt','gte','lt','lte','order','limit','range','match','or','filter','not','ilike','like','contains','upsert','insert','update','delete','returns','abortSignal'].forEach(m=>q[m]=chain);
     const one=()=>res((window.__tableOne||{})[table]||null);q.single=one;q.maybeSingle=one;q.then=(a,b)=>res([]).then(a,b);return q;}
   window.supabase={createClient(){return{
-    auth:{getSession:()=>res({session:S}),getUser:()=>res({user:U}),onAuthStateChange:(cb)=>{setTimeout(()=>cb('SIGNED_IN',S),0);return{data:{subscription:{unsubscribe(){}}}};},
+    auth:{get mfa(){return window.__mfaApi||undefined;},getSession:()=>res({session:S}),getUser:()=>res({user:U}),onAuthStateChange:(cb)=>{setTimeout(()=>cb('SIGNED_IN',S),0);return{data:{subscription:{unsubscribe(){}}}};},
       signInWithPassword:()=>res({session:S,user:U}),signOut:()=>res(null),setSession:()=>res({session:S}),updateUser:()=>res({user:U}),resetPasswordForEmail:()=>res(null),refreshSession:()=>res({session:S})},
-    rpc:(n,a)=>{window.__rpcLog.push(n);const o=window.__rpcOverride[n];return res(typeof o==='function'?o(a):o===undefined?null:o);},
+    rpc:(n,a)=>{window.__rpcLog.push(n);(window.__rpcArgs=window.__rpcArgs||[]).push([n,a]);const o=window.__rpcOverride[n];return res(typeof o==='function'?o(a):o===undefined?null:o);},
     from:qb,functions:{invoke:()=>res(null)},
-    storage:{from:()=>({upload:()=>res({path:'x'}),getPublicUrl:()=>({data:{publicUrl:''}}),createSignedUrl:()=>res({signedUrl:''}),remove:()=>res(null),download:()=>res(null)})},
+    storage:{from:(b)=>({upload:(path,blob)=>{window.__uploads=window.__uploads||{};if(window.__uploads[b+'/'+path])return Promise.resolve({data:null,error:{message:'The resource already exists'}});window.__uploads[b+'/'+path]=blob;return res({path});},getPublicUrl:()=>({data:{publicUrl:''}}),createSignedUrl:()=>res({signedUrl:''}),remove:()=>res(null),download:(path)=>{const x=(window.__uploads||{})[b+'/'+path];return Promise.resolve(x?{data:x,error:null}:{data:null,error:{message:'nf'}});}})},
     channel:()=>({on(){return this},subscribe(){return this}}),removeChannel(){}
   };}};
 })();

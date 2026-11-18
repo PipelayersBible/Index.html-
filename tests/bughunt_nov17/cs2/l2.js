@@ -11,7 +11,7 @@ const L=require('./lib2');(async()=>{let {b,p,H}=await L({perms:['geolocation'],
  const ca=await p.evaluate(()=>{const e=document.getElementById('cpEmCallAgain');return e?[!!e.offsetParent,e.textContent]:null;});console.log('callAgain',ca);
  const em=await p.evaluate(()=>[...document.querySelectorAll('.pb-emergency-btn')].filter(x=>x.offsetParent).map(x=>x.textContent.trim()));console.log('visible em buttons',em);
  // restart
- p=await H.restart();const F=require('/home/claude/rig/flow');Object.assign(H,F(p));
+ p=await H.restart();const F=require(__dirname+'/../../rig/flow');Object.assign(H,F(p));
  H.D=(s)=>p.evaluate(x=>{const r=window.__dbg(x);return r===undefined?null:JSON.parse(JSON.stringify(r));},s);
  console.log('after restart screen',await p.evaluate(()=>{const s=[...document.querySelectorAll('[id^=screen-]')].find(x=>x.offsetParent);return s&&s.id;}),'modal',await H.modal());
  for(let i=0;i<3;i++){const bt=await H.modalBtns();if(!bt.length)break;await H.modalClick(bt[bt.length-1]);}console.log('after restart buttons',await p.evaluate(()=>[...document.querySelectorAll('#screen-confinedActive button')].filter(x=>x.offsetParent&&/^(EMERGENCY|Call .* again)$/i.test(x.textContent.trim())).map(x=>x.textContent.trim())),await p.evaluate(()=>document.getElementById('screen-confinedActive').className));console.log('shell',await p.evaluate(()=>{const e=document.querySelector('.pb-shell-lines, #pbShellLines');return e?e.innerText:document.body.innerText.match(/EMERGENCY STILL OPEN[^\n]*/)?.[0];}));

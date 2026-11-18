@@ -1,6 +1,6 @@
 // r16.95 faster send: a laid mark made while a send is in flight (slow signal)
 const {launch}=require('./srv');const co=require('./co_ok');const L=require('./lib');const F=require('./flow');
-(async()=>{const {b,ctx,p,S}=await launch('http://127.0.0.1:8877/'+(process.env.PG||'cur.html'),{init:co});
+(async()=>{const {b,ctx,p,S}=await launch((process.env.PB_ROOT||'http://127.0.0.1:8877/')+(process.env.PG||'cur.html'),{init:co});
  await L.newRun(p,100);await L.lock(p);
  await p.waitForTimeout(12000); // first copy up
  S.opts.delay=6000; // slow bar of signal: each call takes 6 s

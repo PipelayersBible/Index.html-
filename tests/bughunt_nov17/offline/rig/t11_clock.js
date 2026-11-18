@@ -1,7 +1,7 @@
 // the phone's clock is weeks behind (reset after the battery died, no network time in the trench): the run is ended
 // and sent offline, then signal returns and the clock corrects itself
 const {launch}=require('./srv');const co=require('./co_ok');const F=require('./flow');const L=require('./lib');
-(async()=>{const {b,ctx,p,S,page}=await launch('http://127.0.0.1:8877/'+(process.env.PG||'cur.html'),{init:co});const H=F(p);
+(async()=>{const {b,ctx,p,S,page}=await launch((process.env.PB_ROOT||'http://127.0.0.1:8877/')+(process.env.PG||'cur.html'),{init:co});const H=F(p);
  await p.close();await ctx.setOffline(true);
  const real=Date.now();await ctx.clock.install({time:real-40*86400000});await ctx.clock.resume();
  const p1=await page();

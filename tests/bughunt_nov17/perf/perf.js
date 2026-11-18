@@ -2,8 +2,8 @@
 // https://app.pipelayersbible.com/<variant>/ (mapped to 127.0.0.1:PORT, default 8884).
 const { chromium } = require('/opt/npm-tools/node_modules/playwright');
 const fs = require('fs'), http = require('http');
-const FAKE = fs.readFileSync('/home/claude/rig/fakesb.js', 'utf8');
-const CO = require('/home/claude/rig/co');
+const FAKE = fs.readFileSync(__dirname+'/../../rig/fakesb.js', 'utf8');
+const CO = require(__dirname+'/../../rig/co');
 const PORT = +process.env.PERF_PORT || 8884;
 const ORIGIN = 'https://app.pipelayersbible.com';
 const P = {};

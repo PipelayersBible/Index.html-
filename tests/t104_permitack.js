@@ -1,5 +1,5 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
-(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/cur.html',{init:co});const H=F(p);
+const boot=require(__dirname+'/rig/boot');const co=require(__dirname+'/rig/co');const F=require(__dirname+'/rig/flow');
+(async()=>{const {b,p}=await boot((process.env.PB_URL||'http://127.0.0.1:8843/cur.html'),{init:co});const H=F(p);
  await p.evaluate(()=>pbGoto('confinedPermit'));await p.waitForTimeout(800);
  await p.evaluate(()=>window.pbLockConfinedPermit());await p.waitForTimeout(400);
  console.log('first:',JSON.stringify(await H.modal()));

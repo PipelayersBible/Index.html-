@@ -9,7 +9,7 @@ import datetime, os, sys
 from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-URL = 'file://' + os.path.join(ROOT, 'index.html')
+URL = 'file://' + os.environ.get('PB_BUILD_FILE', os.path.join(ROOT, 'index.html'))  # run_all.sh points this at the build under test
 CHROMIUM = os.environ.get('PB_CHROMIUM', '/opt/pw-browsers/chromium')
 fails = []
 
@@ -38,6 +38,9 @@ def make_permit(pg, clock=False, comm='', atmo=''):
             'cpRescue': '911', 'cpCommInterval': comm, 'cpAtmoInterval': atmo}
     for k, v in vals.items(): pg.fill('#' + k, v)
     pg.evaluate('pbLockConfinedPermit()'); wait(pg, 1500, clock)
+    # since r16.8x locking first asks the supervisor to acknowledge "Entry Supervisor Decides" (t104 checks that sheet itself)
+    if pg.evaluate("(()=>{const d=document.getElementById('pbModalOverlay');return !!d&&getComputedStyle(d).display!=='none'&&/Entry Supervisor Decides/.test(d.innerText);})()"):
+        pg.evaluate("[...document.querySelectorAll('#pbModalOverlay button')].find(b=>b.textContent.trim()==='I Understand').click()"); wait(pg, 1500, clock)
 
 def add_person(pg, name, role, clock=False):
     pg.evaluate('pbOpenRosterAddForm()'); pg.fill('#cpRosterName', name); pg.select_option('#cpRosterRole', role)
@@ -64,7 +67,9 @@ with sync_playwright() as p:
     check('chips show Not set when no interval was typed', txt(pg, 'cpAtmoCountdown') == 'Not set' and txt(pg, 'cpCommCountdown') == 'Not set')
     check('Set reminder is offered on both chips', disp(pg, '#cpAtmoTimerSection .cp-tc-set') == 'block' and disp(pg, '#cpCommTimerSection .cp-tc-set') == 'block')
     ph = pg.evaluate("['cpAtmoO2','cpAtmoLEL','cpAtmoH2S','cpAtmoCO'].map(i=>document.getElementById(i).placeholder)")
-    check('air test boxes show range hints', ph == ['19.5 – 23.5', '0 – 10', 'max 10', 'max 35'], ph)
+    # CO default is 25 ppm, the Cal/OSHA limit, since the strictest-state-limits change (was NIOSH's 35); see the app's
+    # 'Maximum CO (ppm) — blank uses 25 ppm' field
+    check('air test boxes show range hints', ph == ['19.5 – 23.5', '0 – 10', 'max 10', 'max 25'], ph)
     check('roster is a grid with the toggle in column 2', pg.evaluate("(()=>{const r=document.querySelector('#cpRosterList .cp-roster-row');return getComputedStyle(r).display==='grid'&&getComputedStyle(r.querySelector('.cp-tog')).gridColumnStart==='2'})()"))
     check('Permit Status keeps the air readings, hides Recent Activity', 'Latest Air Readings' in pg.inner_text('#cpStatusGrid') and disp(pg, '#cpRecentSection') == 'none')
     top = pg.evaluate("()=>['cpTopPanel','cpStatusBlock'].map(i=>document.getElementById(i).getBoundingClientRect().top)")

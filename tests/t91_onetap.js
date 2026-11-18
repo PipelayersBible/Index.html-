@@ -1,5 +1,5 @@
-const boot=require('/home/claude/rig/boot');const F=require('/home/claude/rig/flow');const fs=require('fs');
-(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/cur.html',{init:require('/home/claude/rig/co')});const H=F(p);
+const boot=require(__dirname+'/rig/boot');const F=require(__dirname+'/rig/flow');const fs=require('fs');
+(async()=>{const {b,p}=await boot((process.env.PB_URL||'http://127.0.0.1:8843/cur.html'),{init:require(__dirname+'/rig/co')});const H=F(p);
  const errs=[];p.on('pageerror',e=>errs.push(e.message));
  const S=(sta,el,cf,line,num)=>({is_stake:true,stake_number:{value:num||'',conf:num?'high':'low'},station:{value:sta||'',conf:sta?'high':'low'},offset:{value:'10/SD',conf:'high'},line_label:{value:line||'',conf:'high'},cut_fill:cf==null?{conf:'low'}:{direction:'cut',feet:cf,as_written:'C-'+cf,to:'IE',conf:'high'},stake_elevation:el==null?{conf:'low'}:{feet:el,as_written:String(el),conf:'high'},other_text:'',uncertain:[]});
  const lo=S('0+50',null,5.66,'','');lo.stake_elevation={feet:88.10,as_written:'(88.10)',conf:'low'};const R=[lo,S('1+50',103.4,3.61,'MH-1','3860')];let n=0,lens=[];

@@ -8,14 +8,14 @@ const mk=require('./mk');
    out.fitRows=rows.map((r,i)=>pbFitCount&&r.pointId?[i,r.station,r.pointId,r.label]:null).filter(Boolean);
    return out;});console.log(JSON.stringify(r));
  // resumed-session simulation
- const r2=await p.evaluate(async()=>{const e=window.__pbCsEntry();const rows=e.intervalRows;
+ const r2=await p.evaluate(s=>window.__ev('('+s+')')(),(async()=>{ /* run inside the app's closure (window.__ev hook): it uses pbLaidSummary, runArchive... */const e=window.__pbCsEntry();const rows=e.intervalRows;
    const iB=rows.findIndex(r=>r.pointId&&e.pointInputs[r.pointId]&&e.pointInputs[r.pointId].fit); // bend row
-   await pbLaidApply(e.id,iB+1,true,true);
+   await window.__ev('pbLaidApply')(e.id,iB+1,true,true); /* pbLaidApply lives inside the app's closure */
    const c1=pbFitCount(e);
    // end short at the row after the bend
    e.incomplete=true;e.completedDistance=rows[iB+1].stationFt-rows[0].stationFt;e.runEndTime=new Date().toISOString();
-   const e2=JSON.parse(JSON.stringify(e));e2.id=e.id+1;delete e2.laid;e2.incomplete=false;e2.completedDistance=undefined;e2.runEndTime=null;e2.resumedFromId=e.id;e.resumedIntoId=e2.id;runArchive.push(e2);
+   const e2=JSON.parse(JSON.stringify(e));e2.id=e.id+1;delete e2.laid;e2.incomplete=false;e2.completedDistance=undefined;e2.runEndTime=null;e2.resumedFromId=e.id;e.resumedIntoId=e2.id;window.__ra().push(e2); /* runArchive is inside the app's closure: the test hook hands it out */
    const S=pbLaidSummary(e2);
-   return {iB,cap:e.completedDistance,c1,early:S.early.filter(Boolean).length,c2:pbFitCount(e2),dly:(await window.__pbDlyFitTest(e2)).filter(r=>r.kind==='counted'),mat:(()=>{const d=document.createElement('div');d.innerHTML=window.__pbMatFitHtml({job_number:'24-017'});return d.innerText;})()};});
+   return {iB,cap:e.completedDistance,c1,early:S.early.filter(Boolean).length,c2:pbFitCount(e2),dly:(await window.__pbDlyFitTest(e2)).filter(r=>r.kind==='counted'),mat:(()=>{const d=document.createElement('div');d.innerHTML=window.__pbMatFitHtml({job_number:'24-017'});return d.innerText;})()};}).toString());
  console.log(JSON.stringify(r2,null,1));
  console.log('errs',p.errs.slice(0,5));await b.close();})();

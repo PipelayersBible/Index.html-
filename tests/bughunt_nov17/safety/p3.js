@@ -1,6 +1,6 @@
 // A hazardous reading refused as a record (LEL left blank) is kept on the permit as an unlogged hazard.
 // The daily report's permit line must count it as OUTSIDE RANGE.
-const L=require('./lib');(async()=>{const {b,p,H}=await L({file:process.env.FILE||'cur.html',init:require('/home/claude/rig/co_fm.js')});
+const L=require('./lib');(async()=>{const {b,p,H}=await L({file:process.env.FILE||'cur.html',init:require(__dirname+'/../../rig/co_fm.js')});
  const D=(s)=>p.evaluate(x=>{const r=window.__dbg(x);return r===undefined?null:JSON.parse(JSON.stringify(r));},s);
  await H.lock({cpJobNumber:'24-017'});
  const r=await H.read(16,null,null,null);console.log('refused+latched:',/NOT added/.test(r.modal||''),'banner:',!!r.banner);

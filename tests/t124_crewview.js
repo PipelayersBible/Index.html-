@@ -2,7 +2,7 @@
 // seconds, and again after a laid mark; (B) a linked pipelayer opens Home > Crew runs today, sees the rows and the laid marks
 // read-only; offline he sees the last copy with its time (also after the in-memory copy is gone: from storage);
 // (C) a non-linked user gets nothing (empty list; a refused get drops the copy); the office has no tile.
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const pl=require('/home/claude/rig/co_pl');const mgr=require('/home/claude/rig/mgr');const F=require('/home/claude/rig/flow');
+const boot=require(__dirname+'/rig/boot');const co=require(__dirname+'/rig/co');const pl=require(__dirname+'/rig/co_pl');const mgr=require(__dirname+'/rig/mgr');const F=require(__dirname+'/rig/flow');
 const URL=process.env.PB_URL||'http://127.0.0.1:8843/cur.html';
 let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++;};
 (async()=>{
@@ -75,7 +75,7 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++;};
   ok(sh.edit===0,'B9 nothing to edit or mark in the copy');
   ok(!sh.stale,'B10 a fresh copy has no stale line');
   ok(sh.wide<=sh.cw+1,'B11 no sideways page scroll at 390 px ('+sh.wide+' / '+sh.cw+')');
-  await p.screenshot({path:'/tmp/claude-0/feat/crewview/tests/cv_light.png',fullPage:true});
+  await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/feat/crewview/tests')+'/cv_light.png'),fullPage:true});
   // offline: the last copy, with its time
   await p.context().setOffline(true);await p.waitForTimeout(500);
   await p.click('#cvBack');await p.waitForTimeout(800);await p.click('#cvRun0');await p.waitForTimeout(1200);
@@ -89,7 +89,7 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++;};
   await p.click('#cvRun0');await p.waitForTimeout(1200);
   off=await p.evaluate(()=>({stale:(document.getElementById('cvStale')||{}).textContent||'',rows:document.querySelectorAll('#cvTable tr.cv-row').length,laid:document.querySelectorAll('#cvTable tr.cv-row[data-cv-laid]').length}));
   ok(off.rows===nRows&&off.laid===nLaid&&/last copy fetched/.test(off.stale),'B14 ...and the sheet from the phone, with laid marks ('+off.rows+' rows, '+off.laid+' laid)');
-  await p.screenshot({path:'/tmp/claude-0/feat/crewview/tests/cv_offline.png',fullPage:true});
+  await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/feat/crewview/tests')+'/cv_offline.png'),fullPage:true});
   // ---------- C: not (or no longer) linked: the server answers nothing ----------
   await p.context().setOffline(false);await p.waitForTimeout(2500);
   await p.evaluate(()=>{window.__cvRefuse=true;});
@@ -106,7 +106,7 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++;};
  {process.env.DARK='1';const {b,p}=await boot(URL,{init});delete process.env.DARK;
   await p.setViewportSize({width:390,height:844});await p.waitForTimeout(1500);
   await p.click('#homeCrewView');await p.waitForTimeout(1200);await p.click('#cvRun0');await p.waitForTimeout(1200);
-  await p.screenshot({path:'/tmp/claude-0/feat/crewview/tests/cv_dark.png',fullPage:true});
+  await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/feat/crewview/tests')+'/cv_dark.png'),fullPage:true});
   ok(p.errs.length===0,'D1 dark: no page errors');await b.close();}
  // C3: the office account has no tile (it has Crew runs)
  {const {b,p}=await boot(URL,{init:co+mgr});await p.waitForTimeout(1000);

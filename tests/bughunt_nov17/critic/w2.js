@@ -1,6 +1,6 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
-const SH='/tmp/claude-0/bughunt/critic/shots/';
-(async()=>{const {b,p}=await boot('http://127.0.0.1:8865/cur.html',{init:co});const H=F(p);
+const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../../rig/co');const F=require(__dirname+'/../../rig/flow');
+const SH=((process.env.PB_OUT||'/tmp/claude-0/bughunt/critic/shots')+'/');
+(async()=>{const {b,p}=await boot((process.env.PB_URL||'http://127.0.0.1:8865/cur.html'),{init:co});const H=F(p);
  await p.setViewportSize({width:390,height:800});
  const txt=()=>p.evaluate(()=>{const s=[...document.querySelectorAll('[id^=screen-]')].find(x=>x.offsetParent);return s.id+' :: '+s.innerText.replace(/\n+/g,' | ').slice(0,3000)});
  const stats=()=>p.evaluate(()=>{const s=[...document.querySelectorAll('[id^=screen-]')].find(x=>x.offsetParent);const v=e=>e.offsetParent;return {inputs:[...s.querySelectorAll('input:not([type=file]):not([type=hidden])')].filter(v).length,selects:[...s.querySelectorAll('select')].filter(v).length,buttons:[...s.querySelectorAll('button')].filter(v).length,height:s.scrollHeight,words:s.innerText.split(/\s+/).length}});
@@ -25,6 +25,7 @@ const SH='/tmp/claude-0/bughunt/critic/shots/';
  await p.screenshot({path:SH+'fm_review.png',fullPage:true});
  await H.click('Lock This Run');await p.waitForTimeout(800);
  console.log('MODAL',await H.modal(),await H.modalBtns());
+ await H.modalClick('Lock Without It').catch(()=>{});await p.waitForTimeout(600);
  await H.modalClick('I Checked Them').catch(e=>console.log('no I checked'));await p.waitForTimeout(2500);
  console.log('MODAL',await H.modal(),await H.modalBtns());
  console.log('RESULTS',await txt());console.log(JSON.stringify(await stats()));

@@ -1,9 +1,9 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
-(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/cur.html',{init:co+`;window.__acc=[];window.__rpcOverride.pb_terms_status=()=>null;window.__rpcOverride.pb_terms_accept=(a)=>{window.__acc.push(a);return {ok:true,at:new Date().toISOString()};};`});const H=F(p);
+const boot=require(__dirname+'/rig/boot');const co=require(__dirname+'/rig/co');const F=require(__dirname+'/rig/flow');
+(async()=>{const {b,p}=await boot((process.env.PB_URL||'http://127.0.0.1:8843/cur.html'),{init:co+`;window.__acc=[];window.__rpcOverride.pb_terms_status=()=>null;window.__rpcOverride.pb_terms_accept=(a)=>{window.__acc.push(a);return {ok:true,at:new Date().toISOString()};};`});const H=F(p);
  await p.evaluate(()=>pbGoto('home'));await p.waitForTimeout(1500);
  const shown=await p.evaluate(()=>!!document.getElementById('pbTermsSheet'));console.log('sheet shown:',shown);
  const dis=await p.evaluate(()=>document.getElementById('pbTermsYes').disabled);console.log('agree disabled before tick:',dis);
- await p.screenshot({path:'/tmp/claude-0/terms_sheet.png'});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0')+'/terms_sheet.png')});
  await p.click('#pbTermsBox');await p.click('#pbTermsYes');await p.waitForTimeout(800);
  console.log('sheet gone:',await p.evaluate(()=>!document.getElementById('pbTermsSheet')),'sent:',JSON.stringify(await p.evaluate(()=>window.__acc.map(a=>[a.p_terms,a.p_privacy,!!a.p_phone_at,a.p_build]))));
  await p.evaluate(()=>pbGoto('settings'));await p.waitForTimeout(800);

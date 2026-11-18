@@ -1,6 +1,6 @@
 // t123 (r16.95 newrun-short): the New Run form is shorter, nothing is lost, and the folds open by themselves.
 // Run: cd /home/claude/rig && node tests/t123_newrunshort.js  (base.html = the build before, cur.html = this one, on 8843)
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
+const boot=require(__dirname+'/rig/boot');const co=require(__dirname+'/rig/co');const F=require(__dirname+'/rig/flow');
 const BASE=process.env.PB_BASE||'http://127.0.0.1:8843/base.html', CUR=process.env.PB_URL||'http://127.0.0.1:8843/cur.html';
 let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++;};
 const formInfo=(p)=>p.evaluate(()=>{const s=document.getElementById('screen-input');const vis=e=>e.checkVisibility();
@@ -8,11 +8,19 @@ const formInfo=(p)=>p.evaluate(()=>{const s=document.getElementById('screen-inpu
  return {h:s.scrollHeight,inputs:c.filter(e=>e.tagName!=='SELECT').length,selects:c.filter(e=>e.tagName==='SELECT').length,buttons:[...s.querySelectorAll('button,[role=button]')].filter(vis).length,ids:[...s.querySelectorAll('[id]')].map(e=>e.id).filter(Boolean)};});
 const openNew=async(p)=>{await p.evaluate(()=>window.pbOpenNewRun());await p.waitForTimeout(1500);};
 const st=(p)=>p.evaluate(()=>({more:document.getElementById('runSecMore').open,seg:document.getElementById('runSegGroup').open,pts:document.getElementById('runSecPoints').open,sum:document.getElementById('runSecMoreSum').textContent,flag:document.getElementById('runSecMoreFlag').textContent}));
+// The "before" numbers come from the r16.94 build. With PB_BASE set (run_all.sh --base FILE, or by hand with base.html on
+// 8843) they are measured live; under run_all.sh without --base they are read from fixtures/t123_before_r16.94.json, which
+// is the same measurement saved from r16.94 (tests/fixtures/README.md says how to remake it).
+const BEFORE_FIX=__dirname+'/fixtures/t123_before_r16.94.json';
+const liveBase=!!process.env.PB_BASE||!process.env.PB_URL;
 (async()=>{
  // ---- before (r16.94) ----
- let {b,p}=await boot(BASE,{init:co.replace("000000000001','3'","000000000001','2'")});await p.setViewportSize({width:390,height:844});
+ let b,p,before;
+ if(liveBase){({b,p}=await boot(BASE,{init:co.replace("000000000001','"+require(__dirname+'/rig/env').NOTICE+"'","000000000001','"+require(__dirname+'/rig/env').BASE_NOTICE+"'")}));await p.setViewportSize({width:390,height:844});
  await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1500);
- const before=await formInfo(p);await b.close();
+ before=await formInfo(p);await b.close();
+ if(process.env.PB_OUT)require('fs').writeFileSync(process.env.PB_OUT+'/t123_before.json',JSON.stringify(before));}
+ else{before=JSON.parse(require('fs').readFileSync(BEFORE_FIX,'utf8'));console.log('before: from '+BEFORE_FIX.split('/').pop()+' (no --base given)');}
  // ---- after ----
  ({b,p}=await boot(CUR,{init:co}));await p.setViewportSize({width:390,height:844});const H=F(p);
  let stake=null;await p.route('**/functions/v1/ai**', async r=>{await r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,text:JSON.stringify(stake),used:1,limit:60})});});

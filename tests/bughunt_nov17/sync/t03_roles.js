@@ -1,8 +1,8 @@
 // A pipelayer (and a foreman) opens every office screen by pbGoto and by hash; report what shows.
-const boot=require('/home/claude/rig/boot');const F=require('/home/claude/rig/flow');
-const URL_=process.env.URL||'http://127.0.0.1:8864/cur.html';
+const boot=require(__dirname+'/../../rig/boot');const F=require(__dirname+'/../../rig/flow');
+const URL_=process.env.URL||process.env.PB_URL||'http://127.0.0.1:8864/cur.html';
 const who=process.env.WHO||'co_pl';
-(async()=>{const {b,p}=await boot(URL_,{init:require('/home/claude/rig/'+who)});const H=F(p);
+(async()=>{const {b,p}=await boot(URL_,{init:require(__dirname+'/../../rig/'+who)});const H=F(p);
  const screens=['crewMembers','companyLogo','reportsAll','reportsInbox','companyPermits','ticketsDashboard','prodDashboard','prodJob','cxList','cxNew','inspCompany','inspJob','jobBook','prodMine','jobSummary','prodNoRun','dailyReport','docsReview','appProblems','myReports','locates','inspMine'];
  for(const s of screens){
   await p.evaluate(()=>pbGoto('home'));await p.waitForTimeout(300);

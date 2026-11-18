@@ -12,7 +12,7 @@ const hit=(p,label)=>p.evaluate((label)=>{const btn=[...document.querySelectorAl
  await p.evaluate(()=>window.pbOwnerOpen());await p.waitForTimeout(1000);
  await p.click('#pbOwnerSheet [data-act="paid"]');await p.waitForTimeout(700);
  const h=await hit(p,'Make Paid');console.log('confirm:',JSON.stringify(h));
- await p.screenshot({path:'/tmp/claude-0/bughunt/office/shots/b4_paid_confirm.png'});
+ await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/office/shots')+'/b4_paid_confirm.png')});
  if(!h.found||!h.onTop){ok=false;console.log('  FAIL: the Make Paid confirmation is hidden behind the Beta Accounts sheet (a real tap can\'t reach it)');}
  else{await p.mouse.click(195,10).catch(()=>{});await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.offsetParent&&b.textContent.trim()==='Make Paid'&&!b.closest('#pbOwnerSheet'));b.click();});await p.waitForTimeout(600);console.log('sent:',JSON.stringify(await p.evaluate(()=>window.__sets)));}
  // a failed change: the alert must be visible too

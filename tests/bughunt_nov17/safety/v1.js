@@ -1,5 +1,5 @@
-const L=require('./lib');const mkrun=require('/home/claude/rig/mkrun');
-(async()=>{const {b,p,H}=await L({file:'fixed.html',init:require('/home/claude/rig/co_fm.js')});
+const L=require('./lib');const mkrun=require(__dirname+'/../../rig/mkrun');
+(async()=>{const {b,p,H}=await L({file:process.env.FILE||'cur.html',/* was fixed.html: the patched build of Nov 17; those fixes are in the live build */init:require(__dirname+'/../../rig/co_fm.js')});
  await p.setViewportSize({width:390,height:800});
  await H.lock({cpJobNumber:'24-017',cpAtmoInterval:'15',cpCommInterval:'10'});
  await H.read(20.9,0,0,0);await H.read(19.4,11,12,30);

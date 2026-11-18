@@ -1,7 +1,7 @@
-const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
+const boot=require(__dirname+'/rig/boot');const co=require(__dirname+'/rig/co');const F=require(__dirname+'/rig/flow');
 // r16.90: record-only confined space permit: an out-of-limit reading shows a plain notice (no siren, no EVACUATE), check-in
 // warns "Permit Does Not Allow Entry" and still asks "Did they enter anyway?"; the emergency panel is untouched.
-(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/cur.html',{init:co+`;(function(){window.__osc=0;const P=(window.AudioContext||window.webkitAudioContext||function(){}).prototype;if(P&&P.createOscillator){const o=P.createOscillator;P.createOscillator=function(){window.__osc++;return o.apply(this,arguments);};}})();`});const H=F(p);
+(async()=>{const {b,p}=await boot((process.env.PB_URL||'http://127.0.0.1:8843/cur.html'),{init:co+`;(function(){window.__osc=0;const P=(window.AudioContext||window.webkitAudioContext||function(){}).prototype;if(P&&P.createOscillator){const o=P.createOscillator;P.createOscillator=function(){window.__osc++;return o.apply(this,arguments);};}})();`});const H=F(p);
  await p.evaluate(()=>pbGoto('confinedPermit'));await p.waitForTimeout(800);
  const d=new Date();const pad=n=>String(n).padStart(2,'0');const date=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
  const vals={cpJobsite:'Test Sewer',cpAddress:'1 Main St',cpSpace:'MH-4',cpPurpose:'Inspect',cpDate:date,cpStart:'00:01',cpEnd:'23:59',cpHazards:'H2S',cpControls:'Vent',cpVentFail:'Flag',cpRescue:'911',cpComms:'Voice',cpSupervisor:'Sam Sup',cpSupervisorInitials:'SS',cpAttendant:'Al Att'};

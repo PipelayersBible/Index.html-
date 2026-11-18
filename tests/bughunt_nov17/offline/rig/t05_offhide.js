@@ -3,7 +3,7 @@ const {launch}=require('./srv');const co=require('./co_ok');
 const init=co+`;(()=>{const now=Date.now();const sheet={jobNumber:'24-017',jobsite:'Test',startLabel:'MH-1',endLabel:'MH-2',rodUnit:'ft',intervalRows:[{station:'0.0',stationFt:0,pointId:'start',bop:'4.80',inv:'5.47'},{station:'10.0',stationFt:10,bop:'4.90',inv:'5.57'}],laid:{marks:{'p:start':now-600000}}};
  window.__rpcOverride.pb_prod_crew_view_list=()=>({runs:[{id:'aaaaaaaa-0000-4000-8000-000000000001',who:'Brandon Jones',job_number:'24-017',label:'MH-1 to MH-2',laid_ft:10,distance_ft:100,ended:false,updated_at:new Date(now-300000).toISOString()}]});
  window.__rpcOverride.pb_prod_crew_view_get=()=>({who:'Brandon Jones',updated_at:new Date(now-300000).toISOString(),ended:false,sheet});})();`;
-(async()=>{const {b,ctx,p,page}=await launch('http://127.0.0.1:8877/'+(process.env.PG||'cur.html'),{init});let fail=0;
+(async()=>{const {b,ctx,p,page}=await launch((process.env.PB_ROOT||'http://127.0.0.1:8877/')+(process.env.PG||'cur.html'),{init});let fail=0;
  await p.evaluate(()=>window.pbCvOpen());await p.waitForTimeout(1500);await p.evaluate(()=>window.pbCvOpenRun(0));await p.waitForTimeout(1500);
  await ctx.setOffline(true);await p.close({runBeforeUnload:false});const p2=await page();
  await p2.evaluate(()=>window.pbCvOpen());await p2.waitForTimeout(1500);

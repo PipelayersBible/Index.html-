@@ -1,7 +1,7 @@
 // the phone dies at once after Break, after End Run and Send Report, and after Lock
 const {launch}=require('./srv');const co=require('./co_ok');const F=require('./flow');const L=require('./lib');
 const W=+process.argv[2]||0;
-(async()=>{const {b,ctx,p,S,page}=await launch('http://127.0.0.1:8877/'+(process.env.PG||'cur.html'),{init:co});
+(async()=>{const {b,ctx,p,S,page}=await launch((process.env.PB_ROOT||'http://127.0.0.1:8877/')+(process.env.PG||'cur.html'),{init:co});
  await ctx.setOffline(true);
  await L.newRun(p,100);
  // kill right after Lock

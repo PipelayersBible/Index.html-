@@ -18,7 +18,7 @@ function mkServer(){
 }
 async function launch(url,opts={}){
  const b=await chromium.launch();
- const ctx=await b.newContext({viewport:{width:400,height:850},serviceWorkers:opts.sw?'allow':'block'});
+ const ctx=await b.newContext({viewport:{width:400,height:850},serviceWorkers:opts.sw?'allow':'block'});await require(__dirname+'/../../../rig/env').applyClock(ctx);
  const S=opts.server||mkServer();
  await ctx.exposeBinding('__srvRpc',async(src,n,a,ov)=>{
   const c={n,a,t:Date.now(),done:false};S.calls.push(c);
@@ -31,7 +31,7 @@ async function launch(url,opts={}){
   if(S.opts.lose.has(n)){c.lost=true;return {data:null,error:{message:'TypeError: Failed to fetch'}};}
   return out;});
  await ctx.exposeBinding('__srvUp',async(src,bucket,path,size)=>{if(S.opts.delay)await new Promise(r=>setTimeout(r,S.opts.delay));const k=bucket+'/'+path;if(S.uploads[k])return {error:'The resource already exists'};S.uploads[k]={size,at:Date.now()};return {ok:true};});
- if(!opts.sw)await ctx.route(/127\.0\.0\.1:8877\/[A-Za-z0-9_]+\.html/,r=>{const n=new URL(r.request().url()).pathname.split('/').pop();r.fulfill({contentType:'text/html; charset=utf-8',body:fs.readFileSync('/tmp/claude-0/audit/offline/'+n)});}); // the SW's kept copy, offline too
+ if(!opts.sw)await ctx.route(new RegExp((process.env.PB_ROOT||'http://127.0.0.1:8877/').replace(/[.*+?^${}()|[\]\\\/]/g,'\\$&')+'[A-Za-z0-9_]+\\.html'),r=>{const n=new URL(r.request().url()).pathname.split('/').pop();r.fulfill({contentType:'text/html; charset=utf-8',body:fs.readFileSync((process.env.PB_SITE||'/tmp/claude-0/audit/offline')+'/'+n)});}); // the SW's kept copy, offline too
  await ctx.route(/supabase-js/,r=>r.fulfill({contentType:'application/javascript',body:FAKE}));
  await ctx.route(/supabase\.co/,r=>r.fulfill({status:200,contentType:'application/json',body:'null'}));
  if(opts.init)await ctx.addInitScript(opts.init);
