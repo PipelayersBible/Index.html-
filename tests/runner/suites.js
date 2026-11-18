@@ -18,7 +18,7 @@ const suites = [
     't101_runphotos.js', 't102_seal.js', 't103_aireads.js', 't104_permitack.js', 't105_terms.js', 't106_cavestate.js', 't107_mfa.js',
     't108_export.js', 't109_crewnotice.js', 't110_clockpdf.js', 't111_exportdaily.js', 't112_exportpermit.js', 't113_adminlog.js',
     't114_mfacrew.js', 't115_checkshot.js', 't116_quickwork.js', 't117_break.js', 't118_trueod.js', 't119_secondshot.js',
-    't120_csrecord.js', 't121_feedbackall.js', 't122_lowslope.js', 't123_newrunshort.js', 't124_crewview.js', 't126_noticeack.js']) },
+    't120_csrecord.js', 't121_feedbackall.js', 't122_lowslope.js', 't123_newrunshort.js', 't124_crewview.js', 't126_noticeack.js', 't127_billing0.js']) },
   { name: 'py', variant: 'plain', tests: T('.', ['permit_active_screen.py']) },
   { name: 'main_older', variant: 'plain', tests: T('.', ['t88.js', 't89_photostamp.js', 't92_backnow.js', 't93_livecam.js', 't94_parallel.js',
     't98_betaend.js', 't99_removed.js', 't100_runpdf.js']) },
@@ -71,10 +71,6 @@ for (const t of suites.find((s) => s.name === 'perf').tests) SKIP[t] = PERF;
 
 // Run, but known to fail on the live build because of an open app bug (key = test id, value = the bug).
 const XFAIL = {
-  'bughunt_nov17/grade2/tests/t04_step_exact.js': 'open bug, grade2 audit 04 (not in any release yet; patches up to r17.01 '
-    + 'carry grade2 01-03 only): Architect\'s rod, a Run 2 Start set from a measured step is calculated from its Invert box, '
-    + 'which is rounded to 1/16 in, so its readings can show a sixteenth off (BOP 6\'-11 15/16" instead of 6\'-11 7/8"). '
-    + 'Fix: /tmp/claude-0/audit/grade2/patches/04_step_start_exact.py.',
 };
 
 // How a test is judged. Default: 'verdict' if the test (or a ./lib it requires) prints PASS/FAIL lines or sets an exit code,
@@ -111,6 +107,7 @@ const FAKE_NOW = '2026-11-18T09:30:00';
 const REAL_CLOCK = {
   // works out a beta's end time in node (real clock) and compares it with what the page shows (page clock)
   'bughunt_nov17/office/b1_beta.js': 'compares node-side times with the page',
+  't98_betaend.js': 'sets the beta end from the node clock (now - 1 day) and prints the days of grace left',
 };
 
 module.exports = { suites, SKIP, XFAIL, JUDGE, NORMALIZE, FAKE_NOW, REAL_CLOCK };

@@ -11,9 +11,13 @@ const hit=(p,label)=>p.evaluate((label)=>{const btn=[...document.querySelectorAl
  await p.evaluate(()=>window.pbOpenSettings());await p.waitForTimeout(1000);
  await p.evaluate(()=>window.pbOwnerOpen());await p.waitForTimeout(1000);
  await p.click('#pbOwnerSheet [data-act="paid"]');await p.waitForTimeout(700);
- const h=await hit(p,'Make Paid');console.log('confirm:',JSON.stringify(h));
+ let h=await hit(p,'Make Paid');let billing=false;
+ // r17.02 (billing phase 0): Make Paid opens the billing form; with no billing server (this rig) it shows a "Not Changed" alert, which must be on top too
+ if(!h.found){const f=await p.evaluate(()=>!!document.getElementById('pbMakePaid'));h=f?{found:true,onTop:true,form:true}:await hit(p,'OK');billing=true;}
+ console.log('confirm:',JSON.stringify(h));
  await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/bughunt/office/shots')+'/b4_paid_confirm.png')});
  if(!h.found||!h.onTop){ok=false;console.log('  FAIL: the Make Paid confirmation is hidden behind the Beta Accounts sheet (a real tap can\'t reach it)');}
+ else if(billing){await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.offsetParent&&b.textContent.trim()==='OK'&&!b.closest('#pbOwnerSheet'));b&&b.click();const m=document.getElementById('pbMakePaid');if(m)m.remove();});await p.waitForTimeout(500);console.log('billing form path');}
  else{await p.mouse.click(195,10).catch(()=>{});await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.offsetParent&&b.textContent.trim()==='Make Paid'&&!b.closest('#pbOwnerSheet'));b.click();});await p.waitForTimeout(600);console.log('sent:',JSON.stringify(await p.evaluate(()=>window.__sets)));}
  // a failed change: the alert must be visible too
  if(h.found&&!h.onTop)await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.offsetParent&&b.textContent.trim()==='Cancel'&&!b.closest('#pbOwnerSheet'));b&&b.click();});
