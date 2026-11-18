@@ -12990,7 +12990,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.90 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.89 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -14603,7 +14603,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     setTimeout(() => { if (pbQueuedAlerts.length && !pbModalIsOpen()) { const n = pbQueuedAlerts.shift(); pbAlert(n[0], n[1]); pbShownQueued = n; } }, 0);
   }
   window.pbShowCutsheetAiPrivacyInfo = function() {
-    pbAlert('AI reading sends this PDF or photo through the app\u2019s server to Anthropic (the maker of Claude) to be read \u2014 unlike the local upload/paste options above, which never leave your device. The app doesn\u2019t keep the file: only a count of your AI requests and what they cost. Anthropic handles it under its own commercial terms.\n\nA cutsheet can include a client\u2019s project name, location, and coordinates. If any of that is confidential or sensitive, use local upload/paste instead, or redact first.\n\nAI reading is part of the paid plans, up to 20 requests a day per person.', 'Why This Matters');
+    pbAlert('AI reading sends this PDF or photo through the app\u2019s server to Anthropic (the maker of Claude) to be read \u2014 unlike the local upload/paste options above, which never leave your device. The app doesn\u2019t keep the file: only a count of your AI requests and what they cost. Anthropic handles it under its own commercial terms.\n\nA cutsheet can include a client\u2019s project name, location, and coordinates. If any of that is confidential or sensitive, use local upload/paste instead, or redact first.\n\nAI reading is part of the paid plans and the beta, with limits per person: company plan 100 requests a day; individual plan 15 stake reads and 5 questions a day, 200 a month; beta 30 a day.', 'Why This Matters');
   };
   // Batch 10 A (F33): labels = { no, yes } names both answers ("Keep Editing" / "Leave and Discard Draft"). A dialog titled
   // "Remove X" says "Keep X" / "Remove X". Every other question keeps Cancel / Continue. Order, focus (the dialog
@@ -16464,7 +16464,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // on any of this, online or off. (Replaces the old, never-configured CUTSHEET_AI_WORKER_URL path.)
   const PB_AI_URL = SUPABASE_URL + '/functions/v1/ai';
   const PB_AI_TIMEOUT_MS = 120000;
-  const PB_AI_PRIVACY_LINE = 'Sent to Anthropic to be read. The app doesn\u2019t keep it, except a question Ask couldn\u2019t answer or an answer you mark Not right, saved without your name so the library can be fixed.';
+  const PB_AI_PRIVACY_LINE = 'Sent to Anthropic to be read. Ask doesn\u2019t keep your question, except one it couldn\u2019t answer or an answer you mark Not right, saved without your name so the library can be fixed. Photos and plan sets you save to a run or a job are kept with that run or job.';
   // ask_v2: the assistant's display name, used for the tab label, the sheet and screen titles and the privacy line.
   // A final name is a one-line change here.
   const PB_AI_NAME = 'Ask';
@@ -17584,8 +17584,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   const pbAiSafetyCheckOk = () => pbAiV2Ok() || pbAiV2Deployed(); // shown only to the app owner
   window.pbAiSafetyCheckOk = () => pbAiSafetyCheckOk();
   // Today's privacy line stays until the server has answered v2; then the job-data wording.
-  const PB_AI_PRIV_V1 = 'Sent to Anthropic to be read. The app doesn\u2019t keep it, except a question Ask couldn\u2019t answer or an answer you mark Not right, saved without your name. Don\u2019t use AI with confidential job info.';
-  const pbAiPrivV2 = () => PB_AI_NAME + ' reads the job data you can see in the app and sends it with your question to Anthropic. The app doesn\u2019t keep it, except a question Ask couldn\u2019t answer or an answer you mark Not right, saved without your name.';
+  const PB_AI_PRIV_V1 = 'Sent to Anthropic to be read. Ask doesn\u2019t keep your question, except one it couldn\u2019t answer or an answer you mark Not right, saved without your name. Photos and plan sets you save to a run or a job are kept with it. Don\u2019t use AI with confidential job info.';
+  const pbAiPrivV2 = () => PB_AI_NAME + ' reads the job data you can see in the app and sends it with your question to Anthropic. Ask doesn\u2019t keep your question, except one it couldn\u2019t answer or an answer you mark Not right, saved without your name.';
   function pbAiPrivacySync() { const el = document.getElementById('aiAskPrivacy'); if (el) { const t = pbAiV2Ok() ? pbAiPrivV2() : PB_AI_PRIV_V1; if (el.textContent !== t) el.textContent = t; } }
   function pbAiAskQuotaLine(st) {
     if (!st) return; const q = pbAiQuotaText();
@@ -44491,7 +44491,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (force || key !== pbBrkKey || el.hidden) {
       pbBrkKey = key;
       const at = new Date(b.start).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), age = m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') + ' min';
-      el.innerHTML = '<div class="pb-sl-pcard"><h2 id="pbBrkH">On Break</h2><p class="pb-sl-ptime">Since ' + escapeHtml(at) + ' \u00b7 ' + escapeHtml(age) + '</p><p class="pb-help">The run\u2019s clock is stopped and the grade sheet is hidden until the break ends.</p><button type="button" class="pb-btn" id="pbBrkEnd" onclick="pbBreakEnd()">End Break</button></div>';
+      el.innerHTML = '<div class="pb-sl-pcard"><h2 id="pbBrkH">On Break</h2><p class="pb-sl-ptime">Since ' + escapeHtml(at) + ' \u00b7 ' + escapeHtml(age) + '</p><p class="pb-help">The run\u2019s clock is stopped and the grade sheet is hidden until the break ends. This is for the run\u2019s stats, not a time clock.</p><button type="button" class="pb-btn" id="pbBrkEnd" onclick="pbBreakEnd()">End Break</button></div>';
     }
     if (el.hidden) el.hidden = false;
     document.documentElement.classList.add('pb-on-break');
@@ -49452,14 +49452,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // --- r16.86: check shots taken on the laid pipe
     if (Array.isArray(e.checkShots) && e.checkShots.length) {
       const C = e.checkShots.filter(c => c && typeof c.rod === 'number'), off = C.filter(c => !window.pbCsResult(c.diff).ok).length;
-      R.section('checks', 'Check shots (' + C.length + ')', { keep: 30, intro: 'Rod readings taken on the laid pipe, compared with the grade sheet\u2019s target for that row (device time). TOP = top of pipe, BOP = bottom of pipe, INV = invert. On grade = within ' + (window.PB_CS_TOL || 0.02).toFixed(2) + ' ft. ' + (off ? off + ' shot' + (off === 1 ? ' was' : 's were') + ' off grade.' : 'Every shot was on grade.') + (C.some(c => c.unit === 'lenker') ? ' Lenker rod: the values are elevations.' : '') });
+      R.section('checks', 'Check shots (' + C.length + ')', { keep: 30, intro: 'Rod readings taken on the laid pipe, compared with the grade sheet\u2019s target for that row (device time). TOP = top of pipe, BOP = bottom of pipe, INV = invert. On grade = within ' + (window.PB_CS_TOL || 0.02).toFixed(2) + ' ft of the target. ' + (off ? off + ' reading' + (off === 1 ? ' was' : 's were') + ' more than ' + (window.PB_CS_TOL || 0.02).toFixed(2) + ' ft from the target.' : 'Every reading entered was within ' + (window.PB_CS_TOL || 0.02).toFixed(2) + ' ft of the target.') + ' Readings are typed in by the crew; the tolerance is the app\u2019s, not the project\u2019s.' + (C.some(c => c.unit === 'lenker') ? ' Lenker rod: the values are elevations.' : '') });
       const rd = (v, u) => fmtReading(v, u === 'lenker' ? 'engineer' : u);
       R.table({ head: ['Dist.', 'On', 'Read', 'Target', 'Result', 'Taken (device time)'], body: C.map(c => { const r0 = window.pbCsResult(c.diff); return [c.sta, String(c.ref || '').toUpperCase(), rd(c.rod, c.unit), rd(c.target, c.unit), r0.ok ? r0.txt : { content: r0.txt, _accent: true }, pbRptDt(c.at, { sec: true })]; }), fontSize: 8.5 });
     }
     // --- r16.88: breaks
     if (Array.isArray(e.breaks) && e.breaks.length) {
       const B = e.breaks.filter(b => b && b.start && b.end), tot = B.reduce((t, b) => t + (b.end - b.start), 0), mins = (ms) => Math.max(1, Math.round(ms / 60000)) + ' min';
-      R.section('breaks', 'Breaks (' + B.length + ', ' + mins(tot) + ')', { keep: 26, intro: 'Breaks taken with the Break button (device time). The run\u2019s clock was stopped and the grade sheet hidden during each one; break time is left out of the time-per-pipe stats.' });
+      R.section('breaks', 'Breaks (' + B.length + ', ' + mins(tot) + ')', { keep: 26, intro: 'Breaks taken with the Break button (device time). The run\u2019s clock was stopped and the grade sheet hidden during each one; break time is left out of the time-per-pipe stats. Not a time-clock or meal-and-rest-period record: breaks taken without the button are not shown.' });
       R.table({ head: ['Started', 'Ended', 'Length'], body: B.map(b => [pbRptDt(b.start, { sec: true }), pbRptDt(b.end, { sec: true }), mins(b.end - b.start)]), fontSize: 8.5 });
     }
     // --- r16.77: values read from stake photos by AI
@@ -63322,11 +63322,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbCrewNoticeCheck = function() {
     try {
       const uid = sbUser && sbUser.id; if (!uid || document.getElementById('pbTermsSheet') || document.getElementById('pbMfaSheet') || document.getElementById('pbCrewNotice')) return;
-      let ok = null; try { ok = localStorage.getItem('pbCrewNotice:' + uid); } catch (e) {} if (ok === '1') return;
+      let ok = null; try { ok = localStorage.getItem('pbCrewNotice:' + uid); } catch (e) {} if (ok === '2') return;
       if (pbTermsLs.get('pbTermsOk:' + uid) !== PB_TERMS_KEY && !pbTermsLs.get('pbTermsPend:' + uid)) return; // after the Terms
       const acc = pbProdAccMem.get(uid); if (!acc || !acc.member || !acc.companyId || acc.manager) return;
       const ov = document.getElementById('pbModalOverlay'); if (pbCurrentScreen !== 'home' || (ov && getComputedStyle(ov).display !== 'none')) return; // never over another question
-      pbShowModal('Your company can see the work you record in this app: your runs and their reports, photos (with the time, place and direction stamped on them), run notes, delays, production and footage, permits and daily reports, and when each was made or changed.\n\nYour location is used only while Run Setup or Run Results is open, to stamp photos. The app doesn’t track where you go.\n\nYour company decides how it uses these records. The Privacy Policy is in Settings.', [{ label: 'Got It', primary: true, onClick: () => { try { localStorage.setItem('pbCrewNotice:' + uid, '1'); } catch (e) {} } }], 'What Your Company Sees');
+      pbShowModal('Your company can see the work you record in this app: your runs and their reports, photos (with the time, place and direction stamped on them), run notes, delays, breaks taken with the Break button, how long pipes took, check shots, production and footage, permits and daily reports, and when each was made or changed.\n\nYour location is used only while Run Setup or Run Results is open, to stamp photos. The app doesn’t track where you go.\n\nYour company decides how it uses these records. The Privacy Policy is in Settings.', [{ label: 'Got It', primary: true, onClick: () => { try { localStorage.setItem('pbCrewNotice:' + uid, '2'); } catch (e) {} } }], 'What Your Company Sees');
     } catch (e) {}
   };
   (window.pbScreenHooks = Array.isArray(window.pbScreenHooks) ? window.pbScreenHooks : []).push(function (name) { if (name === 'home') setTimeout(() => window.pbCrewNoticeCheck(), 1500); });
@@ -63436,9 +63436,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const E = Array.isArray(d.entries) ? d.entries : [];
     const since = new Date(String(d.since) + 'T12:00:00'), sinceTxt = isFinite(since.getTime()) ? since.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' }) : 'November 17, 2026';
     const stamped = Number(d.days_stamped) || 0, due = Number(d.days_due) || 0;
-    const head = 'This log lists every change to your company’s records that didn’t come from someone using the app: changes the app’s operator made directly in the database (for example, to fix a problem), changes made with the server key, and the operator’s admin actions on your account (like changing your plan). Records simply being read are not logged. Started ' + sinceTxt + '.';
-    const body = E.length ? (d.total > E.length ? 'Newest ' + E.length + ' of ' + d.total + ':\n' : (E.length === 1 ? '1 entry:\n' : E.length + ' entries:\n')) + E.map(pbAdminLogLine).join('\n') : 'No entries: nothing about your company has been changed outside the app.';
-    const tail = 'Each finished day of the log is fingerprinted and time-stamped by outside time-stamp services, so it can’t be quietly rewritten later. ' + (due ? 'Days time-stamped so far: ' + Math.min(stamped, due) + ' of ' + due + '.' : 'The first day is time-stamped after midnight (UTC).');
+    const head = 'This log lists changes to your company’s main records (runs, production, site log, job items, daily reports, permits and tickets) that didn’t come from someone using the app: changes the app’s operator made directly in the database (for example, to fix a problem), changes made with the server key, and some of the operator’s admin actions on your account (like changing your plan). It doesn’t cover stored photos and files, and records simply being read are not logged. Started ' + sinceTxt + '.';
+    const body = E.length ? (d.total > E.length ? 'Newest ' + E.length + ' of ' + d.total + ':\n' : (E.length === 1 ? '1 entry:\n' : E.length + ' entries:\n')) + E.map(pbAdminLogLine).join('\n') : 'No entries: the log shows no change to these records from outside the app.';
+    const tail = 'Each finished day of the log is fingerprinted and time-stamped by outside time-stamp services, so a later change to a stamped day would show. ' + (due ? 'Days time-stamped so far: ' + Math.min(stamped, due) + ' of ' + due + '.' : 'The first day is time-stamped after midnight (UTC).');
     pbAlert(head + '\n\n' + body + '\n\n' + tail, 'Admin Access Log');
   };
 
