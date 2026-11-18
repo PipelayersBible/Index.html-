@@ -12990,7 +12990,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.91 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.92 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -38924,8 +38924,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         }
       }
       let pill = document.getElementById('pbFbPill');
-      if (!pill && beta) { pill = document.createElement('button'); pill.type = 'button'; pill.id = 'pbFbPill'; pill.className = 'pb-fb-pill'; pill.textContent = 'Feedback'; pill.onclick = () => window.pbFeedbackOpen(); document.body.appendChild(pill); }
-      if (pill) pill.hidden = !beta || ['appProblem', 'appProblems', 'login', 'auth'].includes(typeof pbCurrentScreen === 'string' ? pbCurrentScreen : '');
+      const fbOn = !!sbUser; /* r16.92: every signed-in account */
+      if (!pill && fbOn) { pill = document.createElement('button'); pill.type = 'button'; pill.id = 'pbFbPill'; pill.className = 'pb-fb-pill'; pill.textContent = 'Feedback'; pill.onclick = () => window.pbFeedbackOpen(); document.body.appendChild(pill); }
+      if (pill) pill.hidden = !fbOn || ['appProblem', 'appProblems', 'login', 'auth'].includes(typeof pbCurrentScreen === 'string' ? pbCurrentScreen : '');
     }
     let planAt = 0; /* bughunt 03: when the server was last asked */
     async function pbPlanLoad(again) {
