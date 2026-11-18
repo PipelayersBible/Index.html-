@@ -1169,13 +1169,14 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
 .pb-fb-pill { position: fixed; left: 14px; bottom: calc(14px + var(--pb-shell-h, 0px)); z-index: 39; border: 0; border-radius: 999px; padding: 9px 14px; font: 600 14px/1 'Inter', sans-serif; color: #14171C; background: var(--pbl-yellow, #F5BF1F); box-shadow: 0 4px 14px rgba(0,0,0,.28); }
 html.pb-kb-open .pb-fb-pill, html.pb-fb-open .pb-fb-pill { display: none !important; }
 .pb-fb { position: fixed; inset: 0; z-index: 48; /* bughunt 04: below the app's dialog (50), above the bars and sheets (<= 47) */ background: rgba(0,0,0,.5); display: flex; align-items: flex-end; justify-content: center; }
-.pb-fb-card { width: 100%; max-width: 560px; box-sizing: border-box; background: var(--pb-bg, #fff); color: var(--pb-text, #14171C); border-radius: 18px 18px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px)); font-family: 'Inter', sans-serif; display: flex; flex-direction: column; gap: 12px; max-height: 92vh; overflow-y: auto; }
+.pb-fb-card { width: 100%; max-width: 560px; box-sizing: border-box; background: var(--pb-raised, #fff); border-top: 1px solid var(--pb-divider, #ccc); color: var(--pb-text, #14171C); border-radius: 18px 18px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px)); font-family: 'Inter', sans-serif; display: flex; flex-direction: column; gap: 12px; max-height: 92vh; overflow-y: auto; }
 .pb-fb-top { display: flex; align-items: center; justify-content: space-between; font-size: 18px; font-weight: 700; }
 .pb-fb-x { border: 0; background: none; color: inherit; font-size: 26px; line-height: 1; padding: 4px 8px; }
 .pb-fb-seg { display: flex; gap: 8px; }
 .pb-fb-seg button { flex: 1; border: 1.5px solid var(--pb-divider, #ccc); background: none; color: inherit; border-radius: 10px; padding: 10px; font: 600 15px 'Inter', sans-serif; }
 .pb-fb-seg button[aria-pressed="true"] { border-color: var(--pbl-yellow, #F5BF1F); background: var(--pbl-yellow, #F5BF1F); color: #14171C; }
-.pb-fb-card textarea, .pb-fb-card input { width: 100%; box-sizing: border-box; font: 16px/1.4 'Inter', sans-serif; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--pb-divider, #ccc); background: var(--pb-surface, #fff); color: inherit; }
+.pb-fb-card textarea, .pb-fb-card input { width: 100%; box-sizing: border-box; font: 16px/1.4 'Inter', sans-serif; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--pb-divider, #ccc); background: var(--pb-canvas, #fff); color: inherit; }
+.pb-fb-card textarea::placeholder, .pb-fb-card input::placeholder { color: var(--pb-text-2, #555); opacity: 1; }
 .pb-fb-card textarea { min-height: 120px; resize: vertical; }
 .pb-fb-st { margin: 0; font-size: 14px; color: var(--pb-text-2, #555); min-height: 1px; }
 .pb-fb-card .pb-btn { margin: 0; width: 100%; font: 600 16px 'Inter', sans-serif; text-transform: none; letter-spacing: 0; border-radius: 12px; padding: 13px 14px; border: 1.5px solid var(--pbl-yellow, #F5BF1F); background: var(--pbl-yellow, #F5BF1F); color: #14171C; }
@@ -12990,7 +12991,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.92 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.93 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -38958,7 +38959,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + '<div class="pb-fb-top"><span id="pbFbTitle">Send Feedback</span><button type="button" class="pb-fb-x" aria-label="Close" id="pbFbX">&times;</button></div>'
         + '<div class="pb-fb-seg" role="group" aria-label="Kind"><button type="button" data-k="problem">Problem</button><button type="button" data-k="idea">Idea</button></div>'
         + '<textarea id="pbFbText" maxlength="3000" aria-label="Feedback"></textarea>'
-        + '<input id="pbFbPhone" type="tel" inputmode="tel" autocomplete="tel" maxlength="30" placeholder="Your phone (optional), if you’re OK with a call" aria-label="Your phone (optional)">' + '<p class="pb-help" style="margin:6px 0 0;">We use feedback to fix and improve the app. We won’t quote you or use your name without asking first.</p>' /* r16.83 */
+        + '<input id="pbFbPhone" type="tel" inputmode="tel" autocomplete="tel" maxlength="30" placeholder="Phone for a call back (optional)" aria-label="Your phone (optional)">' + '<p class="pb-help" style="margin:6px 0 0;">We use feedback to fix and improve the app. We won’t quote you or use your name without asking first.</p>' /* r16.83 */
         + '<button type="button" class="pb-btn" id="pbFbSend">Send</button>'
         + '<p class="pb-fb-st" id="pbFbSt" role="status"></p>'
         + '<button type="button" class="pb-fb-link" id="pbFbPast">Past reports</button></div>';
