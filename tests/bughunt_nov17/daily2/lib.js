@@ -1,0 +1,51 @@
+const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');module.exports.co=co;
+const JOB=`;window.__rpcOverride=Object.assign(window.__rpcOverride||{},{pb_prod_member_jobs:()=>({jobs:[{job_number:'24-017',project_name:'Test Sewer'},{job_number:'24-020',project_name:'Elm St Water'}]})});`;
+module.exports.boot=async(extra='',opts={})=>{const r=await boot('http://127.0.0.1:8843/'+(process.env.PG||'curT.html'),Object.assign({init:co+JOB+extra},opts));r.H=F(r.p);await r.p.setViewportSize({width:390,height:844});return r;};
+module.exports.mkrun=async function(p,o={}){const dist=o.dist||100;
+ await p.evaluate(()=>pbGoto('home'));await p.waitForTimeout(400);
+ await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1200);
+ await p.evaluate(()=>{const lr=[...document.querySelectorAll('#screen-input button')].find(b=>b.textContent.trim()==="Engineer's Rod");lr&&lr.click();});
+ const f=async(id,v)=>p.evaluate(([id,v])=>{const e=document.getElementById(id);if(!e)return;e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));},[id,String(v)]);
+ await f('saJobNumber',o.job||'24-017');await f('saJobsite',o.site||'Test Sewer');
+ await f('runBedding',0.5);await f('runTrenchWidth',3);await f('runWT',0.08);
+ await p.evaluate(()=>{const e=document.getElementById('runIdSel');e.value=[...e.options].find(o=>o.text.trim()==='8"').value;e.dispatchEvent(new Event('change',{bubbles:true}));});
+ await f('startStakeElev',100);await f('startCutFillVal',5);await f('startStakeReading',4.8);
+ await f('endStakeElev',99);await f('endCutFillVal',5);await f('endStakeReading',5.8);
+ await f('totalDist',dist);await f('interval',10);
+ await p.waitForTimeout(400);
+ await p.getByText('Review & Calculate',{exact:true}).click();await p.waitForTimeout(1200);
+ await p.getByText('Lock This Run',{exact:true}).click();await p.waitForTimeout(1200);
+ for(let i=0;i<6;i++){const m=await p.evaluate(()=>{const t=document.getElementById('pbModalTitle');const o=document.getElementById('pbModal')||document.querySelector('.pb-modal-overlay');return t&&t.offsetParent?t.textContent:null;});if(!m)break;
+  const btns=await p.evaluate(()=>[...document.querySelectorAll('#pbModalDialog button')].filter(b=>b.offsetParent).map(b=>b.textContent.trim()));
+  const pick=['Lock Without It','I Checked Them','Lock Anyway','OK','Got It'].find(x=>btns.includes(x))||btns.find(x=>/^Use .*Anyway$/.test(x));
+  if(o.log)console.log('MODAL',m,btns);if(!pick)break;
+  await p.evaluate(t=>[...document.querySelectorAll('#pbModalDialog button')].find(b=>b.offsetParent&&b.textContent.trim()===t).click(),pick);await p.waitForTimeout(1200);}
+ return p.evaluate(()=>{const runArchive=__dEval("runArchive");const e=runArchive.slice().sort((a,b)=>b.id-a.id)[0];return e&&{id:e.id,job:e.jobNumber,lock:e.lockTime,start:e.runStartTime};});
+};
+module.exports.txt=(p,sel)=>p.evaluate(s=>{const e=document.querySelector(s||'.pb-screen.active');return e?e.innerText:'';},sel);
+module.exports.modal=(p)=>p.evaluate(()=>{const t=document.getElementById('pbModalTitle');if(!t||!t.offsetParent)return null;return t.textContent+' | '+(document.getElementById('pbModalMessage')||{}).innerText+' | '+[...document.querySelectorAll('#pbModalDialog button')].filter(b=>b.offsetParent).map(b=>b.textContent.trim()).join(',');});
+module.exports.mclick=async(p,t)=>{await p.evaluate(t=>{const b=[...document.querySelectorAll('#pbModalDialog button')].find(b=>b.offsetParent&&b.textContent.trim()===t);if(!b)throw new Error('no modal btn '+t);b.click();},t);await p.waitForTimeout(700);};
+module.exports.shot=(p,n)=>p.screenshot({path:'/tmp/claude-0/audit/daily2/out/'+n+'.png',fullPage:true});
+module.exports.ev=(p,s)=>p.evaluate(s=>window.__dEval(s),s);
+// crew via UI on the current run; then shift log times by evaluating
+module.exports.crew=async(p,name,type,cat)=>{await p.evaluate(([n,t,c])=>{document.getElementById('crewLogAddForm').style.display='';document.getElementById('crewLogName').value=n;document.getElementById('crewLogType').value=t;window.pbFmCrewTypeChanged&&pbFmCrewTypeChanged();if(c)document.getElementById('crewLogCategory').value=c;},[name,type,cat]);await p.evaluate(()=>pbAddCrewLogEntry(true));await p.waitForTimeout(900);};
+module.exports.prod=async(p,o)=>{await p.evaluate(o=>{document.getElementById('resForemanCard').open=true;const m={fpForeman:o.by,fpExcavated:o.exc,fpPipeInstalled:o.pipe,fpBackfill:o.bf,fpRestoration:o.rest,fpDemo:o.demo,fpAppurtenances:o.app};Object.keys(m).forEach(k=>{if(m[k]!=null){const e=document.getElementById(k);e.value=m[k];e.dispatchEvent(new Event('input',{bubbles:true}));}});},o);await p.evaluate(()=>pbSaveForemanData());await p.waitForTimeout(1200);};
+module.exports.openAll=async(p)=>{await p.evaluate(()=>{document.querySelectorAll('.dx-tog[aria-expanded=false]').forEach(b=>b.click());});await p.waitForTimeout(500);};
+module.exports.daily=async(p,o={})=>{await p.evaluate(o=>window.pbOpenDailyReport(o),o);await p.waitForTimeout(2500);await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.offsetParent&&b.textContent.trim()==='Hours & Sign');b&&b.click();});await p.waitForTimeout(2000);await module.exports.openAll(p);};
+module.exports.endRun=async(p,log)=>{await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.offsetParent&&b.textContent.trim()==='End Run and Send Report');b.click();});await p.waitForTimeout(1500);
+ for(let i=0;i<8;i++){const m=await module.exports.modal(p);if(!m)break;if(log)console.log('M:',m);const bs=m.split(' | ').pop().split(',');const pick=bs.find(x=>/^(End Run|End It|Check Them Out|Check Out All|Everyone|Send|OK|Yes|Now|End Now|Got It|Not Now)/.test(x))||bs[bs.length-1];await module.exports.mclick(p,pick);await p.waitForTimeout(1000);}};
+// set times on the current run: start ms, crew in/out ms
+module.exports.times=(p,st,inn,out)=>module.exports.ev(p,`(()=>{const e=getCurrentArchiveEntry();e.runStartTime=${st};e.crewLog.forEach(c=>{c.log=[{action:'Checked In',time:${inn}}${out?`,{action:'Checked Out',time:${out}}`:''}];c.status=${out?"'out'":"'in'"};});return saveRunArchive();})()`);
+module.exports.draftDump=(p)=>module.exports.ev(p,`(()=>{const d=pbDpDraft();if(!d)return null;return {crew:d.crew.map(x=>x.name+'='+pbDxHvC(x)),equip:d.equip.map(q=>pbDpEqName(q)+'='+pbDxHvC(q,true)),events:d.events.length};})()`);
+module.exports.capSubmit=(p)=>p.evaluate(()=>{window.__subs=[];window.__rpcOverride.pb_daily_submit=(a)=>{window.__subs.push(JSON.parse(JSON.stringify(a)));return {ok:true,id:'srv'+window.__subs.length,version:1,received_at:new Date().toISOString()};};});
+module.exports.sign=async(p,name,narr)=>{await p.evaluate(([n,t])=>{const a=document.getElementById('drNarrative');a.value=t;a.dispatchEvent(new Event('input',{bubbles:true}));const b=document.getElementById('drName');b.value=n;b.dispatchEvent(new Event('input',{bubbles:true}));},[name,narr]);await p.evaluate(()=>pbDlySign());await p.waitForTimeout(2500);const m=await module.exports.modal(p);if(m&&/Sign/.test(m)){await module.exports.mclick(p,'Sign Report');await p.waitForTimeout(3000);}return {modal:m,status:await p.evaluate(()=>(document.getElementById('drSignStatus')||{}).textContent)};};
+module.exports.setEnd=(p,end)=>module.exports.ev(p,`(()=>{const e=runArchive.slice().sort((a,b)=>b.id-a.id)[0];e.runEndTime=${end};(e.crewLog||[]).forEach(c=>{const l=c.log[c.log.length-1];if(l&&/Checked Out/.test(l.action)&&l.time>${end})l.time=${end};});return saveRunArchive();})()`);
+// boot with a controlled clock and/or timezone: o.time (ms or ISO), o.tz (IANA), o.offline
+module.exports.boot2=async(extra='',o={})=>{const {chromium}=require('playwright');const fs=require('fs');const b=await chromium.launch();
+ const ctx=await b.newContext({viewport:{width:390,height:844},colorScheme:(process.env.DARK?'dark':'light'),serviceWorkers:'block',timezoneId:o.tz||undefined});
+ await ctx.route(/supabase-js/,r=>r.fulfill({contentType:'application/javascript',body:fs.readFileSync('/home/claude/rig/fakesb.js','utf8')}));
+ await ctx.route(/supabase\.co/,r=>r.fulfill({status:200,contentType:'application/json',body:'null'}));
+ await ctx.addInitScript(co+JOB+extra);const p=await ctx.newPage();p.errs=[];p.on('pageerror',e=>p.errs.push(e.message));
+ if(o.time)await p.clock.install({time:new Date(o.time)});
+ await p.goto('http://127.0.0.1:8843/'+(process.env.PG||'curT.html'),{waitUntil:'load'});await p.waitForTimeout(3000);return {b,p,ctx,H:F(p)};};
+module.exports.pdfText=async(p,expr,name)=>{const b64=await p.evaluate(async(expr)=>{const doc=await window.__dEval(expr);const a=new Uint8Array(doc.output('arraybuffer'));let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s);},expr);const f='/tmp/claude-0/audit/daily2/out/'+name+'.pdf';require('fs').writeFileSync(f,Buffer.from(b64,'base64'));return require('child_process').execSync('pdftotext -layout '+f+' -').toString();};
