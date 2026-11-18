@@ -14,7 +14,7 @@ const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/c
  await H.sel('hub1FitBr','6"');
  stake=S('4+51',104.26,3.83,'MH-2','3863');await p.setInputFiles('#endAiStakePhoto',[H.img('p05')]);await p.waitForTimeout(2500);
  await H.click('Review & Calculate');await p.waitForTimeout(1500);
- await H.click('Lock This Run');await p.waitForTimeout(800);await H.modalClick('I Checked Them').catch(()=>{});await p.waitForTimeout(2500);
+ await H.click('Lock This Run');await p.waitForTimeout(800);await H.modalClick('Lock Without It').catch(()=>{});await p.waitForTimeout(600);await H.modalClick('I Checked Them').catch(()=>{});await p.waitForTimeout(2500);
  // counted box before laying
  await p.evaluate(()=>{const s=[...document.querySelectorAll('#screen-results summary')].find(s=>/Production & Crew/.test(s.textContent));s&&s.click();});await p.waitForTimeout(400);
  console.log('counted (none laid):',JSON.stringify(await p.evaluate(()=>{const h=document.getElementById('fpCounted');return h&&!h.hidden?h.innerText:null;})));

@@ -1168,7 +1168,7 @@ table.pb-table.pb-zoom .pb-notebtn { width: 38px; height: 38px; font-size: 21px;
 #pbApp .pb-beta-acts { display: flex; gap: 8px; width: 100%; } #pbApp .pb-beta-acts .pb-btn { flex: 1; margin: 0; }
 .pb-fb-pill { position: fixed; left: 14px; bottom: calc(14px + var(--pb-shell-h, 0px)); z-index: 39; border: 0; border-radius: 999px; padding: 9px 14px; font: 600 14px/1 'Inter', sans-serif; color: #14171C; background: var(--pbl-yellow, #F5BF1F); box-shadow: 0 4px 14px rgba(0,0,0,.28); }
 html.pb-kb-open .pb-fb-pill, html.pb-fb-open .pb-fb-pill { display: none !important; }
-.pb-fb { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; justify-content: center; }
+.pb-fb { position: fixed; inset: 0; z-index: 48; /* bughunt 04: below the app's dialog (50), above the bars and sheets (<= 47) */ background: rgba(0,0,0,.5); display: flex; align-items: flex-end; justify-content: center; }
 .pb-fb-card { width: 100%; max-width: 560px; box-sizing: border-box; background: var(--pb-bg, #fff); color: var(--pb-text, #14171C); border-radius: 18px 18px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px)); font-family: 'Inter', sans-serif; display: flex; flex-direction: column; gap: 12px; max-height: 92vh; overflow-y: auto; }
 .pb-fb-top { display: flex; align-items: center; justify-content: space-between; font-size: 18px; font-weight: 700; }
 .pb-fb-x { border: 0; background: none; color: inherit; font-size: 26px; line-height: 1; padding: 4px 8px; }
@@ -5289,6 +5289,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
   function pipeOD(type, idIn, wFt) {
     const t = String(type || ''), d = Math.round(Number(idIn) * 1000) / 1000; if (!(d > 0)) return '';
     const r3 = (x) => String(Math.round(x * 1000) / 1000);
+    if (typeof window.pbPipeOdIn === 'function') { const v = window.pbPipeOdIn(t, d, wFt); return v ? r3(v) : ''; } // r16.90: the app's one OD table
     let od = null;
     if (t === '' || t === 'PVC SDR 35') od = pick(D3034, [4, 6, 8, 10, 12, 15], d); // blank = "PVC SDR 35 (auto)" in Run Setup
     else if (t === 'Ductile Iron') od = pick(DIOD, [4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 30, 36, 42, 48], d);
@@ -8752,7 +8753,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
         <div class="pb-field"><label>Isolation / control measures</label><textarea id="cpControls" rows="2" maxlength="1000" placeholder="e.g. LOTO on pumps, forced-air ventilation running"></textarea></div>
         <div class="pb-field"><label>How you'll detect a ventilation failure</label><textarea id="cpVentFail" rows="2" maxlength="1000" placeholder="e.g. air horn alarm on blower, attendant checks duct airflow every 10 min"></textarea></div>
         <div class="pb-field"><label>Other acceptable entry conditions (optional)</label><textarea id="cpConditions" rows="2" placeholder="e.g. blower running, no standing water. Gas limits go in the fields below; this text isn&rsquo;t checked"></textarea></div>
-        <details class="pb-more b4-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>How the app uses these limits</span></summary><p class="pb-help">The app checks every logged air test against these limits and sounds EVACUATE when one is outside them. A blank field uses the standard value in its label &mdash; it never turns the app&rsquo;s check off. Enter your own only where your program or this space calls for different limits, and keep using your gas meter&rsquo;s own alarm too. H2S and CO are checked on the tests where they are measured; a blank reading means not measured, never zero.</p></details>
+        <details class="pb-more b4-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>How the app uses these limits</span></summary><p class="pb-help">The app checks every logged air test against these limits and shows a red notice when one is outside them. A blank field uses the standard value in its label &mdash; it never turns the app&rsquo;s check off. Enter your own only where your program or this space calls for different limits, and keep using your gas meter&rsquo;s own alarm too. H2S and CO are checked on the tests where they are measured; a blank reading means not measured, never zero.</p></details>
         <div class="pb-row cp-limits-row">
           <div class="pb-field"><label>Minimum acceptable O2 (%) — blank uses 19.5</label><input type="number" enterkeyhint="next" step="0.1" min="0" max="25" id="cpMinO2" placeholder="19.5" inputmode="decimal"></div>
           <div class="pb-field"><label>Maximum acceptable O2 (%) — blank uses 23.5 (oxygen-enriched air is a fire hazard)</label><input type="number" enterkeyhint="next" step="0.1" min="0" max="30" id="cpMaxO2" placeholder="23.5" inputmode="decimal"></div>
@@ -8885,7 +8886,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
       <div class="pb-section" id="cpEmergencyEndWrap">
         <div class="pb-tag">End This Incident</div>
         <div class="pb-body">
-          <p class="pb-help" style="margin-top:0;">Only once it is over. Ending the incident record is NOT permission to re-enter the space: unsafe readings, DO NOT ENTER and the permit window stay exactly as they are, and nothing logged is erased. The declaration and how long it lasted stay in the closeout report either way.</p>
+          <p class="pb-help" style="margin-top:0;">Only once it is over. Ending the incident record is NOT permission to re-enter the space: out-of-limit readings, the entry warnings and the permit window stay exactly as they are, and nothing logged is erased. The declaration and how long it lasted stay in the closeout report either way.</p>
           <div class="pb-field"><label>Note (optional)</label><textarea id="cpEmergencyOutcomeNote" rows="2" maxlength="500" placeholder="e.g. button bumped in a pocket; dispatcher told no response needed"></textarea></div>
           <div class="pb-btn-row" style="padding-top:6px;">
             <button class="pb-btn ghost small" onclick="pbDismissEmergencyPanel('mistake')">Activated by Mistake</button>
@@ -9139,7 +9140,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
       <div class="pb-tag">Pipe</div>
       <div class="pb-body">
         <div class="pb-row pb-pipepair">
-          <div class="pb-field"><label for="runIdSel">Pipe ID<span class="pb-sr"> (inches)</span></label><select id="runIdSel" onchange="pbToggleIdOther('run')"></select></div>
+          <div class="pb-field"><label for="runIdSel">Pipe size<span class="pb-sr"> (inches, nominal)</span></label><select id="runIdSel" onchange="pbToggleIdOther('run')"></select></div>
           <div class="pb-field" id="runPipeTypeWrap"><label for="runPipeType">Pipe type</label><div class="pb-pt-box"><select id="runPipeType"></select><span class="pb-pa-auto" id="runPipeTypeAuto" hidden>auto</span></div></div>
         </div>
         <div class="pb-field" id="runIdOtherWrap" style="display:none;"><label for="runIdOther">Custom ID<span class="pb-sr"> (inches)</span></label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.01" id="runIdOther" inputmode="decimal" placeholder="e.g. 10.5"><span class="pb-unit" aria-hidden="true">in</span></div></div>
@@ -9260,7 +9261,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
           </div>
           <div class="pb-row pb-pipepair">
             <div class="pb-field"><label for="seg2WT">Wall thickness<span class="pb-sr"> (ft)</span><span class="pb-req"> (required)</span></label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.001" id="seg2WT" inputmode="decimal" placeholder="e.g. 0.08" aria-required="true"><span class="pb-unit" aria-hidden="true">ft</span></div></div>
-            <div class="pb-field"><label for="seg2IdSel">Pipe ID<span class="pb-sr"> (inches)</span></label><select id="seg2IdSel" onchange="pbToggleIdOther('seg2')"></select></div>
+            <div class="pb-field"><label for="seg2IdSel">Pipe size<span class="pb-sr"> (inches, nominal)</span></label><select id="seg2IdSel" onchange="pbToggleIdOther('seg2')"></select></div>
           </div>
           <div class="pb-field" id="seg2IdOtherWrap" style="display:none;"><label for="seg2IdOther">Custom ID<span class="pb-sr"> (inches)</span></label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.01" id="seg2IdOther" inputmode="decimal" placeholder="e.g. 10.5"><span class="pb-unit" aria-hidden="true">in</span></div></div>
           <div class="pb-row">
@@ -9310,7 +9311,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
           </div>
           <div class="pb-row pb-pipepair">
             <div class="pb-field"><label for="seg3WT">Wall thickness<span class="pb-sr"> (ft)</span><span class="pb-req"> (required)</span></label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.001" id="seg3WT" inputmode="decimal" placeholder="e.g. 0.08" aria-required="true"><span class="pb-unit" aria-hidden="true">ft</span></div></div>
-            <div class="pb-field"><label for="seg3IdSel">Pipe ID<span class="pb-sr"> (inches)</span></label><select id="seg3IdSel" onchange="pbToggleIdOther('seg3')"></select></div>
+            <div class="pb-field"><label for="seg3IdSel">Pipe size<span class="pb-sr"> (inches, nominal)</span></label><select id="seg3IdSel" onchange="pbToggleIdOther('seg3')"></select></div>
           </div>
           <div class="pb-field" id="seg3IdOtherWrap" style="display:none;"><label for="seg3IdOther">Custom ID<span class="pb-sr"> (inches)</span></label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.01" id="seg3IdOther" inputmode="decimal" placeholder="e.g. 10.5"><span class="pb-unit" aria-hidden="true">in</span></div></div>
           <div class="pb-row">
@@ -9360,7 +9361,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
           </div>
           <div class="pb-row pb-pipepair">
             <div class="pb-field"><label for="seg4WT">Wall thickness<span class="pb-sr"> (ft)</span><span class="pb-req"> (required)</span></label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.001" id="seg4WT" inputmode="decimal" placeholder="e.g. 0.08" aria-required="true"><span class="pb-unit" aria-hidden="true">ft</span></div></div>
-            <div class="pb-field"><label for="seg4IdSel">Pipe ID<span class="pb-sr"> (inches)</span></label><select id="seg4IdSel" onchange="pbToggleIdOther('seg4')"></select></div>
+            <div class="pb-field"><label for="seg4IdSel">Pipe size<span class="pb-sr"> (inches, nominal)</span></label><select id="seg4IdSel" onchange="pbToggleIdOther('seg4')"></select></div>
           </div>
           <div class="pb-field" id="seg4IdOtherWrap" style="display:none;"><label for="seg4IdOther">Custom ID<span class="pb-sr"> (inches)</span></label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.01" id="seg4IdOther" inputmode="decimal" placeholder="e.g. 10.5"><span class="pb-unit" aria-hidden="true">in</span></div></div>
           <div class="pb-row">
@@ -9410,7 +9411,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
           </div>
           <div class="pb-row pb-pipepair">
             <div class="pb-field"><label for="seg5WT">Wall thickness<span class="pb-sr"> (ft)</span><span class="pb-req"> (required)</span></label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.001" id="seg5WT" inputmode="decimal" placeholder="e.g. 0.08" aria-required="true"><span class="pb-unit" aria-hidden="true">ft</span></div></div>
-            <div class="pb-field"><label for="seg5IdSel">Pipe ID<span class="pb-sr"> (inches)</span></label><select id="seg5IdSel" onchange="pbToggleIdOther('seg5')"></select></div>
+            <div class="pb-field"><label for="seg5IdSel">Pipe size<span class="pb-sr"> (inches, nominal)</span></label><select id="seg5IdSel" onchange="pbToggleIdOther('seg5')"></select></div>
           </div>
           <div class="pb-field" id="seg5IdOtherWrap" style="display:none;"><label for="seg5IdOther">Custom ID<span class="pb-sr"> (inches)</span></label><div class="pb-unitbox"><input type="number" enterkeyhint="next" step="0.01" id="seg5IdOther" inputmode="decimal" placeholder="e.g. 10.5"><span class="pb-unit" aria-hidden="true">in</span></div></div>
           <div class="pb-row">
@@ -12003,7 +12004,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const wt = document.getElementById(prefix + 'RedWT'), ln = document.getElementById(prefix + 'RedLine');
     let L = null; try { L = pbPipeLookup(pbFitLayPipeType(), Number(sel.value)); } catch (e) {}
     if (wt && (wt.value === '' || wt.dataset.pbAuto === '1')) { const v = L && L.wallFt ? String(L.wallFt) : ''; if (wt.value !== v) wt.value = v; if (v) wt.dataset.pbAuto = '1'; else delete wt.dataset.pbAuto; }
-    if (ln) ln.textContent = 'Pipe after this point: ' + sel.value + '" ID' + (wt && wt.value ? ', ' + wt.value + ' ft wall' + (wt.dataset.pbAuto === '1' ? ' (auto)' : '') : '');
+    if (ln) ln.textContent = 'Pipe after this point: ' + sel.value + '" pipe' + (wt && wt.value ? ', ' + wt.value + ' ft wall' + (wt.dataset.pbAuto === '1' ? ' (auto)' : '') : '');
   }
   document.addEventListener('input', (ev) => { const m = ev.target && ev.target.id && /^(.*)RedWT$/.exec(ev.target.id); if (m) { if (ev.isTrusted !== false) delete ev.target.dataset.pbAuto; pbRedSync(m[1]); try { scheduleHiCascade(); } catch (e) {} } }, true);
   function pbFitBrWrite(prefix) {
@@ -12591,7 +12592,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!ty) t = 'Choose the fitting type to fill this in.';
       else if (ty === 'bend' && pbFitAngleOf(String(info).toUpperCase()) === null) t = 'Choose the bend angle to fill this in.';
       else if (ty === 'other') t = '';
-      else if (id === null) t = 'Choose the Pipe ID to fill this in.';
+      else if (id === null) t = 'Choose the Pipe size to fill this in.';
       else if ((ty === 'wye' || ty === 'tee' || ty === 'reducer') && !pbFitBrRead(info, ty)) t = ty === 'reducer' ? 'Choose the size it reduces to.' : 'Choose the branch size to fill this in.';
       else if (pbFitDefaultLayFt(ty, info, id, pipe) === null) t = 'No laying length on file for this ' + (pipe && pipe !== 'Other' ? pipe + ' ' : '') + 'fitting. Type it from the fitting.';
     }
@@ -12657,6 +12658,44 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return { wallFt: w, layFt: typeof row[1] === 'number' && row[1] > 0 ? row[1] : null };
   }
   window.pbPipeLookup = pbPipeLookup;
+  // r16.90: real outside diameters (in) by pipe type and nominal size. Sources as pipeOD in the calculators:
+  //  DI: AWWA C151 (C900 and DIPS HDPE are made in DI ODs). PVC SDR 35: ASTM D3034 4-15 in, ASTM F679 (PS46) 18-48 in.
+  //  IPS: ASME B36.10 / ASTM F714 / D1785. Corrugated HDPE: Prinsco OD column (its sizes are the inside diameter).
+  //  Concrete (ASTM C76): nominal = inside diameter, so OD = size + 2 walls. Vitrified clay: ODs differ by maker: no table.
+  var PB_OD_DI = { 4: 4.8, 6: 6.9, 8: 9.05, 10: 11.1, 12: 13.2, 14: 15.3, 16: 17.4, 18: 19.5, 20: 21.6, 24: 25.8, 30: 32, 36: 38.3, 42: 44.5, 48: 50.8 };
+  var PB_OD_SDR35 = { 4: 4.215, 6: 6.275, 8: 8.4, 10: 10.5, 12: 12.5, 15: 15.3, 18: 18.701, 21: 22.047, 24: 24.803, 27: 27.953, 30: 32, 36: 38.3, 42: 44.5, 48: 50.8 };
+  var PB_OD_IPS = { 1.5: 1.9, 2: 2.375, 2.5: 2.875, 3: 3.5, 4: 4.5, 5: 5.563, 6: 6.625, 8: 8.625, 10: 10.75, 12: 12.75, 14: 14, 16: 16, 18: 18, 20: 20, 24: 24, 30: 30, 36: 36 };
+  var PB_OD_CORR = { 4: 4.8, 6: 7.1, 8: 9.3, 10: 11.9, 12: 14.7, 15: 17.6, 18: 21.4, 24: 28.2, 30: 34.7, 36: 40.6, 42: 47.5, 48: 54.1, 60: 66.8 };
+  // OD in inches for a pipe type (Run Setup's Pipe type; blank = PVC SDR 35) and nominal size, or null when not known.
+  function pbPipeOdIn(type, sizeIn, wFt) {
+    const t = String(type || ''), d = Math.round(Number(sizeIn) * 1000) / 1000; if (!(d > 0)) return null;
+    const g = (tbl, max) => (tbl[d] && (!max || d <= max)) ? tbl[d] : null;
+    let od = null;
+    if (t === '' || t === 'PVC SDR 35') od = g(PB_OD_SDR35);
+    else if (t === 'Ductile Iron') od = g(PB_OD_DI);
+    else if (t === 'PVC C900') od = g(PB_OD_DI, 30);
+    else if (/hdpe/i.test(t) && /dips/i.test(t)) od = g(PB_OD_DI, 24);
+    else if (t === 'Solid-Wall HDPE') od = (d >= 4 && d <= 24) ? g(PB_OD_IPS) : null;
+    else if (t === 'Corrugated HDPE') od = g(PB_OD_CORR);
+    else if (t === 'Steel') od = (d >= 4 && d <= 36 && d !== 30) ? g(PB_OD_IPS) : null;
+    else if (t === 'PVC Sch 40') od = d <= 18 ? g(PB_OD_IPS) : null;
+    else if (t === 'PVC Sch 80') od = d <= 12 ? g(PB_OD_IPS) : null;
+    else if (t === 'Concrete') { const w = Number(wFt); od = w > 0 ? d + 2 * w * 12 : null; }
+    return od;
+  }
+  // A grade point's pipe: OD in ft from its nominal size (idFt) and wall (ft): the table OD for the run's Pipe type, else
+  // size + 2 walls. A table OD that leaves no inside (a typed wall far too thick) falls back too.
+  function pbPipeOdFt(idFt, wt) {
+    if (idFt === null || idFt === undefined || !Number.isFinite(idFt) || !(idFt > 0)) return null;
+    const w = (wt === null || wt === undefined || !Number.isFinite(wt)) ? null : wt;
+    let t = ''; try { t = pbFitLayPipeType(); } catch (e) { t = ''; }
+    const od = pbPipeOdIn(t, idFt * 12, w);
+    if (od && (w === null || od / 12 - 2 * w > 0)) return od / 12;
+    return w === null ? null : idFt + 2 * w;
+  }
+  // Invert (inside bottom) to outside top, ft: OD - wall. null without a wall or a size.
+  function pbInvToTopFt(idFt, wt) { const od = pbPipeOdFt(idFt, wt); return (od === null || wt === null || wt === undefined || !Number.isFinite(wt)) ? null : od - wt; }
+  window.pbPipeOdIn = pbPipeOdIn; window.pbPipeOdFt = pbPipeOdFt; window.pbInvToTopFt = pbInvToTopFt;
   // AUTO flag: the box holds exactly what the app put there (data-pb-auto = that value). Typing, or any other change of
   // the value, makes it the person's. Saved with the record (pipeInfo[].wtAuto, pipeLayout.runs[n].lenAuto), drafts and
   // the remembered pipe (lastWallAuto, lastLaying.lenAuto).
@@ -12842,6 +12881,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       wtFt: r.point.wt,
       ...(pbPiAIsAuto(r.n === 1 ? 'runWT' : 'seg' + r.n + 'WT') ? { wtAuto: true } : {}), /* feat_pipeauto: filled in by the app */
       idIn: r.point.idFt !== null ? r.point.idFt * 12 : null,
+      ...((() => { const o = r.point.idFt !== null && r.point.wt !== null ? pbPipeOdFt(r.point.idFt, r.point.wt) : null; return o !== null ? { odIn: Math.round(o * 12 * 1000) / 1000 } : {}; })()), /* r16.90: OD used for TOP */
       beddingFt: (r.point.bedding !== null && r.point.bedding !== undefined) ? r.point.bedding : null,
       trenchWidthFt: (r.point.trenchWidth !== null && r.point.trenchWidth !== undefined) ? r.point.trenchWidth : null
     }));
@@ -12950,7 +12990,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r16.89 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r16.90 · 2026-11-17'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -13936,7 +13976,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           html = '<span class="pb-home-line"><span class="pb-sr">Active permit · </span><span class="pb-nw pb-home-in">' + inside + '<span class="pb-sr">' + (inside === 1 ? ' person' : ' people') + '</span> inside</span>'
             + (win ? '<span class="pb-home-sep"> · </span><span class="pb-nw' + (/ended|not started/.test(win) ? ' pb-home-winbad' : '') + '">' + win + '</span>' : '') + '</span>';
           if (confinedEmergencyStartTime && !confinedEmergencyEndTime) html += '<span class="pb-home-urgent">EMERGENCY declared — open the permit</span>';
-          if (pbHomeShown(document.getElementById('cpUnsafeBanner'))) html += '<span class="pb-home-urgent">OUTSIDE PERMIT LIMITS — DO NOT ENTER</span>';
+          if (pbHomeShown(document.getElementById('cpUnsafeBanner'))) html += '<span class="pb-home-urgent">OUTSIDE PERMIT LIMITS — PERMIT DOES NOT ALLOW ENTRY</span>';
         }
       } catch (e) {}
       pbHomeSetSub('confinedResumeSub', html);
@@ -14680,6 +14720,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   });
 
   function pbPlayAlarm(kind) {
+    if (kind === 'evacuate') { try { if (navigator.vibrate) navigator.vibrate([200]); } catch (e) {} return; } // r16.90: record-only permit: no siren
     const ctx = pbGetAudioCtx();
     if (!ctx) return;
     if (ctx.state === 'suspended') ctx.resume();
@@ -15554,7 +15595,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!onPermit) {
       if (keptEmergency) lines.push({ id: 'Emergency', tone: 'danger', text: 'EMERGENCY STILL OPEN', go: 'Open panel', onClick: async () => { pbShellBeforeUrgent(); try { await window.pbOpenClosedEmergencyPanel(); } finally { pbShellUrgentMove = false; } } });
       else if (liveEmergency) lines.push({ id: 'Emergency', tone: 'danger', text: 'EMERGENCY STILL OPEN', go: 'Open panel', onClick: () => pbShellOpenPermitUrgent('cpEmergencyPanel') });
-      if (unsafe) lines.push({ id: 'Unsafe', tone: 'danger', text: 'OUTSIDE PERMIT LIMITS \u2014 DO NOT ENTER', go: 'Open', onClick: () => pbShellOpenPermitUrgent('cpUnsafeBanner') });
+      if (unsafe) lines.push({ id: 'Unsafe', tone: 'danger', text: 'OUTSIDE PERMIT LIMITS \u2014 PERMIT DOES NOT ALLOW ENTRY', go: 'Open', onClick: () => pbShellOpenPermitUrgent('cpUnsafeBanner') });
       // A red line already opens this permit's screen; the plain permit line is folded into it.
       if (confinedPermit && !liveEmergency && !unsafe) lines.push({ id: 'Permit', tone: 'normal', text: 'Permit open \u2014 ' + (String(confinedPermit.space || '').trim() || 'confined space'), go: 'Open', onClick: () => pbGoto('confinedActive') });
     }
@@ -16917,7 +16958,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbStakeAiStale(prefix, ctx)) return; // the point was removed or a new run started: nothing to fill
     if (!r.ok) {
       const net = /^(offline|timeout|network|dropped|ai_busy|ai_failed|ai_incomplete|unavailable|http_5\d\d)$/.test(r.code || '');
-      pbAiShow(stNow, 'warn', 'Stake not read.', r.message + (net ? ' The photos are kept on this point.' : ' Nothing on this point was changed.'));
+      const keepOnly = !net && /^(daily_limit|plan|signed_out)$/.test(r.code || ''); /* bughunt 05: no read, but the photo taken at the stake stays with the point */
+      pbAiShow(stNow, 'warn', 'Stake not read.', r.message + (net ? ' The photos are kept on this point.' : keepOnly ? ' The photo is kept on this point. Type the values from the stake.' : ' Nothing on this point was changed.'));
+      if (keepOnly) pbStakeAiKeepPhotos(prefix, ctx, only === 'back' ? [null, img] : [img, back]);
       if (net) { pbStakeAiLast[prefix] = { ctx, img, back }; pbStakeAiKeepPhotos(prefix, ctx, only === 'back' ? [null, img] : [img, back]); if (stNow) stNow.insertAdjacentHTML('beforeend', '<div class="pb-btn-row"><button type="button" class="pb-btn small" onclick="pbStakeAiRetry(\'' + prefix + '\')">Try Again</button></div>'); }
       return;
     }
@@ -17856,7 +17899,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const prevQ = (pbAiAskTurns()[0] || {}).q || ''; // a follow-up like "120 ft, 5 days" finds its pages through the question before it
       const ex = pbAiEduExcerpts(prevQ ? q + ' ' + prevQ : q);
       pbAiAskBusy = true; if (btn) btn.disabled = true;
-      if (retryEntry) { const ri = pbAiAskHistory.indexOf(retryEntry); if (ri >= 0) { pbAiAskHistory.splice(ri, 1); pbAiAskRender(); } } // r15.99: the unfinished card goes once the new request starts
+      let retryAt = -1; /* bughunt 06: where the unfinished card was, so it can go back if this try fails before any words */
+      if (retryEntry) { const ri = pbAiAskHistory.indexOf(retryEntry); if (ri >= 0) { retryAt = ri; pbAiAskHistory.splice(ri, 1); pbAiAskRender(); } } // r15.99: the unfinished card goes once the new request starts
       pbAiShow(st, '', '', ''); // ask_v2: the wait line (with Cancel) shows instead
       const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
       pbAiAskCtl = ctl; pbAiAskWait(true);
@@ -17890,6 +17934,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         else { live.streaming = false; live.body = ''; live.failed = r.message; } // unchecked words never stay on screen
         pbAiAskRender();
       }
+      if (!r.ok && !live && retryEntry && retryAt >= 0 && pbAiAskHistory.indexOf(retryEntry) < 0) { if (r.code !== 'canceled') retryEntry.failed = r.message; pbAiAskHistory.splice(Math.min(retryAt, pbAiAskHistory.length), 0, retryEntry); pbAiAskRender(); } /* bughunt 06 */
       if (!r.ok) { pbAiShow(st, r.code === 'canceled' ? 'info' : 'warn', r.message, ''); if (r.code === 'daily_limit' && st) { const qe = st.querySelector('.pb-ai-quota'); if (qe) qe.remove(); } pbAiAskModeSync(); return; }
       if (r.data && r.data.v === 2) pbAiV2Mark(); // the server answers v2: its controls can show
       const a = r.data && r.data.v === 2 ? pbAiFromV2(r.data, q) : pbAiParseTeacher(r.text, ex, q);
@@ -18043,13 +18088,28 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       escapeHtml(x.title || (x.state === 'done' ? '' : 'Not read yet')) + (x.issues ? ' · <span class="pb-plan-issue">' + x.issues + ' discrepanc' + (x.issues === 1 ? 'y' : 'ies') + '</span>' : '') + '</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>').join('');
   };
   function pbPlanFree() { pbPlanV.urls.forEach((u) => { try { URL.revokeObjectURL(u); } catch (e) {} }); pbPlanV.urls = []; if (pbPlanV.obs) { try { pbPlanV.obs.disconnect(); } catch (e) {} pbPlanV.obs = null; } }
+  /* bughunt 08: a sheet that can't be downloaded says so, and is fetched again when back online or on Try Again */
+  function pbPlanMiss(on) {
+    let el = pbPlansEl('planSheetMiss'); const view = pbPlansEl('planView');
+    if (!on) { if (el) el.hidden = true; return; }
+    if (!el && view && view.parentNode) { el = document.createElement('p'); el.id = 'planSheetMiss'; el.className = 'pb-docs-line'; el.setAttribute('role', 'status'); el.style.margin = '6px 16px'; view.parentNode.insertBefore(el, view); }
+    if (!el) return;
+    el.hidden = false;
+    el.innerHTML = escapeHtml(navigator.onLine === false ? 'No signal. This sheet loads when you’re back online.' : 'Couldn’t load this sheet. Check your signal.') + ' <button type="button" class="pb-btn ghost small" onclick="pbPlanTilesAgain()">Try Again</button>';
+  }
+  window.pbPlanTilesAgain = function() {
+    if (pbCurrentScreen !== 'planSheet') return;
+    pbPlanMiss(false);
+    const cv = pbPlansEl('planCanvas'); if (cv) cv.querySelectorAll('img[data-path]').forEach((im) => { if (!im.dataset.loaded) pbPlanTile(im); });
+  };
+  window.addEventListener('online', () => setTimeout(() => { try { window.pbPlanTilesAgain(); } catch (e) {} }, 1500));
   async function pbPlanTile(img) {
     if (img.dataset.loaded) return; img.dataset.loaded = '1';
     try {
       const { data, error } = await sbClient.storage.from('plan-sets').download(img.dataset.path);
-      if (error || !data) { img.dataset.loaded = ''; return; }
+      if (error || !data) { img.dataset.loaded = ''; if (img.isConnected) pbPlanMiss(true); return; }
       const u = URL.createObjectURL(data); pbPlanV.urls.push(u); img.src = u;
-    } catch (e) { img.dataset.loaded = ''; }
+    } catch (e) { img.dataset.loaded = ''; if (img.isConnected) pbPlanMiss(true); }
   }
   function pbPlanLayout() {
     const x = pbPlanV.sheets[pbPlanV.i], cv = pbPlansEl('planCanvas'), view = pbPlansEl('planView'); if (!x || !cv || !view) return;
@@ -18060,7 +18120,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const z = pbPlansEl('planZoomT'); if (z) z.textContent = pbPlanV.zoom ? Math.round(k / fit * 100) + '%' : 'Fit';
   }
   window.pbPlanSheetOpen = function(k) {
-    pbPlanFree(); pbPlanV.i = Math.max(0, Math.min(k, pbPlanV.sheets.length - 1)); pbPlanV.zoom = 0;
+    pbPlanFree(); pbPlanMiss(false); pbPlanV.i = Math.max(0, Math.min(k, pbPlanV.sheets.length - 1)); pbPlanV.zoom = 0;
     const x = pbPlanV.sheets[pbPlanV.i]; if (!x) return;
     const tt = pbPlansEl('planSheetTitle'); if (tt) tt.textContent = x.sheet ? 'Sheet ' + x.sheet : 'Page ' + x.page;
     const eb = pbPlansEl('planSheetEyebrow'); if (eb) eb.textContent = (pbPlanV.set && pbPlanV.set.title) || 'Plans';
@@ -18111,7 +18171,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!(await pbEnsurePdfjs())) { pbPlansSay('Couldn’t open PDFs on this device.'); return; }
     pbPlans.busy = true; pbPlansRender(); pbPlansSay('');
     let wake = null; try { wake = navigator.wakeLock ? await navigator.wakeLock.request('screen') : null; } catch (e) { wake = null; }
-    const reports = [], sent = [], already = []; let stop = '';
+    const reports = [], sent = [], already = []; let stop = '', parkedN = 0;
     const qids = []; for (const f of pdfs) qids.push(await pbPlansQAdd(f, pbPlans.job)); // r16.20: kept on the phone until sent
     pbPlansWait('Getting ready…'); await pbPlansProgStart(pdfs);
     try {
@@ -18119,7 +18179,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const r = await pbPlansSendOne(pdfs[k], pdfs.length > 1 ? 'Set ' + (k + 1) + ' of ' + pdfs.length + ' · ' : '', pbPlans.job);
         if (!r.stop || !r.net) await pbPlansQDel(qids[k]); // r16.20: done with it (sent, already there, a report, or refused)
         if (r.report) reports.push(r);
-        if (r.sent) sent.push(pdfs[k].name);
+        if (r.sent) { sent.push(pdfs[k].name); if (r.parked) parkedN++; }
         if (r.already) already.push(pdfs[k].name);
         if (r.stop) stop = (pdfs.length > 1 ? String(pdfs[k].name || '').replace(/\.pdf$/i, '') + ': ' : '') + r.stop + (k + 1 < pdfs.length ? ' The rest weren’t sent.' : '');
       }
@@ -18128,7 +18188,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       pbPlans.busy = false; pbPlansWait(''); pbPlansRender(); pbPlansLoad(true);
     }
     const skipped = list.length - pdfs.length;
-    pbPlansSay(stop || ((sent.length ? (sent.length > 1 ? sent.length + ' plan sets sent.' : 'Sent.') + ' Ask can use each sheet as soon as it’s read.' : '') +
+    pbPlansSay(stop || ((sent.length ? (sent.length > 1 ? sent.length + ' plan sets sent.' : 'Sent.') + (parkedN ? ' You can open the sheets now. Plan reading for Ask starts with a paid plan.' : ' Ask can use each sheet as soon as it’s read.') : '') +
       (already.length ? ' ' + (already.length > 1 ? already.length + ' were' : 'One was') + ' already on this job.' : '') + (skipped ? ' ' + skipped + ' file' + (skipped > 1 ? 's weren’t PDFs' : ' wasn’t a PDF') + '.' : '')).trim());
     if (reports.length) {
       const r0 = reports[0], more = reports.length - 1;
@@ -18193,7 +18253,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       }
       const u = await pbDocsRpc('pb_plans_uploaded', { p_set: setId }, 'Couldn’t finish sending.');
       if (!u.ok) return { stop: u.line };
-      return Object.assign({ sent: true }, rep);
+      return Object.assign({ sent: true, parked: !!(u.data && u.data.parked) }, rep); /* bughunt 01: a beta company's set waits for a paid plan */
     } catch (e) {
       console.error('plans upload', e);
       return { stop: 'Couldn’t read that PDF.' };
@@ -19895,7 +19955,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   window.pbRedAt = pbRedAt;
   function pbRedList() { const out = []; for (let n = 1; n <= MAX_SEG; n++) { if (n > 1 && !segIsActive(n)) continue; pbRedHubs(n).forEach(h => { const r = pbRedAt(h, true), at = numVal(h + 'Station'); if (r && at !== null) out.push({ run: n, atFt: at, idIn: Math.round(r.idFt * 12 * 1000) / 1000, wtFt: r.wt, label: getPointLabel(h, 'Reducer') }); }); } return out; }
-  function pbRedWords(list, run) { return (list || []).filter(x => x && (run === undefined || x.run === run)).sort((a, b) => a.atFt - b.atFt).map(x => ', then ' + x.idIn + '" ID' + (typeof x.wtFt === 'number' ? ' (' + x.wtFt.toFixed(3) + ' ft wall)' : '') + ' after ' + fmt(x.atFt, 1) + ' ft').join(''); }
+  function pbRedWords(list, run) { return (list || []).filter(x => x && (run === undefined || x.run === run)).sort((a, b) => a.atFt - b.atFt).map(x => ', then ' + x.idIn + '" pipe' + (typeof x.wtFt === 'number' ? ' (' + x.wtFt.toFixed(3) + ' ft wall)' : '') + ' after ' + fmt(x.atFt, 1) + ' ft').join(''); }
   function getPointBedding(prefix) { const n = segNumFromPrefix(prefix); return n ? numVal('seg' + n + 'Bedding') : numVal('runBedding'); }
   function getPointTrenchWidth(prefix) { const n = segNumFromPrefix(prefix); return n ? numVal('seg' + n + 'TrenchWidth') : numVal('runTrenchWidth'); }
   function getPointIdFt(prefix) {
@@ -21445,7 +21505,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (negativeCutFill(cfg.startPrefix) !== null) segErrors.push(pbErrAt(negativeCutFillMsg(getPointLabel(cfg.startPrefix, cfg.startLabel), negativeCutFill(cfg.startPrefix)), cfg.startPrefix + 'CutFillVal'));
       if (negativeCutFill(cfg.endPrefix) !== null) segErrors.push(pbErrAt(negativeCutFillMsg(getPointLabel(cfg.endPrefix, cfg.endLabel), negativeCutFill(cfg.endPrefix)), cfg.endPrefix + 'CutFillVal'));
       if (startWT !== null && startWT <= 0) segErrors.push(pbErrAt(cfg.notePrefix + 'Wall thickness must be greater than zero \u2014 check for a typo (e.g. a stray minus sign).', pbSegFieldFor(cfg.startPrefix, 'WT')));
-      if (startId !== null && startId <= 0) segErrors.push(pbErrAt(cfg.notePrefix + 'Pipe ID must be greater than zero \u2014 check for a typo.', pbSegFieldFor(cfg.startPrefix, 'Id')));
+      if (startId !== null && startId <= 0) segErrors.push(pbErrAt(cfg.notePrefix + 'Pipe size must be greater than zero \u2014 check for a typo.', pbSegFieldFor(cfg.startPrefix, 'Id')));
       if (bedding !== null && bedding <= 0) segErrors.push(pbErrAt(cfg.notePrefix + 'Bedding thickness must be greater than zero \u2014 check for a typo, or leave it blank if unknown.', pbSegFieldFor(cfg.startPrefix, 'Bedding')));
       if (trenchWidth !== null && trenchWidth <= 0) segErrors.push(pbErrAt(cfg.notePrefix + 'Trench width must be greater than zero \u2014 check for a typo, or leave it blank if unknown.', pbSegFieldFor(cfg.startPrefix, 'TrenchWidth')));
       // The trench bottom has to be wider than the pipe sitting in it. A width
@@ -21454,7 +21514,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       // negative, without a word.
       else if (trenchWidth !== null && startWT !== null && startWT > 0 && startId !== null && startId > 0 && trenchWidth <= startId + 2 * startWT) segErrors.push(cfg.notePrefix + 'Trench width (' + trenchWidth + ' ft) is not wider than the pipe itself (' + (startId + 2 * startWT).toFixed(2) + ' ft outside diameter) \u2014 check for a typo (it\u2019s in feet), or leave it blank if unknown.');
       if (wtMissing) segCapabilityNotes.push(cfg.notePrefix + 'Wall thickness is missing — BOP and TOP can\u2019t be calculated. INV/Elevation is still shown below.');
-      else if (idMissing) segCapabilityNotes.push(cfg.notePrefix + 'Pipe ID is missing — TOP can\u2019t be calculated. BOP and INV/Elevation are still shown below.');
+      else if (idMissing) segCapabilityNotes.push(cfg.notePrefix + 'Pipe size is missing — TOP can\u2019t be calculated. BOP and INV/Elevation are still shown below.');
 
       try { pbStSync(); } catch (e) { console.error(e); } /* feat_results2: the distance boxes match the stations before they are read */
       const totalDist = numVal(cfg.totalDistId);
@@ -21597,12 +21657,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     function rowDataForPoint(p) {
       const wtOk = p.wt !== null, idOk = p.idFt !== null, beddingOk = p.bedding !== null && p.bedding !== undefined;
       const bp = wtOk ? p.pi - p.wt : null;
-      const result = { pi: p.pi, bp, tp: (wtOk && idOk) ? p.pi + p.idFt + p.wt : null, sg: (wtOk && beddingOk) ? bp - p.bedding : null, seg: { wt: p.wt, idFt: p.idFt, bedding: p.bedding, trenchWidth: p.trenchWidth } };
+      const result = { pi: p.pi, bp, tp: (wtOk && idOk) ? p.pi + pbInvToTopFt(p.idFt, p.wt) : null, sg: (wtOk && beddingOk) ? bp - p.bedding : null, seg: { wt: p.wt, idFt: p.idFt, bedding: p.bedding, trenchWidth: p.trenchWidth } };
       if (needsReading) {
         const bopReading = wtOk ? p.reading + p.wt : null;
         result.invReading = p.reading;
         result.bopReading = bopReading;
-        result.topReading = (wtOk && idOk) ? p.reading - (p.idFt + p.wt) : null;
+        result.topReading = (wtOk && idOk) ? p.reading - pbInvToTopFt(p.idFt, p.wt) : null;
         result.sgReading = (wtOk && beddingOk) ? bopReading + p.bedding : null;
       }
       return result;
@@ -21763,7 +21823,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         if (m === 'stake') return getElevVal(p.id + 'StakeReading') !== null && !isPredictedFillMarked(p.id + 'StakeReading');
         if (m === 'elev') return pbStakeShotReading(p.id) !== null || (getElevVal(p.id + 'ElevReading') !== null && !isPredictedFillMarked(p.id + 'ElevReading'));
         return false; };
-      const topOfR = p => (p.wt !== null && p.idFt !== null) ? p.reading - (p.idFt + p.wt) : null;
+      const topOfR = p => (p.wt !== null && p.idFt !== null) ? p.reading - pbInvToTopFt(p.idFt, p.wt) : null;
       // fix98 2b: a typed / benchmark HI (a typo there puts every reading below zero), or every point below zero: red, not out of reach
       const hiSrcT = activeVal('hiToggle'), withR = points.filter(p => p.reading !== null);
       const redAll = hiSrcT === 'direct' || hiSrcT === 'bm' || (withR.length > 0 && withR.every(p => p.reading < -1e-9));
@@ -21782,7 +21842,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (above.length) warnings.push({ type: 'hi-serious', heading: belowHeading, text: above.map(p => 'Reading at ' + p.label + ' works out to ' + fmtReading(p.reading, rodUnit)).join('; ') + ' \u2014 below zero. Check the HI and these inverts, or set the instrument up higher.' });
       // The TOP reading is shown in every row too: with the crown above the instrument
       // (invert still below it) no rod set on the pipe's top can show it.
-      const topOf = p => (p.wt !== null && p.idFt !== null) ? p.reading - (p.idFt + p.wt) : null;
+      const topOf = p => (p.wt !== null && p.idFt !== null) ? p.reading - pbInvToTopFt(p.idFt, p.wt) : null;
       const crownAbove = points.filter(p => p.reading !== null && p.reading >= -1e-9 && topOf(p) !== null && topOf(p) < -1e-9 && evid(p)); // hidisc: untyped ones are in the out-of-reach line
       if (crownAbove.length) warnings.push({ type: 'hi-serious', heading: belowHeading, text: crownAbove.map(p => 'TOP reading at ' + p.label + ' works out to ' + fmtReading(topOf(p), rodUnit)).join('; ') + ' \u2014 below zero. Read INV or BOP there, check the HI, or set the instrument up higher.' });
     }
@@ -21814,13 +21874,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const pi = seg.from.pi + (seg.to.pi - seg.from.pi) * frac;
     const wtOk = seg.wt !== null, idOk = seg.idFt !== null, beddingOk = seg.bedding !== null && seg.bedding !== undefined;
     const bp = wtOk ? pi - seg.wt : null;
-    const result = { pi, bp, tp: (wtOk && idOk) ? pi + seg.idFt + seg.wt : null, sg: (wtOk && beddingOk) ? bp - seg.bedding : null, seg };
+    const result = { pi, bp, tp: (wtOk && idOk) ? pi + pbInvToTopFt(seg.idFt, seg.wt) : null, sg: (wtOk && beddingOk) ? bp - seg.bedding : null, seg };
     if (needsReading) {
       const reading = seg.from.reading + (seg.to.reading - seg.from.reading) * frac;
       const bopReading = wtOk ? reading + seg.wt : null;
       result.invReading = reading;
       result.bopReading = bopReading;
-      result.topReading = (wtOk && idOk) ? reading - (seg.idFt + seg.wt) : null;
+      result.topReading = (wtOk && idOk) ? reading - pbInvToTopFt(seg.idFt, seg.wt) : null;
       result.sgReading = (wtOk && beddingOk) ? bopReading + seg.bedding : null;
     }
     return result;
@@ -21870,11 +21930,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const wtOk = point.wt !== null, idOk = point.idFt !== null, beddingOk = point.bedding !== null && point.bedding !== undefined;
     if (calc.rodUnit === 'lenker') {
       const bp = wtOk ? point.pi - point.wt : null;
-      const v = field === 'bop' ? bp : field === 'top' ? ((wtOk && idOk) ? point.pi + point.idFt + point.wt : null) : field === 'sg' ? ((wtOk && beddingOk) ? bp - point.bedding : null) : point.pi;
+      const v = field === 'bop' ? bp : field === 'top' ? ((wtOk && idOk) ? point.pi + pbInvToTopFt(point.idFt, point.wt) : null) : field === 'sg' ? ((wtOk && beddingOk) ? bp - point.bedding : null) : point.pi;
       return fmt(v, 2);
     }
     const bopReading = wtOk ? point.reading + point.wt : null;
-    const v = field === 'bop' ? bopReading : field === 'top' ? ((wtOk && idOk) ? point.reading - (point.idFt + point.wt) : null) : field === 'sg' ? ((wtOk && beddingOk) ? bopReading + point.bedding : null) : point.reading;
+    const v = field === 'bop' ? bopReading : field === 'top' ? ((wtOk && idOk) ? point.reading - pbInvToTopFt(point.idFt, point.wt) : null) : field === 'sg' ? ((wtOk && beddingOk) ? bopReading + point.bedding : null) : point.reading;
     if (typeof v === 'number' && v < -1e-9) return '\u2014'; // fix98 2a: no rod shows a reading below zero
     return fmtReading(v, calc.rodUnit);
   }
@@ -21891,7 +21951,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     const multiRun = runStarts.length > 1;
     const pipeTiles = runStarts.map(r =>
-      `<div class="pb-summary-item"><div class="k">${multiRun ? r.label + ' \u2014 ' : ''}Wall Thickness</div><div class="v">${fmt(r.point.wt,3)} ft${pbPiAWord(pbPiAIsAuto(r.point.id === 'start' ? 'runWT' : r.point.id.replace(/start$/, 'WT')))}</div></div><div class="pb-summary-item"><div class="k">${multiRun ? r.label + ' \u2014 ' : ''}Pipe ID</div><div class="v">${r.point.idFt !== null ? fmt(r.point.idFt*12,2) : '\u2014'}"${escapeHtml(pbRedWords(pbRedList(), (/^seg(\d+)/.exec(r.point.id) || [0, 1])[1] * 1))}</div></div>`
+      `<div class="pb-summary-item"><div class="k">${multiRun ? r.label + ' \u2014 ' : ''}Wall Thickness</div><div class="v">${fmt(r.point.wt,3)} ft${pbPiAWord(pbPiAIsAuto(r.point.id === 'start' ? 'runWT' : r.point.id.replace(/start$/, 'WT')))}</div></div><div class="pb-summary-item"><div class="k">${multiRun ? r.label + ' \u2014 ' : ''}Pipe size</div><div class="v">${r.point.idFt !== null ? fmt(r.point.idFt*12,2) : '\u2014'}"${escapeHtml(pbRedWords(pbRedList(), (/^seg(\d+)/.exec(r.point.id) || [0, 1])[1] * 1))}</div></div>`
     ).join('');
     const segSlopes = calc.segments.filter(s => s.to.station - s.from.station > 0).map(s => fmt(s.slopePct,2)+'%'); // grades only: a reducer junction is a step, not a section
     const multiSeg = segSlopes.length > 1;
@@ -22121,7 +22181,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         // displacement always cover identical ground: an excluded interval's
         // pipe volume can never be subtracted from a DIFFERENT, included
         // interval's trench total.
-        const odFt = ownSeg.idFt + 2 * ownSeg.wt;
+        const odFt = pbPipeOdFt(ownSeg.idFt, ownSeg.wt); // r16.90: real OD
         totalTrenchCf += pbNetTrenchVolumeCf(r1.station, x2, g1, g2, r1.bp, bp2, tw, odFt / 2); // net of the SUBMERGED pipe only, exact for the model, spacing-independent
       }
       if (anyIntervalIncluded) volumeYd3 = Math.max(0, totalTrenchCf / 27);
@@ -22814,6 +22874,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     if (!(opts && opts.fmAsked) && typeof window.pbR57AskForeman === 'function' && window.pbR57AskForeman(opts)) return; /* r15.57: no foreman picked: asked once per form */
     if (!(opts && opts.jobAsked) && typeof window.pbRfAskJob === 'function' && window.pbRfAskJob(opts)) return; // feat_runflow P6: a company run needs its job
+    if (!(opts && (opts.aiChecked || opts.ai2nd))) { const ai = pbAiReadsNow(); if (ai.length) { let hc = null; try { hc = computeHiCrossCheck(); } catch (e) { hc = null; }
+      if (hc && hc.candidates.length < 2) {
+        const shot = new Set(hc.candidates.map(c => c.prefix).filter(Boolean)), all = ['start'].concat(getAllHubPrefixes(), ['end']).concat(getAllActiveSegPrefixes()).filter(p => document.getElementById(p + 'ModeToggle') && activeVal(p + 'ModeToggle') === 'stake' && !shot.has(p));
+        const aiP = new Set(Object.keys(typeof window.pbStakeAiProvOf === 'function' ? window.pbStakeAiProvOf() || {} : {})), pickL = all.filter(p => aiP.has(p)), tgt = (pickL.includes('end') ? 'end' : pickL[pickL.length - 1]) || (all.includes('end') ? 'end' : all[all.length - 1]) || null;
+        if (tgt) { window._pbAiNo2nd = false; pbShowModal('Stake values were read from ' + (ai.length === 1 ? '1 photo' : ai.length + ' photos') + ' by AI, and only one stake has a rod shot, so nothing can catch a misread cut or elevation. Shoot the rod on ' + escapeHtml(getPointLabel(tgt, tgt === 'end' ? 'the End stake' : 'one more stake')) + ' and type the reading: the app checks the two shots against each other.', [{ label: 'Go Back' }, { label: 'Lock Without It', onClick: () => { window._pbAiNo2nd = true; pbLock(Object.assign({}, opts || {}, { ai2nd: true })); } }, { label: 'Add a Rod Shot', primary: true, onClick: () => { try { pbGoto('input'); } catch (e) {} setTimeout(() => { try { window.pbGoToField(tgt + 'StakeReading'); } catch (e) {} }, 250); } }], 'One More Rod Shot'); return; }
+      }
+    } }
     if (!(opts && opts.aiChecked)) { const ai = pbAiReadsNow(); if (ai.length) { const nv = ai.reduce((a, x) => a + x.fields.length, 0); pbShowModal(nv + ' value' + (nv === 1 ? ' was' : 's were') + ' read from ' + (ai.length === 1 ? '1 stake photo' : ai.length + ' stake photos') + ' by AI. Check them against the stakes before you lock.', [{ label: 'Go Back' }, { label: 'I Checked Them', primary: true, onClick: () => { window._pbAiCheckedAt = Date.now(); pbLock(Object.assign({}, opts || {}, { aiChecked: true })); } }], 'Check the AI Readings'); return; } } /* r16.77 */
     pbLockInFlight = true;
     try {
@@ -25588,7 +25655,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return (segSl.length > 1 ? `<div class="pb-summary-item" style="grid-column: 1 / -1;"><div class="k">Slope %</div><div class="v">${segSl.map(s => fmt(s.slopePct,2) + '%').join(' / ')}</div></div>`
       : `<div class="pb-summary-item"><div class="k">Slope</div><div class="v">${segSl.length ? fmt(segSl[0].slopePct,2) + '%' : entry.summary ? fmt(entry.summary.overallSlopePct,2) + '%' : '\u2014'}</div></div>`) +
       `<div class="pb-summary-item"><div class="k">Distance</div><div class="v">${fmt(entry.completedDistance !== undefined ? entry.completedDistance : entry.distance,1)} ft${entry.incomplete ? ' (incomplete)' : ''}</div></div>` +
-      pipeInfo.map(p => `<div class="pb-summary-item"><div class="k">${escapeHtml(p.label)} \u2014 Wall Thickness</div><div class="v">${p.wtFt !== null ? fmt(p.wtFt,3) + ' ft' + pbPiAWord(p.wtAuto) : '\u2014'}</div></div><div class="pb-summary-item"><div class="k">${escapeHtml(p.label)} \u2014 Pipe ID</div><div class="v">${p.idIn !== null ? fmt(p.idIn,2) + '"' : '\u2014'}${escapeHtml(pbRedWords(entry.reducers, pipeInfo.length > 1 ? ((/(\d+)$/.exec(p.label || '') || [0, 1])[1] * 1) : undefined))}</div></div>`).join('');
+      pipeInfo.map(p => `<div class="pb-summary-item"><div class="k">${escapeHtml(p.label)} \u2014 Wall Thickness</div><div class="v">${p.wtFt !== null ? fmt(p.wtFt,3) + ' ft' + pbPiAWord(p.wtAuto) : '\u2014'}</div></div><div class="pb-summary-item"><div class="k">${escapeHtml(p.label)} \u2014 Pipe size</div><div class="v">${p.idIn !== null ? fmt(p.idIn,2) + '"' : '\u2014'}${escapeHtml(pbRedWords(entry.reducers, pipeInfo.length > 1 ? ((/(\d+)$/.exec(p.label || '') || [0, 1])[1] * 1) : undefined))}</div></div>`).join('');
   }
   window.pbAddInterval = function() {
     const errEl = document.getElementById('addIntervalError');
@@ -27875,7 +27942,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // alert is added below it under the same title.
   function pbAlertKeepingEvacuate(msg, title) {
     const cur = pbModalOpen() ? document.getElementById('pbModalMessage').textContent : '';
-    if (/^EVACUATE/.test(cur)) { if (cur.indexOf(msg) === -1) pbAlert(cur + '\n\nAlso: ' + msg, document.getElementById('pbModalTitle').textContent); return; }
+    if (/^(EVACUATE|OUTSIDE PERMIT LIMITS)/.test(cur)) { if (cur.indexOf(msg) === -1) pbAlert(cur + '\n\nAlso: ' + msg, document.getElementById('pbModalTitle').textContent); return; }
     pbAlert(msg, title);
   }
   function pbUnreadableNotSavedAlert() {
@@ -28849,8 +28916,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (mx !== null && mx < 20.9) strict.push('maximum O2 ' + mx + '% is below normal air (20.9%)');
       if ((loose.length || strict.length) && !pbPermitNumberErrors().length) { // an impossible limit is refused below, never confirmed first
         const parts = [];
-        if (loose.length) parts.push('These atmospheric limits are looser than the usual safe range:\n\n\u2022 ' + loose.join('\n\u2022 ') + '\n\nReadings inside these looser limits will NOT raise an alarm or block entry.');
-        if (strict.length) parts.push('These oxygen limits rule out normal air:\n\n\u2022 ' + strict.join('\n\u2022 ') + '\n\nEvery fresh-air reading would sound EVACUATE and block entry, and limits can\u2019t be changed after Lock.');
+        if (loose.length) parts.push('These atmospheric limits are looser than the usual safe range:\n\n\u2022 ' + loose.join('\n\u2022 ') + '\n\nReadings inside these looser limits will NOT be flagged as outside the limits.');
+        if (strict.length) parts.push('These oxygen limits rule out normal air:\n\n\u2022 ' + strict.join('\n\u2022 ') + '\n\nEvery fresh-air reading would be flagged outside the limits, and limits can\u2019t be changed after Lock.');
         pbConfirm(parts.join('\n\n') + ' If that\u2019s a typo, tap Cancel and fix it. Lock with these limits anyway?', () => pbLockConfinedPermit(true), 'Check Atmospheric Limits');
         return;
       }
@@ -29440,7 +29507,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // UX batch 3: one re-test chip by the "Latest Air Readings" heading (every gas is tested at the same
     // time with one meter), shown once a gas has been measured, as the per-tile chips were.
     const dueSlot = ''; let anyMeasured = false;
-    if (confinedLastObservation && confinedLastObservation.unsafe) air += '<div class="cp-st-bad">Reading outside the permit limits &mdash; DO NOT ENTER. See the red banner above.</div>';
+    if (confinedLastObservation && confinedLastObservation.unsafe) air += '<div class="cp-st-bad">Reading outside the permit limits &mdash; the permit does not allow entry. See the red banner above.</div>';
     const latchedGases = [];
     h += '</div>';
     air += '<div class="cp-gas-grid">';
@@ -29466,7 +29533,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           latchedGases.push(label + ' ' + Lo[g] + unit); anyMeasured = true;
           air += '<div class="cp-gas latched"><span class="g">' + label + '</span> <strong>' + escapeHtml(Lo[g]) + unit + '</strong><span class="cp-gas-meta"><span class="cp-sep"> · </span>'
             + (isNaN(lt) ? 'time not kept' : new Date(lt).toLocaleTimeString() + ' · ' + pbCpAgeText(lt))
-            + ' · <b>measured, NOT logged</b> (the reading was refused as a record or did not save)' + (haz(Lo[g]) ? ' · <b>outside the limit &mdash; DO NOT ENTER</b>' : '') + '</span>'
+            + ' · <b>measured, NOT logged</b> (the reading was refused as a record or did not save)' + (haz(Lo[g]) ? ' · <b>outside the limit &mdash; the permit does not allow entry</b>' : '') + '</span>'
             + (best ? '<div class="cp-latched-was">Last logged ' + label + ': ' + escapeHtml(best.r[g]) + unit + ' at ' + new Date(best.r.time).toLocaleTimeString() + '</div>' : '') + dueSlot + '</div>';
           return;
         }
@@ -29524,7 +29591,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const tx = document.getElementById('cpUnsafeBannerText');
     if (!el || !tx) return;
     if (confinedLastObservation && confinedLastObservation.unsafe) {
-      tx.textContent = 'READING OUTSIDE PERMIT LIMITS \u2014 DO NOT ENTER. EVACUATE: instruct all entrants to exit the space immediately. ' + confinedLastObservation.problems.join(' ') + ' (measured ' + new Date(confinedLastObservation.time).toLocaleTimeString() + '; stays in effect until a newer acceptable reading is entered, whether or not any reading has saved)';
+      tx.textContent = 'READING OUTSIDE PERMIT LIMITS \u2014 under this permit, entrants exit and no one enters until the entry supervisor resolves it and a new reading inside the limits is logged. ' + confinedLastObservation.problems.join(' ') + ' (measured ' + new Date(confinedLastObservation.time).toLocaleTimeString() + '; stays in effect until a newer acceptable reading is entered, whether or not any reading has saved)';
       el.style.display = '';
     } else { el.style.display = 'none'; }
     pbCpDashSafe(); // UX batch 2 (C4): display only (a latched hazard may be in no log)
@@ -29961,7 +30028,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const inKey = pbObsKeyHazards && pbObsKeyHazards.sid === sid ? pbObsKeyHazards.list : [];
       pbHazardsNotInStoredPermit().filter(h => !listed.includes(pbObsOrder(h)) && !pend.some(r => pbSameHazard(r, h)) && !inKey.some(x => pbSameHazard(x, h)))
         .forEach(h => out.push('an unsafe air reading from ' + new Date(h.time).toLocaleTimeString() + ' on the permit for ' + space + ' (' + pbAtmoProblems(h.o2, h.lel, confinedPermit, h).join(' ') + ' It is not in the saved permit, and the phone had no room to keep it.)')); }
-    pbRosterUnsavedFor().filter(x => !x.stored).forEach(x => out.push(x.p.name + '\u2019s ' + (/^Checked in/i.test(x.entry.action) ? 'check-in' : 'check-out') + ' at ' + new Date(x.entry.time).toLocaleTimeString() + (x.entry.againstBlock ? ' (entered against a DO NOT ENTER warning)' : '') + ' on the permit for ' + space + ' (not saved, and the phone had no room to keep it)'));
+    pbRosterUnsavedFor().filter(x => !x.stored).forEach(x => out.push(x.p.name + '\u2019s ' + (/^Checked in/i.test(x.entry.action) ? 'check-in' : 'check-out') + ' at ' + new Date(x.entry.time).toLocaleTimeString() + (x.entry.againstBlock ? ' (entered while the permit did not allow entry)' : '') + ' on the permit for ' + space + ' (not saved, and the phone had no room to keep it)'));
     const held = held0();
     if (held.length) out.push(held.length + ' air test' + (held.length > 1 ? 's' : '') + ' from ' + held.map(p => new Date(p.r.time).toLocaleTimeString()).join(', ') + ' on the permit for ' + space + ' (not saved, and the phone had no room to keep ' + (held.length > 1 ? 'them' : 'it') + ')');
     return out;
@@ -30183,7 +30250,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       { const sidR = confinedPermit.sessionId; pbRunOnSession(async () => { await persistedRefused; if (pbSessionIs(sidR)) await saveActiveConfinedSession(); }); }
       renderUnsafeBanner();
       pbPlayAlarm('evacuate');
-      pbAlert('EVACUATE \u2014 Attendant: instruct all entrants to exit the space immediately.\n\n' + partial.problems.join('\n') + '\n\nThis reading was NOT added to the Atmospheric Test Log because ' + refusal.why + '. Entry stays blocked. Fix it and save again to record it \u2014 your values are still in the form.', 'Reading Outside Acceptable Range');
+      pbAlert('OUTSIDE PERMIT LIMITS \u2014 Under this permit, entrants exit the space and no one enters until the entry supervisor resolves it and a new reading inside the limits is logged.\n\n' + partial.problems.join('\n') + '\n\nThis reading was NOT added to the Atmospheric Test Log because ' + refusal.why + '. Under the permit, no one enters until a new reading inside the limits is logged. Fix it and save again to record it \u2014 your values are still in the form.', 'Reading Outside Acceptable Range');
       return;
     }
     const effGases = { h2s: h2s !== null ? h2s : carried.h2s, co: co !== null ? co : carried.co }; // a blank keeps the last measured value
@@ -30196,7 +30263,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (thresholdResult.unsafe) {
       // Sound AND visible instructions immediately — neither waits on storage.
       pbPlayAlarm('evacuate');
-      pbAlert('EVACUATE — Attendant: instruct all entrants to exit the space immediately.\n\n' + thresholdResult.problems.join('\n'), 'Reading Outside Acceptable Range');
+      pbAlert('OUTSIDE PERMIT LIMITS — Under this permit, entrants exit the space and no one enters until the entry supervisor resolves it and a new reading inside the limits is logged.\n\n' + thresholdResult.problems.join('\n'), 'Reading Outside Acceptable Range');
     }
     // Tagged provisional (confirmed: false) until its own save actually
     // succeeds — entry authorization below must never trust a reading that
@@ -30234,12 +30301,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const why = keptOnPhone
           ? 'this reading did NOT save yet (storage may be full or unavailable). It is kept on this phone and retried automatically \u2014 the red banner stays until it saves. ' + pbSaveAdvice(true)
           : 'this reading did NOT save yet, and the phone had no room to keep it either (storage is full). It is held on this screen only and retried automatically \u2014 do NOT close the app, reload or log out until the red banner goes away. ' + pbSaveAdvice(true);
-        if (thresholdResult.unsafe) pbAlert('EVACUATE — Attendant: instruct all entrants to exit the space immediately.\n\n' + thresholdResult.problems.join('\n') + '\n\nAlso: ' + why, 'EVACUATE \u2014 Reading Outside Acceptable Range, Not Saved');
+        if (thresholdResult.unsafe) pbAlert('OUTSIDE PERMIT LIMITS — Under this permit, entrants exit the space and no one enters until the entry supervisor resolves it and a new reading inside the limits is logged.\n\n' + thresholdResult.problems.join('\n') + '\n\nAlso: ' + why, 'Outside Permit Limits \u2014 Not Saved');
         else pbAlert('This air test ' + why.replace(/^this reading /, ''), 'Reading Not Saved');
         return;
       }
       if (thresholdResult.unsafe) {
-        pbAlert('EVACUATE — Attendant: instruct all entrants to exit the space immediately.\n\n' + thresholdResult.problems.join('\n') + '\n\nAlso: this reading did NOT save (storage may be full or unavailable) \u2014 your entered values are still in the form below. Try saving again once the space is evacuated.', 'EVACUATE \u2014 Reading Outside Acceptable Range, Not Saved');
+        pbAlert('OUTSIDE PERMIT LIMITS — Under this permit, entrants exit the space and no one enters until the entry supervisor resolves it and a new reading inside the limits is logged.\n\n' + thresholdResult.problems.join('\n') + '\n\nAlso: this reading did NOT save (storage may be full or unavailable) \u2014 your entered values are still in the form below. Try saving again once the space is evacuated.', 'Outside Permit Limits \u2014 Not Saved');
       } else {
         pbAlert('This air test reading did NOT save. Storage may be full or unavailable. Try again \u2014 your entered values are still in the form below.', 'Reading Not Saved');
       }
@@ -30252,7 +30319,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // was last measured outside the range: the air is not cleared.
     if (!thresholdResult.unsafe && confinedLastObservation && confinedLastObservation.unsafe && new Date(confinedLastObservation.time).getTime() === obsTime.getTime()) {
       pbPlayAlarm('evacuate');
-      pbAlert('EVACUATE \u2014 Attendant: instruct all entrants to exit the space immediately.\n\n' + confinedLastObservation.problems.join('\n') + '\n\nThis reading was saved, but a gas left blank in it was last measured outside the acceptable range (recorded in another tab or window of the app). A blank is not a retest \u2014 entry stays blocked until that gas is measured again.', 'Reading Outside Acceptable Range');
+      pbAlert('OUTSIDE PERMIT LIMITS \u2014 Under this permit, entrants exit the space and no one enters until the entry supervisor resolves it and a new reading inside the limits is logged.\n\n' + confinedLastObservation.problems.join('\n') + '\n\nThis reading was saved, but a gas left blank in it was last measured outside the acceptable range (recorded in another tab or window of the app). A blank is not a retest \u2014 entry stays blocked until that gas is measured again.', 'Reading Outside Acceptable Range');
     }
     // Rebase the reminder countdown from THIS confirmed reading — a fresh,
     // successful check resets the clock; a failed one (handled above, this
@@ -30322,7 +30389,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     if (problems.length && !options.skipAlert) {
       pbPlayAlarm('evacuate');
-      pbAlert('EVACUATE — Attendant: instruct all entrants to exit the space immediately.\n\n' + problems.join('\n'), 'Reading Outside Acceptable Range');
+      pbAlert('OUTSIDE PERMIT LIMITS — Under this permit, entrants exit the space and no one enters until the entry supervisor resolves it and a new reading inside the limits is logged.\n\n' + problems.join('\n'), 'Reading Outside Acceptable Range');
     }
     return { unsafe: problems.length > 0, problems };
   }
@@ -30340,7 +30407,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const statusColor = p.status === 'in' ? 'var(--start-c)' : 'var(--ink-soft)';
       const logText = p.log.map(l => escapeHtml(l.action) + ' ' + l.time.toLocaleTimeString() + (l.outsideWindow ? ' (outside permit window)' : '') + escapeHtml(pbAgainstBlockText(l))).join(' · ');
       const lastIn = p.status === 'in' ? p.log.filter(l => /^Checked in/i.test(l.action)).pop() : null;
-      const againstTag = lastIn && lastIn.againstBlock ? '<br><span class="pb-against-block" style="color:var(--rod-red); font-weight:700; font-size:11px;">\u26a0 ENTERED AGAINST BLOCK' + (lastIn.noAttendantOutside ? ' \u2014 NO ATTENDANT OUTSIDE' : '') + '</span>' : '';
+      const againstTag = lastIn && lastIn.againstBlock ? '<br><span class="pb-against-block" style="color:var(--rod-red); font-weight:700; font-size:11px;">\u26a0 ENTERED AGAINST PERMIT' + (lastIn.noAttendantOutside ? ' \u2014 NO ATTENDANT OUTSIDE' : '') + '</span>' : '';
       return `<div class="pb-review-item cp-row cp-roster-row ${p.status === 'in' ? 'is-in' : 'is-out'}" style="margin:10px 0 0 0;">
         <span class="k">${escapeHtml(p.name)} — ${escapeHtml(p.role)}</span>
         <span class="cp-inout" style="float:right; color:${statusColor}; font-weight:600; text-transform:uppercase; font-size:11px;">${escapeHtml(p.status)}</span><br>
@@ -30514,10 +30581,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         if (lr.unsafe && pbObsSupersedes({ ...logLatest, unsafe: true }, confinedLastObservation, true)) unsafeProblems = lr.problems;
       }
       if (unsafeProblems) {
-        return ['The most recent air test reading is outside this permit\u2019s limits, regardless of whether that reading was ever saved. Entry stays blocked on this permit until a new reading is inside the limits.\n\n' + unsafeProblems.join('\n'), 'Reading Outside Limits \u2014 Entry Blocked'];
+        return ['The most recent air test reading is outside this permit\u2019s limits, regardless of whether that reading was ever saved. Under this permit, no one enters until the entry supervisor resolves it and a new reading inside the limits is logged.\n\n' + unsafeProblems.join('\n'), 'Outside Permit Limits'];
       }
       { const odd = pbOddReadingValues();
-        if (odd) return ['A saved air test value can\u2019t be read as a number (' + odd.join(', ') + '), so it can\u2019t count as an acceptable reading. Log a fresh air test' + (odd.some(o => /^(H2S|CO) /.test(o)) ? ' that measures ' + odd.map(o => o.split(' ')[0]).join(' and ') : '') + ' before anyone enters.', 'Air Test Unreadable \u2014 Entry Blocked']; }
+        if (odd) return ['A saved air test value can\u2019t be read as a number (' + odd.join(', ') + '), so it can\u2019t count as an acceptable reading. Log a fresh air test' + (odd.some(o => /^(H2S|CO) /.test(o)) ? ' that measures ' + odd.map(o => o.split(' ')[0]).join(' and ') : '') + ' before anyone enters.', 'Air Test Unreadable']; }
       if (!confinedAtmoLog.some(r => r.confirmed !== false)) {
         return ['An air test must be logged in the Atmospheric Test Log before anyone enters the space.'];
       }
@@ -30530,7 +30597,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const pbFutureStamp = (r) => new Date(r.time).getTime() > Date.now() + 60000;
       if (pbFutureStamp(latest)) {
         const alt = pbNewestReading(confinedAtmoLog.filter(r => r.confirmed !== false && !pbFutureStamp(r)));
-        if (!alt) return ['The most recent air test is stamped ' + new Date(latest.time).toLocaleTimeString() + ', later than this phone\u2019s clock now (' + new Date().toLocaleTimeString() + '). The clock has changed since that test, so its age can\u2019t be told \u2014 log a fresh reading before anyone enters.', 'Air Test Time Unclear \u2014 Entry Blocked'];
+        if (!alt) return ['The most recent air test is stamped ' + new Date(latest.time).toLocaleTimeString() + ', later than this phone\u2019s clock now (' + new Date().toLocaleTimeString() + '). The clock has changed since that test, so its age can\u2019t be told \u2014 log a fresh reading before anyone enters.', 'Air Test Time Unclear'];
         latest = alt; inRange.push(alt);
       }
       const freshnessMinutes = (confinedPermit.atmoInterval && confinedPermit.atmoInterval > 0) ? confinedPermit.atmoInterval : 20;
@@ -30587,16 +30654,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // The full-strength warning, then the question that matters: a person who went
   // in anyway must be counted inside, never left off the headcount.
   function pbDoNotEnter(p, b) {
-    pbPlayAlarm('evacuate');
+    const strong = !!(b.attendant || b.relieve || pbEmergencyOpen()); // r16.90
     const buttons = [{ label: 'Yes \u2014 they\u2019re inside', onClick: () => { const i = confinedRoster.indexOf(p); if (i !== -1) pbToggleRosterStatus(i, { against: b.short }); } }];
     if (b.attendant) buttons.push({ label: 'Reassign Attendant', onClick: () => pbStartAttendantReassign(confinedRoster.indexOf(b.attendant), true) });
     else if (b.relieve) buttons.push({ label: 'Reassign Attendant', onClick: () => pbStartAttendantReassign(confinedRoster.indexOf(b.relieve), true) }); // Pass 25: relieve the attendant who is inside
     buttons.push({ label: 'No \u2014 they stayed out', primary: true });
-    pbShowModal(p.name + ' must NOT enter the space.\n\n' + b.texts.join('\n\n') + '\n\nAttendant: keep ' + p.name + ' out of the space.' + (b.attendant && !pbOtherAttendantOutside(p.name) ? ' If ' + p.name + ' goes in, NO attendant is outside the space.' : '') + '\n\nDid ' + p.name + ' enter anyway?', buttons, 'DO NOT ENTER');
+    pbShowModal(p.name + (strong ? ' must NOT enter the space.' : ' isn\u2019t allowed in under this permit right now.') + '\n\n' + b.texts.join('\n\n') + '\n\nAttendant: keep ' + p.name + ' out of the space.' + (b.attendant && !pbOtherAttendantOutside(p.name) ? ' If ' + p.name + ' goes in, NO attendant is outside the space.' : '') + '\n\nDid ' + p.name + ' enter anyway?', buttons, strong ? 'DO NOT ENTER' : 'Permit Does Not Allow Entry');
   }
-  // " — ENTERED AGAINST BLOCK (...)" for a roster log row, or ''.
+  // " — ENTERED AGAINST PERMIT (...)" for a roster log row, or ''.
   function pbAgainstBlockText(l) {
-    return l && l.againstBlock ? ' \u2014 ENTERED AGAINST BLOCK' + (l.reason ? ' (' + l.reason + ')' : '') + (l.noAttendantOutside ? ' \u2014 NO ATTENDANT OUTSIDE' : '') : '';
+    return l && l.againstBlock ? ' \u2014 ENTERED AGAINST PERMIT' + (l.reason ? ' (' + l.reason + ')' : '') + (l.noAttendantOutside ? ' \u2014 NO ATTENDANT OUTSIDE' : '') : '';
   }
   // enteredAnyway: { against: [...] } once "Yes — they're inside" was answered.
   window.pbToggleRosterStatus = function(idx, enteredAnyway) {
@@ -30668,7 +30735,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           await pbPersistRosterPending(sid, owner);
           renderRosterList();
           if (keepOut) return;
-          pbAlertKeepingEvacuate(p.name + ' is counted INSIDE the space' + (newLogEntry.againstBlock ? ', entered against a DO NOT ENTER warning (' + newLogEntry.reason + '). Get them out as soon as it is safe \u2014 do not go in after them.' : '.') + (newLogEntry.noAttendantOutside ? '\n\nNO ATTENDANT IS OUTSIDE THE SPACE \u2014 ' + (pbRosterEntryConflict(p).attendant ? p.name + ' was the attendant.' : 'the attendant is inside too, or none is on the roster.') + ' Get a qualified attendant to the entrance now and reassign the attendant role.' : '')
+          pbAlertKeepingEvacuate(p.name + ' is counted INSIDE the space' + (newLogEntry.againstBlock ? ', entered while the permit did not allow entry (' + newLogEntry.reason + '). Get them out as soon as it is safe \u2014 do not go in after them.' : '.') + (newLogEntry.noAttendantOutside ? '\n\nNO ATTENDANT IS OUTSIDE THE SPACE \u2014 ' + (pbRosterEntryConflict(p).attendant ? p.name + ' was the attendant.' : 'the attendant is inside too, or none is on the roster.') + ' Get a qualified attendant to the entrance now and reassign the attendant role.' : '')
             + '\n\n' + (gone ? 'This check-in did NOT save: the permit was changed in another tab or window, so it can\u2019t be saved here. It is kept on this screen \u2014 Close Out this permit here to keep it in Records.'
               : 'This check-in did NOT save to the permit yet (storage may be full or unavailable). It is retried automatically; the red banner stays until it saves. ' + pbSaveAdvice(true) + (rec.stored ? '' : ' The phone had no room to keep it either \u2014 do NOT close the app, reload or log out until the banner goes away.'))
             + ' If they did not go in, tap Check Out.', 'Check-In Not Saved');
@@ -30697,7 +30764,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         pbConfinedRepairIfNeeded(tokGen, sid);
         pbAlertKeepingEvacuate(p.name + '\u2019s check-out did NOT save' + (gone ? ': the permit was changed in another tab or window.' : '. Storage may be full or unavailable.') + ' ' + p.name + ' is still shown INSIDE \u2014 try again.', 'Status Not Saved'); // an evacuation instruction on screen stays first
       } else if (newLogEntry.againstBlock && pbSessionIs(sid)) {
-        pbAlertKeepingEvacuate(p.name + ' is recorded INSIDE the space, entered against a DO NOT ENTER warning (' + newLogEntry.reason + '). They count in the headcount and the emergency script. Get them out as soon as it is safe \u2014 do not go in after them.' + (newLogEntry.noAttendantOutside ? '\n\nNO ATTENDANT IS OUTSIDE THE SPACE \u2014 ' + (pbRosterEntryConflict(p).attendant ? p.name + ' was the attendant.' : 'the attendant is inside too, or none is on the roster.') + ' Get a qualified attendant to the entrance now and reassign the attendant role.' : ''), 'Entered Against Block');
+        pbAlertKeepingEvacuate(p.name + ' is recorded INSIDE the space, entered while the permit did not allow entry (' + newLogEntry.reason + '). They count in the headcount and the emergency script. Get them out as soon as it is safe \u2014 do not go in after them.' + (newLogEntry.noAttendantOutside ? '\n\nNO ATTENDANT IS OUTSIDE THE SPACE \u2014 ' + (pbRosterEntryConflict(p).attendant ? p.name + ' was the attendant.' : 'the attendant is inside too, or none is on the roster.') + ' Get a qualified attendant to the entrance now and reassign the attendant role.' : ''), 'Entered Against Block');
       }
     }
       } finally { confinedRosterPendingToggles.delete(p); }
@@ -30988,7 +31055,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const kind = outcome === 'mistake' || outcome === 'resolved' ? outcome : null;
     const noteEl = document.getElementById('cpEmergencyOutcomeNote');
     const note = kind && noteEl ? noteEl.value.trim().slice(0, 500) : '';
-    const notEntry = '\n\nThis only closes the incident record. It is NOT permission to re-enter the space: unsafe readings, DO NOT ENTER and the permit window stay exactly as they are, and nothing logged is erased.';
+    const notEntry = '\n\nThis only closes the incident record. It is NOT permission to re-enter the space: out-of-limit readings, the entry warnings and the permit window stay exactly as they are, and nothing logged is erased.';
     const ask = kind === 'mistake' ? 'Mark this emergency as ACTIVATED BY MISTAKE? Use this only if nothing was actually wrong (for example the button was bumped). The declaration, and for how long, stays permanently recorded in the closeout report, marked as activated by mistake.' + notEntry
       : kind === 'resolved' ? 'Mark this emergency as RESOLVED? Use this only once the real emergency is over. The declaration, and for how long, stays permanently recorded in the closeout report, marked as resolved.' + notEntry
       : 'Dismiss this? Use this only if the emergency call was triggered by mistake, or the situation has been fully resolved. The fact that this was declared, and for how long, stays permanently recorded in the closeout report either way.';
@@ -31048,7 +31115,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (typeof g.co === 'number') parts.push(gasTxt('CO', g.co, g.coTime));
     if (r.other) parts.push(r.other);
     if (!parts.length) return null;
-    return (forSpeech ? 'Last air test: ' : '') + parts.join(', ') + (probs.length ? (forSpeech ? ' \u2014 outside safe limits' : ' \u2014 OUTSIDE ACCEPTABLE RANGE') : '') + (forSpeech ? '.' : ' (at ' + new Date(r.time).toLocaleTimeString() + ')');
+    return (forSpeech ? 'Last air test: ' : '') + parts.join(', ') + (probs.length ? (forSpeech ? ' \u2014 outside the permit limits' : ' \u2014 OUTSIDE ACCEPTABLE RANGE') : '') + (forSpeech ? '.' : ' (at ' + new Date(r.time).toLocaleTimeString() + ')');
   }
   function buildEmergencyScript() {
     const p = confinedPermit;
@@ -31073,7 +31140,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!p) return;
     const inNow = confinedRoster.filter(person => person.status === 'in');
     const againstNow = (person) => { const l = person.log.filter(x => /^Checked in/i.test(x.action)).pop(); return !!(l && l.againstBlock); };
-    const namesText = inNow.length ? inNow.map(person => escapeHtml(person.name) + ' (' + escapeHtml(person.role) + ')' + (againstNow(person) ? ' \u2014 ENTERED AGAINST BLOCK' : '')).join(', ') : 'None currently checked in';
+    const namesText = inNow.length ? inNow.map(person => escapeHtml(person.name) + ' (' + escapeHtml(person.role) + ')' + (againstNow(person) ? ' \u2014 ENTERED AGAINST PERMIT' : '')).join(', ') : 'None currently checked in';
     // Same rule as the check-in: the permit's attendant is inside and no other attendant is outside.
     const attKey = String(p.attendant || '').trim().toLowerCase();
     const attInside = !!attKey && inNow.some(person => String(person.name).trim().toLowerCase() === attKey) && !pbOtherAttendantOutside(p.attendant);
@@ -31462,7 +31529,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     lines.push('PERSONNEL CURRENTLY IN SPACE: ' + inNow.length);
     // Same flags as the panel's key info (renderEmergencyKeyInfo): who went in against a block, and an attendant inside.
     const againstNow = (person) => { const l = person.log.filter(x => /^Checked in/i.test(x.action)).pop(); return !!(l && l.againstBlock); };
-    lines.push(inNow.length ? inNow.map(person => '  - ' + person.name + ' (' + person.role + ')' + (againstNow(person) ? ' \u2014 ENTERED AGAINST BLOCK' : '')).join('\n') : '  (none currently checked in)');
+    lines.push(inNow.length ? inNow.map(person => '  - ' + person.name + ' (' + person.role + ')' + (againstNow(person) ? ' \u2014 ENTERED AGAINST PERMIT' : '')).join('\n') : '  (none currently checked in)');
     lines.push('KNOWN HAZARDS: ' + p.hazards);
     const checkedHaz = (p.hazardChecklist || []).filter(h => h.checked);
     lines.push('SPECIFIC HAZARD CATEGORIES: ' + (checkedHaz.length ? checkedHaz.map(h => h.label + (h.explain ? ' — ' + h.explain : '')).join('; ') : 'None checked'));
@@ -31530,7 +31597,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const pendAtmo = pbPendingAtmoFor().map(p => p.r);
     if (pendAtmo.length) { lines.push('\u26a0 AIR TESTS NOT SAVED YET (' + pendAtmo.length + ') \u2014 kept on the phone, still retrying:'); pendAtmo.forEach(r => { const pr = pbAtmoProblems(r.o2, r.lel, confinedPermit, r); lines.push('   ' + new Date(r.time).toLocaleString() + ' \u2014 Tester: ' + r.tester + ' \u2014 ' + pbUnloggedHazardLine(r, confinedPermit).split(' \u2014 ').slice(1, pr.length ? undefined : -1).join(' \u2014 ') + (r.other ? ' \u2014 ' + r.other : '')); }); }
     { const un = pbUnloggedHazards(confinedPermit, confinedAtmoLog.concat(pendAtmo)); // a pending one is listed above
-      if (un.length) { lines.push('\u26a0 HAZARDOUS AIR TESTS NOT IN THE LOG ABOVE (' + un.length + ') \u2014 refused (e.g. no tester name) or not saved; each sounded EVACUATE:'); un.forEach(h => lines.push('   ' + pbUnloggedHazardLine(h, confinedPermit))); } }
+      if (un.length) { lines.push('\u26a0 HAZARDOUS AIR TESTS NOT IN THE LOG ABOVE (' + un.length + ') \u2014 refused (e.g. no tester name) or not saved; each was flagged outside the limits:'); un.forEach(h => lines.push('   ' + pbUnloggedHazardLine(h, confinedPermit))); } }
     lines.push('');
     lines.push('--- COMMUNICATION CHECKS (' + confinedCommLog.length + ') ---');
     if (!confinedCommLog.length) lines.push('No checks logged.');
@@ -31539,7 +31606,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     lines.push('--- ENTRANT / ATTENDANT ROSTER (' + confinedRoster.length + ' person(s)) ---');
     if (!confinedRoster.length) lines.push('No one logged on the roster.');
     { const n = confinedRoster.reduce((c, person) => c + person.log.filter(l => l.againstBlock).length, 0);
-      if (n) lines.push('\u26a0 ' + n + ' ENTR' + (n === 1 ? 'Y' : 'IES') + ' RECORDED AGAINST A DO NOT ENTER WARNING (marked below)'); }
+      if (n) lines.push('\u26a0 ' + n + ' ENTR' + (n === 1 ? 'Y' : 'IES') + ' RECORDED AGAINST A PERMIT WARNING (marked below)'); }
     confinedRoster.forEach(person => {
       lines.push(person.name + ' — ' + person.role + ' — currently: ' + person.status.toUpperCase());
       person.log.forEach(l => lines.push('   ' + l.action + ' at ' + l.time.toLocaleString() + (l.outsideWindow ? ' \u2014 OUTSIDE AUTHORIZED PERMIT WINDOW' : '') + pbAgainstBlockText(l)));
@@ -35268,7 +35335,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       lines.push('End invert: ' + entry.summary.endInv + (entry.summary.endInvElevFt !== null ? ' (' + fmt(entry.summary.endInvElevFt, 2) + ' ft elevation)' : ''));
       if (entry.summary.pipeInfo && entry.summary.pipeInfo.length) {
         entry.summary.pipeInfo.forEach(p => {
-          lines.push((p.label !== 'Pipe' ? p.label + ' pipe: ' : 'Pipe: ') + (p.wtFt !== null ? p.wtFt.toFixed(3) + ' ft WT' + pbPiAWord(p.wtAuto) : 'WT missing') + ' / ' + (p.idIn !== null ? p.idIn.toFixed(2) + '" ID' : 'ID missing'));
+          lines.push((p.label !== 'Pipe' ? p.label + ' pipe: ' : 'Pipe: ') + (p.wtFt !== null ? p.wtFt.toFixed(3) + ' ft WT' + pbPiAWord(p.wtAuto) : 'WT missing') + ' / ' + (p.idIn !== null ? p.idIn.toFixed(2) + '" pipe' + (typeof p.odIn === 'number' ? ' (' + p.odIn.toFixed(3) + '" OD)' : '') : 'size missing'));
           if (p.beddingFt !== null && p.beddingFt !== undefined) {
             lines.push('  Bedding: ' + p.beddingFt.toFixed(2) + ' ft thick' + (p.trenchWidthFt !== null && p.trenchWidthFt !== undefined ? ', ' + p.trenchWidthFt.toFixed(1) + ' ft trench width' : ''));
           }
@@ -35774,7 +35841,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       sent: false
     }, computed);
     if (resumeGone) { entry.deletedEarlierMin = null; entry.deletedEarlierManHours = null; }
-    try { const ai = pbAiReadsNow(); if (ai.length) { entry.aiReads = ai; entry.aiCheckedAt = window._pbAiCheckedAt || null; } } catch (e) { console.warn('AI reads not kept.'); } /* r16.77 */
+    try { const ai = pbAiReadsNow(); if (ai.length) { entry.aiReads = ai; entry.aiCheckedAt = window._pbAiCheckedAt || null; if (window._pbAiNo2nd) entry.aiNo2nd = true; } } catch (e) { console.warn('AI reads not kept.'); } /* r16.77; r16.90: locked without a second rod shot */
+    window._pbAiNo2nd = false;
     window._pbAiCheckedAt = null;
     try { if (typeof window.pbMatRunCapture === 'function') { const pbMm = window.pbMatRunCapture(calc); if (pbMm) entry.mat = pbMm; } } catch (e) { console.warn('Run materials not kept.'); } // batch 18 M3
     markEntryModified(entry);
@@ -38813,7 +38881,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     let plan = null;
     const planKey = () => 'pbPlan:' + (sbUser ? sbUser.id : '');
     function pbBetaRender() {
-      const beta = !!(plan && plan.plan === 'trial'), ended = beta && !!plan.expired;
+      const beta = !!(plan && plan.plan === 'trial');
+      const endMs = beta && plan.trial_ends_at ? new Date(plan.trial_ends_at).getTime() : NaN; /* bughunt 03: the end date decides, not a count read days ago */
+      const ended = beta && (!!plan.expired || (Number.isFinite(endMs) && endMs <= Date.now()));
+      const daysLeft = Number.isFinite(endMs) ? Math.max(1, Math.ceil((endMs - Date.now()) / 864e5)) : (plan && plan.days_left) || 0;
       const line = document.getElementById('pbBetaLine');
       const removed = !!(plan && !beta && plan.removed && !plan.individual); /* r16.72: removed from a company: offer their own plan */
       if (line && removed) {
@@ -38833,7 +38904,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       } else if (line) {
         line.hidden = !beta; line.classList.toggle('ended', ended);
         if (beta) { /* r16.71: the end of the beta: a company plan, or the person's own plan meanwhile */
-          if (!ended) line.innerHTML = '<span class="pb-beta-chip">Beta</span><span>' + (plan.days_left === 1 ? '1 day left' : (plan.days_left || 0) + ' days left') + '</span>';
+          if (!ended) line.innerHTML = '<span class="pb-beta-chip">Beta</span><span>' + (daysLeft === 1 ? '1 day left' : daysLeft + ' days left') + '</span>';
           else {
             const graceLeft = plan.trial_ends_at ? Math.max(0, Math.ceil((new Date(plan.trial_ends_at).getTime() + 3 * 864e5 - Date.now()) / 864e5)) : 0;
             const what = plan.closed || !graceLeft ? 'Your records stay in your company\u2019s account. New runs and reports wait on this phone and send once your company starts a plan.'
@@ -38856,11 +38927,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!pill && beta) { pill = document.createElement('button'); pill.type = 'button'; pill.id = 'pbFbPill'; pill.className = 'pb-fb-pill'; pill.textContent = 'Feedback'; pill.onclick = () => window.pbFeedbackOpen(); document.body.appendChild(pill); }
       if (pill) pill.hidden = !beta || ['appProblem', 'appProblems', 'login', 'auth'].includes(typeof pbCurrentScreen === 'string' ? pbCurrentScreen : '');
     }
-    async function pbPlanLoad() {
+    let planAt = 0; /* bughunt 03: when the server was last asked */
+    async function pbPlanLoad(again) {
       if (!sbUser) { plan = null; pbBetaRender(); return; }
-      try { plan = JSON.parse(localStorage.getItem(planKey()) || 'null'); } catch (e) { plan = null; }
+      if (!again || !plan) { try { plan = JSON.parse(localStorage.getItem(planKey()) || 'null'); } catch (e) { plan = null; } }
       pbBetaRender();
       if (!sbClient || typeof sbClient.rpc !== 'function' || navigator.onLine === false) return;
+      planAt = Date.now();
       try {
         const r = await sbClient.rpc('pb_my_plan');
         if (r && !r.error && r.data && r.data.ok) { plan = r.data; try { localStorage.setItem(planKey(), JSON.stringify(plan)); } catch (e) {} }
@@ -38869,6 +38942,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     window.pbPlanNow = () => plan;
     window.pbAccountLoadHooks.push(() => { plan = null; setTimeout(() => { pbPlanLoad(); useFlush(); }, 2000); });
+    /* bughunt 03: back to the front (or back online): ask again, at most every 10 minutes, so an extended or paid plan (or an ended one) shows without restarting the app */
+    const planAgain = () => { try { if (sbUser && document.visibilityState !== 'hidden' && planAt && Date.now() - planAt > 600000) pbPlanLoad(true); else pbBetaRender(); } catch (e) {} };
+    document.addEventListener('visibilitychange', planAgain); window.addEventListener('online', planAgain);
     document.addEventListener('focusin', (e) => { if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) document.documentElement.classList.add('pb-kb-open'); });
     document.addEventListener('focusout', () => { setTimeout(() => { const a = document.activeElement; if (!a || !/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) document.documentElement.classList.remove('pb-kb-open'); }, 50); });
 
@@ -38939,7 +39015,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const reqHtml = reqs.length ? '<div class="pb-own-co"><div class="nm">Plan requests</div>' + reqs.map((q) => '<div class="ln" data-uid="' + escapeHtml(q.user_id) + '">' + escapeHtml(q.who || q.email || 'Someone') + (q.company ? ' (' + escapeHtml(q.company) + ')' : '') + ' wants ' + (q.kind === 'company' ? 'a company plan: use Make Paid on the company' : 'their own plan')
           + (q.email && q.email !== q.who ? ' · ' + escapeHtml(q.email) : '') + (q.kind === 'individual' ? ' <button type="button" class="pb-btn small" data-on="1" style="width:auto;display:inline-block;margin-left:6px">Turn On</button>' : '') + '</div>').join('') + '</div>' : '';
         list.innerHTML = reqHtml + tot + (cos.length ? cos.map((c) => {
-          const beta = c.plan === 'trial', left = beta && c.trial_ends_at ? Math.ceil((new Date(c.trial_ends_at) - Date.now()) / 86400000) : null, ended = beta && left !== null && left <= 0;
+          const beta = c.plan === 'trial', left = beta && c.trial_ends_at ? Math.ceil((new Date(c.trial_ends_at) - Date.now()) / 86400000) : null, ended = beta && (left === null || !(left > 0)); /* bughunt 07: no end date = ended, as on the server */
           const ai = Object.entries(c.ai || {}).filter(([f]) => f !== 'gonogo_q').sort((a, b) => b[1] - a[1]).map(([f, n]) => n + ' ' + (FEAT[f] || f)).join(' · ');
           const ev = Object.entries(c.events || {}).filter(([e]) => e.startsWith('scr:') && !/^scr:(home|settings)$/.test(e)).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([e, n]) => SCR(e) + ' ' + n).join(' · ');
           const fb = Object.entries(c.events || {}).filter(([e]) => e.startsWith('feedback:')).reduce((a, [, n]) => a + n, 0);
@@ -40689,7 +40765,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (unl.length) { L.push('  Measured but NOT in the log (refused as a record or did not save), outside the acceptable range:'); unl.forEach(h => { try { L.push('     ' + pbUnloggedHazardLine(h, p)); } catch (e) {} }); }
     if (!airRows.length && !unl.length) L.push('  None logged.');
     else L.push('  ' + (outN + unl.length ? 'Readings outside the acceptable range: ' + (outN + unl.length) + ' of ' + (airRows.length + unl.length) : 'No reading outside the acceptable range') + ' (the permit\u2019s limits above; a blank limit uses the standard value).');
-    const evLine = (x) => { if (!x || typeof x !== 'object') return String(x); const t = fmt(x.time); return [x.action || '', t, x.outsideWindow ? '(outside permit window)' : '', x.againstBlock ? '(ENTERED AGAINST A DO NOT ENTER WARNING' + (x.reason ? ': ' + x.reason : '') + ')' : ''].filter(Boolean).join(' '); };
+    const evLine = (x) => { if (!x || typeof x !== 'object') return String(x); const t = fmt(x.time); return [x.action || '', t, x.outsideWindow ? '(outside permit window)' : '', x.againstBlock ? '(ENTERED AGAINST A PERMIT WARNING' + (x.reason ? ': ' + x.reason : '') + ')' : ''].filter(Boolean).join(' '); };
     L.push('', 'ROSTER');
     (sn.roster || []).forEach(r => { L.push('  ' + (r.name || 'Person') + ' - ' + (r.status === 'in' ? 'IN THE SPACE' : (r.status || '')) + (r.role ? ' (' + r.role + ')' : '')); (r.log || []).forEach(x => L.push('     ' + evLine(x))); });
     L.push('', 'COMM CHECKS'); (sn.commLog || []).forEach(r => L.push('  ' + (r && typeof r === 'object' ? (fmt(r.time) || flat(r)) : r)));
@@ -49213,7 +49289,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const ownN = hist.filter(c => !c.sessionLabel).length, earlierN = hist.length - ownN;
     if (!e.incomplete) R.banner('LOCKED RECORD' + (e.runEndTime ? ': RUN ENDED' : '') + (ownN ? ' \u00b7 ' + ownN + (ownN === 1 ? ' CORRECTION' : ' CORRECTIONS') + ' AFTER LOCK' : '') + (earlierN ? ' \u00b7 ' + earlierN + ' FROM EARLIER SESSION' + (earlierN === 1 ? '' : 'S') : ''), hist.length || (e.warnings || []).length || e.depthFlagged ? 'warn' : 'ok', 'Locked ' + pbRptDt(e.lockTime) + (e.runEndTime ? ' \u00b7 ended ' + pbRptDt(e.runEndTime) : '') + ' \u00b7 ' + pbRfPdfSentShort(e)); /* feat_runflow P8 */
     const s = e.summary || null, pipe = s && s.pipeInfo && s.pipeInfo.length ? s.pipeInfo : [];
-    const pipeTxt = pipe.map(p => (p.label !== 'Pipe' ? p.label + ': ' : '') + (p.idIn !== null && p.idIn !== undefined ? p.idIn.toFixed(2) + '" ID' : 'ID not recorded') + ', ' + (p.wtFt !== null && p.wtFt !== undefined ? p.wtFt.toFixed(3) + "' wall" + pbPiAWord(p.wtAuto) : 'wall not recorded') + pbRedWords(e.reducers, pipe.length > 1 ? ((/(\d+)$/.exec(p.label || '') || [0, 1])[1] * 1) : undefined)).join('; ');
+    const pipeTxt = pipe.map(p => (p.label !== 'Pipe' ? p.label + ': ' : '') + (p.idIn !== null && p.idIn !== undefined ? p.idIn.toFixed(2) + '" pipe' + (typeof p.odIn === 'number' ? ' (' + p.odIn.toFixed(3) + '" OD, used for TOP)' : '') : 'size not recorded') + ', ' + (p.wtFt !== null && p.wtFt !== undefined ? p.wtFt.toFixed(3) + "' wall" + pbPiAWord(p.wtAuto) : 'wall not recorded') + pbRedWords(e.reducers, pipe.length > 1 ? ((/(\d+)$/.exec(p.label || '') || [0, 1])[1] * 1) : undefined)).join('; ');
     { /* r16.74: at a glance: the numbers someone skimming needs, in one strip */
       const Lg = pbRptLaid(e), rl = Lg ? rows.filter(r => typeof Lg.marks[pbRptLaidKey(r)] === 'number') : [], farL = rl.length ? rl[rl.length - 1] : null;
       const fq = e.foreman && e.foreman.feetPipeInstalled !== undefined && e.foreman.feetPipeInstalled !== null && e.foreman.feetPipeInstalled !== '' ? e.foreman.feetPipeInstalled : null;
@@ -49389,7 +49465,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // --- r16.77: values read from stake photos by AI
     if (Array.isArray(e.aiReads) && e.aiReads.length) {
       const ch = e.aiReads.reduce((a, x) => a + x.fields.filter(f => f.changed).length, 0);
-      R.section('aireads', 'Values read from stake photos by AI', { keep: 30, intro: 'What the AI read on each stake photo, next to the value locked. ' + (e.aiCheckedAt ? 'The person who locked the run confirmed they checked these against the stakes (' + pbRptDt(e.aiCheckedAt, { sec: true }) + ', device time).' : 'No check was confirmed at lock.') + (ch ? ' ' + pbRptPlural(ch, 'value') + ' changed by hand after the AI read.' : ' None changed by hand after the AI read.') + ' The stake photos are in the Photos section.' });
+      R.section('aireads', 'Values read from stake photos by AI', { keep: 30, intro: 'What the AI read on each stake photo, next to the value locked. ' + (e.aiCheckedAt ? 'The person who locked the run confirmed they checked these against the stakes (' + pbRptDt(e.aiCheckedAt, { sec: true }) + ', device time).' : 'No check was confirmed at lock.') + (e.aiNo2nd ? ' It was locked without a rod shot on a second stake, so the HI cross-check could not test these values.' : '') + (ch ? ' ' + pbRptPlural(ch, 'value') + ' changed by hand after the AI read.' : ' None changed by hand after the AI read.') + ' The stake photos are in the Photos section.' });
       const fmt = (v) => v === null || v === undefined || v === '' ? 'empty' : (typeof v === 'number' ? v.toFixed(3) : String(v));
       R.table({ head: ['Point', 'Value', 'AI read', 'Locked', 'Read at (device time)'], body: [].concat(...e.aiReads.map(x => x.fields.map((f, i) => [i ? '' : String(x.point || ''), f.name, fmt(f.ai), f.changed ? { content: fmt(f.locked) + ' (changed)', _accent: true } : fmt(f.locked), i ? '' : pbRptDt(x.at, { sec: true })]))), fontSize: 8.5 });
     }
@@ -49731,15 +49807,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!incs.length && p.emergencyDurationSec !== null && p.emergencyDurationSec !== undefined) alerts.push('EMERGENCY WAS DECLARED \u2014 duration ' + pbRptDur(p.emergencyDurationSec) + ' (older record: only the total time was kept).');
     if (outN) alerts.push(outN + ' of ' + air.length + ' logged air tests were OUTSIDE the acceptable range (marked in the log).');
     if ((e.photos || []).length > (Number(e.photoCount) || 0)) alerts.push('Photo count mismatch: the permit counted ' + (Number(e.photoCount) || 0) + ' photo(s) at closeout but ' + e.photos.length + ' are attached to the record now. The extra one(s) are marked in the Photos section.');
-    if (unlogged.length) alerts.push(unlogged.length + ' hazardous air test(s) were refused or not saved, so they are NOT in the log; each sounded EVACUATE (listed under the log).');
+    if (unlogged.length) alerts.push(unlogged.length + ' hazardous air test(s) were refused or not saved, so they are NOT in the log; each was flagged outside the limits (listed under the log).');
     if (e.latestAir && e.latestAir.unlogged) alerts.push('Latest air test seen at closeout (its save failed, so it is NOT in the confirmed log): ' + e.latestAir.text);
-    if (against) alerts.push(against + ' entr' + (against === 1 ? 'y was' : 'ies were') + ' recorded AGAINST a DO NOT ENTER warning (marked in the roster).');
+    if (against) alerts.push(against + ' entr' + (against === 1 ? 'y was' : 'ies were') + ' recorded AGAINST a permit warning (marked in the roster).');
     if (outside) alerts.push(outside + ' check-in/out(s) happened OUTSIDE the authorized window.');
     if (p.closeoutReasonChangedFrom) alerts.push('The closeout reason was changed: first submitted "' + p.closeoutReasonChangedFrom.label + '" at ' + pbRptDt(p.closeoutReasonChangedFrom.at) + '.');
     if (p.closeoutReasonElsewhere) alerts.push('Another closeout of this permit gave: ' + p.closeoutReasonElsewhere.label + (p.closeoutReasonElsewhere.detail ? ' \u2014 ' + p.closeoutReasonElsewhere.detail : '') + ' (' + pbRptDt(p.closeoutReasonElsewhere.at) + ').');
     (p.dialNumberLog || []).forEach(c => alerts.push('The number the EMERGENCY button opens the dialer with was changed from ' + c.from + ' to ' + c.to + ' at ' + pbRptDt(c.time) + '.'));
     R.callout('Safety notices and changes', alerts, alerts.length ? 'danger' : 'ok');
-    if (!alerts.length) R.para('No emergencies, out-of-range air tests, blocked entries or changes recorded.', { size: 9.5, color: G.MUTED });
+    if (!alerts.length) R.para('No emergencies, out-of-range air tests, entries against the permit or changes recorded.', { size: 9.5, color: G.MUTED });
     R.contents();
     // --- the permit, in the order of 29 CFR 1926.1206
     R.section('permit', 'Entry permit (29 CFR 1926.1206 items)', { keep: 50, intro: 'Each item the construction confined-space standard requires on a permit, in its order, with what this permit recorded. Text was typed when the permit was filled in and locked.' });
@@ -49766,7 +49842,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (air.length) R.table({ head: PB_RPT_AIR_HEAD, body: air.map(r => pbRptAirRow(e, r)), columns: PB_RPT_AIR_COLS, fontSize: 8.8 });
     else R.para('No air tests recorded. Limits on this permit: min O2 ' + pbMinO2(p) + '%, max O2 ' + pbMaxO2(p) + '%, max LEL ' + pbMaxLEL(p) + '%, max H2S ' + pbMaxH2S(p) + ' ppm, max CO ' + pbMaxCO(p) + ' ppm.', { size: 9.5, style: 'bold' });
     if (air.length) R.para(pbAtmoLimitsLine(p, outN, air.length) + (e.latestAir && e.latestAir.unlogged && /OUTSIDE/.test(e.latestAir.text) ? ' \u2014 confirmed log only: the latest observed reading (above) was OUTSIDE the acceptable range.' : ''), { size: 9, style: outN ? 'bold' : 'normal' });
-    if (unlogged.length) R.callout('HAZARDOUS AIR TESTS NOT IN THE LOG ABOVE (' + unlogged.length + ') \u2014 refused (e.g. no tester name) or not saved; each sounded EVACUATE', unlogged.map(h => pbRptUnloggedLine(h, p)), 'danger');
+    if (unlogged.length) R.callout('HAZARDOUS AIR TESTS NOT IN THE LOG ABOVE (' + unlogged.length + ') \u2014 refused (e.g. no tester name) or not saved; each was flagged outside the limits', unlogged.map(h => pbRptUnloggedLine(h, p)), 'danger');
     // --- comm checks
     R.section('comm', 'Communication checks (' + (e.commLog || []).length + ')', { keep: 26, intro: 'The app logs a check when it is tapped. A missed or late check is not recorded as an event; the gap since the previous check is shown so long gaps can be seen.' + (p.commInterval ? ' Reminder interval: ' + p.commInterval + ' min.' : '') });
     const cl = (e.commLog || []).slice().sort((a, b) => pbRptMs(a.time) - pbRptMs(b.time));
@@ -49893,7 +49969,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     // --- dismissal / closeout
     R.section('close', 'Dismissal and closeout', { keep: 30 });
     R.table({ head: ['#', 'Declared', 'Ended', 'How it ended (as recorded)'], body: incs.map((inc, i) => [String(i + 1), pbRptDt(inc.start, { sec: true }), inc.end ? pbRptDt(inc.end, { sec: true }) : { content: 'NOT RESOLVED', _accent: true }, pbRptIncOutcome(inc) + pbRptIncNote(inc)]), columns: [{ cellWidth: 8 }, { cellWidth: 40 }, { cellWidth: 40 }, {}] });
-    R.kv([['Permit closeout', pbRptDt(e.lockTime, { sec: true }) + ' \u2014 ' + (p.closeoutReason || 'not recorded') + (p.closeoutReasonDetail ? ' \u2014 ' + p.closeoutReasonDetail : '')], ['Ending an incident', 'Only closes the incident record. It is not permission to re-enter: unsafe readings, DO NOT ENTER and the permit window stay as they were.']], { cols: 1, labelW: 40 });
+    R.kv([['Permit closeout', pbRptDt(e.lockTime, { sec: true }) + ' \u2014 ' + (p.closeoutReason || 'not recorded') + (p.closeoutReasonDetail ? ' \u2014 ' + p.closeoutReasonDetail : '')], ['Ending an incident', 'Only closes the incident record. It is not permission to re-enter: out-of-limit readings, the entry warnings and the permit window stay as they were.']], { cols: 1, labelW: 40 });
     R.sub('Incident narrative (write in)');
     for (let i = 0; i < 6; i++) { R.ensure(8); R.doc.setDrawColor(120, 120, 120); R.doc.setLineWidth(0.25); R.doc.line(G.ML, R.y + 6, G.ML + G.CW, R.y + 6); R.y += 8; }
     { const phs = pbRptPermitPhotos(R, e); if (phs.length) { R.photoInline(phs, 'Permit photos: '); R.photosSection(); } }
@@ -57451,7 +57527,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const wt = num(pt.wt), idIn = pt.idFt !== null && pt.idFt !== undefined && Number.isFinite(pt.idFt) ? pt.idFt * 12 : null;
       parts.push({ n, len: a !== null && b !== null ? Math.max(0, +(b - a).toFixed(3)) : null, pipe: pick('pipe'), bed: pick('bed'), shade: pick('shade'),
         bed_thk: num(pt.bedding), width: num(pt.trenchWidth), shade_thk: (() => { const t = numVal(pbMat3Prefix(n) + 'ShadeThk'); return t !== null && t >= 0 ? t : null; })(),
-        od_in: idIn !== null && wt !== null ? +(idIn + 2 * wt * 12).toFixed(4) : null });
+        od_in: idIn !== null && wt !== null ? +(pbPipeOdFt(idIn / 12, wt) * 12).toFixed(4) : null });
     }
     return parts.length ? { v: 1, parts } : null;
   };
@@ -57975,9 +58051,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // the rest of the queue keeps sending) | 'retry' (no signal, timeout, server down or not set up yet: try again later).
   // A refusal can come as {ok:false, code} or as a PostgreSQL error (SQLSTATE P0001 with a pb: code, or a data or
   // constraint error 22xxx / 23xxx).
+  const PB_DLY_BETA_WHY = 'Your company’s beta has ended. It waits on this phone and is sent once your company starts a plan.'; /* bughunt 02 */
   function pbDlyAnswer(r) {
+    if (r && !r.error && r.data && typeof r.data === 'object' && !r.data.ok && r.data.code === 'pb:beta_ended') return { k: 'retry', why: PB_DLY_BETA_WHY }; /* bughunt 02: the beta closed: it waits, as Home says */
     if (r && !r.error && r.data && typeof r.data === 'object') return r.data.ok ? { k: 'ok', d: r.data } : { k: 'refused', code: r.data.code || 'pb:server', d: r.data };
     const e = (r && r.error) || {}, m = String(e.message || ''), sc = String(e.code || ''), pb = /pb:[a-z_]+/.exec(m);
+    if (pb && pb[0] === 'pb:beta_ended') return { k: 'retry', why: PB_DLY_BETA_WHY }; /* bughunt 02 */
     if (pbDlyMissing(r)) return { k: 'retry', why: 'The company server isn’t ready for this yet. It is sent once it is.' };
     // Re-check B1b: an account or sign-in problem is never a judgement of the content: it is retried.
     if (pb && pb[0] === 'pb:wrong_account') return { k: 'retry', auth: true, why: 'Another account is signed in on this phone. Sign in again with the account that made it to send it.' };
@@ -57996,6 +58075,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const uid = pbArchiveOwnerUid;
     if (pbDlySyncBusy || !uid || uid === 'shared') return;
     const st = await pbDlyLoad(uid); if (!st) return;
+    { let back = 0; st.checks.concat(st.reports).forEach(x => { if (x && x.state === 'refused' && x.code === 'pb:beta_ended') { x.state = 'waiting'; x.code = null; x.why = PB_DLY_BETA_WHY; back++; } }); if (back) { try { await pbDlySave(uid); } catch (e) {} } } /* bughunt 02 */
     pbDlyUnblock(st);
     const waiting = st.checks.some(c => c.state === 'waiting') || st.reports.some(r => r.state === 'waiting');
     if (!waiting || !(await pbDlyCanAsk(uid))) return;
@@ -58824,7 +58904,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   async function pbDlyMaterials(uid, job, date, runSec) {
     const rows = [];
     runSec.items.forEach(r => {
-      if (r.production.pipe) rows.push({ what: 'Pipe installed' + (r.sizes.length ? ' (' + r.sizes.map(s => (s.id_in !== null ? s.id_in + '" ID' : 'size not recorded')).join(', ') + ')' : ''), qty: r.production.pipe.qty, unit: r.production.pipe.unit || 'LF', basis: 'Foreman entry on ' + r.label, kind: 'used' });
+      if (r.production.pipe) rows.push({ what: 'Pipe installed' + (r.sizes.length ? ' (' + r.sizes.map(s => (s.id_in !== null ? s.id_in + '" pipe' : 'size not recorded')).join(', ') + ')' : ''), qty: r.production.pipe.qty, unit: r.production.pipe.unit || 'LF', basis: 'Foreman entry on ' + r.label, kind: 'used' });
       const whole = ' (whole run' + (r.multi_session ? '; this run has more than one session, and each session repeats the whole-run figure' : '') + ')';
       if (r.bedding_yd3 !== null) rows.push({ what: 'Bedding (calculated estimate)', qty: r.bedding_yd3, unit: 'yd³', basis: 'Run calculation for ' + r.label + whole, kind: 'estimate' });
       if (r.backfill_yd3 !== null) rows.push({ what: 'Backfill (calculated estimate)', qty: r.backfill_yd3, unit: 'yd³', basis: 'Run calculation for ' + r.label + whole, kind: 'estimate' });
@@ -61986,7 +62066,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     R.section('runs', 'Runs & Production (' + (S.runs.items.length + ((S.crew_reports && S.crew_reports.runs) || []).length) + ')', { keep: 30 });
     if (S.runs.items.length) R.table({ head: ['Run', 'Times', 'Footage', 'Production entered (this session)'], columns: [{ cellWidth: 40 }, { cellWidth: 50 }, { cellWidth: 30 }, {}], fontSize: 8.4,
       body: S.runs.items.map(r => r.crew_run ? pbFmDailyPdfRow(r, t) /* feat_foreman 1 */ : r.manual && typeof window.pbNrDailyPdfRow === 'function' ? window.pbNrDailyPdfRow(r, t) /* batch 28 MANUAL */ : [r.label + (r.resumed ? '\n(resumed run)' : '') + (r.cost_code ? '\nCost code ' + r.cost_code : ''), 'Started ' + t(r.start) + '\n' + (r.end ? 'Ended ' + t(r.end) : 'Not ended') + '\nStatus: ' + r.status,
-        (r.run_ft !== null ? 'Run ' + r.run_ft + ' ft' : '—') + (r.laid_ft_session !== null ? '\nLaid this session ' + r.laid_ft_session + ' ft' : '') + (r.sizes.length ? '\n' + r.sizes.map(s => (s.id_in !== null ? s.id_in + '" ID ' : '') + s.ft + ' ft').join('\n') : ''),
+        (r.run_ft !== null ? 'Run ' + r.run_ft + ' ft' : '—') + (r.laid_ft_session !== null ? '\nLaid this session ' + r.laid_ft_session + ' ft' : '') + (r.sizes.length ? '\n' + r.sizes.map(s => (s.id_in !== null ? s.id_in + '" pipe ' : '') + s.ft + ' ft').join('\n') : ''),
         (Object.keys(r.production).map(k => (r.production[k].name || pbProdCatName(k, null)) + ': ' + pbDlyQty(r.production[k])).join('\n') || 'none entered') + (r.entered_by ? '\nEntered by ' + r.entered_by + (r.entered_at ? ', ' + t(r.entered_at) : '') : '')]) });
     else R.para('No runs with this job number started on this day on the foreman’s phone.', { size: 9.5 });
     if (Object.keys(S.runs.totals || {}).length) R.para('Day total (foreman entries): ' + prodT.join(' · '), { size: 9.5, style: 'bold' });
@@ -66200,7 +66280,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         if (pbNr.uid !== uid) break;
         if (r && !r.error && r.data && r.data.ok === true && r.data.id) { Object.assign(S, { h, id: r.data.id, v: Number(r.data.version) || null, at: Date.now(), refused: null, rh: null }); changed = true; continue; }
         const m = String((r && r.error && r.error.message) || ''), code = (m.match(/pb:\w+/) || [''])[0];
-        if (navigator.onLine === false || /failed to fetch|networkerror|load failed|no client|timeout/i.test(m) || !code) break; // no signal / not ready: tried again later
+        if (navigator.onLine === false || /failed to fetch|networkerror|load failed|no client|timeout/i.test(m) || !code || code === 'pb:beta_ended') break; // no signal / not ready / the beta closed (bughunt 02): tried again later
         Object.assign(S, { refused: code, rh: h }); changed = true;
       }
     } finally {

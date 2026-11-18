@@ -1,0 +1,18 @@
+const L=require('./lib');
+(async()=>{const {b,p}=await L.boot(L.URL,{init:L.co+`;try{localStorage.setItem('pbAiPrivacyAck','1')}catch(e){};window.__rpcOverride.pb_report_access=()=>({member:true,manager:false,company_id:'11111111-1111-4111-8111-111111111111'});window.__rpcOverride.pb_ticket_save=(a)=>{(window.__tk=window.__tk||[]).push(a);return {ok:true,id:'t1',version:1};};`,wait:4500});const H=L.F(p);
+ let mode=null;await p.route('**/functions/v1/ai**',async r=>{if(mode.abort)return r.abort();await r.fulfill({status:mode.status,contentType:'application/json',body:JSON.stringify(mode.body)});});
+ await p.evaluate(()=>window.pbOpenTickets());await p.waitForTimeout(1200);console.log('screen',await L.scr(p),'modal',await L.modal(p));
+ await p.evaluate(()=>window.pbNewTicket());await p.waitForTimeout(1000);console.log('screen',await L.scr(p),'modal',await L.modal(p),'ovf',JSON.stringify(await L.ovf(p)));
+ console.log((await L.txt(p,'#screen-ticketForm')||'').slice(0,500));
+ await p.setInputFiles('#tkPhotoInput',[H.img('p12')]);await p.waitForTimeout(1200);
+ const st=()=>L.txt(p,'#tkAiStatus');
+ const read=async(name,m)=>{mode=m;await p.evaluate(()=>window.pbTicketAiRead());await p.waitForTimeout(1200);console.log(name,'|',await st());};
+ await read('429',{status:429,body:{error:'daily_limit',limit:5}});
+ await read('502',{status:502,body:{error:'ai_busy'}});
+ await read('abort',{abort:true});
+ await read('not ticket',{status:200,body:{ok:true,text:JSON.stringify({is_ticket:false,reason:'a photo of a stake'}),used:1,limit:5}});
+ await read('garbage',{status:200,body:{ok:true,text:'sorry',used:2,limit:5}});
+ await read('weird',{status:200,body:{ok:true,text:JSON.stringify({is_ticket:true,type:'concrete',fields:{ticketNo:12345,date:'11/17/2026',time:'25:99',qty:'9.5 yd',supplier:{a:1}},conf:{ticketNo:'high',qty:'high'}}),used:3,limit:5}});
+ console.log('review:',((await L.txt(p,'#tkAiReview'))||'(none)').slice(0,600));
+ await p.screenshot({path:'/tmp/claude-0/bughunt/office/shots/t1_ticket.png',fullPage:true});
+ console.log('ovf',JSON.stringify(await L.ovf(p)),'errs',p.errs);await b.close();})();

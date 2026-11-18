@@ -22,7 +22,7 @@ const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/c
  await H.click('Review & Calculate');await p.waitForTimeout(1500);
  const w=await p.evaluate(()=>{const e=[...document.querySelectorAll('.pb-warn')].find(x=>/Deep Trench/.test(x.textContent));return e?e.textContent.slice(0,260):'no deep warning';});
  console.log('['+(ST||'unknown')+'] review:',w);
- await H.click('Lock This Run');await p.waitForTimeout(800);await H.modalClick('I Checked Them');await p.waitForTimeout(2500);
+ await H.click('Lock This Run');await p.waitForTimeout(800);await H.modalClick('Lock Without It').catch(()=>{});await p.waitForTimeout(600);await H.modalClick('I Checked Them');await p.waitForTimeout(2500);
  for(let i=0;i<3;i++){const mm=await H.modal();if(!mm)break;const bt=await H.modalBtns();await H.modalClick(bt[bt.length-1]);await p.waitForTimeout(1200);}
  console.log('entry:',JSON.stringify(await p.evaluate(()=>{const e=window.__pbRrDebug.run();return {flag:e.depthFlagged,ft:e.caveFt,st:e.caveState};})));
 console.log('errs',p.errs.slice(0,3));await b.close();})();

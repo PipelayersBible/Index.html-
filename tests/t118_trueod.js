@@ -1,0 +1,22 @@
+const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/co');const F=require('/home/claude/rig/flow');
+// r16.90: TOP = BOP + the pipe's real OD (15" SDR 35: OD 15.300", wall 0.437" -> INV to TOP 1.2387 ft)
+(async()=>{const {b,p}=await boot('http://127.0.0.1:8843/cur.html',{init:co});const H=F(p);
+ let stake=null;await p.route('**/functions/v1/ai**', async r=>{await r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,text:JSON.stringify(stake),used:1,limit:60})});});
+ const S=(sta,el,cf,line,num)=>({is_stake:true,stake_number:{value:num,conf:'high'},station:{value:sta,conf:'high'},offset:{value:'10/SD',conf:'high'},line_label:{value:line,conf:'high'},cut_fill:{direction:'cut',feet:cf,as_written:'C-'+cf,to:'IE',conf:'high'},stake_elevation:{feet:el,as_written:String(el),conf:'high'},other_text:'',uncertain:[]});
+ console.log('fn:',JSON.stringify(await p.evaluate(()=>[pbPipeOdIn('',15),pbPipeOdIn('Ductile Iron',12),pbPipeOdIn('PVC C900',12),pbPipeOdIn('Vitrified Clay',8),pbPipeOdIn('PVC SDR 35',24),pbPipeOdIn('Concrete',24,0.25)])));
+ await p.getByText('New Run',{exact:true}).click();await p.waitForTimeout(1500);
+ await H.f('saJobNumber','24-017');await H.f('saJobsite','Test Sewer');await H.sel('runIdSel','15"');await p.waitForTimeout(300);
+ console.log('label:',await p.evaluate(()=>document.querySelector('label[for=runIdSel]').textContent),'wall:',await p.evaluate(()=>document.getElementById('runWT').value));
+ stake=S('1+50',103.4,3.61,'MH-1','3860');await p.setInputFiles('#startAiStakePhoto',[H.img('p12')]);await p.waitForTimeout(2500);
+ await H.f('startStakeReading','4.36');
+ stake=S('4+51',104.26,3.83,'MH-2','3863');await p.setInputFiles('#endAiStakePhoto',[H.img('p05')]);await p.waitForTimeout(2500);
+ await H.click('Review & Calculate');await p.waitForTimeout(1500);
+ console.log('modal:',JSON.stringify((await H.modal()||'').slice(0,300)));await H.modalClick('OK').catch(()=>{});await p.waitForTimeout(300);
+ const vis=await p.evaluate(()=>[...document.querySelectorAll('[id^=screen-]')].filter(e=>e.offsetParent!==null||getComputedStyle(e).display!=='none').map(e=>e.id).join(','));console.log('screens:',vis);console.log('errbox:',await p.evaluate(()=>{const e=[...document.querySelectorAll('#screen-input [class*=err],#screen-input [role=alert]')].filter(x=>x.offsetParent&&x.innerText.trim());return e.map(x=>x.innerText.slice(0,300)).join(' | ');}));
+ await H.click('Lock This Run').catch(e=>console.log('nolock'));await p.waitForTimeout(800);await H.modalClick('Lock Without It').catch(()=>{});await p.waitForTimeout(600);await H.modalClick('I Checked Them').catch(()=>{});await p.waitForTimeout(2500);
+ const rows=await p.evaluate(()=>[...document.querySelectorAll('#screen-results [aria-label^="Distance "]')].slice(0,1).map(e=>[...(e.closest('tr')||e.parentElement).querySelectorAll('td,div')].map(c=>c.className+'='+c.textContent.trim()).join(' ; ').replace(/\s+/g,' ')));
+ console.log('rows:',JSON.stringify(rows));
+ const z=await p.evaluate(()=>{const e=window.__pbCsEntry();const r=(e.intervalRows||[])[0]||{};return {inv:r.inv,bop:r.bop,top:r.top,pipe:e.summary.pipeInfo[0]};});
+ const d=+(parseFloat(z.inv)-parseFloat(z.top)).toFixed(2);console.log('INV',z.inv,'TOP',z.top,'diff',d,'pipe',JSON.stringify(z.pipe));
+ if(d!==1.24)p.errs.push('TOP diff '+d+' expected 1.24 (OD 15.30 - wall)');
+ console.log('errs',p.errs.slice(0,3));await b.close();})();

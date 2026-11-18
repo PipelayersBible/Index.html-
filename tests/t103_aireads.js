@@ -24,7 +24,7 @@ const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/c
  await H.click('Review & Calculate');await p.waitForTimeout(1500);
  await H.click('Lock This Run');await p.waitForTimeout(800);
  const m=await H.modal();console.log('modal:',JSON.stringify(m));
- await H.modalClick('I Checked Them');await p.waitForTimeout(2500);
+ await H.modalClick('Lock Without It').catch(()=>{});await p.waitForTimeout(600);await H.modalClick('I Checked Them');await p.waitForTimeout(2500);
  for(let i=0;i<3;i++){const mm=await H.modal();if(!mm)break;console.log('next modal:',JSON.stringify(mm).slice(0,120));const bt=await H.modalBtns();await H.modalClick(bt[bt.length-1]);await p.waitForTimeout(1500);}
  const e=await p.evaluate(()=>{const e=window.__pbRrDebug.run();return {checked:!!e.aiCheckedAt,reads:e.aiReads};});
  console.log('checked:',e.checked);(e.reads||[]).forEach(x=>console.log(' ',x.point,x.fields.map(f=>f.name+': '+f.ai+' -> '+f.locked+(f.changed?' CHANGED':'')).join(' | ')));

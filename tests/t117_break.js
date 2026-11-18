@@ -14,7 +14,7 @@ const boot=require('/home/claude/rig/boot');const co=require('/home/claude/rig/c
  await H.sel('hub1FitBr','6"');
  stake=S('4+51',104.26,3.83,'MH-2','3863');await p.setInputFiles('#endAiStakePhoto',[H.img('p05')]);await p.waitForTimeout(2500);
  await H.click('Review & Calculate');await p.waitForTimeout(1500);
- await H.click('Lock This Run');await p.waitForTimeout(800);await H.modalClick('I Checked Them').catch(()=>{});await p.waitForTimeout(2500);
+ await H.click('Lock This Run');await p.waitForTimeout(800);await H.modalClick('Lock Without It').catch(()=>{});await p.waitForTimeout(600);await H.modalClick('I Checked Them').catch(()=>{});await p.waitForTimeout(2500);
 
  const rowMenu=async(d)=>{await p.evaluate(d=>{const e=[...document.querySelectorAll('#screen-results [aria-label]')].find(e=>e.getAttribute('aria-label').startsWith('Distance '+d+' '));e.click();},d);await p.waitForTimeout(600);};
  const dists=await p.evaluate(()=>[...document.querySelectorAll('#screen-results [aria-label^="Distance "]')].map(e=>e.getAttribute('aria-label').split(' ')[1]));
