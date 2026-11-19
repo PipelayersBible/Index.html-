@@ -2,7 +2,7 @@
 // excavations "less than 20 feet deep"). Every soil choice, typed depths 19.9 / 20 / 20.0 / 25, and the Review link's
 // computed depth 19.96 ft (rounded UP to 20.0). 19.9 ft keeps Table B-1's slope; 20 ft and deeper: no slope, no
 // offset, no top width, no diagram, "Engineer Required" plus OSHA's note.
-const boot = require(__dirname + '/../../../rig/boot'), co = require(__dirname + '/../../../rig/co');
+const boot = require(__dirname + '/rig/boot'), co = require(__dirname + '/rig/co');
 (async () => {
   const { b, p } = await boot((process.env.PB_URL || ((process.env.PB_ROOT || 'http://127.0.0.1:8843/') + 'cur.html')), { init: co });
   const fails = [];

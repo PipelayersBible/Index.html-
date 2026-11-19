@@ -78,6 +78,10 @@ const XFAIL = {
 // How a test is judged. Default: 'verdict' if the test (or a ./lib it requires) prints PASS/FAIL lines or sets an exit code,
 // else 'golden' (its normalized output must match tests/expect/<id>.txt). Override here.
 const JUDGE = {
+  'bughunt_nov17/grade2/tests/t_g40_reload_exact.js': 'verdict',
+  'bughunt_nov17/grade2/tests/t_g41_prefix_stations.js': 'verdict',
+  'bughunt_nov17/grade2/tests/t_g42_short_elev_job.js': 'verdict',
+  'bughunt_nov17/grade2/tests/t_g43_shots_reload.js': 'verdict',
 };
 
 // Extra normalization for golden tests whose output carries values that legitimately change between runs

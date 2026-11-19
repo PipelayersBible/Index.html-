@@ -6587,7 +6587,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
         <div class="pb-review-item" data-edu-id="source"><span class="k">Source</span><br><a class="pb-extlink" href="https://www.osha.gov/laws-regs/regulations/standardnumber/1926/1926.651" target="_blank" rel="noopener">1926.651</a> and <a class="pb-extlink" href="https://www.osha.gov/laws-regs/regulations/standardnumber/1926/1926.652" target="_blank" rel="noopener">1926.652</a>.</div>
         <div class="pb-review-item" data-edu-id="4-ft-or-more"><span class="k">4 feet or more (egress) · greater than 4 feet (air testing)</span><br>Egress: "A stairway, ladder, ramp or other safe means of egress shall be located in trench excavations that are 4 feet (1.22 m) or more in depth so as to require no more than 25 feet (7.62 m) of lateral travel for employees" (1926.651(c)(2)). Air testing: "Where oxygen deficiency (atmospheres containing less than 19.5 percent oxygen) or a hazardous atmosphere exists or could reasonably be expected to exist, such as in excavations in landfill areas or excavations in areas where hazardous substances are stored nearby, the atmospheres in the excavation shall be tested before employees enter excavations greater than 4 feet (1.22 m) in depth" (1926.651(g)(1)(i)).</div>
         <div class="pb-review-item" data-edu-id="5-ft-or-more"><span class="k">5 feet or more</span><br>"Each employee in an excavation shall be protected from cave-ins by an adequate protective system designed in accordance with paragraph (b) or (c) of this section except when: (i) Excavations are made entirely in stable rock; or (ii) Excavations are less than 5 feet (1.52m) in depth and examination of the ground by a competent person provides no indication of a potential cave-in" (1926.652(a)(1)). Under 5 feet the exception needs that competent-person examination — 5 feet is a floor, not a green light.</div>
-        <div class="pb-review-item" data-edu-id="20-ft-or-more"><span class="k">Greater than 20 feet</span><br>"Sloping or benching for excavations greater than 20 feet deep shall be designed by a registered professional engineer" (App. B, Table B-1 note 3). Other designs come from tabulated data (the manufacturer's, or data approved by a registered professional engineer) or a registered professional engineer's own design (1926.652(b)(3)–(4), (c)(2)–(4)). This app's slope calculator gives no slope for depths greater than 20 feet for exactly this reason.</div>
+        <div class="pb-review-item" data-edu-id="20-ft-or-more"><span class="k">20 feet or more</span><br>"Sloping or benching for excavations greater than 20 feet deep shall be designed by a registered professional engineer" (App. B, Table B-1 note 3). Other designs come from tabulated data (the manufacturer's, or data approved by a registered professional engineer) or a registered professional engineer's own design (1926.652(b)(3)–(4), (c)(2)–(4)). Table B-1 covers excavations &ldquo;less than 20 feet deep&rdquo;, so this app's slope calculator gives no slope at 20 feet or deeper: a registered professional engineer designs it.</div>
       </div>
     </div>
     <div class="pb-section" data-edu-id="ladder-and-egress">
@@ -8496,7 +8496,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
     <div class="pb-warn" style="margin-top:16px;">
       <strong>Tabulated data, not a substitute for a competent person</strong>
       <span class="pb-warn-keep">Soil type must be classified per Appendix A by a competent person — don't guess.</span>
-      <details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>Details</span></summary><span>These are OSHA's Table B-1 maximum allowable slopes (29 CFR 1926 Subpart P App B), which cover excavations “less than 20 feet deep”. Benching isn't permitted in Type C. Type A allows an unsupported vertical lower portion (max 3.5 ft, ≤12 ft depth) instead of full sloping — toggle below if it applies. “Sloping or benching for excavations greater than 20 feet deep shall be designed by a registered professional engineer” (App. B, Table B-1 note 3); any non-standard condition also needs a P.E.'s design.</span></details>
+      <details class="pb-more"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>Details</span></summary><span>These are OSHA's Table B-1 maximum allowable slopes (29 CFR 1926 Subpart P App B), which cover excavations “less than 20 feet deep”. Benching isn't permitted in Type C. Type A allows an unsupported vertical lower portion (max 3.5 ft, ≤12 ft depth) instead of full sloping — toggle below if it applies. “Sloping or benching for excavations greater than 20 feet deep shall be designed by a registered professional engineer” (App. B, Table B-1 note 3); any non-standard condition also needs a P.E.'s design. At 20 ft or deeper this calculator gives no slope.</span></details>
     </div>
     <div class="pb-section">
       <div class="pb-body">
@@ -11211,8 +11211,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbRsSet(el, v) { pbRsBusy = true; try { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); } finally { pbRsBusy = false; } }
   // ---- 1. Short elevations: crews type 98.68 or 598.68 for 2598.68. On blur, an elevation box with fewer integer
   // digits than the reference takes the reference's leading digits, the candidate nearest the reference (rollover:
-  // 2598.68 and 01.20 -> 2601.20). Reference: the latest full elevation on this run, else the job's last, else this
-  // phone's last. Only elevation boxes (invert, stake, benchmark, HI, a hub correction): never readings, cut/fill
+  // 2598.68 and 01.20 -> 2601.20). Reference: the latest full elevation on this run, else the job's last (#42: never
+  // another job's; the phone's last from any job is not used). Only elevation boxes (invert, stake, benchmark, HI, a hub correction): never readings, cut/fill
   // or distances.
   var PB_SE_RE = /^(?:(?:start|end|hub\d+|seg\d+(?:start|end|hub\d+))(?:Elev|StakeElev)|bmElev|hiDirect|correctHubElev|rodElevKnownElev|beddingInv|mhRim|mhInv|qrReadingStart|qrReadingEnd|xing\d+(?:Inv|Bop|Top))$/; /* feat_crossing: a crossing's elevations too */
   var pbSeLast = null; // { v, gen }: the latest full elevation typed on the run form (gen: the run's photo context)
@@ -11231,7 +11231,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbSeLoad() { try { const o = JSON.parse(localStorage.getItem(pbSeKey()) || 'null'); if (o && typeof o === 'object') return o; } catch (e) { return pbSeMem[pbSeKey()] || {}; } return {}; }
   function pbSeSave(v) {
     if (!pbSeOk(v)) return;
-    pbSeLast = { v, gen: window._pbPhotoContextGen };
+    pbSeLast = { v, gen: window._pbPhotoContextGen, job: pbSeJob() }; // #42: and the job it was typed on
     const o = pbSeLoad(), j = pbSeJob();
     o.phone = v;
     if (j) { o.jobs = o.jobs && typeof o.jobs === 'object' ? o.jobs : {}; delete o.jobs[j]; o.jobs[j] = v; const ks = Object.keys(o.jobs); if (ks.length > 60) delete o.jobs[ks[0]]; }
@@ -11239,7 +11239,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     try { localStorage.setItem(pbSeKey(), JSON.stringify(o)); } catch (e) {}
   }
   function pbSeRef(selfId) {
-    if (pbSeLast && pbSeLast.gen === window._pbPhotoContextGen && pbSeOk(pbSeLast.v)) return pbSeLast.v;
+    if (pbSeLast && pbSeLast.gen === window._pbPhotoContextGen && pbSeLast.job === pbSeJob() && pbSeOk(pbSeLast.v)) return pbSeLast.v; // #42: not after the job was changed
     let best = null; // this run: what its elevation boxes hold
     document.querySelectorAll('#screen-input input[id]').forEach(el => {
       const id = pbSeId(el); if (!id || id === selfId) return;
@@ -11249,7 +11249,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (best !== null) return best;
     const o = pbSeLoad(), j = pbSeJob();
     if (j && o.jobs && pbSeOk(o.jobs[j])) return o.jobs[j];
-    return pbSeOk(o.phone) ? o.phone : null;
+    return null; // #42: never another job's (the phone's last elevation from any job is no longer used)
   }
   function pbSeNoteOff(id) { const n = document.getElementById(id + 'SeNote'); if (n) n.remove(); }
   function pbSeNote(el, id, from, to, arch, extra) {
@@ -13168,7 +13168,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r17.06 · 2026-11-19'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r17.07 · 2026-11-19'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -16473,7 +16473,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // lower HI, readings to lay to the higher), so the record keeps how the HI was given and the shots typed.
   function pbHdSrcSnap(calc) {
     const hc = computeHiCrossCheck();
-    if (hc.candidates.length < 2 || hc.severity === 'none') return null;
+    if (!hc.candidates.length) return null; // #43: shots that agree (even within 0.005 ft), or one shot, are kept too (below)
     const m = activeVal('hiToggle');
     const o = m === 'direct' ? { mode: m, hi: getElevVal('hiDirect') } : m === 'bm' ? { mode: m, bmElev: getElevVal('bmElev'), bmBS: getElevVal('bmBS') } : { mode: 'stakes' };
     o.shots = {};
@@ -16483,6 +16483,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (md === 'stake') { const v = getElevVal(id + 'StakeReading'); if (v !== null && !isPredictedFillMarked(id + 'StakeReading')) o.shots[id] = { m: 'stake', v }; }
       else if (md === 'elev' && !pbSegStartStepDriven(id)) { const v = getElevVal(id + 'ElevReading'); if (v !== null && !isPredictedFillMarked(id + 'ElevReading')) o.shots[id] = { m: 'elev', v, el: pbHdElevFromShot(id) ? 1 : 0 }; }
     });
+    if ((hc.candidates.length < 2 || hc.severity === 'none') && !Object.keys(o.shots).length) return null; // #43: nothing shot and nothing disagreeing: the typed HI gives the form back, as before
     return o;
   }
   // fix98 1: the record's form: its shots and HI as they were at Lock (PFX: the record's point id -> the form's).
@@ -19909,9 +19910,20 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     el.textContent = 'Invert elevation = ' + fmt(inv, 3).replace(/0$/, '') + ' ft'; /* feat_runsetup (owner): just the invert, as 2589.06 (a 3rd decimal only when it is there) */
   }
 
+  function pbSegStartExact(prefix) { // grade2 audit 04: the step's own invert, while the faded box still shows it
+    const m = /^seg(\d+)start$/.exec(String(prefix || '')); if (!m) return null;
+    const ld = window._pbSegStartLoaded && window._pbSegStartLoaded[prefix]; // the record's own invert (Edit Run Data, Resume)
+    if (ld && !pbSegStartStepDriven(prefix)) { const b = getElevVal(prefix + 'Elev'); return b !== null && Math.abs(b - ld.box) < 1e-9 && Math.abs(b - ld.v) <= 0.003 ? ld.v : null; }
+    if (!pbSegStartStepDriven(prefix)) return null;
+    const n = Number(m[1]), prevEnd = n === 2 ? 'end' : 'seg' + (n - 1) + 'end', step = getElevVal(n === 2 ? 'reducerStep' : 'seg' + n + 'Step');
+    const pe = getPointPI(prevEnd), pw = getPointWT(prevEnd), tw = getPointWT(prefix), box = getElevVal(prefix + 'Elev');
+    if (step === null || pe === null || pw === null || tw === null || box === null) return null;
+    const x = pe - pw + step + tw;
+    return Math.abs(box - x) <= 0.003 ? x : null;
+  }
   function getPointPI(prefix) {
     const modeVal = activeVal(prefix+'ModeToggle');
-    if (modeVal === 'elev') return getElevVal(prefix+'Elev');
+    if (modeVal === 'elev') { const ex = pbSegStartExact(prefix); return ex !== null ? ex : getElevVal(prefix+'Elev'); }
     const se = getElevVal(prefix+'StakeElev'), cf = getElevVal(prefix+'CutFillVal');
     if (se === null || cf === null) return null;
     const mode = document.getElementById(prefix+'CutFill').value;
@@ -19937,7 +19949,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (modeVal === 'elev') {
       const stakeShot = pbStakeShotReading(prefix); // a stake hub corrected at the same invert keeps its own shot, as it did as a stake
       if (stakeShot !== null) return stakeShot;
-      const elev = getElevVal(prefix+'Elev');
+      const ex = pbSegStartExact(prefix), elev = ex !== null ? ex : getElevVal(prefix+'Elev'); // grade2 audit 04
       if (elev === null || hi === null) return null;
       return pbHdElevFromShot(prefix) ? hi - elev : pbHdLayHi(hi) - elev; // hidisc 2: a design elevation is laid to with the higher HI
     }
@@ -27290,6 +27302,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // it, Edit Run Data shows it, and an unchanged Lock is asked "Already Locked" instead of making a second record.
   function pbLoadRunIntoForm(entry, opts) {
     pbNoStakeClear();
+    window._pbSegStartLoaded = {}; // grade2 audit 04
     // Added points are carried whether or not they were given a label;
     // plain interval rows (no label, not added) are rebuilt from the interval.
     const realRows = entry.intervalRows.filter(r => r.label || r.addedTime);
@@ -27448,6 +27461,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         if (prefix) {
           setElevFieldValue(prefix + 'Elev', r.piFt, arch);
           setPredictedFillMarker(prefix + 'Elev', false); // a real, independently-known elevation — not the reducer-derived kind, so it must never get silently recalculated from the (blank) step field
+          if (/start$/.test(prefix) && typeof r.piFt === 'number' && isFinite(r.piFt)) { const b = getElevVal(prefix + 'Elev'); if (b !== null) window._pbSegStartLoaded[prefix] = { v: r.piFt, box: b }; } // grade2 audit 04: its exact invert, not the box's 1/16 in
           restorePointPhotos(prefix, r);
           restorePointInputs(prefix, r);
         } else {
@@ -33359,12 +33373,12 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
   };
   // Table B-1 covers excavations "less than 20 feet deep": at 20 ft and deeper every result carries
-  // OSHA's two sentences (owner decision). It is added after the answer; the slope itself never changes.
+  // OSHA's two sentences (owner decision). #63: at 20 ft and deeper no slope is given (engineer required).
   function pbTrench20Warn(depth) {
     if (!(depth >= 20)) return '';
     const q = 'Table B-1 covers excavations “less than 20 feet deep”. “Sloping or benching for excavations greater than 20 feet deep shall be designed by a registered professional engineer” (App. B, Table B-1 note 3).';
-    return depth === 20
-      ? '<div class="pb-answer-box pb-trench-20warn"><div class="pb-answer-label">At the Limit of Table B-1</div><div class="pb-answer-sub">This depth is at the limit of the table. ' + q + '</div></div>'
+    return depth === 20 // #63: 20 ft is not "less than 20 feet": outside the table, like deeper
+      ? '<div class="pb-answer-box pb-trench-20warn"><div class="pb-answer-label">20 Feet Is Outside Table B-1</div><div class="pb-answer-sub">' + q + ' At exactly 20 ft the table does not apply, so have a registered professional engineer design it.</div></div>'
       : '<div class="pb-answer-box pb-trench-20warn"><div class="pb-answer-label">Greater than 20 Feet</div><div class="pb-answer-sub">' + q + '</div></div>';
   }
   window.pbCalcTrench = function() {
@@ -33375,8 +33389,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const bottomW = numVal('trenchBottomW');
     const resultEl = document.getElementById('trenchResult');
     if (depth === null || depth <= 0) { resultEl.textContent = 'Enter a valid trench depth greater than zero.'; return; }
-    if (depth > 20) {
-      resultEl.innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">Outside Tabulated Data</div><div class="pb-answer-val pb-answer-warn">Over 20 ft</div><div class="pb-answer-sub">No slope is given for this depth.</div></div>${pbTrench20Warn(depth)}`;
+    if (depth >= 20) { // #63: Table B-1 is for excavations less than 20 ft deep: no slope at 20 ft either
+      resultEl.innerHTML = `<div class="pb-answer-box"><div class="pb-answer-label">Engineer Required</div><div class="pb-answer-val pb-answer-warn">${depth === 20 ? '20 ft' : 'Over 20 ft'}</div><div class="pb-answer-sub">No slope is given at 20 ft or deeper. A registered professional engineer designs the sloping or benching.</div></div>${pbTrench20Warn(depth)}`;
       return;
     }
     if (soil === 'Ashort' && depth > 12) {
@@ -53944,6 +53958,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbNoStakeMark = pbNoStakeMark;
   function pbResetRunForm() {
     pbNoStakeClear();
+    window._pbSegStartLoaded = {}; // grade2 audit 04
     try { if (window.pbRsEarlyClear) window.pbRsEarlyClear(); } catch (e) {} /* feat_resume2 */
     pbRdBeforeReset(); // batch 14 R: the form's draft is saved and kept, not lost
     pbFormGen++;
