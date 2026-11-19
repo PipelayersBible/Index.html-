@@ -1,10 +1,10 @@
-# speed2: phone speed (#51, #52, #53, #54), on r17.04
+# speed2: phone speed (#51, #52, #53, #54), on r17.07
 
 Nothing deployed, committed, pushed or changed live. Everything is in `tests/staged/speed2/`.
-Base: written on r17.04; r17.05 (onboard) went live while this ran, and every patch applies unchanged to the CURRENT
-`/home/claude/index.html-/index.html` + `sw.js` (r17.05 · 2026-11-19). The final test runs (speed2 tests and the full
-regression) are on r17.05 + speed2; the measurements were taken on r17.04 + speed2 (same code). Build stamps are left as
-they are (the release step bumps them).
+Base: written on r17.04; r17.05, r17.06 and r17.07 went live while this ran, and every patch applies unchanged to the
+CURRENT `/home/claude/index.html-/index.html` + `sw.js` (r17.07 · 2026-11-19). The final test runs (speed2 tests and the
+full regression) are on r17.07 + speed2; the timing measurements were taken on r17.04 + speed2 (same speed2 code).
+Build stamps are left as they are (the release step bumps them).
 
 ## How to apply
 
@@ -39,9 +39,10 @@ the thing that is patched and tested; `build.py` runs at release. It needs `esbu
 - The worker answers the app page from its kept copy at once (no 304 round trip, no 4 s wait on lie-fi). Behind it,
   it downloads the page whole (never a partial page), at most every 30 s; when the fingerprint differs it stores it for
   the next open, keeps the copy it replaced as the "previous copy", and tells every open app.
-- The page shows a slim line above the tabs: **New version ready  [Reload]  ×**. It also asks the worker 3 s after
-  start, whenever the app comes back to the foreground, and when a new worker takes over, so a crew that leaves the app
-  open for days still sees it. Reload with unsaved typing on the screen asks first ("NOT been saved ... Reload Anyway").
+- The page shows a slim line above the tabs: **New version ready  [Reload]  ×**. It also asks the worker 3 s and 40 s
+  after start, whenever the app comes back to the foreground, and when a new worker takes over, so a crew that leaves
+  the app open for days still sees it. A background check that gets no answer in 15 s (lie-fi) is dropped so it never
+  blocks the next one. Reload with unsaved typing on the screen asks first ("NOT been saved ... Reload Anyway").
 - Never stranded:
   - no kept copy yet (first install, cleared cache): exactly the r17.01 path (network first, 4 s budget for the whole
     page, then the copy).
@@ -125,12 +126,14 @@ Memory: records still hold photos in memory (unchanged; loading photos only when
 `build/build.py` (also runs the checks: node --check on every minified script, no `</script` inside a script, same
 number of scripts/styles, part fingerprints):
 
-| | r17.04 | r17.04 + speed2, built | r17.05 (live now) | r17.05 + speed2, built |
-|---|---:|---:|---:|---:|
-| page, raw | 8.75 MB | 5.15 MB | 8.80 MB | 5.19 MB |
-| page, gzip -9 (what Pages sends) | 2,400,731 B | **1,428,342 B** | 2,413,120 B | **1,441,310 B** |
-| pbx/pdfjs-3.5.141 + worker (cutsheet PDFs, plans viewer) | inside | 370 KB gz, own files | inside | same files (unchanged) |
-| pbx/jspdf-2.5.1 + autotable (read right after load) | inside | 127 KB gz, own files | inside | same files (unchanged) |
+| page | raw | gzip -9 (what Pages sends) |
+|---|---:|---:|
+| r17.04 | 8.75 MB | 2,400,731 B |
+| r17.04 + speed2, built | 5.15 MB | **1,428,342 B** |
+| r17.07 (live now) | 8.98 MB | 2,453,330 B |
+| r17.07 + speed2, built | 5.34 MB | **1,476,942 B** (-976 KB) |
+| pbx/pdfjs-3.5.141 + worker (cutsheet PDFs, plans viewer) | 1.37 MB | 370 KB, own files, kept across releases |
+| pbx/jspdf-2.5.1 + autotable (read right after load) | 0.40 MB | 127 KB, own files, kept across releases |
 
 - Install / update on one bar (400 kbps): ~48 s of transfer -> ~29 s for the page (the parts follow after the app is up;
   they only change when the libraries change).
@@ -157,21 +160,57 @@ that phone): the old 4 MB rule and wording, true there. Checked at most every 10
 
 ## Tests
 
-Own tests (`tests/`; `run_speed2.sh <site> <r17.04 index.html> <r17.04 sw.js> <out> [port]` runs them all; the site is a
-build made with `build.py --hooks` or the patched source):
+Own tests (`tests/`; `run_speed2.sh <site> <previous index.html> <previous sw.js> <out> [port]` runs them all; the site
+is a folder with a build made with `build.py --hooks` (or the patched source) + the new sw.js. Helpers: `mksite.js`
+(served site like run_all's, plus the previous release as base.html on the same origin), `phlib.js`, `httpssite.js` +
+`cert.pem`/`key.pem` (real HTTPS for the worker tests). Proposed golden files: `tests/expect_updates/`.)
 
-SPEED2_RESULTS
+| test | what it checks | result (r17.07 + speed2, built with --hooks) |
+|---|---|---|
+| p01_migrate | r17.04-format Records (104 photo places) moved; every photo same place, same bytes; text 7.2 MB -> 0.24 MB; a laid mark writes no photo; reload | 14/14 PASS |
+| p02_kill | browser SIGKILLed (persistent profile) while photos are written, as the short text is saved, right after a start; 328 photo places / 27 MB | 7/7 PASS |
+| p03_quota | storage full mid-move (stops, removes what it wrote, Records whole, laid mark saves); store refusing every write; room again: finishes | 12/12 PASS |
+| p04_outputs | same Records read by the previous release and by this one after the move: PDF images, record fingerprint (rev), exported record JSON, cloud photo list identical for every run | 21/21 PASS |
+| p05_gc_tabs | other readers get photos inline; another account's copy shares photos; deleting a run frees only its own photos and only when no account refers to them; stale tab B ("Continue - Overwrite") writes back photos tab A's tidy removed | 11/11 PASS |
+| p06_concurrent | two Records writes at once, each storing new photos | 3/3 PASS (FAILED before the fix below) |
+| p07_rollback_damage | the previous release opens moved Records and keeps references; back again all photos; one photo missing; store unreadable = "Records Failed to Load", nothing overwritten | 12/12 PASS |
+| p08_clear | 40/80/120-day runs: offered per setting (60 default, 30, Never), never unsent or open run; failed save puts everything back; cleared photos replaced, rev unchanged, PDF has a picture in each place, originals leave the store, survives reload | 17/17 PASS |
+| p09_room_warning | previous release: false "about 5 MB" warning at 7 MB; this one: none with room, new wording at 90 % used, once per session | 4/4 PASS |
+| s01_sw_shell | real worker: first open keeps page + 4 parts; reopen with the server taking 8 s / lie-fi: kept copy at once; new build -> line -> Reload; line for an app left open; unsaved typing asks; broken build -> watchdog -> previous version, stays, fixed build offered; ?pbfresh=1; offline incl. pdf.js and jsPDF parts; terms.html not hijacked | 22/22 PASS |
+| s02_sw_upgrade | real HTTPS server (worker updates are real): previous release's worker + page -> this release; new page and parts kept, old cache gone, open old tab unharmed, offline | 8/8 PASS |
 
-Bug found and fixed by these tests: p06 caught two Records writes running at the same time (each storing new photos)
-sharing one global RegExp's `lastIndex` across awaits, which corrupted the second text. Fixed (each write uses its own
-RegExp) before the final runs.
+Measurements (not pass/fail): `m51_opens.js`, `m52_laid_speed.js`.
+
+Bugs these tests found in my own code, fixed before the final runs:
+- p06: two Records writes at the same time (each storing new photos) shared one global RegExp's `lastIndex` across
+  awaits, which corrupted the second text. Now each write uses its own RegExp.
+- s01: a background check left hanging by a lie-fi open blocked every later check until the worker restarted (no "New
+  version" line). Now a check with no answer in 15 s (or not done in 3 min) is dropped, and the page asks again 40 s
+  after start.
 
 Full regression (`tests/run_all.sh --jobs 2`):
 
-REGRESSION
+- **r17.07 + speed2, built with `--hooks`** (all suites; the hooks are put in before minifying so the audit suites run
+  on the minified page): **212 pass, 4 fail, 0 flaky, 15 skipped (of 231), 43 min.** The 4 are golden files whose change
+  is intended (below). Same failing set seen on r17.05 + speed2 earlier, plus that run's differences that were r17.06/07
+  changes (its goldens had moved on); live r17.07 alone passes those 10 (checked).
+- After the two late fixes (worker check timeout, 40 s re-ask): suites main, main_older, py, offline again on the final
+  build (`--hooks`): **56 pass, 2 fail (t07_sw, t09_bigweek: the intended golden changes), 1 skip (of 59).**
+- The page exactly as it would ship (no hooks), suites main, main_older, py: **42 pass of 42.**
+- speed2 tests on r17.07 + speed2: all 11 pass (p01-p09 on the build before the two late fixes, which don't touch the
+  photo code; s01 and s02 again after them).
+- `t10_quota` once printed a third "Save failed (room)" line under load on r17.05 + speed2 (a save at page close racing
+  the close); 3 of 3 alone on r17.07 + speed2 print 2, as golden (live r17.07: 2, 2, 2).
+- Earlier, r17.04 + speed2 runs were cut short by the box (a detached run was stopped) and superseded by the above.
 
 Golden files that change on purpose (proposed new files in `tests/expect_updates/`, after reading each diff):
-EXPECT_UPDATES
+
+| test | change | why |
+|---|---|---|
+| offline/rig/t07_sw | `caches` lists `pb-lazy-v1`; "second tab build ... (the published update: false)"; the hits are the 4 pbx parts | #51: the second tab opens from the kept copy; the new build arrives on the next open (the test's later lines - offline reopen shows the published update - still match). #53: the parts are kept. Their names carry fingerprints: suggest a NORMALIZE entry `pbx/<name>-<12 hex>.js -> pbx/PART.js` in runner/suites.js |
+| offline/rig/t09_bigweek | "archive chars N (~1 M)" instead of ~56 M; usage 3 MB instead of 112 | #52: the test copies the stored text, which now holds photo references: its 40 copies share 2 photos. The laid-mark cost it measures is what m52_laid_speed.js measures properly. (Its quotaMB depends on the box's free disk: worth a NORMALIZE entry too.) |
+| critic/w3, w4 | Settings shows the new "Offer to clear sent photos from this phone after" row (+4 buttons, taller) | #52 |
+
 
 ## Risks
 

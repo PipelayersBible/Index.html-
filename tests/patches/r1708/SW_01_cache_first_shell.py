@@ -149,19 +149,29 @@ async function pbTell(msg) {
   try { (await self.clients.matchAll({ type: 'window', includeUncontrolled: true })).forEach((c) => { try { c.postMessage(msg); } catch (e) {} }); } catch (e) {}
 }
 // The newest page, downloaded whole behind the kept copy. A different build is stored for the next open (its lazy parts
-// first), the copy it replaces becomes the previous copy, and every open app is told. Never more than one at a time,
-// and at most every 30 s unless forced.
-let pbRevalP = null, pbRevalAt = 0;
+// first), the copy it replaces becomes the previous copy, and every open app is told. One at a time, at most every 30 s
+// unless forced. A check that got no answer in 15 s (lie-fi) or isn't done in 3 min is dropped and a new one may start,
+// so a check stuck on a dead connection never blocks the next ones.
+const PB_REVAL_HDR_MS = 15000, PB_REVAL_MAX_MS = 180000;
+let pbReval = null, pbRevalAt = 0;
 function pbRevalidate(force) {
-  if (pbRevalP) return pbRevalP;
-  if (!force && Date.now() - pbRevalAt < PB_REVAL_GAP_MS) return Promise.resolve();
-  pbRevalAt = Date.now();
-  pbRevalP = (async () => {
+  const now = Date.now(), R = pbReval;
+  if (R) {
+    if ((R.hdr || now - R.at <= PB_REVAL_HDR_MS) && now - R.at <= PB_REVAL_MAX_MS) return R.p;
+    try { if (R.ac) R.ac.abort(); } catch (e) {}
+    pbReval = null;
+  } else if (!force && now - pbRevalAt < PB_REVAL_GAP_MS) return Promise.resolve();
+  pbRevalAt = now;
+  const me = { at: now, hdr: false, ac: typeof AbortController === 'function' ? new AbortController() : null };
+  const timer = me.ac ? setTimeout(() => { try { me.ac.abort(); } catch (e) {} }, PB_REVAL_MAX_MS) : null;
+  me.p = (async () => {
     try {
       const scope = self.registration.scope;
-      const res = await fetch(scope, { cache: 'no-cache', credentials: 'same-origin' });
+      const res = await fetch(scope, me.ac ? { cache: 'no-cache', credentials: 'same-origin', signal: me.ac.signal } : { cache: 'no-cache', credentials: 'same-origin' });
+      me.hdr = true;
       if (!pbPageOk(res)) return;
       const buf = await res.arrayBuffer(), sha = await pbSha(buf);
+      if (pbReval !== me) return; // dropped meanwhile
       const c = await caches.open(PB_SHELL), key = pbShellKey(scope), kept = await c.match(key);
       if (kept && (await pbRespSha(kept)) === sha) return; // the same page: nothing to do
       if ((await pbBadList()).indexOf(sha) >= 0) return; // the page that would not start on this phone
@@ -171,9 +181,10 @@ function pbRevalidate(force) {
       await c.put(key, pbPageResp(res, buf, sha));
       pbLazyTidy();
       pbTell({ pb: 'pb-update', build: pbBuildOf(text) });
-    } catch (e) {} finally { pbRevalP = null; }
+    } catch (e) {} finally { if (timer) clearTimeout(timer); if (pbReval === me) pbReval = null; }
   })();
-  return pbRevalP;
+  pbReval = me;
+  return me.p;
 }
 // "?pbprev=1": the previous copy is the kept copy again and the page it replaces is never stored again
 async function pbUsePrev() {

@@ -100,7 +100,9 @@ const NORMALIZE = {
   'bughunt_nov17/offline/rig/t02_day.js': { replace: [[/@\d+\.\d/g, '@N']] },
   // sizes of stamped photos and timings
   'bughunt_nov17/offline/rig/t08_size.js': { replace: [ms(/("(?:runChars|imgChars|lsChars|usage)":)\d+/g), ms(/(mark\+save ms \(incl\. UI waits ~1000\): )\d+/g)] },
-  'bughunt_nov17/offline/rig/t09_bigweek.js': { replace: [ms(/(archive chars )\d+/g), [/\{"n":\d+,"max":\d+,"sum":\d+\}/g, '{LONGTASKS}'], ms(/(pbRrSend pass ms: )\d+/g)] },
+  'bughunt_nov17/offline/rig/t09_bigweek.js': { replace: [ms(/(archive chars )\d+/g), [/\{"n":\d+,"max":\d+,"sum":\d+\}/g, '{LONGTASKS}'], ms(/(pbRrSend pass ms: )\d+/g), ms(/("quotaMB":)\d+/g)] },
+  // r17.08: the lazily loaded parts carry a content fingerprint in their names
+  'bughunt_nov17/offline/rig/t07_sw.js': { replace: [[/(pbx\/[\w.\-]+?)-[0-9a-f]{12}\.js/g, '$1-HASH.js']] },
   // ms timings of the parallel AI reads
   't94_parallel.js': { replace: [[/@\d+/g, '@N']] },
   'bughunt_nov17/cs2/l1.js': { replace: [ms(/(\bms )\d+/g)] },

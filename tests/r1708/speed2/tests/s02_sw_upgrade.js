@@ -1,7 +1,7 @@
-// speed2 #51 bug hunt: a phone on r17.04 (its worker and its kept page) gets this release (new worker + built page).
-// The new worker keeps the new page and its parts, the r17.04 page becomes the previous copy, the next open is the new
-// build at once, offline too, and an open r17.04 tab is not broken by it.
-// env OLD_SITE: folder with the r17.04 index.html + sw.js; NEW_SITE: folder with the new index.html, sw.js, pbx/.
+// speed2 #51 bug hunt: a phone on the previous release (its worker and its kept page) gets this release (new worker + built page).
+// The new worker keeps the new page and its parts, the next open is the new
+// build at once, offline too, and an open tab of the previous release is not broken by it.
+// env OLD_SITE: folder with the previous release's index.html + sw.js; NEW_SITE: folder with the new index.html, sw.js, pbx/.
 const { chromium } = require('/opt/npm-tools/node_modules/playwright');
 const fs = require('fs'), path = require('path');
 const RIG = path.resolve(__dirname, '../../../bughunt_nov17/offline/rig');
@@ -24,22 +24,22 @@ const put = (dir) => { fs.rmSync(SITE, { recursive: true, force: true }); fs.mkd
   const old = await open(); const B0 = await build(old);
   console.log('old:', B0, JSON.stringify(await keys(old)));
   put(process.env.NEW_SITE);
-  const NEWB = fs.readFileSync(SITE + 'index.html', 'utf8').match(/PB_APP_BUILD = '([^']+)'/)[1].replace('r17.04', 'r17.05');
+  const NEWB = 'r99.90 · 2099-01-01'; // this release, as the release step would stamp it (page and worker)
   fs.writeFileSync(SITE + 'index.html', fs.readFileSync(SITE + 'index.html', 'utf8').replace(/PB_APP_BUILD = '[^']+'/, "PB_APP_BUILD = '" + NEWB + "'"));
   fs.writeFileSync(SITE + 'sw.js', fs.readFileSync(SITE + 'sw.js', 'utf8').replace(/PB_SW_BUILD = '[^']+'/, "PB_SW_BUILD = '" + NEWB + "'"));
-  // the phone opens the app again: the r17.04 worker answers (network first) and the browser finds the new sw.js
+  // the phone opens the app again: the previous worker answers (network first) and the browser finds the new sw.js
   const p = await open(9000);
   ok((await build(p)) === NEWB, 'next open with signal: the new build', await build(p));
-  let k = null; for (let i = 0; i < 40; i++) { k = await keys(p); if (Object.keys(k).some((n) => /^pb-shell-/.test(n) && n.indexOf('r17.04') < 0) && (k['pb-lazy-v1'] || []).length === 4) break; await p.waitForTimeout(1000); }
+  let k = null; for (let i = 0; i < 40; i++) { k = await keys(p); if (Object.keys(k).some((n) => /^pb-shell-r99\.90/.test(n)) && (k['pb-lazy-v1'] || []).length === 4) break; await p.waitForTimeout(1000); }
   console.log('after the update:', JSON.stringify(k), 'worker:', await p.evaluate(async () => { const r = await navigator.serviceWorker.getRegistration(); return { active: r.active && r.active.state, waiting: !!r.waiting, installing: !!r.installing }; }));
-  const shell = Object.keys(k).find((n) => /^pb-shell-/.test(n) && n.indexOf('r17.04') < 0);
+  const shell = Object.keys(k).find((n) => /^pb-shell-r99\.90/.test(n));
   ok(!!shell && k[shell].includes(''), 'new worker: the new page kept', shell);
-  // the r17.04 worker (network first) already stored the new page in its own cache on that open, so there is no older
+  // the previous worker (network first) already stored the new page in its own cache on that open, so there is no older
   // page left to keep as "previous" on this first upgrade (from the next release on there is)
   console.log('previous copy kept:', k[shell].includes('pb-prev-page'));
   ok((k['pb-lazy-v1'] || []).length === 4, 'new worker: the 4 parts kept', k['pb-lazy-v1']);
   ok(Object.keys(k).filter((n) => /^pb-shell-/.test(n)).length === 1, 'the older cache is gone');
-  ok((await build(old)) === B0 && old.errs.length === 0, 'the open r17.04 tab still works', old.errs.slice(0, 2));
+  ok((await build(old)) === B0 && old.errs.length === 0, 'the open tab of the previous release still works', old.errs.slice(0, 2));
   const p3 = await open(3000); ok((await build(p3)) === NEWB, 'and the open after that: from the new worker\'s copy', await build(p3)); await p3.close();
   await p.close(); await old.close({ runBeforeUnload: false });
   await ctx.setOffline(true);

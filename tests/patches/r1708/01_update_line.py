@@ -2,7 +2,7 @@
 # speed2 #51 (page side; pairs with SW_01_cache_first_shell.py). The app now opens from the phone's own copy and the
 # worker downloads the newest page behind it. This adds:
 #  1) "New version ready - Reload": a slim line above the tabs when the worker stored a newer build than the one on
-#     screen (it says so with {pb:'pb-update'}; the page also asks {pb:'shell-check'} 3 s after start and whenever the
+#     screen (it says so with {pb:'pb-update'}; the page also asks {pb:'shell-check'} 3 s and 40 s after start, whenever the
 #     app comes back to the foreground, and {pb:'shell-status'} when a new worker takes over). Reload with unsaved typing
 #     on the screen asks first. Never shown on a "?pbprev=1" open (he just went back on purpose).
 #  2) the boot watchdog (the screen shown when the app didn't start) gets "Load the Newest Version" (?pbfresh=1: the
@@ -82,7 +82,7 @@ rep("""        if (d.pb === 'push-resync') pbPushSync({ background: true, check:
     window.__pbUpdateLineShow = show; // tests
     sw.addEventListener('message', (ev) => { const d = ev && ev.data; if (d && typeof d === 'object' && (d.pb === 'pb-update' || d.pb === 'shell-status')) show(d.build); });
     const ask = (kind) => { try { if (sw.controller) sw.controller.postMessage({ pb: kind }); } catch (e) {} };
-    setTimeout(() => ask('shell-check'), 3000);
+    setTimeout(() => ask('shell-check'), 3000); setTimeout(() => ask('shell-check'), 40000); // again later: a check on a dead connection is dropped after 15 s
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') ask('shell-check'); });
     sw.addEventListener('controllerchange', () => ask('shell-status'));
   })();
