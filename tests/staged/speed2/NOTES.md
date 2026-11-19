@@ -58,7 +58,15 @@ build-stamp bump is stored but no line shows (the line compares build stamps). S
 400 ms before each answer, 4x CPU, each open a fresh browser start on the same phone storage; ms from navigation start
 to a usable Home; shared 2-core box with load average 10-14 from other helpers, so +-20 % noise and up):
 
-M51_TABLE
+| one bar, 4x CPU: ms to a usable Home | r17.04 (page + worker) | this release (built page + new worker) |
+|---|---:|---:|
+| cold first open, no worker yet (transfer-bound) | 49,400 (white until 12.6 s) | 29,768 (first paint 2.1 s) |
+| reopen, app unchanged | 6,333 / 6,475 | 1,839 / 2,141 |
+| reopen on lie-fi (bars, nothing answers) | 6,136 / 6,836 | 1,486 / 1,745 |
+| first open after a new release | 5,814 / 6,500 | 1,444 / 1,772 |
+
+(two runs each, run turn about with r17.04 so the box's load hits both alike; `tests/m51_opens.js 400 400 2`.) The reopen
+gains are #51 (no round trip, no 4 s wait) plus #53 (a 5.1 MB page parses faster than 8.75 MB); the cold open is #53.
 
 ## #52 Photos stored apart from Records
 
