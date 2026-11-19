@@ -42,7 +42,7 @@ rep("""  const pbBigMark = (key) => key + '@idb';
   // ---- speed2 #52: photos stored apart from the Records text ----
   const PB_PH_REF = 'pbph:1:', PB_PH_MIN = 2000;
   const PB_PH_REF_RE = /"pbph:1:([0-9a-f]{64})"/g, PB_PH_REF_ONE = /^pbph:1:([0-9a-f]{64})$/;
-  const PB_PH_TXT_RE = /"((?:data:[A-Za-z0-9.+\\/;=-]{1,200},)?[A-Za-z0-9+\\/]{2000,}={0,2})"/g; // a photo inside JSON text (base64 never needs escaping)
+  const PB_PH_TXT_RE = /"((?:data:[A-Za-z0-9.+\\/;=-]{1,200},)?[A-Za-z0-9+\\/]{2000,}={0,2})"/g; // a photo inside JSON text (base64 never needs escaping); pattern only: each use makes its own RegExp
   const PB_PH_OK = /^(?:data:[A-Za-z0-9.+\\/-]{1,100}(?:;[A-Za-z0-9.=+-]{1,100})*;base64,)?[A-Za-z0-9+\\/]+={0,2}$/;
   const pbPhKnown = new Map(), pbPhById = new Map(); // photo text -> key, key -> photo text (stored AND read back equal)
   let pbPhDbP = null, pbPhOff = false, pbPhBudget = Infinity, pbPhLeft = 0, pbPhUsed = null;
@@ -106,21 +106,20 @@ rep("""  const pbBigMark = (key) => key + '@idb';
         for (const id of want) if (!have.has(id)) { const u = pbPhById.get(id); if (u !== undefined) await pbPhPut(u); else console.warn('Records refers to a photo this phone no longer has (' + id.slice(0, 12) + ')'); }
       }
       pbPhLeft = 0;
-      if (text.indexOf('"') >= 0 && PB_PH_TXT_RE.test(text)) {
-        PB_PH_TXT_RE.lastIndex = 0;
+      const re = new RegExp(PB_PH_TXT_RE.source, 'g'); // its own: two writes may interleave across the awaits below
+      if (text.indexOf('"') >= 0 && re.test(text)) {
+        re.lastIndex = 0;
         const parts = []; let last = 0, m, done = 0;
-        while ((m = PB_PH_TXT_RE.exec(text))) {
+        while ((m = re.exec(text))) {
           const u = m[1]; if (!PB_PH_OK.test(u)) continue;
           let id = pbPhKnown.get(u);
           if (id === undefined) { if (done >= pbPhBudget) { pbPhLeft++; continue; } id = await pbPhPut(u); done++; }
           parts.push(text.slice(last, m.index), '"' + PB_PH_REF + id + '"'); last = m.index + m[0].length;
         }
-        PB_PH_TXT_RE.lastIndex = 0;
         if (parts.length) { parts.push(text.slice(last)); text = parts.join(''); }
       }
       return text;
     } catch (e) {
-      PB_PH_TXT_RE.lastIndex = 0;
       console.warn('Photos could not be stored apart; Records is saved whole: ' + (e && (e.name || e.message)));
       return pbPhInlineFromMemory(text);
     }
@@ -194,8 +193,7 @@ rep("""  let archiveSizeWarningShown = false;""",
     pbPhById.forEach((u, id) => { if (!used.has(id)) { pbPhById.delete(id); if (pbPhKnown.get(u) === id) pbPhKnown.delete(u); } });
   }
   function pbPhAfterLoad(uid, raw) {
-    if (typeof raw === 'string' && PB_PH_TXT_RE.test(raw)) { PB_PH_TXT_RE.lastIndex = 0; pbPhSweepSoon(4000); }
-    PB_PH_TXT_RE.lastIndex = 0;
+    if (typeof raw === 'string' && new RegExp(PB_PH_TXT_RE.source).test(raw)) pbPhSweepSoon(4000);
     setTimeout(() => { pbPhGc().catch(() => {}); }, 20000);
   }
   function pbPhSweepSoon(ms) { if (pbPhOff || pbPhSweepStop) return; clearTimeout(pbPhSweepT); pbPhSweepT = setTimeout(() => { pbPhSweep().catch(e => console.warn('photo pass', e)); }, ms === undefined ? 1500 : ms); }

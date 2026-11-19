@@ -10,7 +10,7 @@ SW="$SITE/sw.js" BASE="$BASE" node "$H/mksite.js" "$SITE/index.html" "$OUT/serve
 SRV=$!; sleep 3
 export PB_ROOT="http://127.0.0.1:$PORT/hk/" PB_SITE="$OUT/served/hk" PB_OUT="$OUT"
 fail=0
-for t in p01_migrate p02_kill p03_quota p04_outputs p05_gc_tabs p07_rollback_damage p08_clear p09_room_warning; do
+for t in p01_migrate p02_kill p03_quota p04_outputs p05_gc_tabs p06_concurrent p07_rollback_damage p08_clear p09_room_warning; do
   timeout 900 node "$H/$t.js" > "$OUT/$t.log" 2>&1; r=$?; echo "$t: $(tail -1 "$OUT/$t.log") (exit $r)"; [ $r -ne 0 ] && fail=1
 done
 SITE_SRC="$SITE" timeout 900 node "$H/s01_sw_shell.js" > "$OUT/s01_sw_shell.log" 2>&1; r=$?; echo "s01_sw_shell: $(tail -1 "$OUT/s01_sw_shell.log") (exit $r)"; [ $r -ne 0 ] && fail=1

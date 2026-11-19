@@ -16,8 +16,6 @@ window.__rpcOverride.pb_crew_leave=(a)=>{window.__leave=a;window.__tableOne.comp
   let { b, p } = await L.boot(L.URL, { init: owner, wait: 6000 });
   await p.setViewportSize({ width: 390, height: 844 });
   await p.evaluate(() => pbOpenCrewMembers()); await p.waitForTimeout(1500);
-  const ri = await p.evaluate((id) => window.__ev ? null : null, RICK);
-  await p.evaluate(() => { const rows = [...document.querySelectorAll('#crList button')].map(x => x.getAttribute('onclick') || ''); window.__rmBtns = rows.filter(x => /pbCmAct\('remove'/.test(x)); });
   const rmIdx = await p.evaluate((id) => { const btn = [...document.querySelectorAll('#crList button')].find(x => /pbCmAct\('remove'/.test(x.getAttribute('onclick') || '') && (x.closest('[class*=row]') || x.parentElement).innerText.includes('Rick')); return btn ? btn.getAttribute('onclick') : null; }, RICK);
   console.log('  remove button:', rmIdx);
   if (rmIdx) await p.evaluate((oc) => eval(oc), rmIdx); else await p.evaluate(() => pbCmAct('remove', 1));

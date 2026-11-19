@@ -96,17 +96,17 @@ tile stays hidden, and the office list shows no signature tag (the key is missin
 
 ## Tests
 
-Browser tests (tests/, verdict style, `tests/run.sh http://127.0.0.1:PORT/hk/ OUTDIR` against a build's serve folder;
+Browser tests (tests/, verdict style, `tests/run.sh http://127.0.0.1:PORT/hk/ OUTDIR` against a build's serve folder (logs, PDFs and 390 px light/dark screenshots of the last run in tests/out/);
 they use the daily2 audit helpers, 390 px, light and dark screenshots, offline steps, PDF text via pdftotext):
 
 | test | checks | result |
 |---|---|---|
-| t01_crew_default.js | 8 h on a short day (Joe logged 2 h); 10.5 h first start to last stop; the line; typed 9 h wins; log_h and day_default on the signed report; #46 second job 12-9=3 / 12-10.5=1.5; offline same; 390 light/dark | 14 PASS |
+| t01_crew_default.js | 8 h on a short day (Joe logged 2 h); 10.5 h first start to last stop; the line; typed 9 h wins; log_h and day_default on the signed report; #46 second job 12-9=3 / 12-10.5=1.5; offline same; 390 light/dark | 13 PASS |
 | t02_night_shift.js | 00:30 run (same job) and 03:30 run (other job) on the shift's day; offline opens Mon on the last run's job with the note; Mon 24-017 has both runs (160 LF); crew day 19:00-05:00 = 10 h; Tue has none; signed; PDF lists both runs and the rule; a run after the signed report goes to Tue; afternoon run own day; 390 light/dark | 12 PASS |
-| t03_safety_daily.js | card: today's near miss + stop work only; done/people; Needs attention; offline: phone's copy + unsent First aid; sign offline; snapshot 3 events in order; PDF section, Needs attention, rows, unsent mark; sent with signal; event after signing -> "changed after you signed"; 390 light/dark | 14 PASS |
+| t03_safety_daily.js | card: today's near miss + stop work only; done/people; Needs attention; offline: phone's copy + unsent First aid; sign offline; snapshot 3 events in order; PDF section, Needs attention, rows, unsent mark; sent with signal; event after signing -> "changed after you signed"; 390 light/dark | 12 PASS |
 | t04_safety_search.js | Home tile; opens screen; first search; job filter list; filters sent; result fields; chips; Open Job Book on Safety + Back keeps filters; Show More; offline last search; server without the function; 390 light/dark | 15 PASS |
-| t05_customer_signature.js | sheet content; needs drawing and name; offline: stored with entry (name, title, time, zone, PNG, SHA-256s) and in the stored draft; record (no Change/Remove, Amend); Remove refused; ticket PDF text + image; Amend keeps signed version, unchanged amend refused; re-sign; daily signed offline keeps both; daily PDF signatures + earlier version + fingerprint; signed card ticket PDF; sent with signal; daily amendment keeps it; office tags; foreman can't open the search; 390 light/dark | 24 PASS |
-| t06_last_run_crew.js | first run no offer; offer names 3 and when; 48 px; one tap adds 3 with type/category/Rental, checked in, offline; offer gone; only who is missing; not on an ended run; 390 light/dark | 10 PASS |
+| t05_customer_signature.js | sheet content; needs drawing and name; offline: stored with entry (name, title, time, zone, PNG, SHA-256s) and in the stored draft; record (no Change/Remove, Amend); Remove refused; ticket PDF text + image; Amend keeps signed version, unchanged amend refused; re-sign; daily signed offline keeps both; daily PDF signatures + earlier version + fingerprint; signed card ticket PDF; sent with signal; daily amendment keeps it; office tags; foreman can't open the search; 390 light/dark | 26 PASS |
+| t06_last_run_crew.js | first run no offer; offer names 3 and when; 48 px; one tap adds 3 with type/category/Rental, checked in, offline; offer gone; only who is missing; not on an ended run; 390 light/dark | 9 PASS |
 
 The daily2 audit suite (t01 two jobs, t02 night shift, t03 undo, t04 changed after signing) passes on this build.
 
@@ -119,7 +119,15 @@ neither function change nor any test row was left):
   `pb_daily_events_list`): `RESULT: PASS  submit=true/ events=3 e1=Pat Owner/Owner's rep e2=null e3=true/null`
   (no PNG in the list; every older event still reads).
 
-Full regression: REGRESSION_PLACEHOLDER
+Full regression on this build (`tests/run_all.sh --build <build>/site/index.html --jobs 2`, 212 entries): pass 190, FAIL 6,
+xfail 1 (the known grade2 one), skip 15. Summary in `test_updates/regression_summary.txt`. The 6:
+- 3 intended changes, new expected files in `test_updates/expect/` (copy into tests/expect/ with the release):
+  `critic/w1.js` (the screen list has `screen-safetySearch`), `office/s1_smoke.js` (the RPC list has
+  `pb_jb_safety_search`, called by the Home tile), `safety/d2.js` (the runs' source line now says the night shift rule).
+- 2 fail the same way on the live r17.04 build (checked on it today): `safety/p6.js` (permit window date: the golden
+  says Nov 18, today is Nov 19) and `offline/rig/t10_quota.js` (one extra "Save failed (room)" console line).
+- 1 timing: `cs2/s1.js` failed in the 2-worker run (permit window "Not started"), passes alone on this build and on live.
+The daily2 suite (two jobs, night shift, undo, changed after signing) passes.
 
 ## Found, not mine (pre-existing)
 - A daily built with signal and signed with none shows "The day's records changed since you opened this report.

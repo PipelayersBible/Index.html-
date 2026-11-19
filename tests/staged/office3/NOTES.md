@@ -107,8 +107,8 @@ Foreman production section (08), PB_RPT_FONT and pbPdfSafeFor (09).
 
 ## Decisions (with recommendations)
 1. **Old app copies and the version check (#32).** The old signatures now refuse with pb:update_app, so an app from
-   before this release can't save Job details or PMs & supers until it updates (it shows "Couldn't load. Nothing was
-   saved"). That is the only way to stop an old copy overwriting. Recommendation: keep the refusal; beta users update
+   before this release can't save Job details or PMs & supers until it updates (it shows "Couldn't load." with "Nothing was
+   saved" / "Nothing was changed"). That is the only way to stop an old copy overwriting. Recommendation: keep the refusal; beta users update
    within a day, and it only affects these two office saves.
 2. **Leave Company for PMs and supers (#35).** As built, any member with a membership row can leave, PMs and supers too.
    Recommendation: keep it (the owner is pushed, and can add them back).
@@ -120,6 +120,16 @@ Foreman production section (08), PB_RPT_FONT and pbPdfSafeFor (09).
    expired), the same thresholds as the job page. Recommendation: keep; revisit with #33 if a state's tickets are shorter.
 
 ## Regression
-(filled in below when the run finished)
+Full run: `tests/run_all.sh --build <patched site>/index.html --jobs 2` (197 run, 15 skipped): pass 185, FAIL 11, xfail 1
+(the known grade2 t04_step_exact). Every failure was checked:
+- 4 fail the same way on r17.04 (run on r17.04 with --only): offline/rig/t09_bigweek, offline/rig/t10_quota,
+  safety/d2, safety/p6 (date and environment, not these patches).
+- 4 were load noise: critic/w3, critic/w4, cs2/s1, sync/t03_roles pass on the patched build when rerun (--jobs 2, 7 tests).
+  new/a4 (break timing, "~900s" vs "~901s") passes alone on the patched build.
+- 2 are intended changes, new expected output in `expect/` (copy into tests/expect/ with the release):
+  office/c1_crew (removing the only foreman now adds "There is no other foreman to hand his waiting runs and crew to
+  yet: ..."), office/s1_smoke (the company account now also calls pb_prod_locates_mine, #34).
+The full run was on the build before one last change in patch 02 (the office board looks every 10 s instead of 20 s,
+reloading at 18 s); the 7 reruns, t_o3_31_board and the other office3 tests ran on the final build.
 
 ## DONE

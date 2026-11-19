@@ -272,4 +272,18 @@ Run it: `PB_URL=http://127.0.0.1:<port>/cur.html NODE_PATH=/opt/npm-tools/node_m
    row's sources and flags changes. *Recommend: yes.*
 
 ## Full regression result
-(filled in below when the run finishes)
+`tests/run_all.sh --build <patched site>/index.html --jobs 2`: **pass 190, FAIL 6, xfail 1, skip 15 (of 212)**. None of
+the 6 come from this patch:
+
+| Test | What happened | Verdict |
+|---|---|---|
+| bughunt_nov17/cs2/s1.js | | Environment: the test used the node clock while the page clock is pinned to Nov 18. Fixed in the repo (commit 0315676, per the coordinator). Not re-run. |
+| bughunt_nov17/safety/p6.js | Same failure on bare r17.04 ("Nov 18" expected, "Nov 19" got) | Environment (clock) |
+| bughunt_nov17/safety/d2.js | Same failure on bare r17.04 ("2 reports attached" expected, got 1) | Environment |
+| bughunt_nov17/offline/rig/t10_quota.js | Same failure on bare r17.04 | Environment |
+| bughunt_nov17/offline/rig/t00_smoke.js | Fails on bare r17.04 in 2 of 3 runs (RPC call order, line 12). Passed and failed once each on this build. | Flaky in the environment |
+| t93_livecam.js | Failed 2 of 3 times on this build with a load average of 7 to 9 on the 2-core box (other helpers running), at different lines each time (review2, batch). Then passed 4 of 4 with `--jobs 1`. Passed on bare r17.04 too. | Timing flake. This patch doesn't touch the camera or batch code. |
+
+Logs: `<scratchpad>/staterules_work/reg/logs`.
+
+## DONE

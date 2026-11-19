@@ -18,7 +18,7 @@ const suites = [
     't101_runphotos.js', 't102_seal.js', 't103_aireads.js', 't104_permitack.js', 't105_terms.js', 't106_cavestate.js', 't107_mfa.js',
     't108_export.js', 't109_crewnotice.js', 't110_clockpdf.js', 't111_exportdaily.js', 't112_exportpermit.js', 't113_adminlog.js',
     't114_mfacrew.js', 't115_checkshot.js', 't116_quickwork.js', 't117_break.js', 't118_trueod.js', 't119_secondshot.js',
-    't120_csrecord.js', 't121_feedbackall.js', 't122_lowslope.js', 't123_newrunshort.js', 't124_crewview.js', 't126_noticeack.js', 't127_billing0.js', 't128_betaresults.js', 't129_taplink.js']) },
+    't120_csrecord.js', 't121_feedbackall.js', 't122_lowslope.js', 't123_newrunshort.js', 't124_crewview.js', 't126_noticeack.js', 't127_billing0.js', 't128_betaresults.js', 't129_taplink.js', 't130_onboard.js']) },
   { name: 'py', variant: 'plain', tests: T('.', ['permit_active_screen.py']) },
   { name: 'main_older', variant: 'plain', tests: T('.', ['t88.js', 't89_photostamp.js', 't92_backnow.js', 't93_livecam.js', 't94_parallel.js',
     't98_betaend.js', 't99_removed.js', 't100_runpdf.js']) },
