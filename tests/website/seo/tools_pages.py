@@ -155,7 +155,7 @@ GRADE_UI = r'''
 def grade_page():
     path = '/tools/pipe-grade-calculator/'
     title = 'Pipe Grade Calculator (Invert Elevations) | The Pipelayer\'s Bible'
-    desc = 'Free pipe grade calculator: start invert, slope or drop, and run length give invert elevations at every station, the fall and inches per foot, in feet and feet-inches.'
+    desc = 'Free pipe grade calculator: start invert, slope or elevation change, and run length give invert elevations at every station, the fall and inches per foot, in feet and feet-inches.'
     trail = [('Home', '/'), ('Free tools', '/tools/'), ('Pipe grade calculator', path)]
     body = hero(trail, 'Free tool', 'Pipe grade calculator',
                 'Invert elevations along a straight grade, at whatever interval you want, plus the slope between two inverts. Feet to two decimals and feet-inches to the nearest 1/16".') + '''
@@ -167,9 +167,9 @@ def grade_page():
     <div class="field"><label for="g-len">Run length <span class="hint">feet</span></label><input id="g-len" type="number" inputmode="decimal" step="any" min="0" value="250"></div>
     <fieldset class="field"><legend>Grade given as</legend><div class="choices">
       <label><input type="radio" name="g-mode" value="pct" checked> Slope %</label>
-      <label><input type="radio" name="g-mode" value="drop"> Total drop (ft)</label></div></fieldset>
+      <label><input type="radio" name="g-mode" value="drop"> Elevation change (ft)</label></div></fieldset>
     <div class="field" id="g-slope-wrap"><label for="g-slope">Slope <span class="hint">percent, e.g. 0.40</span></label><input id="g-slope" type="number" inputmode="decimal" step="any" min="0" value="0.40"></div>
-    <div class="field" id="g-drop-wrap" hidden><label for="g-drop">Total drop over the run <span class="hint">feet</span></label><input id="g-drop" type="number" inputmode="decimal" step="any" min="0"></div>
+    <div class="field" id="g-drop-wrap" hidden><label for="g-drop">Elevation change over the run <span class="hint">feet</span></label><input id="g-drop" type="number" inputmode="decimal" step="any" min="0"></div>
     <fieldset class="field"><legend>Direction from the start</legend><div class="choices">
       <label><input type="radio" name="g-dir" value="down" checked> Falls</label>
       <label><input type="radio" name="g-dir" value="up"> Rises</label></div></fieldset>
