@@ -50,6 +50,9 @@ rep("""      if (typeof v === 'string') return /^data:image\\//.test(v) ? 'sha25
 """      if (typeof v === 'string') { if (!/^data:image\\//.test(v)) return v; const h = pbPhotoSha(v); return 'sha256:' + ((pbClr && pbClr.get(h)) || h); }
       if (Array.isArray(v)) return v.map(x => walk(x, false));""")
 
+rep("""return (typeof v === 'string' && /^data:image\\//.test(v)) ? 'sha256:' + pbPhotoSha(v) : v; })), true);""",
+"""return (typeof v === 'string' && /^data:image\\//.test(v)) ? 'sha256:' + ((h) => (pbClr && pbClr.get(h)) || h)(pbPhotoSha(v)) : v; })), true);""")
+
 # the feature
 rep("""  window.__pbPhDebug = {""",
 """  // ---- speed2 #52: clear phone copies of photos the company already has (see 03_photo_clear.py) ----

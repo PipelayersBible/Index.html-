@@ -64,8 +64,8 @@ const FULL = `(()=>{const put=IDBObjectStore.prototype.put;IDBObjectStore.protot
   const info = await p.evaluate(async (ids) => { const out = []; for (const id of ids) { const e = window.__ra().find((x) => x.id === id); const un = await window.__ev('pbPreflightPdfImages')([e], () => {}); const doc = window.__ev('pbRptMakeSafe')(e, { unreadable: un }); const b = new Uint8Array(doc.output('arraybuffer')); let t = ''; for (let i = 0; i < b.length; i += 65536) t += String.fromCharCode.apply(null, b.subarray(i, i + 65536)); out.push({ fp: window.pbRptFingerprintOf(e), images: (t.match(/\/Subtype\s*\/Image/g) || []).length, cleared: (e._phoneCleared || []).length }); } return out; }, [r40, r80, r120]);
   T.ok(info[0].fp === fp0[0] && info[1].fp === fp0[1] && info[2].fp === fp0[2], 'record fingerprints (rev) unchanged');
   T.ok(info[0].images === 2 && info[1].images === 2 && info[0].cleared === 2, 'PDF still has a picture in each place; the run lists what was cleared', info);
-  const keys1 = (await T.stored(p)).storeKeys;
-  T.ok(keys1 === keys0, 'the 4 originals left the photo store (4 small "kept by your company" pictures took their place)', { before: keys0, after: keys1 });
+  const keys1 = (await T.stored(p)).storeKeys, distinct = new Set(Object.values(after).flat().map((x) => x.split('=')[1])).size;
+  T.ok(keys1 === distinct, 'the photo store holds exactly the photos Records still has: the originals left (the failed try\'s pictures too)', { before: keys0, after: keys1, distinct });
   T.ok((await scan()).count === 0 && (await banner()) === null, 'nothing more offered');
   await p.close({ runBeforeUnload: false });
   p = await page();
