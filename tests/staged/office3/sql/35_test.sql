@@ -6,7 +6,7 @@ declare own uuid := 'e03416b7-6086-40a5-8d42-9267b846fc26'; f uuid := '4fc9c8ae-
   procedure_as text;
 begin
   -- setup: M becomes a foreman; a crew run of P waiting for F's claim
-  update public.company_members set role = 'foreman', title = null where company_id = co and user_id = m;
+  update public.company_members set role = 'foreman' where company_id = co and user_id = m;
   insert into pb_prod.entries (user_id, company_id, client_entry_id, kind, job_number, job_key, work_date, record, crew_state, assigned_to, assigned_at, role)
     values (p, co, 'office3-test-run-1', 'run', '26014', '26014', current_date, '{}'::jsonb, 'pending', f, now(), 'pipelayer') returning id into eid;
   -- F is removed by the owner (what the crew function's take_out does)
@@ -24,7 +24,7 @@ begin
     || ' entry_to_m=' || ((select assigned_to from pb_prod.entries where id = eid) = m)::text
     || ' assign_action=' || exists (select 1 from pb_prod.crew_actions a where a.entry_id = eid and a.action = 'assign' and a.target_user = m and a.by_user = own)::text
     || ' new_link=' || exists (select 1 from pb_prod.crew_links where foreman_id = m and pipelayer_id = p and ended_at is null)::text
-    || ' old_link_ended=' || not exists (select 1 from pb_prod.crew_links where foreman_id = f and ended_at is null)::text
+    || ' old_link_ended=' || (not exists (select 1 from pb_prod.crew_links where foreman_id = f and ended_at is null))::text
     || ' push_m=' || exists (select 1 from pb_push.outbox o where o.user_id = m and o.dedupe_key like 'handover:%')::text
     || ' audit=' || exists (select 1 from pb_crew.audit a where a.action = 'handover' and a.target_user = f and a.outcome = 'ok')::text;
   r := public.pb_crew_handover(f, m, own); out := out || ' | again runs=' || (r->>'runs') || ' crew=' || (r->>'crew');
@@ -35,8 +35,8 @@ begin
   begin r := public.pb_crew_leave(own, co); out := out || ' | other uid ALLOWED'; exception when others then out := out || ' | other uid=' || sqlerrm; end;
   r := public.pb_crew_leave(p, co);
   out := out || ' | leave ok=' || (r->>'ok') || ' co=' || coalesce(r->>'company_name', '') || ' role=' || coalesce(r->>'role', '')
-    || ' member_gone=' || not exists (select 1 from public.company_members where user_id = p)::text
-    || ' links_ended=' || not exists (select 1 from pb_prod.crew_links where pipelayer_id = p and ended_at is null)::text
+    || ' member_gone=' || (not exists (select 1 from public.company_members where user_id = p))::text
+    || ' links_ended=' || (not exists (select 1 from pb_prod.crew_links where pipelayer_id = p and ended_at is null))::text
     || ' left_note=' || exists (select 1 from pb_billing.left_company l where l.user_id = p and l.company_id = co and l.dismissed_at is null)::text
     || ' push_owner=' || exists (select 1 from pb_push.outbox o where o.user_id = own and o.dedupe_key like 'leave:' || p::text || '%')::text
     || ' audit=' || exists (select 1 from pb_crew.audit a where a.action = 'leave' and a.actor = p and a.outcome = 'ok')::text;
