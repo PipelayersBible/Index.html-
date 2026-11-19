@@ -1,0 +1,8 @@
+0a1
+> // (streamline: ticks the Terms on the password screen; the "signed in" words are a note, #pbSayDone, not a box)
+15c16
+< const modalText=(p)=>p.evaluate(()=>[...document.querySelectorAll('.pb-modal, .pb-modal-overlay, [role=dialog]')].filter(e=>getComputedStyle(e).display!=='none').map(e=>e.textContent).join(' | '));
+---
+> const modalText=(p)=>p.evaluate(()=>[document.getElementById('pbSayDone')].filter(e=>e&&!e.hidden).concat([...document.querySelectorAll('.pb-modal, .pb-modal-overlay, [role=dialog]')].filter(e=>getComputedStyle(e).display!=='none')).map(e=>e.textContent).join(' | '));
+21a23
+>     else if(await p.$('#setPwTerms')&&await p.isVisible('#setPwTerms'))await p.check('#setPwTerms'); // streamline 01: the tick is on the screen
