@@ -111,7 +111,7 @@ async function pbRespBuild(res) {
   try { return pbBuildOf(await res.clone().text()); } catch (e) { return null; }
 }
 async function pbBadList() {
-  try { const c = await caches.open(PB_META), r = await c.match(pbBadKey()); const a = r ? await r.json() : []; return Array.isArray(a) ? a : []; } catch (e) { return []; }
+  try { if (!(await caches.has(PB_META))) return []; const c = await caches.open(PB_META), r = await c.match(pbBadKey()); const a = r ? await r.json() : []; return Array.isArray(a) ? a : []; } catch (e) { return []; }
 }
 async function pbBadAdd(sha) {
   try { const a = (await pbBadList()).filter((x) => x !== sha).concat([sha]).slice(-10); const c = await caches.open(PB_META); await c.put(pbBadKey(), new Response(JSON.stringify(a), { headers: { 'content-type': 'application/json' } })); } catch (e) {}
@@ -140,6 +140,7 @@ async function pbLazyTidy() {
     const c = await caches.open(PB_SHELL), keep = new Set();
     for (const k of [pbShellKey(self.registration.scope), pbPrevKey()]) { const r = await c.match(k); if (r) pbLazyNames(await r.text()).forEach((u) => keep.add(u)); }
     if (!(await c.match(pbShellKey(self.registration.scope)))) return; // nothing kept: nothing to judge by
+    if (!(await caches.has(PB_LAZY))) return; // never made one (a page without parts): none is made just to look
     const l = await caches.open(PB_LAZY);
     for (const req of await l.keys()) if (!keep.has(req.url)) await l.delete(req);
   } catch (e) {}

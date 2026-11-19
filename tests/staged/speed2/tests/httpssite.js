@@ -4,7 +4,7 @@
 // Optional shaping per request: S.delay (ms before index.html answers), S.hang (index.html never answers),
 // S.kbps (bandwidth for index.html and pbx/*, after the delay).
 'use strict';
-const https = require('https'), fs = require('fs'), path = require('path');
+const https = require('https'), fs = require('fs'), path = require('path'), zlib = require('zlib'), crypto = require('crypto');
 const RIG = path.resolve(__dirname, '../../../bughunt_nov17/offline/rig');
 const FAKE = fs.readFileSync(RIG + '/fakesb2.js', 'utf8');
 const SPKI = 'coLUDdYP7UvBwb8Nbdy3Rut8dtM0+q8TvIYI77qrTbU=';
@@ -22,8 +22,14 @@ function start(site, port) {
     const big = /\/index\.html$|\/pbx\//.test(p);
     if (big && p.endsWith('index.html') && S.hang) return; // lie-fi
     if (big && S.delay) await new Promise((x) => setTimeout(x, S.delay));
-    const body = fs.readFileSync(f);
-    r.writeHead(200, { 'content-type': T[path.extname(f)] || 'application/octet-stream', 'cache-control': 'no-cache', 'content-length': body.length });
+    let body = fs.readFileSync(f);
+    // like GitHub Pages: an ETag (304 when it matches) and gzip for text
+    const etag = '"' + crypto.createHash('sha1').update(body).digest('hex').slice(0, 16) + '"';
+    if (q.headers['if-none-match'] === etag) { r.writeHead(304, { etag, 'cache-control': 'no-cache' }); return r.end(); }
+    const h = { 'content-type': T[path.extname(f)] || 'application/octet-stream', 'cache-control': 'no-cache', etag };
+    if (/gzip/.test(q.headers['accept-encoding'] || '') && /\.(html|js|json|webmanifest)$/.test(f)) { body = zlib.gzipSync(body, { level: 9 }); h['content-encoding'] = 'gzip'; }
+    h['content-length'] = body.length;
+    r.writeHead(200, h);
     if (!big || !S.kbps) return r.end(body);
     const per = Math.max(1024, Math.round(S.kbps * 1024 / 8 / 10)); let i = 0; // 10 chunks a second
     const tick = () => { if (i >= body.length) return r.end(); r.write(body.subarray(i, i + per)); i += per; setTimeout(tick, 100); }; tick();
