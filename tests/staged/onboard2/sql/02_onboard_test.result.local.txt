@@ -1,0 +1,20 @@
+psql:02_onboard_test.sql:867: ERROR:  RESULT: 0.grants anonMake=false anonPeek=true authSvc=false authLost=true anonLost=false authInner=false
+ | 1.O.make=ok toklen=32 code=true role=pipelayer exp_h=24 pairName=Foreman F O.makeForeman=ok O.makePm=pb:bad_role O.pairWithPipelayer=pb:not_a_foreman O.pairForemanLink=pb:bad_role
+ | 2.F.makePl=ok F.makeFm=pb:foreman_pipelayer_only F.linkPair=true
+ | 3.P.make=pb:not_company_account
+ | 4.anon.peek=ok co=DIG Civil Construction role=pipelayer label=Mike pair=Foreman F codeBack=true peekByCode=ok codeHidden=true peekChangedNothing=true peekWrong=pb:link_not_found anon.join=denied anon.find=denied anon.svc=denied anon.lost=denied anon.start=denied
+ | 5.svc.claim=ok kind=join claimAgain=pb:link_busy join=ok role=pipelayer legal={"terms": true, "notice": true} pairedWith=Foreman F member=pipelayer label=Mike own=Mike Rivera crewLink=true terms=1.0/1.0/join link · r17.05 test notice=3 claimUsed=pb:link_used peekUsed=pb:link_used
+ | 6.N2.join=ok role=pipelayer paired=Foreman F again=pb:link_used N2.crewLink=true N2.terms=true
+ | 7.P.join=pb:already_member P.role=pipelayer
+ | 8.F.revokeOwners=pb:not_company_account O.revoke=ok peekRevoked=pb:link_revoked
+ | 9.peekExpired=pb:link_expired
+ | 10.O.links=4 statuses=expired,joined,joined,revoked joinedName=Mike pairShown=Foreman F seats={"paid": null, "plan": "paid", "people": 5, "waiting": 0, "interval": null} room=null F.links=1 F.mgr=false F.seats=hidden F.pairedSelf=true P.links=0
+ | 11.N1.handoff=ok min=15 peekHandoffAsJoin=pb:link_not_found claim=handoff email=m-test1@crew.pipelayersbible.com use=ok user=true again=pb:link_not_found
+ | 12.peekCodeBraked=pb:busy peekFreshTokenBraked=ok
+ | 13.trialUsedBefore=6 make1=ok make2=pb:trial_seats seats={"plan": "trial", "limit": 6, "people": 5, "waiting": 1} claimLast=ok betaEndedMake=pb:beta_ended betaEndedPeek=pb:company_closed betaEndedClaim=pb:company_closed
+ | 14.paidSeats={"paid": 5, "plan": "paid", "people": 5, "waiting": 0, "interval": "month"} paidMake=ok readOnlyMake=pb:read_only room=pb:read_only
+ | 15.liveMade=10 then=pb:too_many_links
+ | 16.O.off=ok foremansLinkNow=pb:link_revoked officesLinkNow=ok F.off=pb:foreman_links_off F.sees=false F.setting=pb:not_company_account F.svc=permission denied for function pb_onboard_svc
+ | 17.N1sessions=2 F.lost=pb:not_company_account O.lostEmailAcct=pb:has_email O.lostPm=pb:has_email O.lost=ok removed=true name=Mike role=pipelayer pair=Foreman F seats=5>4 N1member=false N1sessions=0 N1crewLink=false audit=requested,ok link=pipelayer/Mike/true/true newPhoneJoin=ok paired=Foreman F listReplaces=Mike
+ | 18.start=ok crew=4 signedIn=1 linksWaiting=1 F.start=pb:not_company_account
+ | events=abandoned:1,claimed:4,handoff_made:1,handoff_used:1,joined:3,lost_phone:1,made:20,paired:3,refused:5,revoked:1,setting:2
