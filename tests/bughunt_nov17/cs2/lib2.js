@@ -20,7 +20,8 @@ module.exports=async function(opts={}){
  H.closeModals=async(max=6)=>{const seen=[];for(let i=0;i<max;i++){const m=await H.modal();if(!m)break;const bt=await H.modalBtns();seen.push([m.slice(0,160),bt]);const pick=bt.find(x=>/^(OK|I Understand|Close)$/i.test(x))||bt[bt.length-1];await H.modalClick(pick);await p.waitForTimeout(300);}return seen;};
  H.lock=async(over={})=>{
   await p.evaluate(()=>pbGoto('confinedPermit'));await p.waitForTimeout(800);
-  const d=new Date();const pad=n=>String(n).padStart(2,'0');const date=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  // the page's own date (the runner may pin the page clock), not the node clock
+  const date=await p.evaluate(()=>{const d=new Date();const pad=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());});
   const vals=Object.assign({cpJobsite:'Test Sewer',cpAddress:'1 Main St',cpSpace:'MH-4',cpPurpose:'Inspect',cpDate:date,cpStart:'00:01',cpEnd:'23:59',cpHazards:'H2S',cpControls:'Vent',cpVentFail:'Flag',cpRescue:'911',cpComms:'Voice',cpSupervisor:'Sam Sup',cpSupervisorInitials:'SS',cpAttendant:'Al Att'},over);
   await p.evaluate(v=>{for(const k in v){const el=document.getElementById(k);if(!el)throw new Error('no field '+k);el.value=v[k];el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}},vals);
   await p.evaluate(()=>window.pbLockConfinedPermit());await p.waitForTimeout(700);

@@ -3,7 +3,7 @@ const boot=require(__dirname+'/../../rig/boot');const co=require(__dirname+'/../
 const URL_=process.env.URL||process.env.PB_URL||'http://127.0.0.1:8864/cur.html';
 (async()=>{const {b,p}=await boot(URL_,{init:co});const H=F(p);
  await p.evaluate(()=>pbGoto('confinedPermit'));await p.waitForTimeout(800);
- const d=new Date();const pad=n=>String(n).padStart(2,'0');const date=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+ const date=await p.evaluate(()=>{const d=new Date();const pad=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());});
  const vals={cpJobsite:'Test Sewer',cpAddress:'1 Main St',cpSpace:'MH-4',cpPurpose:'Inspect',cpDate:date,cpStart:'00:01',cpEnd:'23:59',cpHazards:'H2S',cpControls:'Vent',cpVentFail:'Flag',cpRescue:'911',cpComms:'Voice',cpSupervisor:'Sam Sup',cpSupervisorInitials:'SS',cpAttendant:'Al Att'};
  await p.evaluate(v=>{for(const k in v){const el=document.getElementById(k);el.value=v[k];el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}},vals);
  await p.evaluate(()=>window.pbLockConfinedPermit());await p.waitForTimeout(600);
