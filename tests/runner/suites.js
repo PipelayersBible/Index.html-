@@ -18,7 +18,7 @@ const suites = [
     't101_runphotos.js', 't102_seal.js', 't103_aireads.js', 't104_permitack.js', 't105_terms.js', 't106_cavestate.js', 't107_mfa.js',
     't108_export.js', 't109_crewnotice.js', 't110_clockpdf.js', 't111_exportdaily.js', 't112_exportpermit.js', 't113_adminlog.js',
     't114_mfacrew.js', 't115_checkshot.js', 't116_quickwork.js', 't117_break.js', 't118_trueod.js', 't119_secondshot.js',
-    't120_csrecord.js', 't121_feedbackall.js', 't122_lowslope.js', 't123_newrunshort.js', 't124_crewview.js', 't126_noticeack.js', 't127_billing0.js', 't128_betaresults.js', 't129_taplink.js', 't130_onboard.js']) },
+    't120_csrecord.js', 't121_feedbackall.js', 't122_lowslope.js', 't123_newrunshort.js', 't124_crewview.js', 't126_noticeack.js', 't127_billing0.js', 't128_betaresults.js', 't129_taplink.js', 't130_onboard.js', 't131_trench20.js']) },
   { name: 'r1706_plain', variant: 'plain', tests: T('r1706/staterules/tests', ['t130_staterules.js']).concat(T('r1706/office3/tests', ['t_o3_31_board.js', 't_o3_32_jobinfo_pms.js', 't_o3_34_36_office.js', 't_o3_35_leave_handover.js'])) },
   { name: 'r1706_hook', variant: 'hook', tests: T('r1706/office3/tests', ['t_o3_30_31_permit.js', 't_o3_37_38_39_records.js']).concat(T('r1706/daily3/tests', ['t01_crew_default.js', 't02_night_shift.js', 't03_safety_daily.js', 't04_safety_search.js', 't05_customer_signature.js', 't06_last_run_crew.js'])) },
   { name: 'py', variant: 'plain', tests: T('.', ['permit_active_screen.py']) },
@@ -30,7 +30,7 @@ const suites = [
   { name: 'daily2', variant: 'hook', tests: T('bughunt_nov17/daily2', ['t01_twojobs.js', 't02_nightshift.js', 't03_undo_remove.js', 't04_changed_after_sign.js']) },
   { name: 'grade', variant: 'hook', tests: T('bughunt_nov17/grade', ['g1.js', 'g2.js', 'g3.js', 'g4.js', 'g5.js', 'g6.js', 'g7.js', 'repo_t115_checkshot.js', 'repo_t117_break.js',
     't01_pdf_inverts.js', 't02_pdf_stations.js', 't03_ai_changed.js', 't04_laidstats.js', 't05_csparse.js', 't06_laidlog.js', 't07_resume_volume.js', 't07b_volume_control.js']) },
-  { name: 'grade2', variant: 'hook', tests: T('bughunt_nov17/grade2', ['tests/t01_run2_stations.js', 'tests/t02_reducer_samesta.js', 'tests/t03_step_volume.js', 'tests/t04_step_exact.js',
+  { name: 'grade2', variant: 'hook', tests: T('bughunt_nov17/grade2', ['tests/t01_run2_stations.js', 'tests/t02_reducer_samesta.js', 'tests/t03_step_volume.js', 'tests/t04_step_exact.js', 'tests/t_g40_reload_exact.js', 'tests/t_g41_prefix_stations.js', 'tests/t_g42_short_elev_job.js', 'tests/t_g43_shots_reload.js',
     'tests/cutsheet.js', 'tests/edge.js',
     { file: 'ref/run.js', args: ['0', '24', 'cur.html', '1'], id: 'bughunt_nov17/grade2/ref/run.js[0-24]', timeout: 900 },
     { file: 'ref/run_flip.js', args: ['0', '12', 'cur.html', '1'], id: 'bughunt_nov17/grade2/ref/run_flip.js[0-12]', timeout: 900 },
@@ -73,10 +73,6 @@ for (const t of suites.find((s) => s.name === 'perf').tests) SKIP[t] = PERF;
 
 // Run, but known to fail on the live build because of an open app bug (key = test id, value = the bug).
 const XFAIL = {
-  'bughunt_nov17/grade2/tests/t04_step_exact.js': 'open bug, grade2 audit 04 (not in any release yet; held back from r17.02 because it broke the Edit Run Data reload check, grade2/ref/run_lock.js; patches up to r17.02 '
-    + 'carry grade2 01-03 only): Architect\'s rod, a Run 2 Start set from a measured step is calculated from its Invert box, '
-    + 'which is rounded to 1/16 in, so its readings can show a sixteenth off (BOP 6\'-11 15/16" instead of 6\'-11 7/8"). '
-    + 'Fix: /tmp/claude-0/audit/grade2/patches/04_step_start_exact.py.',
 };
 
 // How a test is judged. Default: 'verdict' if the test (or a ./lib it requires) prints PASS/FAIL lines or sets an exit code,
