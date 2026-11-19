@@ -237,12 +237,12 @@ ROD_UI = r'''
   var M = PBT;
   function calc() {
     var out = $('r-out'), where = radio('r-where'), key = $('r-pipe').value;
-    $('r-pipe-wrap').hidden = where === 'inv';
+    $('r-pipe-wrap').hidden = false; // the bottom-of-pipe reading needs the wall, wherever the shot was taken
     var bm = num('r-bm'), bs = num('r-bs'), fs = num('r-fs'), des = num('r-des');
     if ([bm, bs, fs, des].some(function (v) { return Number.isNaN(v); })) { out.innerHTML = msg('Check the numbers: one of them is not a number.', true); return; }
     if (bm === null || bs === null) { out.innerHTML = msg('Enter the benchmark elevation and the backsight reading on it.'); return; }
     if (bs < 0 || (fs !== null && fs < 0)) { out.innerHTML = msg('A rod reading can\'t be negative. A rod is read up from its foot.', true); return; }
-    var h = M.hi(bm, bs), p = where === 'inv' ? null : M.pipeFt(key);
+    var h = M.hi(bm, bs), p = M.pipeFt(key);
     var html = '<div class="answers">' + answer('HI (height of instrument)', M.fmt(h, 3) + ' ft', M.toArch(h), 'r-hi');
     if (fs !== null) {
       var e = M.elevFromRod(h, fs), inv = M.invertFromShot(e, where, key);
@@ -250,7 +250,7 @@ ROD_UI = r'''
       html += answer('Invert', M.fmt(inv, 3) + ' ft', where === 'inv' ? 'Rod on the invert' : (where === 'top' ? 'Shot elevation minus ' + M.fmt(p.topFromInv, 3) + ' ft' : 'Shot elevation plus ' + M.fmt(p.wallFt, 3) + ' ft'), 'r-inv');
       if (des !== null) { var diff = inv - des; html += answer('Against design', Math.abs(diff) < 0.0005 ? 'On grade' : M.fmt(Math.abs(diff), 3) + ' ft ' + (diff > 0 ? 'high' : 'low'), M.toArch(Math.abs(diff)) + ' ' + (diff > 0 ? 'above' : diff < 0 ? 'below' : 'from') + ' the design invert', 'r-diff'); }
     }
-    if (des !== null) html += answer('Rod reading to lay to', M.fmt(M.targetReading(h, des, where, key), 3) + ' ft', M.toArch(M.targetReading(h, des, where, key)) + (where === 'inv' ? ' with the rod on the invert' : where === 'top' ? ' with the rod on top of the pipe' : ' with the rod under the pipe'), 'r-target');
+    if (des !== null) { var bopR = M.targetReading(h, des, 'bop', key); html += answer('Rod reading to bottom of pipe', M.fmt(bopR, 3) + ' ft', M.toArch(bopR) + ' with the rod under the pipe (design invert ' + M.fmt(des, 2) + ' less a ' + M.fmt(p.wallFt, 3) + ' ft wall)', 'r-target'); }
     html += '</div>';
     if (p) html += '<p class="msg">' + esc(p.name) + ': outside diameter ' + p.odIn + ' in, wall ' + p.wallIn + ' in (' + M.fmt(p.wallFt, 3) + ' ft). Top of pipe sits ' + M.fmt(p.topFromInv, 3) + ' ft above the invert.</p>';
     if (fs === null && des === null) html += msg('Add the rod reading at the new point, or a design invert, to keep going.');
@@ -288,9 +288,9 @@ def rod_page():
 <h2>How it works</h2>
 <p class="formula">HI = benchmark elevation + backsight</p>
 <p class="formula">elevation = HI &minus; rod reading</p>
-<p class="formula">rod reading to lay to = HI &minus; elevation you want at the foot of the rod</p>
+<p class="formula">rod reading to bottom of pipe = HI &minus; (design invert &minus; wall)</p>
 <p>With the rod on the invert, the elevation is the invert. On top of the pipe, the foot of the rod is one outside diameter above the outside bottom, so the invert is the shot elevation minus the outside diameter plus one wall. Under the pipe (bottom of pipe, BOP), the invert is one wall higher than the shot.</p>
-<p>Example with the numbers already filled in: 105.20 + 4.36 = an HI of 109.56. A reading of 12.85 on top of 8" SDR 35 is an elevation of 96.71. Take off 0.68 ft (8.4" outside diameter less a 0.24" wall) and the invert is 96.03, right on the design invert.</p>
+<p>Example with the numbers already filled in: 105.20 + 4.36 = an HI of 109.56. A reading of 12.85 on top of 8" SDR 35 is an elevation of 96.71. Take off 0.68 ft (8.4" outside diameter less a 0.24" wall) and the invert is 96.03, right on the design invert. To lay that pipe to a 96.03 invert, the rod under the pipe should read 109.56 &minus; (96.03 &minus; 0.02) = 13.55.</p>
 <h2>Pipe sizes used</h2>
 <p>Outside diameters and walls come from the same tables the full app uses: PVC SDR 35 sewer pipe in 4" to 15" (outside diameters per ASTM D3034, wall = outside diameter &divide; 35) and PVC C900 DR18 in 4" to 12" (ductile iron outside diameters, wall = outside diameter &divide; 18). Those are minimum walls; real pipe runs a hair thicker, a few thousandths of a foot at most on these sizes. For any other pipe, put the rod on the invert or use your pipe's spec sheet.</p>
 <div class="note"><p>Shoot a second known point before you trust an HI. If two hubs give two different HIs, find out why before laying pipe. The <a href="/grade-and-cut-sheet-app/">full app</a> also handles architect's and Lenker rods and checks the HI against every hub you shoot.</p></div>

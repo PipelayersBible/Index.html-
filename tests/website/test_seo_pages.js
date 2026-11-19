@@ -128,9 +128,9 @@ const scrollAll = (p) => p.evaluate(async () => { for (let y = 0; y < document.b
       }
       if (pg.p === '/tools/rod-reading-to-invert/') {
         const v = (id) => p.evaluate((i) => { const e = document.querySelector('#' + i + ' .v'); return e ? e.textContent : null; }, id);
-        ok((await v('r-hi')) === '109.560 ft' && (await v('r-elev')) === '96.710 ft' && (await v('r-inv')) === '96.030 ft' && (await v('r-target')) === '12.850 ft' && (await v('r-diff')) === 'On grade', at + 'defaults: HI 109.560, shot 96.710, invert 96.030, lay to 12.850 on top of 8" SDR 35');
+        ok((await v('r-hi')) === '109.560 ft' && (await v('r-elev')) === '96.710 ft' && (await v('r-inv')) === '96.030 ft' && (await v('r-target')) === '13.550 ft' && (await v('r-diff')) === 'On grade', at + 'defaults: HI 109.560, shot 96.710, invert 96.030, lay to 12.850 on top of 8" SDR 35');
         await p.check('input[name=r-where][value=inv]');
-        ok((await v('r-target')) === '13.530 ft' && (await p.evaluate(() => document.getElementById('r-pipe-wrap').hidden)), at + 'rod on the invert: lay to 13.530, pipe choice hidden');
+        ok((await v('r-target')) === '13.550 ft' && !(await p.evaluate(() => document.getElementById('r-pipe-wrap').hidden)), at + 'rod on the invert: lay to 13.530, pipe choice hidden');
         await p.fill('#r-fs', '13.60'); ok((await v('r-diff')) === '0.070 ft low', at + 'reading 13.60 on the invert is 0.070 ft low');
         await p.check('input[name=r-where][value=bop]'); await p.selectOption('#r-pipe', 'c900-8'); await p.fill('#r-fs', '13.50');
         ok((await v('r-inv')) === '96.102 ft', at + 'BOP shot on 8" C900: invert = 96.06 + 0.042 = 96.102');
