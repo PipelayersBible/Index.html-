@@ -1,0 +1,18 @@
+0a1
+> // (streamline: Join Crew goes to Home with a note, #pbSayDone, instead of the You're In sheet and its Start button)
+9a11
+> const said=(p)=>p.evaluate(()=>{const n=document.getElementById('pbSayDone');return n&&!n.hidden?n.textContent:'';}); // streamline 02: the join is said in a note on Home
+100,101c102,103
+<  t=await sheet(H);const me=await H.evaluate(()=>window.__pbObMe());
+<  ok(/You joined DIG Civil Construction as Pipelayer\. You’re on Ray’s crew\./.test(t),'4: "You\'re In ... You\'re on Ray\'s crew"');
+---
+>  t=await said(H);const me=await H.evaluate(()=>window.__pbObMe());
+>  ok(/You joined DIG Civil Construction as Pipelayer\. You’re on Ray’s crew\./.test(t)&&!(await H.$('#pbObSheet')),'4: Home, with a note "You joined ... You\'re on Ray\'s crew" (no You\'re In sheet)');
+107c109
+<  await H.click('#pbObStartBtn');await H.waitForTimeout(3000);
+---
+>  await H.waitForTimeout(3000);
+128c130
+<  ok(/You joined DIG Civil Construction/.test(await sheet(F6))&&!!L6.used_at,'6: with signal, Join Crew works');
+---
+>  ok(/You joined DIG Civil Construction/.test(await said(F6))&&!!L6.used_at,'6: with signal, Join Crew works');
