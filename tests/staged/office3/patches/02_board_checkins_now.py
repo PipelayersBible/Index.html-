@@ -27,8 +27,8 @@ rep("""  function renderRosterList() {
 
 rep("""  setInterval(() => { if (pbCurrentScreen === 'prodDashboard' && document.visibilityState === 'visible') pbBdLoad(false).catch(() => null); }, 60 * 1000);""",
 """  setInterval(() => { if (pbCurrentScreen === 'prodDashboard' && document.visibilityState === 'visible') pbBdLoad(false).catch(() => null); }, 60 * 1000);
-  /* office3 #31: someone inside a reported permit: look again every 20 s (a check-out shows within about 20 s) */
-  setInterval(() => { try { if (pbCurrentScreen !== 'prodDashboard' || document.visibilityState !== 'visible' || pbBd.busy) return; const P = pbBd.permits, L = P && Array.isArray(P.permits) ? P.permits : []; if (!L.some(x => x && !x.closed && Number((x.status || {}).inside) > 0) || Date.now() - (pbBd.at || 0) < 18000) return; pbBdLoad(true).catch(() => null); } catch (e) {} }, 20 * 1000);""")
+  /* office3 #31: someone inside a reported permit: reload about every 20 s (a check-out shows within about 20 s) */
+  setInterval(() => { try { if (pbCurrentScreen !== 'prodDashboard' || document.visibilityState !== 'visible' || pbBd.busy) return; const P = pbBd.permits, L = P && Array.isArray(P.permits) ? P.permits : []; if (!L.some(x => x && !x.closed && Number((x.status || {}).inside) > 0) || Date.now() - (pbBd.at || 0) < 18000) return; pbBdLoad(true).catch(() => null); } catch (e) {} }, 10 * 1000); // looks every 10 s, reloads when the copy is 18 s old or more""")
 
 open(dst, 'w', encoding='utf-8').write(s)
 print('ok', dst)

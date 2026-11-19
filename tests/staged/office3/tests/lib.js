@@ -2,8 +2,8 @@
 const path = require('path'), fs = require('fs');
 const RIG = fs.existsSync(path.resolve(__dirname, '../../../rig/co.js')) ? path.resolve(__dirname, '../../../rig') : path.resolve(__dirname, '../rig');
 const boot = require(RIG + '/boot'), co = require(RIG + '/co'), mgr = require(RIG + '/mgr');
-const URL = process.env.PB_URL || 'http://127.0.0.1:8949/cur.html';
-const OUT = (() => { const d = process.env.PB_OUT || '/tmp/claude-0/-home-claude/301429b0-ad8e-5cc1-a9ea-816c5040b6d3/scratchpad/out'; try { fs.mkdirSync(d, { recursive: true }); } catch (e) {} return d; })();
+const URL = process.env.PB_URL || 'http://127.0.0.1:8953/cur.html';
+const OUT = (() => { const d = process.env.PB_OUT || '/tmp/claude-0/-home-claude/301429b0-ad8e-5cc1-a9ea-816c5040b6d3/scratchpad/office3w/out'; try { fs.mkdirSync(d, { recursive: true }); } catch (e) {} return d; })();
 let pass = 0, fail = 0;
 const ok = (c, m) => { if (c) { pass++; console.log('PASS', m); } else { fail++; console.log('FAIL', m); } };
 const done = async (b) => { try { await b.close(); } catch (e) {} console.log(fail ? 'RESULT FAIL ' + fail : 'RESULT PASS ' + pass); process.exit(fail ? 1 : 0); };
