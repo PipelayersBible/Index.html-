@@ -84,6 +84,7 @@ const net = { delay: 0, hang: false, hits: [] };
   ok((await build(p)) === 'r99.01 · 2099-01-01' && !(await line(p)), 'Reload: the new build, no line', await build(p));
   const c3 = await caches(p); ok((c3[shell] || []).some((u) => /pb-prev-page/.test(u)), 'the previous copy is kept for recovery');
   publish('r99.02 · 2099-01-02');
+  await p.waitForTimeout(31000); // the worker checks at most every 30 s
   await p.evaluate(() => navigator.serviceWorker.controller.postMessage({ pb: 'shell-check' }));
   ok(/New version ready/.test((await waitLine(p, 20000)) || ''), 'an app left open gets the line when it comes back to the foreground');
   // 4
@@ -97,6 +98,7 @@ const net = { delay: 0, hang: false, hits: [] };
   // 5 a broken build
   p = await open(undefined, 6000); // shows r99.02 (stored behind the last open)
   publish('r99.03 · 2099-01-03', true);
+  await p.waitForTimeout(31000);
   await p.evaluate(() => navigator.serviceWorker.controller.postMessage({ pb: 'shell-check' }));
   ok(/New version ready/.test((await waitLine(p, 20000)) || ''), 'a broken build is offered like any other (the worker can\'t tell)');
   await Promise.all([p.waitForNavigation({ timeout: 20000 }).catch(() => {}), p.click('#pbUpdateReload')]);
@@ -112,6 +114,7 @@ const net = { delay: 0, hang: false, hits: [] };
   await p.waitForTimeout(3000);
   ok(!(await line(p)), 'the broken page is not offered again');
   publish('r99.04 · 2099-01-04');
+  await p.waitForTimeout(31000);
   await p.evaluate(() => navigator.serviceWorker.controller.postMessage({ pb: 'shell-check' }));
   ok(/New version ready/.test((await waitLine(p, 20000)) || ''), 'a fixed build is offered');
   await p.close();
