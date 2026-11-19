@@ -22,6 +22,7 @@ let failed = 0;
 const ok = (c, w, x) => { console.log((c ? 'PASS ' : 'FAIL ') + w + (x !== undefined ? ' ' + JSON.stringify(x) : '')); if (!c) failed++; };
 fs.rmSync(SITE, { recursive: true, force: true }); fs.mkdirSync(SITE, { recursive: true });
 for (const n of ['index.html', 'sw.js', 'manifest.webmanifest', 'icon-192.png', 'apple-touch-icon.png', 'terms.html', 'privacy.html']) if (fs.existsSync(path.join(FROM, n))) fs.copyFileSync(fs.realpathSync(path.join(FROM, n)), SITE + n);
+for (const n of ['terms.html', 'privacy.html', 'manifest.webmanifest', 'icon-192.png']) if (!fs.existsSync(SITE + n)) fs.copyFileSync(path.resolve(__dirname, '../../../..', n), SITE + n); // the site's other files
 if (fs.existsSync(path.join(FROM, 'pbx'))) fs.cpSync(fs.realpathSync(path.join(FROM, 'pbx')), SITE + 'pbx', { recursive: true });
 const BUILT = fs.existsSync(SITE + 'pbx');
 const page0 = fs.readFileSync(SITE + 'index.html', 'utf8');
@@ -90,7 +91,8 @@ const net = { delay: 0, hang: false, hits: [] };
   // 4
   await p.evaluate(() => { pbGoto('home'); }); await p.waitForTimeout(500);
   await p.getByText('New Run', { exact: true }).click(); await p.waitForTimeout(1200);
-  await p.evaluate(() => { const e = document.getElementById('saJobsite'); e.value = 'Typed, not saved'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+  await p.evaluate(() => { for (const [id, v] of [['startStakeElev', '100'], ['totalDist', '120']]) { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); e.dispatchEvent(new Event('change', { bubbles: true })); } });
+  await p.waitForTimeout(400);
   await p.click('#pbUpdateReload'); await p.waitForTimeout(800);
   const m4 = await p.evaluate(() => { const o = document.getElementById('pbModalOverlay'); return o && getComputedStyle(o).display !== 'none' ? o.innerText.replace(/\s+/g, ' ') : null; });
   ok(/NOT been saved/.test(m4 || '') && (await build(p)) === 'r99.01 · 2099-01-01', 'Reload with typing not saved asks first', (m4 || '').slice(0, 90));
