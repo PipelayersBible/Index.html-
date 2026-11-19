@@ -1,0 +1,40 @@
+screen screen-crewMembers ovf []
+CREW MEMBERS Crew members Acme Pipeline & Underground Construction Incorporated 6 members (your plan includes 5) Add crew member Email Name (optional) Role Foreman Pipelayer Project manager Superintendent Add Crew Member 2 of 30 invites used in the last 24 hours Your crew Tommy Fontaine (you) tester@example.com Owner Active Last signed in DATE Company owner. Can’t be changed or removed here. Bartholomew Montgomery-Fitzgerald the Third averyveryverylongemailaddress.foreman@some-long-company-domain-name.example.com Their own name: Bartholomew Foreman Manager Active Joined DATE · Last signed in DATE Edit Name Make Pipelayer Make Project Manager Make Superintendent Remove Manager Remove from Company pl@x.com Pipelayer Invited — hasn’t opened the link yet Invited DATE Resend Invite Edit Name Make Foreman Make Project Manager Make Superintendent Make Manager Remove from Company Pat PM pm@x.com Project manager Active Joined DATE Edit Name Make Foreman Make Pipelayer Make Superintendent Remove from Company Sue Super sup@x.com Superintendent Not signed in yet Joined DATE Edit Name Make Foreman Make Pipelayer Make Project Manager Remove from Company Waiting to accept Invited Guy inv@x.com Superintendent Invitation sent — waiting for them to accept in the app Invited DATE · Expires DATE Withdraw Invitation old@x.com Foreman Expired, invite again Invited DATE Refresh What PMs, superintendents, managers and removal mean
+
+ u2 role => Change Role Make Bartholomew Montgomery-Fitzgerald the Third a Pipelayer? Cancel Make Pipelayer
+ sent: ["crew-admin",{"company_id":"UUID","action":"set_role","user_id":"u2","role":"pipelayer"}] | status: Bartholomew Montgomery-Fitzgerald the Third is now a Pipelayer.
+
+ u2 manager => Remove Manager Bartholomew Montgomery-Fitzgerald the Third will no longer be a manager: no more company reports, dashboards or plan editing. They stay in the company as Foreman. Keep as Manager Remove Manager
+ sent: ["crew-admin",{"company_id":"UUID","action":"set_manager","user_id":"u2","on":false}] | status: Bartholomew Montgomery-Fitzgerald the Third is no longer a manager.
+
+ u2 pm => Change Role Make Bartholomew Montgomery-Fitzgerald the Third a Project manager? They get their own login to the company account: they see and do what the company account does on every job, and get the alerts of the jobs they are assigned to. They take a paid seat. They can’t change billing or ownership, or change or remove you or another PM. Only you, the owner, can make or remove project managers. Cancel Make Project manager
+ sent: ["crew-admin",{"company_id":"UUID","action":"set_role","user_id":"u2","role":"pm"}] | status: Bartholomew Montgomery-Fitzgerald the Third is now a Project manager.
+
+ u2 super => Change Role Make Bartholomew Montgomery-Fitzgerald the Third a Superintendent? A superintendent has exactly a project manager’s access: their own login to the company account, they see and do what the company account does on every job, and get the alerts of the jobs they are assigned to. They take a paid seat. They can’t change billing or ownership, or change or remove you or another PM or superintendent. Only you, the owner, can make or remove PMs and superintendents. Cancel Make Superintendent
+ sent: ["crew-admin",{"company_id":"UUID","action":"set_role","user_id":"u2","role":"superintendent"}] | status: Bartholomew Montgomery-Fitzgerald the Third is now a Superintendent.
+
+ u4 role => Change Role Pat PM will no longer be a project manager: no more company screens or job alerts, and they come off every job they were assigned to. They stay in the company as Foreman. Cancel Make Foreman
+ sent: ["crew-admin",{"company_id":"UUID","action":"set_role","user_id":"u4","role":"foreman"}] | status: Pat PM is now a Foreman.
+
+ u4 role-pipelayer => Change Role Pat PM will no longer be a project manager: no more company screens or job alerts, and they come off every job they were assigned to. They stay in the company as Pipelayer. Cancel Make Pipelayer
+ sent: ["crew-admin",{"company_id":"UUID","action":"set_role","user_id":"u4","role":"pipelayer"}] | status: Pat PM is now a Pipelayer.
+
+ u4 super => Change Role Make Pat PM a Superintendent? Only the title changes: a superintendent has exactly the same access, and stays on the same jobs. Cancel Make Superintendent
+ sent: ["crew-admin",{"company_id":"UUID","action":"set_role","user_id":"u4","role":"superintendent"}] | status: Pat PM is now a Superintendent.
+
+ u5 pm => Change Role Make Sue Super a Project manager? Only the title changes: a project manager has exactly the same access, and stays on the same jobs. Cancel Make Project manager
+ sent: ["crew-admin",{"company_id":"UUID","action":"set_role","user_id":"u5","role":"pm"}] | status: Sue Super is now a Project manager.
+
+ u5 role => Change Role Sue Super will no longer be a superintendent: no more company screens or job alerts, and they come off every job they were assigned to. They stay in the company as Foreman. Cancel Make Foreman
+ sent: ["crew-admin",{"company_id":"UUID","action":"set_role","user_id":"u5","role":"foreman"}] | status: Sue Super is now a Foreman.
+
+ u3 resend => Resend Invite Send the invite email to pl@x.com again? The sign-in email service only sends a few emails an hour for the whole app. If it doesn’t arrive, check their spam folder and wait an hour before trying again. Cancel Resend Invite
+ sent: ["crew-admin",{"company_id":"UUID","action":"resend","user_id":"u3"}] | status: Invite sent again to pl@x.com. If it doesn’t arrive, wait an hour before trying again: the sign-in email service only sends a few emails an hour.
+
+ u2 remove => Remove from Company Remove Bartholomew Montgomery-Fitzgerald the Third from Acme Pipeline & Underground Construction Incorporated? What this does: they lose access to the company’s screens, and they stop being a manager. Their work stops going to the company from now on. What it doesn’t do: production, tickets and permits they already filed stay the company’s. Their own records on their phone stay on their phone. Their account isn’t closed, and they can be added again later. Keep in Company Remove from Company
+ sent: ["crew-admin",{"company_id":"UUID","action":"remove","user_id":"u2"}] | status: Bartholomew Montgomery-Fitzgerald the Third was removed from the company. There is no other foreman to hand his waiting runs and crew to yet: they wait for any foreman, and his pipelayers can link to a new foreman themselves.
+invite sent: ["crew-admin",{"company_id":"UUID","action":"invite","email":"new@x.com","role":"pipelayer","name":"New Guy"}] | Invite sent to new@x.com. They show as Invited until they open the link and set a password.
+trial seats: The beta includes the company account plus 6 people. Remove someone or wait for a pending invite to expire to add another. | err: | email kept: new2@x.com
+errs []
+
+[exit 0]

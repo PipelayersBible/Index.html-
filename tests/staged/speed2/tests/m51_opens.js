@@ -12,25 +12,28 @@ const SITE = path.join(process.env.PB_OUT || '/tmp', 'm51site');
 const put = (dir, bump) => { fs.rmSync(SITE, { recursive: true, force: true }); fs.mkdirSync(SITE, { recursive: true }); for (const n of fs.readdirSync(dir)) { const f = path.join(dir, n); if (n === 'pbx') fs.cpSync(f, path.join(SITE, 'pbx'), { recursive: true }); else if (/^(index\.html|sw\.js)$/.test(n)) fs.copyFileSync(f, path.join(SITE, n)); } if (bump) { const f = path.join(SITE, 'index.html'); fs.writeFileSync(f, fs.readFileSync(f, 'utf8').replace(/PB_APP_BUILD = '[^']+'/, "PB_APP_BUILD = '" + bump + "'")); } };
 async function measure(S, variantDir) {
   const out = {};
-  const b = await chromium.launch({ proxy: { server: 'direct://', bypass: '*' }, args: HS.chromeArgs(PORT) });
-  const ctx = await b.newContext({ viewport: { width: 400, height: 850 }, serviceWorkers: 'allow' });
-  await ctx.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort()); await ctx.addInitScript(co);
+  const dir = fs.mkdtempSync(path.join(process.env.PB_OUT || '/tmp', 'm51prof-'));
+  // each open is a fresh browser start on the same phone storage (a phone reopening the app later: the worker starts
+  // fresh, so no "just served the copy" window from the previous open carries over)
   const open = async (label) => {
-    const p = await ctx.newPage(); const cdp = await ctx.newCDPSession(p); await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+    const ctx = await chromium.launchPersistentContext(dir, { headless: true, viewport: { width: 400, height: 850 }, serviceWorkers: 'allow', proxy: { server: 'direct://', bypass: '*' }, args: HS.chromeArgs(PORT) });
+    await ctx.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort()); await ctx.addInitScript(co);
+    const p = ctx.pages()[0] || await ctx.newPage(); const cdp = await ctx.newCDPSession(p); await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
     await p.goto(ORIGIN, { waitUntil: 'commit', timeout: 180000 }).catch(() => {});
     let home = null;
     try { await p.waitForFunction(() => window.__pbMainInit && document.querySelector('#screen-home.active') && typeof window.pbGoto === 'function', null, { timeout: 180000, polling: 100 }); home = await p.evaluate(() => Math.round(performance.now())); } catch (e) { home = 'timeout'; }
     const fcp = await p.evaluate(() => { const e = performance.getEntriesByName('first-contentful-paint')[0]; return e ? Math.round(e.startTime) : null; }).catch(() => null);
     (out[label] = out[label] || []).push({ home, fcp });
-    await p.waitForTimeout(label.startsWith('cold') ? 15000 : 6000); // let the worker finish what it does behind the page
-    await p.close();
+    const hold = S.hang ? 3000 : label.startsWith('cold') ? 70000 : 30000; // let the worker finish what it does behind the page (one bar: a 2.4 MB page takes ~50 s)
+    S.hang = false; await p.waitForTimeout(hold);
+    await ctx.close();
   };
   S.kbps = KBPS; S.delay = RTT; S.hang = false;
-  put(variantDir); await open('cold first open');
+  put(variantDir); await open('cold first open (no worker yet)');
   for (let i = 0; i < REP; i++) await open('reopen, app unchanged');
-  S.hang = true; for (let i = 0; i < REP; i++) await open('reopen, lie-fi (nothing answers)'); S.hang = false;
+  for (let i = 0; i < REP; i++) { S.hang = true; await open('reopen, lie-fi (nothing answers)'); }
   for (let i = 0; i < REP; i++) { put(variantDir, 'r99.' + String(i + 10) + ' · 2099-01-01'); await open('first open after a new release'); }
-  await b.close();
+  fs.rmSync(dir, { recursive: true, force: true });
   return out;
 }
 (async () => {

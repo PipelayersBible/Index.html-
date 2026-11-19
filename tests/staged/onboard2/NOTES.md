@@ -18,7 +18,7 @@ the answers as the lead summarised them (#2 #3 #9 #11 #12 #13 #15 #17 yes as rec
 | 15 | Pair the pipelayer with the foreman who invited him, automatically | A foreman's link puts the pipelayer on his crew when he joins (`pb_prod.crew_links`). The office can also pick a foreman for a Pipelayer link (optional). The join screen and the "You're In" screen say "You'll be on Ray's crew". |
 | 17 | Ticking the Terms on the join screen counts as accepting | The tick is recorded on the server in the join's own transaction, in `pb_legal.acceptances` (the table `pb_terms_accept` writes; `app_build` starts "join link ·", with the user agent). The crew notice (version 3, shown on the join screen) goes to `pb_legal.notice_acks`. Neither sheet pops up after joining. If the server couldn't record one, the phone falls back to the normal pending path. |
 | 11 | Lost phone on a no-email account: new link, old account removed | Crew members shows **Lost Phone: New Link** on anyone who joined by link. One step on the server: the old account is taken out of the company (the same two audit rows as Remove), its sessions are ended (the lost phone is signed out within the hour, when its access token runs out), and a new link is made with the same role, name and foreman. The link list says "new phone for Mike". |
-| 2 | Getting-started card on a new company's Home | Top of the company Home: **Add your crew** (checks off when someone is in the company), **Add a job** (when the company has a job), **Tell the crew to install the app** (when someone on the crew has signed in on a phone). Add Crew / New Job buttons. **Hide This** hides it for good on that phone; it also goes away once all three are done, so companies that are already set up never see it. Works offline from the last copy. |
+| 2 | Getting-started card on a new company's Home | Top of the company Home: **Add your crew** (checks off when someone is in the company), **Add a job** (when the company has a job), **Tell the crew to install the app** (when someone on the crew has signed in on a phone). Add Crew / New Job buttons. **Hide This** hides it for good on that phone; it also goes away once all three are done, so companies that are already set up never see it. It shows only after the server's numbers have come in once; after that it works offline from the copy on the phone. |
 | 3 | iPhone "Add to Home Screen" one-time card, plus steps in the invite email | On an iPhone in Safari (not the Home Screen app), Home shows **Put the App on Your Home Screen** with the 3 steps. A no-email account also gets **Get a Code** (it signs the Home Screen app in to the same account). **Got It** hides it for good. It stands in for the notifications card's iPhone line while it shows. Invite email text for Tommy to paste: below. |
 | 16 | No mail on crew.pipelayersbible.com | Nothing to build. Tommy checks his domain settings (below). |
 | 10, 14 | Not now | Not built. |
@@ -89,7 +89,23 @@ Company"); the Log In terms line; the account line in `updateLoginStatusDisplay`
   **69/69 PASS**, no page errors (`tests/t130.out.txt`). Covers every screen at 390 px, light and dark, offline, and
   the scanner/preview cases (a plain fetch of the link touches nothing; a page-running scanner only peeks; the link
   stays unused until the tap).
-- **Full regression** on the patched build: REGRESSION_RESULT
+- **Full regression** on the patched build: 212 entries, `--jobs 2`: pass 185, FAIL 11, xfail 1
+  (the known t04), skip 15. I re-ran all 13 tests that failed in that run or during it on the **unpatched r17.04**
+  (`--build` of the live index.html) and on the patched build (with the getting-started change below):
+  - **Expected changes from this patch (5).** The goldens need updating when it ships (`tests/run_all.sh --only
+    '<id>' --update-golden`). I didn't change the shared goldens. `critic/w3`: a foreman's Settings gains "Your crew ›
+    Add a Pipelayer by Text" (+1 button). `critic/w4`, `office/c1_crew`, `sync/t03_roles`: Crew members gains "Text a
+    Join Link" and its line. `office/s1_smoke`: the company Home's RPC list gains `pb_onboard_start`. Each diff is
+    only that addition.
+  - **Environment, not this patch.** `cs2/s1` (and `cs2/l1`, a cs2 sibling): a test bug. cs2's lib.js took the permit
+    date from the Node clock while the page clock is pinned to Nov 18. The coordinator fixed it in the repo (commit
+    0315676); it fails the same way on unpatched r17.04. `safety/p6` and `safety/d2` fail the same way on unpatched
+    r17.04 (date "Nov 19" against the Nov 18 golden; report count). `offline/rig/t10_quota` failed on unpatched r17.04
+    and passed on the patched re-run. `offline/rig/t09_bigweek`, `new/a4` (900 s timing came out as 901 s on the
+    loaded box) and `t88` passed on the re-run. Three other helpers were using this 2-core box at the same time.
+  - One change from the run: in the first run the getting-started card also showed on rig company accounts that have
+    no `pb_onboard_start` answer ("checks off with signal"). It now shows **only once the server's numbers have arrived**
+    (a copy is kept for offline), so existing goldens of the company Home don't change. t130 re-run after it: 69/69.
 
 ## Apply and deploy (lead only), in order
 1. Run `sql/02_onboard_test.sql` live (rolled back) and compare with the local result.

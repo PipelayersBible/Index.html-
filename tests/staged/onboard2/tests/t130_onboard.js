@@ -116,6 +116,7 @@ const CONTRACTOR=`window.__tableOne={subscriptions:{tier:'contractor',status:'ac
  await O.evaluate(()=>pbObClose());await O.evaluate(()=>pbObOpenInvite());await O.waitForTimeout(700);await O.click('#pbObMakeBtn');await O.waitForTimeout(800);
  const url6=await urlOf(O);const L6=linkOf(srv,url6);
  const F6=(await boot(b,toLocal(url6),srv,{ua:AND,signedOut:true,offline:true,wait:4500})).p;pages.push(F6);
+ await F6.waitForFunction(()=>/No Signal/.test((document.getElementById('pbObSheet')||{}).innerText||''),null,{timeout:25000}).catch(()=>{});
  t=await sheet(F6);
  ok(/No Signal/.test(t)&&/Nothing was used up/.test(t)&&!L6.used_at,'6: opened with no signal: "No Signal ... Nothing was used up", link unused');
  ok(await fits(F6,'#pbObSheet .pbob-card'),'6: the No Signal sheet fits 390 px');
