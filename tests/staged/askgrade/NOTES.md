@@ -15,6 +15,7 @@ kept. Afterwards, kb_chunks still has 2,782 rows, n = 2782 and parts = 2.
 | `tests/glib.js` | Shared helper for the grade tests: the grade2 page driver plus Review and Lock with the modals answered |
 | `tests/t_g40_reload_exact.js`, `t_g41_prefix_stations.js`, `t_g42_short_elev_job.js`, `t_g43_shots_reload.js` | Grade tests (hook page) |
 | `tests/t131_trench20.js` | #63 test (plain page) |
+| `tests/expect/bughunt_nov17__grade2__ref__run.js[0-24].txt` | New golden output for grade2 run.js |
 | `sql/kb_lockout_trench20.py` | KB source and generator for #65 and #63. It writes the `.jsonl`, the migration and its test. A copy is in `/home/claude/kb_add/lockout_trench20.py` next to the other KB sources. |
 | `sql/kb_lockout_trench20.jsonl` | The 2 new chunks (rebuild source) |
 | `sql/01_ask_kb_lockout_trench20.sql` | Staged migration: 2 new chunks, the chunk 224 edit, kb_versions n/counts, blob invalidation |
@@ -206,10 +207,34 @@ In `tests/runner/suites.js`:
 - Copy `tests/t_g4*.js` and `glib.js` into `tests/bughunt_nov17/grade2/tests/`. glib finds `./lib.js` there by itself. Add them
   to the `grade2` suite list: `'tests/t_g40_reload_exact.js', 'tests/t_g41_prefix_stations.js', 'tests/t_g42_short_elev_job.js', 'tests/t_g43_shots_reload.js'`.
 - Copy `t131_trench20.js` into `tests/` and add `'t131_trench20.js'` to the `main` suite.
+- Replace `tests/expect/bughunt_nov17__grade2__ref__run.js[0-24].txt` with `tests/expect/...` from this folder. It goes from "mismatch 2" to "mismatch 0" (the fixed sixteenth).
 
 ## Test results
 
-REGRESSION_PLACEHOLDER
+Full regression, `tests/run_all.sh --build <r17.04 + patches 01-04> --jobs 2`, 212 entries:
+
+**pass 190, FAIL 6, XPASS 1, skip 15.**
+
+The XPASS is `grade2/tests/t04_step_exact.js`, the intended fix. The 6 failures:
+
+| test | why | on its own |
+|---|---|---|
+| `grade2/ref/run.js[0-24]` | **Intended.** The golden output recorded the sixteenth bug: "runs with a mismatch 2", with shown TOP/BOP/SG/INV off against the reference. Now it is 0. | New golden output: `tests/expect/bughunt_nov17__grade2__ref__run.js[0-24].txt` (copy it over the old one, or `--update-golden` with the release). |
+| `offline/rig/t00b.js`, `t00_smoke.js` | RPC order under load | pass when rerun on the patched build |
+| `offline/rig/t10_quota.js` | One extra "Save failed (room)" console line under load | Failed once more with `--jobs 2`. Passed 2 of 2 alone on the patched build and 2 of 2 on base. It is a timing race on save retries. |
+| `safety/d2.js` | "1 report attached" vs 2 | Also fails on base r17.04 when run alone. It passes on the patched build when rerun, so it is flaky and older than this change. |
+| `safety/p6.js` | "Nov 19" vs "Nov 18": the date under the fake clock that runs on from 09:30 | Passes when rerun on the patched build |
+
+Everything else in the `grade`, `grade2`, `main` and `py` suites passed. Additional runs on the final build:
+
+| run | result |
+|---|---|
+| `t_g40`, `t_g41`, `t_g42`, `t_g43`, `t131` | PASS |
+| `ref/run_lock.js 0 60` | 0 mismatches |
+| `ref/run_resume.js 0 20` | 20 resumed, 1,986 rows, 0 mismatches |
+| 2,000-scenario differential sweep | as described in section A |
+
+Nothing was run against Ask itself. The KB and eval SQL were only tested rolled back.
 
 ## Decisions
 
