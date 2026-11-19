@@ -1,8 +1,10 @@
 # speed2: phone speed (#51, #52, #53, #54), on r17.04
 
 Nothing deployed, committed, pushed or changed live. Everything is in `tests/staged/speed2/`.
-Base: `/home/claude/index.html-/index.html` and `sw.js` as of r17.04 (Nov 18). Build stamps are left at r17.04 (the
-release step bumps them).
+Base: written on r17.04; r17.05 (onboard) went live while this ran, and every patch applies unchanged to the CURRENT
+`/home/claude/index.html-/index.html` + `sw.js` (r17.05 · 2026-11-19). The final test runs (speed2 tests and the full
+regression) are on r17.05 + speed2; the measurements were taken on r17.04 + speed2 (same code). Build stamps are left as
+they are (the release step bumps them).
 
 ## How to apply
 
@@ -123,12 +125,12 @@ Memory: records still hold photos in memory (unchanged; loading photos only when
 `build/build.py` (also runs the checks: node --check on every minified script, no `</script` inside a script, same
 number of scripts/styles, part fingerprints):
 
-| | r17.04 | this release (built) |
-|---|---:|---:|
-| page, raw | 8.75 MB | 5.15 MB |
-| page, gzip -9 (what Pages sends) | 2.40 MB (2,400,731 B) | **1.43 MB** (1,428,342 B) |
-| pbx/pdfjs-3.5.141 + worker (cutsheet PDFs, plans viewer) | inside the page | 370 KB gz, own files, kept across releases |
-| pbx/jspdf-2.5.1 + autotable | inside the page | 127 KB gz, own files, read right after load |
+| | r17.04 | r17.04 + speed2, built | r17.05 (live now) | r17.05 + speed2, built |
+|---|---:|---:|---:|---:|
+| page, raw | 8.75 MB | 5.15 MB | 8.80 MB | 5.19 MB |
+| page, gzip -9 (what Pages sends) | 2,400,731 B | **1,428,342 B** | 2,413,120 B | **1,441,310 B** |
+| pbx/pdfjs-3.5.141 + worker (cutsheet PDFs, plans viewer) | inside | 370 KB gz, own files | inside | same files (unchanged) |
+| pbx/jspdf-2.5.1 + autotable (read right after load) | inside | 127 KB gz, own files | inside | same files (unchanged) |
 
 - Install / update on one bar (400 kbps): ~48 s of transfer -> ~29 s for the page (the parts follow after the app is up;
   they only change when the libraries change).
