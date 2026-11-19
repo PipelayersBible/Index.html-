@@ -18,7 +18,7 @@ const suites = [
     't101_runphotos.js', 't102_seal.js', 't103_aireads.js', 't104_permitack.js', 't105_terms.js', 't106_cavestate.js', 't107_mfa.js',
     't108_export.js', 't109_crewnotice.js', 't110_clockpdf.js', 't111_exportdaily.js', 't112_exportpermit.js', 't113_adminlog.js',
     't114_mfacrew.js', 't115_checkshot.js', 't116_quickwork.js', 't117_break.js', 't118_trueod.js', 't119_secondshot.js',
-    't120_csrecord.js', 't121_feedbackall.js', 't122_lowslope.js', 't123_newrunshort.js', 't124_crewview.js', 't126_noticeack.js', 't127_billing0.js', 't128_betaresults.js', 't129_taplink.js', 't130_onboard.js', 't131_trench20.js']) },
+    't120_csrecord.js', 't121_feedbackall.js', 't122_lowslope.js', 't123_newrunshort.js', 't124_crewview.js', 't126_noticeack.js', 't127_billing0.js', 't128_betaresults.js', 't129_taplink.js', 't130_onboard.js', 't131_trench20.js', 't132_setpw_stay.js']) },
   { name: 'r1706_plain', variant: 'plain', tests: T('r1706/staterules/tests', ['t130_staterules.js']).concat(T('r1706/office3/tests', ['t_o3_31_board.js', 't_o3_32_jobinfo_pms.js', 't_o3_34_36_office.js', 't_o3_35_leave_handover.js'])) },
   { name: 'r1706_hook', variant: 'hook', tests: T('r1706/office3/tests', ['t_o3_30_31_permit.js', 't_o3_37_38_39_records.js']).concat(T('r1706/daily3/tests', ['t01_crew_default.js', 't02_night_shift.js', 't03_safety_daily.js', 't04_safety_search.js', 't05_customer_signature.js', 't06_last_run_crew.js'])) },
   { name: 'py', variant: 'plain', tests: T('.', ['permit_active_screen.py']) },
