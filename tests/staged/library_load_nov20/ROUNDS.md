@@ -265,4 +265,57 @@ answered with OSHA's 24-hour short-term exposure; the MUTCD card was retrieved),
 (library gap, 191 words of "from general knowledge"). Length: 7 answers 3 to 15 words over, plus `lib-us-fed-9` at 163. One filler pattern seen often: a line that only
 says "<state> follows federal OSHA for private crews"; reply rule v6d (test row) drops it.
 
+## Round 7 (step d, second of two): lib6 + reply rule v6d ($2.18)
+Run `1120-1902-ai-next-6f2f` (all 17 batches came back, many on a second or third try after 546).
+**Fresh 54 / 68 (79%)**, re-asked 2 / 12, canaries 15 / 15, style 3 / 5, facts 95 / 100, **wrong state 1**, within limit 86, answer first 89, median 72 words.
+- **Length is the main failure (14):** most are 1 to 17 words over, from a third "- " line on top of the safety line (`lib-ut-sp-1` 87, `lib-in-dig-2` 80, `lib-ny-sp-1` 81);
+  `lib-us-fed-9` 220 and `lib-us-fed-17` 169 run long when the library lacks the fact.
+- **Wrong state (1):** `lib-mt-dig-1` (Montana ticket life, not confirmed): "Iowa's 25 days, for example, doesn't apply here." Right advice, but it names another state's number.
+- **Facts (5):** repeats only: `lib-us-osha-12` (classify the soil), `lib-us-mutcd-40` (shoulder), `lib-us-mutcd-55` (short duration answered with OSHA's 24-hour
+  short-term exposure, third time), and two case patterns (`lib-us-osha-94` lists the 22 states without the number; `lib-us-osha-51` is right but never says
+  "agreement" or "notify").
+- Offers: 6 of 11 complicated topics offered; 11 offers elsewhere (several on traffic setups, which Tommy's rule allows).
+- Answer-guard artifact again: `lib-ny-sp-1` shows "Subpart A\n\nA." where a sentence was cut (same guard splitting seen in `tr12`).
+
+## Scores (this helper)
+| Round | Build / rule | Fresh | Canaries | Wrong state | Facts | Within limit | Answer first | Median words | Cost |
+|---|---|---|---|---|---|---|---|---|---|
+| 5 (12 lost + 16 failures) | lib5 / v6 | n/a (re-asks: 18 of 28) | 1 / 1 | 0 | 25 / 28 | 22 / 28 | 21 / 28 | 77.5 | $0.60 |
+| Follow-through (10 x 2 turns) | lib5 / v6 | 8 of 10 continue cleanly, 2 partly | | | | | | | $0.43 |
+| Full 148 existing | lib5 / v6, v6b | pass 141 vs live 117 | | | 141 vs 146 | 148 vs 119 | | 70 avg vs 118 | $5.01 |
+| tr12 / tr14 + 5 re-checks | lib6 / v6c | tr12 3/3, tr14 3/3 | | | | | | | $0.24 |
+| 6 | lib6 / v6c | **66 / 72 (92%)** | 15 / 15 | 0 | 96 | 93 | 94 | 68 | $2.03 |
+| 7 | lib6 / v6d | **54 / 68 (79%)** | 15 / 15 | 1 | 95 | 86 | 89 | 72 | $2.18 |
+**Spent by this helper: $10.49** (of $17). With the earlier $8.16 this job is at $18.65; Tommy's Ask test total is about $33.5 of $50. Batches that hit 546 may have used some
+model time before failing; that is not in these numbers. Nothing is running.
+
+## Stop rule and the big run: NO-GO for now
+Two rounds in a row at 90% fresh and zero wrong state: **not met** (92% then 79%, one wrong-state mention). Safety canaries pass in every round. What to do first (all small):
+1. **Length:** the safety line plus the offer pushed answers up; v6d did not hold them. Next wording to try (free, test row): "at most 2 '- ' lines BEFORE the safety line;
+   the safety line and the offer are extra" and drop the federal-OSHA filler in state.ts itself (it tells the model "federal OSHA IS <state>'s rule", which it then repeats as a line).
+2. **Wrong state:** add to the reply rule "never name another state or its number, not even as an example" (the Montana case).
+3. **Quality-run harness:** the 6-question batch hits 546 (worker resource limit) on most first tries with the overlay build; the big run (~830 questions) will lose
+   batches and take hours. Before it: 3-question batches (`eval_start` groups by 6; needs the lead) or re-post failed batches one by one as done here.
+4. **Answer guard sentence split** (gonogo.ts, live code too): it cuts at "App." / "Subpart A." and leaves fragments ("... makes that call on site. B)."). Seen 3 times.
+   This is live code: lead's call.
+5. The 20-ft question (tr14): pick one reading (recommend the app's: engineer at exactly 20 ft) and add it to the slope card.
+6. Retrieval gaps seen twice or more: SWPPP record retention (`fed-epa-cgp-*` lose to OSHA 1904 on "keep ... reports"), "short duration" (MUTCD) vs OSHA "short term",
+   benching dimensions on a follow-up (`osha-appendix-b-c-d-in-words-2` not pulled for "yes please").
+Then one round of 100; if fresh is at or above 90% with zero wrong state twice, the big run is about $17 (830 x ~$0.02).
+
+## What is on the server because of this helper
+| Thing | State |
+|---|---|
+| `pb_ai.code` slot `next` | `13f8e89a0c31` (lib6: lib5 code + traffic v2 overlay), commit fd02a7f. lib5 `40d00759e67d` (commit ec25df6) was installed before it. **Live slot untouched (`b7ad788e3a62`).** |
+| `teacher_v2@next` prompt row | reply rule v6d + `{"knobs": {"exChars": 10000}}`; v5 kept in `work/reply_rule_v5.txt`. Live row untouched. |
+| `pb_ai.eval_set` | +140 inactive library cases (cat `lib6`, `lib7`); same cleanup line as above. Active cases and their patterns not touched. |
+| Library tables, shelf | nothing written. |
+| Repo | two sealed build files under `data/ask/` (b-40d00759e67d.txt, b-13f8e89a0c31.txt), one commit each; nothing else committed. |
+
+## If promoted
+lib6 as built carries reply rule **v6** built in; the test row carries **v6d**. Before any promotion rebuild with `src_patch/reply_rule.txt` (now v6d) or put v6d in the
+live row. Parts 2 to 7 of `src_patch/apply_patch.py` apply on live too; part 7 (state cards first, excerpts 10,000) has been through the full 148 regression.
+Files: `src_patch/apply_patch.py` (part 7 added), `src_patch/reply_rule.txt` (v6d), `tools/cut.mjs`, `tools/intent_try.mjs`, `tools/regress_build.mjs`, `tools/release_from.sh`,
+`tools/grade.py` (round 5 rules; round 4 grader kept as `work/grade_r4.py`), `work/round5..7/`, `work/followup/`, `merge.py` (traffic v2 paths), `fixes.py` (24-inch pattern).
+
 ## DONE
