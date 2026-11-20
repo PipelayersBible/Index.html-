@@ -1,188 +1,129 @@
-# One device per login (staged Nov 20, on r17.11) — version 2, with Tommy's answers
+# One device in use per login, two signed in (staged Nov 20, on r17.11) — version 3, PART DONE
 
-Tommy (Nov 20): "Can you limit an account to only be signed in to one [device] at a time? And implement your other fixes too."
-Then: "the first device with the app actively in use should prevent the second [device] from logging in, right?"
+**State when work stopped (usage limit): the server part (SQL) is finished and tested locally for Tommy's final rule.
+The app patch and the browser tests are still the earlier version and do NOT match it yet. Do not ship the app patch
+as it is.** Nothing here is live; the server was only read.
 
-Base: `/tmp/claude-0/r1711/src.html` (r17.11). Nothing here is live: the server was only read (SELECT, function and edge
-function source). Nothing committed, pushed or deployed. The SQL was run on a throwaway local Postgres 16, not on live.
+## Tommy's final rule (Nov 20, 9:44 and after)
 
-## Tommy's answers, and where each one is
+1. Every login may stay signed in on **2 devices** (phone + tablet). A 3rd sign-in is refused while both are signed in;
+   it can sign one of them out and take its place.
+2. Only **one of the two may be in use at a time**. In use = that device's app checked in during the last **5 minutes**,
+   or it holds the login while a confined space permit is open (saved in the last 2 hours, not closed).
+3. The other signed-in device shows a plain "in use on your other device" screen and unlocks by itself, no sign-in.
+4. A sign-in on a new device while the login is in use: refused, "try again in 5 minutes".
+5. Home Screen code replaces the Safari page that made it (one of the two places, not both).
+6. All DIG Civil logins and Tommy's login: an override, set per company.
+7. Refused sign-ins and sharing signals: **tracked, never shown to users or company accounts**; only for Tommy's
+   app-owner admin screen (another helper builds the screen).
 
-| Answer | Where |
+## DONE: server (`sql/`), tested on a throwaway local Postgres 16
+
+`RESULT: 65 pass, 0 fail`, as a plain migration applied twice and as the rolled-back block (`sql/tests/block_t01.sql`,
+nothing left behind). 02 and 99 were run locally too.
+
+| File | What |
 |---|---|
-| Company account: 2 devices | By rule in `pb_auth.allowed()`: the owner login of a company gets 2. Tested (SQL 9p, rig section 1). |
-| His own login: 2 devices | By rule: the app owner (`pb_support.admins`) gets 2. `sql/03_allow_examples.sql` also pins `tfontaine@digcivil.com` to 2. **DIG Civil test accounts are not added:** I don't know which logins are tests. The file has the query to list them and the insert to fill in. |
-| Keep location in the alert | Kept. The two sentences for the lawyer: `legal/DRAFT_location_sentences_for_lawyer.md`. Not put in the app or website. |
-| "Minutes apart": record, don't show | A second device within minutes is now refused, so that event is recorded as `tried_in_use` (count per day) and never shown. The notes show only "far apart" and "back and forth". |
-| Keep the open-permit hold | Kept, as part of the new rule: an open permit counts as "in use", so the second sign-in is refused. |
-| NEW: refuse the second device while the first is in use | Built. Below. |
+| `sql/01_one_device.sql` | Schema `pb_auth`, trigger on `auth.sessions`, functions. Changes no existing object. |
+| `sql/02_gate_on.sql` | Turns the pre-request gate on. |
+| `sql/03_overrides.sql` | DIG Civil company + `tfontaine@digcivil.com`: 5 devices, usable at the same time. |
+| `sql/99_undo.sql` | Gate off; triggers off; remove everything. |
+| `sql/tests/t01.plpgsql`, `block_t01.sql` (built by `mk.py`), `sql/local/` | Test, the rolled-back live form, local runner. |
 
-## The rule now
+How it works:
 
-**A new sign-in is refused while the login is in use on another device. If the other device is idle, the new sign-in
-takes over and the old device is signed out.**
+- **Sign-in** (trigger, every way of signing in): refused as `in_use` if another device has the login in use; refused
+  as `full` if already on 2 devices; otherwise allowed and nobody is signed out. A refused sign-in is a marked session
+  that the gate refuses; it is cleared when the device asks why, or within 10 minutes. A fault in the trigger never
+  blocks a sign-in (tested). Two-step login: decided when the code is entered.
+- **`pb_device_seen(...)`** (the app's check-in) answers `state: active` (this device has the login) or
+  `state: locked` with `other` (phone, tablet, computer), `wait_s`, `permit`. A device takes the login only when the
+  other has not checked in for 5 minutes and no permit holds it.
+- **`pb_session_gate()`** (PostgREST pre-request, every RPC and table request): refuses with `pb:signed_out` (HTTP 401)
+  and `details` = `other_device`, `moved`, `ended`, `in_use`, `full` (hint: `phone|<epoch last used>,tablet|<epoch>`), or
+  `locked` (hint: `<other kind>|<seconds until idle>|<1 if a permit holds it>`). The app's queues already treat
+  `pb:signed_out` as "nothing filed, try later", so a locked device keeps its work.
+- **`pb_session_take_slot(session, pick)`**: a sign-in refused as `full` signs one of the two devices out (pick 1 = used
+  last, 2 = the one before) and becomes a normal session. Called with the app's own key. Refused while the login is in use.
+- **`pb_session_why(session)`**: answers `other_device`, `moved`, `in_use`, `full`; removes a refused session.
+- **Home Screen code**: never refused; ends the page that made it as `moved` and hands the login to the new session.
+- **Log Out / Lost Phone** end the sessions, so the other device is free at once and there is no lock-out (tested, also
+  with a permit open).
+- **Overrides**: `pb_auth.allow (user_id, devices, one_at_a_time)` per login, `pb_auth.company_allow (company_id,
+  devices, one_at_a_time)` per company (owner login and every member, now and later). The login's own row wins.
 
-- **In use** = the other device's app checked in during the last 15 minutes (the app checks in when opened, when signal
-  returns and every 5 minutes while it is on screen), **or** the login has a confined space permit open (saved to the
-  server in the last 2 hours, not closed) on a signed-in device.
-- **Refused:** the new device shows "This account is in use on another phone right now. Sign out there first, or try
-  again in 15 minutes." and stays on Log In. The first device is not touched and is told nothing.
-- **Idle** (lost, dead, left at home, app closed for 15 minutes): the new sign-in goes in; the old device, next time it
-  reaches the server, shows "Your account was signed in on another phone, so this phone was signed out. Your saved work
-  is kept and will send when you sign in again." once.
-- **Longest lock-out:** 15 minutes after the other device was last on screen with signal; 2 hours after the last save of
-  an open permit. **No wait at all** after Log Out on the first device or Lost Phone (both end its sessions).
-- **Home Screen code** always moves the session, even though Safari was in use seconds ago: the Home Screen app signs in,
-  Safari's session is ended as `moved`, Safari says so once. Get a Code says the page will be signed out and names unsent
-  work first.
-- **Two-step login:** the password alone decides nothing; the rule runs when the code is entered.
-- **2 devices** (company account, app owner): a third is refused only while both are in use; otherwise it replaces the
-  one idle longest.
+### For the admin-screen helper: the event log
 
-## What is true today (checked on live, read-only)
+Table **`pb_auth.flags`**, one row per event, never shown to users. Not reachable from the API directly; read it through
+**`public.pb_owner_share_events(p_days default 90, p_limit default 200)`** (same check as Beta Accounts:
+`pb_support.admin_ok`). It returns `{ok, events: [...]}`, newest first.
 
-- Any number of devices can use one login at once. No device registry, no trigger on `auth.sessions`, no pre-request
-  check. Live now: 3 sessions, no login with two.
-- Only `pb_onboard_lost_phone` ends sessions, and a phone signed out that way keeps a working access token for up to an hour.
-- There is no shared helper the RPCs call: 420 public functions, almost all check `auth.uid()` themselves.
-- **The company account is already its own login.** `companies.owner_user_id` is never a row in `company_members` (all 3
-  companies). Office on the company login and a foreman on his own login are two logins and don't affect each other.
-
-## Design
-
-| Part | Where | What it does |
+| Column | In the RPC row | Meaning |
 |---|---|---|
-| Decide | trigger on `auth.sessions` (insert, and `aal` reaching `aal2`) calling `pb_auth.take_over` | Refuses (marks the new session `in_use`) or takes over (deletes the idle session; its refresh tokens go with it) and logs why: `other_device`, `moved`, `in_use`. |
-| Gate | `public.pb_session_gate()` as PostgREST `db-pre-request` | Before every RPC and table request: a request from an ended or refused session is refused with `pb:signed_out` (HTTP 401, the reason in `details`). Two primary-key reads, no writes. The app's key, the service key and tokens with no session id pass. |
-| Why | `public.pb_session_why(session)` | The signed-out device asks why, with no account. Answers `other_device`, `moved`, `in_use`; removes a refused session. |
-| Check-in | `public.pb_device_seen(...)` | "I'm in use": device id, kind, the photo stamp's last GPS fix if the phone already has one (rounded to 0.01 degree). Records the flags. Clears refused sign-ins left behind. |
-| Notes | `public.pb_share_notes()`, `public.pb_owner_share_notes()` | Company account: its own people. App owner: everyone. One note per login per day, 30 days. |
-| Tables | schema `pb_auth` (not reachable from the API) | `sessions_log`, `devices`, `allow`, `flags`. Rows older than 120 days go at the login's next sign-in. |
+| `id`, `at` | `id`, `at` | When it happened. |
+| `user_id` | `user_id`, `who`, `email` | The login. `who` = the name its company uses, "Company account" for an owner login, else the email. |
+| `company_id` | `company_id`, `company` | The login's company when it happened; null for a login with none. |
+| `kind` | `kind` | `tried_in_use` (sign-in refused, login in use), `tried_full` (refused, already on 2 devices), `took_place` (then signed one device out), `far_apart`, `back_and_forth`. |
+| `kind_a`, `kind_b` | `device_a`, `device_b` | Devices involved: phone, tablet, computer. For `took_place`, `device_a` is the one signed out. |
+| `miles`, `minutes` | same | `far_apart`: distance, and minutes between the two GPS fixes. |
+| `n` | `n` | `back_and_forth`: switches that day (one row per login per day). |
+| `detail` | `detail` | Session ids. |
 
-Why this way:
+`far_apart` is recorded only when the two fixes are 10+ miles apart and too far to drive in the time between them
+(over 90 mph), so one person with a phone and a tablet does not trip it. Location is sent only when the photo stamp
+already has a fix; it is stored rounded to 0.01 degree.
 
-- **A trigger, not an edge function or the app.** The app calls an edge function, so a changed app could skip it. The
-  trigger fires on every way of signing in (password, invite or reset link, join link, Home Screen code). A fault inside
-  it is caught, so it can never break signing in (tested).
-- **The refusal is a marked session, not an error.** The auth service gives no clean way to turn a sign-in down from the
-  database (raising there shows the person "Database error"). So the sign-in is let through, its session is marked
-  `in_use`, the gate refuses everything it asks for, and the app, which checks in a third of a second after signing in,
-  shows the message and signs out. The marked session is removed when that device asks why, at the first device's next
-  check-in (5 minutes at most) or at the next sign-in.
-- **A pre-request gate, not a check in each RPC.** One place covers all 420 functions and every table, and it also makes
-  Lost Phone and Log Out take effect at once instead of within the hour.
-- **`pb:signed_out` as the refusal.** Every queue in the app already treats it as "nothing was filed, try later"
-  (`pbSlSync`, src line 24455; permit backup, 42563), so refused work is kept.
-- Supabase's own "single session per user" setting was not used: paid Auth plan, acts only at the next token refresh,
-  no reason given to the phone, no "in use" rule, no exceptions.
+## NOT DONE
 
-Other cases:
+1. **App patch (`patches/01_one_device.py`) is still version 2.** It has to change to:
+   - check in every 90 seconds while on screen (now 5 minutes), and read `state` / the `locked` and `full` refusals;
+   - the lock screen ("In use on your other device (phone). You can use this one when that one has been idle for 5
+     minutes.", countdown from `wait_s`, Try Now, Log Out; not shown offline or over a live permit on this device;
+     unlocks by itself and kicks the queues);
+   - the "already signed in on two devices" screen with one button per device (calls `pb_session_take_slot` with the
+     app's own key by plain fetch, then reloads) and Cancel;
+   - the refused message with "5 minutes" (it says 15);
+   - **remove** the Crew members note and the Beta Accounts block (they call `pb_share_notes` /
+     `pb_owner_share_notes`, which no longer exist; the calls fail quietly, but the code is dead and the hidden box stays).
+   What is still right in it: device id, GPS only from the photo stamp, the signed-out message shown once, the Get a
+   Code warning, silence when the server part is missing.
+2. **Browser tests (`tests/t_1dev.js`, `srv1dev.js`) are version 2** (15-minute takeover, notes). They passed 72 checks
+   for that version only. Needed: A active then B locked; A idle 5 minutes then B unlocks without sign-in; third device
+   refused and takes a place; permit priority; offline queue; Home Screen code.
+3. **`03_overrides.sql` not checked against live:** I did not confirm that `name ilike 'DIG Civil%'` matches exactly one
+   company and that the email matches one login. The file ends with a query that shows what it matched. The values (5
+   devices, usable at once) are my reading of "the same override as my own login".
+4. **Not tested anywhere:** the gate inside real PostgREST and the trigger inside the real auth service. The live block
+   also creates `pg_temp` helper functions; if live refuses that, the block fails before testing and changes nothing.
+5. Legal: `legal/DRAFT_location_sentences_for_lawyer.md` was written for version 2 (company sees the distance). Now only
+   the app owner sees it, so the crew-notice sentence is no longer needed and the Privacy Policy sentence should say
+   "we", not "your company account". Not rewritten.
+6. `old_v2/` holds the version 2 SQL and test for reference. `shots/` are version 2 screens.
 
-- **No signal.** A phone with no signal can't check in, so after 15 minutes it counts as idle and another device can
-  take the login. The phone keeps working and keeps its unsent work under its account. When signal is back it is signed
-  out and told once. After its person signs in again, the work sends under their account. Tested.
-- **Lost phone / new phone.** Email login: log in on the new phone (at once if the lost one has been quiet 15 minutes).
-  Join-link account: Crew members, Lost Phone, as today; the lost phone is cut off at once. Unsent work on a lost phone
-  stays on that phone.
-- **Company account and individual plans** follow the same rule; the company account gets 2 devices.
+## Apply order (this weekend), once the app patch is finished
 
-Flags, written by the server:
+1. Finish and test the app patch (items 1 and 2). Release the app first: it must be silent while the server part is
+   missing, and phones on the old app never check in, so they would never hold the login.
+2. Run `sql/tests/block_t01.sql` on live. Expect `RESULT: 65 pass, 0 fail`. Rolls itself back.
+3. Run `sql/01_one_device.sql`, then `sql/03_overrides.sql` (read its last result).
+4. `select public.pb_session_gate();` must return with no error. Run `sql/02_gate_on.sql`. Open the app signed in and
+   signed out at once: both must load.
+5. Two browsers on a test login outside DIG Civil: the second is refused while the first is open; five minutes after
+   closing the first, the second signs in and both stay signed in.
+6. Wrong: `sql/99_undo.sql` part 1 (gate off, instant), then part 2.
 
-| Flag | When | Shown |
-|---|---|---|
-| `far_apart` | after a takeover, the two devices' GPS fixes within the same hour, 10 miles or more apart | "Ray's login was used on two phones 35 miles apart at 9:10 AM on Nov 20." |
-| `back_and_forth` | a device that was signed out by another one comes back within 24 hours | "Ray's login went back and forth between two phones 2 times on Nov 20." |
-| `tried_in_use` | a sign-in was refused because the login was in use (count per day) | Not shown. In `pb_auth.flags`. |
+**If the app patch cannot be finished this weekend:** steps 2 and 3 can still go live safely on their own without
+step 4. Then sign-ins are refused by the rule, but a refused or second device gets no screen explaining it (its
+requests just fail quietly until step 4 and the new app). I would not do that; ship server and app together.
 
-Shown on Crew members (company account) with "Each person needs their own login.", and in Beta Accounts (app owner).
-GPS is sent only when the photo stamp already has a fix under an hour old; the app never asks for location for this.
+## Risks (server part)
 
-## What is staged
-
-- `sql/01_one_device.sql`: schema, tables, trigger, functions. Changes no existing object.
-- `sql/02_gate_on.sql`: turns the gate on. `sql/03_allow_examples.sql`: Tommy's login; template for test accounts.
-- `sql/99_undo.sql`: three parts: gate off; triggers off; remove everything.
-- `sql/tests/t01.plpgsql` and `sql/tests/block_t01.sql` (built by `mk.py`): migration + test in one transaction that
-  always ends `RESULT: ...` and rolls everything back; the form to run on live. 02 and 03 are not in it.
-- `sql/local/`: stubs and `run_local.sh` (throwaway Postgres 16).
-- `patches/01_one_device.py`: the app patch (`python3 01_one_device.py in.html out.html`, 7 exact-once swaps).
-- `tests/t_1dev.js` with `srv1dev.js`, `fakesb_1dev.js`, `boot_1dev.js`: several browser contexts on one Node "server"
-  that applies the same rules as the SQL. `shots/`: 7 screenshots.
-- `legal/DRAFT_location_sentences_for_lawyer.md`.
-- Edge functions: **no change, no files.** `crew-admin` checks the caller with `auth.getUser(token)`; the others were
-  not read one by one.
-
-## Test results
-
-- SQL, local Postgres 16: `RESULT: 43 pass, 0 fail`, as a plain migration (applied twice) and as the rolled-back block
-  (nothing left behind). Sessions were inserted as `supabase_auth_admin`. Covers: takeover of an idle session and its
-  refresh token; **refused while in use, first device untouched, refused session removed by "why" and by the next
-  check-in, taken over after 16 idle minutes**; the gate for live, ended, refused, logged-out and unknown sessions and
-  for the app key, service key, no claims, malformed token; grants; Home Screen move; two-step login; 2 devices by rule
-  and by exception; **open permit refuses, Lost Phone / Log Out lift it, a permit not saved for 3 hours does not lock**;
-  check-in, flags without duplicates, refused tries never in the notes; who can read the notes; a fault in the trigger
-  not blocking sign-in; user deletion. 02 and 99 were run locally too.
-- Rig, patched r17.11: `t_1dev.js` sections 1 to 6, **72 checks, all pass, no page errors** (run whole once, then
-  section 1 again after one expectation was corrected).
-  1. Phone 2 is refused while phone 1 is in use (message, back on Log In, phone 1 untouched, try recorded). 16 minutes
-     later phone 2 gets in; phone 1 is told once, not again after a restart; flags; notes on Crew members and Beta
-     Accounts; a crew member sees none; company account on 2 devices, a fourth refused.
-  2. The old phone learns it from a refused token refresh; a plain Log Out shows nothing.
-  3. No signal: the phone keeps working and keeps its unsent record, is told when signal returns, and the record sends
-     once under the right account after signing in again; back-and-forth flag and note.
-  4. Home Screen code: not refused, session moved, Safari told, no flag.
-  5. Server part not installed: nothing changes, no errors.
-  6. Open permit refuses even when its phone has been quiet; Log Out on phone 1 lets phone 2 in at once.
-- Existing tests on the patched page: `r1710/streamline/tests/t_sl4_code.js` all pass, the updated `t130_onboard.js`
-  ALL PASS, `t107_mfa.js` clean (`t126_noticeack.js` clean on version 1, not re-run). The full regression was not run.
-
-**Not tested:** the gate inside real PostgREST and the trigger inside the real auth service (only the functions, with the
-claims and the role those services use). Step 2 below is the first live check.
-
-## Apply steps (the lead)
-
-1. **Release the app patch first.** It is silent while the server part is missing (section 5). This order matters more
-   now: a phone on an older app never checks in, so it counts as idle 15 minutes after its sign-in and can be taken over
-   while in use.
-2. Run `sql/tests/block_t01.sql` on live. Expect `RESULT: 43 pass, 0 fail`. It holds a lock on `auth.sessions` for about
-   a second and leaves nothing. A note in the result says if a part could not run there.
-3. Run `sql/01_one_device.sql`, then `sql/03_allow_examples.sql` (fill in the test accounts).
-4. `select public.pb_session_gate();` must return with no error. Run `sql/02_gate_on.sql`. Straight after, open the app
-   signed in and signed out: both must load.
-5. Check with a test login on two browsers: the second is refused with the message; sign out on the first, the second
-   gets in at once. `select * from pb_auth.sessions_log order by started_at desc limit 5`.
-6. If anything looks wrong: `sql/99_undo.sql` part 1 (gate off, instant), then part 2.
-
-Goldens: tests that print the Crew members screen or the Get a Code sheet will differ by the new sentence and the hidden
-note box. Not updated.
-
-## Risks
-
-- **The gate runs on every API request.** If it were missing or not runnable by a role, every request for that role
-  would fail. Granted to everyone, tested for `anon`, `authenticated`, `service_role`, `authenticator`; undo is one statement.
-- **"In use" is what the app reports.** A phone with no signal, or with the app closed for 15 minutes, counts as idle.
-  Two people can still take turns on one login 15 minutes apart; that is what the two shown flags are for.
-- **A permit phone with no signal for the whole entry** has not saved the permit to the server, so the server cannot
-  hold the login for it. If someone else then signs in, the permit phone is signed out when signal returns and its
-  message adds "A confined space permit is open on this phone. Sign in again now...". The entry on the phone is not interrupted.
-- **A reset or invite link is a sign-in too.** Someone who taps "Forgot password?" on a new phone while their old phone
-  is in use is refused until the old one is quiet or signed out.
-- **A refused sign-in exists for up to 5 minutes** before it is cleared. The gate refuses its API requests, but photo
-  uploads (storage) and edge functions that only ask the auth service who the caller is would accept it in that window.
-  The same hour-long gap applies to photo uploads from a session that was taken over.
-- **Location:** the check-in stores a rounded last fix per device and the company sees "35 miles apart". The Privacy
-  Policy and crew notice don't say this yet (drafts in `legal/`).
-
-## Decisions for Tommy
-
-1. **15 minutes** as the "in use" window, and 2 hours for an open permit. Shorter locks people out less but lets a
-   second person in sooner. *Recommend 15 minutes and 2 hours as staged.*
-2. **Which DIG Civil logins are test accounts?** Needed to finish `03_allow_examples.sql`. Company owner logins are
-   already 2 by rule.
-3. **Refused tries: show them?** They are the clearest sign of sharing now ("Ray's login was tried on a second phone
-   while in use, 3 times on Nov 20"). You said record silently for "minutes apart", so they are not shown. *Recommend
-   showing them in Beta Accounts only.* Not built.
-4. **Turn the note on for companies before the lawyer answers?** *Recommend the server and the rule go live now, and the
-   Crew members note waits for the crew-notice sentence* (drop one hook in the patch; I can stage that).
+- The gate runs on every API request; if it were missing or not runnable by a role, every request for that role would
+  fail. Granted to everyone and tested for all four API roles; undo is one statement.
+- "In use" is what the app reports: a phone with no signal or with the app closed for 5 minutes counts as idle.
+- A permit phone with no signal for the whole entry has not saved the permit, so the server cannot hold the login for it.
+- Photo uploads (storage) and edge functions are not covered by the gate: a locked or refused device could still use
+  them. The lock screen in the app is what stops normal use there.
+- A reset or invite link is a sign-in too and is refused while the login is in use elsewhere.
 
 ## DONE
