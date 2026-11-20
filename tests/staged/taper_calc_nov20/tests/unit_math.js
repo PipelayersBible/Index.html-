@@ -49,6 +49,11 @@ const CAS = { 25: 100, 30: 150, 35: 200, 40: 250, 45: 300, 50: 350, 65: 350 };
 for (const s of Object.keys(CAS)) { const x = c({ speed: +s, road: 'urbanLow', state: 'CA' }); ok(x.signs.rule === 'CA' && x.signs.abc[0] === CAS[s], 'CA city ' + s + ' mph: ' + CAS[s] + ' ft'); }
 ok(c({ speed: 30, road: 'urbanLow', state: 'CA' }).signs.abc[0] === 150 && c({ speed: 30, road: 'urbanLow', state: 'US' }).signs.abc[0] === 100, '30 mph city: CA 150 ft vs federal 100 ft');
 ok(c({ speed: 55, road: 'rural', state: 'CA' }).signs.rule === 'US', 'CA rural = national 500 ft row');
+// Alaska: city street by speed (ATMS Table 6B-1, low speed = 40 mph or less)
+let ak = c({ speed: 40, road: 'urbanHigh', state: 'AK' }); ok(ak.signs.rule === 'AK' && ak.signs.abc[0] === 100, 'AK 40 mph city: low speed 100 ft even if "high" picked');
+ak = c({ speed: 45, road: 'urbanLow', state: 'AK' }); ok(ak.signs.rule === 'AK' && ak.signs.abc[0] === 350, 'AK 45 mph city: high speed 350 ft');
+ok(c({ speed: 55, road: 'rural', state: 'AK' }).signs.rule === 'US' && JSON.stringify(c({ speed: 65, road: 'freeway', state: 'AK' }).signs.abc) === '[1000,1500,2640]', 'AK rural / freeway = national rows');
+ok(c({ speed: 30, road: 'urbanLow', state: 'MA' }).signs.rule === 'US', 'MA: national sign spacing');
 // bad entries
 ok(!!c({ speed: 15 }).err && !!c({ speed: 80 }).err && !!c({ speed: '' }).err, 'speed outside 20-75 is refused');
 ok(!!c({ speed: 45, width: 0 }).err && !!c({ speed: 45, width: 40 }).err, 'width 0 or over 30 ft is refused');

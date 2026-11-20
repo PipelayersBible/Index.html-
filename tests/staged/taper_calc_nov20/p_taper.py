@@ -82,6 +82,7 @@ SCREEN = '''  <!-- TAPER & CONE SPACING (taper_calc_nov20) -->
             <li>Cone spacing: Section 6K.01, no more than 1 &times; the speed in feet in a taper and 2 &times; along the work. One-lane two-way and downstream tapers: 50 to 100 ft, devices about 20 ft apart (Section 6B.08).</li>
             <li>Sign spacing A, B, C: Section 6B.04, Table 6B-1. The road agency decides what is low or high speed.</li>
             <li>Buffer: Section 6B.06 and Table 6B-2 (stopping sight distance). The same distances may place a flagger station (Section 6D.06).</li>
+            <li>Alaska: 2026 Alaska Traffic Manual Supplement (eff. Jan 20, 2026), Table 6B-1 (city low speed = 40 mph or less), 6D.01, 6D.02. Massachusetts: Amendments to the MUTCD 11th Edition (Jan 2026), 6C.05, 6D.01, 6D.05, 6D.06, 6K.01. Both read through a summary; check the state manual.</li>
             <li>California: CA MUTCD 2026 (Caltrans, Jan 18, 2026), Table 6B-1 sets city street sign spacing by speed. Its taper table (6B-3(CA)) matches the national formula.</li>
           </ul>
           <p class="pb-help" style="margin:4px 0 0;">Checked Nov 20, 2026. Speeds between table rows use the next row up.</p>
@@ -179,13 +180,16 @@ CALC = '''  // ---------- Taper & Cone Spacing (taper_calc_nov20) ----------
     h += box('Buffer space', ft(r.buffer), 'Empty road before the work' + (r.ssdSpeed !== S ? ' (' + r.ssdSpeed + ' mph row)' : '') + '. No trucks, material or equipment in it.' + (type === 'flagger' ? ' Flagger station: about ' + ft(r.buffer) + ' ahead of the work.' : ''));
     if (r.signs) {
       const a = r.signs.abc, ROAD = { urbanLow: 'city street, low speed', urbanHigh: 'city street, high speed', rural: 'rural road', freeway: 'expressway / freeway' }[road];
-      h += box('Advance warning signs', a.map(x => Number(x).toLocaleString('en-US')).join(' \\u00b7 ') + ' ft', 'A: taper to 1st sign ' + ft(a[0]) + '. B: 1st to 2nd ' + ft(a[1]) + '. C: 2nd to 3rd ' + ft(a[2]) + '. First sign ' + ft(r.firstSign) + ' before the taper (' + (r.signs.rule === 'CA' ? 'California, city street at ' + S + ' mph' : ROAD) + ').', 'tc-signs');
+      h += box('Advance warning signs', a.map(x => Number(x).toLocaleString('en-US')).join(' \\u00b7 ') + ' ft', 'A: taper to 1st sign ' + ft(a[0]) + '. B: 1st to 2nd ' + ft(a[1]) + '. C: 2nd to 3rd ' + ft(a[2]) + '. First sign ' + ft(r.firstSign) + ' before the taper (' + (r.signs.rule === 'CA' ? 'California, city street at ' + S + ' mph' : r.signs.rule === 'AK' ? 'Alaska, city street at ' + S + ' mph' : ROAD) + ').', 'tc-signs');
     } else {
       h += box('Advance warning signs', 'Pick road type', 'Pick the road type above. Sign spacing depends on it.', 'tc-signs');
     }
     const nm = pbTcStateName(state);
     let note;
     if (state === 'CA') note = r.signs && r.signs.rule === 'CA' ? '<strong>California rule:</strong> city street sign spacing by speed (CA MUTCD 2026, Table 6B-1). Tapers and buffer are the same as the national numbers.' : '<strong>California:</strong> same as the national numbers here (CA MUTCD 2026). City street sign spacing goes by speed in California.';
+    else if (state === 'AK') note = (r.signs && r.signs.rule === 'AK' ? '<strong>Alaska rule:</strong> on city streets 40 mph or less is low speed (100 ft), 45 mph or more is high speed (350 ft) (2026 Alaska Traffic Manual Supplement, Table 6B-1). ' : '<strong>Alaska:</strong> sign spacing same as the national table. ')
+      + 'Flaggers on state highways must be certified (Std. Spec. 643). Paddle at least 24 in wide with 8 in letters, except local roads 25 mph or less. Check the state manual.';
+    else if (state === 'MA') note = '<strong>Massachusetts:</strong> flaggers must be MassDOT certified, carry an airhorn, and use two-way radios when working together. Cones at least 36 in tall (MA Amendments to the MUTCD, Jan 2026). Tapers and sign spacing here are the national numbers. Check the state manual.';
     else if (nm) note = 'National MUTCD numbers. ' + e(nm) + ' may have its own manual or supplement with different numbers; check it.';
     else note = 'National MUTCD numbers. Your state may have its own manual with different numbers.';
     h += '<p class="tc-state" id="tcStateNote">' + note + '</p>';

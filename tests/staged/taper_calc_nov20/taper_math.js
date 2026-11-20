@@ -2,7 +2,8 @@
    required by tests/unit_math.js. Numbers: MUTCD 11th Edition (FHWA, Dec 2023, Rev. 1 Dec 2025), Part 6 -
    Tables 6B-1 (sign spacing), 6B-2 (stopping sight distance), 6B-3 / 6B-4 (tapers), Section 6K.01 (device spacing),
    Section 6B.08 (20 ft in one-lane two-way and downstream tapers). California: CA MUTCD 2026 Table 6B-1 (city streets
-   by speed). Checked Nov 20 2026. */
+   by speed). Alaska: 2026 Alaska Traffic Manual Supplement Table 6B-1 (city low speed = 40 mph or less).
+   Checked Nov 20 2026. */
 (function (root) {
   var SSD = { 20: 115, 25: 155, 30: 200, 35: 250, 40: 305, 45: 360, 50: 425, 55: 495, 60: 570, 65: 645, 70: 730, 75: 820 };
   var SIGNS = { urbanLow: [100, 100, 100], urbanHigh: [350, 350, 350], rural: [500, 500, 500], freeway: [1000, 1500, 2640] };
@@ -17,6 +18,8 @@
       var v = 350; for (var i = 0; i < CA_CITY.length; i++) if (S <= CA_CITY[i][0]) { v = CA_CITY[i][1]; break; }
       return { abc: [v, v, v], rule: 'CA' };
     }
+    // Alaska: 2026 ATMS Table 6B-1 (replaces the national table): same distances, low speed = 40 mph or less
+    if (state === 'AK' && (road === 'urbanLow' || road === 'urbanHigh')) return { abc: S <= 40 ? [100, 100, 100] : [350, 350, 350], rule: 'AK' };
     return { abc: SIGNS[road].slice(), rule: 'US' };
   }
   function calc(o) {

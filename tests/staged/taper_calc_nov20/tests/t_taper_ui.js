@@ -49,6 +49,11 @@ const overflow = (p) => p.evaluate(() => { const w = document.documentElement.cl
   ok(/180 ft/.test(t), 'CA 30 mph merging taper 180 ft (Table 6B-3(CA))');
   await sel(p, 'tcState', 'TX'); t = await res(p);
   ok(/100 · 100 · 100 ft/.test(t) && /Texas may have its own manual/.test(t), 'TX: federal 100 ft + state may differ');
+  await sel(p, 'tcState', 'AK'); await typ(p, 'tcSpeed', 40); await sel(p, 'tcRoad', 'urbanHigh'); t = await res(p);
+  ok(/100 · 100 · 100 ft/.test(t) && /Alaska rule:/.test(t) && /24 in wide with 8 in letters/.test(t) && /Check the state manual/.test(t), 'AK 40 mph city: 100 ft, "Alaska rule", paddle note, check line');
+  await typ(p, 'tcSpeed', 45); t = await res(p); ok(/350 · 350 · 350 ft/.test(t) && /Alaska, city street at 45 mph/.test(t), 'AK 45 mph city: 350 ft');
+  await sel(p, 'tcState', 'MA'); await sel(p, 'tcRoad', 'urbanLow'); t = await res(p);
+  ok(/100 · 100 · 100 ft/.test(t) && /MassDOT certified/.test(t) && /airhorn/.test(t) && /36 in/.test(t) && /Check the state manual/.test(t) && !/rule:/.test(t), 'MA: national spacing + flagger/cone note + check line');
   // bad entry: one quiet line on leaving the box
   await typ(p, 'tcSpeed', 90); await p.click('#tcRoad'); await p.keyboard.press('Escape'); await p.evaluate(() => document.activeElement.blur()); await p.waitForTimeout(300);
   ok(/20 to 75 mph/.test(await p.evaluate(() => (document.getElementById('taperCalcLiveMsg') || {}).textContent || '')) && !(await p.evaluate(() => !!document.querySelector('#taperResult .pb-answer-box'))), '90 mph: no answer, message "20 to 75 mph"');
