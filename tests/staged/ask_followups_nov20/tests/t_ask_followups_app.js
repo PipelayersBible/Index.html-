@@ -4,6 +4,7 @@
 const L = require('/home/claude/index.html-/tests/bughunt_nov17/office/lib');
 let fails = 0, n = 0; const ok = (c, m) => { n++; console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const ACK = `;try{localStorage.setItem('pbAiPrivacyAck','1')}catch(e){}`;
+const IND = `;window.__rpcOverride=Object.assign(window.__rpcOverride||{},{pb_terms_status:()=>({terms:'1.0',privacy:'1.0',at:new Date().toISOString()}),pb_my_name_get:()=>({ok:true,name:'Tommy Fontaine'})});`;
 const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s); return !!(e && e.offsetParent); }, sel);
 const txt = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s); return e ? e.innerText.replace(/\s+/g, ' ').trim() : null; }, sel);
 async function askRig(p) {
@@ -16,7 +17,7 @@ async function askRig(p) {
 (async () => {
   // ---------- 1. Individual plan (the rig's default account): asked once on Home, kept on the phone ----------
   {
-    const { b, p } = await L.boot(L.URL, { init: ACK });
+    const { b, p } = await L.boot(L.URL, { init: IND + ACK });
     ok(await vis(p, '#homeStateCard'), 'individual: the State card is on Home');
     ok(/Which state do you work in\?/.test(await txt(p, '#homeStateCard') || ''), 'individual wording: ' + (await txt(p, '#homeStateH')));
     ok(!(await vis(p, '#homeStateUse')), 'no guess, no "Use ..." button');
@@ -58,7 +59,7 @@ async function askRig(p) {
   }
   // ---------- 2. Individual: Ask had to ask; Not Now ----------
   {
-    const { b, p } = await L.boot(L.URL, { init: ACK });
+    const { b, p } = await L.boot(L.URL, { init: IND + ACK });
     await p.click('#homeStateLater'); await p.waitForTimeout(200);
     ok(!(await vis(p, '#homeStateCard')), 'Not Now hides the card');
     const A = await askRig(p); await A.open();
