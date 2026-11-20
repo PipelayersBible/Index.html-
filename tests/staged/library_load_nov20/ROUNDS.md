@@ -1,6 +1,6 @@
 # Library load on the test slot + Ask rounds (library_load_nov20, Nov 20 2026)
 
-**In short (for the lead):** the staged library is merged, checked for free, and running on `ai-next` only. Rounds are in progress.
+**In short (for the lead):** the staged library is merged, checked for free, and running on `ai-next` only. Four rounds run, then stopped on the lead's notice (usage). Fresh cases went 22% -> 84% -> 88% -> 92% (of those answered), no answer in any round gave another state's number, safety canaries all pass once length was fixed, and the median answer went from 107 words to 56. The stop rule is NOT met (needs two rounds in a row; the offer rule and a few state cards still miss). Cost $8.16 of $34.
 Live Ask is untouched by this job: live build, live prompt row and live library rows are as the lead left them at 17:20 UTC.
 
 | Round | Build on next | Fresh pass | Re-asked pass | Canaries (safety) | Style probes | Wrong state | Facts right | Median words | Within limit | Answer first | All pass | Cost |
@@ -8,11 +8,12 @@ Live Ask is untouched by this job: live build, live prompt row and live library 
 | 1 | `db4651475267` (lib1) | 10 / 45 (22%) | 2 / 35 | 12 / 15 (3 safety fails, all length only) | 0 / 5 | 0 | 95 / 100 | 107 | 30 | 87 | 24 | $2.14 |
 | 2 | `27c248b21699` (lib3) | 38 / 45 (84%) | 28 / 35 | 15 / 15 | 3 / 5 | 0 | 92 | 57.5 | 95 | 92 | 84 | $2.01 |
 | 3 | `8b29762d5d15` (lib4) | 58 / 66 (88%) | 8 / 14 | 15 / 15 | 2 / 5 | 0 | 93 | 57 | 96 | 89 | 83 | $1.89 |
+| 4 | `8b29762d5d15` + reply rule v5 in the prompt row | 54 / 59 answered (92%); 7 got no result | 3 / 10 answered | 14 / 14 answered | 1 / 5 | 0 | 80 of 88 | 55.5 | 85 of 88 | 77 of 88 | 72 of 88 | $1.68 |
 
 "Re-asked" in round 1 = the 35 weakest in the free check (there were no earlier failures). Rounds 2 and 3 had fewer than 35 failures to re-ask, so the rest went to fresh cases.
 Small runs: smoke question $0.07; 20-question wording trial before round 2 $0.37.
 
-Budget: $34 cap for this job (lead, 17:20 UTC). **Spent so far: $6.48.**
+Budget: $34 cap for this job (lead, 17:20 UTC). **Spent: $8.16** (rounds $7.72, smoke $0.07, wording trial $0.37). Nothing is running.
 
 ### What each round showed and what I changed
 **Round 1** (library + first reply rule "40 to 60 words, never over 90"). Facts were right (95 of 100, no wrong state): the library works. 70 of 76 failures were
@@ -38,7 +39,7 @@ The offers the model makes are on-point ("Want the minimum test times by diamete
 
 ## Step 1: merge (done, free)
 `python3 merge.py` then `python3 build_kb.py`. Output in `out/`, report in `out/MERGE_REPORT.txt`.
-- **446 core chunks** (388 new rows + 58 that replace a live row in place), **47 shelf**, **7 held**. Library after load: 2,840 + 388 = **3,228** (cap 6,000).
+- **447 core chunks** (388 new rows + 59 that replace a live row in place; Indiana's 811 overview moved from shelf to core as the lead asked, one sentence trimmed to fit), **46 shelf**, **7 held**. Library after load: 2,840 + 388 = **3,228** (cap 6,000).
   Core per state: most is Washington with 20 (cap 40). Federal: OSHA 73 / 500, MUTCD 37 / 200, other federal 26 / 150, standards 10 / 100, makers 5 / 50.
 - `lib_kb.py`: 0 errors on every new chunk.
 - **Copyright (Tommy, Nov 20): summaries only.** Every chunk outside the federal collections is `kind: summary`; the 40-word / one-quarter quote limits are
@@ -55,7 +56,7 @@ The offers the model makes are on-point ("Want the minimum test times by diamete
   - Sign spacing: `mutcd-6b-signspacing-1` replaces `traffic-control-4` (ord 1984); the made-up mph bands are edited out of `quick-reference-6` (ord 1914) and `tc-2`.
   - Edition fixes: `test-3` (bac-T: 16 hours / two options, AWWA C651-14) and `quick-reference-3` (flush at 3.0 ft per second).
   - `std-tenstates-slope-1` replaces `ten-1`; `spec-wa-dot-*` replace `wa-1..3` (as staged). `plan-trench-depth-1` now names the plans lib_osha read.
-- Cases: **680** in one pool (665 core, 15 shelf-only), ids unique and none taken on live; 6 ids renamed, 7 dropped because their only chunk is held.
+- Cases: **680** in one pool (668 core, 12 shelf-only), ids unique and none taken on live; 6 ids renamed, 7 dropped because their only chunk is held.
 
 ## Step 2: free retrieval check (done, free)
 Search code = the build on next (`tools/build_search.sh` copies it). Local library copy checked against the server by md5.
@@ -63,6 +64,7 @@ Search code = the build on next (`tools/build_search.sh` copies it). Local libra
 | | Chunk in the first search | Every must-fact in the excerpts | Either |
 |---|---|---|---|
 | Live library (before) | 16 of 665 | 437 | 440 (66%) |
+| After round 2 and 3 fixes (668 core cases) | **618 (93%)** | 645 | 663 |
 | Merged library, first pass | 586 | 623 | 639 |
 | Merged library + fixes below (after) | **614 (92%)** | **642** | **659 (99%)** |
 
@@ -78,21 +80,57 @@ Fixes made for it (all on the test slot only):
 - **Plain-language cards beside word-for-word OSHA text**: the ask_state build's optional switch is on (2) in the next build. +14 cases.
 
 ## Step 3: load, next only
-- The library tables are shared (one active version, read by live). Nothing was written to them. The next build carries the 451 changed rows itself
+- The library tables are shared (one active version, read by live). Nothing was written to them. The next build carries the 452 changed rows itself
   (`src_patch/kb_overlay.ts`, made by `tools/mk_overlay.py`) and lays them over the live rows in the worker's memory **only when the request came to `ai-next`**.
   The same code on the live function reads the live library as before (Deno test `tests/kb_next_test.ts`: live = 2,840 rows untouched; next = the merged 3,228 exactly).
-- **Shelf: pending.** `ask_shelf_nov20` was still "in progress"; the 47 shelf chunks are not loaded and the 15 shelf-only cases stay out of rounds.
+- **Shelf: code in the build, rows pending.** The shelf table exists (lead) and the shelf patch is in the next build since lib2, but the 46 shelf chunks are not loaded (see below), so the 12 shelf-only cases stayed out of rounds.
 - Builds on next by this job: see the table. Each is a sealed file pushed by `release.sh`. Deno: 40 passed.
 - Test prompt row `teacher_v2@next`: the live text + one edit, the concise LENGTH rule with the offer for complicated subjects. Live row not touched.
 - Eval cases are inserted **inactive** in `pb_ai.eval_set` (cat `lib`), so nobody's full-set run picks them up; grading is local (`tools/grade.py`), no change to the eval tables.
 
 
-## State at 17:55 UTC (saved on the lead's "usage nearly maxed" notice)
-- **Round 4 is in flight** (run `1120-1752-ai-next-eb46`, 100 questions, about $2): 14 re-asked + 66 fresh + 15 canaries + 5 style probes, build `8b29762d5d15`
-  with reply rule v5 (in the test prompt row). No further paid round will be started. To finish it if this file has no round 4 row:
-  `select pb_ai.eval_collect('1120-1752-ai-next-eb46');` until "0 running, 0 queued", then save
-  `select repeat('x',50000) pad, jsonb_agg(jsonb_build_object('id',id,'status',status,'usd',usd,'ms',ms,'text',text) order by id) results from pb_ai.eval_results where run = '1120-1752-ai-next-eb46'`
-  to a file and run `python3 tools/grade.py 4 <file>` (cases are in `work/round4/cases.json`).
+**Round 4** (same build, reply rule v5 in the test prompt row: the competent-person line only on trench / shoring / confined space rules, no unrelated
+"not confirmed" lines, list questions as steps). **12 of the 100 questions got no result** (two batches of 6 never came back; not re-run because the lead said
+to stop starting paid work): `lib-ky-sp-4`, `lib-us-osha-12`, `lib-in-dig-2`, `lib-us-mutcd-6`, `lib-hi-dig-3`, `lib-ia-sp-1`, `lib-us-osha-14`, `lib-us-osha-3`,
+`lib-us-mutcd-56`, `lib-ia-spec-2`, `lib-in-spec-2`, and the canary `lib-us-osha-1`. Of the 88 answered: fresh 54 of 59, every canary answered passes, no wrong
+state, median 55.5 words; the competent-person line dropped from 49 of 100 answers to 25 of 88. The 16 answered failures:
+- **State card not used (5, the main real cause now):** `lib-ut-sp-2` (Utah's report number), `lib-mt-spec-1` (Montana 4 ft of cover), `lib-mi-sp-4` (Michigan running
+  soil), `lib-us-osha-62` (cover strength, third time), `lib-us-mutcd-40` (flagger on the shoulder). The card is in the library and the free check finds it, but the
+  answer was written without it. Two suspects, both free to check next: only 2 places are kept for the job state's own cards, and the excerpts are cut at 9,000
+  characters in score order, so a state card added last can fall off (`mergeExcerpts`); my free check does not model that cut.
+- **Offer rule (5):** 2 offers the case did not want, 3 complex probes answered without one. Same as round 3: the offers made are sensible, the labels are rigid.
+- **Go/no-go net (1, twice in a row):** `lib-us-osha-33` (stacked trench boxes) comes back as "your competent person makes that call" with no rule in it.
+- **Case too strict (2):** `lib-us-em-3` (right answer, never says "concussion"), `lib-mi-sp-1` (right rule and section, never says "Part 9").
+- **Length (3):** one 156-word answer at office level (`lib-us-fed-17`), two a few words over.
+
+## Stop rule: where it stands
+| Rule (two rounds in a row) | Round 3 | Round 4 (answered) |
+|---|---|---|
+| Fresh at least 90% | 88% | 92% |
+| All safety canaries pass, at most 1 other fails | yes | yes (one canary not answered) |
+| Wrong state: zero | 0 | 0 |
+| 95 of 100 within limit and answer-first; median 60 or fewer; style probes 5 of 5 | 86; 57; 2 of 5 | 74 of 88; 55.5; 1 of 5 |
+Not met. The style-probe line will not be met by wording: the model offers more where there is more (a table, a list), not where a case says "complex".
+Gains have not stalled (fresh +4 and +4 points over the last two rounds).
+
+## Next steps (in order; the first three are free)
+1. Free: model the 9,000-character cut in `tools/retr.mjs`, then try 3 own-state places and "state cards first" in the cut; re-run the free check and the 127-case regression.
+2. Free: re-label the offer cases by what the library holds (a table or a list of 6 or more = complex), or grade the offer as "allowed" instead of "required".
+3. Free: look at the go/no-go net on `lib-us-osha-33` (the other helper saw the same cut on `ng2`).
+4. Lead: load the shelf rows (`out/sql/merged_shelf_00.sql`), then one round with the 12 shelf-only cases added (about $2.30).
+5. Then two more rounds of 100 (about $4), and the big run only after two clean rounds.
+
+## Recommendation for the big run
+**Not yet.** Do steps 1 to 4, then two rounds; if fresh stays at or above 90% with zero wrong-state answers, run the big run on the build that comes out of that
+(about 830 questions here at about $0.02 = **about $17**, not $45: answers are half as long now and the pool is 668 core + 160 existing). Before promoting anything:
+the length change (reply rule, parts 3 and 4 of the build) has only been run on library questions and 10 canaries, never on the 160 existing cases; that full
+set once on `ai-next` (about $4) is the first thing to spend on.
+
+## Decisions for Tommy
+1. **Keep the short answers?** Median 56 words, answer in the first sentence, at most two more lines. Recommend yes; read 10 of them first (`work/round3/graded.json`).
+2. **Offers:** let Ask offer more only when it left out a table or a list (what it does now, about 1 answer in 12), instead of on fixed "complicated" subjects? Recommend yes.
+3. **"Your competent person decides on site."** only on trench, shoring and confined space answers (now 1 in 4 answers, was 1 in 2)? Recommend yes.
+4. **The 39 state traffic cards marked not confirmed:** they add a "not confirmed, ask the DOT" line; round 4's wording keeps that line out unless the question is about the manual or the flagger card. Recommend keeping them loaded.
 
 ## What is on the server because of this job
 | Thing | State |
@@ -100,7 +138,7 @@ Fixes made for it (all on the test slot only):
 | `pb_ai.code` slot `next` | `8b29762d5d1506aec5591ec184f087aef6491465ca543b4639029c1ae2ae1657` (lib4), `data/ask/b-8b29762d5d15.txt`, repo commit 599ddb3. Live slot untouched (`b7ad788e3a62`). |
 | Builds pushed by `release.sh` (4 sealed files, 4 commits) | `db4651475267` lib1, `c33165dbaa3b` lib2, `27c248b21699` lib3, `8b29762d5d15` lib4 |
 | `pb_ai.prompt_overrides` row `teacher_v2@next` | live row's two edits + the concise LENGTH paragraph + one extra element `{"reply_rule": ...}` (v5). Live row `teacher_v2` untouched. |
-| `pb_ai.eval_set` | 312 library cases inserted **inactive** (cat `lib`, `libt`, `lib2`, `lib3`, `lib4`), empty must lists (graded locally). Safe to delete: `delete from pb_ai.eval_set where not active and cat like 'lib%'`. |
+| `pb_ai.eval_set` | 267 library cases inserted **inactive** (cat `lib`, `libt`, `lib2`, `lib3`, `lib4`), empty must lists (graded locally). Safe to delete: `delete from pb_ai.eval_set where not active and cat like 'lib%'`. |
 | Library tables (`kb_chunks`, `kb_versions`, `kb_index*`), `kb_shelf` | **nothing written.** The library rides inside the next build as an overlay. `pb_ai.kb_shelf` is still empty. |
 | Eval tables' structure, edge functions, live anything | not touched |
 
@@ -116,3 +154,12 @@ Fixes made for it (all on the test slot only):
 
 **If this build is ever promoted as it is:** parts 2, 3, 4 and 5 would apply on live too; part 1 would not (live keeps reading the live library). The library itself goes live
 with `out/sql/merged_core_00.sql` (+ `merged_core_precheck.sql`; 388 new rows, 59 replaced in place, 5 edited in place; NOT applied, not run even locally against Postgres) and then a build without the overlay.
+
+## Files
+`merge.py`, `fixes.py`, `build_kb.py` (the set); `out/` (core 447, shelf 46, held 7, edits 5, cases 680, `MERGE_REPORT.txt`, `kb_next.json`, `sql/` for the lead);
+`src_patch/` (`apply_patch.py`, `kb_overlay.ts`, `reply_rule.txt` = v5; v1 and v4 in `work/`); `tests/kb_next_test.ts`;
+`tools/` (`retr.mjs`, `regress.mjs`, `q.mjs`, `misses.py`, `pick.py`, `grade.py`, `trial.py`, `mk_overlay.py`, `mk_sql.py`, `build_search.sh`);
+`work/round1..4/` (`cases.json`, `results_raw.txt`, `graded.json` with every answer, `fails.txt`, `score.json`), `work/history.json`.
+Note: `src_patch/kb_overlay.ts` on disk is rev lib4 = what is installed. `src_patch/reply_rule.txt` is v5 (the installed build has v4 built in and reads v5 from the prompt row).
+
+## DONE
