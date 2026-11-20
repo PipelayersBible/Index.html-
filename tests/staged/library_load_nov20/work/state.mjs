@@ -76,6 +76,7 @@ function resolveState(o) {
   if (appOk && ah === "company") return { code: app, how: "company", named: q };
   if (okState(o?.companyState)) return { code: o.companyState, how: "company", named: q };
   if (appOk && ah === "last_job") return { code: app, how: "last_job", named: q };
+  if (appOk && ah === "here") return { code: app, how: "here", named: q };
   if (appOk && ah === "told") return { code: app, how: "told", named: q };
   if (okState(o?.majorityState)) return { code: o.majorityState, how: "company_jobs", named: q };
   return { code: null, how: q.length > 1 ? "question_many" : "unknown", named: q };
@@ -146,6 +147,10 @@ function stateSearch(search, index, query, opts, st, question) {
   }
   const ownFirst = new Set(EMERGENCY.test(String(question || "")) ? [] : own.map((h) => h.id));
   out.sort((a, b) => Number(ownFirst.has(b.id)) - Number(ownFirst.has(a.id)) || b.score - a.score);
+  if (ownFirst.size && out.length > 2 && ownFirst.has(out[1].id)) {
+    const g = out.findIndex((h) => !ownFirst.has(h.id));
+    if (g > 1) out.splice(1, 0, out.splice(g, 1)[0]);
+  }
   const ownN = out.filter((h) => own.some((x) => x.id === h.id)).length, dep = stateDependent(question, wide);
   const thin = !dep && !ownN && PLAN_STATES.includes(code) && SAFETY_RULE.test(String(question || "")) && !EMERGENCY.test(String(question || "")) && !kept.some((h) => chunkStates(h).includes(code) && h.score >= top * OWN_MIN * 0.5);
   return { hits: out, dropped: wide.slice(0, k).filter((h) => !keep(h)).length, own: ownN, plain, dependent: thin ? "plan" : dep };
@@ -158,12 +163,12 @@ const PLAN_STATES = "AK AZ CA HI IN IA KY MD MI MN NV NM NC OR SC TN UT VT VA WA
 function stateLines(st, dependent, own) {
   const code = st?.code, name = code ? US_STATES[code] : "";
   if (code) {
-    const how = { question: "named in the question", job: "from the job", company: "the company's state", conversation: "named earlier in this conversation", company_jobs: "where most of this company's jobs are", last_job: "from the last job on this phone", told: "the state this person gave Ask before" }[st.how] || "from the job";
+    const how = { question: "named in the question", job: "from the job", company: "the company's state", conversation: "named earlier in this conversation", company_jobs: "where most of this company's jobs are", last_job: "from the last job on this phone", told: "the state this person gave Ask before", here: "where this phone is" }[st.how] || "from the job";
     const head = `JOB STATE: ${name} (${code}), ${how}.`;
-    if (dependent === "plan") return `${head} ${name} runs its own OSHA plan, which can be stricter than federal OSHA, and the library has no ${name} rule for this question. Answer with the federal rule as usual, then add one short line that says this is the federal rule, the library does not have ${name}'s own rule for it, and to confirm with ${name}'s OSHA plan. Never give another state's number as theirs. Do not ask which state.`;
-    if (!dependent && !own) return `${head} Use it only if the answer changes by state (811 rules, a state OSHA plan, breaks, pay or heat rules, state specs); then answer for ${name} and never give another state's number as theirs. Otherwise answer as usual, at the usual short length, and do not mention the state. Do not ask which state.`;
+    if (dependent === "plan") return `${head} ${name} runs its own OSHA plan, which must be at least as protective as federal OSHA and can be stricter, and the library has no ${name} rule for this question. Give the federal rule as the minimum, then one short line: ${name}'s plan can be stricter, confirm with ${name}'s OSHA plan. Never give another state's number or name another state. Do not ask which state.`;
+    if (!dependent && !own) return `${head} Use it only if the answer changes by state (811 rules, a state OSHA plan, breaks, pay or heat rules, state specs); then give the STRICTEST rule that applies in ${name} (the state's or the federal one, whichever protects the crew more) and say in a few words where it comes from; never give another state's number or name another state. Otherwise answer as usual, at the usual short length, and do not mention the state. Do not ask which state.`;
     const plan = PLAN_STATES.includes(code) ? ` ${name} runs its own OSHA plan, which can be stricter than federal OSHA: if this is a safety-rule question and no excerpt gives ${name}'s rule, search_knowledge once with "${name}" and the topic before answering.` : ` ${name} has no state OSHA plan for private crews: on a safety rule (trench, confined space, fall protection, silica) federal OSHA IS ${name}'s rule, so give it plainly and do not say the library lacks a ${name} rule.`;
-    return `${head}${plan} Answer for ${name}: lead with the direct answer. Where an excerpt gives ${name}'s own rule or number, lead with it and name the state; give the federal rule beside it in one short clause when there is one. The state must not make the answer longer: its rule takes the place of a general point, it is not added on top, so keep the usual short length. Never give another state's number as theirs. If the excerpts have no ${name} rule for this, say in a few words that the library does not have ${name}'s rule for it, give the federal rule, and name who to check with (the state's OSHA plan, 811 center or agency). Do not ask which state.`;
+    return `${head}${plan} Answer for ${name}: lead with the direct answer. STRICTEST RULE: where ${name}'s own rule and a federal rule (OSHA, MUTCD, EPA) both apply and differ, the answer is the STRICTER one (more protective for the crew and the public), with its source named in a few words: "${name} requires ... (stricter than federal ...)" or "Federal OSHA requires ... (stricter than ${name}'s ...)". If they are the same, say so in a few words. If you cannot tell which is stricter, give both in one short line each and say to follow the stricter. Never give a weaker rule because it is ${name}'s, and never drop a stricter federal rule. A rule only the state has (811 tickets, state specs) is simply ${name}'s rule. The state must not make the answer longer: keep the usual short length. Never give another state's number or name another state, not even as an example. If the excerpts have no ${name} rule for this, say in a few words that the library does not have ${name}'s rule for it, give the federal rule, and name who to check with (the state's OSHA plan, 811 center or agency). Do not ask which state.`;
   }
   return dependent ? `JOB STATE: not known, and this answer changes with the state. Give in one or two lines only what is the same in every state (the federal rule, if there is one). Do not give any one state's number as theirs. Then end with exactly one short question: "Which state is the job in?"` : 'JOB STATE: not known. If, and only if, the answer changes with the state, give what is the same everywhere and end with one short question: "Which state is the job in?" Otherwise just answer; do not ask. In an emergency never ask: give the steps.';
 }

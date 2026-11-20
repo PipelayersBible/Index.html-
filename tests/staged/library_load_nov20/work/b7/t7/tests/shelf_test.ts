@@ -218,7 +218,7 @@ Deno.test("request: a shelf excerpt of the job state's own rule counts as the li
   const without = await ask(q, { where: "Louisville, KY" });
   ok(/the library has no Kentucky rule for this question/.test(without.text), "today: Kentucky plan state, nothing of its own");
   const withOwn = await ask(q, { where: "Louisville, KY", shelf: { ok: true, rows: [row({ id: "sp-ky-trench-1", state: "KY", coll: "sp", title: "Kentucky trench protection: depth where a protective system is required", source: "803 KAR 2:415", cover: 1, text: "Kentucky adopts the federal excavation standard through 803 KAR 2:415. ".repeat(4) })] } });
-  ok(!/the library has no Kentucky rule for this question/.test(withOwn.text) && /Where an excerpt gives Kentucky's own rule or number, lead with it/.test(withOwn.text), "with the shelf's Kentucky chunk the model is told to lead with it");
+  ok(!/the library has no Kentucky rule for this question/.test(withOwn.text) && /STRICTEST RULE: where Kentucky's own rule and a federal rule/.test(withOwn.text), "with the shelf's Kentucky chunk the model is told to lead with it");
   const fed = await ask(q, { where: "Louisville, KY", shelf: { ok: true, rows: [row({ id: "osha-pl-x-1", state: "US", coll: "osha", cover: 1 })] } });
   ok(/the library has no Kentucky rule for this question/.test(fed.text), "a federal shelf excerpt does not count as Kentucky's rule");
 });
