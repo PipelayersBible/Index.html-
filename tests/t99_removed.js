@@ -6,7 +6,7 @@ const init=require(__dirname+'/rig/co')+`;window.__rpcOverride.pb_my_plan=()=>({
  const txt=()=>p.evaluate(()=>{const l=document.getElementById('pbBetaLine');return l.hidden?'(hidden)':l.innerText.replace(/\s+/g,' ')});
  console.log('card:',await txt(),'| pill:',await p.evaluate(()=>!!document.getElementById('pbFbPill')));
  await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0')+'/t99.png')});
- await p.click('#pbBetaLine [data-own="1"]');await p.waitForTimeout(500);
+ await p.click('#pbBetaLine [data-own="individual:month"]');await p.waitForTimeout(500);
  console.log('after My Own Plan:',JSON.stringify(await p.evaluate(()=>window.__req)),'|',await txt());
  await p.evaluate(()=>{window.__rpcOverride.pb_my_plan=()=>({ok:true,plan:null,removed:{company:'Acme Pipeline'},individual:false,requested:false});});
  console.log('errs',p.errs);await b.close();

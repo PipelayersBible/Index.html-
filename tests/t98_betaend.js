@@ -10,7 +10,7 @@ const mk=(plan)=>require(__dirname+'/rig/co')+`;window.__rpcOverride.pb_my_plan=
  await p.waitForTimeout(4500);
  console.log('grace:',await p.evaluate(()=>document.getElementById('pbBetaLine').innerText.replace(/\s+/g,' ')));
  await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0')+'/t98_grace.png')});
- await p.click('#pbBetaLine [data-plan="individual"]');await p.waitForTimeout(500);
+ await p.click('#pbBetaLine [data-plan="individual:year"]');await p.waitForTimeout(500);
  console.log('after tap:',JSON.stringify(await p.evaluate(()=>window.__req)),'|',await p.evaluate(()=>document.getElementById('pbBetaLine').innerText.replace(/\s+/g,' ')));
  await p.evaluate(()=>window.pbOwnerOpen());await p.waitForTimeout(800);
  console.log('owner:',await p.evaluate(()=>document.getElementById('pbOwnList').innerText.replace(/\n+/g,' | ')));

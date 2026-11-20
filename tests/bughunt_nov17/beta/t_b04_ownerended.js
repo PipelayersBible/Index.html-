@@ -13,5 +13,5 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++;};
   ok(!p.errs.length,'no errors '+p.errs);await b.close();}
  {const {b,p}=await boot((process.env.PB_ROOT||'http://127.0.0.1:8843/')+f,{init:co+plan,wait:6500});
   const btns=await p.evaluate(()=>[...document.querySelectorAll('#pbBetaLine button')].map(b=>b.textContent));
-  ok(btns.join()==='Company Plan,My Own Plan','crew unchanged ['+btns+']');await b.close();}
+  ok(btns.join()==='Company Plan,My Own Plan: Monthly $15,My Own Plan: Yearly $144, save $36','crew unchanged ['+btns+']');await b.close();}
  process.exit(fails?1:0);})();

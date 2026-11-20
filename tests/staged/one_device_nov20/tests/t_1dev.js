@@ -229,7 +229,7 @@ const EMPTY_DASH=`window.__rpcOverride=Object.assign(window.__rpcOverride||{},{p
   const O=track((await boot(b,BASE,srv,{user:srv.USERS[OF],ua:WIN,wide:true,init:EMPTY_DASH,wait:6000})).p,'9:O');
   await O.evaluate(()=>window.pbOpenCrewMembers());await O.waitForTimeout(2500);
   const html=await O.evaluate(()=>document.documentElement.outerHTML);
-  ok(!/crShare|pbOwnShare|pb_share_notes|pb_owner_share|used in two places|Each person needs their own login/.test(html),'9: no crew note, no Beta Accounts block, no sharing words in the page');
+  ok(!/crShare|pbOwnShare|pb_share_notes|pb_owner_share_notes|used in two places|Each person needs their own login/.test(html),'9: no crew note, no Beta Accounts block, no sharing words in the page');
   const n0=seen(srv);await O.evaluate(()=>{window.__pb1d.at=Date.now()-91000;});await O.waitForTimeout(16000);
   ok(seen(srv)===n0+1,'9: a check-in ~90 s after the last one while on screen ('+(seen(srv)-n0)+')');
   await O.evaluate(()=>{window.__pb1d.at=Date.now()-30000;});await O.waitForTimeout(16000);

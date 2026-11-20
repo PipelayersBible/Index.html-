@@ -1326,7 +1326,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     function capture(err, opts) {
       if (busy) return false;
       busy = true;
-      try { if (!allowed() || quiet()) return false; return take(build(err, opts)); }
+      try { if (!allowed() || quiet()) return false; var took = take(build(err, opts)); if (took) { try { if (typeof window.pbTrack === 'function') window.pbTrack('crash'); else window.__pbCrashN = (window.__pbCrashN || 0) + 1; } catch (x) {} } return took; }
       catch (e) { return false; }
       finally { busy = false; }
     }
@@ -3442,6 +3442,12 @@ html.pb-ask-open .pb-tabbar { z-index: 46; } /* r16.07: over the Ask sheet (45) 
 #pbApp .pb-ai-src { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 14px; }
 #pbApp .pb-ai-src .pb-edu-link { min-height: 44px; text-align: left; }
 #pbApp .pb-ai-src-k { color: var(--pb-text-2); }
+/* ask_followups: the state an answer is for (quiet), and the State picks */
+#pbApp .pb-ai-st { margin-top: 8px; font-size: 13px; }
+#pbApp .pb-ai-st .pb-edu-link { font-size: 13px; min-height: 44px; padding: 0 6px; }
+#pbApp .pb-ai-st select, #pbApp #homeStateSel, #pbApp #cxnState { min-height: 44px; max-width: 100%; font-size: 16px; }
+#pbApp .pb-ai-st-pick { display: block; margin-top: 6px; }
+#pbApp #homeStateCard .pbst-f { margin: 10px 0 0 0; padding: 0; }
 #pbApp .pb-ai-label { font-weight: 600; }
 #pbApp .pb-ai-em { margin: 0 0 12px 0; }
 #pbApp .pb-ai-local { margin: 0 0 8px 0; }
@@ -5386,6 +5392,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     </div><!-- feat_pushcard: the Turn on notifications offer; not counted in Needs Attention -->
     <!-- B27CX:company (batch 27 CONSOLE): the Company Home, for the company account, its managers and PMs only (pbIsCompanyHome). Hidden for everyone else.
          What a PM must know first (right now, inbox, material alerts, waiting), then every job's progress; a job opens its own screen. -->
+    <div id="homeStateAsk" hidden></div><!-- ask_followups: which state (asked one time; company account or Individual plan) -->
     <section id="homeCompany" class="pb-coh pbx-home" aria-labelledby="homeCoHead" hidden>
       <div id="homeObStart" hidden></div><!-- onboard2: Getting started (add your crew, add a job, crew installs the app) -->
       <div id="homePlanAlerts" class="pbx-pas" role="region" aria-labelledby="homePaHead" hidden></div><!-- feat_super: plan changes on the jobs this account is assigned to -->
@@ -5494,7 +5501,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
         <details class="pb-more" id="settingsPlanMore"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>What each plan includes</span></summary><div class="pb-help" id="settingsPlanHelp"><!-- pricing_nov20 -->
           <p><b>Company plan: <span data-pbp="base">$99</span> a month</b> for your company and <span data-pbp="seats">5</span> people. <span data-pbp="seat">$12</span> a month for each extra person. Pay for the year and get 12 months for the price of <span data-pbp="ym">10</span>. Everyone with a login counts as a person. The company account is free and doesn&rsquo;t count.</p>
           <p>Everything in the app for the whole company: runs with photos and sealed records, Confined Space permits, trench and shoring, daily reports, tickets, locates, the company board and office screens, crew invites, the calculators, Education &amp; Reference and Ask.</p>
-          <p><b>Individual plan: <span data-pbp="ind">$15</span> a month</b>, or <span data-pbp="indym">$12</span> a month billed yearly (<span data-pbp="indyear">$144</span> a year). One person, no company: New Run, Quick Run, the calculators, Education &amp; Reference, Stats, Jobs, Ask and stake reading.</p>
+          <p><b>Individual plan: <span data-pbp="ind">$15</span> a month</b>, or <span data-pbp="indym">$12</span> a month billed yearly (<span data-pbp="indyear">$144</span> a year, save <span data-pbp="indsave">$36</span>). One person, no company: New Run, Quick Run, the calculators, Education &amp; Reference, Stats, Jobs, Ask and stake reading.</p>
           <p><b>Plan reading (add-on for company plans): <span data-pbp="sheet">$1</span> a sheet</b>, charged once when the sheet is read. Questions about your plans after that count as normal Ask requests. It isn&rsquo;t turned on yet: plan sets you add are kept and you can still open the sheets.</p>
           <p>Prices are plus applicable tax. There is no free plan.</p>
           <p>Ask and photo reading have daily and monthly limits. A person on a company plan: 25 a day. The company account: 5 a day. An individual plan: 15 a day, 50 a month. A company shares 60 a month for each person on its plan. The app tells you when a limit is reached and when it resets.</p>
@@ -5574,6 +5581,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
           <button type="button" class="pb-edu-row pb-tool-row" id="settingsReportProblemBtn" data-ic="warn" onclick="pbFeedbackOpen()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Send Feedback</span><span class="sub">A problem or an idea, straight to the app&rsquo;s owner</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
           <a class="pb-edu-row pb-tool-row" id="settingsSupportEmail" data-ic="people" href="mailto:admin@pipelayersbible.com?subject=The%20Pipelayer%27s%20Bible%20help" style="text-decoration:none;color:inherit"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Email Support</span><span class="sub">admin@pipelayersbible.com</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></a>
           <button type="button" class="pb-edu-row pb-tool-row" id="settingsBetaBtn" data-ic="people" hidden onclick="pbOwnerOpen()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Beta Accounts</span><span class="sub">Start betas, Make Paid, billing due, hand over (app owner only)</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
+          <button type="button" class="pb-edu-row pb-tool-row" id="settingsCeoBtn" data-ic="flag" hidden onclick="pbCeoOpen()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Owner Dashboard</span><span class="sub">Money, use, costs, safety and account sharing (app owner only)</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
           <button type="button" class="pb-edu-row pb-tool-row" id="settingsAppProblemsBtn" data-ic="people" hidden onclick="pbOpenAppProblems()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">App problems</span><span class="sub">Reports from people using the app (app owner only)</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
           <button type="button" class="pb-edu-row pb-tool-row" id="settingsDocsReviewBtn" data-ic="people" hidden onclick="pbOpenDocsReview()"><span class="pb-tool-ic" aria-hidden="true"></span><span class="tx"><span class="name">Documents review</span><span class="sub">Shared documents to check (app owner only)</span></span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
         </div>
@@ -5746,6 +5754,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
       <button type="button" class="pb-btn secondary" id="calcCatBtnPipe" onclick="pbCalcCatJump('Pipe &amp; Flow')">Pipe &amp; Flow</button>
       <button type="button" class="pb-btn secondary" id="calcCatBtnStruct" onclick="pbCalcCatJump('Structures')">Structures</button>
       <button type="button" class="pb-btn secondary" id="calcCatBtnSafety" onclick="pbCalcCatJump('Confined Space')">Confined Space</button>
+      <button type="button" class="pb-btn secondary" id="calcCatBtnTraffic" onclick="pbCalcCatJump('Traffic Control')">Traffic Control</button>
     </section>
     <div id="toolsSearchResults" style="display:none;" aria-live="polite"></div>
     <div id="toolsList"></div>
@@ -7982,6 +7991,7 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
         <div class="pb-field"><label for="cxnJob">Job number <span class="pbx-req">(required)</span></label><input type="text" id="cxnJob" maxlength="60" autocomplete="off" autocapitalize="characters" spellcheck="false" required></div>
         <div class="pb-field"><label for="cxnName">Job name</label><input type="text" id="cxnName" maxlength="120" autocomplete="off" placeholder="e.g. Main St sewer replacement"></div>
         <div class="pb-field"><label for="cxnAddr">City, State</label><div class="cxn-addrw"><input type="text" id="cxnAddr" maxlength="300" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="e.g. Springfield, IL" oninput="this.dataset.auto=''; var p = document.getElementById('cxnAddrAuto'); if (p) p.hidden = true;"><span class="cxn-auto" id="cxnAddrAuto" hidden>auto</span></div></div>
+        <div class="pb-field" id="cxnStateF" hidden><label for="cxnState">State</label><select id="cxnState"></select><p class="pb-help" id="cxnStateHelp">No state in City, State. Pick it so 811 rules, trench rules and Ask answers fit this job.</p></div>
         <div class="pb-field"><label for="cxnStart">Start date <span class="pbx-opt">(optional)</span></label><input type="date" id="cxnStart"></div>
         <p class="pbx-formerr" id="cxnErr" role="alert" hidden></p>
         <div class="pb-btn-wrap"><button type="submit" class="pb-btn" id="cxnSave">Create Job</button></div>
@@ -9096,6 +9106,77 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
         </div>
         <div class="pb-field" id="pwOtherWrap" style="display:none;"><label>Custom density (lb/ft³)</label><input type="number" enterkeyhint="next" step="1" id="pwOther" inputmode="decimal"></div>
         <div class="pb-derived" id="pipeWeightResult" style="font-size:16px; margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAPER & CONE SPACING (taper_calc_nov20) -->
+  <style id="pbTaperCss">
+#pbApp { --pb-icon-cone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 3h4l4.5 16h-13z'/%3E%3Cpath d='M3 20.5h18'/%3E%3Cpath d='M8.2 10.5h7.6'/%3E%3C/svg%3E"); }
+#pbApp .pb-tool-row[data-dest="taper"] { --pb-tool-icon: var(--pb-icon-cone); }
+#pbApp .pb-sc-tile[data-dest="taper"] { --pb-tile-icon: var(--pb-icon-cone); }
+#pbApp #screen-taperCalc { --pb-calc-icon: var(--pb-icon-cone); }
+#pbApp #screen-calcHub section[aria-label="Traffic Control"] { --pb-sec-icon: var(--pb-icon-cone); }
+#pbApp #screen-taperCalc .tc-signs { font-variant-numeric: tabular-nums; }
+#pbApp #screen-taperCalc .tc-state { margin: 12px 0 0; font-size: 14px; line-height: 1.45; color: var(--pb-text-2); }
+#pbApp #screen-taperCalc .tc-state strong { color: var(--pb-text); }
+#pbApp #screen-taperCalc .tc-tcp { margin: 14px 0 0; font-size: 15px; line-height: 1.45; font-weight: 650; color: var(--pb-text); }
+#pbApp #screen-taperCalc .tc-src ul { margin: 6px 0 0; padding-left: 18px; }
+#pbApp #screen-taperCalc .tc-src li { margin: 0 0 6px; font-size: 14px; line-height: 1.4; color: var(--pb-text-2); }
+#pbApp #screen-taperCalc select, #pbApp #screen-taperCalc input { min-height: 52px; font-size: 18px; }
+  </style>
+  <div class="pb-screen pb-b6-calc" id="screen-taperCalc">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>TRAFFIC CONTROL</span><button class="pb-back" title="Back" onclick="pbGoBack()"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button></p>
+      <h1 class="pb-title">Taper &amp; Cone Spacing</h1>
+      <div class="pb-addhome-wrap"><button type="button" class="pb-addhome" data-dest="taper" aria-pressed="false" onclick="pbAddToHome('taper')">Add to Home</button></div>
+    </div>
+    <div class="pb-warn" style="margin-top:16px;">
+      <strong>Minimums from the national manual (MUTCD)</strong>
+      <span class="pb-warn-keep">Not a traffic control plan. The approved plan or permit comes first.</span>
+    </div>
+    <div class="pb-section">
+      <div class="pb-body">
+        <div class="pb-field"><label for="tcSpeed">Posted speed (mph)</label><input type="number" enterkeyhint="next" step="5" min="20" max="75" id="tcSpeed" inputmode="numeric"></div>
+        <div class="pb-field">
+          <label for="tcType">Taper type</label>
+          <select id="tcType">
+            <option value="merge" selected>Merging (lane closed)</option>
+            <option value="shift">Shifting (no merge)</option>
+            <option value="shoulder">Shoulder closed</option>
+            <option value="flagger">Flagger (one lane, two-way)</option>
+            <option value="down">Downstream (end of the work)</option>
+          </select>
+        </div>
+        <div class="pb-field" id="tcWidthWrap"><label for="tcWidth" id="tcWidthLabel">Lane width closed or shifted (ft)</label><input type="number" enterkeyhint="next" step="1" min="1" max="30" id="tcWidth" value="12" inputmode="decimal"></div>
+        <div class="pb-field">
+          <label for="tcRoad">Road type (for sign spacing)</label>
+          <select id="tcRoad">
+            <option value="" selected>Pick the road type</option>
+            <option value="urbanLow">City street, low speed</option>
+            <option value="urbanHigh">City street, high speed</option>
+            <option value="rural">Rural road</option>
+            <option value="freeway">Expressway / freeway</option>
+          </select>
+        </div>
+        <div class="pb-field">
+          <label for="tcState">Job state</label>
+          <select id="tcState"><option value="" selected>Not set (national numbers)</option></select>
+          <p class="pb-help" id="tcStateHow" style="margin:6px 0 0;"></p>
+        </div>
+        <div class="pb-derived" id="taperResult" style="font-size:16px; margin-top:10px;"></div>
+        <details class="pb-more tc-src" id="tcSources"><summary><svg class="pb-ic sm" aria-hidden="true" focusable="false"><use href="#pb-i-info"/></svg><span>Where the numbers come from</span></summary>
+          <ul>
+            <li>Taper length: MUTCD 11th Edition (FHWA, Dec 2023, with Revision 1, Dec 2025), Section 6B.08, Tables 6B-3 and 6B-4. L = W &times; S&sup2; &divide; 60 at 40 mph or less, L = W &times; S at 45 mph or more. Shifting &frac12; L, shoulder &#8531; L (rounded up).</li>
+            <li>Cone spacing: Section 6K.01, no more than 1 &times; the speed in feet in a taper and 2 &times; along the work. One-lane two-way and downstream tapers: 50 to 100 ft, devices about 20 ft apart (Section 6B.08).</li>
+            <li>Sign spacing A, B, C: Section 6B.04, Table 6B-1. The road agency decides what is low or high speed.</li>
+            <li>Buffer: Section 6B.06 and Table 6B-2 (stopping sight distance). The same distances may place a flagger station (Section 6D.06).</li>
+            <li>Alaska: 2026 Alaska Traffic Manual Supplement (eff. Jan 20, 2026), Table 6B-1 (city low speed = 40 mph or less), 6D.01, 6D.02. Massachusetts: Amendments to the MUTCD 11th Edition (Jan 2026), 6C.05, 6D.01, 6D.05, 6D.06, 6K.01. Both read through a summary; check the state manual.</li>
+            <li>California: CA MUTCD 2026 (Caltrans, Jan 18, 2026), Table 6B-1 sets city street sign spacing by speed. Its taper table (6B-3(CA)) matches the national formula.</li>
+          </ul>
+          <p class="pb-help" style="margin:4px 0 0;">Checked Nov 20, 2026. Speeds between table rows use the next row up.</p>
+        </details>
+        <p class="tc-tcp" id="tcTcpLine">Your competent person / traffic control plan decides on site. Follow the approved TCP if there is one.</p>
       </div>
     </div>
   </div>
@@ -13807,7 +13888,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r17.11 · 2026-11-20'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r17.12 · 2026-11-20'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -14651,7 +14732,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         const trySignOut = async (opts) => { try { const res = await sbClient.auth.signOut(opts); return (res && res.error) ? (res.error.message || 'unknown error') : null; } catch (e) { return e.message || 'unknown error'; } };
         // A session another tab signed in (not the account shown here) is only removed from this phone.
         const liveUid = await pbLiveSessionUid();
-        let failure = await trySignOut(liveUid && (!sbUser || liveUid !== sbUser.id) ? { scope: 'local' } : undefined);
+        let failure = await trySignOut({ scope: 'local' }); // this device only (one device in use, Nov 20): the other signed-in device stays signed in and is free at once
         if (failure) {
           console.error('signOut failed, signing out on this phone only:', failure);
           failure = await trySignOut({ scope: 'local' });
@@ -15164,7 +15245,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     calcHub: 'calculators', calcCatGrade: 'calculators', calcCatTrench: 'calculators', calcCatPipe: 'calculators', calcCatStructures: 'calculators',
     bendCalc: 'calculators', beddingCalc: 'calculators', flowCalc: 'calculators', volumeCalc: 'calculators', ventCalc: 'calculators', bedShadeCalc: 'calculators',
     trenchCalc: 'calculators', pipeWeightCalc: 'calculators', liftCalc: 'calculators', slopeConvCalc: 'calculators', fracCalc: 'calculators',
-    manningCalc: 'calculators', manholeDepthCalc: 'calculators', rodElevCalc: 'calculators', constCalc: 'calculators',
+    manningCalc: 'calculators', manholeDepthCalc: 'calculators', rodElevCalc: 'calculators', constCalc: 'calculators', taperCalc: 'calculators',
     tools: 'tools', quickrun: 'home', formulasHub: 'tools', confinedHub: 'home', /* hunt_nov19 05: both are opened from Home > Start work, not from More */
     refRod: 'tools', refPipeDiagram: 'tools', refSlope: 'tools', refBends: 'tools', refFlowVolume: 'tools',
     refTrench: 'tools', refPipe: 'tools', refConfined: 'tools', refConcrete: 'tools', refSafety: 'tools', refGlossary: 'tools', refCutsheet: 'tools',
@@ -18645,11 +18726,36 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return JSON.stringify(o).length <= 1500 ? o : null;
     } catch (err) { return null; }
   }
+  // ask_state: Ask always knows the state. The open job's state, else the company's, else the last job on this phone
+  // that has one, else the state the person told Ask. Nothing: Ask asks once, and only when the answer changes by state.
+  let pbAskStateWasAsked = false;
+  function pbAskState() {
+    const ok = (c) => typeof c === 'string' && /^[A-Z]{2}$/.test(c);
+    try { const s = window.pbSrJobState(pbAskCurrentJob()); if (s && s.how !== 'default' && ok(s.code)) return { state: s.code, state_how: s.how }; } catch (e) {}
+    try {
+      const seen = new Set();
+      for (let i = (runArchive || []).length - 1; i >= 0 && seen.size < 8; i--) {
+        const n = String((runArchive[i] && runArchive[i].jobNumber) || '').trim().toLowerCase(); if (!n || seen.has(n)) continue; seen.add(n);
+        const t = window.pbSrJobState(n); if (t && (t.how === 'phone' || t.how === 'picked' || t.how === 'address') && ok(t.code)) return { state: t.code, state_how: 'last_job' };
+      }
+    } catch (e) {}
+    try { const h = typeof window.pbHereState === 'function' ? window.pbHereState() : null; if (ok(h)) return { state: h, state_how: 'here' }; } catch (e) {} /* ask_followups: where this phone is */
+    try { const c = localStorage.getItem('pbAskSt:' + pbArchiveOwnerUid); if (ok(c)) return { state: c, state_how: 'told' }; } catch (e) {}
+    return {};
+  }
+  function pbAskStateNote(s) { // the reply says which state it answered for; a state given in answer to "Which state is the job in?" is kept on this phone
+    try {
+      if (!s || typeof s !== 'object') return;
+      if (pbAskStateWasAsked && s.how === 'question' && /^[A-Z]{2}$/.test(String(s.code || ''))) localStorage.setItem('pbAskSt:' + pbArchiveOwnerUid, s.code);
+      pbAskStateWasAsked = !s.code && s.asked === true;
+    } catch (e) {}
+  }
+  window.__debugAskState = { get: () => pbAskState(), note: (s) => pbAskStateNote(s) }; /* tests */
   function pbAiAskPayload(q, ex, images) {
     return { v: 2, question: q, ...(images && images.length ? { images } : {}),
       excerpts: ex.map(x => ({ n: x.n, article: x.article, anchor: x.anchor, title: x.title, page: x.page, caution: x.caution, text: x.text })),
       history: pbAiAskTurns().map((h, k) => ({ q: String(h.q || '').slice(0, 300), a: pbAiAskA(h.body, k) })), // this thread's last turns, newest first (feat_convo: 8)
-      ctx: { label: pbAiAskCtx ? pbAiAskCtx.label : '', screen: pbAiAskCtx ? pbAiAskCtx.screen : pbCurrentScreen, job: pbAskCurrentJob(), run: pbAskRunSummary() },
+      ctx: { label: pbAiAskCtx ? pbAiAskCtx.label : '', screen: pbAiAskCtx ? pbAiAskCtx.screen : pbCurrentScreen, job: pbAskCurrentJob(), run: pbAskRunSummary(), ...pbAskState() },
       mode: 'auto' }; // v20: the server decides Ask or analysis from the question
   }
   const pbAiCell = (c) => c === null || c === undefined ? '' : typeof c === 'number' ? (Number.isFinite(c) ? String(Math.round(c * 100) / 100) : '') : String(c);
@@ -18716,13 +18822,14 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   function pbAiFromV2(d, q) {
     if (d.local) return { kind: d.kind === 'emergency' ? 'emergency' : 'gonogo', safety: true, local: true, body: String(d.text || ''), sources: [] };
+    pbAskStateNote(d.state);
     const srcs = Array.isArray(d.sources) ? d.sources.filter(s => s && typeof s === 'object') : [];
     const app = srcs.filter(s => s.kind === 'app_page' && s.article && PB_EDU_ARTICLES[s.article]).map(s => ({ n: s.n, article: String(s.article), anchor: String(s.anchor || ''), title: String(s.title || pbEduArticleTitle(s.article) || '') }));
     const more = srcs.filter(s => s.kind === 'kb' || s.kind === 'doc' || s.kind === 'data');
     const analysis = d.mode === 'analysis';
     const fb = typeof d.answer_id === 'string' && /^[A-Za-z0-9_-]{20,12000}\.[A-Za-z0-9_-]{43}$/.test(d.answer_id) ? d.answer_id : ''; // gap loop: "Not right"
     const noHint = d.data === true || d.type === 'refusal' || d.type === 'data' || analysis || more.some(s => s.kind === 'data'); // v20: job data or off-topic: no Education-pages line
-    return { v: 2, fb, noHint, body: String(d.text || '').trim(), safety: !!d.safety || d.type === 'safety' || PB_AI_SAFETY_RX.test(q), sources: app, more, analysis,
+    return { v: 2, fb, noHint, st: analysis ? null : pbAskStOf(d.state), body: String(d.text || '').trim(), safety: !!d.safety || d.type === 'safety' || PB_AI_SAFETY_RX.test(q), sources: app, more, analysis,
       table: pbAiTableOk(d.table), chart: analysis && pbAskIsOffice() ? pbAiChartOk(d.chart) : null, prop: pbAiPropOk(d.proposal) };
   }
   // feat_takeoff: { job, items: [{ name, kind, qty, unit, basis }] } from the server, checked again here
@@ -18810,6 +18917,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       + (h.failed ? '<div class="pb-ai-retry"><p class="pb-ai-flagnote">Not finished. ' + escapeHtml(h.failed) + '</p>' + (h.tid === pbAiAskThread.tid ? '<button type="button" class="pb-btn small secondary" onclick="pbAiAskRetry(' + i + ')">Retry</button>' : '') + '</div>' : '')
       + (h.streaming || h.failed ? '' : h.sources.length ? '<div class="pb-ai-src"><span class="pb-ai-src-k">' + (h.local ? 'Read:' : 'From this app:') + '</span>' + h.sources.map(x => '<button type="button" class="pb-edu-link" data-article="' + escapeHtml(x.article) + '" data-anchor="' + escapeHtml(x.anchor || '') + '" onclick="pbAiOpenSource(this)">[' + escapeHtml(String(x.n)) + '] ' + escapeHtml(x.title) + '</button>').join('') + '</div>' : (h.local || h.noHint || i !== 0 || (h.more && h.more.length) ? '' : '<p class="pb-ai-hint">Not from this app’s Education pages.</p>'))
       + (pbAiChipsOnce(h).length ? '<div class="pb-ai-src">' + pbAiChipsOnce(h).join('') + '</div>' : '')
+      + pbAskStHtml(h, i) // ask_followups: "Answered for Texas."
       + (h.streaming || h.failed ? '<p class="pb-ai-hint pb-ai-label"><span class="pb-ai-tag">AI</span> ' + (h.failed ? 'no checked answer' : 'writing… checked when done') + '</p>' : '<p class="pb-ai-hint pb-ai-label">' + (h.local ? 'Answered by the app · no AI used' : '<span class="pb-ai-tag">AI</span>' + (i !== 0 ? '' : ' ' + (h.analysis ? 'analysis of your company’s numbers \u00b7 check before acting' : 'answer \u00b7 can be wrong'))) + '</p>')
       + pbAiPropHtml(h, i)
       + pbAiNrHtml(h)
@@ -35146,6 +35254,137 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       <p class="pb-help">${n ? 'Adds the ' + n + ' shot' + (n === 1 ? '' : 's') + ' taken since you opened this from ' + escapeHtml(pbCalcNoteDest(t)) + '.' : 'Every shot taken here is already in this note.'}${earlier ? ' The ' + earlier + ' earlier shot' + (earlier === 1 ? '' : 's') + ' in the list stay' + (earlier === 1 ? 's' : '') + ' out.' : ''}</p>`;
   }
 
+  // ---------- Taper & Cone Spacing (taper_calc_nov20) ----------
+  /* taper_calc_nov20: Taper & Cone Spacing math. Pure: no page, no storage. Inlined into the app by p_taper.py and
+     required by tests/unit_math.js. Numbers: MUTCD 11th Edition (FHWA, Dec 2023, Rev. 1 Dec 2025), Part 6 -
+     Tables 6B-1 (sign spacing), 6B-2 (stopping sight distance), 6B-3 / 6B-4 (tapers), Section 6K.01 (device spacing),
+     Section 6B.08 (20 ft in one-lane two-way and downstream tapers). California: CA MUTCD 2026 Table 6B-1 (city streets
+     by speed). Alaska: 2026 Alaska Traffic Manual Supplement Table 6B-1 (city low speed = 40 mph or less).
+     Checked Nov 20 2026. */
+  (function (root) {
+    var SSD = { 20: 115, 25: 155, 30: 200, 35: 250, 40: 305, 45: 360, 50: 425, 55: 495, 60: 570, 65: 645, 70: 730, 75: 820 };
+    var SIGNS = { urbanLow: [100, 100, 100], urbanHigh: [350, 350, 350], rural: [500, 500, 500], freeway: [1000, 1500, 2640] };
+    var CA_CITY = [[25, 100], [30, 150], [35, 200], [40, 250], [45, 300], [Infinity, 350]];
+    var TYPES = { merge: 1, shift: 1 / 2, shoulder: 1 / 3, flagger: 0, down: 0 };
+    var up = function (x) { return Math.ceil(x - 1e-9); };
+    // L: 40 mph or less W*S*S/60, 45 mph or more W*S. A speed between 40 and 45 takes W*S (the longer one).
+    function baseL(W, S) { return S <= 40 ? W * S * S / 60 : W * S; }
+    function signs(road, S, state) {
+      if (!SIGNS[road]) return null;
+      if (state === 'CA' && (road === 'urbanLow' || road === 'urbanHigh')) {
+        var v = 350; for (var i = 0; i < CA_CITY.length; i++) if (S <= CA_CITY[i][0]) { v = CA_CITY[i][1]; break; }
+        return { abc: [v, v, v], rule: 'CA' };
+      }
+      // Alaska: 2026 ATMS Table 6B-1 (replaces the national table): same distances, low speed = 40 mph or less
+      if (state === 'AK' && (road === 'urbanLow' || road === 'urbanHigh')) return { abc: S <= 40 ? [100, 100, 100] : [350, 350, 350], rule: 'AK' };
+      return { abc: SIGNS[road].slice(), rule: 'US' };
+    }
+    function calc(o) {
+      var S = Number(o.speed), W = Number(o.width), type = o.type || 'merge';
+      if (!(type in TYPES)) return { err: 'Pick a taper type.' };
+      if (!isFinite(S) || S < 20 || S > 75) return { err: 'Enter a posted speed from 20 to 75 mph.' };
+      var range = TYPES[type] === 0;
+      if (!range && (!isFinite(W) || W <= 0 || W > 30)) return { err: 'Enter a lane or shoulder width from 1 to 30 ft.' };
+      var r = { type: type, speed: S, width: range ? null : W, range: range };
+      if (range) {
+        r.L = null; r.Lmin = 50; r.Lmax = 100; r.taperSpacing = 20;
+        r.conesMin = up(50 / 20) + 1; r.conesMax = up(100 / 20) + 1;
+      } else {
+        var L0 = baseL(W, S);
+        r.formula = S <= 40 ? 'WS2/60' : 'WS';
+        r.Lfull = up(L0);
+        r.L = up(L0 * TYPES[type]);
+        r.taperSpacing = Math.floor(S);
+        r.cones = up(r.L / r.taperSpacing) + 1;
+        r.coneGap = Math.floor(r.L / (r.cones - 1));
+      }
+      r.tangentSpacing = Math.floor(2 * S);
+      r.ssdSpeed = Math.min(75, up(S / 5) * 5);
+      r.buffer = SSD[r.ssdSpeed];
+      r.signs = signs(o.road, S, o.state);
+      if (r.signs) r.firstSign = r.signs.abc[0] + r.signs.abc[1] + r.signs.abc[2];
+      return r;
+    }
+    var api = { calc: calc, baseL: baseL, SSD: SSD, SIGNS: SIGNS, CA_CITY: CA_CITY };
+    if (typeof module !== 'undefined' && module.exports) module.exports = api;
+    if (root) root.pbTaperMath = api;
+  })(typeof window !== 'undefined' ? window : null);
+  // the job's state: the current job (picked, its address), then the company, then where this phone is; '' = not known
+  function pbTcDefaultState() {
+    const ok = (c) => !!c && !!window.PB_STATE_RULES && Object.prototype.hasOwnProperty.call(window.PB_STATE_RULES.states, c);
+    try {
+      const cj = typeof window.pbCurJobGet === 'function' ? window.pbCurJobGet() : null;
+      if (cj && cj.job_number && typeof window.pbSrJobState === 'function') { const x = window.pbSrJobState(cj.job_number); if (x && x.how !== 'default' && ok(x.code)) return { code: x.code, how: x.how === 'company' ? 'company' : 'job' }; }
+      if (typeof window.pbSrJobState === 'function') { const x = window.pbSrJobState(''); if (x && x.how === 'company' && ok(x.code)) return { code: x.code, how: 'company' }; }
+    } catch (e) {}
+    try { const h = typeof window.pbHereState === 'function' ? window.pbHereState() : null; if (ok(h)) return { code: h, how: 'here' }; } catch (e) {}
+    return { code: '', how: '' };
+  }
+  let pbTcStatePicked = false, pbTcStateHow = '';
+  function pbTcStateName(c) { const R = c && window.PB_STATE_RULES ? window.PB_STATE_RULES.states[c] : null; return R ? R.name : ''; }
+  function pbTcFillStates() {
+    const sel = document.getElementById('tcState'); if (!sel || !window.PB_STATE_RULES || sel.options.length > 1) return;
+    const S = window.PB_STATE_RULES.states, codes = Object.keys(S).sort((a, b) => S[a].name.localeCompare(S[b].name));
+    codes.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = S[c].name; sel.appendChild(o); });
+  }
+  function pbTcOnOpen() {
+    pbTcFillStates();
+    const sel = document.getElementById('tcState'); if (!sel || pbTcStatePicked) return;
+    const d = pbTcDefaultState(); sel.value = d.code; pbTcStateHow = d.code ? d.how : '';
+  }
+  document.addEventListener('change', (e) => { if (e.target && e.target.id === 'tcState') { pbTcStatePicked = true; pbTcStateHow = 'picked'; } }, true);
+  (window.pbScreenHooks = window.pbScreenHooks || []).push(function(name, back) {
+    if (name !== 'taperCalc') return;
+    try { pbTcOnOpen(); } catch (e) { console.error(e); }
+    if (back) return; // simplify 04's rule, here because Width starts at 12: cursor in an empty Posted speed
+    const go = () => { try { const el = document.getElementById('tcSpeed'); if (pbCurrentScreen === 'taperCalc' && !pbModalIsOpen() && el && el.value === '') el.focus({ preventScroll: true }); } catch (e) {} };
+    go(); setTimeout(go, 60);
+  });
+  window.pbCalcTaper = function() {
+    const resultEl = document.getElementById('taperResult'); if (!resultEl) return;
+    const type = document.getElementById('tcType').value, range = type === 'flagger' || type === 'down';
+    const ww = document.getElementById('tcWidthWrap'); if (ww) ww.style.display = range ? 'none' : '';
+    const wl = document.getElementById('tcWidthLabel'); if (wl) wl.textContent = type === 'shoulder' ? 'Shoulder width closed (ft)' : 'Lane width closed or shifted (ft)';
+    const state = document.getElementById('tcState').value, road = document.getElementById('tcRoad').value;
+    const how = document.getElementById('tcStateHow');
+    if (how) how.textContent = !state ? 'Pick the state to check for its own rule.' : pbTcStateHow === 'job' ? 'From the current job.' : pbTcStateHow === 'company' ? 'From your company.' : pbTcStateHow === 'here' ? 'Where this phone is now.' : '';
+    const sp = document.getElementById('tcSpeed').value.trim(), wd = document.getElementById('tcWidth').value.trim();
+    if (sp === '') { resultEl.innerHTML = ''; return; }
+    const r = window.pbTaperMath.calc({ speed: Number(sp), width: wd === '' ? NaN : Number(wd), type, road, state });
+    if (r.err) { resultEl.textContent = r.err; return; }
+    const ft = (n) => Number(n).toLocaleString('en-US') + ' ft', S = r.speed, e = escapeHtml;
+    const box = (label, val, sub, cls) => '<div class="pb-answer-box' + (cls ? ' ' + cls : '') + '"><div class="pb-answer-label">' + e(label) + '</div><div class="pb-answer-val">' + e(val) + '</div>' + (sub ? '<div class="pb-answer-sub">' + e(sub) + '</div>' : '') + '</div>';
+    const NAME = { merge: 'Merging taper', shift: 'Shifting taper', shoulder: 'Shoulder taper', flagger: 'One-lane, two-way taper', down: 'Downstream taper' }[type];
+    let h;
+    if (r.range) {
+      h = box(NAME + ' length', '50 to 100 ft', '50 ft minimum, 100 ft maximum.')
+        + box('Cones in the taper', r.conesMin + ' to ' + r.conesMax + ' cones', 'About ' + r.taperSpacing + ' ft apart.');
+    } else {
+      const f = r.formula === 'WS' ? 'L = W \u00d7 S = ' + r.width + ' \u00d7 ' + S + ' = ' + ft(r.Lfull) : 'L = W \u00d7 S\u00b2 \u00f7 60 = ' + r.width + ' \u00d7 ' + S + '\u00b2 \u00f7 60 = ' + ft(r.Lfull);
+      const part = type === 'shift' ? ' Shifting: \u00bd L.' : type === 'shoulder' ? ' Shoulder: \u2153 L.' : '';
+      h = box(NAME + ' length', ft(r.L), 'At least this long. ' + f + '.' + part)
+        + box('Cones in the taper', r.cones + ' cones', (r.coneGap === r.taperSpacing ? r.taperSpacing + ' ft apart' : 'About ' + r.coneGap + ' ft apart') + ' (no more than ' + r.taperSpacing + ' ft: 1 \u00d7 the speed).');
+    }
+    h += box('Cone spacing along the work', r.tangentSpacing + ' ft', 'No more than this (2 \u00d7 the speed), along the buffer and the work. Closer at night, on curves, or where drivers cut in.');
+    h += box('Buffer space', ft(r.buffer), 'Empty road before the work' + (r.ssdSpeed !== S ? ' (' + r.ssdSpeed + ' mph row)' : '') + '. No trucks, material or equipment in it.' + (type === 'flagger' ? ' Flagger station: about ' + ft(r.buffer) + ' ahead of the work.' : ''));
+    if (r.signs) {
+      const a = r.signs.abc, ROAD = { urbanLow: 'city street, low speed', urbanHigh: 'city street, high speed', rural: 'rural road', freeway: 'expressway / freeway' }[road];
+      h += box('Advance warning signs', a.map(x => Number(x).toLocaleString('en-US')).join(' \u00b7 ') + ' ft', 'A: taper to 1st sign ' + ft(a[0]) + '. B: 1st to 2nd ' + ft(a[1]) + '. C: 2nd to 3rd ' + ft(a[2]) + '. First sign ' + ft(r.firstSign) + ' before the taper (' + (r.signs.rule === 'CA' ? 'California, city street at ' + S + ' mph' : r.signs.rule === 'AK' ? 'Alaska, city street at ' + S + ' mph' : ROAD) + ').', 'tc-signs');
+    } else {
+      h += box('Advance warning signs', 'Pick road type', 'Pick the road type above. Sign spacing depends on it.', 'tc-signs');
+    }
+    const nm = pbTcStateName(state);
+    let note;
+    if (state === 'CA') note = r.signs && r.signs.rule === 'CA' ? '<strong>California rule:</strong> city street sign spacing by speed (CA MUTCD 2026, Table 6B-1). Tapers and buffer are the same as the national numbers.' : '<strong>California:</strong> same as the national numbers here (CA MUTCD 2026). City street sign spacing goes by speed in California.';
+    else if (state === 'AK') note = (r.signs && r.signs.rule === 'AK' ? '<strong>Alaska rule:</strong> on city streets 40 mph or less is low speed (100 ft), 45 mph or more is high speed (350 ft) (2026 Alaska Traffic Manual Supplement, Table 6B-1). ' : '<strong>Alaska:</strong> sign spacing same as the national table. ')
+      + 'Flaggers on state highways must be certified (Std. Spec. 643). Paddle at least 24 in wide with 8 in letters, except local roads 25 mph or less. Check the state manual.';
+    else if (state === 'MA') note = '<strong>Massachusetts:</strong> flaggers must be MassDOT certified, carry an airhorn, and use two-way radios when working together. Cones at least 36 in tall (MA Amendments to the MUTCD, Jan 2026). Tapers and sign spacing here are the national numbers. Check the state manual.';
+    else if (nm) note = 'National MUTCD numbers. ' + e(nm) + ' may have its own manual or supplement with different numbers; check it.';
+    else note = 'National MUTCD numbers. Your state may have its own manual with different numbers.';
+    h += '<p class="tc-state" id="tcStateNote">' + note + '</p>';
+    resultEl.innerHTML = h;
+  };
+
   // ---------- UX batch 1: out-of-date calculator answers (UX-01) ----------
   // calclive (owner, Nov 3): every calculator answers as you type (the live engine below). A change marks the answer
   // out of date (it can't be copied, added to a note or used) and the live engine replaces it at once.
@@ -35160,7 +35399,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     liftCalc: { results: ['liftResult'], calc: 'pbCalcLifts' },
     slopeConvCalc: { results: ['slopeConvResult'], calc: 'pbCalcSlopeConv' },
     manningCalc: { results: ['manningResult'], calc: 'pbCalcManning' },
-    manholeDepthCalc: { results: ['manholeDepthResult'], calc: 'pbCalcManholeDepth' }
+    manholeDepthCalc: { results: ['manholeDepthResult'], calc: 'pbCalcManholeDepth' },
+    taperCalc: { results: ['taperResult'], calc: 'pbCalcTaper' } /* taper_calc_nov20 */
   };
   const PB_CALC_NOTE_SCREENS = { bendCalc: 'bendNoteBar', beddingCalc: 'beddingNoteBar', rodElevCalc: 'rodElevNoteBar' };
   const pbCalcStaleScreens = new Set();
@@ -37646,10 +37886,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // destination is the Tools tab, Stats included on every plan. Confined Space Permits has its own category.
   const PB_DEST_CATS = [
     ['run', 'Run Tools'], ['grade', 'Grade & Elevation'], ['trench', 'Trench & Backfill'], ['pipe', 'Pipe & Flow'],
-    ['structures', 'Structures'], ['safety', 'Confined Space'], ['permits', 'Confined Space Permits'], ['reference', 'Education & Reference'], ['records', 'Reports & Records']
+    ['structures', 'Structures'], ['safety', 'Confined Space'], ['traffic', 'Traffic Control'], ['permits', 'Confined Space Permits'], ['reference', 'Education & Reference'], ['records', 'Reports & Records']
   ];
-  const PB_CALC_CATS = ['grade', 'trench', 'pipe', 'structures', 'safety'];
-  const PB_CALC_ORDER = ['rodElev', 'slopeConv', 'frac', 'ccalc', 'trench', 'lift', 'bedShade', 'volume', 'pipeWeight', 'bend', 'manning', 'flow', 'manhole', 'bedding', 'vent']; // clean_c: order inside each group, most used first
+  const PB_CALC_CATS = ['grade', 'trench', 'pipe', 'structures', 'safety', 'traffic'];
+  const PB_CALC_ORDER = ['rodElev', 'slopeConv', 'frac', 'ccalc', 'trench', 'lift', 'bedShade', 'volume', 'pipeWeight', 'bend', 'manning', 'flow', 'manhole', 'bedding', 'vent', 'taper']; // clean_c: order inside each group, most used first
   const PB_TOOLS_TAB_CATS = [['job', 'On the job'], ['reference', 'Learn']]; const pbDcMoreCat = (d) => (d.cat === 'records' || ['plans', 'talks', 'askDocs'].includes(d.id)) ? 'job' : d.cat; /* declutter 03 */ /* feat_core33 K7: the first row is named Education & Reference */ // feat_navfix: Quick Run and permits are on Home > Start work
   const PB_DESTINATIONS = [
     { id: 'quickRun', label: 'Quick Run', sub: 'Basic grade calculations', cat: 'run', gate: 'quickrun', screen: 'quickrun', words: 'quick run grade fall slope rod readings elevations stations cut fill', open: () => pbOpenQuickRun() },
@@ -37687,6 +37927,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   PB_SCREEN_TABS.aiAsk = 'ask';
   PB_SCREEN_TABS.askDocs = 'tools'; PB_SCREEN_TABS.docsReview = 'home'; // ask_v2
   PB_SCREEN_TABS.companyPermits = 'reports'; PB_SCREEN_TABS.tickets = 'reports'; PB_SCREEN_TABS.ticketForm = 'reports'; PB_SCREEN_TABS.ticketsDashboard = 'reports'; PB_CONTRACTOR_SCREENS.push('tickets', 'ticketForm', 'ticketsDashboard'); // batch 7: field tickets // batch 6b // batch 5: the Ask screen belongs to the Ask tab
+  PB_DESTINATIONS.push({ id: 'taper', label: 'Taper & Cone Spacing', sub: 'Taper length, cones, sign spacing and buffer by speed (MUTCD)', cat: 'traffic', gate: 'calcHub', screen: 'taperCalc', words: 'traffic control taper cone cones channelizer channelizing devices drums spacing lane closure merge merging shift shifting shoulder flagger flagging one lane two way downstream buffer advance warning sign signs road work ahead mutcd tcp work zone', open: () => pbGoto('taperCalc') }); /* taper_calc_nov20 */
   const PB_DEST = Object.fromEntries(PB_DESTINATIONS.map(d => [d.id, d]));
   const PB_DEST_BY_SCREEN = Object.fromEntries(PB_DESTINATIONS.map(d => [d.screen, d.id]));
   const PB_SC_DEFAULTS = ['volume', 'trench', 'frac', 'bedding']; // D5: Material Volume, Shoring/Sloping, Tenths <-> Inches, Bedding Elevation
@@ -37734,7 +37975,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     confinedHub: 'Start a permit or open the active one', confinedRef: 'Ventilation, attendant, entry rules',
     manning: 'Full-pipe flow and velocity', flow: 'GPM and flush time',
     volume: 'Yards for any shape, plus tons', vent: 'Blower CFM (not an OSHA number)', bend: 'Pipe between two matching bends',
-    manhole: 'Depth and barrel sections'
+    manhole: 'Depth and barrel sections', taper: 'Taper, cones, signs, buffer'
   };
   function pbDestRowHTML(d, extraSub) {
     const lock = pbDestLockReason(d), short = PB_TOOL_SHORT[d.id] || d.sub;
@@ -40542,6 +40783,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     window.pbScreenHooks = Array.isArray(window.pbScreenHooks) ? window.pbScreenHooks : [];
     window.pbScreenHooks.push(function(name) { window.pbTrack('scr:' + name); pbBetaRender(); });
     window.pbTrack('open');
+    try { const bd = String(window.PB_APP_BUILD || '').split(' ')[0]; if (/^r\d/.test(bd)) window.pbTrack('build:' + bd); } catch (e) {} /* owner dashboard: builds in use */
+    try { for (let i = 0; i < Math.min(Number(window.__pbCrashN) || 0, 10); i++) window.pbTrack('crash'); window.__pbCrashN = 0; } catch (e) {} /* crashes before this point */
 
     // the plan: beta days left, or ended
     let plan = null;
@@ -40621,16 +40864,24 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const pbPr = () => { const p = (plan && plan.prices) || {}, n = (v, d) => (v !== null && v !== '' && Number.isFinite(+v) ? +v : d); return { base: n(p.base_cents, 9900), seats: n(p.base_seats, 5), seat: n(p.seat_cents, 1200), ym: n(p.yearly_months, 10), fm: n(p.founder_months, 12), ind: n(p.individual_cents, 1500), indy: n(p.individual_year_cents, 14400), sheet: n(p.plan_sheet_cents, 100) }; };
     const pbUsd = (c) => { const d = Number(c || 0) / 100; return '$' + (Number.isInteger(d) ? String(d) : d.toFixed(2)); };
     const pbPriceCo = () => { const p = pbPr(); return pbUsd(p.base) + ' a month for your company and ' + p.seats + ' people, ' + pbUsd(p.seat) + ' a month for each extra person, plus applicable tax.'; };
-    const pbPriceInd = () => { const p = pbPr(); return pbUsd(p.ind) + ' a month, or ' + pbUsd(p.indy) + ' for a year (' + pbUsd(Math.round(p.indy / 12)) + ' a month), plus applicable tax'; };
+    const pbIndSave = () => { const p = pbPr(); return Math.max(0, p.ind * 12 - p.indy); }; /* billing_yearly_nov20: 12 months minus the yearly price ($36) */
+    const pbPriceInd = () => { const p = pbPr(), sv = pbIndSave(); return pbUsd(p.ind) + ' a month, or ' + pbUsd(p.indy) + ' for a year (' + pbUsd(Math.round(p.indy / 12)) + ' a month' + (sv > 0 ? ', save ' + pbUsd(sv) : '') + '), plus applicable tax'; };
+    /* billing_yearly_nov20: the individual plan is picked Monthly or Yearly; the pick goes with the request ('individual:month' / 'individual:year') */
+    const pbIndPick = (attr, pre) => { const p = pbPr(), sv = pbIndSave(), x = pre || '';
+      return '<span class="pb-beta-acts pb-ind-pick"><button type="button" class="pb-btn small" ' + attr + '="individual:month">' + x + 'Monthly ' + pbUsd(p.ind) + '</button>'
+        + '<button type="button" class="pb-btn small" ' + attr + '="individual:year">' + x + 'Yearly ' + pbUsd(p.indy) + (sv > 0 ? ', save ' + pbUsd(sv) : '') + '</button></span>'; };
     window.pbSheetUsd = () => pbUsd(pbPr().sheet); /* plan reading add-on: per sheet, charged once when the sheet is read */
     const pbReqKey = () => 'pbPlanReq:' + (sbUser ? sbUser.id : '');
-    const pbReqSent = (kind) => '<span>' + (kind === 'individual' ? 'Request sent. You\u2019ll get an email with how to pay: ' + pbPriceInd() + '.'
+    const pbReqSent = (kind) => '<span>' + (kind === 'individual:year' ? 'Request sent: yearly, ' + pbUsd(pbPr().indy) + ' a year (' + pbUsd(Math.round(pbPr().indy / 12)) + ' a month), plus applicable tax. You\u2019ll get an email with how to pay.'
+      : kind === 'individual:month' ? 'Request sent: monthly, ' + pbUsd(pbPr().ind) + ' a month, plus applicable tax. You\u2019ll get an email with how to pay.'
+      : kind === 'individual' ? 'Request sent. You\u2019ll get an email with how to pay: ' + pbPriceInd() + '.'
       : kind === 'company' ? 'Request sent. You\u2019ll get an email with the invoice: ' + pbPriceCo()
       : 'Request sent. You\u2019ll get an email with the price and how to pay.') + '</span>';
     const pbReqKind = (office) => { if (office) return 'company'; try { return localStorage.getItem(pbReqKey()) || ''; } catch (e) { return ''; } };
+    const pbIndKind = () => { const k = pbReqKind(false); return /^individual/.test(k) ? k : 'individual'; }; /* billing_yearly_nov20: what this phone asked for */
     window.pbPlanPrices = () => Object.assign({ usd: pbUsd, company: pbPriceCo(), individual: pbPriceInd() }, pbPr());
     function pbPriceFill() { /* every price written in the page (Settings, What each plan includes) follows the server's list */
-      try { const p = pbPr(), v = { base: pbUsd(p.base), seats: String(p.seats), seat: pbUsd(p.seat), ym: String(p.ym), ind: pbUsd(p.ind), indyear: pbUsd(p.indy), indym: pbUsd(Math.round(p.indy / 12)), sheet: pbUsd(p.sheet), fm: String(p.fm) };
+      try { const p = pbPr(), v = { base: pbUsd(p.base), seats: String(p.seats), seat: pbUsd(p.seat), ym: String(p.ym), ind: pbUsd(p.ind), indyear: pbUsd(p.indy), indym: pbUsd(Math.round(p.indy / 12)), indsave: pbUsd(pbIndSave()), sheet: pbUsd(p.sheet), fm: String(p.fm) };
         document.querySelectorAll('[data-pbp]').forEach((el) => { const t = v[el.getAttribute('data-pbp')]; if (t && el.textContent !== t) el.textContent = t; }); } catch (e) {}
     }
     function pbPlanAskBind(line) { /* the request buttons: the same request as before (the app owner answers it), now with the price said */
@@ -40654,21 +40905,22 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (line && removed) {
         line.hidden = false; line.classList.add('ended');
         line.innerHTML = '<span>You’re no longer part of ' + escapeHtml(plan.removed.company || 'your company') + '. Would you like your own plan? It\u2019s ' + pbPriceInd() + '.</span>'
-          + (plan.requested ? pbReqSent('individual')
-            : '<span class="pb-beta-acts"><button type="button" class="pb-btn small" data-own="1">My Own Plan</button><button type="button" class="pb-btn ghost small" data-own="0">Not Now</button></span>');
+          + (plan.requested ? pbReqSent(pbIndKind())
+            : pbIndPick('data-own') + '<span class="pb-beta-acts"><button type="button" class="pb-btn ghost small" data-own="0">Not Now</button></span>');
         line.querySelectorAll('[data-own]').forEach((b) => { b.onclick = async () => {
           if (!sbClient || navigator.onLine === false) { pbAlert('Needs signal. Try again when you have it.', 'Needs Signal'); return; }
-          const yes = b.dataset.own === '1'; b.disabled = true;
-          let r; try { r = yes ? await sbClient.rpc('pb_plan_request', { p_kind: 'individual' }) : await sbClient.rpc('pb_removed_dismiss'); } catch (e) { r = { error: e }; }
+          const yes = b.dataset.own !== '0', kind = /^individual:(month|year)$/.test(b.dataset.own) ? b.dataset.own : 'individual'; b.disabled = true;
+          let r; try { r = yes ? await sbClient.rpc('pb_plan_request', { p_kind: kind }) : await sbClient.rpc('pb_removed_dismiss'); } catch (e) { r = { error: e }; }
+          if (yes && r && !r.error && r.data && r.data.ok) { try { localStorage.setItem(pbReqKey(), kind); } catch (e) {} }
           if (!r || r.error || !r.data || !r.data.ok) { b.disabled = false; pbAlert('Not sent. Try again.', 'Not Sent'); return; }
           plan = yes ? Object.assign({}, plan, { requested: true }) : Object.assign({}, plan, { removed: null });
           try { localStorage.setItem(planKey(), JSON.stringify(plan)); } catch (e) {}
-          window.pbTrack(yes ? 'plan_request:individual_removed' : 'plan_request:dismissed'); pbBetaRender();
+          window.pbTrack(yes ? 'plan_request:individual_removed:' + kind.replace('individual:', '') : 'plan_request:dismissed'); pbBetaRender();
         }; });
       } else if (line && sbUser && plan && plan.ok && plan.plan == null && plan.individual === false) { /* pricing_nov20: no plan yet (the server says so) */
         line.hidden = false; line.classList.add('ended');
         line.innerHTML = '<span class="pb-beta-chip">No plan yet</span><span>Your own plan is ' + pbPriceInd() + '. It has New Run, Quick Run, the calculators, Education &amp; Reference, Ask and stake reading. On a crew? Ask your company to invite you instead.</span>'
-          + (plan.requested ? pbReqSent('individual') : '<span class="pb-beta-acts"><button type="button" class="pb-btn small" data-plan="individual">Get My Own Plan</button></span>');
+          + (plan.requested ? pbReqSent(pbIndKind()) : pbIndPick('data-plan'));
         pbPlanAskBind(line);
       } else if (line && plan && plan.plan === 'paid' && plan.paused) { /* billing Phase 0: a paid plan that is read-only (past due or canceled) */
         line.hidden = false; line.classList.add('ended');
@@ -40689,7 +40941,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
             const own = office ? (plan.requested ? pbReqSent('company') : '<span class="pb-beta-price">The company plan is ' + pbPriceCo() + '</span><span class="pb-beta-acts"><button type="button" class="pb-btn small" data-plan="company">Start Company Plan</button></span>')
               : plan.individual ? '<span>You have an individual plan.</span>'
               : plan.requested ? pbReqSent(pbReqKind(false))
-              : '<span class="pb-beta-price">Your own plan is ' + pbPriceInd() + '.</span><span class="pb-beta-acts"><button type="button" class="pb-btn small" data-plan="company">Company Plan</button><button type="button" class="pb-btn ghost small" data-plan="individual">My Own Plan</button></span>';
+              : '<span class="pb-beta-price">Your own plan is ' + pbPriceInd() + '.</span><span class="pb-beta-acts"><button type="button" class="pb-btn small" data-plan="company">Company Plan</button></span>' + pbIndPick('data-plan', 'My Own Plan: ');
             line.innerHTML = '<span class="pb-beta-chip">Beta ended</span><span>' + (office ? whatOffice : what) + '</span>' + own;
             pbPlanAskBind(line);
           }
@@ -40793,6 +41045,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     }
     const pbBillChip = (a) => { const st = a.state; return '<span class="ch' + (st === 'active' ? ' paid' : st === 'past_due' ? '' : ' ended') + '">' + (st === 'past_due' ? 'Past due · ' + (Number(a.days_to_lock) === 1 ? '1 day' : (Number(a.days_to_lock) || 0) + ' days') + ' left' : ({ active: 'Paid', read_only: 'Read-only', canceled: 'Canceled' }[st] || 'Paid')) + '</span>'; };
     const pbCatchLine = (a) => { const c = a.catchup || {}; return Number(c.cents) > 0 ? 'Catch-up: ' + c.people + ' above the paid seats × ' + c.months + ' month' + (c.months === 1 ? '' : 's') + ' left × ' + pbMoney(a.seat_cents) + ' = <b>' + pbMoney(c.cents) + '</b>' : Number(c.monthly_next_invoice) > 0 ? c.monthly_next_invoice + ' above the paid seats: on the next invoice' : ''; };
+    let pbSR = null; /* billing_yearly_nov20: plan sheets read (pb_owner_sheets_read); null = server not updated yet */
+    const pbSRn = (v) => (Number(v) || 0).toLocaleString('en-US');
+    const pbSRtxt = (x) => '<b>' + pbSRn(x && x.month) + '</b> this month \u00b7 ' + pbSRn(x && x.last_month) + ' last month \u00b7 ' + pbSRn(x && x.total) + ' in all';
+    const pbSheetsLn = (id) => { if (!pbSR) return ''; const x = (pbSR.companies || []).find((y) => y && y.company_id === id); return '<div class="ln" data-sheets="' + escapeHtml(id || '') + '">Plan sheets read: ' + pbSRtxt(x) + '</div>'; };
     function pbBillLines(bc) {
       if (!bc) return '';
       const a = bc.account, login = '<div class="ln">Company login: ' + escapeHtml(bc.owner_login || 'unknown') + ' · ' + (Number(bc.seats_used) || 0) + ' people counted (the company login is free)</div>';
@@ -40805,7 +41061,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + (a.state === 'read_only' ? '<div class="ln">' + (a.stored_state === 'read_only' ? 'Read-only (you set it): ' : 'Read-only since ' + pbDay(a.lock_on) + ' (not paid): ') + 'new runs and reports wait on the crew’s phones until you press Paid. Nothing is deleted.</div>' : '')
         + (a.state === 'canceled' ? '<div class="ln">Canceled: ' + (a.read_only ? 'read-only now.' : 'open until ' + pbDay(a.cancel_at) + ', then read-only.') + ' Nothing is deleted.</div>' : '')
         + (a.founder_until ? '<div class="ln">Founder price locked until ' + pbDay(a.founder_until) + (a.founder_set_by ? ' (set ' + pbDay(a.founder_set_at) + ' by ' + escapeHtml(a.founder_set_by) + ')' : '') + '</div>' : '')
-        + '<div class="ln">Plan reading add-on: ' + (a.plan_reading ? 'on · ' + (window.pbSheetUsd ? window.pbSheetUsd() : '$1') + ' a sheet, charged once when read. Billing doesn\u2019t show sheets read yet: count them before you invoice' : 'off (plan sets stay parked) · ' + (window.pbSheetUsd ? window.pbSheetUsd() : '$1') + ' a sheet when it\u2019s on') + '</div>' + login;
+        + '<div class="ln">Plan reading add-on: ' + (a.plan_reading ? 'on · ' + (window.pbSheetUsd ? window.pbSheetUsd() : '$1') + ' a sheet, charged once when read' + (pbSR ? ' (sheets read are counted below)' : '. Billing doesn\u2019t show sheets read yet: count them before you invoice') : 'off (plan sets stay parked) · ' + (window.pbSheetUsd ? window.pbSheetUsd() : '$1') + ' a sheet when it\u2019s on') + '</div>' + login;
     }
     function pbBillActs(bc, beta, haveBilling) {
       const b = (act, label, ghost) => '<button type="button" class="pb-btn small' + (ghost ? ' ghost' : '') + '" data-act="' + act + '">' + label + '</button>';
@@ -40820,30 +41076,35 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     function pbBillInd(B) { /* pricing_nov20: individual plans with a billing record: what is due, and Paid */
       const L = Array.isArray(B.individuals) ? B.individuals.filter((x) => x && x.state !== 'canceled') : [];
       return L.map((x) => { const n = x.next || {};
-        return '<div class="pb-bill-due" data-ind="' + escapeHtml(x.user_id) + '"><div class="hd">' + escapeHtml(x.email || '') + ' · individual' + (x.state === 'lapsed' ? ' <span class="ch ended">Not paid · AI off</span>' : x.state === 'past_due' ? ' <span class="ch ended">Past due</span>' : '') + '</div>'
+        const yr = x.interval === 'year', other = yr ? x.cents : x.year_cents, srI = pbSR && (pbSR.individuals || []).find((y) => y && y.user_id === x.user_id);
+        return '<div class="pb-bill-due" data-ind="' + escapeHtml(x.user_id) + '"><div class="hd">' + escapeHtml(x.email || '') + ' · individual, ' + (yr ? 'yearly' : 'monthly') + (x.state === 'lapsed' ? ' <span class="ch ended">Not paid · AI off</span>' : x.state === 'past_due' ? ' <span class="ch ended">Past due</span>' : '') + '</div>'
           + '<div class="ln">Paid through ' + pbDay(x.paid_through) + ' · next: <b>' + pbMoney(n.amount_cents) + '</b> ' + (x.interval === 'year' ? 'for the year' : 'for the month') + '</div>'
-          + (n.due ? '<div class="acts"><button type="button" class="pb-btn small" data-indpaid="' + escapeHtml(x.user_id) + '" data-from="' + escapeHtml(x.paid_through) + '">Paid</button></div>' : '') + '</div>'; }).join('');
+          + (srI ? '<div class="ln">Plan sheets read: ' + pbSRtxt(srI) + '</div>' : '')
+          + (n.due ? '<div class="acts"><button type="button" class="pb-btn small" data-indpaid="' + escapeHtml(x.user_id) + '" data-from="' + escapeHtml(x.paid_through) + '" data-iv="' + (yr ? 'year' : 'month') + '">Paid</button>'
+            + (Number(other) > 0 ? '<button type="button" class="pb-btn ghost small" data-indpaid="' + escapeHtml(x.user_id) + '" data-from="' + escapeHtml(x.paid_through) + '" data-iv="' + (yr ? 'month' : 'year') + '">Paid for a ' + (yr ? 'Month' : 'Year') + ' Instead (' + pbMoney(other) + ')</button>' : '') + '</div>' : '') + '</div>'; }).join('');
     }
     document.addEventListener('click', async (e) => {
       const b = e.target && e.target.closest ? e.target.closest('[data-indpaid]') : null; if (!b || b.disabled) return;
       if (!sbClient || navigator.onLine === false) { pbAlert('Needs signal. Try again when you have it.', 'Needs Signal'); return; }
-      b.disabled = true; let r; try { r = await sbClient.rpc('pb_owner_individual_paid', { p_user: b.dataset.indpaid, p_from: b.dataset.from }); } catch (err) { r = { error: err }; }
+      const iv = b.dataset.iv === 'year' || b.dataset.iv === 'month' ? b.dataset.iv : null; /* billing_yearly_nov20: the period being paid */
+      b.disabled = true; let r; try { r = await sbClient.rpc('pb_owner_individual_paid', iv ? { p_user: b.dataset.indpaid, p_from: b.dataset.from, p_interval: iv } : { p_user: b.dataset.indpaid, p_from: b.dataset.from }); } catch (err) { r = { error: err }; }
       const d = r && !r.error ? r.data : null, row = b.closest('[data-ind]');
       if (!d || !d.ok) { b.disabled = false; pbAlert((d && d.message) || 'Not saved. Try again.', 'Not Saved'); return; }
       const me = (d.individuals || []).find((x) => x.user_id === b.dataset.indpaid);
-      if (row && me) { const ln = row.querySelector('.ln'); if (ln) ln.textContent = 'Marked paid. Paid through ' + pbDay(me.paid_through) + '.'; const a = row.querySelector('.acts'); if (a) a.remove(); const ch = row.querySelector('.ch'); if (ch) ch.remove(); }
+      if (row && me) { const ln = row.querySelector('.ln'); if (ln) ln.textContent = 'Marked paid' + (me.interval === 'year' ? ' for the year' : me.interval === 'month' ? ' for the month' : '') + '. Paid through ' + pbDay(me.paid_through) + '.'; const a = row.querySelector('.acts'); if (a) a.remove(); const ch = row.querySelector('.ch'); if (ch) ch.remove(); }
     });
     function pbBillDue(B) {
       if (!B) return '';
       const set = B.settings || {}, due = Array.isArray(B.due) ? B.due : [], seller = typeof set.seller_legal_name === 'string' && set.seller_legal_name ? set.seller_legal_name : '';
       return '<div class="pb-own-co" id="pbBillDue"><div class="nm">Billing due</div>'
+        + (pbSR ? '<div class="ln" id="pbSheetsAll">Plan sheets read, everyone: ' + pbSRtxt(pbSR.all) + ' \u00b7 ' + (window.pbSheetUsd ? window.pbSheetUsd() : '$1') + ' a sheet when plan reading is on</div>' : '')
         + '<div class="ln">Seller on invoices: ' + (seller ? escapeHtml(seller) : '<b>not set yet</b>') + ' · ' + pbMoney(pbNum(set.base_cents, 9900)) + ' a month includes ' + pbNum(set.base_seats, 5) + ' people, ' + pbMoney(pbNum(set.seat_cents, 1200)) + ' each extra · yearly = ' + pbNum(set.yearly_months, 10) + ' months · individual ' + pbMoney(pbNum(set.individual_cents, 1500)) + ' a month or ' + pbMoney(pbNum(set.individual_year_cents, 14400)) + ' a year · plan reading ' + pbMoney(pbNum(set.plan_sheet_cents, 100)) + ' a sheet</div>'
         + pbBillInd(B) /* pricing_nov20 */
         + (due.length ? due.map((d) => '<div class="pb-bill-due" data-id="' + escapeHtml(d.company_id) + '"><div class="hd">' + escapeHtml(d.legal_name || d.name || '') + (d.state && d.state !== 'active' ? ' ' + pbBillChip(d) : '') + '</div>'
             + (d.state === 'past_due' ? '<div class="ln"><b>Locks (read-only) on ' + pbDay(d.lock_on) + '</b> unless you press Paid</div>' : d.state === 'read_only' ? '<div class="ln"><b>Read-only now</b> · press Paid once it’s paid</div>' : '')
             + '<div class="ln">' + pbDay(d.from) + ' – ' + pbDay(d.to) + ' · ' + (Number(d.seats) || 0) + ' people · <b>' + pbMoney(d.amount_cents) + '</b> ' + (d.interval === 'year' ? 'for the year' : 'for the month') + (d.founder ? ' · founder price' : '') + '</div>'
             + (d.catchup && Number(d.catchup.cents) > 0 ? '<div class="ln">Catch-up now: ' + d.catchup.people + ' above the paid seats × ' + d.catchup.months + ' months × ' + pbMoney(pbNum(set.seat_cents, 1200)) + ' = <b>' + pbMoney(d.catchup.cents) + '</b></div>' : '')
-            + '<div class="ln">Send to ' + escapeHtml(d.billing_email || '') + (d.tax_state ? ' · billing state ' + escapeHtml(d.tax_state) : '') + (d.plan_reading_price_missing ? ' · plan reading is on: add ' + (window.pbSheetUsd ? window.pbSheetUsd() : '$1') + ' for each sheet read' : '') + '</div></div>').join('')
+            + '<div class="ln">Send to ' + escapeHtml(d.billing_email || '') + (d.tax_state ? ' · billing state ' + escapeHtml(d.tax_state) : '') + (d.plan_reading_price_missing ? ' · plan reading is on: add ' + (window.pbSheetUsd ? window.pbSheetUsd() : '$1') + ' for each sheet read' + (pbSR ? ' (' + pbSRtxt((pbSR.companies || []).find((y) => y && y.company_id === d.company_id)).replace(/<\/?b>/g, '') + ')' : '') : '') + '</div></div>').join('')
           : (pbBillInd(B) ? '' : '<div class="ln">Nothing to invoice in the next ' + pbNum(set.invoice_ahead_days, 7) + ' days.</div>')) + '</div>';
     }
     function pbBillSheet(id, title) {
@@ -40865,7 +41126,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + '<div class="pb-bill-sec">People</div><p class="pb-bill-note"><b id="pbMpSeats">' + seats + '</b> counted now: every login in the company and every open invite. The company login is free.</p>'
         + '<div class="pb-bill-sec">Billing</div><div class="pb-fb-seg" role="group" aria-label="Billing period"><button type="button" data-iv="month">Monthly</button><button type="button" data-iv="year">Yearly</button></div>'
         + '<label class="pb-bill-chk"><input type="checkbox" id="pbMpFounder"' + (founderOk ? '' : ' disabled') + '><span>Founder price, locked until <b>' + pbDay(until) + '</b>' + (founderOk ? '' : (c.plan === 'trial' ? ' (not offered: the beta has ended)' : ' (only for a beta company that commits before its beta ends)')) + '</span></label>'
-        + '<label class="pb-bill-chk"><input type="checkbox" id="pbMpPr"><span>Plan reading add-on (' + (window.pbSheetUsd ? window.pbSheetUsd() : '$1') + ' a sheet, charged once when read). Leave it off for customers until Billing shows sheets read. Off: plan sets stay parked.</span></label>'
+        + '<label class="pb-bill-chk"><input type="checkbox" id="pbMpPr"><span>Plan reading add-on (' + (window.pbSheetUsd ? window.pbSheetUsd() : '$1') + ' a sheet, charged once when read). ' + (pbSR ? 'Billing counts the sheets read.' : 'Leave it off for customers until Billing shows sheets read.') + ' Off: plan sets stay parked.</span></label>'
         + '<label>Signed by (name and title)<input id="pbMpSigner" maxlength="200" autocomplete="off" placeholder="Jane Smith, President"></label>'
         + '<div class="pb-bill-price" id="pbMpPrice" role="status"></div>'
         + '<button type="button" class="pb-btn" id="pbMpGo">Make Paid</button><p class="pb-fb-st" id="pbMpSt" role="status"></p>';
@@ -40959,13 +41220,15 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         let r; try { r = await sbClient.rpc('pb_owner_overview'); } catch (e) { r = { error: e }; }
         let rq = null; try { rq = await sbClient.rpc('pb_owner_plan_requests'); } catch (e) {} /* r16.71 */
         let bl = null; try { bl = await sbClient.rpc('pb_owner_billing'); } catch (e) {} /* billing Phase 0 */
+        let sr = null; try { sr = await sbClient.rpc('pb_owner_sheets_read'); } catch (e) {} /* billing_yearly_nov20 */
+        pbSR = sr && !sr.error && sr.data && sr.data.ok ? sr.data : null;
         B = bl && !bl.error && bl.data && bl.data.ok ? bl.data : null; BC = {}; if (B) (B.companies || []).forEach((x) => { BC[x.id] = x; });
         const reqs = rq && !rq.error && rq.data && rq.data.ok ? rq.data.requests || [] : [];
         if (!r || r.error || !r.data || !r.data.ok) { list.innerHTML = '<p class="pb-fb-st">Couldn’t load. Check signal and open it again.</p>'; return; }
         const cos = r.data.companies || [], T = r.data.totals || null, ft = (n) => Math.round(Number(n) || 0).toLocaleString() + ' ft';
         const tot = T ? '<div class="pb-own-co"><div class="nm">All companies</div><div class="ln">' + ft(T.laid_ft) + ' laid · ' + ft(T.laid_ft_30) + ' in the last 30 days · ' + (T.runs || 0) + ' runs · ' + (T.companies || 0) + ' compan' + (T.companies === 1 ? 'y' : 'ies') + '</div></div>' : ''; /* r16.70 */
-        const reqHtml = reqs.length ? '<div class="pb-own-co"><div class="nm">Plan requests</div>' + reqs.map((q) => '<div class="ln" data-uid="' + escapeHtml(q.user_id) + '">' + escapeHtml(q.who || q.email || 'Someone') + (q.company ? ' (' + escapeHtml(q.company) + ')' : '') + ' wants ' + (q.kind === 'company' ? 'a company plan: use Make Paid on the company' : 'their own plan')
-          + (q.email && q.email !== q.who ? ' · ' + escapeHtml(q.email) : '') + (q.kind === 'individual' ? ' <button type="button" class="pb-btn small" data-on="1" style="width:auto;display:inline-block;margin-left:6px">Turn On</button>' : '') + '</div>').join('') + '</div>' : '';
+        const reqHtml = reqs.length ? '<div class="pb-own-co"><div class="nm">Plan requests</div>' + reqs.map((q) => '<div class="ln" data-uid="' + escapeHtml(q.user_id) + '">' + escapeHtml(q.who || q.email || 'Someone') + (q.company ? ' (' + escapeHtml(q.company) + ')' : '') + ' wants ' + (q.kind === 'company' ? 'a company plan: use Make Paid on the company' : 'their own plan' + (q.interval === 'year' ? ', yearly (' + pbMoney(pbNum(B && B.settings && B.settings.individual_year_cents, 14400)) + ' a year)' : q.interval === 'month' ? ', monthly (' + pbMoney(pbNum(B && B.settings && B.settings.individual_cents, 1500)) + ' a month)' : ''))
+          + (q.email && q.email !== q.who ? ' · ' + escapeHtml(q.email) : '') + (q.kind === 'individual' ? ['month', 'year'].map((iv) => ' <button type="button" class="pb-btn small' + ((q.interval || 'month') === iv ? '' : ' ghost') + '" data-on="' + iv + '" style="width:auto;display:inline-block;margin-left:6px">Turn On ' + (iv === 'year' ? 'Yearly' : 'Monthly') + '</button>').join('') : '') + '</div>').join('') + '</div>' : '';
         list.innerHTML = reqHtml + pbBillDue(B) + tot + (cos.length ? cos.map((c) => {
           const beta = c.plan === 'trial', left = beta && c.trial_ends_at ? Math.ceil((new Date(c.trial_ends_at) - Date.now()) / 86400000) : null, ended = beta && (left === null || !(left > 0)); /* bughunt 07: no end date = ended, as on the server */
           const ai = Object.entries(c.ai || {}).filter(([f]) => f !== 'gonogo_q').sort((a, b) => b[1] - a[1]).map(([f, n]) => n + ' ' + (FEAT[f] || f)).join(' · ');
@@ -40974,6 +41237,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
           const bc = BC[c.id], acct = bc && bc.account; /* billing Phase 0 */
           return '<div class="pb-own-co" data-id="' + escapeHtml(c.id) + '"><div class="nm">' + escapeHtml(c.name || '') + ' ' + (!beta && acct ? pbBillChip(acct) : '<span class="ch' + (beta ? (ended ? ' ended' : '') : ' paid') + '">' + (beta ? (ended ? 'Beta ended' : 'Beta · ' + left + (left === 1 ? ' day' : ' days') + ' left') : 'Paid') + '</span>') + '</div>'
             + pbBillLines(bc)
+            + pbSheetsLn(c.id) /* billing_yearly_nov20 */
             + '<div class="ln">' + c.users + ' user' + (c.users === 1 ? '' : 's') + ' · ' + c.active_7d + ' active this week · used on ' + c.active_days + ' of the last 30 days</div>'
             + '<div class="ln">Laid: ' + ft(c.laid_ft) + ' (' + ft(c.laid_ft_30) + ' in 30 days) · ' + (c.runs || 0) + ' runs · ' + (c.photos || 0) + ' photos · ' + (c.reports_30 || 0) + ' reports in 30 days</div>'
             + '<div class="ln">Last used: ' + (c.last_active ? new Date(c.last_active + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'not yet') + '</div>'
@@ -40986,7 +41250,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         }).join('') : '<p class="pb-fb-st">No companies yet.</p>');
         list.querySelectorAll('[data-on]').forEach((b) => { b.onclick = async () => {
           const uid = b.closest('[data-uid]').dataset.uid; b.disabled = true;
-          let r; try { r = await sbClient.rpc('pb_owner_individual_on', { p_user: uid }); } catch (e) { r = { error: e }; }
+          const iv = b.dataset.on === 'year' ? 'year' : 'month'; /* billing_yearly_nov20 */
+          let r; try { r = await sbClient.rpc('pb_owner_individual_on', { p_user: uid, p_interval: iv }); } catch (e) { r = { error: e }; }
+          const old = r && r.error && /PGRST202|could not find the function|does not exist/i.test(String(r.error.message || '') + ' ' + String(r.error.code || ''));
+          if (old && iv === 'month') { try { r = await sbClient.rpc('pb_owner_individual_on', { p_user: uid }); } catch (e) { r = { error: e }; } }
+          else if (old) { pbAlert('Yearly needs the billing server update first. Nothing was changed.', 'Not Changed'); b.disabled = false; return; }
           if (!r || r.error || !r.data || !r.data.ok) { pbAlert('Not changed. Check signal and try again.', 'Not Changed'); b.disabled = false; return; }
           load();
         }; });
@@ -41032,6 +41300,258 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       load();
     };
   })();
+  /* Owner Dashboard (app owner only): one call, public.pb_owner_dashboard(p_days); account sharing list from pb_owner_share_events when it is live. */
+  (function () {
+    const CSS = `
+#pbCeo { position: fixed; inset: 0; z-index: 48; background: var(--pb-canvas, #08090B); color: var(--pb-text, #F4F6F8); font-family: var(--pb-font); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+#pbCeo * { box-sizing: border-box; }
+#pbCeo .cx-top { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px; background: var(--pb-surface, #171B21); border-bottom: 1px solid var(--pb-divider, #2C323B); }
+#pbCeo .cx-top h1 { font-size: 20px; line-height: 1.2; margin: 0; flex: 1 1 auto; font-weight: 700; }
+#pbCeo .cx-top .cx-as { width: 100%; order: 3; font-size: 13px; color: var(--pb-text-3, #9AA3AF); margin: 0; }
+#pbCeo .cx-seg { display: inline-flex; border: 1px solid var(--pb-divider, #2C323B); border-radius: 999px; overflow: hidden; }
+#pbCeo .cx-seg button, #pbCeo .cx-btn { appearance: none; border: 0; background: transparent; color: var(--pb-text-2, #B3BBC6); font: 600 14px/1 var(--pb-font); padding: 9px 12px; min-height: 36px; cursor: pointer; }
+#pbCeo .cx-seg button[aria-pressed="true"] { background: var(--pb-brand, #F4C542); color: var(--pb-brand-ink, #111318); }
+#pbCeo .cx-btn { border: 1px solid var(--pb-divider, #2C323B); border-radius: 999px; }
+#pbCeo .cx-x { appearance: none; border: 0; background: none; color: inherit; font-size: 28px; line-height: 1; padding: 2px 8px; cursor: pointer; }
+#pbCeo .cx-body { max-width: 1280px; margin: 0 auto; padding: 16px 16px calc(32px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 22px; }
+#pbCeo h2 { font-size: 15px; letter-spacing: .02em; color: var(--pb-text-2, #B3BBC6); margin: 0 0 10px; font-weight: 700; }
+#pbCeo .cx-kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+#pbCeo .cx-kpi { background: var(--pb-surface, #171B21); border: 1px solid var(--pb-divider, #2C323B); border-radius: 14px; padding: 12px 14px; min-width: 0; }
+#pbCeo .cx-kpi .k { font-size: 13px; color: var(--pb-text-3, #9AA3AF); }
+#pbCeo .cx-kpi .v { font-size: 26px; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+#pbCeo .cx-kpi .s { font-size: 12px; color: var(--pb-text-3, #9AA3AF); }
+#pbCeo .cx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 12px; align-items: start; }
+#pbCeo .cx-card { background: var(--pb-surface, #171B21); border: 1px solid var(--pb-divider, #2C323B); border-radius: 14px; padding: 14px; min-width: 0; }
+#pbCeo .cx-card h3 { font-size: 16px; margin: 0 0 8px; font-weight: 700; }
+#pbCeo .cx-card p { margin: 4px 0; font-size: 14px; line-height: 1.45; color: var(--pb-text-2, #B3BBC6); }
+#pbCeo .cx-row { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-top: 1px solid var(--pb-divider, #2C323B); font-size: 14px; }
+#pbCeo .cx-row:first-of-type { border-top: 0; }
+#pbCeo .cx-row > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+#pbCeo .cx-row > span:last-child { flex: 0 0 auto; text-align: right; font-variant-numeric: tabular-nums; color: var(--pb-text, #F4F6F8); }
+#pbCeo .cx-muted { color: var(--pb-text-3, #9AA3AF) !important; }
+#pbCeo .cx-attn { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+#pbCeo .cx-attn li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; font-size: 15px; line-height: 1.4; background: var(--pb-info-soft, #13202E); border-left: 4px solid var(--pb-info, #8CC2FF); }
+#pbCeo .cx-attn li.red { background: var(--pb-danger-soft, #2B1316); border-left-color: var(--pb-danger-line, #E0505C); }
+#pbCeo .cx-attn li.amber { background: var(--pb-warn-soft, #2A1F10); border-left-color: var(--pb-warn, #FFAA4D); }
+#pbCeo .cx-attn .tag { flex: 0 0 auto; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.08); white-space: nowrap; margin-top: 1px; }
+#pbCeo .cx-attn li.red .tag { color: var(--pb-danger-text, #FF8F96); }
+#pbCeo .cx-attn li.amber .tag { color: var(--pb-warn-text, #FFD08A); }
+#pbCeo .cx-attn li.ok { background: var(--pb-ok-soft, #10241A); border-left-color: var(--pb-ok, #5FD39A); }
+#pbCeo .cx-bars { display: flex; align-items: flex-end; gap: 2px; height: 72px; margin: 8px 0 2px; }
+#pbCeo .cx-bars i { flex: 1 1 0; min-width: 2px; background: var(--pb-brand, #F4C542); border-radius: 2px 2px 0 0; opacity: .9; }
+#pbCeo .cx-bars i.z { background: var(--pb-divider, #2C323B); height: 2px !important; }
+#pbCeo .cx-bars.blue i { background: var(--pb-info, #8CC2FF); }
+#pbCeo .cx-bars.green i { background: var(--pb-ok, #5FD39A); }
+#pbCeo .cx-bars.red i { background: var(--pb-danger-line, #E0505C); }
+#pbCeo .cx-axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--pb-text-3, #9AA3AF); }
+#pbCeo .cx-meter { height: 8px; border-radius: 999px; background: var(--pb-raised-2, #2A3038); overflow: hidden; margin-top: 4px; }
+#pbCeo .cx-meter > i { display: block; height: 100%; background: var(--pb-ok, #5FD39A); }
+#pbCeo .cx-meter.warn > i { background: var(--pb-warn, #FFAA4D); }
+#pbCeo .cx-meter.bad > i { background: var(--pb-danger-line, #E0505C); }
+#pbCeo .cx-chip { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--pb-raised-2, #2A3038); color: var(--pb-text-2, #B3BBC6); white-space: nowrap; }
+#pbCeo .cx-chip.ok { background: var(--pb-ok-soft, #10241A); color: var(--pb-ok, #5FD39A); }
+#pbCeo .cx-chip.warn { background: var(--pb-warn-soft, #2A1F10); color: var(--pb-warn-text, #FFD08A); }
+#pbCeo .cx-chip.bad { background: var(--pb-danger-soft, #2B1316); color: var(--pb-danger-text, #FF8F96); }
+#pbCeo .cx-not { border-style: dashed; }
+#pbCeo .cx-st { font-size: 15px; color: var(--pb-text-2, #B3BBC6); }
+#pbCeo .cx-ctl { display: flex; gap: 8px; align-items: center; }
+#pbCeo .cx-more { margin-top: 8px; }
+@media (max-width: 640px) { #pbCeo .cx-ctl { order: 2; width: 100%; } #pbCeo .cx-x { order: 1; } }
+@media (max-width: 520px) { #pbCeo .cx-kpi .v { font-size: 22px; } #pbCeo .cx-top h1 { font-size: 18px; } }
+`;
+    const esc = (x) => escapeHtml(x == null ? '' : String(x));
+    const num = (x) => Math.round(Number(x) || 0).toLocaleString();
+    const usd = (x, dp) => '$' + (Number(x) || 0).toLocaleString('en-US', { minimumFractionDigits: dp == null ? 2 : dp, maximumFractionDigits: dp == null ? 2 : dp });
+    const cents = (c) => usd((Number(c) || 0) / 100, (Number(c) || 0) % 100 ? 2 : 0);
+    const day = (d) => { if (!d) return ''; const t = new Date(String(d).length === 10 ? d + 'T12:00:00' : d); return isNaN(t) ? '' : t.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); };
+    const when = (d) => { if (!d) return 'never'; const t = new Date(d); if (isNaN(t)) return ''; const h = (Date.now() - t) / 36e5; return h < 1 ? Math.max(1, Math.round(h * 60)) + ' min ago' : h < 48 ? Math.round(h) + ' h ago' : Math.round(h / 24) + ' days ago'; };
+    const row = (k, v, cls) => '<div class="cx-row"><span>' + k + '</span><span' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</span></div>';
+    const card = (title, inner, cls) => '<div class="cx-card' + (cls ? ' ' + cls : '') + '"><h3>' + title + '</h3>' + inner + '</div>';
+    const FEAT = { teacher: 'Ask', analysis: 'Ask (crew stats)', stake: 'Stake reads', cutsheet: 'Cut sheets', ticket: 'Tickets', plans_strong: 'Plan questions', gonogo_q: 'Permit safety checks' };
+    const SHARE = { tried_in_use: 'Tried to sign in while in use elsewhere', tried_full: 'Tried a third device', took_place: 'Signed a device out to get in',
+      far_apart: 'Used too far apart to drive', back_and_forth: 'Switched devices back and forth' };
+    const STATE = { active: ['Paid', 'ok'], past_due: ['Past due', 'warn'], read_only: ['Read-only', 'bad'], canceled: ['Canceled', 'bad'], no_billing: ['Paid · no billing set up', ''] };
+    function bars(list, key, cls, fmt) {
+      const v = list.map((x) => Number(x[key]) || 0), max = Math.max(...v, 0), tot = v.reduce((a, b) => a + b, 0);
+      const f = fmt || num, first = list[0], last = list[list.length - 1];
+      return '<div class="cx-bars ' + (cls || '') + '" role="img" aria-label="' + esc(f(tot) + ' in total, most in one day ' + f(max)) + '">'
+        + v.map((n, i) => '<i' + (n ? ' style="height:' + Math.max(4, Math.round(100 * n / (max || 1))) + '%"' : ' class="z"') + ' title="' + esc(day(list[i].day) + ': ' + f(n)) + '"></i>').join('')
+        + '</div><div class="cx-axis"><span>' + esc(first ? day(first.day) : '') + '</span><span>Total ' + esc(f(tot)) + '</span><span>' + esc(last ? day(last.day) : '') + '</span></div>';
+    }
+    function meter(pct) { const p = Math.max(0, Math.min(100, Number(pct) || 0)); return '<div class="cx-meter' + (pct >= 100 ? ' bad' : pct >= 80 ? ' warn' : '') + '"><i style="width:' + p + '%"></i></div>'; }
+    let days = 30, D = null, shareRows = null, attnAll = false;
+    try { days = Number(localStorage.getItem('pbCeoDays')) || 30; } catch (e) {}
+    if (![7, 30, 90].includes(days)) days = 30;
+
+    function render(ov) {
+      const body = ov.querySelector('.cx-body'), as = ov.querySelector('.cx-as');
+      ov.querySelectorAll('.cx-seg button').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.d) === days)));
+      if (!D) return;
+      as.textContent = 'As of ' + new Date(D.at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' · last ' + D.days + ' days';
+      const M = D.money || {}, C = D.costs || {}, G = D.growth || {}, S = D.security || {}, R = D.reliability || {}, F = D.safety || {}, A = D.ask || {}, MC = M.counts || {};
+      const attn = D.attention || [];
+      const LV = { red: 'Now', amber: 'Soon', info: 'FYI' };
+      const showN = attnAll ? attn.length : 6;
+      let h = '<section aria-labelledby="cxAttnH"><h2 id="cxAttnH">Needs your attention' + (attn.length ? ' (' + attn.length + ')' : '') + '</h2><ul class="cx-attn">'
+        + (attn.length ? attn.slice(0, showN).map((a) => '<li class="' + esc(a.level) + '"><span class="tag">' + esc(LV[a.level] || 'FYI') + '</span><span>' + esc(a.text) + '</span></li>').join('')
+          : '<li class="ok"><span class="tag">OK</span><span>Nothing needs you right now.</span></li>') + '</ul>'
+        + (attn.length > 6 ? '<button type="button" class="cx-btn cx-more" id="cxAttnMore" aria-expanded="' + attnAll + '">' + (attnAll ? 'Show Fewer' : 'Show All ' + attn.length) + '</button>' : '') + '</section>';
+      // headline numbers
+      const margin = C.margin_mtd_cents;
+      h += '<section aria-label="Headline numbers"><div class="cx-kpis">'
+        + '<div class="cx-kpi"><div class="k">Monthly revenue (MRR)</div><div class="v">' + cents(M.mrr_cents) + '</div><div class="s">' + cents((Number(M.mrr_cents) || 0) * 12) + ' a year</div></div>'
+        + '<div class="cx-kpi"><div class="k">Companies</div><div class="v">' + num((MC.paid || 0) + (MC.beta || 0)) + '</div><div class="s">' + num(MC.paid) + ' paid · ' + num(MC.beta) + ' in beta</div></div>'
+        + '<div class="cx-kpi"><div class="k">People in the app</div><div class="v">' + num(G.active_7) + '</div><div class="s">this week · ' + num(G.active_today) + ' today</div></div>'
+        + '<div class="cx-kpi"><div class="k">Feet laid</div><div class="v">' + num((G.totals || {}).feet) + '</div><div class="s">' + num((G.totals || {}).runs) + ((G.totals || {}).runs === 1 ? ' run sent' : ' runs sent') + '</div></div>'
+        + '<div class="cx-kpi"><div class="k">AI cost this month</div><div class="v">' + usd(C.ai_mtd_usd) + '</div><div class="s">' + usd(C.ai_today_usd) + ' today</div></div>'
+        + '<div class="cx-kpi"><div class="k">Left after AI' + (C.fixed_month_cents == null ? '' : ' and hosting') + '</div><div class="v">' + cents(margin) + '</div><div class="s">this month' + (C.fixed_month_cents == null ? ' · hosting not set' : '') + '</div></div>'
+        + '</div></section>';
+      // MONEY
+      const cos = M.companies || [];
+      h += '<section aria-labelledby="cxMoneyH"><h2 id="cxMoneyH">Money</h2><div class="cx-grid">'
+        + card('Companies', cos.length ? cos.map((c) => {
+            const st = c.plan === 'trial' ? (c.days_left != null && c.days_left > 0 ? ['Beta · ' + c.days_left + (c.days_left === 1 ? ' day' : ' days') + ' left', c.days_left <= 7 ? 'warn' : ''] : ['Beta ended', 'bad']) : (STATE[c.state] || [c.state || 'Paid', '']);
+            return row(esc(c.name) + ' <span class="cx-chip ' + st[1] + '">' + esc(st[0]) + '</span>', esc(num(c.seats_used) + (c.seats_used === 1 ? ' person' : ' people')) + (c.mrr_cents ? ' · ' + cents(c.mrr_cents) + '/mo' : ''));
+          }).join('') : '<p>No companies yet.</p>')
+        + card('Revenue', row('Company plans', cents(M.company_mrr_cents) + '/mo') + row('Individual plans (' + num((M.individuals || {}).active) + ')', cents(M.individual_mrr_cents) + '/mo')
+            + row('If every beta paid today', cents(M.beta_pipeline_cents) + '/mo') + row('Seats used / paid', num(MC.seats_used) + ' / ' + num(MC.seats_paid))
+            + (MC.paid_no_billing ? '<p class="cx-muted">' + num(MC.paid_no_billing) + ' paid company with no billing set up (not counted).</p>' : '')
+            + '<p class="cx-muted">Payments: ' + (M.stripe_connected ? 'Stripe connected.' : 'invoices by hand (Stripe not connected).') + ' Sales tax is not added by the app; each company’s billing state is on its invoice.</p>')
+        + card('Renewals and founder prices', ((M.renewals_30 || []).length ? (M.renewals_30 || []).map((x) => row(esc(x.company) + (x.founder ? ' <span class="cx-chip">founder</span>' : ''), esc(day(x.paid_through)) + ' · ' + cents(x.amount_cents))).join('') : '<p>No renewals in the next 30 days.</p>')
+            + ((M.founder_locks || []).length ? '<p class="cx-muted">Founder price ends: ' + (M.founder_locks || []).map((x) => esc(x.company + ' ' + day(x.until))).join(' · ') + '</p>' : ''))
+        + '</div></section>';
+      // COSTS
+      const stops = (C.stops || []).filter((x) => Number(x.usd) > 0 || Number(x.pct) >= 50).slice(0, 8);
+      const st = C.storage_gb || {}, stTot = Object.values(st).reduce((a, b) => a + (Number(b) || 0), 0);
+      h += '<section aria-labelledby="cxCostH"><h2 id="cxCostH">Costs</h2><div class="cx-grid">'
+        + card('AI cost per day', bars(C.ai_by_day || [], 'usd', '', (n) => usd(n)) + row('Last ' + D.days + ' days', usd(C.ai_window_usd)))
+        + card('AI by feature (' + D.days + ' days)', (C.ai_by_feature || []).length ? (C.ai_by_feature || []).map((x) => row(esc(FEAT[x.feature] || x.feature) + ' <span class="cx-muted">' + num(x.n) + ' uses</span>', usd(x.usd) + ' <span class="cx-muted">' + usd(x.n ? x.usd / x.n : 0, 3) + ' each</span>')).join('') : '<p>No AI cost logged.</p>')
+        + card('AI money used this month', (stops.length ? stops.map((x) => '<div class="cx-row" style="display:block"><div style="display:flex;justify-content:space-between;gap:8px"><span>' + esc(x.who) + '</span><span>' + usd(x.usd) + ' of ' + usd(x.stop, Number(x.stop) % 1 ? 2 : 0) + ' · ' + num(x.pct) + '%</span></div>' + meter(x.pct) + '</div>').join('') : '<p>No one has used AI money this month.</p>')
+            + '<p class="cx-muted">At 100% the server stops that company’s AI until the 1st.</p>')
+        + card('AI by company (' + D.days + ' days)', (C.ai_by_company || []).length ? (C.ai_by_company || []).map((x) => row(esc(x.company), usd(x.usd))).join('') : '<p>None.</p>')
+        + card('Storage, email, push', Object.keys(st).sort().map((b) => row(esc(b), (Number(st[b]) || 0).toFixed(2) + ' GB')).join('') + row('Database', (Number(C.db_gb) || 0).toFixed(2) + ' GB') + row('<strong>Files in all</strong>', stTot.toFixed(2) + ' GB')
+            + row('Plan sheets read this month', num(C.plan_sheets_mtd) + ' · ' + usd(C.plan_usd_mtd))
+            + row('Emails this month', num(Object.values(C.emails_mtd || {}).reduce((a, b) => a + (Number(b) || 0), 0)) + ' <span class="cx-muted">' + esc(Object.entries(C.emails_mtd || {}).map(([k, v]) => k + ' ' + v).join(' · ')) + '</span>')
+            + row('Push notices (' + D.days + ' days)', num((C.pushes || {}).sent) + ' sent · ' + num((C.pushes || {}).gave_up) + ' failed'))
+        + '</div></section>';
+      // GROWTH
+      const fv = G.first_value || {}, by = G.by_day || [];
+      h += '<section aria-labelledby="cxGrowH"><h2 id="cxGrowH">Growth and use</h2><div class="cx-grid">'
+        + card('People in the app per day', bars(by, 'active', 'blue') + row('Today / 7 days / 30 days', num(G.active_today) + ' / ' + num(G.active_7) + ' / ' + num(G.active_30)) + row('Companies active this week', num(G.active_companies_7))
+            + (G.usage_since ? '<p class="cx-muted">Counted since ' + esc(day(G.usage_since)) + '.</p>' : ''))
+        + card('Work done per day', bars(by, 'runs', 'green') + row('Runs sent', num((G.totals || {}).runs)) + row('Feet laid', num((G.totals || {}).feet)) + row('Daily reports', num((G.totals || {}).reports))
+            + row('Production entries', num((G.totals || {}).entries)) + row('Permits', num((G.totals || {}).permits)) + row('Plan sets', num((G.totals || {}).plan_sets)))
+        + card('Sign-ups and invites', bars(by, 'signups', 'blue') + row('New logins', num(G.new_logins)) + row('New companies', num(G.new_companies))
+            + row('Invites sent / accepted', num((G.invites || {}).sent) + ' / ' + num((G.invites || {}).accepted)) + row('Join links made / used', num((G.invites || {}).links_made) + ' / ' + num((G.invites || {}).links_used))
+            + row('Time to first record', fv.median_hours == null ? '—' : (fv.median_hours < 48 ? fv.median_hours + ' h' : Math.round(fv.median_hours / 24) + ' days') + ' <span class="cx-muted">(' + num(fv.reached) + ' of ' + num(fv.n) + ' new logins)</span>'))
+        + card('Gone quiet (no app for 7+ days)', ((G.quiet || []).length ? (G.quiet || []).map((x) => row(esc(x.who) + (x.company ? ' <span class="cx-muted">' + esc(x.company) + '</span>' : ''), esc(x.days + ' days'))).join('') : '<p>No one has gone quiet.</p>')
+            + ((G.quiet_companies || []).length ? '<p class="cx-muted">Whole company quiet: ' + esc((G.quiet_companies || []).join(', ')) + '</p>' : ''))
+        + card('Screens used most', (G.screens || []).length ? (G.screens || []).map((x) => row(esc(String(x.screen).replace(/([a-z])([A-Z])/g, '$1 $2')), num(x.n) + ' <span class="cx-muted">' + num(x.people) + (x.people === 1 ? ' person' : ' people') + '</span>')).join('') : '<p>No screen counts yet.</p>')
+        + '</div></section>';
+      // SECURITY
+      const sh = S.share || {}, mfa = S.mfa || {};
+      let shareHtml;
+      if (!sh.live) shareHtml = '<p><span class="cx-chip">Not live yet</span></p><p>Starts with the one-device update (signed in on 2 devices, one in use at a time). Refused sign-ins and sharing signals will show here. Users never see this.</p>';
+      else {
+        const k7 = sh.by_kind_7 || {}, k30 = sh.by_kind_30 || {};
+        shareHtml = Object.keys(SHARE).map((k) => row(esc(SHARE[k]), num(k7[k]) + ' <span class="cx-muted">/ ' + num(k30[k]) + ' in 30 days</span>')).join('')
+          + ((sh.top || []).length ? '<p style="margin-top:10px"><strong>Logins with the most signals (30 days)</strong></p>' + (sh.top || []).map((x) => row(esc(x.who) + (x.company ? ' <span class="cx-muted">' + esc(x.company) + '</span>' : ''), num(x.n))).join('') : '<p>No signals in 30 days.</p>')
+          + '<p><button type="button" class="cx-btn" id="cxShareMore">' + (shareRows ? 'Hide Events' : 'Show Events') + '</button></p>'
+          + (shareRows ? (shareRows.length ? shareRows.slice(0, 50).map((x) => '<div class="cx-row" style="display:block"><div>' + esc((x.who || 'A login') + (x.company ? ' · ' + x.company : '')) + ' <span class="cx-muted">' + esc(day(x.at)) + '</span></div><div class="cx-muted">' + esc((SHARE[x.kind] || x.kind) + (x.miles ? ' · ' + x.miles + ' miles in ' + x.minutes + ' minutes' : '') + (x.n > 1 ? ' · ' + x.n + ' times' : '')) + '</div></div>').join('') : '<p>No events.</p>') : '');
+      }
+      h += '<section aria-labelledby="cxSecH"><h2 id="cxSecH">Account sharing and security</h2><div class="cx-grid">'
+        + card('Account sharing', shareHtml)
+        + card('Sign-ins', row('Logins', num(mfa.logins)) + row('Two-step login on', num(mfa.on) + ' of ' + num(mfa.logins))
+            + ((S.many_sessions || []).length ? '<p style="margin-top:10px"><strong>Signed in on 3+ devices now</strong></p>' + (S.many_sessions || []).map((x) => row(esc(x.who) + (x.company ? ' <span class="cx-muted">' + esc(x.company) + '</span>' : ''), num(x.sessions))).join('') : row('Signed in on 3+ devices now', '0'))
+            + ((mfa.bosses_without || []).length ? '<p style="margin-top:10px"><strong>Company accounts and PMs without two-step</strong></p>' + (mfa.bosses_without || []).map((x) => row(esc(x.who), esc((x.company || '') + ' · ' + (x.role === 'pm' ? 'PM' : x.role || '')))).join('') : '')
+            + (S.failed_signins_available ? '' : '<p class="cx-muted">Failed sign-ins aren’t kept in the database (Supabase Auth logs only).</p>'))
+        + card('Changes to crews and records (' + D.days + ' days)', row('Members removed', num(S.removed)) + row('Refused crew actions', num(S.refused)) + row('Billing actions', num(S.billing_actions))
+            + row('Admin access log entries', num(S.admin_log) + (S.admin_log_last ? ' <span class="cx-muted">last ' + esc(day(S.admin_log_last)) + '</span>' : '')))
+        + '</div></section>';
+      // RELIABILITY
+      const sc = R.seal_checks || {}, pc = R.photo_checks || {}, ps = R.push_subs || {}, bl = R.backup_last || {}, ol = R.offsite_last || {}, lg = R.legacy_7 || {};
+      const ok = (good, yes, no) => '<span class="cx-chip ' + (good ? 'ok' : 'bad') + '">' + esc(good ? yes : no) + '</span>';
+      h += '<section aria-labelledby="cxRelH"><h2 id="cxRelH">Reliability</h2><div class="cx-grid">'
+        + card('Backups and record checks', row('Backup', ok(!R.backup_problem, 'OK', 'Problem') + ' <span class="cx-muted">' + esc(when(bl.at)) + '</span>') + (R.backup_problem ? '<p>' + esc(R.backup_problem) + '</p>' : '')
+            + row('Off-site copy (Backblaze)', esc(when(ol.at)) + (ol.failed ? ' · ' + num(ol.failed) + ' failed' : '') + ' <span class="cx-muted">' + num(R.offsite_files) + ' files</span>')
+            + row('Sealed runs checked', num(sc.n) + ' ' + ok(!sc.bad, 'all match', sc.bad + ' changed')) + row('Run photos checked', num(pc.n) + ' ' + ok(!pc.bad, 'all match', pc.bad + ' changed')))
+        + card('Crashes per day', bars(by, 'crashes', 'red') + row('This week / last week', num(R.crashes_7) + ' / ' + num(R.crashes_prev_7))
+            + '<p class="cx-muted">Counted from the app’s crash reporter (only when “Send crash reports” is on). Details are in Sentry.</p>')
+        + card('App builds in use (14 days)', ((R.builds || []).length ? (R.builds || []).map((x, i) => row(esc(x.build) + (i === 0 ? ' <span class="cx-chip ok">newest</span>' : ''), num(x.people) + (x.people === 1 ? ' person' : ' people'))).join('') : '<p>Starts filling once this update is out.</p>')
+            + (lg.people ? row('On an old build still writing the old run table', num(lg.people) + ' people', '') : ''))
+        + card('Server jobs', (R.jobs || []).map((j) => row(esc(j.name), esc(when(j.last)) + (j.failed ? ' · <span class="cx-chip bad">' + num(j.failed) + ' failed</span>' : '') + (j.stuck ? ' · <span class="cx-chip bad">stuck</span>' : ''))).join('')
+            + row('Server errors (7 days)', num(R.server_errors_7)) + ((R.plans_stuck || []).length ? row('Plan sets stuck reading', num((R.plans_stuck || []).length) + ' <span class="cx-muted">since ' + esc(day(R.plans_stuck[0].since)) + '</span>') : ''))
+        + card('Notices to phones', row('Push sign-ups alive', num((ps.n || 0) - (ps.dead || 0)) + ' of ' + num(ps.n)) + row('Push failed (7 days)', num(R.push_gave_up_7)) + row('Emails failed (7 days)', num(R.email_gave_up_7)) + row('Emails waiting', num(R.email_waiting)))
+        + '</div></section>';
+      // SAFETY
+      const op = F.open_permits || [], lc = F.locates || {}, fe = F.field_events || {};
+      const EV = { delay: 'Delays', standby: 'Standby', 'log:delay': 'Delays (run log)', 'log:incident': 'Incidents', 'log:near_miss': 'Near misses' };
+      h += '<section aria-labelledby="cxSafeH"><h2 id="cxSafeH">Safety and legal</h2><div class="cx-grid">'
+        + card('Confined space right now', (op.length ? op.map((x) => row(esc((x.company || '') + (x.space ? ' · ' + x.space : '')), '<span class="cx-chip ' + (x.hours >= 8 ? 'bad' : 'warn') + '">open ' + esc(x.hours) + ' h</span>')).join('') : '<p>No permit open.</p>')
+            + row('Emergency notices (30 days)', num(F.em_notices_30) + (F.em_last ? ' <span class="cx-muted">last ' + esc(day(F.em_last)) + '</span>' : '')) + row('Permits started (' + D.days + ' days)', num(F.permits_window)))
+        + card('811 tickets', row('Open tickets', num(lc.open)) + row('Expiring in 3 days', num(lc.soon)) + ((lc.expired_open || []).length ? (lc.expired_open || []).map((x) => row(esc('Expired ' + day(x.expired) + ' · ' + (x.company || '') + (x.job ? ', job ' + x.job : '')), esc(x.ticket || ''), 'cx-muted')).join('') : ''))
+        + card('From the field (' + D.days + ' days)', (Object.keys(fe).length ? Object.entries(fe).map(([k, v]) => row(esc(EV[k] || k.replace(/^log:/, '').replace(/_/g, ' ')), num(v))).join('') : '<p>No delays or incidents logged.</p>')
+            + row('Reports to management', num(F.mgmt_reports)) + '<p class="cx-muted">Counts only. What crews write to their company stays with the company.</p>')
+        + card('Feedback and legal', row('Feedback not read', num(F.feedback_new)) + row('Website beta requests waiting', num(F.trial_requests_new))
+            + row('Terms accepted', esc(Object.entries(F.terms || {}).map(([k, v]) => 'v' + k + ': ' + v).join(' · ') || 'none')) + row('Logins with no Terms record', num(F.logins_no_terms))
+            + row('State rules to re-check', (F.state_rules_overdue || []).length ? esc((F.state_rules_overdue || []).join(', ')) : 'none' + (F.state_rules_next ? ' <span class="cx-muted">next ' + esc(day(F.state_rules_next)) + '</span>' : '')))
+        + '</div></section>';
+      // ASK
+      h += '<section aria-labelledby="cxAskH"><h2 id="cxAskH">Ask</h2><div class="cx-grid">'
+        + card('Questions per day', bars(by, 'ask', 'blue') + row('Questions (' + D.days + ' days)', num(A.questions)) + row('Cost', usd(A.usd) + (A.usd_per_q != null ? ' <span class="cx-muted">' + usd(A.usd_per_q, 3) + ' each</span>' : ''))
+            + (A.kb_version ? row('Knowledge build', esc(A.kb_version)) : ''))
+        + card('Answers to improve', row('Waiting', num(A.gaps_new)) + row('Marked “not right” (' + D.days + ' days)', num(A.not_right))
+            + Object.entries(A.gaps_by_reason || {}).map(([k, v]) => row(esc({ low_retrieval: 'Library had little on it', model_said_not_in_kb: 'Ask said it isn’t in the library', not_right: 'Crew said not right', not_right_data: 'Crew said the numbers are wrong' }[k] || k), num(v))).join('')
+            + ((A.newest || []).length ? '<p style="margin-top:10px"><strong>Newest</strong></p>' + (A.newest || []).map((x) => '<p>“' + esc(x.q) + '”</p>').join('') : ''))
+        + '</div></section>';
+      // NOT TRACKED YET
+      h += '<section aria-labelledby="cxNotH"><h2 id="cxNotH">Not tracked yet</h2><div class="cx-grid">'
+        + card('What this page can’t see yet', '<p>Card payments and failed cards (Stripe not connected) · failed sign-ins (Supabase Auth logs) · edge function errors · uptime · which state each Ask question is about · permit entries made against a meter warning.</p><p class="cx-muted">How to start each one is in the build notes.</p>', 'cx-not')
+        + '</div></section>';
+      body.innerHTML = h;
+      const am = body.querySelector('#cxAttnMore'); if (am) am.onclick = () => { attnAll = !attnAll; render(ov); };
+      const more = body.querySelector('#cxShareMore');
+      if (more) more.onclick = async () => {
+        if (shareRows) { shareRows = null; render(ov); return; }
+        more.disabled = true; more.textContent = 'Loading…';
+        let r; try { r = await sbClient.rpc('pb_owner_share_events', { p_days: 90, p_limit: 200 }); } catch (e) { r = { error: e }; }
+        shareRows = r && !r.error && r.data && r.data.ok ? r.data.events || [] : [];
+        render(ov);
+      };
+    }
+
+    async function load(ov) {
+      const body = ov.querySelector('.cx-body');
+      if (!D) body.innerHTML = '<p class="cx-st" role="status">Loading…</p>';
+      let r; try { r = await sbClient.rpc('pb_owner_dashboard', { p_days: days }); } catch (e) { r = { error: e }; }
+      if (!document.body.contains(ov)) return;
+      const err = r && r.error, code = err && (err.code || ''), msg = String((err && (err.message || err.details)) || '');
+      if (err && (code === 'PGRST202' || /could not find the function|does not exist/i.test(msg))) { D = null; body.innerHTML = '<p class="cx-st" role="status">The Owner Dashboard isn’t set up on the server yet. Nothing was changed.</p>'; return; }
+      if (err && /pb:not_allowed/.test(msg)) { D = null; body.innerHTML = '<p class="cx-st" role="status">This page is only for the app’s owner. If you use a two-step code, sign out and back in with it.</p>'; return; }
+      if (!r || err || !r.data || !r.data.ok) { body.innerHTML = (D ? '' : '') + '<p class="cx-st" role="status">Couldn’t load. Check signal and press Refresh.</p>'; return; }
+      D = r.data; shareRows = null; render(ov);
+    }
+
+    window.pbCeoOpen = function () {
+      if (typeof pbSupAdminState !== 'undefined' && !(sbUser && pbSupAdminState.uid === sbUser.id && pbSupAdminState.admin)) { pbAlert('This page is only for the app’s owner.', 'Owner Dashboard'); return; }
+      if (!document.getElementById('pbCeoCss')) { const st = document.createElement('style'); st.id = 'pbCeoCss'; st.textContent = CSS; document.head.appendChild(st); }
+      const old = document.getElementById('pbCeo'); if (old) old.remove();
+      const ov = document.createElement('div'); ov.id = 'pbCeo'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-labelledby', 'cxTitle');
+      ov.innerHTML = '<div class="cx-top"><h1 id="cxTitle">Owner Dashboard</h1><div class="cx-ctl"><div class="cx-seg" role="group" aria-label="Days shown"><button type="button" data-d="7">7 days</button><button type="button" data-d="30">30 days</button><button type="button" data-d="90">90 days</button></div>'
+        + '<button type="button" class="cx-btn" id="cxRefresh">Refresh</button></div><button type="button" class="cx-x" aria-label="Close" id="cxX">&times;</button><p class="cx-as" role="status"></p></div><div class="cx-body"></div>';
+      document.body.appendChild(ov); document.documentElement.classList.add('pb-fb-open');
+      D = null; shareRows = null; attnAll = false;
+      const close = () => { ov.remove(); document.documentElement.classList.remove('pb-fb-open'); document.removeEventListener('keydown', onKey); };
+      const onKey = (e) => { if (e.key === 'Escape') close(); };
+      document.addEventListener('keydown', onKey);
+      ov.querySelector('#cxX').onclick = close;
+      ov.querySelector('#cxRefresh').onclick = () => load(ov);
+      ov.querySelectorAll('.cx-seg button').forEach((b) => { b.onclick = () => { days = Number(b.dataset.d); try { localStorage.setItem('pbCeoDays', String(days)); } catch (e) {} render(ov); load(ov); }; });
+      render(ov); load(ov);
+      try { ov.querySelector('#cxX').focus(); } catch (e) {}
+    };
+  })();
+
   /* Beta Results: one page from the company's own records (pb_company_beta_summary), for the owner. */
   window.pbBresCanSee = function() {
     try { const s = sbCachedSubscription; if (s && (s.companyRole === 'Company account' || s.companyRole === 'Project manager')) return true; } catch (e) {}
@@ -41240,6 +41760,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const row = document.getElementById('settingsAppProblemsBtn'); if (!row) return;
     row.hidden = !(sbUser && pbSupAdminState.uid === sbUser.id && pbSupAdminState.admin === true);
     { const bb = document.getElementById('settingsBetaBtn'); if (bb) bb.hidden = row.hidden; } /* r16.66 */
+    { const cb = document.getElementById('settingsCeoBtn'); if (cb) cb.hidden = row.hidden; } /* owner dashboard */
     const dr = document.getElementById('settingsDocsReviewBtn'); if (dr) dr.hidden = row.hidden || !(window.pbDocsReady() || window.pbAiSafetyCheckOk()); // ask_v2: once docs answers, or the safety check is due
   }
   async function pbSupCheckAdmin() {
@@ -66798,6 +67319,214 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (switched) { window.pbObClose(); pbGoto('home', true); window.pbSayDone('Signed in as ' + (pbObIsLink(user) ? pbObDisplay(user) : (user.email || 'your account')) + '.'); try { window.pbMfaCheck(); } catch (e) {} } // streamline 09
   }
 
+  // ---- one device in use per login (Nov 20, v3; server: sql/01_one_device.sql) ----
+  // A login stays signed in on up to 2 devices; one of them is in use at a time (checked in within 5 minutes, or holding
+  // an open confined space permit). The other shows a lock screen and unlocks by itself once that one has been idle.
+  const PB_1D = { busy: false, at: 0, t: null, asking: false, dev: null, lock: null, tick: null, waking: false, full: null, relock: null };
+  const PB_1D_EVERY = 90000; // the check-in while on screen (the server counts a device idle after 5 minutes)
+  const PB_1D_MSG = {
+    other_device: 'Your account was signed in on another device, so this one was signed out. Your saved work is kept and will send when you sign in again.',
+    moved: 'Your account is now signed in in the Home Screen app, so this page was signed out. Open the app from its icon. Your saved work is kept.',
+    in_use: 'This account is in use on another device right now. Try again in 5 minutes.', // a new sign-in refused; the other device is untouched
+    full: 'This account is already signed in on two devices. Log out on one of them, then sign in here.'
+  };
+  const pb1dK = (k) => (k === 'tablet' || k === 'computer') ? k : 'phone';
+  function pb1dDevice() {
+    let d = PB_1D.dev || pbObLs.get('pbDeviceId');
+    if (!d || !/^[A-Za-z0-9_-]{8,64}$/.test(d)) {
+      try { const a = new Uint8Array(12); crypto.getRandomValues(a); d = 'd' + Array.from(a, (x) => ('0' + x.toString(16)).slice(-2)).join(''); } catch (e) { d = 'd' + Date.now().toString(16) + Math.random().toString(16).slice(2, 12); }
+      pbObLs.set('pbDeviceId', d);
+    }
+    PB_1D.dev = d; return d;
+  }
+  function pb1dKind() {
+    const ua = navigator.userAgent || '';
+    if (/iPad|Tablet/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua)) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'tablet';
+    return /iPhone|iPod|Android|Mobile/i.test(ua) ? 'phone' : 'computer';
+  }
+  function pb1dSid(session) {
+    try { const p = JSON.parse(atob(String(session.access_token).split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); return /^[0-9a-f-]{36}$/.test(p.session_id || '') ? p.session_id : null; } catch (e) { return null; }
+  }
+  function pb1dNote(session) { try { const sid = pb1dSid(session); if (sid && session.user) pbObLs.set('pb1dLast', JSON.stringify({ sid, uid: session.user.id })); } catch (e) {} }
+  const pb1dRace = (p, ms) => Promise.race([Promise.resolve(p).catch((e) => ({ data: null, error: { message: String((e && e.message) || e) } })), new Promise((res) => setTimeout(() => res({ data: null, error: { message: 'timeout' } }), ms))]);
+  const pb1dQuiet = () => { try { return typeof pbAuthBackgroundOk === 'function' && !pbAuthBackgroundOk(); } catch (e) { return false; } }; // the anonymous-report quiet rule
+  const pb1dMissing = (e) => !!e && /PGRST202|could not find the function/i.test(String(e.code || '') + ' ' + String(e.message || ''));
+  function pb1dSoon(ms, force) { clearTimeout(PB_1D.t); PB_1D.t = setTimeout(() => { if (sbUser) pb1dSeen(force); else pb1dWhy(); }, ms); }
+  function pb1dTell(reason, sid, uid) { // once per ended session
+    if (!PB_1D_MSG[reason]) return;
+    const key = sid || ('u:' + uid); if (pbObLs.get('pb1dTold') === key) return; pbObLs.set('pb1dTold', key);
+    let msg = PB_1D_MSG[reason];
+    try { if (reason === 'other_device' && uid && typeof pbOpenPermitOf === 'function' && pbOpenPermitOf(uid)) msg += ' A confined space permit is open on this device. Sign in again now so it keeps backing up and your company keeps seeing it.'; } catch (e) {}
+    pbAlert(msg, reason === 'in_use' ? 'Account In Use' : reason === 'full' ? 'Signed In on Two Devices' : 'Signed Out');
+  }
+  async function pb1dEnded(reason, sid, uid) { // the server says this session is over
+    if (reason !== 'other_device' && reason !== 'moved' && reason !== 'ended' && reason !== 'in_use' && reason !== 'full') return;
+    pb1dUnlock(false); pb1dTell(reason, sid, uid);
+    pbObLs.set('pb1dLast', '');
+    try { if (sbUser && sbUser.id === uid) await sbClient.auth.signOut({ scope: 'local' }); } catch (e) {} // this device only; the app's own SIGNED_OUT handling follows
+    if ((reason === 'in_use' || reason === 'full') && sid) { try { await pb1dRace(sbClient.rpc('pb_session_why', { p_session: sid }), 15000); } catch (e) {} } // the refused sign-in is removed on the server
+  }
+  async function pb1dRefused(sid, uid) { // a refused sign-in while the server's gate is not on yet (no reason given): ask why
+    let reason = null;
+    try { const r = await pb1dRace(sbClient.rpc('pb_session_why', { p_session: sid }), 15000); reason = r && !r.error && r.data && r.data.reason; } catch (e) {}
+    await pb1dEnded(reason === 'full' ? 'full' : 'in_use', null, uid);
+  }
+
+  // -- the lock screen (this device is signed in; the other one is in use) --
+  function pb1dLock(other, waitS, permit) {
+    const w = Math.max(0, Math.min(600, Math.round(Number(waitS) || 0)));
+    PB_1D.lock = { other: pb1dK(other), until: Date.now() + w * 1000, permit: !!permit, uid: sbUser && sbUser.id };
+    pb1dShow();
+  }
+  function pb1dUnlock(wake) {
+    const was = !!PB_1D.lock; PB_1D.lock = null; pb1dShow();
+    if (was && wake) { // this device is the one in use now: wake every queue at once (they all listen for 'online')
+      PB_1D.waking = true; try { window.dispatchEvent(new Event('online')); } catch (e) {} PB_1D.waking = false;
+      try { if (sbUser && typeof window.pbCrewNoticeAckSend === 'function') window.pbCrewNoticeAckSend(sbUser.id); } catch (e) {} // (the one record that doesn't listen for 'online')
+    }
+  }
+  const pb1dClock = (ms) => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + ('0' + (t % 60)).slice(-2); };
+  function pb1dLockText(L) {
+    return L.permit ? 'In use on your other device (' + L.other + '): a confined space permit is open there. You can use this one when that permit is closed.'
+      : 'In use on your other device (' + L.other + '). You can use this one when that one has been idle for 5 minutes.';
+  }
+  function pb1dShow() {
+    const L = PB_1D.lock;
+    let cover = document.getElementById('pb1dLock'), bar = document.getElementById('pb1dBar');
+    let localPermit = false; try { localPermit = !!(L && ((typeof pbOpenPermitOf === 'function' && pbOpenPermitOf(L.uid)) || window.__pb1dPermitHere)); } catch (e) {} /* (__pb1dPermitHere: for the rig) */
+    const showCover = !!L && navigator.onLine !== false && !!sbUser && sbUser.id === L.uid && !localPermit; // no signal: keep working on the phone
+    const showBar = !!L && navigator.onLine !== false && !!sbUser && sbUser.id === L.uid && localPermit;   // never over a live permit on this device
+    if (showCover && !cover) {
+      cover = document.createElement('div'); cover.id = 'pb1dLock'; cover.setAttribute('role', 'alertdialog'); cover.setAttribute('aria-modal', 'true'); cover.setAttribute('aria-labelledby', 'pb1dLockH');
+      cover.style.cssText = 'position:fixed;inset:0;z-index:49;display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px));background:var(--pb-canvas,#F4F5F7);color:var(--pb-text,#14171C);font-family:Inter,system-ui,-apple-system,sans-serif;box-sizing:border-box;';
+      cover.innerHTML = '<div style="width:100%;max-width:420px;text-align:center;overflow-wrap:anywhere;">'
+        + '<h2 id="pb1dLockH" style="margin:0 0 12px;font-size:22px;">In Use on Your Other Device</h2>'
+        + '<p id="pb1dLockMsg" style="margin:0 0 12px;font-size:17px;line-height:1.45;"></p>'
+        + '<p id="pb1dLockCd" role="timer" aria-live="off" style="margin:0 0 12px;font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;"></p>'
+        + '<p style="margin:0 0 18px;font-size:15px;line-height:1.4;opacity:.8;">Your saved work stays on this device and sends once you use it here.</p>'
+        + '<button type="button" class="pb-btn" id="pb1dTry" style="width:100%;min-height:52px;margin:0 0 10px;">Try Now</button>'
+        + '<button type="button" class="pb-btn ghost" id="pb1dOut" style="width:100%;min-height:48px;margin:0 0 18px;">Log Out</button>'
+        + '<a href="tel:911" style="display:inline-block;min-height:44px;line-height:44px;color:#C62828;font-weight:700;text-decoration:none;">Emergency: Call 911</a></div>';
+      (document.getElementById('pbApp') || document.body).appendChild(cover); // inside the app: its buttons and fonts
+      cover.querySelector('#pb1dTry').addEventListener('click', () => { const b = cover.querySelector('#pb1dTry'); b.disabled = true; b.textContent = 'Checking…'; pb1dSeen(true).finally(() => { b.disabled = false; b.textContent = 'Try Now'; }); });
+      cover.querySelector('#pb1dOut').addEventListener('click', () => { if (typeof window.pbLogout === 'function') window.pbLogout(); }); // its questions show above this screen
+    }
+    if (!showCover && cover) cover.remove();
+    if (showBar && !bar) {
+      bar = document.createElement('div'); bar.id = 'pb1dBar'; bar.setAttribute('role', 'status');
+      bar.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:49;padding:calc(8px + env(safe-area-inset-top,0px)) 16px 8px;background:#5D4037;color:#fff;font:600 14px/1.35 system-ui,-apple-system,sans-serif;text-align:center;overflow-wrap:anywhere;';
+      (document.getElementById('pbApp') || document.body).appendChild(bar);
+    }
+    if (!showBar && bar) bar.remove();
+    clearInterval(PB_1D.tick); PB_1D.tick = null;
+    if (!showCover && !showBar) return;
+    const paint = () => {
+      const M = PB_1D.lock; if (!M) return;
+      const left = M.until - Date.now();
+      if (showBar) { bar.textContent = pb1dLockText(M) + ' This permit keeps working here; it backs up to your company once this device is the one in use.'; }
+      else {
+        const msg = document.getElementById('pb1dLockMsg'), cd = document.getElementById('pb1dLockCd');
+        if (msg) msg.textContent = pb1dLockText(M);
+        if (cd) cd.textContent = M.permit ? '' : left > 0 ? 'Unlocks by itself in ' + pb1dClock(left) : 'Checking…';
+      }
+      if (!M.permit && left <= 0 && !PB_1D.busy && Date.now() - PB_1D.at > 4000) pb1dSeen(true); // its time is up: check now (it unlocks if the other one stayed idle)
+    };
+    paint(); PB_1D.tick = setInterval(paint, 1000);
+  }
+
+  // -- "already signed in on two devices": sign one out and take its place --
+  function pb1dFull(hint, sid, uid) {
+    if (PB_1D.full === sid) return; // already asking
+    PB_1D.full = sid; pb1dUnlock(false);
+    const L = String(hint || '').split(',').map((x) => { const p = x.split('|'); return { kind: pb1dK(p[0]), at: Number(p[1]) * 1000 }; }).filter((x) => isFinite(x.at) && x.at > 0).slice(0, 2);
+    const ago = (t) => { const m = Math.round((Date.now() - t) / 60000); return !isFinite(m) || m < -10 ? '' : m < 2 ? 'used just now' : m < 120 ? 'used ' + m + ' min ago' : m < 2880 ? 'used ' + Math.round(m / 60) + ' h ago' : 'used ' + Math.round(m / 1440) + ' days ago'; };
+    const cap = (k) => k.charAt(0).toUpperCase() + k.slice(1);
+    const same = L.length === 2 && L[0].kind === L[1].kind;
+    const names = L.length === 2 ? L.map((x, i) => (same ? (i === 0 ? cap(x.kind) + ' Used Last' : 'Other ' + cap(x.kind)) : cap(x.kind)) + (ago(x.at) ? ' (' + ago(x.at) + ')' : ''))
+      : ['One Used Last', 'Other One'];
+    const btns = names.map((n, i) => ({ label: 'Sign Out the ' + n, primary: i === 0, onClick: () => pb1dTake(sid, uid, i + 1) }));
+    btns.push({ label: 'Cancel', onClick: () => { PB_1D.full = null; pb1dEnded('ended', null, uid).then(() => { try { pbRawFetch1d('pb_session_why', { p_session: sid }); } catch (e) {} }); } });
+    pbShowModal('This account is already signed in on two devices. To use it here, sign one of them out. Its saved work stays on it and sends when it signs in again.', btns, 'Signed In on Two Devices',
+      () => { PB_1D.full = null; pb1dSoon(2000, true); }); // replaced by another message before an answer: asked again
+  }
+  async function pbRawFetch1d(fn, args) { // with the app's own key only (a refused sign-in's own token is refused by the server)
+    const url = (typeof SUPABASE_URL === 'string' ? SUPABASE_URL : sbClient.supabaseUrl), key = (typeof SUPABASE_PUBLISHABLE_KEY === 'string' ? SUPABASE_PUBLISHABLE_KEY : sbClient.supabaseKey);
+    const f = (typeof pbRawFetch === 'function' ? pbRawFetch : fetch);
+    return pb1dRace(f(url + '/rest/v1/rpc/' + fn, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: key }, body: JSON.stringify(args), credentials: 'omit', cache: 'no-store' })
+      .then((r) => r.json().catch(() => null).then((d) => r.ok ? { data: d, error: null } : { data: null, error: d || { message: 'HTTP ' + r.status } })), 15000);
+  }
+  async function pb1dTake(sid, uid, pick) {
+    const r = await pbRawFetch1d('pb_session_take_slot', { p_session: sid, p_pick: pick });
+    PB_1D.full = null;
+    if (!sbUser || sbUser.id !== uid) return;
+    const d = r && !r.error ? r.data : null;
+    if (d && d.ok) { pbObLs.set('pb1dLast', ''); setTimeout(() => location.reload(), 50); return; } // a normal sign-in now: start clean
+    if (d && d.code === 'pb:in_use') { await pb1dEnded('in_use', sid, uid); return; }
+    if (d && d.code === 'pb:not_found') { await pb1dEnded('ended', null, uid); pbAlert('That took too long. Sign in again.', 'Sign In Again'); return; }
+    pbShowModal('No answer from the server. Check the signal and try again.', [{ label: 'Try Again', primary: true, onClick: () => pb1dTake(sid, uid, pick) }, { label: 'Cancel', onClick: () => pb1dEnded('ended', null, uid) }], 'Not Signed In Yet');
+  }
+
+  // -- the check-in --
+  async function pb1dSeen(force) {
+    if (!sbClient || typeof sbClient.rpc !== 'function' || !sbUser || PB_1D.busy) return;
+    if (navigator.onLine === false) { pb1dShow(); return; } // no signal: the lock is not shown; work goes on and waits on the phone
+    if (!force && Date.now() - PB_1D.at < PB_1D_EVERY - 10000) return;
+    if (pb1dQuiet()) { pb1dSoon(60000, force); return; }
+    PB_1D.busy = true; const uid = sbUser.id;
+    try {
+      let ss = null; try { const g = await sbClient.auth.getSession(); ss = g && g.data && g.data.session; } catch (e) {}
+      if (!ss || !ss.user || ss.user.id !== uid) return;
+      const sid = pb1dSid(ss); pb1dNote(ss);
+      let fix = null; try { const f = window.pbCam && window.pbCam._g && window.pbCam._g.fix; if (f && isFinite(f.lat) && isFinite(f.lng) && Date.now() - f.at < 3600000) fix = f; } catch (e) {} // only a fix the photo stamp already has; never asked for here
+      const r = await pb1dRace(sbClient.rpc('pb_device_seen', { p_device: pb1dDevice(), p_kind: pb1dKind(), p_lat: fix ? fix.lat : null, p_lng: fix ? fix.lng : null, p_fix_at: fix ? new Date(fix.at).toISOString() : null, p_build: String(window.PB_APP_BUILD || '').slice(0, 60) }), 15000);
+      PB_1D.at = Date.now();
+      if (!sbUser || sbUser.id !== uid) return;
+      const e = r && r.error, d = r && !e ? r.data : null;
+      if (d && d.state === 'locked') pb1dLock(d.other, d.wait_s, d.permit);
+      else if (e && /pb:signed_out/.test(String(e.message || ''))) {
+        const why = String(e.details || '');
+        if (why === 'locked') { const h = String(e.hint || '').split('|'); pb1dLock(h[0], h[1], h[2] === '1'); }
+        else if (why === 'full') pb1dFull(e.hint, sid, uid);
+        else if (why) await pb1dEnded(why, sid, uid);
+        else if (sid) await pb1dRefused(sid, uid);
+      }
+      else if (!e || pb1dMissing(e)) pb1dUnlock(true); // in use here (or the server part isn't installed: nothing changes)
+      // no answer: left as it was; tried again on the next check-in
+    } finally { PB_1D.busy = false; }
+  }
+  async function pb1dWhy() { // signed out here without a tap (a refresh was refused): ask why, once
+    if (!sbClient || typeof sbClient.rpc !== 'function' || sbUser || navigator.onLine === false || PB_1D.asking) return;
+    let last = null; try { last = JSON.parse(pbObLs.get('pb1dLast') || 'null'); } catch (e) {}
+    if (!last || !last.sid) return;
+    if (pb1dQuiet()) { pb1dSoon(60000); return; }
+    PB_1D.asking = true;
+    try {
+      const r = await pb1dRace(sbClient.rpc('pb_session_why', { p_session: last.sid }), 15000), e = r && r.error;
+      if (e && /pb:signed_out/.test(String(e.message || '')) && e.details) { pb1dTell(String(e.details), last.sid, last.uid); pbObLs.set('pb1dLast', ''); try { await sbClient.auth.signOut({ scope: 'local' }); } catch (x) {} }
+      else if (r && !e && r.data && r.data.ok) { pbObLs.set('pb1dLast', ''); if (r.data.reason === 'other_device' || r.data.reason === 'moved') pb1dTell(String(r.data.reason), last.sid, last.uid); }
+      else if (r && !e) pbObLs.set('pb1dLast', ''); // the server has no such function (not installed): nothing to ask
+      else if (pb1dMissing(e)) pbObLs.set('pb1dLast', '');
+    } finally { PB_1D.asking = false; }
+  }
+  window.pb1dSeen = pb1dSeen; window.pb1dWhy = pb1dWhy; window.__pb1d = PB_1D; /* (the rig reads the state) */
+  if (sbClient) {
+    try { sbClient.auth.onAuthStateChange((event, session) => { // (nothing is awaited inside the callback)
+      if (session && session.user) { pb1dNote(session); if (event === 'SIGNED_IN') pb1dSoon(300, true); } // at once: a refused sign-in is said right away
+      else if (event === 'SIGNED_OUT') { PB_1D.lock = null; PB_1D.full = null; pb1dShow(); pb1dSoon(1500); }
+    }); } catch (e) {}
+    setTimeout(() => { if (sbUser) pb1dSeen(false); else pb1dWhy(); }, 6000);
+    window.addEventListener('online', () => { if (!PB_1D.waking) { pb1dShow(); pb1dSoon(2500, true); } });
+    window.addEventListener('offline', () => pb1dShow());
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pb1dSoon(1000, true); });
+    window.addEventListener('pageshow', (ev) => { if (ev.persisted) pb1dSoon(1000, true); });
+    setInterval(() => { if (document.visibilityState === 'visible' && sbUser) pb1dSeen(false); }, 15000); // (each tick checks in at most every ~90 s)
+    window.pbScreenHooks.push((name) => { if (sbUser) { pb1dSeen(false); if (PB_1D.lock) pb1dShow(); } else if (name === 'login') pb1dWhy(); });
+  }
+  // Get a Code: signing in with it in the Home Screen app signs this page out, so unsent work is named first.
+  window.pb1dMoveWarn = async function (id) {
+    try { const uid = sbUser && sbUser.id; if (!uid || typeof pbUnsentSentence !== 'function') return; const t = await (window.__pb1dUnsent || pbUnsentSentence)(uid); /* (the rig can stand in for the sentence) */ const e = document.getElementById(id); if (t && e) { e.textContent = 'Let this send before you switch. ' + t; e.hidden = false; } } catch (e) {}
+  };
+
   // ---- 3. a code for this account's other screen (the iPhone Home Screen app): made by the person, 15 minutes ----
   window.pbObHandoff = async function () {
     if (!sbUser) return;
@@ -66805,9 +67534,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!r.ok) { pbAlert(pbObText(r.code), 'No Code'); return; }
     PB_OB.handoff = r;
     pbObSheet('<h2 data-pbob-focus tabindex="-1">Code for the Home Screen App</h2>'
-      + '<p>In the Home Screen app, tap <strong>Paste Join Code</strong> (or type the code). It works once, for 15 minutes. Don’t send it to anyone: it signs in to your account.</p>'
+      + '<p>In the Home Screen app, tap <strong>Paste Join Code</strong> (or type the code). It works once, for 15 minutes. Don’t send it to anyone: it signs in to your account. This page is signed out when you sign in there.</p><p class="pbob-err" id="pb1dUnsentA" role="status" hidden></p>'
       + '<div class="pbob-code" id="pbObHandoffCode">' + escapeHtml(pbObCodeShown(r.code)) + '</div>'
       + '<div class="pbob-btns"><button type="button" class="pb-btn" id="pbObHandoffCopy" onclick="pbObHandoffCopy()">Copy Code</button><button type="button" class="pb-btn ghost" onclick="pbObClose()">Done</button></div>', 'Code for the Home Screen app');
+    window.pb1dMoveWarn('pb1dUnsentA');
   };
   window.pbObHandoffCopy = async function () {
     const r = PB_OB.handoff; if (!r) return; const txt = 'PBCODE:' + r.token; let ok = false;
@@ -67085,7 +67815,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!document.getElementById('pbObA2hsCode')) return;
     if (!r.ok) { if (b) { b.disabled = false; b.textContent = 'Get a Code'; } let e = document.getElementById('pbObA2hsErr'); if (!e) { e = document.createElement('p'); e.id = 'pbObA2hsErr'; e.className = 'pbob-err'; e.setAttribute('role', 'alert'); box.appendChild(e); } e.textContent = pbObText(r.code); return; }
     PB_OB.handoff = r;
-    box.innerHTML = '<div class="pbob-code" id="pbObHandoffCode">' + escapeHtml(pbObCodeShown(r.code)) + '</div><button type="button" class="pb-btn secondary" id="pbObHandoffCopy" onclick="pbObHandoffCopy()" style="width:100%;min-height:52px;">Copy Code</button><p class="pbob-dim" style="margin:6px 0 0;">Works once, for 15 minutes. Don’t send it to anyone: it signs in to your account.</p>';
+    box.innerHTML = '<div class="pbob-code" id="pbObHandoffCode">' + escapeHtml(pbObCodeShown(r.code)) + '</div><button type="button" class="pb-btn secondary" id="pbObHandoffCopy" onclick="pbObHandoffCopy()" style="width:100%;min-height:52px;">Copy Code</button><p class="pbob-dim" style="margin:6px 0 0;">Works once, for 15 minutes. Don’t send it to anyone: it signs in to your account. This Safari page is signed out when you sign in there.</p><p class="pbob-err" id="pb1dUnsentB" role="status" hidden></p>';
+    window.pb1dMoveWarn('pb1dUnsentB');
   };
   window.pbObInstall = async function () {
     const e = pbObBip; pbObBip = null;
@@ -69883,7 +70614,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         if (src) { const parts = src.address.split(',').map(x => x.trim()).filter(Boolean), cs = parts.length >= 3 ? parts.slice(-2).join(', ') : parts.length === 2 && !/\d/.test(parts[0]) ? parts.join(', ') : ''; /* review1: never the street */
           if (cs) { a.value = cs.slice(0, 300); a.dataset.auto = '1'; } } }
       if (au) au.hidden = !(a && a.dataset.auto === '1' && a.value.trim()); }
-    { const f = document.getElementById('cxNewForm'); if (f && !f.__cxIn) { f.__cxIn = true; f.addEventListener('input', () => pbCxNewErr('')); } } // a message goes once the person types again
+    { const f = document.getElementById('cxNewForm'); if (f && !f.__cxIn) { f.__cxIn = true; f.addEventListener('input', () => { pbCxNewErr(''); try { window.pbStNewJobSync(); } catch (e) {} }); } } // a message goes once the person types again
+    try { window.pbStNewJobSync(true); } catch (e) {} // ask_followups: the State field shows only when City, State has no state
     pbGoto('cxNew');
     setTimeout(() => { const j = document.getElementById('cxnJob'); if (j && !(window.pbShellOskLikely && window.pbShellOskLikely())) j.focus(); }, 60); /* feat_planfill: a phone shows no keyboard for it */
   };
@@ -69938,6 +70670,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         if (pbCx.nf && pbCx.nf.key === key) { pbCx.nf.loc = pbJcSavedLine(d, addr); window.pbCxJobPaint(); }
       }).catch(() => {});
     }
+    try { const sf = document.getElementById('cxnStateF'), sv = String((document.getElementById('cxnState') || {}).value || ''); if (sf && !sf.hidden && pbSrOk(sv)) pbStSetJob(job.job_number, sv); } catch (e) { console.error(e); } // ask_followups: the state picked for a job with no state in its address
     pbCx.nf = { key, step: 1, saw: false, partial, loc: locNote };
     const f = document.getElementById('cxNewForm'); if (f) f.reset();
     try { await pbCxForgetJob(uid, key, job.job_number); } catch (e) { console.error(e); } // feat_office C1: nothing of an earlier job with this number
@@ -71976,10 +72709,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (pbSrNoFn(m)) { pbSrNoServer = true; return; }
       if (!r || r.error || !r.data || r.data.ok !== true || pbArchiveOwnerUid !== uid) return;
       const o = pbSrGet(uid), J = r.data.jobs && typeof r.data.jobs === 'object' ? r.data.jobs : {};
-      o.co = pbSrOk(r.data.company_state) ? r.data.company_state : ''; o.jobs = {}; Object.keys(J).forEach(k => { if (pbSrOk(J[k])) o.jobs[k] = J[k]; }); o.at = Date.now(); pbSrPut(uid, o);
+      o.co = pbSrOk(r.data.company_state) ? r.data.company_state : ''; o.can = r.data.can_set_company === true; o.jobs = {}; Object.keys(J).forEach(k => { if (pbSrOk(J[k])) o.jobs[k] = J[k]; }); o.at = Date.now(); pbSrPut(uid, o);
       for (const k of Object.keys(o.jobs_local)) { const x = o.jobs_local[k]; if (x && x.num) await pbSrPush(uid, x.num, x.code); } // picks made with no signal (or before the update)
       if (o.co_local !== undefined && r.data.can_set_company) await pbSrPush(uid, null, o.co_local);
       pbLocRefreshScreens(); try { pbLocCoRender(); } catch (e) {}
+      try { pbStHomeRender(); } catch (e) {}
     }).catch(() => {});
   }
   // the Rules view: everything from the table, the sources, the day it was checked. Works with no signal (links need it).
@@ -72068,6 +72802,108 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
   { const o = window.pbCalcTrench; if (typeof o === 'function') window.pbCalcTrench = function() { const r = o.apply(this, arguments); try { pbSrTrenchNote(); } catch (e) { console.error(e); } return r; }; }
   window.__debugSr = { job: (k, n) => pbSrJob(k, n), store: (u) => JSON.parse(JSON.stringify(pbSrGet(u || pbArchiveOwnerUid))), reset: () => { pbSrPullAt = 0; pbSrNoServer = false; pbSrMem = { uid: null, o: null }; } };
+
+  // ---- ask_followups (Nov 20): a State pick at set-up, and the state shown under Ask answers ----
+  // "My state" = the company's state when this account may set it (owner, PM, superintendent: saved for the whole
+  // company), else kept on this phone (Individual plan). It is the same value Settings > Company > 811 rules state shows.
+  function pbStIndividual() { try { const t = sbCachedSubscription; return !!(sbUser && t && t.tier === 'individual' && !t.companyId); } catch (e) { return false; } }
+  function pbStUid() { const uid = pbArchiveOwnerUid; return uid && uid !== 'shared' && sbUser && sbUser.id === uid ? uid : null; }
+  function pbStGuess() { // a state the phone can already tell: where it is (photo stamps, last 12 hours), else the newest run's job
+    try { const h = typeof window.pbHereState === 'function' ? window.pbHereState() : null; if (pbSrOk(h)) return h; } catch (e) {}
+    try {
+      const seen = new Set();
+      for (let i = (runArchive || []).length - 1; i >= 0 && seen.size < 8; i--) {
+        const n = String((runArchive[i] && runArchive[i].jobNumber) || '').trim().toLowerCase(); if (!n || seen.has(n)) continue; seen.add(n);
+        const t = pbSrJob(pbDlyKey(n), n); if (t && (t.how === 'phone' || t.how === 'picked' || t.how === 'address') && pbSrOk(t.code)) return t.code;
+      }
+    } catch (e) {}
+    return '';
+  }
+  function pbStSetMine(code) {
+    const uid = pbStUid(); if (!uid || !pbSrOk(code)) return false;
+    const o = pbSrGet(uid); o.co_local = code; pbSrPut(uid, o);
+    if (o.can) pbSrPush(uid, null, code).then(() => { try { pbLocCoRender(); } catch (e) {} });
+    try { pbLocRefreshScreens(); } catch (e) {} try { pbLocCoRender(); } catch (e) {}
+    return true;
+  }
+  function pbStSetJob(num, code) { // the same pick as Change State on Locates
+    const uid = pbStUid(); num = String(num || '').trim(); if (!uid || !num || !pbSrOk(code)) return false;
+    const o = pbSrGet(uid); o.jobs_local[pbDlyKey(num)] = { code, num }; pbSrPut(uid, o);
+    pbSrPush(uid, num, code).then(() => { try { pbLocRefreshScreens(); } catch (e) {} });
+    return true;
+  }
+  // Home: asked once. The company account when the company has no state yet (the server says so), or an Individual plan.
+  function pbStHomeWant() {
+    const uid = pbStUid(); if (!uid) return false;
+    try { if (localStorage.getItem('pbStLater:' + uid)) return false; } catch (e) {}
+    if (pbSrCompany(uid)) return false;
+    if (pbStIndividual()) return true;
+    const o = pbSrGet(uid);
+    if (!o.at || Date.now() - o.at > 86400000) pbSrPullSoon(uid);
+    return !!(o.at && o.can);
+  }
+  function pbStHomeRender() {
+    const el = document.getElementById('homeStateAsk'); if (!el) return;
+    if (!pbStHomeWant()) { if (!el.hidden || el.dataset.k) { el.hidden = true; el.innerHTML = ''; el.dataset.k = ''; } return; }
+    const g = pbStGuess(), co = !pbStIndividual(), k = (co ? 'c' : 'i') + ':' + g;
+    if (el.dataset.k !== k) {
+      el.innerHTML = '<div class="pb-home-att info" id="homeStateCard"><span class="t" id="homeStateH">' + (co ? 'Which state does your company work in?' : 'Which state do you work in?') + '</span>'
+        + 'For 811 rules, trench rules and Ask answers. A job in another state uses its own.'
+        + '<div class="pb-field pbst-f"><label for="homeStateSel">State</label><select id="homeStateSel" onchange="pbStHomePick(this.value)">' + pbSrOptions('', g ? 'Another state' : 'Pick a state') + '</select></div>'
+        + '<div class="pb-pc-act">' + (g ? '<button type="button" class="pb-btn small" id="homeStateUse" onclick="pbStHomePick(' + pbLocQ(g) + ')">Use ' + escapeHtml(pbSrName(g)) + '</button>' : '')
+        + '<button type="button" class="pb-btn tertiary small" id="homeStateLater" onclick="pbStHomeLater()">Not Now</button></div></div>';
+      el.dataset.k = k;
+    }
+    el.hidden = false;
+  }
+  window.pbStHomePick = function(v) { if (pbStSetMine(v)) pbStHomeRender(); };
+  window.pbStHomeLater = function() { const uid = pbStUid(); if (!uid) return; try { localStorage.setItem('pbStLater:' + uid, new Date().toISOString()); } catch (e) {} pbStHomeRender(); };
+  { const r0 = window.pbRenderHome; if (typeof r0 === 'function') window.pbRenderHome = function() { const out = r0.apply(this, arguments); try { pbStHomeRender(); } catch (e) { console.error(e); } return out; }; }
+  // New Job: the State field shows only when City, State has no state the app can read
+  window.pbStNewJobSync = function(fresh) {
+    const a = document.getElementById('cxnAddr'), f = document.getElementById('cxnStateF'), sel = document.getElementById('cxnState'); if (!a || !f || !sel) return;
+    const co = pbSrCompany(pbArchiveOwnerUid), k = co || '-';
+    if (fresh || sel.dataset.k !== k) { const keep = fresh ? '' : sel.value; sel.innerHTML = pbSrOptions('', co ? pbSrName(co) + ' (company state)' : 'Pick a state'); sel.dataset.k = k; if (pbSrOk(keep)) sel.value = keep; }
+    f.hidden = !!pbSrParse(a.value);
+  };
+  // Ask: the state an answer was written for. The server sends { code, how } (and used: false when the state did not
+  // matter to the answer), or { code: null, asked: true } when it had to ask which state.
+  function pbAskStOf(x) {
+    try {
+      if (!x || typeof x !== 'object') return null;
+      const c = String(x.code || '');
+      if (pbSrOk(c)) return x.used === false ? null : { code: c };
+      return !x.code && x.asked === true ? { ask: true } : null;
+    } catch (e) { return null; }
+  }
+  let pbAskStPick = false;
+  function pbAskStCanChange() { const uid = pbStUid(); if (!uid) return false; return !!pbAskCurrentJob() || pbStIndividual() || !!pbSrGet(uid).can; }
+  function pbAskStHtml(h, i) {
+    const t = h.st; if (!t || h.streaming || h.failed || h.local) return '';
+    const sel = '<span class="pb-ai-st-pick"><label for="aiAskStSel">' + (t.ask ? 'Pick the state' : 'State for your answers') + '</label> <select id="aiAskStSel" onchange="pbAskStSet(this.value)">' + pbSrOptions('', 'Pick a state') + '</select></span>';
+    if (t.ask) return i === 0 && !t.done ? '<div class="pb-ai-hint pb-ai-st" id="aiAskSt0">' + sel + '</div>' : '';
+    return '<div class="pb-ai-hint pb-ai-st" id="aiAskSt' + i + '">Answered for ' + escapeHtml(pbSrName(t.code)) + '.'
+      + (i === 0 && t.next ? ' Next answers: ' + escapeHtml(pbSrName(t.next)) + '.' : '')
+      + (i === 0 && !t.next && pbAskStCanChange() ? (pbAskStPick ? sel : ' <button type="button" class="pb-edu-link" id="aiAskStChange" onclick="pbAskStChange()">Change</button>') : '') + '</div>';
+  }
+  window.pbAskStChange = function() { pbAskStPick = true; pbAiAskRender(); const e = document.getElementById('aiAskStSel'); if (e) e.focus({ preventScroll: true }); };
+  window.pbAskStSet = function(v) {
+    const uid = pbStUid(), h = pbAiAskHistory[0], t = h && h.st; if (!uid || !t || !pbSrOk(v)) return;
+    const job = pbAskCurrentJob();
+    if (job) pbStSetJob(job, v);                                        // the open job is in this state
+    else if (pbStIndividual() || pbSrGet(uid).can) pbStSetMine(v);      // my / the company's state
+    else { try { localStorage.setItem('pbAskSt:' + uid, v); } catch (e) {} } // a crew member with no job open: kept for Ask on this phone
+    pbAskStPick = false;
+    if (t.ask) { // Ask had to ask: the same question again, now with the state
+      t.done = true; pbAiAskRender();
+      const box = document.getElementById('aiAskBox'), btn = document.getElementById('aiAskBtn');
+      if (box && btn && !btn.disabled && !box.value.trim()) { box.value = h.q; btn.click(); }
+      return;
+    }
+    if (v !== t.code) t.next = v;
+    pbAiAskRender();
+  };
+  window.__debugSt = { guess: () => pbStGuess(), want: () => pbStHomeWant(), mine: () => pbSrCompany(pbArchiveOwnerUid), render: () => pbStHomeRender() }; /* tests */
 
   // ---- Settings › Company: the company's state (r17.05; replaced "a new ticket is good for N days") ----
   let pbLocCo = { edit: false, busy: false, msg: '', kind: '' };

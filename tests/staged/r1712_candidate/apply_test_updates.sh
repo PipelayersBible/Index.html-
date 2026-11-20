@@ -5,7 +5,7 @@
 # passes on r17.12 with the update (see NOTES.md).
 set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
-ROOT="${1:-.}"
+ROOT="$(cd "${1:-.}" && pwd)"
 [ -f "$ROOT/_src/index.html" ] || { echo "run from the repo root (or pass it)"; exit 1; }
 cd "$HERE/test_updates"
 find tests -type f | while read -r f; do mkdir -p "$ROOT/$(dirname "$f")"; cp "$f" "$ROOT/$f"; echo "updated $f"; done

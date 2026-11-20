@@ -75,7 +75,7 @@ async function openSettings(p){await p.evaluate(()=>window.pbOpenSettings());awa
  await p.keyboard.press('Escape');await p.waitForTimeout(300);ok(await p.evaluate(()=>!document.getElementById('pbCeo')),'Escape closes');
  // the two usage counts
  const use=await p.evaluate(()=>JSON.parse(localStorage.getItem('pbUse1')||'{}'));
- ok(Object.keys(use).some(k=>/\|build:r17\.11$/.test(k)),'build:r17.11 counted for the dashboard');
+ ok(Object.keys(use).some(k=>/\|build:r17\.\d+$/.test(k)),'build:<this build> counted for the dashboard');
  ok(p.errs.length===0,'no page errors: '+p.errs.join(' | '));await b.close();
 
  // B: phone width
