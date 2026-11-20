@@ -4,7 +4,7 @@
 // Run: NODE_PATH=/opt/npm-tools/node_modules PB_URL=http://127.0.0.1:9300/cur.html node t_es_switch.js
 const L=require('./lib');
 let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++;};
-const tab=(p)=>p.evaluate(()=>{const n=[...document.querySelectorAll('nav button, nav a, [aria-label="Main"] button, [aria-label="Principal"] button')].filter(e=>e.getClientRects().length);return n.map(e=>{let s='';const w=document.createTreeWalker(e,4);let t;while((t=w.nextNode()))s+=Object.getOwnPropertyDescriptor(CharacterData.prototype,'data').get.call(t);return s.trim();}).join('|');});
+const tab=(p)=>p.evaluate(()=>{const n=[...document.querySelectorAll('nav button, nav a, [aria-label="Main"] button, [aria-label="Principal"] button')].filter(e=>e.getClientRects().length);return n.map(e=>{let s='';const w=document.createTreeWalker(e,4);let t;while((t=w.nextNode()))s+=window.__nativeData.get.call(t);return s.trim();}).join('|');});
 const painted=(p,sel)=>p.evaluate((sel)=>{const e=document.querySelector(sel);if(!e)return null;const d=window.__nativeData;let s='';const w=document.createTreeWalker(e,4);let t;while((t=w.nextNode()))s+=d.get.call(t);return s.replace(/\s+/g,' ').trim();},sel);
 const NATIVE="window.__nativeData=Object.getOwnPropertyDescriptor(CharacterData.prototype,'data');window.__nativeTC=Object.getOwnPropertyDescriptor(Node.prototype,'textContent').get;";
 const snap=(p)=>p.evaluate(()=>{const c=document.body.cloneNode(true);c.querySelectorAll('script,style,#pbLangOffer').forEach(e=>e.remove());return c.innerHTML.replace(/\d{1,2}:\d{2}(:\d{2})?( [AP]M)?/g,'T').replace(/\b\d+ ?s\b|\b\d+ seconds\b/g,'S').replace(/ class="[^"]*"/g,'').replace(/ aria-pressed="[^"]*"/g,'').replace(/ style="[^"]*"/g,'');});
@@ -18,6 +18,8 @@ const snap=(p)=>p.evaluate(()=>{const c=document.body.cloneNode(true);c.querySel
   // 2. Settings > Language / Idioma
   await p.evaluate(()=>pbGoto('settings'));await p.waitForTimeout(600);
   ok(await p.evaluate(()=>{const t=document.getElementById('langToggle');return !!t&&t.getClientRects().length>0&&document.getElementById('langLabel').textContent==='Language / Idioma'&&[...t.querySelectorAll('button')].map(x=>x.textContent).join('|')==='English|Español'&&t.querySelector('[data-val=en]').getAttribute('aria-pressed')==='true';}),'2: Settings > Preferences shows "Language / Idioma": English (on) | Español');
+  await p.evaluate(()=>pbGoto('home'));await p.waitForTimeout(600);await p.evaluate(()=>pbGoto('settings'));await p.waitForTimeout(600); // the same walk as below, so only the language differs
+  await p.evaluate(()=>{pbSetLang('es');});await p.waitForTimeout(400);await p.evaluate(()=>{pbSetLang('en');try{localStorage.removeItem('pbLang');}catch(e){}});await p.waitForTimeout(400); // (the app tidies its Run Setup form the first time anything on the page changes; let it, so the two snapshots differ only by language)
   const before=await snap(p);
   await p.click('#langToggle [data-val=es]');await p.waitForTimeout(500);
   ok(await p.evaluate(()=>pbLang()==='es'&&document.documentElement.lang==='es'&&localStorage.getItem('pbLang')==='es'&&document.querySelector('#langToggle [data-val=es]').getAttribute('aria-pressed')==='true'),'2: tap Español: Spanish is on and saved on this phone');
@@ -25,8 +27,6 @@ const snap=(p)=>p.evaluate(()=>{const c=document.body.cloneNode(true);c.querySel
   ok(await p.evaluate(()=>{const e=[...document.querySelectorAll('button,a')].find(x=>x.getClientRects().length&&x.textContent.trim()==='Home');return !!e;}),'2: the app\'s own code still reads the English text ("Home") while "Inicio" is painted');
   await p.evaluate(()=>pbGoto('home'));await p.waitForTimeout(600);
   ok(/Tramo nuevo/.test(await painted(p,'#screen-home'))&&/New Run/.test(await p.evaluate(()=>document.getElementById('screen-home').textContent))&&/New Run/.test(await p.evaluate(()=>document.getElementById('screen-home').innerText))&&/New Run/.test(await p.evaluate(()=>document.getElementById('screen-home').innerHTML)),'2: Home paints "Tramo nuevo"; textContent, innerText and innerHTML still answer "New Run"');
-  await p.reload({waitUntil:'load'});await p.waitForTimeout(3500);
-  ok(/^Inicio\|/.test(await tab(p))&&/Tramo nuevo/.test(await painted(p,'#screen-home')),'2: still Spanish after the app is reopened');
   // 3. back to English: everything exactly as before
   await p.evaluate(()=>pbGoto('settings'));await p.waitForTimeout(600);
   await p.click('#langToggle [data-val=en]');await p.waitForTimeout(500);
@@ -35,6 +35,8 @@ const snap=(p)=>p.evaluate(()=>{const c=document.body.cloneNode(true);c.querySel
   ok(after===before,'3: the Settings screen and everything behind it is exactly the English it was before (same HTML, '+after.length+' chars)'+(after===before?'':' first difference at '+[...after].findIndex((c,i)=>c!==before[i])+': "'+after.slice(Math.max(0,[...after].findIndex((c,i)=>c!==before[i])-60),[...after].findIndex((c,i)=>c!==before[i])+60)+'" vs "'+before.slice(Math.max(0,[...after].findIndex((c,i)=>c!==before[i])-60),[...after].findIndex((c,i)=>c!==before[i])+60)+'"'));
   await p.evaluate(()=>pbGoto('home'));await p.waitForTimeout(500);
   ok(/New Run/.test(await painted(p,'#screen-home'))&&!/Tramo/.test(await painted(p,'#screen-home')),'3: Home is English again');
+  await p.evaluate(()=>pbSetLang('es'));await p.reload({waitUntil:'load'});await p.waitForTimeout(3500);
+  ok(/^Inicio\|/.test(await tab(p))&&/Tramo nuevo/.test(await painted(p,'#screen-home')),'3b: Spanish again, and still Spanish after the app is reopened');
   ok(p.errs.length===0,'1-3: no page errors '+p.errs.join('|').slice(0,200));await p.context().close();}
  // 4. a Spanish phone: offered once on first open (Log In) and on the join screen
  {const p=await L.SC.login(b,{init:NATIVE,ua:L.AND});await p.context().close();}
@@ -64,7 +66,7 @@ const snap=(p)=>p.evaluate(()=>{const c=document.body.cloneNode(true);c.querySel
   ok(p.errs.length===0,'6: no page errors '+p.errs.join('|').slice(0,200));await p.context().close();}
  // 7. a run locked in Spanish sends the same record as one locked in English
  {const rec=async(lang)=>{const p=await L.SC.run_locked(b,{lang});let put=null;for(let i=0;i<24&&!put;i++){await p.waitForTimeout(500);put=await p.evaluate(()=>{const a=(window.__rpcArgs||[]).filter(x=>x[0]==='pb_prod_run_record_put').pop();return a?a[1]:null;});}
-   const flat=[];(function go(o,path){if(o&&typeof o==='object'){for(const k of Object.keys(o).sort())go(o[k],path+'.'+k);}else if(typeof o==='string'&&!/^\d{4}-\d\d-\d\dT|^[0-9a-f]{8}-[0-9a-f]{4}-/.test(o)&&!/(At|_at|Id|_id|id|time|Time|hash|Hash|key|Key|uid|stamp)$/.test(path))flat.push(path+'='+o);})(put,'');
+   const flat=[];(function go(o,path){if(o&&typeof o==='object'){for(const k of Object.keys(o).sort())go(o[k],path+'.'+k);}else if(typeof o==='string'&&!/^\d{4}-\d\d-\d\dT|^[0-9a-f]{8}-[0-9a-f]{4}-/.test(o)&&!/(At|_at|Id|_id|id|time|Time|hash|Hash|key|Key|uid|stamp)$/.test(path))flat.push(path+'='+o.replace(/\d{1,2}\/\d{1,2}\/\d{4}, \d{1,2}:\d{2}(:\d{2})? [AP]M|\d{1,2}:\d{2}(:\d{2})? ?[AP]M/g,'TIME'));})(put,'');
    const errs=p.errs.slice();await p.context().close();return {put:!!put,flat,errs};};
   const en=await rec('en'),es=await rec('es');
   ok(en.put&&es.put,'7: both runs were locked and sent (pb_prod_run_record_put)');

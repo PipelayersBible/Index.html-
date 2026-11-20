@@ -8,11 +8,11 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++;};
 // in the test (names, job, address), dates and clock times (phase 2: date words), codes.
 const KEEP=[/^The$/,/^Pipelayer['’]s Bible$/,/^PVC, (Sch 40|Sch 80|C900|SDR 35)$/,/^Lenker$/,/^Español$|^English$/,
   /^(Tommy|Luis Ramos|Luis|Brandon Jones|Tom|Test Job|Test Foreman|Tommy Fontaine|MH1|Inspect|Vent|Monitor|Radio|None|DIG Civil Construction|1 Main St|Wildomar Ridge|Sundance Sewer Improvement)$/,
-  /^Test Job · #1 · 1 Main St$/,/^e\.pipelayersbible\.com\/$/,/^\?[A-Z0-9-]+$/,/^"I'm calling about a confined space emergency/,/^[A-Z0-9]{3} [A-Z0-9]{3}$/,/^tester@example\.com$/];
+  /^Test Job · #1 · 1 Main St$/,/^e\.pipelayersbible\.com\/$/,/^\?[A-Z0-9-]+$/,/^"I'm calling about a confined space emergency/,/^[A-Z0-9]{3} [A-Z0-9]{3}$/,/^tester@example\.com$/,/^[\d:]+ [AP]M — Tom$/];
 const UNITS=/\b(ft|yd³|in|ppm|BOP|INV|TOP|HI|ID|OD|O2|LEL|H2S|CO|PM|AM|PST|PDT|MH|C|F|s|min|h|PVC|SDR|HDPE|OSHA|NIOSH|IA|PDF|Safari|Chrome|Anthropic)\b/g;
-const DATES=/\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|OVERNIGHT|America\/Los_Angeles|the phone’s time zone when it was locked)\b/g;
+const DATES=/\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|America\/Los_Angeles)\b/g;
 const left=(r)=>{const out=[];const seen=new Set();for(const x of r){if(x.hit)continue;if(x.kind==='mixed')continue; // a sentence with bold words: its parts are listed on their own
-  const k=x.k;if(KEEP.some(re=>re.test(k)))continue;const rest=k.replace(UNITS,'').replace(DATES,'');if(!/[A-Za-z]{2,}/.test(rest))continue;if(seen.has(k))continue;seen.add(k);out.push('['+x.kind+'] '+k.slice(0,110));}return out;};
+  const k=x.k;if(KEEP.some(re=>re.test(k)))continue;const rest=k.replace(/yd³/g,'').replace(UNITS,'').replace(DATES,'');if(!/[A-Za-z]{2,}/.test(rest))continue;if(seen.has(k))continue;seen.add(k);out.push('['+x.kind+'] '+k.slice(0,110));}return out;};
 // screen -> the part of the page that is in phase 1 (null = whole page)
 const SCREENS={login:null,login_forgot:null,login_bad:null,join:null,join_ios:null,join_code:null,taplink:'#pbTapLink, #pbTapLinkGo',setpw:'#screen-setPassword',setpw_err:'#screen-setPassword',
   a2hs_ios:'#pbObSheet',a2hs_and:'#pbObSheet',home_pl:null,run_setup:null,run_review:null,run_lockask:'#pbModalOverlay',run_locked:null,laid_modal:'#pbModalOverlay',laid_done:null,quick_run:null,

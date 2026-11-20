@@ -84,3 +84,67 @@ All five of the first hunter's fixes confirmed: fail before, pass after.
 - Trench Sloping boundaries (0, blank, negative, 4.9, 5, 19.94-19.999, Type A short-term at 12 / 12.01, Type A with
   vertical lower part at 8 / 8.01 / 12 / 12.01, rock): all answers match OSHA Table B-1 / Figure B-1.1. No finding.
 - Home Screen step sheet on 390x844, 360x640, 320x568 (iPhone and Android): Done / Get a Code always reachable.
+
+### Patch 06 (new) — a photo the phone's photo store has lost went to the company as text, uncounted
+- `06_office_copy_missing_photo.py` + `t_h08_missing_photo_office_copy.js` (hook page). Reproduced: a locked run with
+  two stake photos; both entries deleted from the `pb-photos` store; app reopened. The record then holds
+  `pbph:1:<fingerprint>` where the photos were (r17.08's designed behaviour for a missing photo). The copy of the run
+  sent to the company (`pbRrOfficeCopy`, re-sent whenever a run of the last 21 days changes) carried those two
+  references as plain text, with `photosLeftOut: 0` and no photo list. The office would see a run with no photos and
+  nothing saying two are missing. Before: 2 FAIL. After: all pass (never sent as text; counted as left out).
+- Not fixed, proposed: (a) nobody is told on the phone that a photo is missing (only a console / crash note);
+  (b) the same thing happens to EVERY photo if the app is ever rolled back below r17.08 (the old build doesn't know
+  the references): for the days of the rollback the office copies of the last 21 days' runs would be re-sent without
+  photos (server keeps older versions; they heal on the next forward release). Reasoned from the code, not run.
+  r17.08's notes list the rollback risk only as "missing pictures on the phone". Avoid rolling back below r17.08.
+
+### Reproduced, not patched (proposals)
+- **Permit written after midnight for a window that began before midnight** (`tests/x_permit_after_midnight_probe.js`):
+  at 12:30 AM, Date = today (the default), Start 10:00 PM, End 2:00 AM. The app takes it as TONIGHT 10 PM to tomorrow
+  2 AM, locks without a question, and the active permit shows "OUTSIDE THIS PERMIT'S AUTHORIZED WINDOW ... The window
+  has not started yet ... Check-ins made now are marked in the record." A night crew re-issuing a permit after
+  midnight gets every check-in flagged unless they think to set the date back a day. (Written before midnight, the
+  same times work: "Nov 19, 10:00 PM → Nov 20, 2:00 AM".) Proposal: at Lock, when the window hasn't started but the
+  same times one day earlier contain "now", ask once: "Did this window start last night (Thu 10:00 PM)?" Yes / No.
+  Not built: it adds a question to the permit, Tommy's call.
+- **supabase-js pin** (one-liner 3): steps for the lead: pick the exact version jsdelivr serves for `@2` today, put
+  `@x.y.z` + `integrity="sha384-..."` on the tag (source line 976), change `PB_SB_URL` in sw.js to the same URL in the
+  same commit, and make the rigs' `/supabase-js/` route strip nothing (a routed `fulfill` body fails the integrity
+  check, so the test build must drop the attribute: one line in tests/release_build.sh `--hooks`). `t_h07_sbjs_pin.js`
+  is the check.
+
+### Seen in the code only (NOT reproduced; listed so nobody re-finds them, not as findings)
+- Toolbox talks: `pbTtAdopt` stamps `rndAt` with the UTC date (`toISOString().slice(0,10)`, source ~72477) while the
+  rest uses the company's date; after 4 PM Pacific that is tomorrow's date. Possible effect: a random "next talk"
+  adopted from the server in the evening is not re-picked after it is given that same evening.
+- Runs older than 21 days that never reached the company are not sent unless Send Report was tapped (by design,
+  "offline audit 03"); Records shows them as Not sent.
+
+## Summary for the lead (ranked)
+1. **SERVER 01 (live now): sealed-original checks, photo checks and weather alerts have never run.** Six GRANTs
+   missing. Staged SQL + check query in `sql/`. Needs Tommy's OK to apply (server change).
+2. **Patch 01** Reload asks before losing unsaved work (quantities, notes, permits) — iPhone has no other question.
+3. **Patch 02** (now 14 h) a day crew's next-morning runs no longer land on yesterday's daily report.
+4. **SW_01 + patch 03** PDFs after an update on bad signal: the phone keeps a page whose PDF tools it has; a failed
+   PDF-tool read is retried.
+5. **Patch 06** a photo missing from the phone's store is counted, not sent to the company as text.
+6. **Patch 04** the "New version ready" line no longer covers a question's button or the active bar.
+7. **Patch 05** Quick Run / permit list light up Home, not More.
+8. Proposals: permit-after-midnight question; supabase-js pin; tell the user when a photo is missing; edge functions
+   should log a refused RPC instead of "0 waiting". 811 Renew/History: built in the app, server half never applied.
+
+Apply: `sh apply_all.sh <in index.html> <out index.html> [<in sw.js> <out sw.js>]` (page patches 01-06 in order; SW_01
+on sw.js). All anchors match r17.10 `_src/index.html` exactly once; no anchor is shared with the other Nov 19 helper
+folders (grep checked). Tests: `tests/t_h01`..`t_h08` (t_h02 and t_h08 need a hook page: `node tests/mkhk.js in out`;
+t_h03 needs `python3 tests/mkparts.py in <dir> b.html`; t_h04 is the HTTPS worker test; t_h07 is a static check that
+fails until the pin is done). Final run on r17.10 + 01-06 + SW_01: t_h01-t_h06, t_h08 all pass; unpatched each fails.
+Nothing committed, pushed, deployed or changed on the server.
+
+## Decisions for Tommy
+1. Apply the six server GRANTs now? **Recommend yes, today**: the app and the Privacy page already say these checks happen.
+2. Night-shift rule: a run left open counts for 14 hours from the shift's first run. **Recommend yes.**
+3. Permit written after midnight: add one "Did this window start last night?" question at Lock? **Recommend yes** (night crews only see it).
+4. Pin the login library to an exact version with a fingerprint? **Recommend yes**, next release (needs the small test-rig change).
+5. 811 Renew + History are finished in the app but not on the server: finish and switch on, or remove the dormant code? **Recommend finish** (crews renew tickets every few weeks).
+
+## DONE

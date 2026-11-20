@@ -36,9 +36,9 @@ CSS = r'''
 #pbApp #screen-home .pbx-pulse .pbx-pair { display: contents; }
 #pbApp#pbApp #screen-home .pbx-pulse .pbx-act { flex: 1 1 calc(33.33% - 8px); min-width: 100px; }
 /* a card with a number: icon and number on one line, so the card is a third shorter */
-#pbApp#pbApp #screen-home .pbx-pulse .pbx-act:not(.dc-zero) { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; align-content: start; column-gap: 10px; row-gap: 2px; min-height: 0; }
-#pbApp#pbApp #screen-home .pbx-pulse .pbx-act:not(.dc-zero) .pbx-act-ic { margin-bottom: 4px; }
-#pbApp#pbApp #screen-home .pbx-pulse .pbx-act:not(.dc-zero) :is(.pbx-lbl, .pbx-sub) { grid-column: 1 / -1; }
+#pbApp#pbApp:not(.pb-text-big) #screen-home .pbx-pulse .pbx-act:not(.dc-zero) { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; align-content: start; column-gap: 10px; row-gap: 2px; min-height: 0; }
+#pbApp#pbApp:not(.pb-text-big) #screen-home .pbx-pulse .pbx-act:not(.dc-zero) .pbx-act-ic { margin-bottom: 4px; }
+#pbApp#pbApp:not(.pb-text-big) #screen-home .pbx-pulse .pbx-act:not(.dc-zero) :is(.pbx-lbl, .pbx-sub) { grid-column: 1 / -1; }
 /* a card with nothing to count: one short line (still opens the same list) */
 #pbApp#pbApp #screen-home .pbx-pulse .pbx-act.dc-zero { order: 5; flex: 1 1 calc(50% - 8px); display: grid; grid-template-columns: 24px minmax(0, 1fr); column-gap: 10px; row-gap: 0; align-items: center; min-height: 52px; padding: 7px 12px; box-shadow: none; }
 #pbApp#pbApp #screen-home .pbx-pulse .dc-zero .pbx-act-ic { grid-row: 1 / span 2; width: 24px; height: 24px; margin: 0; background: none; }

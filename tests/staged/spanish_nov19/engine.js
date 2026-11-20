@@ -20,7 +20,7 @@
   var NOI = { 'screen-archive': 1, 'screen-reportReceipt': 1, 'screen-reportsAll': 1, 'screen-myReports': 1, 'screen-reportsInbox': 1, 'screen-pdfView': 1, 'screen-companyPermits': 1, 'rrBody': 1 };
   var SKIP_SEL = 'script,style,textarea,noscript,svg,canvas,iframe,[contenteditable],[data-noi18n],#screen-archive,#screen-reportReceipt,#screen-reportsAll,#screen-myReports,#screen-reportsInbox,#screen-pdfView,#screen-companyPermits,#rrBody';
   var INLINE = { STRONG: 1, B: 1, EM: 1, I: 1, U: 1, A: 1, SPAN: 1, BR: 1, svg: 1, SVG: 1, INPUT: 1, CODE: 1, SMALL: 1, IMG: 1 };
-  var dTC, dData, dNV, dIT, dIH, dOH, dOT;
+  var dTC, dData, dNV, dIT, dIH, dOH, dOT, nGetAttr;
 
   function norm(s) { return s.replace(/\s+/g, ' ').trim(); }
   function compile() {
@@ -51,7 +51,7 @@
   function look(k, el) {
     var v = T[k];
     if (v !== undefined) return pick(v, el);
-    if (k.length > 400) return null;
+    if (k.length > 1600) return null;
     var c = cache[k];
     if (c !== undefined) { if (c === 0) return null; if (typeof c === 'string') return c; }
     var out = null, ctxDep = false;
@@ -127,7 +127,7 @@
     if (lang !== 'es') return false;
     var mk = mixedKey(el); if (!mk) return false;
     var key = mk.key, els = mk.els, kids = el.childNodes, i, c;
-    var v = T[key], es = v !== undefined ? pick(v, el) : (key.length < 400 ? look(key, el) : null);
+    var v = T[key], es = v !== undefined ? pick(v, el) : look(key, el);
     if (es == null) return false;
     // split the Spanish into: gap text, child 1, gap text, child 2, ... (children keep their order)
     var re = /<(\d+)>([\s\S]*?)<\/\1>|<(\d+)\/>/g, m, last = 0, gaps = [], inner = [];
@@ -157,7 +157,8 @@
   }
   /* ---- attributes ---- */
   function doAttr(el, a) {
-    var v = el.getAttribute(a); if (v == null) return;
+    if (el.tagName === 'SECTION') return; // a section's aria-label is looked up by name by the app (Calculators list)
+    var v = (nGetAttr || el.getAttribute).call(el, a); if (v == null) return;
     var R = arec.get(el), r = R && R[a];
     if (r && r.es === v) { if (lang !== 'es') { el.setAttribute(a, r.en); delete R[a]; } return; }
     if (r) delete R[a];
@@ -231,6 +232,11 @@
         get: function () { var el = this; return withEn(el, function () { return dIH.get.call(el); }); } });
       Object.defineProperty(Element.prototype, 'outerHTML', { configurable: true, enumerable: dOH.enumerable, set: dOH.set,
         get: function () { var el = this; return withEn(el, function () { return dOH.get.call(el); }); } });
+      // a copy the app makes of something on screen is a copy of the English
+      var nClone = Node.prototype.cloneNode;
+      Node.prototype.cloneNode = function (deep) { var n = this; if (!deep || n.nodeType !== 1 && n.nodeType !== 11) { var c = nClone.call(n, deep); if (n.nodeType === 3) { var r = rec.get(n); if (r && r.es === rawData(n)) setData(c, r.en); } return c; } return withEn(n, function () { return nClone.call(n, true); }); };
+      nGetAttr = Element.prototype.getAttribute;
+      Element.prototype.getAttribute = function (a) { var v = nGetAttr.call(this, a); if (v != null) { var R = arec.get(this), r = R && R[a]; if (r && r.es === v) return r.en; } return v; };
       Object.defineProperty(HTMLOptionElement.prototype, 'text', { configurable: true, enumerable: dOT.enumerable, set: dOT.set,
         get: function () { return norm(enText(this)); } });
     } catch (e) {}
@@ -286,7 +292,7 @@
       var t = el.tagName;
       if (t === 'SCRIPT' || t === 'STYLE' || t === 'TEXTAREA' || t === 'NOSCRIPT' || t === 'svg' || t === 'SVG' || t === 'CANVAS' || t === 'IFRAME' || el.hasAttribute('data-noi18n') || el.id && NOI[el.id] === 1) return;
       if (!vis(el) && t !== 'OPTION' && t !== 'OPTGROUP') return;
-      for (var a = 0; a < ATTRS.length; a++) { var av = el.getAttribute(ATTRS[a]); var R = arec.get(el); if (R && R[ATTRS[a]] && R[ATTRS[a]].es === av) av = R[ATTRS[a]].en; if (av && /[A-Za-z]/.test(av)) out.push({ k: norm(av), kind: 'attr:' + ATTRS[a], hit: has(norm(av), el) }); }
+      for (var a = 0; a < ATTRS.length; a++) { var av = t === 'SECTION' ? null : el.getAttribute(ATTRS[a]); if (av && /[A-Za-z]/.test(av)) out.push({ k: norm(av), kind: 'attr:' + ATTRS[a], hit: has(norm(av), el) }); }
       var mk = mixedKey(el);
       if (mk) { var mh = has(mk.key, el); out.push({ k: mk.key, kind: 'mixed', hit: mh }); if (mh) return; }
       for (var c = el.firstChild; c; c = c.nextSibling) {

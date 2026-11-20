@@ -578,3 +578,12 @@ Every string below is shown on a confined space, air test, trench or emergency s
 - **permit_emergency.035**
   - EN: Hide Details (emergency stays open)
   - ES: Ocultar detalles (la emergencia sigue abierta)
+
+## permit_active
+
+- **permit_active.101**
+  - EN: {0} → {1} — OVERNIGHT ({2}, the phone’s time zone when it was locked)
+  - ES: {0} → {1} — PASA LA MEDIANOCHE ({2}, la zona horaria del teléfono cuando se bloqueó el permiso)
+- **permit_active.102**
+  - EN: {0} → {1} ({2}, the phone’s time zone when it was locked)
+  - ES: {0} → {1} ({2}, la zona horaria del teléfono cuando se bloqueó el permiso)

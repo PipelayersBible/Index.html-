@@ -14,12 +14,12 @@ async function plain(b,q,init,o={}){
   const ctx=await b.newContext({viewport:{width:o.w||390,height:844},serviceWorkers:'block',userAgent:o.ua||undefined,locale:o.locale||'en-US'});
   await ctx.route(/supabase-js/,r=>r.fulfill({contentType:'application/javascript',body:FAKESB}));
   await ctx.route(/supabase\.co/,r=>r.fulfill({status:200,contentType:'application/json',body:'null'}));
-  await ctx.addInitScript(LANG(o.lang)+(init||''));
+  await ctx.addInitScript(LANG(o.lang)+(init||'')+(o.init||''));
   const p=await ctx.newPage();p.errs=[];p.on('pageerror',e=>p.errs.push(e.message));
-  await p.goto(BASE+(q||''),{waitUntil:'load'});await p.waitForTimeout(o.wait||2500);return p;}
+  await p.goto((o.url||BASE)+(q||''),{waitUntil:'load'});await p.waitForTimeout(o.wait||2500);return p;}
 async function ob(b,hash,o={}){ // onboarding rig (signed out unless o.user)
   const srv=o.srv||require(T+'/obsrv')({paid:5,interval:'year'});
-  const r=await bootOb(b,BASE+(hash||''),srv,{ua:o.ua||AND,signedOut:!o.user,user:o.user,standalone:o.standalone,clip:o.clip,wait:o.wait||4000,init:LANG(o.lang)+(o.init||'')});
+  const r=await bootOb(b,(o.url||BASE)+(hash||''),srv,{ua:o.ua||AND,signedOut:!o.user,user:o.user,standalone:o.standalone,clip:o.clip,wait:o.wait||4000,init:LANG(o.lang)+(o.init||'')});
   r.p.srv=srv;return r.p;}
 const SC={};
 SC.login=async(b,o)=>{const p=await ob(b,'',o);await p.evaluate(()=>pbGoto('login'));await p.waitForTimeout(600);return p;};
@@ -71,7 +71,7 @@ const btns=(p)=>p.evaluate(()=>[...document.querySelectorAll('#pbModalOverlay bu
 async function answer(p,o,tag,prefer){for(let i=0;i<6;i++){const t=await modalText(p);if(!t)break;if(o&&o.onStep)await o.onStep(p,tag+'_q'+i);const bt=await btns(p);
   const pick=bt.find(x=>prefer.some(r=>r.test(x)))||bt[bt.length-1];(p.mods=p.mods||[]).push(t.slice(0,160)+' :: '+bt.join('|')+' -> '+pick);await modalClick(p,pick);await p.waitForTimeout(500);}}
 SC.run_locked=async(b,o)=>{const p=await SC.run_lockask(b,o);await answer(p,o,'lock',[/^Job \d/,/^Lock Without It$/,/^I Checked Them$/,/^Lock Anyway$/,/^Lock/]);await p.waitForTimeout(1500);return p;};
-SC.laid_modal=async(b,o)=>{const p=await SC.run_locked(b,o);const dists=await p.evaluate(()=>[...document.querySelectorAll('#screen-results [aria-label^="Distance "]')].map(e=>e.getAttribute('aria-label').split(' ')[1]));
+SC.laid_modal=async(b,o)=>{const p=await SC.run_locked(b,o);const dists=await p.evaluate(()=>[...document.querySelectorAll('#screen-results [aria-label]')].filter(e=>/^Distance /.test(e.getAttribute('aria-label'))).map(e=>e.getAttribute('aria-label').split(' ')[1]));
   await p.evaluate(d=>{const e=[...document.querySelectorAll('#screen-results [aria-label]')].find(e=>e.getAttribute('aria-label').startsWith('Distance '+d+' '));e.click();},dists[2]);await p.waitForTimeout(700);return p;};
 SC.laid_done=async(b,o)=>{const p=await SC.laid_modal(b,o);await modalClick(p,'Mark laid to here (and the rows before)');await p.waitForTimeout(1200);return p;};
 SC.quick_run=async(b,o)=>{const p=await SC.home_pl(b,o);await p.evaluate(()=>{const x=[...document.querySelectorAll('#screen-home button,#screen-home a,#screen-home [role=button]')].find(e=>/^Quick Run/.test(e.textContent.trim()));x.click();});await p.waitForTimeout(1200);return p;};
@@ -94,7 +94,7 @@ SC.permit_checkin=async(b,o)=>{const p=await SC.permit_airok(b,o);for(let i=0;i<
   await p.evaluate(()=>pbToggleRosterStatus(0));await p.waitForTimeout(1500);return p;};
 SC.permit_in=async(b,o)=>{const p=await SC.permit_checkin(b,o);for(let i=0;i<4;i++){const t=await modalText(p);if(!t)break;const bt=await p.evaluate(()=>[...document.querySelectorAll('#pbModalButtons button')].map(b=>b.textContent.trim()));(p.mods=p.mods||[]).push(t.slice(0,300)+' :: '+bt.join('|'));await modalClick(p,bt[bt.length-1]);}return p;};
 SC.permit_comm=async(b,o)=>{const p=await SC.permit_roster(b,o);await p.evaluate(()=>pbLogCommCheck());await p.waitForTimeout(700);return p;};
-SC.permit_att=async(b,o)=>{const p=await SC.permit_airok(b,o);await p.evaluate(()=>{const i=[...document.querySelectorAll('#screen-confinedActive button')].find(b=>b.offsetParent&&b.textContent.trim()==='Check In');i.click();});await p.waitForTimeout(1200);return p;}; // first row = the attendant: DO NOT ENTER
+SC.permit_att=async(b,o)=>{const p=await SC.permit_airok(b,o);await p.evaluate(()=>{const i=[...document.querySelectorAll('#screen-confinedActive button')].filter(b=>b.offsetParent&&b.textContent.trim()==='Check In');i[1].click();});await p.waitForTimeout(1200);return p;}; // first row = the attendant: DO NOT ENTER
 SC.permit_emergency=async(b,o)=>{const p=await SC.permit_roster(b,o);await p.evaluate(()=>{window.pbNavigateExternal=function(){};});await p.evaluate(()=>pbTriggerEmergency());await p.waitForTimeout(1800);return p;};
 SC.permit_em_enter=async(b,o)=>{const p=await SC.permit_emergency(b,o);await p.evaluate(()=>{const rows=[...document.querySelectorAll('#screen-confinedActive button')].filter(b=>b.offsetParent&&b.textContent.trim()==='Check In');rows[rows.length-1].click();});await p.waitForTimeout(1200);return p;};
 SC.permit_close=async(b,o)=>{const p=await SC.permit_roster(b,o);await p.evaluate(()=>pbCloseConfinedPermit());await p.waitForTimeout(1200);return p;};
