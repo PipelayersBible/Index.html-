@@ -25,6 +25,7 @@ const SCREENS={login:null,login_forgot:null,login_bad:null,join:null,join_ios:nu
   ok(lf.length===0,name+': no English left over'+(lf.length?' ('+lf.length+'):\n      '+lf.join('\n      '):''));
   let bad=await L.fits(p);if(bad.length){const q=await L.SC[name](b,{lang:'en'});const base=new Set((await L.fits(q)).map(x=>x.split(' "')[0]));await q.context().close();bad=bad.filter(x=>!base.has(x.split(' "')[0]));} // only what English does not already do
   ok(bad.length===0,name+': fits 390 px'+(bad.length?':\n      '+bad.slice(0,12).join('\n      '):''));
+  if(sel==='#pbModalOverlay'){const m=await p.evaluate(()=>{const m=document.getElementById('pbModalMessage');return [m.scrollHeight,m.clientHeight];});ok(m[0]<=m[1]+1,name+': the whole message shows without scrolling on a 390 x 844 phone ('+m.join(' / ')+')');}
   ok(p.errs.length===0,name+': no page errors'+(p.errs.length?' '+p.errs.join(' | ').slice(0,200):''));
   await p.screenshot({path:SHOTS+'/es_'+name+'.png',fullPage:!sel});
   await p.context().close();}

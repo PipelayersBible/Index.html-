@@ -433,7 +433,7 @@ Every string below is shown on a confined space, air test, trench or emergency s
   - ES: La última prueba de aire está fuera de los límites de este permiso. Primero anote una lectura nueva dentro de los límites.
 - **permit_entry.008**
   - EN: Attendant Restriction: {0} is the confined space attendant. OSHA 1926.1209(d): the attendant “remains outside the permit space during entry operations until relieved by another attendant.” Do not enter for any reason — not even rescue — unless first relieved by another qualified attendant (Reassign Attendant). A relieved attendant may enter for rescue only if your program allows it and they are trained and equipped for rescue (1926.1211(a)).
-  - ES: Restricción del asistente: {0} es el asistente del espacio confinado. OSHA 1926.1209(d): el asistente «se queda afuera del espacio con permiso durante la entrada hasta que otro asistente lo releve». No entre por ningún motivo, ni siquiera para rescatar, a menos que antes lo releve otro asistente calificado (Cambiar de asistente). Un asistente relevado solo puede entrar a rescatar si el programa de su compañía lo permite y si está capacitado y equipado para rescate (1926.1211(a)).
+  - ES: Restricción del asistente: {0} es el asistente del espacio confinado. OSHA 1926.1209(d): el asistente «se queda afuera del espacio con permiso durante la entrada hasta que otro asistente lo releve». No entre por ningún motivo, ni para rescatar, si antes no lo releva otro asistente calificado (Cambiar de asistente). Un asistente relevado solo entra a rescatar si el programa de la compañía lo permite y está capacitado y equipado para rescate (1926.1211(a)).
 - **permit_entry.009**
   - EN: No Attendant Outside the Space: the attendant is checked in, so no attendant is outside the space right now. OSHA 1926.1204(f) requires “at least one attendant outside the permit space into which entry is authorized for the duration of entry operations.” Before anyone else goes in, tap Reassign Attendant to hand the role to a qualified person outside, or get the attendant out and check them out.
   - ES: No hay asistente afuera del espacio: el asistente registró su entrada, así que ahora no hay ningún asistente afuera. OSHA 1926.1204(f) exige «por lo menos un asistente afuera del espacio con permiso al que se autoriza entrar, durante todo el tiempo que dure la entrada». Antes de que entre alguien más, toque Cambiar de asistente para pasarle el puesto a una persona calificada que esté afuera, o saque al asistente y registre su salida.
@@ -445,7 +445,7 @@ Every string below is shown on a confined space, air test, trench or emergency s
   - ES: Asistente: no deje que {0} entre al espacio.
 - **permit_entry.012**
   - EN: Attendant: keep {0} out of the space. If {1} goes in, NO attendant is outside the space.
-  - ES: Asistente: no deje que {0} entre al espacio. Si {1} entra, NO queda ningún asistente afuera del espacio.
+  - ES: Asistente: no deje que {0} entre al espacio. Si {1} entra, NO queda ningún asistente afuera.
 - **permit_entry.013**
   - EN: Did {0} enter anyway?
   - ES: ¿{0} entró de todos modos?

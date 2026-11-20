@@ -253,7 +253,7 @@ S("Cut/fill amount (ft)", "Corte o relleno (ft)")
 S("Rod reading at this stake", "Lectura de la regla en esta estaca")
 S("Point label (optional)", "Nombre del punto (opcional)")
 S("e.g. MH-4 or stake 12", "p. ej. MH-4 o estaca 12")
-P("e.g. {0}", "p. ej. {0}")
+P("e.g. {0:w}", "p. ej. {0}", note="number examples only (one token)")
 S("Photos (optional)<1/>", "Fotos (opcional)<1/>")
 S("Photos (optional)", "Fotos (opcional)")
 S("+ Add Photo", "+ Agregar foto")
@@ -548,7 +548,7 @@ S("An air test must be logged in the Atmospheric Test Log before anyone enters t
 P("The most recent air test is {0:d} minutes old — log a fresh reading before anyone enters.", "La última prueba de aire tiene {0} minutos: anote una lectura nueva antes de que alguien entre.", safety=1)
 S("The most recent air test is outside this permit’s limits. Log a new reading inside the limits first.", "La última prueba de aire está fuera de los límites de este permiso. Primero anote una lectura nueva dentro de los límites.", safety=1)
 P("Attendant Restriction: {0} is the confined space attendant. OSHA 1926.1209(d): the attendant “remains outside the permit space during entry operations until relieved by another attendant.” Do not enter for any reason — not even rescue — unless first relieved by another qualified attendant (Reassign Attendant). A relieved attendant may enter for rescue only if your program allows it and they are trained and equipped for rescue (1926.1211(a)).",
-  "Restricción del asistente: {0} es el asistente del espacio confinado. OSHA 1926.1209(d): el asistente «se queda afuera del espacio con permiso durante la entrada hasta que otro asistente lo releve». No entre por ningún motivo, ni siquiera para rescatar, a menos que antes lo releve otro asistente calificado (Cambiar de asistente). Un asistente relevado solo puede entrar a rescatar si el programa de su compañía lo permite y si está capacitado y equipado para rescate (1926.1211(a)).", safety=1,
+  "Restricción del asistente: {0} es el asistente del espacio confinado. OSHA 1926.1209(d): el asistente «se queda afuera del espacio con permiso durante la entrada hasta que otro asistente lo releve». No entre por ningún motivo, ni para rescatar, si antes no lo releva otro asistente calificado (Cambiar de asistente). Un asistente relevado solo entra a rescatar si el programa de la compañía lo permite y está capacitado y equipado para rescate (1926.1211(a)).", safety=1,
   note="the OSHA quote is my translation of the English rule text, not an official OSHA Spanish text")
 S("No Attendant Outside the Space: the attendant is checked in, so no attendant is outside the space right now. OSHA 1926.1204(f) requires “at least one attendant outside the permit space into which entry is authorized for the duration of entry operations.” Before anyone else goes in, tap Reassign Attendant to hand the role to a qualified person outside, or get the attendant out and check them out.",
   "No hay asistente afuera del espacio: el asistente registró su entrada, así que ahora no hay ningún asistente afuera. OSHA 1926.1204(f) exige «por lo menos un asistente afuera del espacio con permiso al que se autoriza entrar, durante todo el tiempo que dure la entrada». Antes de que entre alguien más, toque Cambiar de asistente para pasarle el puesto a una persona calificada que esté afuera, o saque al asistente y registre su salida.", safety=1,
@@ -556,7 +556,7 @@ S("No Attendant Outside the Space: the attendant is checked in, so no attendant 
 S("Emergency Open: An emergency is open. Only trained rescue personnel with rescue equipment should be in the space — nobody goes in after a downed worker.",
   "Emergencia abierta: hay una emergencia abierta. Solo debe estar en el espacio el personal de rescate capacitado y con equipo de rescate: nadie entra por un trabajador caído.", safety=1)
 P("Attendant: keep {0} out of the space.", "Asistente: no deje que {0} entre al espacio.", safety=1)
-P("Attendant: keep {0} out of the space. If {1} goes in, NO attendant is outside the space.", "Asistente: no deje que {0} entre al espacio. Si {1} entra, NO queda ningún asistente afuera del espacio.", safety=1)
+P("Attendant: keep {0} out of the space. If {1} goes in, NO attendant is outside the space.", "Asistente: no deje que {0} entre al espacio. Si {1} entra, NO queda ningún asistente afuera.", safety=1)
 P("Did {0} enter anyway?", "¿{0} entró de todos modos?", safety=1)
 S("Yes — they’re inside", "Sí — está adentro", safety=1)
 S("No — they stayed out", "No — se quedó afuera", safety=1)
@@ -608,3 +608,6 @@ S("Hide Details (emergency stays open)", "Ocultar detalles (la emergencia sigue 
 SCREEN('permit_active')
 P("{0} → {1} — OVERNIGHT ({2}, the phone’s time zone when it was locked)", "{0} → {1} — PASA LA MEDIANOCHE ({2}, la zona horaria del teléfono cuando se bloqueó el permiso)", safety=1)
 P("{0} → {1} ({2}, the phone’s time zone when it was locked)", "{0} → {1} ({2}, la zona horaria del teléfono cuando se bloqueó el permiso)", safety=1)
+
+SCREEN('permit_emergency')
+S("e.g. button bumped in a pocket; dispatcher told no response needed", "p. ej. el botón se apretó en la bolsa; se avisó al operador que no hace falta que vengan", safety=1)
