@@ -1,6 +1,7 @@
 // critic_nov19 01 + 02. Run: NODE_PATH=/opt/npm-tools/node_modules PB_URL=http://127.0.0.1:9150/fixed.html node t_cr1_pill.js
 // 01: the Feedback pill is not shown on Choose Your Password, Run Setup, Review, Run Results, Entry Permit; still shown on
 //     Home, Records, Settings, Calculators; still hidden on the active permit; bottom-right on a computer.
+// 03: the sheets' height cap uses the visible height (dvh), rule present in the page.
 // 02: the Home Screen card's steps start with Get a Code and end with Paste Join Code (source check).
 const R=__dirname+'/../../../rig';const boot=require(R+'/boot');const co=require(R+'/co');const mgr=require(R+'/mgr');const fs=require('fs');const http=require('http');
 const URL=process.env.PB_URL||'http://127.0.0.1:9150/fixed.html';
@@ -23,6 +24,10 @@ const get=(u)=>new Promise((res,rej)=>http.get(u,r=>{let d='';r.on('data',c=>d+=
  await p.evaluate(()=>pbGoto('home'));await p.waitForTimeout(600);ok(!!(await pill(p)),'back on Home: pill shown again');
  await p.evaluate(()=>pbGoto('confinedPermit'));await p.waitForTimeout(600);ok(!(await pill(p)),'Entry Permit form: no pill');
  await p.evaluate(()=>pbGoto('setPassword'));await p.waitForTimeout(600);ok(!(await pill(p)),'Choose Your Password: no pill over the Terms line');
+ // 03: a sheet (Settings > Add a Pipelayer by Text) is capped to the height you can see, and scrolls
+ await p.evaluate(()=>pbGoto('settings'));await p.waitForTimeout(500);await p.getByText('Add a Pipelayer by Text',{exact:true}).click();await p.waitForTimeout(900);
+ const sh=await p.evaluate(()=>{const c=document.querySelector('.pbob-card');if(!c||!c.offsetParent)return null;const cs=getComputedStyle(c);const r=c.getBoundingClientRect();return {mh:cs.maxHeight,ov:cs.overflowY,bottom:Math.round(r.bottom),ih:innerHeight};});
+ ok(sh&&sh.mh===(664-32)+'px'&&sh.ov==='auto'&&sh.bottom<=sh.ih,'03: sheet max-height is the visible height - 32 and it scrolls '+JSON.stringify(sh));
  ok(p.errs.length===0,'no page errors '+p.errs.slice(0,2).join('|'));await b.close();
  const d=await boot(URL,{init:co+mgr,wait:3500});await d.p.setViewportSize({width:1440,height:900});await d.p.waitForTimeout(700);
  const pp=await pill(d.p);ok(pp&&pp.r<=30&&pp.l>1000,'computer: pill bottom-right, off the side menu '+JSON.stringify(pp));
@@ -30,4 +35,5 @@ const get=(u)=>new Promise((res,rej)=>http.get(u,r=>{let d='';r.on('data',c=>d+=
  ok(foot.length===0,'computer Home: pill covers no button or link '+JSON.stringify(foot));await d.b.close();
  const src=await get(URL);const i=src.indexOf('id="homeAttention_a2hs"');const card=src.slice(i,i+900);
  ok(/<ol><li>Tap <strong>Get a Code<\/strong> below, then <strong>Copy Code<\/strong>\.<\/li><li>Tap <strong>Share/.test(card)&&/Open the new icon and tap <strong>Paste Join Code<\/strong>\.<\/li><\/ol>/.test(card)&&!/Open the new icon\. Tap/.test(card),'02: Home Screen card steps: code first, Paste Join Code last');
+ ok(/max-height:calc\(100vh - 32px\);max-height:calc\(100dvh - 32px\);/.test(src),'03: dvh rule after the vh fallback');
  console.log(fail?('FAILED '+fail):'ALL PASS',pass);process.exit(fail?1:0);})();
