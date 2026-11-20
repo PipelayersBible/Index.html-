@@ -76,18 +76,18 @@ begin
   perform pg_temp.ok(pg_temp.use(M4, 'teacher', 1) = 1, '5i room again');
   update pb_billing.accounts set seats_paid = 5 where company_id = C;
 
-  -- 6. the dollar stop: $24 a month for the base plan, + $3.50 for each extra paid person
-  perform public.ai_cost_add(M4, 'teacher', 23.95);
-  perform pg_temp.ok(pg_temp.use(M4, 'teacher', 1) = 1, '6a under $24: goes');
+  -- 6. the dollar stop: $22 a month for the base plan, + $3.25 for each extra paid person
+  perform public.ai_cost_add(M4, 'teacher', 21.95);
+  perform pg_temp.ok(pg_temp.use(M4, 'teacher', 1) = 1, '6a under $22: goes');
   perform public.ai_cost_add(M4, 'teacher', 0.06);
-  perform pg_temp.ok(pg_temp.use(M5, 'teacher', 1) = 0 and pg_temp.why(M5, 'teacher') = 'budget', '6b $24.01: every person in the company stops');
+  perform pg_temp.ok(pg_temp.use(M5, 'teacher', 1) = 0 and pg_temp.why(M5, 'teacher') = 'budget', '6b $22.01: every person in the company stops');
   perform pg_temp.ok(pg_temp.use(OW, 'gonogo_q', 1, 40) = 0 and pg_temp.use(M5, 'plans_strong', 1, 3) = 0, '6c the uncounted kinds stop too');
   update pb_billing.accounts set seats_paid = 12 where company_id = C;
-  perform pg_temp.ok(pg_temp.use(M5, 'teacher', 1) = 1, '6d 12 paid people: the stop is $48.50');
+  perform pg_temp.ok(pg_temp.use(M5, 'teacher', 1) = 1, '6d 12 paid people: the stop is $44.75');
   perform public.ai_cost_add(M5, 'stake', 24.50);
-  perform pg_temp.ok(pg_temp.use(M5, 'teacher', 1) = 0 and pg_temp.why(M5, 'teacher') = 'budget', '6e $48.51 stops');
+  perform pg_temp.ok(pg_temp.use(M5, 'teacher', 1) = 0 and pg_temp.why(M5, 'teacher') = 'budget', '6e $46.51 stops');
   update pb_billing.accounts set seats_paid = 5 where company_id = C;
-  perform pg_temp.ok((select sum(usd) from pb_billing.ai_cost where user_id in (M4, M5)) = 48.51, '6f the per-person cost log still written');
+  perform pg_temp.ok((select sum(usd) from pb_billing.ai_cost where user_id in (M4, M5)) = 46.51, '6f the per-person cost log still written');
   -- one person's month: 150
   delete from pb_billing.ai_pool where owner_key = C::text;
   insert into public.ai_usage (user_id, day, feature, count) values (M5, today, 'other', 149) on conflict (user_id, day, feature) do update set count = 149;
@@ -97,17 +97,17 @@ begin
   perform pg_temp.ok(pg_temp.use(M3, 'stake', 1) = 0 and public.ai_daily_limit(M3) = 0 and pg_temp.why(M3, 'stake') = 'plan', '6h read-only company');
   update pb_billing.accounts set state = 'active' where company_id = C;
 
-  -- 7. the individual plan: Ask 5, stake 10, 15 a day, 60 a month, $3.00 a month
+  -- 7. the individual plan: Ask 5, stake 10, 15 a day, 50 a month, $2.50 a month
   perform pg_temp.ok(pg_temp.use(IND, 'teacher', 6) = 5, '7a Ask 5'); perform pg_temp.ok(pg_temp.use(IND, 'stake', 11) = 10, '7b stake 10');
   perform pg_temp.ok(pg_temp.use(IND, 'cutsheet', 1) = 0 and pg_temp.why(IND, 'cutsheet') = 'person_day', '7c 15 a day');
   perform pg_temp.ok(pg_temp.use(IND, 'plans_strong', 1, 3) = 0, '7d no strong plan reads');
   perform pg_temp.ok((select sum(p.n) from pb_billing.ai_pool p where p.owner_key = 'u:' || IND::text) = 15, '7e own total');
-  update public.ai_usage set count = 0 where user_id = IND; insert into public.ai_usage (user_id, day, feature, count) values (IND, today, 'other', 60) on conflict (user_id, day, feature) do update set count = 60;
-  perform pg_temp.ok(pg_temp.use(IND, 'teacher', 1) = 0 and pg_temp.why(IND, 'teacher') = 'person_month', '7f 60 a month');
+  update public.ai_usage set count = 0 where user_id = IND; insert into public.ai_usage (user_id, day, feature, count) values (IND, today, 'other', 50) on conflict (user_id, day, feature) do update set count = 50;
+  perform pg_temp.ok(pg_temp.use(IND, 'teacher', 1) = 0 and pg_temp.why(IND, 'teacher') = 'person_month', '7f 50 a month');
   delete from public.ai_usage where user_id = IND;
-  perform public.ai_cost_add(IND, 'stake', 2.99); perform pg_temp.ok(pg_temp.use(IND, 'teacher', 1) = 1, '7g under $3');
-  perform public.ai_cost_add(IND, 'teacher', 0.02); perform pg_temp.ok(pg_temp.use(IND, 'teacher', 1) = 0 and pg_temp.why(IND, 'teacher') = 'budget', '7h $3.01 stops');
-  perform pg_temp.ok(pb_billing.individual_limits() = '{"stake": 10, "ask": 5, "other": 3, "month": 60}'::jsonb, '7i individual_limits');
+  perform public.ai_cost_add(IND, 'stake', 2.49); perform pg_temp.ok(pg_temp.use(IND, 'teacher', 1) = 1, '7g under $2.50');
+  perform public.ai_cost_add(IND, 'teacher', 0.02); perform pg_temp.ok(pg_temp.use(IND, 'teacher', 1) = 0 and pg_temp.why(IND, 'teacher') = 'budget', '7h $2.51 stops');
+  perform pg_temp.ok(pb_billing.individual_limits() = '{"stake": 10, "ask": 5, "other": 3, "month": 50}'::jsonb, '7i individual_limits');
 
   -- 8. the individual plan's billing record
   perform pg_temp.act(M1); perform pg_temp.ok(pg_temp.err(format('select public.pb_owner_individual_on(%L)', IND2)) like '%pb:not_allowed%'

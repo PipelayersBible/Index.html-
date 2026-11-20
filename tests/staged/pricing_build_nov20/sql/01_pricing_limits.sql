@@ -6,15 +6,17 @@
 --                 Everyone with a login counts as a person. The company account (the owner login) is free and is not counted.
 --   Individual    $12 a month (recommended; the owner said $10-15), yearly = 10 months. No free tier.
 --   The company account gets tight limits of its own (it is free, so it must not be a way around paying for people).
---   Limits        worst case (everybody at every limit every day) costs at most 30% of the monthly price.
+--   Limits        worst case (everybody at every limit every day) costs about 30% of the monthly price, so it stays
+--                 under 40% of the money even on the yearly deal with card fees. The math is in NOTES.md.
 --
 -- How the worst case is made certain: every AI request already reports its real cost (public.ai_cost_add). This file keeps a
 -- running total per company (or per individual) and stops AI for the rest of the month when the total reaches the budget.
 -- The count limits (per day, per month) are there so people see a plain number long before the dollar stop is reached.
 --
 -- Existing functions are changed in two ways:
---   REPLACED in full (their old text is in sql/live/):  public.ai_daily_limit, public.ai_try_consume, public.ai_cost_add,
+--   REPLACED in full:  public.ai_daily_limit, public.ai_try_consume, public.ai_cost_add,
 --     public.ai_refund, public.pb_storage_put_ok, pb_billing.individual_limits, pb_billing.has_individual, pb_plans.limits, pb_docs.limits
+--     (old text to roll back to: sql/local/stubs2.sql and sql/local/base/, md5-equal to live on Nov 20; see NOTES)
 --   PATCHED in place by pg_temp.pb_patch (one exact piece of text swapped; refuses unless it finds it exactly once):
 --     public.pb_my_plan, public.pb_plan_request, public.pb_plans_begin, public.pb_owner_billing,
 --     public.pb_owner_billing_setting_set, public.pb_owner_individual_on
@@ -62,9 +64,9 @@ language sql immutable set search_path to '' as $$
   select '{
     "member":     {"day": 25, "month": 150, "ask": 8, "analysis": 3, "stake": 15, "cutsheet": 3, "ticket": 10, "plans_strong": 2, "other": 5, "photos_day": 150},
     "owner":      {"day": 5,  "month": 30,  "ask": 5, "analysis": 1, "stake": 5,  "cutsheet": 1, "ticket": 2,  "plans_strong": 0, "other": 2, "photos_day": 20},
-    "individual": {"day": 15, "month": 60,  "ask": 5, "analysis": 2, "stake": 10, "cutsheet": 2, "ticket": 3,  "plans_strong": 0, "other": 3, "photos_day": 60,
-                   "usd_month": 3.00, "storage_gb": 1},
-    "company":    {"day_per_person": 12, "month_per_person": 60, "usd_base": 24.00, "usd_per_extra": 3.50, "storage_gb_base": 10, "storage_gb_per_extra": 1},
+    "individual": {"day": 15, "month": 50,  "ask": 5, "analysis": 2, "stake": 10, "cutsheet": 2, "ticket": 3,  "plans_strong": 0, "other": 3, "photos_day": 60,
+                   "usd_month": 2.50, "storage_gb": 1},
+    "company":    {"day_per_person": 12, "month_per_person": 60, "usd_base": 22.00, "usd_per_extra": 3.25, "storage_gb_base": 10, "storage_gb_per_extra": 1},
     "beta":       {"usd_month": 30.00, "photos_day": 150, "storage_gb": 10},
     "none":       {"photos_day": 10, "storage_gb": 0.1},
     "plan_reading": {"sheets_month": 150, "usd_month": 45, "sets_day": 3, "pages_set": 150, "share": 0.33, "usd_sheet": 0.28}

@@ -17,9 +17,9 @@ trial section, FAQ). The numbers below are the billing settings; if a setting ch
 
 Small print, same size as the rest:
 - Prices are in US dollars, plus applicable tax.
-- There is no free plan. New companies start with a 30-day beta; the price is shown in the app the whole time.
+- There is no free plan. Companies in the beta pay nothing until their beta ends; the price is shown in the app the whole time.
 - In the beta now? Start your company plan before your beta ends and the price is locked for 12 months.
-- Ask and photo reading have daily and monthly limits (a person on a company plan: 25 a day; a company shares 60 a month for each person on its plan; an individual plan: 15 a day, 60 a month). The app says when a limit is reached and when it resets.
+- Ask and photo reading have daily and monthly limits (a person on a company plan: 25 a day; a company shares 60 a month for each person on its plan; an individual plan: 15 a day, 50 a month). The app says when a limit is reached and when it resets.
 - Plan-set reading is an add-on, priced separately. [Leave this line out until decision 2 is made.]
 
 Example line under the company card (helps an owner do the math):
@@ -33,8 +33,8 @@ Buttons: "Request a Beta" (existing trial form) under the company plan; "Get the
 
 ## FAQ: "What does it cost?"
 "$99 a month for your company and 5 people, and $12 a month for each extra person. Pay yearly and get 12 months for the
-price of 10. One person without a company: $12 a month. Prices are plus applicable tax. There is no free plan; new
-companies start with a 30-day beta."
+price of 10. One person without a company: $12 a month. Prices are plus applicable tax. There is no free plan; companies in
+the beta pay nothing until their beta ends."
 
 ## Not to say
 - No "free forever", no "unlimited" (AI and photo reading are limited).

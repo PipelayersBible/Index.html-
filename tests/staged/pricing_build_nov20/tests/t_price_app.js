@@ -70,7 +70,7 @@ const noSide=(p)=>p.evaluate(()=>document.documentElement.scrollWidth<=window.in
  t=await p.evaluate(()=>document.getElementById('settingsPlanHelp').textContent.replace(/\s+/g,' '));
  ok(t.includes('Company plan: $99 a month for your company and 5 people. $12 a month for each extra person. Pay for the year and get 12 months for the price of 10.')&&t.includes('The company account is free and doesn’t count.'),'5c Settings: company plan price and who counts');
  ok(t.includes('Individual plan: $12 a month ($120 for a year)')&&t.includes('plus applicable tax')&&t.includes('There is no free plan')&&!/Contractor plan/.test(t),'5d Settings: individual price, tax, no free plan');
- ok(/daily reports/.test(t)&&/tickets/.test(t)&&/Ask/.test(t)&&/25 a day/.test(t)&&/5 a day/.test(t)&&/60 a month/.test(t),'5e Settings: the real feature list and the limits');
+ ok(/daily reports/.test(t)&&/tickets/.test(t)&&/Ask/.test(t)&&/25 a day/.test(t)&&/5 a day/.test(t)&&/15 a day, 50 a month/.test(t)&&/shares 60 a month/.test(t),'5e Settings: the real feature list and the limits');
  await p.evaluate(()=>{pbGoto('settings');const d=document.getElementById('settingsPlanMore');d.open=true;d.scrollIntoView();});await p.waitForTimeout(500);
  ok(await noSide(p),'5f Settings: no sideways scroll');await p.screenshot({path:__dirname+'/../shots/5_settings_plans.png'});
  ok(p.errs.length===0,'5g no page errors '+JSON.stringify(p.errs));await p.context().close();

@@ -92,7 +92,7 @@ rep("""<p class="pb-help" id="settingsPlanHelp">Individual plan: New Run, Quick 
           <p>Everything in the app for the whole company: runs with photos and sealed records, Confined Space permits, trench and shoring, daily reports, tickets, locates, the company board and office screens, crew invites, the calculators, Education &amp; Reference and Ask.</p>
           <p><b>Individual plan: <span data-pbp="ind">$12</span> a month</b> (<span data-pbp="indyear">$120</span> for a year). One person, no company: New Run, Quick Run, the calculators, Education &amp; Reference, Stats, Jobs, Ask and stake reading.</p>
           <p>Prices are plus applicable tax. There is no free plan.</p>
-          <p>Ask and photo reading have daily and monthly limits. A person on a company plan: 25 a day. The company account: 5 a day. An individual plan: 15 a day, 60 a month. A company shares 60 a month for each person on its plan. The app tells you when a limit is reached and when it resets.</p>
+          <p>Ask and photo reading have daily and monthly limits. A person on a company plan: 25 a day. The company account: 5 a day. An individual plan: 15 a day, 50 a month. A company shares 60 a month for each person on its plan. The app tells you when a limit is reached and when it resets.</p>
         </div>""")
 
 # ---- 7. Crew Members: what the people on the list cost
