@@ -192,7 +192,7 @@ const CONTRACTOR=`window.__tableOne={subscriptions:{tier:'contractor',status:'ac
  await I.evaluate(()=>pbObClose());
  const H2=(await boot(b,BASE,srv,{ua:IOS,signedOut:true,standalone:true,wait:3500})).p;pages.push(H2);
  await H2.evaluate(()=>pbObOpenCode());await H2.waitForTimeout(300);await H2.fill('#pbObCodeIn',hcode.toLowerCase());await H2.click('#pbObCodeGo');await H2.waitForTimeout(3500);
- ok((await H2.evaluate(()=>(window.__pbObMe()||{}).id))===nu.id&&/Signed In/.test(await sheet(H2)),'11: the typed code signs the Home Screen app in to the same account');
+ ok((await H2.evaluate(()=>(window.__pbObMe()||{}).id))===nu.id&&/^Signed in as /.test(await said(H2)),'11: the typed code signs the Home Screen app in to the same account (a note, no Signed In box)');
  await H2.evaluate(()=>pbObClose());await H2.evaluate(()=>pbLogout());await H2.waitForTimeout(500);
  ok(/No Email or Password/.test(await H2.evaluate(()=>document.getElementById('pbModalOverlay').innerText)),'11: Log Out on a no-email account warns first');
  await O.evaluate(()=>pbObClose());await O.evaluate(()=>pbObOpenInvite());await O.waitForTimeout(700);await O.click('#pbObMakeBtn');await O.waitForTimeout(800);

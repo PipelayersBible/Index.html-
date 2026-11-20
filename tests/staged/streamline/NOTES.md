@@ -4,10 +4,10 @@ Tommy's instruction: "Everything should be streamlined and as simple and clear a
 especially for sign ups / set ups." Plus his priority item: "I don't think it has a prompt to add the app to their Home
 Screen when they do their set up."
 
-Source: `/tmp/claude-0/r1709/src_latest.html` (upcoming r17.09), not edited. Nothing committed, pushed, deployed, or
+Source: `/tmp/claude-0/r1709b/src.html` (r17.09 with its build stamp; 01-08 were written on `/tmp/claude-0/r1709/src_latest.html` and apply unchanged, same changes, checked). Not edited. Nothing committed, pushed, deployed, or
 changed on Supabase. Every change is client-only.
 
-Apply: `sh patches/apply_all.sh in.html out.html` (runs 01..08 in order; each `rep()` must match exactly once).
+Apply: `sh patches/apply_all.sh in.html out.html` (runs 01..09 in order; each `rep()` must match exactly once).
 
 Tap counts are taps on a 390 px phone. Typing is listed separately. Taps that Safari or Android need (Share, Add) are counted.
 "Step" = the new Home Screen step that Tommy asked for. It is counted where it now appears.
@@ -77,8 +77,8 @@ The Settings row stays the same.
 |---|---|---|---|
 | Log In: email, password, Log In | 1 + typing x2 | same | Legal line kept |
 | Forgot password?: panel opens at the bottom, email filled in if typed | 2 + 1 tap into the field | 2: scrolls into view, cursor in the email box (or on Send Reset Link if the email is filled in) | 07 |
-| Hand-off code (no-email account) to the Home Screen app: Get a Code, Copy, Log In "Join a Crew or Use a Code", Paste Join Code | 4 | 3: "Paste Join Code" is on the Home Screen app's Log In. Instructions say just that (03) | 03 |
-| Code from the Home Screen step (link account, iPhone) | - | Get a Code, Copy Code, (Home Screen app) Paste Join Code | 08 |
+| Hand-off code (no-email account) to the Home Screen app: Get a Code, Copy, Log In "Join a Crew or Use a Code", Paste Join Code, "Signed In" OK | 5 | 3: "Paste Join Code" is on the Home Screen app's Log In, and a note replaces the OK box | 03, 09 |
+| **Email account (owner, PM) signing in to the iPhone Home Screen app** | tap Email, type it, tap Password, type it, Log In: 3 taps + typing x2 | Get a Code, Copy Code (in Safari), then Paste Join Code: 3 taps, no typing. Two-step login is still asked when the account has it. | 09 (Tommy's #5) |
 
 ## Path 5: first-use prompts stacked on top of each other
 
@@ -99,6 +99,10 @@ The Settings row stays the same.
 5. `05_crew_words.py`: One line under Text a Join Link on Crew members. "Or invite by email" heading. One-line intro on the link sheet.
 6. `06_foreman_picker_link.py`: A foreman's "Add to your crew" list has "Text a Join Link" (`pbObCanFmLink`: foreman member, not a manager).
 7. `07_forgot_focus.py`: Forgot password? scrolls into view and puts the cursor where it's needed.
+9. `09_code_for_every_account.py` (**Tommy's answer #5**): every account gets the one-time code for the iPhone Home Screen app, not only no-email ones.
+   - **Where it shows:** "Get a Code" in the Home Screen step (iPhone), on the Home card, and in Settings and Notifications in iPhone Safari. No-email accounts get it everywhere, as before. Email accounts on a computer don't get it.
+   - **Words:** the step says "Open the new icon and tap Paste Join Code". For an email account: "no typing your email and password", plus "Two-step login still asks for its code" when the account has two-step login on.
+   - **After a code sign-in:** two-step login is asked at once (`pbMfaCheck`; the screen hook asks it too). "Signed In" + OK becomes a note.
 8. `08_a2hs_step.py` (**Tommy's priority item**): Adding to the Home Screen is a step at the end of set-up, on iPhone Safari and Android Chrome only. It never shows in the Home Screen app or on a computer.
    - **When it opens:** after Save Password (invite or reset), after Join Crew, and after a Log In (an owner's first sign-in on a phone, or anyone on a new phone).
    - **Order:** it waits until nothing else is up: Terms, two-step code, crew notice, other boxes, a live permit. It shows only on Home, and gives up after 2 minutes. The Home card stays as the reminder.
@@ -110,10 +114,19 @@ The Settings row stays the same.
 Offline: nothing new needs signal except Get a Code (shows the usual "No signal..." line). The join, link and Terms
 paths behave as before with no signal: t130 section 6 passes.
 
+## Server check for 09 (read-only, nothing changed)
+
+Checked against the live project on Nov 19 with read-only queries:
+- **`public.pb_onboard_handoff_make`:** any signed-in account. It checks only `auth.uid()` and the limit of 5 an hour.
+- **`public.pb_onboard_svc`:** the `claim` and `handoff` steps only need the account to have an email. Every account has one; no-email accounts have the hidden crew address.
+- **Edge function `crew-join` (live version 1, same as `staged/onboard2/functions`):** `signin` makes a magic-link hash for that email with `generateLink`, which sends no email.
+- **`pb_link`:** the only server function that checks it is `pb_onboard_lost_phone`.
+
+**No server change is needed.** A code sign-in is a one-factor (aal1) session. The app asks for the two-step code before the account is used, the same as after a password login.
+
 ## Proposed, not built (and why)
 
-- **Drop "Type it again" and add a Show button** (01 left it alone): saves retyping 8+ characters. It's a judgment call on lock-out risk (they stay signed in, and Forgot password works), so it's decision 1.
-- **Get a Code for email accounts too** (owners, PMs on iPhone): skips retyping email and password in the Home Screen app. The server already allows it (`pb_onboard_handoff_make` has no account check). This is a security choice: a code that signs into a company account. Two-step login is still asked. Decision 5.
+- **Drop "Type it again"**: Tommy said keep both password boxes. Not built.
 - **Getting Started above the Home Screen card on a new company's Home:** the card pushes Getting Started below the fold. With the new step and Done, the card is gone after set-up, so I left the layout alone.
 - **Server:** shorter invite/reset email text and a "Set Up Your Account" button (Supabase auth email templates). Optional passwordless email sign-in (magic code) for email accounts (auth config). Neither is built.
 - **The join screen's long "What your company sees" text:** kept word for word (legal, crew notice v3).
@@ -125,10 +138,11 @@ New, in `tests/staged/streamline/tests/` (they use `tests/boot_ob.js`, `obsrv.js
 | Test | Covers | Result on the patched page |
 |---|---|---|
 | `t_sl1_setpw.js` | tick on the screen (light/dark, 390 px), Save refused without it, Terms recorded once, note instead of a box; crew notice on the screen and acked; reset with Terms agreed (no tick); sheet folded in | 33 PASS |
-| `t_sl2_a2hs.js` | iPhone Safari step after Save (light/dark, Share picture, one Done), Done sets the shared key and hides the card, not asked again; standalone: none; computer: none; Android after Join: menu steps; Android with `beforeinstallprompt`: Install App one tap; iPhone link account: Get a Code, then code, then Copy; order Terms, then crew notice, then step; Skip-in-Safari not re-asked; Android Log In | all PASS |
+| `t_sl2_a2hs.js` | iPhone Safari step after Save (light/dark, Share picture, Get a Code + one Done), Done sets the shared key and hides the card, not asked again; standalone: none; computer: none; Android after Join: menu steps; Android with `beforeinstallprompt`: Install App one tap; iPhone link account: Get a Code, then code, then Copy; order Terms, then crew notice, then step; Skip-in-Safari not re-asked; Android Log In | all PASS |
+| `t_sl4_code.js` (09) | email account: Get a Code in the step, the Home card and Settings (iPhone Safari); the copied code + Paste Join Code in the Home Screen app signs in to the owner's account, with a note and no box; two-step login: "Two-step login still asks" line, then "Enter Your Code" after the code sign-in, and the app's code finishes it; computer, email account: no button; no-email account: button anywhere | 16 PASS |
 | `t_sl3_paths.js` | Paste Join Code on Log In (Home Screen app only; empty clipboard), Join to Home + note, Forgot focus, Getting Started link sheet + foreman picker loaded + Add by Email, foreman picker link, pipelayer can't, Crew words | all PASS |
 
-Run: `NODE_PATH=/opt/npm-tools/node_modules PB_URL=http://127.0.0.1:<port>/cur.html node <test>`. I served the patched page with `python3 -m http.server 8961`.
+Run: `NODE_PATH=/opt/npm-tools/node_modules PB_URL=http://127.0.0.1:<port>/cur.html node <test>`. I served the patched page (01-09 on r1709b) with `python3 -m http.server 8962`, and re-ran every test there.
 
 Existing tests against the patched page (one browser at a time):
 
@@ -137,7 +151,7 @@ Existing tests against the patched page (one browser at a time):
 | t129_taplink.js | all pass |
 | t133_onetap_text.js | all pass |
 | t132_setpw_stay.js | 10 FAIL as expected: it ticks the Terms on the old sheet and reads the "signed in" words from a box. The updated copy `test_updates/t132_setpw_stay.js` (diff in `t132.diff`: tick `#setPwTerms`, read `#pbSayDone`) has **all pass**. |
-| t130_onboard.js | fails at `#pbObStartBtn` (the You're In sheet is gone), as expected. The updated copy `test_updates/t130_onboard.js` (diff in `t130.diff`: read the note, no Start tap) has **ALL PASS**. |
+| t130_onboard.js | fails at `#pbObStartBtn` (the You're In sheet is gone), as expected. The updated copy `test_updates/t130_onboard.js` (diff in `t130.diff`: read the note, no Start tap; section 11 reads the "Signed in as" note, 09) has **ALL PASS**. |
 | run_all `--only` t95_beta, t105_terms, t107_mfa, t109_crewnotice, t114_mfacrew, t126_noticeack (--jobs 1) | pass (goldens match) |
 
 `test_updates/` holds symlinks to boot_ob.js, obsrv.js, fakesb_ob.js and rig/fakesb.js so the copies run in place.
@@ -153,12 +167,14 @@ All three print the Crew members screen. Two changes are from 05: "No email need
 
 No other golden contains the changed words. Possible risk: a golden test that logs in, or saves a password, with an iPhone or Android user agent would now see the Home Screen step. I found none (grep of tests/ for phone UAs plus login/join).
 
-## Decisions for Tommy
+## Decisions for Tommy (answered Nov 19)
 
-1. **Drop "Type it again" on the password screen (with a Show button)?** Saves retyping the password on a phone. They stay signed in after Save, and Forgot password? fixes a typo. *Recommend: yes* (small patch, not built yet).
-2. **"What your company sees" shown on the password screen counts as seen (no separate Got It box later)?** This is how the join screen already works (your #17). It's built. *Recommend: keep.*
-3. **Home Screen step after every Log In on a phone, not only the first set-up?** Once per account per phone, and never again after Done. Built that way. *Recommend: keep.* A new phone is set-up too.
-4. **After "Skip: Join Here in Safari", don't ask the Home Screen step again right after Join Crew?** They said no 30 seconds earlier. The Home card still offers it. Built that way. *Recommend: keep.* Showing it anyway is a one-line change.
-5. **Let email accounts (owner, PMs) get a code for the Home Screen app instead of retyping email and password?** The server already allows it, and two-step login is still asked. *Recommend: yes.* It's a security call, so it's yours to make.
+1. Drop "Type it again": **no, keep both password boxes.** Not built.
+2. "What your company sees" on the password screen counts as seen: **keep** (built, 01).
+3. Home Screen step after every Log In on a phone, once per account per phone: **keep** (built, 08).
+4. No Home Screen step right after "Skip: Join Here in Safari": **keep** (built, 08).
+5. A one-time code for email accounts in the Home Screen app: **yes.** Built in 09 with no server change; two-step login is still asked.
+
+Nothing is left open.
 
 ## DONE

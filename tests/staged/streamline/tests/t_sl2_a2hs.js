@@ -2,6 +2,7 @@
 // iPhone Safari: after Save Password (invite/reset) and after a Log In; Android Chrome: after Join Crew and Log In, with
 // "Install App" when Chrome offers it. Never in the Home Screen app, never on a computer. After the Terms and the crew
 // notice. Done ends it for good (pbObA2hs:<uid>, shared with the Home card). A no-email account gets its code there.
+// (09: an email account gets Get a Code in the step too)
 // Run: NODE_PATH=/opt/npm-tools/node_modules PB_URL=http://127.0.0.1:<port>/cur.html node t_sl2_a2hs.js
 const {chromium}=require('playwright');const fs=require('fs');const path=require('path');
 const boot=require('../../../boot_ob');const mkSrv=require('../../../obsrv');
@@ -35,9 +36,9 @@ async function invite(b,ua,opts={}){
   const p=await invite(b,IOS,{dark});
   ok(await waitStep(p),L+': iPhone Safari: the Home Screen step opens after Save Password');
   const t=await sheet(p);
-  ok(/Add the App to Your Home Screen/.test(t)&&/Tap Share at the bottom of Safari/.test(t)&&/Add to Home Screen, then Add/.test(t)&&/Open the new icon and log in/.test(t),L+': the 3 steps: '+t.slice(0,200));
+  ok(/Add the App to Your Home Screen/.test(t)&&/Tap Share at the bottom of Safari/.test(t)&&/Add to Home Screen, then Add/.test(t)&&/Open the new icon and tap Paste Join Code/.test(t),L+': the Share steps: '+t.slice(0,200));
   ok(await p.evaluate(()=>!!document.querySelector('#pbObA2hsSteps svg[aria-label="the Share button"]')),L+': a picture of the Share button');
-  ok(await p.evaluate(()=>!document.getElementById('pbObA2hsCodeBtn')&&document.querySelectorAll('#pbObSheet button').length===1&&document.getElementById('pbObA2hsDone').textContent==='Done'),L+': an email account: one "Done" button, no code');
+  ok(await p.evaluate(()=>!!document.getElementById('pbObA2hsCodeBtn')&&document.querySelectorAll('#pbObSheet button').length===2&&document.getElementById('pbObA2hsDone').textContent==='Done'),L+': an email account: Get a Code (09) and one "Done" button');
   ok(await fits(p),L+': fits 390 px');await p.screenshot({path:SHOTS+'/a2hs_ios_'+L+'.png'});
   if(!dark){
    await p.click('#pbObA2hsDone');await p.waitForTimeout(500);
