@@ -1,22 +1,89 @@
 # Ask state-aware build: eval on ai-next (Nov 20 2026)
 
-> ROUND 3 IN PROGRESS (full run of b7ad788e3a62 + price paragraph done: run `1120-1657-ai-next-9e1a` + `1120-1656-ai-next-7043`, 149 cases, 118 pass, facts 147, $4.66; does NOT meet the pass rule by the letter: ng2 lost its numbers, over-length 8 vs live 4 on the 20 same-day cases). Write-up follows.
+## Where it stands after round 3 (full run of the final build, then the concise-prompt trial)
 
-## Recommendation: do NOT promote today. Run the full set once on the final build `b7ad788e3a62` (about $4.50), then promote if it is clean. I expect it to be.
+**The full run does not meet the pass rule by the letter. I would still promote: both misses are run-to-run noise, not the build. The lead decides; nothing was promoted.**
 
-Why not today: the build now on `next` (b7ad788e3a62) has two changes made after the big run: shorter state wording, and a fix to
-the quote checker (the safety net that removes made-up OSHA quotes). Both tested well on 20 questions and 38 code tests, but
-the quote checker touches every answer that quotes a rule, and it has not seen the full set. That is the only thing missing.
+Full run: build `b7ad788e3a62` + the price paragraph on the test prompt row, every active case except the 11 stake reads
+(runs `1120-1656-ai-next-7043` + `1120-1657-ai-next-9e1a`, 149 cases, $4.66 of $5).
 
-What round 2 settled (details in "Round 2" below):
-- **The length worry is gone.** Same day, same 10 questions: live passes 6 and averages 125 words; the final build passes 6 and
-  averages 122. The build before the tune passed 2 and averaged 132, so it did run long and the tune fixed it.
-- **Photos: 9 of 9 pass on live and on next.** All 12 photo questions are now run.
-- **State cases: 36 of 36**, and the 8 re-run on the final build still pass, a little shorter.
-- **web1 (pipe price) fails on live too.** Cause found, fix staged and tested once (works). Separate from this build.
-- **tr14 "[quote removed…]" marks:** cause found, fixed in the final build.
+| | Result |
+|---|---|
+| Pass | 118 of 149 |
+| Facts right | 147 of 149 (ph02 is the old 3.82 / 3.83 photo read, fails on every build; ng2 below) |
+| Wrong number, another state's number, safety verdict, unwanted "Which state?" | none |
+| Over the word limit | 29 |
+| State cases (nw + sa) | 34 of 36 pass; the two misses are length only (sa1 125 / 120, nw16 172 / 170) |
+| Photo questions | 10 of 12 (ph02 as always; svy3 right but 124 words, limit 120) |
+| web1 (pipe price) | passes again: searched the web, gave a range with sources |
+| "[quote removed]" marks | 2 of 148 answers, both proper single removals; none mid-sentence. Before the fix: 4 of 140 |
 
-Spent: round 1 $4.81 of $5, round 2 $2.85 of $3.
+Against the rule:
+1. **"No fact wrong that live gets right": one miss, ng2** ("O2 20.1 and LEL 3%, ok to enter?"). No fact is wrong; the answer
+   came back short (76 words) without the 19.5 / 23.5 / 10% numbers, only "the entry supervisor decides". That is the
+   go/no-go safety net cutting a sentence, in code this build does not touch. It fails safe. The same build gave the
+   numbers 9 minutes before and 12 minutes after (three of four runs on next today); past builds lost them 1 time in 8.
+2. **"No more over-length answers than live the same day": missed on count, met on length.** On the 20 questions live also
+   ran today: next 8 over, live 4 over; average length 105.1 words next, 105.4 live. Against the Nov 16 run (110 shared):
+   27 over vs 20; average 121.8 vs 121.5 words. The count swings by itself: the same build 9 minutes apart went from
+   4 over to 7 over on the same 10 questions (dw4 160 then 186, tr4 129 then 173). Most overs are 3 to 5 words.
+   The word limits sit right at the usual answer length, so the count is mostly luck; the average is the steady number, and it is equal.
+
+**Concise-prompt trial (separate round, $2.85 of $3): no real effect, taken off the test row again.** Details in "Round 3b".
+
+### If the lead promotes (two independent steps, either order)
+```sql
+-- 1. Code: copy next to live (b7ad788e3a62). Workers pick it up within a few minutes.
+insert into pb_ai.code (slot, sha, blob, url) select 'live', sha, blob, url from pb_ai.code where slot = 'next'
+  on conflict (slot) do update set sha = excluded.sha, blob = excluded.blob, url = excluded.url, updated_at = now();
+insert into pb_ai.code_history (slot, sha, url) select 'live', sha, url from pb_ai.code where slot = 'next';
+-- check: select slot, left(sha,12) from pb_ai.code;   live and next both b7ad788e3a62
+
+-- 2. Price paragraph: copy the test prompt row to the live row. Picked up within a minute.
+--    Safe as a plain copy today: the test row is the live row's text plus the one price paragraph (checked), nothing else.
+update pb_ai.prompt_overrides
+   set text = (select text from pb_ai.prompt_overrides where name = 'teacher_v2@next'),
+       note = note || ' | Nov 20: prices and availability go to web search (eval web1)', updated_at = now()
+ where name = 'teacher_v2' and (select text from pb_ai.prompt_overrides where name = 'teacher_v2@next') like '%PRICES AND AVAILABILITY%'
+   and (select text from pb_ai.prompt_overrides where name = 'teacher_v2@next') not like '%COMPLICATED SUBJECTS%';
+-- check: select name, length(text) from pb_ai.prompt_overrides;   both rows 1325
+```
+- After the code is live: the KB fix `sql/01_ask_kb_state_fix.sql` (DEPLOY_PLAN step 2), not before.
+- Roll back the code: install `b4ad91749f6f` on next again (URL in `pb_ai.code_history`, 2026-11-17 02:25) and copy next to live.
+  Roll back the prompt: `update pb_ai.prompt_overrides set text = 'EDITS' || (((substr(text, 6))::jsonb) - -1)::text where name = 'teacher_v2' and text like '%PRICES AND AVAILABILITY%';`
+- If the lead wants the letter of the rule first (about $1.50): run ng2 three times and the 20 same-day questions once more on live and on next, and compare average words, not the count.
+
+### Decisions for Tommy
+1. **Promote the build and the price paragraph?** Recommend yes, on the reasoning above.
+2. **Loosen the word limits in the eval, or grade length by average?** Recommend yes: add about 15% to each limit, or pass on
+   average words. Today 20 to 29 answers fail on length in every run of every build, live included, which hides real changes.
+3. **Shorter answers (Tommy's style rule):** the prompt wording alone did not do it. Recommend a code change next: trim what is
+   handed to the model (fewer excerpts, shorter verbatim rule text) and a hard cap, tested as its own round.
+4. **ng2 safety-net cut:** worth a look on its own. It sometimes removes the rule numbers together with the verdict.
+
+Spend today: round 1 $4.81 of $5, round 2 $2.85 of $3, full run $4.66 of $5, concise trial $2.85 of $3. Total $15.18.
+
+## Round 3b: concise prompt trial (Tommy: concise, direct, offer more on complicated subjects)
+`library_arch_nov20/sql/PROPOSED_prompt_concise_next.sql` put on the test row (checked: the prompt grew by the expected 1,144
+characters, so the edit took), same build, 117 text questions (runs `1120-1709-ai-next-3b69` + `1120-1710-ai-next-9976`;
+left out to fit $3: photo, web, geometry, math, emergency, testing). Compared with the full run 15 minutes earlier, same questions:
+
+| | Before (full run) | With the concise wording |
+|---|---|---|
+| Average words | 124.9 | 128.5 |
+| Median words | 125 | 122 |
+| Answers of 100 words or fewer (the new rule says never more) | 29 | 30 |
+| Over the eval limit | 26 | 21 |
+| Facts right | 116 | 116 (nw4 says "24-inch"; the pattern wants "24 in", a grading miss, the fact is right) |
+| Answers ending with an offer ("Want the details on …?") | 0 | 4 (gb1, sw1, tie5, wa4) |
+
+- **Answers did not get shorter.** The model does not follow the length paragraph: 87 of 117 answers are over the 100 words it
+  now says never to pass. Length comes from elsewhere: the six to eight excerpts with word-for-word rule text, and the rules that
+  ask for the quote, the state line and the competent-person line. Some got longer (dw4 258 words, ng4 211).
+- The offer works where it shows, and reads well ("Want the cut-in (shutdown) steps in detail?"), but only 4 times in 117.
+- So: no harm to facts, no gain in length. I took it off the test row again so `next` is exactly what the full run tested.
+- `PROPOSED_eval_style.sql` (new columns and a new grading view) was **not applied**: it changes the shared eval tables, and the
+  numbers above could be measured without it.
 
 ## What is installed
 | Slot | Build | Note |
@@ -26,15 +93,18 @@ Spent: round 1 $4.81 of $5, round 2 $2.85 of $3.
 
 - Builds on next today, in order: `f452a27f6053` (first), `66c743680d2f` (plan-state line; the big run), `b7ad788e3a62` (shorter
   wording + quote checker; final). Each is a sealed file pushed by the release script.
-- Twice something on the test side was changed for a minute and put back (checked): the live build on next for one baseline
-  question, and the price paragraph on the test prompt row `teacher_v2@next`. Both prompt rows equal their Nov 16 text again.
+- The live build was on next for one baseline question in round 1, then put back (checked).
+- Test prompt row `teacher_v2@next` now = the live row's text + the price paragraph (as tested in the full run). The live row
+  `teacher_v2` is untouched (Nov 16 text). The concise wording was on the test row for the trial only and is off again.
 - Not done, as told: no promote, KB fix `01_ask_kb_state_fix.sql` not applied, no edge function deployed.
 - Inserted: the 10 eval cases sa1-sa10 (`pb_ai.eval_set`).
 - Staged files now match the final build: `src_patch/apply_patch.py` (adds the guard.ts change), `src_patch/state.ts`,
   `src_patch/patched/state.ts` and `guard.ts`, `tests/state_test.ts`, `tests/guard_quote_test.ts`. Deno: **38 passed** (36 + 2 new).
   `apply_patch.py` on the live source reproduces the installed source exactly.
 
-## Round 2 (after the lead approved up to $3 more)
+# Round 2 (after the lead approved up to $3 more)
+
+Round 2 ended with: do not promote yet, run the full set on the final build first. That run is round 3, at the top.
 
 ### 1. Live and next back to back, same day (runs `1120-1643-ai-7c03` + `-ai-9ebc` on live, `1120-1643-ai-next-ac59` on next)
 Words per answer; F = over the limit. Facts were right in every one of these answers.
@@ -96,7 +166,7 @@ Ask prompt, changes every answer, and needs its own full run. See decisions.
 | `1120-1652-ai-next-b074` web1 with the price paragraph | next b7ad | 1 | $0.13 |
 | **Round 2 total** | | | **$2.85 of $3** |
 
-## Decisions for Tommy
+## Decisions after round 2 (superseded by the ones at the top)
 1. **Full run of the final build, then promote?** Recommend yes (about $4.50 with the cold start). Pass rule for it: no fact
    wrong that live gets right, and no more over-length answers than live gets the same day.
 2. **Price paragraph (`03_ask_web_price_prompt.sql`) in that same run?** Recommend yes, on the test row first.
@@ -211,8 +281,7 @@ No regression gives a wrong number, another state's number, a safety verdict, or
 - Cold starts cost about 9 cents a question for the first few questions of a run. Budget future full runs with about $1.20 on top,
   or start with one question and launch the rest right after it.
 
-## To promote later
-Copy the `next` row of `pb_ai.code` to `live` (DEPLOY_PLAN step 1 is otherwise done; the Deno count is now 38). Roll back as in DEPLOY_PLAN. The KB fix
-(step 2) still waits until this build is live.
+## To promote
+See "If the lead promotes" at the top.
 
 ## DONE

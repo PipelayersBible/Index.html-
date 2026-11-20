@@ -1,6 +1,6 @@
 # apply_patch.py <src_in> <src_out> : library_load_nov20 changes on top of the ask_state build (b7ad788e3a62 source). Exact-once replacements.
-#  1 kb.ts        : on the TEST function only (PB_ASK_SLOT === "next") the library version comes from the row "kb@next" in pb_ai.prompt_overrides
-#                   ({"version","n","rev"}); the worker reloads when that row changes (checked at most once a minute). Live reads the active version, as before.
+#  1 kb.ts        : on the TEST function only (PB_ASK_SLOT === "next") the staged library (src_patch/kb_overlay.ts) is laid over the live
+#                   rows in the worker's memory. No library row on the server changes; the live function reads the active version, as before.
 #  2 retrieval.ts : an emergency worded the way a crew words it ("confused and stumbling", "caved in on a guy") counts as an injury question,
 #                   so first-aid chunks are not ranked down for it.
 #  3 ask.ts       : plain-language chunks beside verbatim OSHA text (the ask_state build's optional switch) default to 2 instead of off.
@@ -11,45 +11,39 @@ shutil.copytree(src, out)
 def rep(f, old, new):
     p = os.path.join(out, f); s = open(p).read(); assert s.count(old) == 1, (f, old[:60], s.count(old)); open(p, 'w').write(s.replace(old, new))
 
-# 1 ---- kb.ts
-rep('kb.ts', 'let KB = null, KB_VERSION = "", KB_RETRY_AT = 0, KB_LOADING = null, KB_SAVING = null;',
- '''let KB = null, KB_VERSION = "", KB_RETRY_AT = 0, KB_LOADING = null, KB_SAVING = null;
-// library_load: the test function reads its own library version. Pointer row "kb@next" = {"version":"<12 hex>","n":<rows>,"rev":"<any>"}.
-let NEXT_PTR = null, NEXT_RAW = "", NEXT_AT = 0, NEXT_LOADED = "";
-async function nextPointer(admin) {
-  if (globalThis.PB_ASK_SLOT !== "next") return null;
-  if (Date.now() - NEXT_AT < 6e4) return NEXT_PTR;
-  NEXT_AT = Date.now();
-  try {
-    const { data, error } = await Promise.race([admin.rpc("pb_ai_prompt_overrides", {}), new Promise((r) => setTimeout(() => r({ data: null, error: "timeout" }), 2500))]);
-    if (error || !Array.isArray(data)) return NEXT_PTR;
-    const raw = String(data.find((x) => x && x.name === "kb@next")?.text || "");
-    if (raw === NEXT_RAW) return NEXT_PTR;
-    let p = null;
-    try { p = JSON.parse(raw); } catch {}
-    NEXT_RAW = raw, NEXT_PTR = p && /^[0-9a-f]{12}$/.test(String(p.version)) && Number.isInteger(p.n) && p.n > 0 ? { version: String(p.version), n: p.n, rev: String(p.rev || "") } : null;
-  } catch {}
-  return NEXT_PTR;
-}''')
-rep('kb.ts', '''function kb(admin) {
-  return KB
-    ? Promise.resolve(KB)''', '''function kb(admin) {
-  return globalThis.PB_ASK_SLOT === "next" ? kbNext(admin) : kbLive(admin);
+# 1 ---- kb.ts + kb_overlay.ts (the overlay file is written by tools/mk_overlay.py from out/rows_changed.jsonl)
+ov = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'kb_overlay.ts')
+shutil.copy(ov, os.path.join(out, 'kb_overlay.ts'))
+rep('kb.ts', 'import { decodeIndex, encodeIndex } from "./_shared/kb_codec.ts";', """import { decodeIndex, encodeIndex } from "./_shared/kb_codec.ts";
+import { OVERLAY } from "./kb_overlay.ts";
+// library_load: on the TEST function only, the staged library is laid over the live rows in memory. Nothing is written to the
+// server's library and the live function never takes this path. replace = by the id of the live chunk; add = new chunks.
+function withOverlay(byLib) {
+  const where = new Map();
+  for (const lib of Object.keys(byLib)) byLib[lib].forEach((c, i) => where.set(c?.id, [lib, i]));
+  let replaced = 0, missing = 0, added = 0;
+  for (const [oldId, e] of Object.entries(OVERLAY.replace || {})) {
+    const at = where.get(oldId);
+    if (!at) { missing++; continue; }
+    if (at[0] === e.lib) byLib[at[0]][at[1]] = e.chunk;
+    else byLib[at[0]][at[1]] = null, (byLib[e.lib] ||= []).push(e.chunk);
+    replaced++;
+  }
+  const have = new Set();
+  for (const lib of Object.keys(byLib)) { byLib[lib] = byLib[lib].filter(Boolean); for (const c of byLib[lib]) have.add(c.id); }
+  for (const e of OVERLAY.add || []) if (!have.has(e.chunk.id)) (byLib[e.lib] ||= []).push(e.chunk), have.add(e.chunk.id), added++;
+  console.log(JSON.stringify({ ai: "kb_overlay", rev: OVERLAY.rev, replaced, missing, added }));
+  return added;
 }
-async function kbNext(admin) {
-  const p = await nextPointer(admin), key = p ? p.version + "/" + p.n + "/" + p.rev : "";
-  if (key !== NEXT_LOADED && !KB_LOADING) KB = null, KB_VERSION = "", KB_RETRY_AT = 0, NEXT_LOADED = key; // the pointer moved: load that library
-  return kbLive(admin, p);
-}
-function kbLive(admin, ptr) {
-  return KB
-    ? Promise.resolve(KB)''')
-rep('kb.ts', '''        const boot = await admin.rpc("pb_ai_kb_boot", {}),''', '''        const boot = ptr ? { error: "next pointer" } : await admin.rpc("pb_ai_kb_boot", {}),''')
-rep('kb.ts', '''        else {
-          const { data, error } = await admin.rpc("pb_ai_kb_active", {});''', '''        else if (ptr) act = { version: ptr.version, n: ptr.n, built: ptr.rev }, how = "next";
-        else {
-          const { data, error } = await admin.rpc("pb_ai_kb_active", {});''')
-rep('kb.ts', 'KB_VERSION = String(act.version),', 'KB_VERSION = String(act.version) + (ptr && ptr.rev ? "." + ptr.rev : ""),')
+const overlayOn = () => globalThis.PB_ASK_SLOT === "next" && OVERLAY && OVERLAY.rev;""")
+rep('kb.ts', """        const boot = await admin.rpc("pb_ai_kb_boot", {}),""", """        const lay = overlayOn(), boot = lay ? { error: "overlay: build from rows" } : await admin.rpc("pb_ai_kb_boot", {}),""")
+rep('kb.ts', """          const built = buildIndex(await legacyRows(admin, act), String(act.built || "")).index;
+          if (built.N !== act.n) throw new Error(`got ${built.N} of ${act.n} rows`);""", """          const rows = await legacyRows(admin, act), nLive = Object.values(rows).reduce((s, v) => s + v.length, 0);
+          if (nLive !== act.n) throw new Error(`got ${nLive} of ${act.n} rows`);
+          const extra = lay ? withOverlay(rows) : 0, built = buildIndex(rows, String(act.built || "")).index;
+          if (built.N !== act.n + extra) throw new Error(`got ${built.N} of ${act.n + extra} rows`);
+          lay && (how = "overlay " + OVERLAY.rev);""")
+rep('kb.ts', 'KB_VERSION = String(act.version),', 'KB_VERSION = String(act.version) + (lay ? "+" + OVERLAY.rev : ""),')
 
 # 2 ---- retrieval.ts
 rep('_shared/retrieval.ts', '|electrocut\\w*|shocked|lightning|struck|sintoma', '|electrocut\\w*|shocked|lightning|struck|confus\\w*|stumbl\\w*|disorient\\w*|slurr\\w*|unresponsive|not breathing|stopped breathing|caved|cave[- ]?in on|trapped|engulf\\w*|dig (him|her|them) out|pull (him|her|them) out|sintoma')

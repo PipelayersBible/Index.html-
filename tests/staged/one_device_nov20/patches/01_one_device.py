@@ -2,6 +2,7 @@
 # One device per login, the app's part (staged Nov 20 2026, on r17.11): python3 01_one_device.py in.html out.html
 #  - check-in (pb_device_seen): device id, kind, the photo stamp's last GPS fix if there is one
 #  - this phone's session was ended by another device: sign out here and say it once (records and unsent work stay)
+#  - this sign-in was refused because the login is in use on another device: say so, sign out here
 #  - Get a Code (Home Screen app): says this page is signed out by it; names unsent work first
 #  - quiet "used on two phones" notes: Crew members (company account) and Beta Accounts (app owner)
 # Everything is silent when the server part isn't installed (a missing function is "no answer").
@@ -21,7 +22,8 @@ MODULE = r"""  // ---- one device per login (Nov 20) ----
   const PB_1D = { busy: false, at: 0, t: null, asking: false, dev: null };
   const PB_1D_MSG = {
     other_device: 'Your account was signed in on another phone, so this phone was signed out. Your saved work is kept and will send when you sign in again.',
-    moved: 'Your account is now signed in in the Home Screen app, so this page was signed out. Open the app from its icon. Your saved work is kept.'
+    moved: 'Your account is now signed in in the Home Screen app, so this page was signed out. Open the app from its icon. Your saved work is kept.',
+    in_use: 'This account is in use on another phone right now. Sign out there first, or try again in 15 minutes.' // this sign-in was refused; the other phone is untouched
   };
   function pb1dDevice() {
     let d = PB_1D.dev || pbObLs.get('pbDeviceId');
@@ -48,13 +50,14 @@ MODULE = r"""  // ---- one device per login (Nov 20) ----
     const key = sid || ('u:' + uid); if (pbObLs.get('pb1dTold') === key) return; pbObLs.set('pb1dTold', key);
     let msg = PB_1D_MSG[reason];
     try { if (reason === 'other_device' && uid && typeof pbOpenPermitOf === 'function' && pbOpenPermitOf(uid)) msg += ' A confined space permit is open on this phone. Sign in again now so it keeps backing up and your company keeps seeing it.'; } catch (e) {}
-    pbAlert(msg, 'Signed Out');
+    pbAlert(msg, reason === 'in_use' ? 'Account In Use' : 'Signed Out');
   }
   async function pb1dEnded(reason, sid, uid) { // the server says this session is over
-    if (reason !== 'other_device' && reason !== 'moved' && reason !== 'ended') return;
+    if (reason !== 'other_device' && reason !== 'moved' && reason !== 'ended' && reason !== 'in_use') return;
     pb1dTell(reason, sid, uid);
     pbObLs.set('pb1dLast', '');
     try { if (sbUser && sbUser.id === uid) await sbClient.auth.signOut({ scope: 'local' }); } catch (e) {} // this phone only; the app's own SIGNED_OUT handling follows
+    if (reason === 'in_use' && sid) { try { await pb1dRace(sbClient.rpc('pb_session_why', { p_session: sid }), 15000); } catch (e) {} } // the refused sign-in is removed on the server
   }
   async function pb1dSeen(force) {
     if (!sbClient || typeof sbClient.rpc !== 'function' || !sbUser || navigator.onLine === false || PB_1D.busy) return;
@@ -89,7 +92,7 @@ MODULE = r"""  // ---- one device per login (Nov 20) ----
   window.pb1dSeen = pb1dSeen; window.pb1dWhy = pb1dWhy;
   if (sbClient) {
     try { sbClient.auth.onAuthStateChange((event, session) => { // (nothing is awaited inside the callback)
-      if (session && session.user) { pb1dNote(session); if (event === 'SIGNED_IN') pb1dSoon(4000, true); }
+      if (session && session.user) { pb1dNote(session); if (event === 'SIGNED_IN') pb1dSoon(300, true); } // at once: a sign-in refused because the login is in use is said right away
       else if (event === 'SIGNED_OUT') pb1dSoon(1500);
     }); } catch (e) {}
     setTimeout(() => { if (sbUser) pb1dSeen(false); else pb1dWhy(); }, 6000);
@@ -118,7 +121,7 @@ MODULE = r"""  // ---- one device per login (Nov 20) ----
   window.pb1dNoteText = pb1dNoteText;
   window.pb1dOwnerHtml = function (r) { // Beta Accounts
     const L = r && !r.error && r.data && r.data.ok && Array.isArray(r.data.notes) ? r.data.notes : [];
-    return L.length ? '<div class="pb-own-co" id="pbOwnShare"><div class="nm">Logins used in two places</div>' + L.slice(0, 20).map((n) => '<div class="ln">' + pb1dNoteText(n) + (n.company ? ' (' + escapeHtml(n.company) + ')' : '') + '</div>').join('') + '<div class="ln">Nothing was blocked.</div></div>' : '';
+    return L.length ? '<div class="pb-own-co" id="pbOwnShare"><div class="nm">Logins used in two places</div>' + L.slice(0, 20).map((n) => '<div class="ln">' + pb1dNoteText(n) + (n.company ? ' (' + escapeHtml(n.company) + ')' : '') + '</div>').join('') + '</div>' : '';
   };
   async function pb1dCrewNotes() { // Crew members (company account)
     const box = document.getElementById('crShare'); if (!box) return;
@@ -127,7 +130,7 @@ MODULE = r"""  // ---- one device per login (Nov 20) ----
     if (!sbUser || sbUser.id !== uid || pbCurrentScreen !== 'crewMembers') return;
     const L = r && !r.error && r.data && r.data.ok && Array.isArray(r.data.notes) ? r.data.notes : [];
     if (!L.length) { box.hidden = true; box.innerHTML = ''; return; }
-    box.innerHTML = L.slice(0, 5).map((n) => '<p style="margin:0 0 4px;">' + pb1dNoteText(n) + '</p>').join('') + '<p style="margin:0;">Each person needs their own login. Nothing was blocked.</p>';
+    box.innerHTML = L.slice(0, 5).map((n) => '<p style="margin:0 0 4px;">' + pb1dNoteText(n) + '</p>').join('') + '<p style="margin:0;">Each person needs their own login.</p>';
     box.hidden = false;
   }
   window.pbScreenHooks.push((name) => { const box = document.getElementById('crShare'); if (name === 'crewMembers') pb1dCrewNotes(); else if (box && !box.hidden && name !== 'crewMembers') { box.hidden = true; box.innerHTML = ''; } });

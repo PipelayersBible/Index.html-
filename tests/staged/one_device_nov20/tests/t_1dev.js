@@ -8,6 +8,7 @@ let fails=0,passes=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(c)pa
 const IOS='Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
 const AND='Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36';
 const WIN='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
+const INUSE='Account In Use This account is in use on another phone right now. Sign out there first, or try again in 15 minutes. OK';
 const MSG='Your account was signed in on another phone, so this phone was signed out. Your saved work is kept and will send when you sign in again.';
 const scr=(p)=>p.evaluate(()=>{const s=document.querySelector('.pb-screen.active');return s?s.id.replace('screen-',''):'';});
 const modal=(p)=>p.evaluate(()=>{const d=document.getElementById('pbModalOverlay');return d&&getComputedStyle(d).display!=='none'?d.innerText.replace(/\s+/g,' ').trim():'';});
@@ -25,7 +26,7 @@ const EMPTY_DASH=`window.__rpcOverride=Object.assign(window.__rpcOverride||{},{p
  const close=async(...ps)=>{for(const p of ps){if(p.errs.length)console.log('  page errors ['+p.__n+']:',p.errs.slice(0,3));await p.context().close();}};
  const noErr=(...ps)=>ps.every(p=>!p.errs.length);
 
- // ===== 1. two phones, one login: the second sign-in signs the first out, said once; the flag is recorded =====
+ // ===== 1. two phones, one login: refused while the first is in use; once it is idle the second sign-in signs it out, said once; the flag is recorded =====
  if(run(1)){const srv=require('./srv1dev')();const F=srv.FOREMAN;
   const P1=track((await boot(b,BASE,srv,{user:srv.USERS[F],ua:IOS,wait:7500})).p,'1:P1');
   ok(await scr(P1)==='home'&&srv.live(F)===1,'1: phone 1 is signed in as Ray (1 session on the server)');
@@ -37,7 +38,18 @@ const EMPTY_DASH=`window.__rpcOverride=Object.assign(window.__rpcOverride||{},{p
   const P2=track((await boot(b,BASE,srv,{ua:AND,wait:3500})).p,'1:P2');
   ok(await scr(P2)==='login','1: phone 2 starts signed out');
   await login(P2,'ray@example.com');
-  ok(await scr(P2)==='home'&&await who(P2)===F,'1: phone 2 logs in with the same email and password and lands on Home');
+  const mi=await modal(P2);
+  ok(mi===INUSE,'1: phone 2 logs in with the same email and password while phone 1 is in use: "'+mi.slice(15,75)+'…"');
+  ok(await scr(P2)==='login'&&await who(P2)===null,'1: phone 2 is back on Log In, not signed in');
+  ok(srv.live(F)===1&&[...srv.D.sess.values()].filter(x=>x.blocked).every(x=>x.removed)&&[...srv.D.sess.values()].some(x=>x.blocked),'1: SERVER: one live session (phone 1); the refused sign-in was removed');
+  ok(await fits(P2,'#pbModalOverlay'),'1: the in-use message fits 390 px');await P2.screenshot({path:SHOTS+'/in_use_light.png'});
+  await reach(P1);
+  ok(await who(P1)===F&&!(await modal(P1))&&await scr(P1)==='home','1: phone 1 is untouched: still signed in, no message');
+  const tr=srv.D.flags.find(f=>f.kind==='tried_in_use');ok(tr&&tr.n===1,'1: SERVER: the refused try is recorded (silently)');
+  await modalClick(P2,'OK');
+  srv.idle(16); // phone 1 is not used for 16 minutes (lost, dead, left at home)
+  await login(P2,'ray@example.com');
+  ok(await scr(P2)==='home'&&await who(P2)===F,'1: 16 minutes later phone 2 logs in and lands on Home');
   ok(srv.live(F)===1,'1: SERVER: still exactly one live session for the login ('+srv.live(F)+')');
   const old=[...srv.D.sess.values()].find(s=>s.device===d1);
   ok(old&&!old.alive&&old.reason==='other_device','1: SERVER: phone 1\'s session was ended, reason other_device');
@@ -55,7 +67,7 @@ const EMPTY_DASH=`window.__rpcOverride=Object.assign(window.__rpcOverride||{},{p
   // the flags: phone 2 checks in with a GPS fix 35 miles away
   await setFix(P2,40.5,-83.0);await P2.evaluate(()=>window.pb1dSeen(true));await P2.waitForTimeout(800);
   const kinds=srv.D.flags.map(f=>f.kind+(f.miles?':'+f.miles:'')).sort().join(',');
-  ok(kinds==='far_apart:34,minutes_apart'||kinds==='far_apart:35,minutes_apart','1: SERVER: flags recorded: '+kinds);
+  ok(kinds==='far_apart:34,tried_in_use'||kinds==='far_apart:35,tried_in_use','1: SERVER: flags recorded: '+kinds);
   ok(srv.live(F)===1&&await who(P2)===F,'1: nothing was blocked by the flag');
   ok(noErr(P1,P2),'1: no page errors');await close(P1,P2);
   // the notes: the company account (its own login, on a computer) and the app owner
@@ -63,20 +75,22 @@ const EMPTY_DASH=`window.__rpcOverride=Object.assign(window.__rpcOverride||{},{p
   ok(srv.live(F)===1&&srv.live(srv.OFFICE)===1,'1: the company account on a computer is its own login: Ray\'s phone stays signed in');
   await O.evaluate(()=>window.pbOpenCrewMembers());await O.waitForTimeout(3500);
   const note=await O.evaluate(()=>{const e=document.getElementById('crShare');return e&&!e.hidden?e.innerText.replace(/\s+/g,' ').trim():'';});
-  ok(/^Ray’s login was used on two phones 3[45] miles apart at \d{1,2}:\d\d\s?[AP]M on [A-Z][a-z]{2} \d{1,2}\. Each person needs their own login\. Nothing was blocked\.$/.test(note),'1: Crew members (company account) shows the quiet note: "'+note+'"');
+  ok(/^Ray’s login was used on two phones 3[45] miles apart at \d{1,2}:\d\d\s?[AP]M on [A-Z][a-z]{2} \d{1,2}\. Each person needs their own login\.$/.test(note),'1: Crew members (company account) shows the quiet note, and not the refused try: "'+note+'"');
   await O.screenshot({path:SHOTS+'/crew_note_computer.png'});
   srv.D.admins.add(srv.OFFICE);
   await O.evaluate(()=>window.pbOwnerOpen());await O.waitForTimeout(2500);
   const adm=await O.evaluate(()=>{const e=document.getElementById('pbOwnShare');return e?e.innerText.replace(/\s+/g,' ').trim():'';});
-  ok(/^Logins used in two places Ray’s login was used on two phones 3[45] miles apart at .* \(DIG Civil Construction\) Nothing was blocked\.$/.test(adm),'1: Beta Accounts (app owner) shows it with the company: "'+adm.slice(0,120)+'"');
+  ok(/^Logins used in two places Ray’s login was used on two phones 3[45] miles apart at .* \(DIG Civil Construction\)$/.test(adm),'1: Beta Accounts (app owner) shows it with the company: "'+adm.slice(0,120)+'"');
   ok(noErr(O),'1: no page errors (office)');await close(O);
   // a crew member never sees the note box
-  const P3=track((await boot(b,BASE,srv,{ua:IOS,wait:3000})).p,'1:P3');await login(P3,'ray@example.com');
+  srv.idle(16);const P3=track((await boot(b,BASE,srv,{ua:IOS,wait:3000})).p,'1:P3');await login(P3,'ray@example.com');
   ok(await P3.evaluate(()=>{const e=document.getElementById('crShare');return !!e&&e.hidden;}),'1: a crew member sees no note');
   // 390 px, dark: the note on a phone
   await close(P3);
   const O2=track((await boot(b,BASE,srv,{user:srv.USERS[srv.OFFICE],ua:IOS,dark:true,init:EMPTY_DASH,wait:6000})).p,'1:O2');
-  ok(srv.live(srv.OFFICE)===1,'1: the company account signing in on a phone ends its computer session (same rule for the company account)');
+  ok(srv.live(srv.OFFICE)===2,'1: the company account may be on 2 devices: its computer stays signed in when its phone signs in');
+  const third=srv.call('auth:password',null,{email:'tester@example.com'});
+  ok(srv.live(srv.OFFICE)===2&&srv.D.sess.get(third.sid).blocked===true,'1: SERVER: a third device on the company account is refused while both are in use');
   await O2.evaluate(()=>window.pbOpenCrewMembers());await O2.waitForTimeout(3500);
   ok(await fits(O2,'#crShare'),'1: the note fits 390 px (dark)');await O2.evaluate(()=>document.getElementById('crShare').scrollIntoView());await O2.screenshot({path:SHOTS+'/crew_note_dark.png'});await close(O2);
  }
@@ -84,7 +98,7 @@ const EMPTY_DASH=`window.__rpcOverride=Object.assign(window.__rpcOverride||{},{p
  // ===== 2. the old phone learns it from a refused token refresh (no request of its own first) =====
  if(run(2)){const srv=require('./srv1dev')();const F=srv.FOREMAN;
   const P1=track((await boot(b,BASE,srv,{user:srv.USERS[F],ua:IOS,dark:true,wait:7500})).p,'2:P1');
-  const P2=track((await boot(b,BASE,srv,{ua:IOS,wait:3500})).p,'2:P2');await login(P2,'ray@example.com');
+  srv.idle(16);const P2=track((await boot(b,BASE,srv,{ua:IOS,wait:3500})).p,'2:P2');await login(P2,'ray@example.com');
   const r=await P1.evaluate(()=>window.__fakeRefresh());await P1.waitForTimeout(4500);
   ok(r==='signed_out'&&await scr(P1)==='login','2: the refresh is refused and the phone goes to Log In');
   ok(await modal(P1)==='Signed Out '+MSG+' OK','2: it asks the server why and says it: "'+(await modal(P1)).slice(0,50)+'…"');
@@ -107,15 +121,15 @@ const EMPTY_DASH=`window.__rpcOverride=Object.assign(window.__rpcOverride||{},{p
   await offline(P1,true);
   await modalClick(P1,'Got It');await P1.waitForTimeout(800);
   ok(!!(await P1.evaluate((K)=>localStorage.getItem(K),K))&&srv.st.notices.length===0,'3: with no signal, the record waits on the phone');
-  const P2=track((await boot(b,BASE,srv,{ua:AND,wait:3500})).p,'3:P2');await login(P2,'ray@example.com');
-  ok(srv.live(F)===1&&await who(P2)===F,'3: meanwhile phone 2 signs in to the same login');
+  srv.idle(16);const P2=track((await boot(b,BASE,srv,{ua:AND,wait:3500})).p,'3:P2');await login(P2,'ray@example.com');
+  ok(srv.live(F)===1&&await who(P2)===F,'3: phone 1 has had no signal for 16 minutes; phone 2 signs in to the same login');
   await P1.evaluate(()=>{window.pb1dSeen(true);pbGoto('settings');pbGoto('home');});await P1.waitForTimeout(2500);
   ok(await who(P1)===F&&!(await modal(P1))&&await scr(P1)==='home','3: phone 1, still without signal, keeps working: signed in on the phone, no message');
   await offline(P1,false);await reach(P1);
   ok(await modal(P1)==='Signed Out '+MSG+' OK'&&await scr(P1)==='login','3: signal back: phone 1 is signed out and told why');
   ok(!!(await P1.evaluate((K)=>localStorage.getItem(K),K)),'3: the unsent record is still on phone 1');
   ok(srv.st.notices.length===0&&!srv.D.calls.some(c=>c[0]==='pb_notice_ack'),'3: SERVER: nothing from the ended session was filed');
-  await modalClick(P1,'OK');await login(P1,'ray@example.com');
+  await modalClick(P1,'OK');srv.idle(16);await login(P1,'ray@example.com');
   await P1.evaluate(()=>{try{pbObClose();}catch(e){}pbGoto('settings');pbGoto('home');});await P1.waitForTimeout(3500);
   const acks=srv.D.calls.filter(c=>c[0]==='pb_notice_ack');
   ok(acks.length===1&&acks[0][1]===F&&acks[0][2].p_notice==='crew_notice','3: after signing in again the record is sent once, under Ray\'s account ('+acks.length+')');
@@ -149,11 +163,11 @@ const EMPTY_DASH=`window.__rpcOverride=Object.assign(window.__rpcOverride||{},{p
   await HS.evaluate(()=>window.pbObPasteNow());await HS.waitForTimeout(6500);
   ok(await who(HS)===OF&&await scr(HS)==='home','4: the Home Screen app signs in with the code');
   const olds=[...srv.D.sess.values()].filter(s=>s.uid===OF&&!s.alive);
-  ok(srv.live(OF)===1&&olds.length===1&&olds[0].reason==='moved','4: SERVER: one live session; Safari\'s was ended as "moved", not left behind');
+  ok(srv.live(OF)===1&&olds.length===1&&olds[0].reason==='moved','4: SERVER: the code is not refused though Safari was in use seconds ago; one live session; Safari\'s was ended as "moved"');
   await reach(SA);const mm=await modal(SA);
   ok(mm==='Signed Out Your account is now signed in in the Home Screen app, so this page was signed out. Open the app from its icon. Your saved work is kept. OK'&&await scr(SA)==='login','4: Safari, next time it reaches the server: "'+mm.slice(11,80)+'…"');
   await HS.evaluate(()=>window.pb1dSeen(true));await HS.waitForTimeout(800);
-  ok(srv.D.flags.length===0,'4: a Home Screen move records no sharing flag');
+  ok(srv.D.flags.length===0,'4: a Home Screen move records no flag at all');
   ok(await who(HS)===OF&&srv.live(OF)===1,'4: the Home Screen app stays signed in');
   ok(noErr(SA,HS),'4: no page errors');await close(SA,HS);
  }
@@ -166,6 +180,23 @@ const EMPTY_DASH=`window.__rpcOverride=Object.assign(window.__rpcOverride||{},{p
   ok(srv.live(F)===2&&await who(P1)===F&&await who(P2)===F&&!(await modal(P1)),'5: both phones stay signed in, no message (as today)');
   await P1.evaluate(()=>window.__fakeRefresh());
   ok(noErr(P1,P2),'5: no page errors');await close(P1,P2);
+ }
+ // ===== 6. in use: an open permit counts; Log Out on the first phone lets the second in at once =====
+ if(run(6)){const srv=require('./srv1dev')();const F=srv.FOREMAN;
+  const P1=track((await boot(b,BASE,srv,{user:srv.USERS[F],ua:IOS,wait:7500})).p,'6:P1');
+  srv.D.hold.add(F);srv.idle(16); // a confined space permit is open on phone 1, which has not checked in for 16 minutes
+  const P2=track((await boot(b,BASE,srv,{ua:AND,dark:true,wait:3500})).p,'6:P2');await login(P2,'ray@example.com');
+  ok(await modal(P2)===INUSE&&srv.live(F)===1&&await scr(P2)==='login','6: an open permit on phone 1: phone 2 is refused even though phone 1 has been quiet');
+  await P2.screenshot({path:SHOTS+'/in_use_dark.png'});await modalClick(P2,'OK');
+  await reach(P1);ok(await who(P1)===F&&!(await modal(P1)),'6: the permit phone is untouched');
+  srv.D.hold.delete(F);
+  await login(P2,'ray@example.com');
+  ok(await modal(P2)===INUSE,'6: permit closed, phone 1 in use again (it just checked in): still refused');await modalClick(P2,'OK');
+  await P1.evaluate(()=>{window.pbLogout();});await P1.waitForTimeout(800);await modalClick(P1,'Continue');await P1.waitForTimeout(6000);
+  ok(srv.live(F)===0,'6: phone 1 logs out');
+  await login(P2,'ray@example.com');
+  ok(await scr(P2)==='home'&&await who(P2)===F&&srv.live(F)===1&&!(await modal(P2)),'6: "Sign out there first": phone 2 gets in at once, no wait');
+  ok(noErr(P1,P2),'6: no page errors');await close(P1,P2);
  }
  console.log(fails?('FAILED '+fails+' (passed '+passes+')'):('ALL PASS ('+passes+')'));await b.close();process.exit(fails?1:0);
 })();

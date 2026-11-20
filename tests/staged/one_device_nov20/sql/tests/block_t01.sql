@@ -4,7 +4,8 @@ begin;
 -- What it adds (nothing existing is changed):
 --   (reads pb_onboard.links, pb_safety.open_permits / permits, auth.mfa_factors; writes none of them)
 --   pb_auth.*                 tables: sessions_log (every sign-in and how it ended), devices, allow (exceptions), flags
---   trigger on auth.sessions  a new sign-in ends the login's other sessions (their refresh tokens go with them)
+--   trigger on auth.sessions  a new sign-in is REFUSED while the login is in use on another device (checked in during the
+--                             last 15 minutes, or a confined space permit open); otherwise it ends the idle session(s)
 --   public.pb_session_gate()  the API's pre-request check: a request from an ended session is refused (02 turns it on)
 --   public.pb_session_why()   the signed-out phone asks why (so it can say it once)
 --   public.pb_device_seen()   the app's check-in: device id, kind, last GPS fix if it has one; records sharing flags
@@ -22,7 +23,7 @@ create table if not exists pb_auth.sessions_log (
   device_id    text,                 -- from the app's check-in
   last_seen_at timestamptz,          -- last check-in
   ended_at     timestamptz,
-  end_reason   text,                 -- other_device | moved (Home Screen code) | ended (log out, lost phone, removed)
+  end_reason   text,                 -- other_device | moved (Home Screen code) | in_use (this sign-in was refused) | ended (log out, lost phone, removed)
   replaced_by  uuid
 );
 create index if not exists sessions_log_user on pb_auth.sessions_log (user_id, started_at desc);
@@ -41,7 +42,7 @@ create table if not exists pb_auth.devices (
   primary key (user_id, device_id)
 );
 
--- Exceptions: a login allowed on more than one device at once. Empty = everyone gets one.
+-- Exceptions: a login allowed on more (or fewer) devices at once than pb_auth.allowed() gives it by rule.
 create table if not exists pb_auth.allow (
   user_id uuid primary key references auth.users (id) on delete cascade,
   devices integer not null check (devices between 1 and 5),
@@ -52,7 +53,7 @@ create table if not exists pb_auth.allow (
 create table if not exists pb_auth.flags (
   id       bigserial primary key,
   user_id  uuid not null references auth.users (id) on delete cascade,
-  kind     text not null check (kind in ('minutes_apart', 'far_apart', 'back_and_forth')),
+  kind     text not null check (kind in ('minutes_apart', 'far_apart', 'back_and_forth', 'tried_in_use')),
   dedupe   text not null,
   at       timestamptz not null default now(),
   kind_a   text, kind_b text,        -- the two devices: phone | tablet | computer
@@ -74,50 +75,67 @@ insert into pb_auth.sessions_log (session_id, user_id, started_at)
 select s.id, s.user_id, coalesce(s.created_at, now()) from auth.sessions s
 on conflict (session_id) do nothing;
 
--- A sign-in finished: end the login's other sessions, keeping the newest N (N = 1 unless pb_auth.allow says more).
-create or replace function pb_auth.take_over(p_session uuid, p_user uuid)
- returns integer language plpgsql security definer set search_path to ''
+-- How many devices a login may be on at once: its row in pb_auth.allow, else 2 for a company account (the owner login)
+-- and for the app owner, else 1.
+create or replace function pb_auth.allowed(p_user uuid)
+ returns integer language sql stable security definer set search_path to ''
 as $function$
-declare v_allow integer; v_reason text; v_mfa boolean; r record; n integer := 0;
+  select coalesce((select a.devices from pb_auth.allow a where a.user_id = p_user),
+    case when exists (select 1 from public.companies c where c.owner_user_id = p_user)
+           or exists (select 1 from pb_support.admins a where a.user_id = p_user) then 2 else 1 end)
+$function$;
+
+-- A sign-in finished. Returns 'ok' (it is the login's session now; idle ones over the limit were ended) or 'in_use'
+-- (REFUSED: the login is in use on another device; this session is marked and the gate refuses its requests).
+--   in use = that device checked in during the last 15 minutes (the app checks in every 5 minutes while open), or the
+--            login has a confined space permit open (saved in the last 2 hours, not closed) on a signed-in device.
+--   A device idle longer (lost, dead, left at home) is taken over, so nobody is locked out for more than 15 minutes
+--   (2 hours after the last save of an open permit). Lost Phone and Log Out end the sessions, so there is no wait at all.
+--   A Home Screen sign-in code always moves the session (reason 'moved').
+create or replace function pb_auth.take_over(p_session uuid, p_user uuid)
+ returns text language plpgsql security definer set search_path to ''
+as $function$
+declare v_allow integer := pb_auth.allowed(p_user); v_reason text; v_mfa boolean; v_need integer; r record;
 begin
-  select a.devices into v_allow from pb_auth.allow a where a.user_id = p_user;
-  v_allow := coalesce(v_allow, 1);
   v_mfa := exists (select 1 from auth.mfa_factors f where f.user_id = p_user and f.status = 'verified');
+  -- sign-ins refused earlier are cleared away (their rows could not be removed while they were being made)
+  delete from auth.sessions s using pb_auth.sessions_log l where s.user_id = p_user and s.id <> p_session and l.session_id = s.id and l.end_reason = 'in_use';
+  -- old rows go (120 days)
+  delete from pb_auth.sessions_log l where l.user_id = p_user and coalesce(l.ended_at, l.started_at) < now() - interval '120 days'
+    and not exists (select 1 from auth.sessions s where s.id = l.session_id);
+  delete from pb_auth.devices d where d.user_id = p_user and d.last_seen < now() - interval '120 days';
   -- a Home Screen sign-in code used just now (crew-join "signin" stamps used_at before the session is made): the login moved
   v_reason := case when exists (select 1 from pb_onboard.links l where l.kind = 'handoff' and l.for_user = p_user
                                    and l.used_at > now() - interval '3 minutes') then 'moved' else 'other_device' end;
-  -- SAFETY: a login with a confined space permit open right now (its phone saved it to the server in the last 12 hours
-  -- and has not closed it) is not cut off: the permit phone keeps its backup, the company's live view and emergency
-  -- alerts. Both devices work until the permit is closed; the next check-in after that ends the older one (settle).
-  if v_reason = 'other_device' and exists (select 1 from pb_safety.open_permits o where o.user_id = p_user and o.saved_at > now() - interval '12 hours'
-        and not exists (select 1 from pb_safety.permits p where p.user_id = o.user_id and p.client_permit_id = o.client_permit_id)) then
-    return 0;
+  -- the login's other finished sessions (with two-step login, one still waiting for its code never took the login)
+  select count(*) into v_need from auth.sessions s where s.user_id = p_user and s.id <> p_session and (not v_mfa or s.aal = 'aal2');
+  if v_reason = 'moved' and v_need > 0 then v_need := greatest(v_need - (v_allow - 1), 1); -- the page that made the code always goes
+  else v_need := v_need - (v_allow - 1); end if;
+  if v_need <= 0 then return 'ok'; end if;
+  if v_reason = 'other_device' and (
+       exists (select 1 from (select coalesce(l.last_seen_at, l.started_at, s.created_at) as act
+                                from auth.sessions s left join pb_auth.sessions_log l on l.session_id = s.id
+                               where s.user_id = p_user and s.id <> p_session and (not v_mfa or s.aal = 'aal2')
+                               order by 1 asc nulls first limit v_need) x where x.act > now() - interval '15 minutes')
+    or exists (select 1 from pb_safety.open_permits o where o.user_id = p_user and o.saved_at > now() - interval '2 hours'
+                  and not exists (select 1 from pb_safety.permits p where p.user_id = o.user_id and p.client_permit_id = o.client_permit_id))) then
+    insert into pb_auth.sessions_log as l (session_id, user_id, started_at, ended_at, end_reason) values (p_session, p_user, now(), now(), 'in_use')
+    on conflict (session_id) do update set ended_at = now(), end_reason = 'in_use';
+    insert into pb_auth.flags as f (user_id, kind, dedupe, at) values (p_user, 'tried_in_use', to_char(now() at time zone 'utc', 'YYYY-MM-DD'), now())
+    on conflict (user_id, kind, dedupe) do update set n = f.n + 1, at = excluded.at;
+    return 'in_use';
   end if;
-  -- (with two-step login, a session still waiting for its code is left alone: it never took the login)
-  for r in select s.id from auth.sessions s where s.user_id = p_user and s.id <> p_session and (not v_mfa or s.aal = 'aal2')
-            order by s.created_at desc nulls last, s.id offset greatest(v_allow - 1, 0) loop
+  -- end the idle ones over the limit: the longest idle first (after a Home Screen code: the one used last, the page that made it)
+  for r in select s.id from auth.sessions s left join pb_auth.sessions_log l on l.session_id = s.id
+            where s.user_id = p_user and s.id <> p_session and (not v_mfa or s.aal = 'aal2')
+            order by case when v_reason = 'moved' then -extract(epoch from coalesce(l.last_seen_at, l.started_at, s.created_at))
+                          else extract(epoch from coalesce(l.last_seen_at, l.started_at, s.created_at)) end asc nulls first, s.id limit v_need loop
     insert into pb_auth.sessions_log as l (session_id, user_id, started_at, ended_at, end_reason, replaced_by)
     values (r.id, p_user, now(), now(), v_reason, p_session)
     on conflict (session_id) do update set ended_at = now(), end_reason = v_reason, replaced_by = p_session where l.ended_at is null;
     delete from auth.sessions s where s.id = r.id; -- its refresh tokens go with it
-    n := n + 1;
   end loop;
-  delete from pb_auth.sessions_log l where l.user_id = p_user and coalesce(l.ended_at, l.started_at) < now() - interval '120 days'
-    and not exists (select 1 from auth.sessions s where s.id = l.session_id);
-  return n;
-end $function$;
-
--- More finished sign-ins than allowed (a permit was open when the last one signed in): the newest takes over now.
-create or replace function pb_auth.settle(p_user uuid)
- returns integer language plpgsql security definer set search_path to ''
-as $function$
-declare v_allow integer; v_mfa boolean; v_new uuid;
-begin
-  select a.devices into v_allow from pb_auth.allow a where a.user_id = p_user;
-  v_mfa := exists (select 1 from auth.mfa_factors f where f.user_id = p_user and f.status = 'verified');
-  if (select count(*) from auth.sessions s where s.user_id = p_user and (not v_mfa or s.aal = 'aal2')) <= coalesce(v_allow, 1) then return 0; end if;
-  select s.id into v_new from auth.sessions s where s.user_id = p_user and (not v_mfa or s.aal = 'aal2') order by s.created_at desc nulls last, s.id limit 1;
-  return pb_auth.take_over(v_new, p_user);
+  return 'ok';
 end $function$;
 
 -- auth.sessions triggers. Whatever goes wrong in here, the sign-in itself goes ahead.
@@ -163,9 +181,9 @@ drop trigger if exists pb_one_device_del on auth.sessions;
 create trigger pb_one_device_del after delete on auth.sessions for each row execute function pb_auth.session_ended();
 
 -- The API's pre-request check (PostgREST db-pre-request; 02_gate_on.sql turns it on). It runs before every RPC and table
--- request. A signed-in request whose session no longer exists is refused with the words every RPC already uses when
+-- request. A signed-in request whose session no longer exists, or whose sign-in was refused (in_use), is refused with the words every RPC already uses when
 -- nobody is signed in (pb:signed_out), so the app keeps the work and tries later. No session id, the app's own key, the
--- service key: untouched. One primary-key read; no writes.
+-- service key: untouched. Two primary-key reads; no writes.
 create or replace function public.pb_session_gate()
  returns void language plpgsql security definer set search_path to ''
 as $function$
@@ -176,20 +194,24 @@ begin
   if v_claims->>'role' is distinct from 'authenticated' then return; end if;
   v_s := v_claims->>'session_id';
   if v_s is null or v_s !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then return; end if;
-  if exists (select 1 from auth.sessions s where s.id = v_s::uuid) then return; end if;
   select l.end_reason into v_reason from pb_auth.sessions_log l where l.session_id = v_s::uuid;
+  if v_reason is distinct from 'in_use' and exists (select 1 from auth.sessions s where s.id = v_s::uuid) then return; end if;
   raise exception using errcode = 'PT401', message = 'pb:signed_out', detail = coalesce(v_reason, 'ended');
 end $function$;
 revoke all on function public.pb_session_gate() from public;
 grant execute on function public.pb_session_gate() to public; -- every API role must be able to run it, or every request fails
 
--- The signed-out phone asks why. Only "another device took over" and "moved to the Home Screen app" are answered.
+-- The signed-out phone asks why. Answered: another device took over, moved to the Home Screen app, or refused because
+-- the login is in use (that refused session is removed here; nothing else can be removed through this).
 create or replace function public.pb_session_why(p_session uuid)
- returns jsonb language sql stable security definer set search_path to ''
+ returns jsonb language plpgsql security definer set search_path to ''
 as $function$
-  select jsonb_build_object('ok', true, 'reason',
-    (select l.end_reason from pb_auth.sessions_log l where l.session_id = p_session and l.ended_at is not null and l.end_reason in ('other_device', 'moved')))
-$function$;
+declare v_reason text;
+begin
+  select l.end_reason into v_reason from pb_auth.sessions_log l where l.session_id = p_session and l.ended_at is not null and l.end_reason in ('other_device', 'moved', 'in_use');
+  if v_reason = 'in_use' then delete from auth.sessions s where s.id = p_session; end if;
+  return jsonb_build_object('ok', true, 'reason', v_reason);
+end $function$;
 revoke all on function public.pb_session_why(uuid) from public;
 grant execute on function public.pb_session_why(uuid) to anon, authenticated;
 
@@ -222,24 +244,18 @@ begin
     fix_at = coalesce(excluded.fix_at, d.fix_at);
   if v_s is null or v_s !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then return jsonb_build_object('ok', true); end if;
   v_sid := v_s::uuid;
-  perform pb_auth.settle(v_uid); -- a permit that held two devices has closed: the newest sign-in takes over
+  delete from auth.sessions s using pb_auth.sessions_log l where s.user_id = v_uid and s.id <> v_sid and l.session_id = s.id and l.end_reason = 'in_use'; -- refused sign-ins left behind
   insert into pb_auth.sessions_log as l (session_id, user_id, device_id, last_seen_at) values (v_sid, v_uid, p_device, now())
   on conflict (session_id) do update set device_id = excluded.device_id, last_seen_at = now() where l.user_id = v_uid;
 
   -- Sharing flags. Nothing is blocked; these are notes.
   -- The session this sign-in replaced, when it was on a different device (a Home Screen move is not counted).
+  -- (A second device within minutes is no longer a takeover: it is refused, and recorded as tried_in_use by take_over.)
   select l.session_id, l.last_seen_at, l.ended_at, d.kind, d.lat, d.lng, d.fix_at into prev
     from pb_auth.sessions_log l join pb_auth.devices d on d.user_id = l.user_id and d.device_id = l.device_id
    where l.user_id = v_uid and l.replaced_by = v_sid and l.end_reason = 'other_device' and l.device_id <> p_device
    order by l.ended_at desc limit 1;
   if found then
-    -- in use on the other device within 15 minutes of this sign-in
-    if prev.last_seen_at is not null and prev.ended_at - prev.last_seen_at <= interval '15 minutes' then
-      insert into pb_auth.flags (user_id, kind, dedupe, at, kind_a, kind_b, minutes)
-      values (v_uid, 'minutes_apart', prev.session_id::text, prev.ended_at, prev.kind, v_kind,
-              greatest(0, floor(extract(epoch from (prev.ended_at - prev.last_seen_at)) / 60)::integer))
-      on conflict (user_id, kind, dedupe) do nothing;
-    end if;
     -- the two devices' GPS fixes, within the same hour, 10 miles or more apart
     if v_fix is not null and prev.fix_at is not null and abs(extract(epoch from (v_fix - prev.fix_at))) <= 3600 then
       v_miles := pb_auth.miles(prev.lat, prev.lng, v_lat, v_lng);
@@ -270,10 +286,10 @@ end $function$;
 revoke all on function public.pb_device_seen(text, text, double precision, double precision, timestamptz, text) from public;
 grant execute on function public.pb_device_seen(text, text, double precision, double precision, timestamptz, text) to authenticated;
 
--- One note per login per day (UTC), the strongest: far apart, then back and forth, then minutes apart. Last 30 days.
+-- One note per login per day (UTC), the strongest: far apart, then back and forth. Last 30 days.
 create or replace view pb_auth.strongest_flags as
   select distinct on (f.user_id, (f.at at time zone 'utc')::date) f.*
-    from pb_auth.flags f where f.at > now() - interval '30 days'
+    from pb_auth.flags f where f.at > now() - interval '30 days' and f.kind in ('far_apart', 'back_and_forth') -- the others are recorded, not shown
    order by f.user_id, (f.at at time zone 'utc')::date, case f.kind when 'far_apart' then 1 when 'back_and_forth' then 2 else 3 end, f.at desc;
 revoke all on pb_auth.strongest_flags from public, anon, authenticated;
 
@@ -325,7 +341,7 @@ do $test$
 declare
   pass integer := 0; fail integer := 0; fails text := ''; notes text := '';
   u1 uuid := gen_random_uuid(); u2 uuid := gen_random_uuid(); u3 uuid := gen_random_uuid(); o1 uuid := gen_random_uuid();
-  o2 uuid := gen_random_uuid(); ad uuid := gen_random_uuid(); u4 uuid := gen_random_uuid();
+  o2 uuid := gen_random_uuid(); ad uuid := gen_random_uuid(); u4 uuid := gen_random_uuid(); u5 uuid := gen_random_uuid(); u6 uuid := gen_random_uuid();
   c1 uuid; c2 uuid; s1 uuid; s2 uuid; s3 uuid; s4 uuid; sa uuid; sb uuid; sc uuid; sd uuid; j jsonb; t text; d text; n integer; -- (n: a count; the flags column is always written flags.n / f.n)
   as_auth boolean := false; member_ok boolean := true;
   tag text := substr(md5(random()::text), 1, 10);
@@ -333,12 +349,12 @@ begin
   -- ---------- helpers are inlined (a DO block has no local functions): chk = the two lines after each test ----------
   insert into auth.users (id, email) values (u1, 'pb1dev-' || tag || '-u1@example.invalid'), (u2, 'pb1dev-' || tag || '-u2@example.invalid'),
     (u3, 'pb1dev-' || tag || '-u3@example.invalid'), (o1, 'pb1dev-' || tag || '-o1@example.invalid'), (o2, 'pb1dev-' || tag || '-o2@example.invalid'),
-    (ad, 'pb1dev-' || tag || '-ad@example.invalid'), (u4, 'pb1dev-' || tag || '-u4@example.invalid');
+    (ad, 'pb1dev-' || tag || '-ad@example.invalid'), (u4, 'pb1dev-' || tag || '-u4@example.invalid'), (u5, 'pb1dev-' || tag || '-u5@example.invalid'), (u6, 'pb1dev-' || tag || '-u6@example.invalid');
   -- sign-ins are made by the auth service's own role where this session may take it
   begin set local role supabase_auth_admin; as_auth := true; reset role; exception when others then as_auth := false; end;
   notes := notes || case when as_auth then ' [sessions inserted as supabase_auth_admin]' else ' [sessions inserted as ' || current_user || ']' end;
 
-  -- ===== 1. a second sign-in ends the first =====
+  -- ===== 1. a second sign-in ends the first when the first has been idle (here: 2 hours) =====
   s1 := gen_random_uuid(); s2 := gen_random_uuid();
   if as_auth then set local role supabase_auth_admin; end if;
   insert into auth.sessions (id, user_id, created_at, aal) values (s1, u1, now() - interval '2 hours', 'aal1');
@@ -391,6 +407,7 @@ begin
   if not exists (select 1 from auth.sessions where id = s2) and exists (select 1 from pb_auth.sessions_log where session_id = s2 and end_reason = 'moved' and replaced_by = s3)
      and public.pb_session_why(s2)->>'reason' = 'moved' then pass := pass + 1; else fail := fail + 1; fails := fails || ' 4-handoff-not-moved'; end if;
   update pb_onboard.links set used_at = now() - interval '10 minutes' where for_user = u1 and kind = 'handoff'; -- an old code doesn't count
+  update pb_auth.sessions_log set started_at = now() - interval '1 hour' where session_id = s3; -- and s3 has been idle
   s4 := gen_random_uuid();
   if as_auth then set local role supabase_auth_admin; end if;
   insert into auth.sessions (id, user_id, created_at, aal) values (s4, u1, now(), 'aal1');
@@ -444,7 +461,8 @@ begin
   if (j->>'ok')::boolean and exists (select 1 from pb_auth.devices where user_id = u4 and device_id = 'devAAAAAAAA' and lat = 40.00 and lng = -83.00 and kind = 'phone')
      and exists (select 1 from pb_auth.sessions_log where session_id = sa and device_id = 'devAAAAAAAA' and last_seen_at is not null) then pass := pass + 1; else fail := fail + 1; fails := fails || ' 8a-check-in'; end if;
   if (select count(*) from pb_auth.flags where user_id = u4) = 0 then pass := pass + 1; else fail := fail + 1; fails := fails || ' 8b-flag-on-first-device'; end if;
-  -- a computer signs in 35 miles away, minutes later
+  -- a computer signs in 35 miles away, 20 minutes after the phone was last used
+  update pb_auth.sessions_log set last_seen_at = now() - interval '20 minutes' where session_id = sa;
   if as_auth then set local role supabase_auth_admin; end if;
   insert into auth.sessions (id, user_id, created_at, aal) values (sb, u4, now(), 'aal1');
   reset role;
@@ -452,10 +470,10 @@ begin
   set local role authenticated; j := public.pb_device_seen('devBBBBBBBB', 'computer', 40.5, -83.0, now(), 'r17.12');
   j := public.pb_device_seen('devBBBBBBBB', 'computer', 40.5, -83.0, now(), 'r17.12'); reset role; -- twice: no second note
   select count(*) into n from pb_auth.flags where user_id = u4;
-  if n = 2 and exists (select 1 from pb_auth.flags where user_id = u4 and kind = 'far_apart' and miles between 33 and 36 and kind_a = 'phone' and kind_b = 'computer')
-     and exists (select 1 from pb_auth.flags where user_id = u4 and kind = 'minutes_apart' and minutes between 0 and 15) then pass := pass + 1;
+  if n = 1 and exists (select 1 from pb_auth.flags where user_id = u4 and kind = 'far_apart' and miles between 33 and 36 and kind_a = 'phone' and kind_b = 'computer') then pass := pass + 1;
   else fail := fail + 1; fails := fails || ' 8c-flags:' || n || ':' || coalesce((select string_agg(kind || '/' || coalesce(miles::text, '') || '/' || coalesce(minutes::text, ''), ',') from pb_auth.flags where user_id = u4), ''); end if;
-  -- the phone signs back in: back and forth
+  -- later the phone signs back in: back and forth
+  update pb_auth.sessions_log set last_seen_at = now() - interval '20 minutes' where session_id = sb;
   if as_auth then set local role supabase_auth_admin; end if;
   insert into auth.sessions (id, user_id, created_at, aal) values (sc, u4, now(), 'aal1');
   reset role;
@@ -464,6 +482,7 @@ begin
   if exists (select 1 from pb_auth.flags where user_id = u4 and kind = 'back_and_forth' and flags.n = 2) then pass := pass + 1; else fail := fail + 1; fails := fails || ' 8d-back-and-forth'; end if;
   -- the same phone signs in again (same device id): nothing new
   select count(*) into n from pb_auth.flags where user_id = u4;
+  update pb_auth.sessions_log set last_seen_at = now() - interval '20 minutes' where session_id = sc;
   if as_auth then set local role supabase_auth_admin; end if;
   insert into auth.sessions (id, user_id, created_at, aal) values (sd, u4, now(), 'aal1');
   reset role;
@@ -490,7 +509,7 @@ begin
   perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', o1, 'aal', 'aal1')::text, true);
   j := public.pb_share_notes();
   if not member_ok then null;
-  elsif (j->>'ok')::boolean and jsonb_array_length(j->'notes') = 1 and j->'notes'->0->>'who' = 'Ray Test' and j->'notes'->0->>'kind' = 'far_apart' and (j->'notes'->0->>'miles')::int = 35 and (select count(*) from pb_auth.flags where user_id = u4) = 4 then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9a-company-notes:' || left(j::text, 700); end if;
+  elsif (j->>'ok')::boolean and jsonb_array_length(j->'notes') = 1 and j->'notes'->0->>'who' = 'Ray Test' and j->'notes'->0->>'kind' = 'far_apart' and (j->'notes'->0->>'miles')::int = 35 and (select count(*) from pb_auth.flags where user_id = u4) = 2 then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9a-company-notes:' || left(j::text, 700); end if;
   perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', o2, 'aal', 'aal1')::text, true);
   j := public.pb_share_notes();
   if (j->>'ok')::boolean and jsonb_array_length(j->'notes') = 0 then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9b-other-company-sees-notes'; end if;
@@ -504,26 +523,82 @@ begin
   if (j->>'ok')::boolean and exists (select 1 from jsonb_array_elements(j->'notes') e where e->>'kind' = 'far_apart' and (not member_ok or (e->>'company' = 'PB1DEV A ' || tag and e->>'who' = 'Ray Test')))
   then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9e-admin-notes:' || left(j::text, 200); end if;
 
-  -- ===== 9f. SAFETY: an open confined space permit holds the permit phone; closing it lets the newest sign-in take over =====
+  -- ===== 9f. IN USE: a sign-in while the other device is in use is refused; idle, it takes over =====
+  sa := gen_random_uuid(); sb := gen_random_uuid(); sc := gen_random_uuid(); sd := gen_random_uuid();
+  if as_auth then set local role supabase_auth_admin; end if;
+  insert into auth.sessions (id, user_id, created_at, aal) values (sa, u5, now() - interval '3 hours', 'aal1');
+  reset role;
+  perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', u5, 'session_id', sa)::text, true);
+  j := public.pb_device_seen('devMMMMMMMM', 'phone'); -- the first phone is in use right now
+  if as_auth then set local role supabase_auth_admin; end if;
+  insert into auth.sessions (id, user_id, created_at, aal) values (sb, u5, now(), 'aal1'); -- the sign-in itself is never an error
+  reset role;
+  if exists (select 1 from auth.sessions where id = sa) and exists (select 1 from pb_auth.sessions_log where session_id = sb and end_reason = 'in_use')
+     and exists (select 1 from pb_auth.sessions_log where session_id = sa and ended_at is null) then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9f-not-refused'; end if;
+  perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', u5, 'session_id', sb)::text, true);
+  begin perform public.pb_session_gate(); fail := fail + 1; fails := fails || ' 9g-refused-session-let-in';
+  exception when others then get stacked diagnostics t = returned_sqlstate, d = pg_exception_detail;
+    if t = 'PT401' and sqlerrm = 'pb:signed_out' and d = 'in_use' then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9g:' || sqlerrm || '/' || coalesce(d, ''); end if; end;
+  perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', u5, 'session_id', sa)::text, true);
+  begin perform public.pb_session_gate(); pass := pass + 1; exception when others then fail := fail + 1; fails := fails || ' 9h-first-phone-refused'; end;
+  perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+  j := public.pb_session_why(sb);
+  if j->>'reason' = 'in_use' and not exists (select 1 from auth.sessions where id = sb) and exists (select 1 from auth.sessions where id = sa)
+     and (select f.n from pb_auth.flags f where f.user_id = u5 and f.kind = 'tried_in_use') = 1 then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9i-why-in-use:' || j::text; end if;
+  -- a refused sign-in that never asks why is cleared by the first phone's next check-in
+  if as_auth then set local role supabase_auth_admin; end if;
+  insert into auth.sessions (id, user_id, created_at, aal) values (sc, u5, now(), 'aal1');
+  reset role;
+  perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', u5, 'session_id', sa)::text, true);
+  j := public.pb_device_seen('devMMMMMMMM', 'phone');
+  if not exists (select 1 from auth.sessions where id = sc) and exists (select 1 from auth.sessions where id = sa)
+     and (select f.n from pb_auth.flags f where f.user_id = u5 and f.kind = 'tried_in_use') = 2 then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9j-refused-left-behind'; end if;
+  -- 16 minutes with no check-in (lost, dead, left at home): the new sign-in takes over
+  update pb_auth.sessions_log set last_seen_at = now() - interval '16 minutes' where session_id = sa;
+  if as_auth then set local role supabase_auth_admin; end if;
+  insert into auth.sessions (id, user_id, created_at, aal) values (sd, u5, now(), 'aal1');
+  reset role;
+  if not exists (select 1 from auth.sessions where id = sa) and exists (select 1 from auth.sessions where id = sd)
+     and public.pb_session_why(sa)->>'reason' = 'other_device' and exists (select 1 from pb_auth.sessions_log where session_id = sd and ended_at is null) then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9k-idle-not-taken-over'; end if;
+  -- the notes never show the refused tries
+  perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', ad, 'aal', 'aal1')::text, true);
+  if not exists (select 1 from jsonb_array_elements(public.pb_owner_share_notes()->'notes') e where e->>'kind' in ('tried_in_use', 'minutes_apart')) then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9l-silent-flags-shown'; end if;
+
+  -- ===== 9m. SAFETY: an open confined space permit counts as in use, even when its phone has not checked in; Lost Phone / Log Out lift it =====
   begin
-    sa := gen_random_uuid(); sb := gen_random_uuid();
+    sa := gen_random_uuid(); sb := gen_random_uuid(); sc := gen_random_uuid(); sd := gen_random_uuid();
     if as_auth then set local role supabase_auth_admin; end if;
-    insert into auth.sessions (id, user_id, created_at, aal) values (sa, o2, now() - interval '1 hour', 'aal1');
+    insert into auth.sessions (id, user_id, created_at, aal) values (sa, u6, now() - interval '1 hour', 'aal1');
     reset role;
-    insert into pb_safety.open_permits (user_id, client_permit_id, snapshot, record_sha256, bytes) values (o2, 'pb1dev-' || tag, '{}'::jsonb, md5(tag), 2);
+    insert into pb_safety.open_permits (user_id, client_permit_id, snapshot, record_sha256, bytes) values (u6, 'pb1dev-' || tag, '{}'::jsonb, md5(tag), 2);
     if as_auth then set local role supabase_auth_admin; end if;
-    insert into auth.sessions (id, user_id, created_at, aal) values (sb, o2, now(), 'aal1');
+    insert into auth.sessions (id, user_id, created_at, aal) values (sb, u6, now(), 'aal1');
     reset role;
-    if (select count(*) from auth.sessions where id in (sa, sb)) = 2 then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9f-permit-phone-cut-off'; end if;
-    perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', o2, 'session_id', sa)::text, true);
-    j := public.pb_device_seen('devPPPPPPPP', 'phone'); perform public.pb_session_gate(); -- the permit phone still works
-    if (select count(*) from auth.sessions where id in (sa, sb)) = 2 then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9g-check-in-cut-permit-phone'; end if;
-    update pb_safety.open_permits set saved_at = now() - interval '13 hours' where user_id = o2; -- no longer open right now
-    perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', o2, 'session_id', sb)::text, true);
-    j := public.pb_device_seen('devQQQQQQQQ', 'computer');
-    if not exists (select 1 from auth.sessions where id = sa) and exists (select 1 from auth.sessions where id = sb)
-       and public.pb_session_why(sa)->>'reason' = 'other_device' then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9h-not-settled-after-permit'; end if;
-  exception when others then reset role; notes := notes || ' [permit hold not testable here: ' || left(sqlerrm, 80) || ']'; end;
+    if exists (select 1 from auth.sessions where id = sa) and exists (select 1 from pb_auth.sessions_log where session_id = sb and end_reason = 'in_use') then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9m-permit-phone-cut-off'; end if;
+    -- Lost Phone (and Log Out) delete the login's sessions: the next sign-in goes straight in, permit or not
+    delete from auth.sessions where user_id = u6;
+    if as_auth then set local role supabase_auth_admin; end if;
+    insert into auth.sessions (id, user_id, created_at, aal) values (sc, u6, now() - interval '1 hour', 'aal1');
+    reset role;
+    if exists (select 1 from pb_auth.sessions_log where session_id = sc and ended_at is null) then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9n-lost-phone-locked-out'; end if;
+    -- the permit was last saved over 2 hours ago and its phone is idle: no lock-out
+    update pb_safety.open_permits set saved_at = now() - interval '3 hours' where user_id = u6;
+    if as_auth then set local role supabase_auth_admin; end if;
+    insert into auth.sessions (id, user_id, created_at, aal) values (sd, u6, now(), 'aal1');
+    reset role;
+    if not exists (select 1 from auth.sessions where id = sc) and exists (select 1 from pb_auth.sessions_log where session_id = sd and ended_at is null) then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9o-stale-permit-locks'; end if;
+  exception when others then reset role; notes := notes || ' [permit rule not testable here: ' || left(sqlerrm, 80) || ']'; end;
+
+  -- ===== 9p. a company account (owner login) and the app owner get 2 devices by rule; a third is refused while both are in use =====
+  sa := gen_random_uuid(); sb := gen_random_uuid(); sc := gen_random_uuid();
+  if as_auth then set local role supabase_auth_admin; end if;
+  insert into auth.sessions (id, user_id, created_at, aal) values (sa, o2, now(), 'aal1');
+  insert into auth.sessions (id, user_id, created_at, aal) values (sb, o2, now(), 'aal1');
+  insert into auth.sessions (id, user_id, created_at, aal) values (sc, o2, now(), 'aal1');
+  reset role;
+  if pb_auth.allowed(o2) = 2 and pb_auth.allowed(ad) = 2 and pb_auth.allowed(u5) = 1 and pb_auth.allowed(u3) = 2
+     and (select count(*) from pb_auth.sessions_log where session_id in (sa, sb) and ended_at is null) = 2
+     and exists (select 1 from pb_auth.sessions_log where session_id = sc and end_reason = 'in_use') then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9p-company-two-devices'; end if;
 
   -- ===== 10. a fault inside the trigger never blocks a sign-in =====
   alter table pb_auth.allow rename to allow_broken;

@@ -19,13 +19,13 @@ do $$ begin
   if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; create role authenticated; create role service_role; end if;
 end $$;
 drop schema if exists pb_ai cascade; create schema pb_ai; grant usage on schema pb_ai to authenticated;
-drop function if exists public.pb_ai_kb_shelf_search(text, text, integer, text[], text[], integer);
+
 """)
 qs = json.load(open(os.path.join(HERE, '../work/queries.json')))
 lit = lambda s: "'" + s.replace("'", "''") + "'"
-vals = ",\n".join(f"({lit(q['id'])}, {lit(q['q'])}, {lit(STATES[k % len(STATES)])}, array[{','.join(lit(t) for t in q['terms'])}]::text[])" for k, q in enumerate(qs) if q['terms'])
+vals = ",\n".join(f"({lit(q['id'])}, {lit(q['q'])}, {lit(STATES[k % len(STATES)])}, array[{','.join(lit(t) for t in q['terms'])}]::text[], array[{','.join(str(w) for w in q['weights'])}]::real[])" for k, q in enumerate(qs) if q['terms'])
 open(os.path.join(D, 'time.sql'), 'w').write(f"""
-create temp table tq (id text, q text, st text, terms text[]);
+create temp table tq (id text, q text, st text, terms text[], w real[]);
 insert into tq values
 {vals};
 create temp table tr (id text, ms numeric, n int);
@@ -36,12 +36,12 @@ begin
     if pass = 2 then truncate tr; end if;        -- first pass warms the cache, second is timed
     for r in select * from tq loop
       t0 := clock_timestamp();
-      v := public.pb_ai_kb_shelf_search(r.q, r.st, 3, r.terms);
+      v := public.pb_ai_kb_shelf_search(r.q, r.st, 4, r.terms, null, 700, r.w);
       insert into tr values (r.id, extract(epoch from clock_timestamp() - t0) * 1000, jsonb_array_length(v->'rows'));
     end loop;
   end loop;
 end $$;
 select 'searches ' || count(*) || ': median ' || round(percentile_cont(0.5) within group (order by ms)::numeric, 1) || ' ms, p95 ' || round(percentile_cont(0.95) within group (order by ms)::numeric, 1)
-       || ' ms, slowest ' || round(max(ms), 1) || ' ms; with 3 excerpts ' || count(*) filter (where n = 3) || ', with none ' || count(*) filter (where n = 0) from tr;
+       || ' ms, slowest ' || round(max(ms), 1) || ' ms; with 4 excerpts ' || count(*) filter (where n = 4) || ', with none ' || count(*) filter (where n = 0) from tr;
 select 'slowest: ' || string_agg(x, ' | ') from (select round(tr.ms, 0) || ' ms "' || left(tq.q, 50) || '"' x from tr join tq using (id) order by tr.ms desc limit 4) s;
 """)

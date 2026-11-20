@@ -1,23 +1,27 @@
 import { buildIndex, search } from "./_shared/retrieval.ts";
 import { decodeIndex, encodeIndex } from "./_shared/kb_codec.ts";
-let KB = null, KB_VERSION = "", KB_RETRY_AT = 0, KB_LOADING = null, KB_SAVING = null;
-// library_load: the test function reads its own library version. Pointer row "kb@next" = {"version":"<12 hex>","n":<rows>,"rev":"<any>"}.
-let NEXT_PTR = null, NEXT_RAW = "", NEXT_AT = 0, NEXT_LOADED = "";
-async function nextPointer(admin) {
-  if (globalThis.PB_ASK_SLOT !== "next") return null;
-  if (Date.now() - NEXT_AT < 6e4) return NEXT_PTR;
-  NEXT_AT = Date.now();
-  try {
-    const { data, error } = await Promise.race([admin.rpc("pb_ai_prompt_overrides", {}), new Promise((r) => setTimeout(() => r({ data: null, error: "timeout" }), 2500))]);
-    if (error || !Array.isArray(data)) return NEXT_PTR;
-    const raw = String(data.find((x) => x && x.name === "kb@next")?.text || "");
-    if (raw === NEXT_RAW) return NEXT_PTR;
-    let p = null;
-    try { p = JSON.parse(raw); } catch {}
-    NEXT_RAW = raw, NEXT_PTR = p && /^[0-9a-f]{12}$/.test(String(p.version)) && Number.isInteger(p.n) && p.n > 0 ? { version: String(p.version), n: p.n, rev: String(p.rev || "") } : null;
-  } catch {}
-  return NEXT_PTR;
+import { OVERLAY } from "./kb_overlay.ts";
+// library_load: on the TEST function only, the staged library is laid over the live rows in memory. Nothing is written to the
+// server's library and the live function never takes this path. replace = by the id of the live chunk; add = new chunks.
+function withOverlay(byLib) {
+  const where = new Map();
+  for (const lib of Object.keys(byLib)) byLib[lib].forEach((c, i) => where.set(c?.id, [lib, i]));
+  let replaced = 0, missing = 0, added = 0;
+  for (const [oldId, e] of Object.entries(OVERLAY.replace || {})) {
+    const at = where.get(oldId);
+    if (!at) { missing++; continue; }
+    if (at[0] === e.lib) byLib[at[0]][at[1]] = e.chunk;
+    else byLib[at[0]][at[1]] = null, (byLib[e.lib] ||= []).push(e.chunk);
+    replaced++;
+  }
+  const have = new Set();
+  for (const lib of Object.keys(byLib)) { byLib[lib] = byLib[lib].filter(Boolean); for (const c of byLib[lib]) have.add(c.id); }
+  for (const e of OVERLAY.add || []) if (!have.has(e.chunk.id)) (byLib[e.lib] ||= []).push(e.chunk), have.add(e.chunk.id), added++;
+  console.log(JSON.stringify({ ai: "kb_overlay", rev: OVERLAY.rev, replaced, missing, added }));
+  return added;
 }
+const overlayOn = () => globalThis.PB_ASK_SLOT === "next" && OVERLAY && OVERLAY.rev;
+let KB = null, KB_VERSION = "", KB_RETRY_AT = 0, KB_LOADING = null, KB_SAVING = null;
 globalThis.__pbKbReset = () => {
   KB = null, KB_VERSION = "", KB_RETRY_AT = 0, KB_LOADING = null, KB_SAVING = null;
 }, globalThis.__pbKbSaving = () => KB_SAVING;
@@ -40,14 +44,6 @@ async function legacyRows(admin, act) {
     byLib;
 }
 function kb(admin) {
-  return globalThis.PB_ASK_SLOT === "next" ? kbNext(admin) : kbLive(admin);
-}
-async function kbNext(admin) {
-  const p = await nextPointer(admin), key = p ? p.version + "/" + p.n + "/" + p.rev : "";
-  if (key !== NEXT_LOADED && !KB_LOADING) KB = null, KB_VERSION = "", KB_RETRY_AT = 0, NEXT_LOADED = key; // the pointer moved: load that library
-  return kbLive(admin, p);
-}
-function kbLive(admin, ptr) {
   return KB
     ? Promise.resolve(KB)
     : Date.now() < KB_RETRY_AT
@@ -57,13 +53,12 @@ function kbLive(admin, ptr) {
       let how = "built", canSave = !1;
       try {
         let act = null, blob = null;
-        const boot = ptr ? { error: "next pointer" } : await admin.rpc("pb_ai_kb_boot", {}),
+        const lay = overlayOn(), boot = lay ? { error: "overlay: build from rows" } : await admin.rpc("pb_ai_kb_boot", {}),
           bd = !boot.error && boot.data && typeof boot.data == "object" ? boot.data : null;
         if (bd && bd.ok === !1) throw new Error("no active KB version");
         if (
           bd && bd.ok === !0 && typeof bd.version == "string" && Number.isInteger(bd.n) && bd.n > 0
         ) act = bd, blob = bd.index || null, canSave = !0;
-        else if (ptr) act = { version: ptr.version, n: ptr.n, built: ptr.rev }, how = "next";
         else {
           const { data, error } = await admin.rpc("pb_ai_kb_active", {});
           if (error || !data?.ok) throw new Error(error?.message || "no active KB version");
@@ -82,8 +77,11 @@ function kbLive(admin, ptr) {
           }
         }
         if (!index) {
-          const built = buildIndex(await legacyRows(admin, act), String(act.built || "")).index;
-          if (built.N !== act.n) throw new Error(`got ${built.N} of ${act.n} rows`);
+          const rows = await legacyRows(admin, act), nLive = Object.values(rows).reduce((s, v) => s + v.length, 0);
+          if (nLive !== act.n) throw new Error(`got ${nLive} of ${act.n} rows`);
+          const extra = lay ? withOverlay(rows) : 0, built = buildIndex(rows, String(act.built || "")).index;
+          if (built.N !== act.n + extra) throw new Error(`got ${built.N} of ${act.n + extra} rows`);
+          lay && (how = "overlay " + OVERLAY.rev);
           if (index = built, canSave) {
             const version = String(act.version);
             KB_SAVING = encodeIndex(built).then(async (b) => {
@@ -128,7 +126,7 @@ function kbLive(admin, ptr) {
           }
         }
         KB = index,
-          KB_VERSION = String(act.version) + (ptr && ptr.rev ? "." + ptr.rev : ""),
+          KB_VERSION = String(act.version) + (lay ? "+" + OVERLAY.rev : ""),
           console.log(
             JSON.stringify({
               ai: "kb_loaded",

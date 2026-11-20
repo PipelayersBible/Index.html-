@@ -78,7 +78,8 @@ revoke all on function pb_ai.kb_shelf_excerpt(text, tsquery[], integer) from pub
 -- Speed: ranking every row that has ANY of the words is what gets slow on a big shelf (common words match a third of
 -- it). So the rows to rank are picked by the RAREST groups: groups are added, rarest first, while they bring in at most
 -- 5,000 rows in all; when even the rarest group is commoner than that, a row must have the two rarest. Counting a
--- group's rows is an index-only step. Every picked row is then ranked against all the groups.
+-- group's rows is an index-only step. Every picked row is checked against all the groups (cheap); the 400 that cover the
+-- most of the question get the full ts_rank_cd ranking (the costly step).
 create or replace function public.pb_ai_kb_shelf_search(p_q text, p_state text default null, p_k integer default 3,
     p_terms text[] default null, p_coll text[] default null, p_chars integer default 700, p_weights real[] default null)
  returns jsonb language plpgsql stable security definer set search_path to '' as $function$
@@ -139,6 +140,8 @@ begin
       from pb_ai.kb_shelf s
      where s.tsv @@ v_drive and s.states && v_states
        and (p_coll is null or s.coll = any (p_coll))
+  ), pre as (   -- the costly part (ts_rank_cd) only for the 400 rows that cover the most of the question
+    select * from hit order by m desc, mt desc, id limit 400
   ), scored as (
     select h.id, h.chunk, h.state, h.coll, h.m, h.mt,
            ts_rank_cd('{0.1, 0.2, 0.6, 1.0}', h.tsv, v_all, 32)
@@ -146,7 +149,7 @@ begin
              * (1 + 0.6 * h.mt)                                                   -- title boost
              * (case when h.state <> 'US' then 1.25 else 1 end)                   -- the job state's own chunk first
              * (case h.chunk->>'confidence' when 'low' then 0.8 else 1 end) as score
-      from hit h
+      from pre h
   ), top as (select * from scored order by score desc, id limit 40),
   capped as (select t2.*, row_number() over (partition by lower(t2.chunk->>'title') order by t2.score desc, t2.id) as rn from top t2),
   best as (select * from capped where rn <= 2 order by score desc, id limit v_k)

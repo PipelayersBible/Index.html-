@@ -111,6 +111,23 @@ say(f'in-place edits of live chunks: {len(EDITS)} (5 content fixes + {len(EDITS)
 
 # ---- 6. local fixes (titles in crew language etc.), then validate with lib_kb and enforce the core budget
 if fixes: fixes.apply(NEW, EDITS, BASE, say)
+# ---- 6a. copyright (Tommy, Nov 20: 811 center handbooks, state DOT spec books and paid standards are SUMMARIES ONLY).
+#          lib_kb applies its quote limits only to license "summary"; here they apply to every chunk outside the federal collections whose
+#          source names a document that is not law (handbook, manual, guide, spec book, standard, supplement), whatever its license says.
+NONLAW = re.compile(r'handbook|manual|guide|standard specifications|spec book|specifications|best practices|AWWA|ASTM|AASHTO|Greenbook|Ten States|DIPRA|association|excavator|MUTCD|supplement', re.I)
+QUOTES_ARE_STATUTE = {'dig-ga-tickets-1': 'its quotes are O.C.G.A. 25-9 text (the url is the dig law itself); shelf tier'}
+cp = []
+for c in list(NEW.values()):
+    coll = c['id'].split('-')[0]
+    if coll in ('osha', 'fed', 'mutcd'): continue          # federal government works (17 U.S.C. 105)
+    if c['kind'] != 'summary': cp.append(f"{c['id']}: kind {c['kind']}")
+    if coll in ('sp',) and not NONLAW.search(c['source']): continue
+    qs = [len(q.split()) for q in re.findall(r'"([^"]{20,})"', c['text'])]
+    if NONLAW.search(c['source']) and c['id'] not in QUOTES_ARE_STATUTE and (max(qs, default=0) > lib_kb.QUOTE_MAX_WORDS or sum(qs) > 0.25 * len(c['text'].split())):
+        cp.append(f"{c['id']}: quotes {max(qs)} words max, {sum(qs)} of {len(c['text'].split())} words")
+say(f'copyright check (summaries only for handbooks, spec books, standards): {len(cp)} problems; every non-federal chunk is kind "summary"; 1 allowed exception: ' + '; '.join(f'{k} ({v})' for k, v in QUOTES_ARE_STATUTE.items()))
+for x in cp: say('  COPYRIGHT', x)
+assert not cp
 B = lib_kb.Batch('merged', out_dir=OUT)
 for c in NEW.values(): B.add(**{k: v for k, v in c.items() if not k.startswith('_')})
 E, W = B.check(existing_ids=[i for i in LIVE])
