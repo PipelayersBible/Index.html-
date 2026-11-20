@@ -90,7 +90,9 @@ const EMPTY_DASH=`window.__rpcOverride=Object.assign(window.__rpcOverride||{},{p
   const O2=track((await boot(b,BASE,srv,{user:srv.USERS[srv.OFFICE],ua:IOS,dark:true,init:EMPTY_DASH,wait:6000})).p,'1:O2');
   ok(srv.live(srv.OFFICE)===2,'1: the company account may be on 2 devices: its computer stays signed in when its phone signs in');
   const third=srv.call('auth:password',null,{email:'tester@example.com'});
-  ok(srv.live(srv.OFFICE)===2&&srv.D.sess.get(third.sid).blocked===true,'1: SERVER: a third device on the company account is refused while both are in use');
+  ok(srv.live(srv.OFFICE)===2&&!srv.D.sess.get(third.sid).blocked,'1: SERVER: a third device on the company account takes the place of the idle one (the computer, quiet for 16 minutes)');
+  const fourth=srv.call('auth:password',null,{email:'tester@example.com'});
+  ok(srv.live(srv.OFFICE)===2&&srv.D.sess.get(fourth.sid).blocked===true,'1: SERVER: a fourth is refused while both are in use');
   await O2.evaluate(()=>window.pbOpenCrewMembers());await O2.waitForTimeout(3500);
   ok(await fits(O2,'#crShare'),'1: the note fits 390 px (dark)');await O2.evaluate(()=>document.getElementById('crShare').scrollIntoView());await O2.screenshot({path:SHOTS+'/crew_note_dark.png'});await close(O2);
  }

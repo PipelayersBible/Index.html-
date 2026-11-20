@@ -7,6 +7,16 @@
 begin;
 
 
+-- guard: the earlier draft (library_arch_nov20/sql/PROPOSED_kb_shelf.sql) made a table of the same name without two of
+-- the columns below. If that one is here, stop: run 03_undo_kb_shelf.sql (or drop the draft's table) first.
+do $g$ begin
+  if to_regclass('pb_ai.kb_shelf') is not null and not exists (select 1 from pg_catalog.pg_attribute a
+       where a.attrelid = to_regclass('pb_ai.kb_shelf') and a.attname = 'tsv_t' and not a.attisdropped) then
+    raise exception 'pb_ai.kb_shelf exists in the older draft shape: run 03_undo_kb_shelf.sql first, then this file';
+  end if;
+end $g$;
+drop function if exists public.pb_ai_kb_shelf_search(text[], text, integer, text[]);   -- the draft's search function, if it was ever made
+
 create table if not exists pb_ai.kb_shelf (
   id       text primary key,
   chunk    jsonb not null,           -- the chunk exactly as lib_kb.py writes it (LIBRARY_RULES.md section 2)

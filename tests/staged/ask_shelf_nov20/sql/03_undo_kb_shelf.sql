@@ -5,5 +5,6 @@
 begin;
 drop function if exists public.pb_ai_kb_shelf_search(text, text, integer, text[], text[], integer, real[]);
 drop function if exists pb_ai.kb_shelf_excerpt(text, tsquery[], integer);
+drop function if exists public.pb_ai_kb_shelf_search(text[], text, integer, text[]);   -- the earlier draft's, if present
 drop table if exists pb_ai.kb_shelf;
 commit;

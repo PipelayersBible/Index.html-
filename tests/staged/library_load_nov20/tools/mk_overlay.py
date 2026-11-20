@@ -1,7 +1,7 @@
 # mk_overlay.py <rev>: out/rows_changed.jsonl -> src_patch/kb_overlay.ts (the staged library as an in-memory overlay for the TEST function)
 import json, os, sys
 H = os.path.dirname(os.path.dirname(os.path.abspath(__file__))); S = os.path.dirname(H)
-live = json.load(open(os.path.join(S, 'ask_state_nov20/work/kb_live2.json')))
+live = json.load(open(os.path.join(S, 'ask_state_nov20/work/kb_after.json')))
 by_ord = {int(c['_ord']): c['id'] for v in live.values() for c in v}
 rep, add = {}, []
 for l in open(os.path.join(H, 'out/rows_changed.jsonl')):

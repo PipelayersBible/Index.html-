@@ -13,7 +13,7 @@ OUT = os.path.join(HERE, 'out'); os.makedirs(OUT, exist_ok=True)
 rep = []; say = lambda *a: rep.append(' '.join(str(x) for x in a))
 
 # ---- the live library (local copy, byte-checked against the server on Nov 20) + the staged state fix (applies to the next-only copy)
-kb_live = json.load(open(os.path.join(S, 'ask_state_nov20/work/kb_live2.json')))
+kb_live = json.load(open(os.path.join(S, 'ask_state_nov20/work/kb_after.json')))   # live since the lead applied 01_ask_kb_state_fix.sql (server md5 checked 17:21 UTC)
 kb_fix = json.load(open(os.path.join(S, 'ask_state_nov20/work/kb_after.json')))
 LIVE = {c['id']: dict(c, _lib=lib) for lib, v in kb_live.items() for c in v}
 BASE = {c['id']: dict(c, _lib=lib) for lib, v in kb_fix.items() for c in v}

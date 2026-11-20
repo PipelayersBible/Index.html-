@@ -5,7 +5,7 @@ import { OVERLAY } from "../src/kb_overlay.ts";
 import { search } from "../src/_shared/retrieval.ts";
 const S = "/home/claude/index.html-/tests/staged/";
 const eq = (a: unknown, b: unknown, m = "") => { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${m}: ${JSON.stringify(a)} != ${JSON.stringify(b)}`); };
-const live = JSON.parse(Deno.readTextFileSync(S + "ask_state_nov20/work/kb_live2.json")), rows: { lib: string; chunk: Record<string, unknown> }[] = [];
+const live = JSON.parse(Deno.readTextFileSync(S + "ask_state_nov20/work/kb_after.json")), rows: { lib: string; chunk: Record<string, unknown> }[] = [];
 for (const lib of Object.keys(live)) for (const c of live[lib]) { const o = c._ord; const d = { ...c }; delete d._ord; rows[o] = { lib, chunk: d }; }
 function fakeAdmin(calls: string[]) {
   return { rpc: (name: string, args: Record<string, number>) => {

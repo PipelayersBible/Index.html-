@@ -48,9 +48,15 @@ json.dump({'round': N, 'cases': rows, 'canary_old': CAN_OLD}, open(os.path.join(
 ins = json.load(open(os.path.join(W, 'inserted.json'))) if os.path.exists(os.path.join(W, 'inserted.json')) else []
 new = [r for r in rows if r['id'] not in ins]
 q = lambda s: "'" + s.replace("'", "''") + "'"
-if new:
-    open(os.path.join(R, 'insert.sql'), 'w').write('insert into pb_ai.eval_set (id, cat, q, "where", level, must, mustnot, maxwords, active) values\n' + ',\n'.join(
-        f"({q(r['id'])},{q('lib')},{q(r['q'])},{q(r['where'])},{q(r.get('level', 'pipelayer'))},'[]','[]',{r.get('maxwords') or {'simple': 70, 'rule': 100, 'complex': 110, 'steps': 170}[r['kind']]},false)" for r in new) + '\non conflict (id) do nothing;\n')
-open(os.path.join(R, 'start.sql'), 'w').write(f"select pb_ai.eval_start('ai-next', 'lib round {N}', array[" + ','.join(q(i) for i in ids) + "]);\n")
+tag = f'lib{N}'; LIMS = {'simple': 70, 'rule': 100, 'complex': 110, 'steps': 170}
+sql = ''
+if new:   # compact: one json list of [id, q, where, level, maxwords]
+    arr = json.dumps([[r['id'], r['q'], r['where'], r.get('level', 'pipelayer'), r.get('maxwords') or LIMS[r['kind']]] for r in new], ensure_ascii=False, separators=(',', ':'))
+    assert '$j$' not in arr
+    sql += f"insert into pb_ai.eval_set (id, cat, q, \"where\", level, must, mustnot, maxwords, active) select e->>0, '{tag}', e->>1, e->>2, e->>3, '[]', '[]', (e->>4)::int, false from jsonb_array_elements($j${arr}$j$::jsonb) e on conflict (id) do nothing;\n"
+oldrows = [r['id'] for r in rows if r['id'] in ins]
+if oldrows: sql += f"update pb_ai.eval_set set cat = '{tag}' where not active and id in (" + ','.join(q(i) for i in oldrows) + ");\n"
+sql += f"select pb_ai.eval_start('ai-next', 'lib round {N}', (select array_agg(id) from pb_ai.eval_set where cat = '{tag}' and not active) || array[" + ','.join(q(i) for i in CAN_OLD) + "]) as run, (select count(*) from pb_ai.eval_set where cat = '{tag}' and not active) as n;\n"
+open(os.path.join(R, 'run.sql'), 'w').write(sql)
 json.dump(ins + [r['id'] for r in new], open(os.path.join(W, 'inserted_pending.json'), 'w'))
-print(f'round {N}: {len(re_ask)} re-asked, {len(fresh)} fresh ({dict(collections.Counter(group(c) for c in fresh))}), {len(CAN_NEW)}+{len(CAN_OLD)} canaries, {len(STYLE)} style = {len(ids)}; {len(new)} to insert ({os.path.getsize(os.path.join(R, "insert.sql")) if new else 0} bytes); states {len(st_n)}')
+print(f'run.sql {len(sql)} bytes; round {N}: {len(re_ask)} re-asked, {len(fresh)} fresh ({dict(collections.Counter(group(c) for c in fresh))}), {len(CAN_NEW)}+{len(CAN_OLD)} canaries, {len(STYLE)} style = {len(ids)}; {len(new)} to insert; states {len(st_n)}')

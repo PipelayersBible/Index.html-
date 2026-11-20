@@ -4,7 +4,7 @@ import json, os, sys
 HERE = os.path.dirname(os.path.abspath(__file__)); S = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(S, 'library_arch_nov20')); import lib_kb
 L = lambda f: [json.loads(l) for l in open(f) if l.strip()]
-live = json.load(open(os.path.join(S, 'ask_state_nov20/work/kb_live2.json')))
+live = json.load(open(os.path.join(S, 'ask_state_nov20/work/kb_after.json')))
 rows = {}
 for lib, v in live.items():
     for c in v: rows[int(c['_ord'])] = [lib, {k: x for k, x in c.items() if k != '_ord'}]

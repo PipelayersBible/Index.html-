@@ -1,26 +1,27 @@
-pg_ctl: another server might be running; trying to start server anyway
-pg_ctl: could not start server
-Examine the log output.
 == 1. rolled-back test on an empty database (sql/02_test_rolled_back.sql)
 RESULT: PASS  real_rows_set_aside=0 rows=6 shape=refused tx=tc-tx-zz-1,mutcd-6d-zz-1,mutcd-6d-zz-2 ok_first=tc-ok-zz-1 nostate=2US twostate=ok title_boost=tc-tx-zz-1 excerpt=269ch coll=ok hostile=ok grants=service_role_only table=closed user=refused ms=0.3 shelf_rows=6
 left behind after the test: 0 tables, 0 functions
 == 2. real shelf batches, loaded twice with lib_kb.py's SQL
+psql:sql/01_kb_shelf.sql:23: NOTICE:  function public.pb_ai_kb_shelf_search(text[],text,pg_catalog.int4,text[]) does not exist, skipping
 run 1: 48 shelf chunks, 9 collections, 11 states
 run 2: 48 shelf chunks, 9 collections, 11 states
    and the test again with 01 already applied and rows loaded:
 RESULT: PASS
    rows after it: 48
 == 3. speed at 15000 rows
+psql:sql/01_kb_shelf.sql:23: NOTICE:  function public.pb_ai_kb_shelf_search(text[],text,pg_catalog.int4,text[]) does not exist, skipping
 15000 rows, 52 states, table + indexes 46 MB
-searches 127: median 21.1 ms, p95 37.6 ms, slowest 85.7 ms; with 4 excerpts 127, with none 0
-slowest: 86 ms "Our trench is 7 feet deep in sandy soil, can we wo" | 46 ms "Does Oregon's confined space rule cover my crew go" | 43 ms "Invert at the upstream manhole is 1205.30, run is " | 42 ms "Do I need anything in writing before my guys get i"
-rank-everything baseline: median 28 ms, p95 58 ms, slowest 112 ms
+searches 127: median 18.6 ms, p95 31.1 ms, slowest 41.1 ms; with 4 excerpts 127, with none 0
+slowest: 41 ms "Does the lockout tagout standard 1910.147 cover my" | 37 ms "Type C soil, 10 feet deep. How far back does the t" | 36 ms "Does Oregon's confined space rule cover my crew go" | 35 ms "We need to go down in the lift station wet well to"
+rank-everything baseline: median 26 ms, p95 50 ms, slowest 135 ms
 same best excerpt: 127 of 127; best excerpt is among the baseline's 4: 127; all 4 the same: 127
 == 3. speed at 85000 rows
+psql:sql/01_kb_shelf.sql:23: NOTICE:  function public.pb_ai_kb_shelf_search(text[],text,pg_catalog.int4,text[]) does not exist, skipping
 85000 rows, 52 states, table + indexes 243 MB
-searches 127: median 52.1 ms, p95 96.0 ms, slowest 188.7 ms; with 4 excerpts 127, with none 0
-slowest: 189 ms "What slope is required for a trench in Type B soil" | 157 ms "Do I need to slope or shore a 6 foot deep trench i" | 137 ms "Our trench is 7 feet deep in sandy soil, can we wo" | 111 ms "Can the trench box sit 2 feet above the bottom of "
-rank-everything baseline: median 139 ms, p95 287 ms, slowest 976 ms
+searches 127: median 52.2 ms, p95 89.1 ms, slowest 108.2 ms; with 4 excerpts 127, with none 0
+slowest: 108 ms "What miter and bevel do I set for a curb form corn" | 108 ms "Does the lockout tagout standard 1910.147 cover my" | 105 ms "Our trench is going to be exactly 20 feet deep in " | 103 ms "Our trench is 7 feet deep in sandy soil, can we wo"
+rank-everything baseline: median 138 ms, p95 293 ms, slowest 861 ms
 same best excerpt: 117 of 127; best excerpt is among the baseline's 4: 120; all 4 the same: 115
 == 4. undo (sql/03_undo_kb_shelf.sql)
+psql:sql/03_undo_kb_shelf.sql:8: NOTICE:  function public.pb_ai_kb_shelf_search(text[],text,pg_catalog.int4,text[]) does not exist, skipping
 after undo: 0 shelf tables, 0 shelf functions
