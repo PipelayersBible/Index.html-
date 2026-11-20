@@ -6780,11 +6780,11 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
           <button type="button" data-val="superintendent" id="crRoleSuper" aria-pressed="false" hidden onclick="pbCmPickRole('superintendent')">Superintendent</button><!-- feat_super: owner only; a PM with that title -->
         </div>
         <p class="pbc-err" id="crAddErr" role="alert" hidden></p>
-        <div class="pb-btn-wrap"><button type="button" class="pb-btn" id="crAddBtn" onclick="pbCmAdd()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Add Crew Member</button></div>
+        <div class="pb-btn-wrap"><button type="button" class="pb-btn" id="crAddBtn" onclick="pbCmAdd()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Invite Crew Member</button></div>
         <p class="pbc-dim" id="crInvites"></p>
       </section>
 
-      <h2 class="pb-h2 pbc-h2" id="crListHead">Your crew</h2>
+      <h2 class="pb-h2 pbc-h2" id="crListHead">Your company</h2>
       <div id="crList" class="pbc-list" role="list" aria-labelledby="crListHead"></div>
       <h2 class="pb-h2 pbc-h2" id="crPendingHead" hidden>Waiting to accept</h2>
       <div id="crPending" class="pbc-list" role="list" aria-labelledby="crPendingHead"></div>
@@ -13222,7 +13222,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r17.08 · 2026-11-19'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r17.09 · 2026-11-19'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -13500,6 +13500,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if (!sbUser) { if (!pbSessionUnverified && sbClient) { pbLinkLeftChecked = true; pbForgetLinkSignIn(); } return; } // no session: nothing left to end
       if (m.uid !== sbUser.id) { pbLinkLeftChecked = true; pbForgetLinkSignIn(); return; } // another account has logged in properly since
       if (await pbLinkHeldElsewhere(m)) { pbLinkLeftChecked = true; return; } // still being finished in another tab
+      if (m.set) { pbLinkLeftChecked = true; pbForgetLinkSignIn(); return; } // r17.09: password saved: the sign-in is kept
       if (!(await pbAuthReachable())) {
         if (!m.toldOffline) {
           pbRawSet(PB_LINK_SIGNIN_KEY, JSON.stringify({ ...m, toldOffline: true }));
@@ -13601,7 +13602,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (pbCurrentScreen !== 'setPassword' && pbLinkBusyWhy()) {
       if (!pbRecoveryWaiting) {
         pbRecoveryWaiting = true;
-        if (!pbRecoveryWaitTold) { pbRecoveryWaitTold = true; pbAlertAfterOpen('The password reset link you opened is ready, but ' + pbLinkBusyWhy() + ' \u2014 setting the password logs this phone out.\n\nSet New Password waits: it opens when you change screens after ' + (pbLiveEntryNow() ? 'the entry is over (everyone checked out, any emergency ended)' + (pbScreenFormWork(pbCurrentScreen) ? ' and what you are entering is locked or saved' : '') : 'locking or saving what you are entering (or leaving this screen)') + '.', 'Password Reset Waiting'); }
+        if (!pbRecoveryWaitTold) { pbRecoveryWaitTold = true; pbAlertAfterOpen('The password reset link you opened is ready, but ' + pbLinkBusyWhy() + ' \u2014 Set New Password would take over this screen.\n\nSet New Password waits: it opens when you change screens after ' + (pbLiveEntryNow() ? 'the entry is over (everyone checked out, any emergency ended)' + (pbScreenFormWork(pbCurrentScreen) ? ' and what you are entering is locked or saved' : '') : 'locking or saving what you are entering (or leaving this screen)') + '.', 'Password Reset Waiting'); }
         pbWhenFormWorkDone(() => !!pbLinkBusyWhy(), () => { pbRecoveryWaiting = false; pbShowRecoveryIfPending(); });
       }
       return;
@@ -13661,11 +13662,13 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbEndResetAfterSave((user && user.email) || (sbUser && sbUser.email) || '');
   };
   function pbEndResetAfterSave(email) {
+    // r17.09: the phone stays signed in with the account whose password was just set (no third typing on Log In).
     const invite = pbUrlAuth.type === 'invite';
-    pbEndResetSignedOut(email,
-      invite ? 'Password set \u2014 log in with your new password.' : 'Password changed \u2014 log in with your new password.',
-      'Your new password is set. This phone now logs out so you log in with it, and that closes the app',
-      'Password Set');
+    pbForgetLinkSignIn(); // finished: a signed-in account like any other from here
+    pbRecoveryUserId = null;
+    pbClearSetPasswordForm();
+    if (pbCurrentScreen === 'setPassword') { pbGoto('home', true, true); try { pbSharedAfterLogin(); } catch (e) {} }
+    pbAlertAfterOpen((invite ? 'Password set. You\u2019re signed in' : 'Password changed. You\u2019re signed in') + (email ? ' as ' + email : '') + ' \u2014 use this password next time you log in.', 'Password Set');
   }
   window.pbSkipNewPassword = function() {
     // Its answer could still set the password: leaving now would say it wasn't changed.
@@ -65569,7 +65572,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + (m.removed ? '<div class="s">' + escapeHtml(m.removed_name || 'The old account') + '’s old account was taken out of the company and signed out. This link makes a new one.</div>' : '')
         + (m.pair_name ? '<div class="s">Goes on ' + escapeHtml(m.pair_name) + '’s crew when they join.</div>' : '')
         + '<div class="s">Works once, until ' + escapeHtml(pbObWhen(m.expires_at)) + '. Code to read out: <strong>' + escapeHtml(pbObCodeShown(m.code)) + '</strong></div>'
-        + '<div class="pbob-btns"><a class="pb-btn" id="pbObTextIt" href="' + escapeHtml(I.sms) + '">Text It</a>'
+        + (I.texted ? '<div class="s" id="pbObTexted">Messages opened with the link in it. Didn\u2019t open? Tap Text It Again.</div>' : '')
+        + '<div class="pbob-btns"><a class="pb-btn' + (I.texted ? ' secondary' : '') + '" id="pbObTextIt" href="' + escapeHtml(I.sms) + '">' + (I.texted ? 'Text It Again' : 'Text It') + '</a>'
         + '<div class="pbob-row2">' + (navigator.share ? '<button type="button" class="pb-btn secondary" id="pbObShare" onclick="pbObInvShare()">Share…</button>' : '') + '<button type="button" class="pb-btn secondary" id="pbObCopyLink" onclick="pbObInvCopy()">Copy Link</button></div></div>'
         + '<p class="pbob-dim" style="margin:8px 0 0;">Send it only to the person it’s for. Whoever opens it first and taps Join Crew joins.</p></div>';
     }
@@ -65600,7 +65604,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + (I.fmOnly ? '<p class="pbob-dim">Foremen add pipelayers. The office adds foremen.</p>' : '')
         + pairSel
         + '<p class="pbob-err" id="pbObErr" role="alert"' + (msg ? '' : ' hidden') + '>' + escapeHtml(msg || '') + '</p>'
-        + '<div class="pbob-btns"><button type="button" class="pb-btn" id="pbObMakeBtn" onclick="pbObInvMake()">Make Join Link</button></div>')
+        + '<div class="pbob-btns"><button type="button" class="pb-btn" id="pbObMakeBtn" onclick="pbObInvMake()">' + (pbObPhoneSms() ? 'Text Join Link' : 'Make Join Link') + '</button></div>')
       + out
       + sw
       + '<h3>Links from the last 7 days</h3><div class="pbob-list" id="pbObInvList">' + (L == null ? '<p class="pbob-dim">Loading…</p>' : L.length ? L.map(row).join('') : '<p class="pbob-dim">None yet.</p>') + '</div>'
@@ -65622,12 +65626,16 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   window.pbObInvMake = async function () {
     const I = PB_OB.inv; if (!I || PB_OB.busy) return;
     const n = document.getElementById('pbObInvName'), name = n ? pbNameClean(n.value) : '';
-    PB_OB.busy = true; const b = document.getElementById('pbObMakeBtn'); if (b) { b.disabled = true; b.textContent = 'Making…'; }
+    PB_OB.busy = true; const b = document.getElementById('pbObMakeBtn'); if (b) { b.disabled = true; b.textContent = pbObPhoneSms() ? 'Opening Messages…' : 'Making…'; }
     const r = await pbObRpc('pb_onboard_link_make', { p_role: I.role, p_name: name || null, p_pair_foreman: (!I.fmOnly && I.role === 'pipelayer' && I.pair) || null });
     PB_OB.busy = false; if (PB_OB.inv !== I) return;
     if (!r.ok || !r.token) { I.nameDraft = name; pbObInvRender(pbObText(r.code)); return; }
-    I.made = r; I.nameDraft = ''; pbObInvRender(); pbObInvLoad();
+    I.made = r; I.nameDraft = ''; I.texted = pbObPhoneSms(); pbObInvRender(); pbObInvLoad();
+    if (I.texted && I.sms) { try { window.__pbObSmsOpened = I.sms; if (!window.__pbObNoNav) window.location.href = I.sms; } catch (e) {} } // r17.09: one tap: Messages opens with the link
   };
+  // A phone that can text (iPhone or Android): Text Join Link opens Messages itself.
+  function pbObPhoneSms() { try { return window.__pbObForceSms === true || /iPhone|iPod|Android/i.test(navigator.userAgent || ''); } catch (e) { return false; } }
+  window.pbObPhoneSms = pbObPhoneSms;
   window.pbObInvSetting = async function (on) {
     const I = PB_OB.inv; if (!I || I.fmOnly) return;
     pbObKeepName(I);
