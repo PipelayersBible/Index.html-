@@ -1,0 +1,170 @@
+    <div class="cp-draft-band" id="cpDraftBand" role="note"><strong>Draft &mdash; not active</strong>Nothing here allows entry or starts a timer until you tap <b>Lock &amp; Activate Permit</b>. <span class="cp-draft-save" id="cpDraftSaveLine">Not saved yet: a draft is saved on this phone once you start typing. Photos are not kept in drafts.</span></div>
+    <div class="pb-btn-wrap cp-review-jump"><button type="button" class="pb-btn ghost small" id="cpReviewPermitBtn" onclick="pbCpReviewPermit()" hidden>Review Permit</button><span class="pb-help" id="cpDraftMissing"></span></div>
+    <div class="pb-btn-wrap" id="cpReuseWrap"><button class="pb-btn secondary" id="cpReuseBtn" onclick="pbReuseLastPermitHazards()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-refresh"/></svg>Copy From Last Permit</button><p class="pb-help cp-reuse-line" id="cpReuseLine"></p></div>
+
+    <details class="cp-group" id="cpGroupLocation" open>
+      <summary class="cp-group-head"><span class="cp-group-num" aria-hidden="true">1</span><span class="cp-group-title">Location &amp; Work</span><span class="cp-group-chev" aria-hidden="true"></span><span class="cp-group-sum" id="cpGroupLocationSum"></span><span class="cp-group-need" id="cpGroupLocationNeed"></span></summary>
+    <div class="pb-section">
+      <div class="pb-body">
+        <div class="pb-field"><label for="cpSpace">Space (which manhole, vault or pipe)</label><input type="text" enterkeyhint="next" id="cpSpace" maxlength="200" placeholder="e.g. MH #4, Main St &amp; 3rd"></div>
+        <div class="pb-field"><label for="cpPurpose">Purpose of entry</label><input type="text" enterkeyhint="next" id="cpPurpose" maxlength="200" placeholder="e.g. pipe tie-in inspection"></div>
+        <div class="pb-field"><label for="cpJobsite">Jobsite / project</label><input type="text" enterkeyhint="next" id="cpJobsite" maxlength="200" placeholder="e.g. Main St sewer replacement"></div>
+        <div class="pb-field"><label for="cpAddress">Site address (what you&rsquo;d tell 911)</label><input type="text" enterkeyhint="next" id="cpAddress" maxlength="200" placeholder="e.g. 1420 Elm St, Fresno"></div>
+        <details class="pb-more b4-more cp-more"><summary><span>More details: job number, how to find the entrance</span></summary>
+          <div class="pb-field"><label for="cpJobNumber">Job number</label><input type="text" enterkeyhint="next" id="cpJobNumber" maxlength="200" placeholder="e.g. 24-017"></div>
+          <div class="pb-field"><label for="cpLandmarks">How responders find the entrance</label><input type="text" enterkeyhint="next" id="cpLandmarks" maxlength="300" placeholder="e.g. north gate, 2nd manhole past the hydrant"></div>
+        </details>
+      </div>
+    </div>
+    </details>
+
+    <details class="cp-group" id="cpGroupWindow" open>
+      <summary class="cp-group-head"><span class="cp-group-num" aria-hidden="true">2</span><span class="cp-group-title">Permit Window</span><span class="cp-group-chev" aria-hidden="true"></span><span class="cp-group-sum" id="cpGroupWindowSum"></span><span class="cp-group-need" id="cpGroupWindowNeed"></span></summary>
+    <div class="pb-section">
+      <div class="pb-body">
+        <div class="pb-field"><label for="cpDate">Date</label><input type="date" enterkeyhint="next" id="cpDate"></div>
+        <div class="pb-row">
+          <div class="pb-field"><label for="cpStart">Start time</label><input type="time" enterkeyhint="next" id="cpStart"></div>
+          <div class="pb-field"><label for="cpEnd">End time</label><input type="time" enterkeyhint="next" id="cpEnd"></div>
+        </div>
+        <div class="pb-field" hidden><label id="cpEndDateAutoLabel">End date (filled in automatically)</label><output class="cp-auto-field" id="cpEndDateAuto" aria-labelledby="cpEndDateAutoLabel"></output></div>
+        <p class="pb-help" id="cpWindowPreview" style="margin:6px 0 0 0;" aria-live="polite"></p>
+        <p class="pb-help" id="cpTimeBasis" hidden>Times are this phone&rsquo;s time.</p>
+        <p class="pb-help" id="cpTimeBasisMore" hidden></p>
+      </div>
+    </div>
+    </details>
+
+    <details class="cp-group" id="cpGroupPeople" open>
+      <summary class="cp-group-head"><span class="cp-group-num" aria-hidden="true">3</span><span class="cp-group-title">People &amp; Communication</span><span class="cp-group-chev" aria-hidden="true"></span><span class="cp-group-sum" id="cpGroupPeopleSum"></span><span class="cp-group-need" id="cpGroupPeopleNeed"></span></summary>
+    <div class="pb-section">
+      <div class="pb-body">
+        <datalist id="cpNamesList"></datalist>
+        <div class="pb-field"><label for="cpSupervisor">Entry supervisor</label><input type="text" enterkeyhint="next" id="cpSupervisor" maxlength="200" list="cpNamesList" autocomplete="off"></div>
+        <div class="pb-field"><label for="cpSupervisorInitials">Supervisor&rsquo;s initials (typed by the supervisor: &ldquo;I reviewed this permit and authorize entry&rdquo;)</label><input type="text" enterkeyhint="next" id="cpSupervisorInitials" maxlength="20" autocomplete="off"></div>
+        <div class="pb-field"><label for="cpAttendant">Attendant</label><input type="text" enterkeyhint="next" id="cpAttendant" maxlength="200" list="cpNamesList" autocomplete="off"></div>
+        <p class="pb-help cp-entrants-line">Entrants are checked in by name on the next screen.</p>
+        <div class="pb-field"><label for="cpComms">How entrants and the attendant stay in contact</label><textarea id="cpComms" rows="2" maxlength="1000" placeholder="e.g. radio check every 5 min, hand signals if radio fails"></textarea></div>
+        <div class="pb-field"><label for="cpCommInterval">Contact check reminder, minutes (blank = off)</label><input type="number" enterkeyhint="next" step="1" id="cpCommInterval" placeholder="e.g. 5" inputmode="numeric"></div>
+        <div class="pb-field"><label for="cpPosted">How entrants see this permit before they go in</label><select id="cpPosted"><option value="Shown to each entrant on this phone at the entrance" selected>Shown on this phone at the entrance</option><option value="Printed copy posted at the entrance">Printed copy posted at the entrance</option><option value="Shown on this phone and a printed copy posted at the entrance">Both</option></select></div>
+      </div>
+    </div>
+    </details>
+
+    <details class="cp-group" id="cpGroupHazards" open>
+      <summary class="cp-group-head"><span class="cp-group-num" aria-hidden="true">4</span><span class="cp-group-title">Hazards &amp; Controls</span><span class="cp-group-chev" aria-hidden="true"></span><span class="cp-group-sum" id="cpGroupHazardsSum"></span><span class="cp-group-need" id="cpGroupHazardsNeed"></span></summary>
+    <div class="pb-section">
+      <div class="pb-body">
+        <div class="pb-field"><label for="cpHazards">Hazards of the space</label><textarea id="cpHazards" rows="2" maxlength="1000" placeholder="e.g. oxygen deficiency, H2S, engulfment"></textarea></div>
+        <div class="pb-field"><label for="cpControls">Isolation / control measures</label><textarea id="cpControls" rows="2" maxlength="1000" placeholder="e.g. LOTO on pumps, forced-air ventilation running"></textarea></div>
+        <div class="pb-field"><label for="cpVentFail">How you&rsquo;ll know if ventilation stops</label><textarea id="cpVentFail" rows="2" maxlength="1000" placeholder="e.g. air horn alarm on blower, attendant checks duct airflow every 10 min"></textarea></div>
+        <p class="pb-help cp-ticks-head">Tick any that apply (rescuers see this list):</p>
+        <div class="cp-ticks">
+        <div class="pb-field">
+          <label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="cpHazFlows" style="width:auto;" onchange="pbToggleHazExplain('Flows')"> Incoming flows</label>
+          <div id="cpHazFlowsExplainWrap" style="display:none; margin-top:6px;"><input type="text" enterkeyhint="next" id="cpHazFlowsExplain" aria-label="Incoming flows: explain" maxlength="300" placeholder="Explain (source, rate, how to isolate)"></div>
+        </div>
+        <div class="pb-field">
+          <label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="cpHazEngulf" style="width:auto;" onchange="pbToggleHazExplain('Engulf')"> Engulfment</label>
+          <div id="cpHazEngulfExplainWrap" style="display:none; margin-top:6px;"><input type="text" enterkeyhint="next" id="cpHazEngulfExplain" aria-label="Engulfment: explain" maxlength="300" placeholder="Explain (material, depth, trigger)"></div>
+        </div>
+        <div class="pb-field">
+          <label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="cpHazElec" style="width:auto;" onchange="pbToggleHazExplain('Elec')"> Electrical energy</label>
+          <div id="cpHazElecExplainWrap" style="display:none; margin-top:6px;"><input type="text" enterkeyhint="next" id="cpHazElecExplain" aria-label="Electrical energy: explain" maxlength="300" placeholder="Explain (source, voltage, LOTO status)"></div>
+        </div>
+        <div class="pb-field">
+          <label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="cpHazMech" style="width:auto;" onchange="pbToggleHazExplain('Mech')"> Mechanical energy</label>
+          <div id="cpHazMechExplainWrap" style="display:none; margin-top:6px;"><input type="text" enterkeyhint="next" id="cpHazMechExplain" aria-label="Mechanical energy: explain" maxlength="300" placeholder="Explain (equipment, LOTO status)"></div>
+        </div>
+        <div class="pb-field">
+          <label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="cpHazNearby" style="width:auto;" onchange="pbToggleHazExplain('Nearby')"> Nearby operations</label>
+          <div id="cpHazNearbyExplainWrap" style="display:none; margin-top:6px;"><input type="text" enterkeyhint="next" id="cpHazNearbyExplain" aria-label="Nearby operations: explain" maxlength="300" placeholder="What&rsquo;s nearby and how it could affect this work or emergency crews"></div>
+        </div>
+        <div class="pb-field">
+          <label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="cpHazOther" style="width:auto;" onchange="pbToggleHazExplain('Other')"> Other</label>
+          <div id="cpHazOtherExplainWrap" style="display:none; margin-top:6px;"><input type="text" enterkeyhint="next" id="cpHazOtherExplain" aria-label="Other hazard: explain" maxlength="300" placeholder="Explain"></div>
+        </div>
+        </div>
+      </div>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Air Testing</div>
+      <div class="pb-body">
+        <div class="pb-field"><label for="cpMeter">Gas meter used (make, model, serial or unit number)</label><input type="text" enterkeyhint="next" id="cpMeter" maxlength="120" placeholder="e.g. BW MicroClip XL, unit 3" autocomplete="off"></div>
+        <div class="pb-field"><label for="cpMeterCal">Meter&rsquo;s last bump test or calibration</label><input type="date" enterkeyhint="next" id="cpMeterCal"></div>
+        <div class="pb-field"><label for="cpAtmoInterval">Air re-test reminder, minutes (blank = off)</label><input type="number" enterkeyhint="next" step="1" id="cpAtmoInterval" placeholder="e.g. 15" inputmode="numeric"><p class="pb-help" style="margin:4px 0 0 0;">Check-in is blocked when the last air test is older than this (20 min if blank).</p></div>
+        <p class="pb-help cp-limits-line" id="cpLimitsLine"></p>
+        <details class="pb-more b4-more cp-more" id="cpMoreLimits"><summary><span>More details: change air limits, other entry conditions</span></summary>
+        <p class="pb-help">A blank box uses the standard value shown in it; it never turns the check off. Keep using your gas meter&rsquo;s own alarm too. A blank H2S or CO reading means not measured, never zero.</p>
+        <div class="pb-row cp-limits-row">
+          <div class="pb-field"><label for="cpMinO2">Minimum O2 (%)</label><input type="number" enterkeyhint="next" step="0.1" min="0" max="25" id="cpMinO2" placeholder="19.5" inputmode="decimal"></div>
+          <div class="pb-field"><label for="cpMaxO2">Maximum O2 (%)</label><input type="number" enterkeyhint="next" step="0.1" min="0" max="30" id="cpMaxO2" placeholder="23.5" inputmode="decimal"></div>
+          <div class="pb-field"><label for="cpMaxLEL">Maximum LEL (%)</label><input type="number" enterkeyhint="next" step="0.1" min="0" id="cpMaxLEL" placeholder="10" inputmode="decimal"></div>
+          <div class="pb-field"><label for="cpMaxH2S">Maximum H2S (ppm)</label><input type="number" enterkeyhint="next" step="0.1" min="0" id="cpMaxH2S" placeholder="10" inputmode="decimal"></div>
+          <div class="pb-field"><label for="cpMaxCO">Maximum CO (ppm)</label><input type="number" enterkeyhint="next" step="0.1" min="0" id="cpMaxCO" placeholder="25" inputmode="decimal"></div>
+        </div>
+        <div class="pb-field"><label for="cpConditions">Other acceptable entry conditions</label><textarea id="cpConditions" rows="2" placeholder="e.g. blower running, no standing water (this text isn&rsquo;t checked by the app)"></textarea></div>
+        </details>
+      </div>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Equipment On Site</div>
+      <div class="pb-body">
+        <div class="cp-ticks">
+        <div class="pb-field"><label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="cpEqPPE" style="width:auto;"> PPE</label></div>
+        <div class="pb-field"><label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="cpEqTest" style="width:auto;"> Testing equipment</label></div>
+        <div class="pb-field"><label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="cpEqComm" style="width:auto;"> Communications equipment</label></div>
+        <div class="pb-field"><label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="cpEqAlarm" style="width:auto;"> Alarm systems</label></div>
+        <div class="pb-field"><label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="cpEqRescue" style="width:auto;"> Rescue equipment</label></div>
+        </div>
+        <details class="pb-more b4-more cp-more"><summary><span>More details: equipment notes, other permits (hot work)</span></summary>
+        <div class="pb-field"><label for="cpEqNotes">Equipment notes</label><input type="text" enterkeyhint="next" id="cpEqNotes" maxlength="300"></div>
+        <div class="pb-field"><label for="cpAddlPermits">Other permits issued for this work (e.g. hot work)</label><input type="text" enterkeyhint="next" id="cpAddlPermits" maxlength="300"></div>
+        </details>
+      </div>
+    </div>
+    </details>
+
+    <details class="cp-group" id="cpGroupRescue" open>
+      <summary class="cp-group-head"><span class="cp-group-num" aria-hidden="true">5</span><span class="cp-group-title">Rescue &amp; Emergency Plan</span><span class="cp-group-chev" aria-hidden="true"></span><span class="cp-group-sum" id="cpGroupRescueSum"></span><span class="cp-group-need" id="cpGroupRescueNeed"></span></summary>
+    <div class="pb-section">
+      <div class="pb-body">
+        <div class="pb-field"><label for="cpRescue">Rescue service and how to call them</label><textarea id="cpRescue" rows="2" maxlength="1000" placeholder="e.g. 911, standby rescue team on site, radio channel 2"></textarea></div>
+        <div class="pb-field"><label for="cpDialNum">Number the EMERGENCY button dials</label><input type="tel" enterkeyhint="next" id="cpDialNum" value="911" maxlength="30"><p class="pb-help" style="margin:4px 0 0 0;">911 unless this site has its own rescue number.</p></div>
+        <details class="pb-more b4-more cp-more"><summary><span>More details: a second contact</span></summary>
+        <div class="pb-row">
+          <div class="pb-field"><label for="cpEmergContactNum">Second contact number</label><input type="tel" enterkeyhint="next" id="cpEmergContactNum" placeholder="e.g. 555-123-4567"></div>
+          <div class="pb-field"><label for="cpEmergContactName">Contact name</label><input type="text" enterkeyhint="next" id="cpEmergContactName" maxlength="200" placeholder="e.g. John, on-call supervisor"></div>
+        </div>
+        </details>
+      </div>
+    </div>
+    </details>
+
+    <details class="cp-group" id="cpGroupNotes">
+      <summary class="cp-group-head"><span class="cp-group-num" aria-hidden="true">6</span><span class="cp-group-title">Notes &amp; Photos</span><span class="cp-group-chev" aria-hidden="true"></span><span class="cp-group-sum" id="cpGroupNotesSum"></span><span class="cp-group-need" id="cpGroupNotesNeed"></span></summary>
+    <div class="pb-section">
+      <div class="pb-body">
+        <div class="pb-field"><label for="cpMiscNotes">Notes</label><textarea id="cpMiscNotes" rows="2" maxlength="1000" placeholder="Anything else worth documenting"></textarea></div>
+        <div class="pb-field">
+          <label>Photos<span id="cpMiscPhotoCount" class="pb-photo-count"></span></label>
+          <div id="cpMiscPhotoList"></div>
+          <input type="file" accept="image/*" capture="environment" id="cpMiscPhoto" style="display:none;" onchange="pbAddPhoto('cpMisc')">
+          <button type="button" class="pb-btn ghost small" onclick="document.getElementById('cpMiscPhoto').click()">+ Add Photo</button>
+        </div>
+      </div>
+    </div>
+    </details>
+
+    <div class="pb-section" id="cpReviewSection" tabindex="-1">
+      <div class="pb-tag">Review Before Locking</div>
+      <div class="pb-body">
+        <div id="cpLockReview"></div>
+        <div id="cpReviewMissing" role="status"></div>
+        <p class="pb-help">Locking records the date and time as your authorization. After Lock, only the EMERGENCY number can be changed.</p>
+      </div>
+    </div>
+    <div class="pb-btn-wrap"><button class="pb-btn" onclick="pbLockConfinedPermit()">Lock &amp; Activate Permit</button></div>
+    <div class="pb-error" id="cpError" style="display:none; margin:14px 16px 0 16px; padding:10px 12px; background:#3a1f1c; border-left:4px solid var(--rod-red); color:var(--rod-white); font-size:13px;"></div>
+  </div>
+
