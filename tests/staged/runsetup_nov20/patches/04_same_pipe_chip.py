@@ -43,7 +43,7 @@ rep("""  window.pbOpenCutsheetImport = function() {
   ['input', 'change'].forEach(t => document.addEventListener(t, (ev) => { if (pbCurrentScreen === 'input' && ev.target && (ev.target.id === 'runIdSel' || ev.target.id === 'saJobNumber' || ev.target.id === 'runWT')) setTimeout(() => { try { pbSamePipeRender(); } catch (e) {} }, 50); }, true));""")
 rep("""#pbApp#pbApp #screen-input #pbRfWhoLine { margin-top: 0; margin-bottom: 0; }""", """#pbApp#pbApp #screen-input #pbRfWhoLine { margin-top: 0; margin-bottom: 0; }
 /* runsetup 04: same pipe as the last run on this job */
-#pbApp#pbApp #screen-input .pb-samepipe { display: block; width: calc(100% - 32px); margin: 2px 16px 12px; min-height: 48px; padding: 8px 14px; border-radius: 12px; border: 1.5px solid var(--pb-border, #b9b4a8); background: var(--pb-surface, #fff); color: var(--pb-text); font: inherit; font-size: 15px; font-weight: 600; text-align: left; line-height: 1.3; }
+#pbApp#pbApp #screen-input .pb-samepipe { display: block; width: calc(100% - 32px); margin: 2px 16px 12px; min-height: 48px; padding: 8px 14px; border-radius: 12px; border: 1.5px solid var(--pb-text-3); background: var(--pb-surface); color: var(--pb-text); font: inherit; font-size: 15px; font-weight: 600; text-align: left; line-height: 1.3; }
 #pbApp#pbApp #screen-input .pb-samepipe[hidden] { display: none; }""")
 open(out, 'w', encoding='utf-8').write(s)
 print('04_same_pipe_chip ok')

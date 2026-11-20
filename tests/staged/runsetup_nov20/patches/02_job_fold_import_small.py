@@ -35,7 +35,7 @@ rep("""#screen-input .pb-runsec-alts .pb-btn { flex: 1 1 150px; width: auto; mar
     """#screen-input .pb-runsec-alts .pb-btn { flex: 1 1 150px; width: auto; margin: 0; min-height: 44px; text-transform: none; font-size: 14px; letter-spacing: 0.01em; }
 /* runsetup 02: compact, at their own width */
 #pbApp#pbApp #screen-input .pb-runsec-alts { padding: 8px 16px 0 16px; justify-content: flex-start; }
-#pbApp#pbApp #screen-input .pb-runsec-alts .pb-btn { flex: 0 1 auto; min-height: 44px; padding: 0 14px; border-radius: 22px; box-shadow: none; background: transparent; border: 1.5px solid var(--pb-border, #b9b4a8); color: var(--pb-text); font-weight: 600; }
+#pbApp#pbApp #screen-input .pb-runsec-alts .pb-btn { flex: 0 1 auto; min-height: 44px; padding: 0 14px; border-radius: 22px; box-shadow: none; background: transparent; border: 1.5px solid var(--pb-text-3); color: var(--pb-text); font-weight: 600; }
 #pbApp#pbApp #screen-input #runSecJob > details.pb-jobgrp:not([open]) > summary { flex-wrap: wrap; row-gap: 0; padding-top: 8px; padding-bottom: 8px; }
 #pbApp#pbApp #screen-input #runSecJob > details.pb-jobgrp:not([open]) .pb-jobgrp-sum { flex: 1 1 100%; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.35; }""")
 open(out, 'w', encoding='utf-8').write(s)

@@ -80,6 +80,6 @@ rep("""#pbApp#pbApp #screen-input #pbRfWhoLine { margin-top: 0; margin-bottom: 0
 #pbApp#pbApp #screen-input .pb-plchips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 2px 0 10px; }
 #pbApp#pbApp #screen-input .pb-plchips[hidden] { display: none; }
 #pbApp#pbApp #screen-input .pb-plchips-l { font-size: 14px; color: var(--pb-text-2); }
-#pbApp#pbApp #screen-input .pb-plchip { min-height: 44px; padding: 0 14px; border-radius: 22px; border: 1.5px solid var(--pb-border, #b9b4a8); background: var(--pb-surface, #fff); color: var(--pb-text); font: inherit; font-size: 15px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }""")
+#pbApp#pbApp #screen-input .pb-plchip { min-height: 44px; padding: 0 14px; border-radius: 22px; border: 1.5px solid var(--pb-text-3); background: var(--pb-surface); color: var(--pb-text); font: inherit; font-size: 15px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }""")
 open(out, 'w', encoding='utf-8').write(s)
 print('01_pipelayer_prefill ok')

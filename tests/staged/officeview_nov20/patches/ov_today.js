@@ -117,7 +117,8 @@
     const all = pbOvBuild(B, feed, people, jobs, O.fit, day), rows = pbOvSorted(all, O.sort);
     const ats = [B && B.at, feed ? O.at : 0].filter(t => t > 0), at = ats.length ? Math.min.apply(null, ats) : 0;
     const cached = !!((B && B.cached) || (feed && O.cached)), busy = !!((B && B.busy) || O.busy);
-    const st = (day !== now ? 'Showing ' + pbRpfDayShort(day) + ', the last copy saved here. ' : '') + pbCxAge(busy, O.msg, at, cached) + (!feed && B ? ' Daily reports, tickets and delays load with signal.' : '') + (O.more && feed ? ' More than 100 records today: the newest 100 are counted.' : '');
+    const nosig = O.msg === 'No signal.' && at > 0; // lead with the copy's time: the app hides lines that only say "No signal." (its banner says it once)
+    const st = (day !== now ? 'Showing ' + pbRpfDayShort(day) + ', the last copy saved here. ' : '') + pbCxAge(busy, nosig ? '' : O.msg, at, cached || nosig) + (!feed && B ? ' Daily reports, tickets and delays load with signal.' : '') + (O.more && feed ? ' More than 100 records today: the newest 100 are counted.' : '');
     const th = PB_OV_COLS.map(([k, label, tip]) => '<th scope="col" class="ov-c-' + k + '"' + (O.sort.k === k ? ' aria-sort="' + (O.sort.d > 0 ? 'ascending' : 'descending') + '"' : '') + '><button type="button" class="ov-sort" id="ovSort_' + k + '" data-k="' + k + '"' + (tip ? ' title="' + pbCxE(tip) + '"' : '') + ' onclick="pbOvSort(this.dataset.k)">' + pbCxE(label) + '<span class="ov-arrow" aria-hidden="true">' + (O.sort.k === k ? (O.sort.d > 0 ? '▲' : '▼') : '') + '</span></button></th>').join('');
     const dash = '<span class="ov-dim">–</span>';
     const tr = (r, i) => {
