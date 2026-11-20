@@ -1091,20 +1091,22 @@
 "grp": "fresh"
 },
 {
-"id": "lib-wv-tc-1",
+"id": "lib-ak-tc-2",
 "cat": "traffic",
-"q": "Do my flaggers need a card or certification here?",
-"where": "Charleston, WV",
+"q": "How big does the STOP/SLOW paddle have to be on a state highway here?",
+"where": "Anchorage, AK",
 "level": "foreman",
 "kind": "rule",
 "must": [
-"ATSSA"
+"24 ?(in|inch|\\\")",
+"8 ?(in|inch|\\\")"
 ],
 "lead": [
-"yes|no\\b|must|need|require|train|certif|not"
+"24"
 ],
 "chunks": [
-"tc-wv-adopt-1"
+"tc-ak-ttc-1",
+"tc-ak-adopt-1"
 ],
 "state_strict": true,
 "coll": "traffic",
@@ -1134,20 +1136,20 @@
 "grp": "fresh"
 },
 {
-"id": "lib-ak-tc-1",
+"id": "lib-wv-tc-1",
 "cat": "traffic",
 "q": "Do my flaggers need a card or certification here?",
-"where": "Anchorage, AK",
+"where": "Charleston, WV",
 "level": "foreman",
 "kind": "rule",
 "must": [
-"ATSSA|IMSA"
+"ATSSA"
 ],
 "lead": [
 "yes|no\\b|must|need|require|train|certif|not"
 ],
 "chunks": [
-"tc-ak-adopt-1"
+"tc-wv-adopt-1"
 ],
 "state_strict": true,
 "coll": "traffic",
@@ -1176,23 +1178,42 @@
 "grp": "fresh"
 },
 {
-"id": "lib-ca-tc-3",
+"id": "lib-ca-tc-4",
 "cat": "traffic",
-"q": "How far apart do the advance warning signs go on a 35 mph street?",
+"q": "Sign spacing on a 45 mph street?",
 "where": "Wildomar, CA",
 "level": "foreman",
 "kind": "simple",
 "must": [
-"200( ?ft| ?feet| ?foot|\\')"
+"300( ?ft| ?feet| ?foot|\\')"
 ],
 "lead": [
-"200"
+"300"
 ],
 "chunks": [
 "tc-ca-signspacing-1"
 ],
-"mustnot": [
-"350 ?(ft|feet)"
+"state_strict": true,
+"coll": "traffic",
+"tier": "core",
+"grp": "fresh"
+},
+{
+"id": "lib-nv-tc-2",
+"cat": "traffic",
+"q": "What signs do I need for double penalties in my work zone?",
+"where": "Las Vegas, NV",
+"level": "foreman",
+"kind": "rule",
+"must": [
+"DOUBLE PENALTIES IN WORK ZONES",
+"begin|end"
+],
+"lead": [
+"DOUBLE PENALTIES|three|3"
+],
+"chunks": [
+"tc-nv-fines-1"
 ],
 "state_strict": true,
 "coll": "traffic",
@@ -1221,22 +1242,46 @@
 "grp": "fresh"
 },
 {
-"id": "lib-us-mutcd-55",
+"id": "lib-ma-tc-3",
 "cat": "traffic",
-"q": "What counts as short duration work?",
-"where": "Little Rock, AR",
-"level": "pipelayer",
-"kind": "simple",
+"q": "Does every flagger need an airhorn here?",
+"where": "Worcester, MA",
+"level": "foreman",
+"kind": "rule",
 "must": [
-"1 hour|one hour|60 minutes"
+"airhorn|air horn",
+"yes|every|all|must"
 ],
 "lead": [
-"1 hour|one hour|60 minutes"
+"yes|airhorn|air horn"
 ],
 "chunks": [
-"mutcd-6n-duration-1",
-"mutcd-6n-short-1"
+"tc-ma-adopt-1",
+"tc-ma-ttc-1"
 ],
+"state_strict": true,
+"coll": "traffic",
+"tier": "core",
+"grp": "fresh"
+},
+{
+"id": "lib-de-tc-2",
+"cat": "traffic",
+"q": "Which Delaware MUTCD edition is in effect?",
+"where": "Dover, DE",
+"level": "foreman",
+"kind": "simple",
+"must": [
+"2011",
+"2026|pending"
+],
+"lead": [
+"2011"
+],
+"chunks": [
+"tc-de-adopt-1"
+],
+"state_strict": true,
 "coll": "traffic",
 "tier": "core",
 "grp": "fresh"
@@ -1263,6 +1308,27 @@
 "grp": "fresh"
 },
 {
+"id": "lib-us-mutcd-55",
+"cat": "traffic",
+"q": "What counts as short duration work?",
+"where": "Little Rock, AR",
+"level": "pipelayer",
+"kind": "simple",
+"must": [
+"1 hour|one hour|60 minutes"
+],
+"lead": [
+"1 hour|one hour|60 minutes"
+],
+"chunks": [
+"mutcd-6n-duration-1",
+"mutcd-6n-short-1"
+],
+"coll": "traffic",
+"tier": "core",
+"grp": "fresh"
+},
+{
 "id": "lib-nv-tc-1",
 "cat": "traffic",
 "q": "Do my flaggers need a card or certification here?",
@@ -1277,28 +1343,6 @@
 ],
 "chunks": [
 "tc-nv-adopt-1"
-],
-"state_strict": true,
-"coll": "traffic",
-"tier": "core",
-"grp": "fresh"
-},
-{
-"id": "lib-nv-tc-2",
-"cat": "traffic",
-"q": "What signs do I need for double penalties in my work zone?",
-"where": "Las Vegas, NV",
-"level": "foreman",
-"kind": "rule",
-"must": [
-"DOUBLE PENALTIES IN WORK ZONES",
-"begin|end"
-],
-"lead": [
-"DOUBLE PENALTIES|three|3"
-],
-"chunks": [
-"tc-nv-fines-1"
 ],
 "state_strict": true,
 "coll": "traffic",
@@ -1347,47 +1391,6 @@
 "grp": "fresh"
 },
 {
-"id": "lib-pa-tc-2",
-"cat": "traffic",
-"q": "Which PennDOT publication has the work zone setups?",
-"where": "Harrisburg, PA",
-"level": "foreman",
-"kind": "simple",
-"must": [
-"213"
-],
-"lead": [
-"213"
-],
-"chunks": [
-"tc-pa-adopt-1"
-],
-"state_strict": true,
-"coll": "traffic",
-"tier": "core",
-"grp": "fresh"
-},
-{
-"id": "lib-mt-tc-1",
-"cat": "traffic",
-"q": "Do my flaggers need a card or certification here?",
-"where": "Billings, MT",
-"level": "foreman",
-"kind": "rule",
-"must": [
-"certif"
-],
-"lead": [
-"yes|no\\b|must|need|require|train|certif|not"
-],
-"chunks": [
-"tc-mt-adopt-1"
-],
-"coll": "traffic",
-"tier": "core",
-"grp": "fresh"
-},
-{
 "id": "lib-wy-spec-1",
 "cat": "specs",
 "q": "What lift and density for culvert backfill on a WYDOT job?",
@@ -1430,6 +1433,47 @@
 "grp": "fresh"
 },
 {
+"id": "lib-tx-spec-4",
+"cat": "specs",
+"q": "What is the line and grade tolerance for a jack and bore under the highway?",
+"where": "El Paso, TX",
+"level": "pipelayer",
+"kind": "rule",
+"must": [
+"1 (in|inch)[^.]{0,20}10 (ft|feet)"
+],
+"lead": [
+"1 (in|inch)[^.]{0,20}10 (ft|feet)"
+],
+"chunks": [
+"spec-tx-dot-bore-1"
+],
+"state_strict": true,
+"coll": "specs",
+"tier": "core",
+"grp": "fresh"
+},
+{
+"id": "lib-us-mfr-7",
+"cat": "specs",
+"q": "Minimum cover for 60 inch HDPE storm pipe under a road?",
+"where": "Wichita, KS",
+"level": "pipelayer",
+"kind": "simple",
+"must": [
+"2 (ft|feet)|24 (in|inch)"
+],
+"lead": [
+"2 (ft|feet)|24 (in|inch)"
+],
+"chunks": [
+"mfr-ads-cover-1"
+],
+"coll": "specs",
+"tier": "core",
+"grp": "fresh"
+},
+{
 "id": "lib-tx-spec-2",
 "cat": "specs",
 "q": "When do we pull the mandrel on HDPE storm pipe and what size?",
@@ -1445,6 +1489,48 @@
 ],
 "chunks": [
 "spec-tx-dot-plastic-1"
+],
+"state_strict": true,
+"coll": "specs",
+"tier": "core",
+"grp": "fresh"
+},
+{
+"id": "lib-in-spec-1",
+"cat": "specs",
+"q": "How much plastic storm pipe gets mandrel tested on an INDOT job?",
+"where": "Fort Wayne, IN",
+"level": "pipelayer",
+"kind": "simple",
+"must": [
+"10 ?(%|percent)"
+],
+"lead": [
+"10 ?(%|percent)"
+],
+"chunks": [
+"spec-in-dot-pipe-1"
+],
+"state_strict": true,
+"coll": "specs",
+"tier": "core",
+"grp": "fresh"
+},
+{
+"id": "lib-tx-spec-1",
+"cat": "specs",
+"q": "How thick can backfill lifts be around pipe on a TxDOT job?",
+"where": "Waco, TX",
+"level": "pipelayer",
+"kind": "simple",
+"must": [
+"8 (in|inch)"
+],
+"lead": [
+"8 (in|inch)"
+],
+"chunks": [
+"spec-tx-dot-trench-1"
 ],
 "state_strict": true,
 "coll": "specs",
@@ -1474,89 +1560,6 @@
 "grp": "fresh"
 },
 {
-"id": "lib-tx-spec-4",
-"cat": "specs",
-"q": "What is the line and grade tolerance for a jack and bore under the highway?",
-"where": "El Paso, TX",
-"level": "pipelayer",
-"kind": "rule",
-"must": [
-"1 (in|inch)[^.]{0,20}10 (ft|feet)"
-],
-"lead": [
-"1 (in|inch)[^.]{0,20}10 (ft|feet)"
-],
-"chunks": [
-"spec-tx-dot-bore-1"
-],
-"state_strict": true,
-"coll": "specs",
-"tier": "core",
-"grp": "fresh"
-},
-{
-"id": "lib-tx-spec-1",
-"cat": "specs",
-"q": "How thick can backfill lifts be around pipe on a TxDOT job?",
-"where": "Waco, TX",
-"level": "pipelayer",
-"kind": "simple",
-"must": [
-"8 (in|inch)"
-],
-"lead": [
-"8 (in|inch)"
-],
-"chunks": [
-"spec-tx-dot-trench-1"
-],
-"state_strict": true,
-"coll": "specs",
-"tier": "core",
-"grp": "fresh"
-},
-{
-"id": "lib-us-mfr-7",
-"cat": "specs",
-"q": "Minimum cover for 60 inch HDPE storm pipe under a road?",
-"where": "Wichita, KS",
-"level": "pipelayer",
-"kind": "simple",
-"must": [
-"2 (ft|feet)|24 (in|inch)"
-],
-"lead": [
-"2 (ft|feet)|24 (in|inch)"
-],
-"chunks": [
-"mfr-ads-cover-1"
-],
-"coll": "specs",
-"tier": "core",
-"grp": "fresh"
-},
-{
-"id": "lib-in-spec-1",
-"cat": "specs",
-"q": "How much plastic storm pipe gets mandrel tested on an INDOT job?",
-"where": "Fort Wayne, IN",
-"level": "pipelayer",
-"kind": "simple",
-"must": [
-"10 ?(%|percent)"
-],
-"lead": [
-"10 ?(%|percent)"
-],
-"chunks": [
-"spec-in-dot-pipe-1"
-],
-"state_strict": true,
-"coll": "specs",
-"tier": "core",
-"grp": "fresh"
-},
-{
 "id": "lib-us-std-14",
 "cat": "specs",
 "q": "What is the load factor for Class B bedding on clay pipe?",
@@ -1568,6 +1571,26 @@
 ],
 "lead": [
 "1\\.9"
+],
+"chunks": [
+"std-astm-c12clay-1"
+],
+"coll": "specs",
+"tier": "core",
+"grp": "fresh"
+},
+{
+"id": "lib-us-std-15",
+"cat": "specs",
+"q": "Load factor for clay pipe in flowable fill?",
+"where": "Louisville, KY",
+"level": "pipelayer",
+"kind": "simple",
+"must": [
+"2\\.8"
+],
+"lead": [
+"2\\.8"
 ],
 "chunks": [
 "std-astm-c12clay-1"
@@ -1591,27 +1614,6 @@
 ],
 "chunks": [
 "spec-ky-dot-inspect-1"
-],
-"state_strict": true,
-"coll": "specs",
-"tier": "core",
-"grp": "fresh"
-},
-{
-"id": "lib-ut-spec-2",
-"cat": "specs",
-"q": "Which spec book do city water and sewer jobs here usually use?",
-"where": "Provo, UT",
-"level": "pipelayer",
-"kind": "simple",
-"must": [
-"APWA"
-],
-"lead": [
-"APWA"
-],
-"chunks": [
-"spec-ut-dot-edition-1"
 ],
 "state_strict": true,
 "coll": "specs",
@@ -1684,28 +1686,6 @@
 "grp": "fresh"
 },
 {
-"id": "lib-us-fed-12",
-"cat": "dot",
-"q": "Do we need a DOT number on our pickups? We only work in state.",
-"where": "Phoenix, AZ",
-"level": "office",
-"kind": "rule",
-"must": [
-"10,?001",
-"Arizona|state"
-],
-"lead": [
-"yes|10,?001|Arizona"
-],
-"mustnot": [],
-"chunks": [
-"fed-fmcsa-usdot-number-1"
-],
-"coll": "more",
-"tier": "core",
-"grp": "fresh"
-},
-{
 "id": "lib-us-fed-20",
 "cat": "environmental",
 "q": "Hydraulic hose blew and theres a sheen on the creek. Who do I call?",
@@ -1728,25 +1708,45 @@
 "grp": "fresh"
 },
 {
-"id": "lib-fl-spec-more-1",
-"cat": "water",
-"q": "Can I pull both sets of bac-t samples the same day?",
-"where": "Orlando, FL",
-"level": "foreman",
+"id": "lib-us-fed-12",
+"cat": "dot",
+"q": "Do we need a DOT number on our pickups? We only work in state.",
+"where": "Phoenix, AZ",
+"level": "office",
 "kind": "rule",
 "must": [
-"separate day",
-"6 hours|six hours",
-"62-555"
+"10,?001",
+"Arizona|state"
 ],
 "lead": [
-"no"
+"yes|10,?001|Arizona"
 ],
 "mustnot": [],
 "chunks": [
-"spec-fl-dep-main-disinfection-1"
+"fed-fmcsa-usdot-number-1"
 ],
-"state_strict": true,
+"coll": "more",
+"tier": "core",
+"grp": "fresh"
+},
+{
+"id": "lib-us-fed-9",
+"cat": "dot",
+"q": "How many gas cans can we carry in the crew truck before we need hazmat placards?",
+"where": "Jackson, MS",
+"level": "foreman",
+"kind": "rule",
+"must": [
+"8 gallons?",
+"440 (lb|pounds)"
+],
+"lead": [
+"8 gallons?|440"
+],
+"mustnot": [],
+"chunks": [
+"fed-phmsa-fuel-cans-1"
+],
 "coll": "more",
 "tier": "core",
 "grp": "fresh"

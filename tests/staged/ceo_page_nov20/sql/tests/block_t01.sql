@@ -304,8 +304,9 @@ begin
     select 1, 'safety', 'Confined space permit open ' || round((extract(epoch from now() - o.first_saved_at) / 3600)::numeric) || ' hours: '
            || coalesce(c.name, 'a company') || coalesce(' · ' || nullif(left(o.space, 40), ''), '')
       from pb_safety.open_permits o left join public.companies c on c.id = o.company_id where o.first_saved_at < now() - interval '8 hours'
-    union all select 1, 'safety', 'Emergency notice sent ' || to_char(max(e.created_at) at time zone 'UTC', 'Mon DD') || ' (' || count(distinct (e.permit_ref, e.started_at)) || ' in 7 days). Call the company.'
-      from pb_safety.em_notices e where e.created_at > now() - interval '7 days' having count(*) > 0
+    union all select 1, 'safety', 'Confined space emergency at ' || coalesce(c.name, 'a company') || ', ' || to_char(max(e.created_at) at time zone 'UTC', 'Mon DD')
+           || case when count(distinct (e.permit_ref, e.started_at)) > 1 then ' (' || count(distinct (e.permit_ref, e.started_at)) || ' in 7 days)' else '' end || '. Call them.'
+      from pb_safety.em_notices e left join public.companies c on c.id = e.company_id where e.created_at > now() - interval '7 days' group by c.name
     union all select 1, 'reliability', 'Backup: ' || pb_backup.health(now()) where pb_backup.health(now()) is not null
     union all select 1, 'reliability', 'Sealed run files that no longer match their fingerprint: ' || count(*) || '. Look before anyone relies on them.'
       from pb_prod.run_seal_checks x where not x.matches having count(*) > 0

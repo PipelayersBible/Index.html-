@@ -46,8 +46,8 @@ same ones Beta Accounts already shows Tommy.
 ## Files
 | File | What |
 |---|---|
-| `sql/01_owner_dashboard.sql` (md5 ce714b21…) | Adds `public.pb_owner_dashboard(integer)` (granted to authenticated, refuses anyone but the app owner via `pb_support.admin_ok`, i.e. with the two-step code when the login has one) and `pb_support.dash_uc()` (helper, not callable from the API). Changes nothing else. Reads `pb_auth.flags` only if it exists (dynamic SQL), so it can go before or after one_device. |
-| `sql/tests/block_t01.sql` (md5 7977869c…) | ONE query for the live SQL editor: the migration + read-only checks on live data; ends with `RESULT: {...}` so it all rolls back. Inserts nothing. |
+| `sql/01_owner_dashboard.sql` (md5 c084a365…) | Adds `public.pb_owner_dashboard(integer)` (granted to authenticated, refuses anyone but the app owner via `pb_support.admin_ok`, i.e. with the two-step code when the login has one) and `pb_support.dash_uc()` (helper, not callable from the API). Changes nothing else. Reads `pb_auth.flags` only if it exists (dynamic SQL), so it can go before or after one_device. |
+| `sql/tests/block_t01.sql` (md5 e29fee2e…) | ONE query for the live SQL editor: the migration + read-only checks on live data; ends with `RESULT: {...}` so it all rolls back. Inserts nothing. |
 | `sql/99_undo.sql` | Drops the two functions. |
 | `sql/tests/local_t01.sql`, `sql/local/*` | Local Postgres 16 test (stand-ins copied from live definitions): **50 pass**; live block on the same base: **16 pass**, also with a `pb_auth.flags` in the one_device shape; migration and undo each run twice. `bash sql/local/run_local.sh`. |
 | `patches/p01_owner_dashboard.py` (md5 92720a73…) | App patch on `_src/index.html` r17.11 (md5 3813d6f2…), 5 exact-once swaps; all inline scripts pass `node --check`. |
@@ -93,7 +93,7 @@ Undo: `sql/99_undo.sql` (the app then shows the "not set up" line; nothing else 
 3. **Copy failed sign-ins and edge function errors into the database nightly?** Recommend yes after one_device is live
    — it is the only way the page can show them without putting keys on a phone.
 4. **"Gone quiet" = 7 days without opening the app.** Recommend 7 for now (crews work weekdays); 14 if it is noisy.
-5. **Emergency notices on this page show only the count and date, never who or where.** Recommend keeping it that way;
-   the company has the details.
+5. **Emergency lines name the company and the date, not the worker or the space.** Recommend keeping it that way
+   (you call the company; the company has the details).
 
 ## DONE
