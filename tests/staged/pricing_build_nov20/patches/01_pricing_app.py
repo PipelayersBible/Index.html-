@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-# pricing_nov20: the price shown in the app, the individual plan's sign-up wording, clear "limit reached" messages.
+# pricing_nov20 (v2, the owner's Nov 20 decisions): the price shown in the app (company $99 + $12; individual $15 a month or
+# $144 a year; plan reading $1 a sheet), the individual plan's sign-up wording, clear "limit reached" messages.
 # Usage: python3 01_pricing_app.py in.html out.html   (base: r17.11 master source; every replacement must match exactly once)
 import sys
 s = open(sys.argv[1], encoding='utf-8').read()
@@ -12,10 +13,11 @@ def rep(old, new, count=1):
 rep("""    function pbBetaRender() {
       const beta = !!(plan && plan.plan === 'trial');""",
 """    /* pricing_nov20: the price list. It comes from the server with the plan (pb_my_plan); until it has answered these are the same numbers. */
-    const pbPr = () => { const p = (plan && plan.prices) || {}, n = (v, d) => (v !== null && v !== '' && Number.isFinite(+v) ? +v : d); return { base: n(p.base_cents, 9900), seats: n(p.base_seats, 5), seat: n(p.seat_cents, 1200), ym: n(p.yearly_months, 10), fm: n(p.founder_months, 12), ind: n(p.individual_cents, 1200) }; };
+    const pbPr = () => { const p = (plan && plan.prices) || {}, n = (v, d) => (v !== null && v !== '' && Number.isFinite(+v) ? +v : d); return { base: n(p.base_cents, 9900), seats: n(p.base_seats, 5), seat: n(p.seat_cents, 1200), ym: n(p.yearly_months, 10), fm: n(p.founder_months, 12), ind: n(p.individual_cents, 1500), indy: n(p.individual_year_cents, 14400), sheet: n(p.plan_sheet_cents, 100) }; };
     const pbUsd = (c) => { const d = Number(c || 0) / 100; return '$' + (Number.isInteger(d) ? String(d) : d.toFixed(2)); };
     const pbPriceCo = () => { const p = pbPr(); return pbUsd(p.base) + ' a month for your company and ' + p.seats + ' people, ' + pbUsd(p.seat) + ' a month for each extra person, plus applicable tax.'; };
-    const pbPriceInd = () => pbUsd(pbPr().ind) + ' a month plus applicable tax';
+    const pbPriceInd = () => { const p = pbPr(); return pbUsd(p.ind) + ' a month, or ' + pbUsd(p.indy) + ' for a year (' + pbUsd(Math.round(p.indy / 12)) + ' a month), plus applicable tax'; };
+    window.pbSheetUsd = () => pbUsd(pbPr().sheet); /* plan reading add-on: per sheet, charged once when the sheet is read */
     const pbReqKey = () => 'pbPlanReq:' + (sbUser ? sbUser.id : '');
     const pbReqSent = (kind) => '<span>' + (kind === 'individual' ? 'Request sent. You\\u2019ll get an email with how to pay: ' + pbPriceInd() + '.'
       : kind === 'company' ? 'Request sent. You\\u2019ll get an email with the invoice: ' + pbPriceCo()
@@ -23,7 +25,7 @@ rep("""    function pbBetaRender() {
     const pbReqKind = (office) => { if (office) return 'company'; try { return localStorage.getItem(pbReqKey()) || ''; } catch (e) { return ''; } };
     window.pbPlanPrices = () => Object.assign({ usd: pbUsd, company: pbPriceCo(), individual: pbPriceInd() }, pbPr());
     function pbPriceFill() { /* every price written in the page (Settings, What each plan includes) follows the server's list */
-      try { const p = pbPr(), v = { base: pbUsd(p.base), seats: String(p.seats), seat: pbUsd(p.seat), ym: String(p.ym), ind: pbUsd(p.ind), indyear: pbUsd(p.ind * p.ym), fm: String(p.fm) };
+      try { const p = pbPr(), v = { base: pbUsd(p.base), seats: String(p.seats), seat: pbUsd(p.seat), ym: String(p.ym), ind: pbUsd(p.ind), indyear: pbUsd(p.indy), indym: pbUsd(Math.round(p.indy / 12)), sheet: pbUsd(p.sheet), fm: String(p.fm) };
         document.querySelectorAll('[data-pbp]').forEach((el) => { const t = v[el.getAttribute('data-pbp')]; if (t && el.textContent !== t) el.textContent = t; }); } catch (e) {}
     }
     function pbPlanAskBind(line) { /* the request buttons: the same request as before (the app owner answers it), now with the price said */
@@ -90,7 +92,8 @@ rep("""<p class="pb-help" id="settingsPlanHelp">Individual plan: New Run, Quick 
 """<div class="pb-help" id="settingsPlanHelp"><!-- pricing_nov20 -->
           <p><b>Company plan: <span data-pbp="base">$99</span> a month</b> for your company and <span data-pbp="seats">5</span> people. <span data-pbp="seat">$12</span> a month for each extra person. Pay for the year and get 12 months for the price of <span data-pbp="ym">10</span>. Everyone with a login counts as a person. The company account is free and doesn&rsquo;t count.</p>
           <p>Everything in the app for the whole company: runs with photos and sealed records, Confined Space permits, trench and shoring, daily reports, tickets, locates, the company board and office screens, crew invites, the calculators, Education &amp; Reference and Ask.</p>
-          <p><b>Individual plan: <span data-pbp="ind">$12</span> a month</b> (<span data-pbp="indyear">$120</span> for a year). One person, no company: New Run, Quick Run, the calculators, Education &amp; Reference, Stats, Jobs, Ask and stake reading.</p>
+          <p><b>Individual plan: <span data-pbp="ind">$15</span> a month</b>, or <span data-pbp="indym">$12</span> a month billed yearly (<span data-pbp="indyear">$144</span> a year). One person, no company: New Run, Quick Run, the calculators, Education &amp; Reference, Stats, Jobs, Ask and stake reading.</p>
+          <p><b>Plan reading (add-on for company plans): <span data-pbp="sheet">$1</span> a sheet</b>, charged once when the sheet is read. Questions about your plans after that count as normal Ask requests. It isn&rsquo;t turned on yet: plan sets you add are kept and you can still open the sheets.</p>
           <p>Prices are plus applicable tax. There is no free plan.</p>
           <p>Ask and photo reading have daily and monthly limits. A person on a company plan: 25 a day. The company account: 5 a day. An individual plan: 15 a day, 50 a month. A company shares 60 a month for each person on its plan. The app tells you when a limit is reached and when it resets.</p>
         </div>""")
@@ -133,7 +136,7 @@ rep("""pbTkAiShow('warn', 'Ticket not read.', 'No AI readings left today. Type t
 # ---- 9. the app owner's Billing: the individual price, and the individual plans with Paid
 rep("""' each extra · yearly = ' + pbNum(set.yearly_months, 10) + ' months</div>'
         + (due.length ?""",
-"""' each extra · yearly = ' + pbNum(set.yearly_months, 10) + ' months · individual ' + pbMoney(pbNum(set.individual_cents, 1200)) + ' a month</div>'
+"""' each extra · yearly = ' + pbNum(set.yearly_months, 10) + ' months · individual ' + pbMoney(pbNum(set.individual_cents, 1500)) + ' a month or ' + pbMoney(pbNum(set.individual_year_cents, 14400)) + ' a year · plan reading ' + pbMoney(pbNum(set.plan_sheet_cents, 100)) + ' a sheet</div>'
         + pbBillInd(B) /* pricing_nov20 */
         + (due.length ?""")
 rep("""    function pbBillDue(B) {
@@ -159,6 +162,19 @@ rep("""    function pbBillDue(B) {
 
 rep("""          : '<div class="ln">Nothing to invoice in the next ' + pbNum(set.invoice_ahead_days, 7) + ' days.</div>') + '</div>';""",
 """          : (pbBillInd(B) ? '' : '<div class="ln">Nothing to invoice in the next ' + pbNum(set.invoice_ahead_days, 7) + ' days.</div>')) + '</div>';""")
+
+# ---- 10. plan reading add-on: $1 a sheet, charged once when the sheet is read (v2). The price is said wherever the add-on is described.
+#      It stays OFF for customers until Billing can show sheets read; the app owner's screens say so.
+rep("""' You can open the sheets now. Plan reading for Ask starts with a paid plan.'""",
+"""' You can open the sheets now. Plan reading for Ask is an add-on on a paid plan: ' + (window.pbSheetUsd ? window.pbSheetUsd() : '$1') + ' a sheet, charged once.'""")
+rep("""(a.plan_reading ? 'on · ' + (a.plan_reading_cents == null ? 'price not set (not on the invoice)' : pbMoney(a.plan_reading_cents) + ' a month') : 'off (plan sets stay parked)')""",
+"""(a.plan_reading ? 'on · ' + (window.pbSheetUsd ? window.pbSheetUsd() : '$1') + ' a sheet, charged once when read. Billing doesn\\u2019t show sheets read yet: count them before you invoice' : 'off (plan sets stay parked) · ' + (window.pbSheetUsd ? window.pbSheetUsd() : '$1') + ' a sheet when it\\u2019s on')""")
+rep("""<span>Plan reading add-on' + (prc == null ? ' (price not set yet: not on the invoice)' : ' (' + pbMoney(prc) + ' a month)') + '. Off: plan sets stay parked.</span>""",
+"""<span>Plan reading add-on (' + (window.pbSheetUsd ? window.pbSheetUsd() : '$1') + ' a sheet, charged once when read). Leave it off for customers until Billing shows sheets read. Off: plan sets stay parked.</span>""")
+rep("""price = B && B.settings && typeof B.settings.plan_reading_cents === 'number' ? pbMoney(B.settings.plan_reading_cents) + ' a month' : 'price not set yet (not on the invoice)';""",
+"""price = (window.pbSheetUsd ? window.pbSheetUsd() : '$1') + ' a sheet, charged once when read. Billing doesn\\u2019t show sheets read yet, so you count them yourself';""")
+rep("""(d.plan_reading_price_missing ? ' · plan reading price not set' : '')""",
+"""(d.plan_reading_price_missing ? ' · plan reading is on: add ' + (window.pbSheetUsd ? window.pbSheetUsd() : '$1') + ' for each sheet read' : '')""")
 
 open(sys.argv[2], 'w', encoding='utf-8').write(s)
 print('ok', len(s))

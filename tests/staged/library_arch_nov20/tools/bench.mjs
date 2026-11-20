@@ -5,7 +5,8 @@
 import fs from "node:fs";
 import { buildIndex, search, tokenize } from "../work/retrieval.mjs";
 import { encodeIndex, decodeIndex } from "../work/kb_codec.mjs";
-const F = Number(process.argv[2] || 1);
+const F = Number(process.argv[2] || 1), MODE = process.argv[3] || "build";   // build = first cold start (read rows, build, save blob); blob = later cold starts (decode the saved blob)
+const BLOB = new URL("../work/blob_" + F + ".json", import.meta.url);
 const src = JSON.parse(fs.readFileSync(new URL("../../ask_state_nov20/work/kb_live2.json", import.meta.url)));
 const byLib = {};
 for (const lib of Object.keys(src)) {
@@ -14,16 +15,16 @@ for (const lib of Object.keys(src)) {
 }
 const mb = (n) => (n / 1048576).toFixed(1);
 const rss0 = process.memoryUsage().rss;
-let t = performance.now();
-const { index } = buildIndex(byLib, "bench");
-const tBuild = performance.now() - t;
+let t = performance.now(), index, tBuild = 0, tDec = 0, blob = null, tEnc = 0, decErr = "", json = "", tJson = 0;
+if (MODE === "blob") {
+  const b = JSON.parse(fs.readFileSync(BLOB, "utf8"));
+  for (const l in byLib) byLib[l].length = 0;
+  t = performance.now(); index = await decodeIndex(b, b.n); tDec = performance.now() - t; blob = b;
+} else {
+  index = buildIndex(byLib, "bench").index; tBuild = performance.now() - t;
+  try { t = performance.now(); blob = await encodeIndex(index); tEnc = performance.now() - t; fs.writeFileSync(BLOB, JSON.stringify(blob)); } catch (e) { decErr = "encode: " + String(e).slice(0, 80); }
+}
 const heapBuilt = process.memoryUsage().heapUsed;
-t = performance.now();
-const json = JSON.stringify(index);
-const tJson = performance.now() - t;
-let blob = null, tEnc = 0, tDec = 0, decErr = "";
-try { t = performance.now(); blob = await encodeIndex(index); tEnc = performance.now() - t; } catch (e) { decErr = "encode: " + e; }
-if (blob) { try { t = performance.now(); await decodeIndex(blob, index.N); tDec = performance.now() - t; } catch (e) { decErr = String(e).slice(0, 80); } }
 const QS = ["how deep can a trench be before I need a trench box", "how long is my 811 ticket good for", "confined space permit attendant duties",
   "taper length for a lane closure at 45 mph", "minimum cover over water main", "what does OSHA say about ladders in a trench", "do we get a lunch break",
   "how far from the edge do spoil piles have to be", "air monitor alarm set points h2s lel", "flagger station distance sign spacing"];
@@ -36,7 +37,7 @@ const dead = {};
 for (const term of Object.keys(index.t)) { const p = index.t[term], per = {}; for (let i = 1; i < p.length; i += 2) { const l = index.docs[p[i]][1]; per[l] = (per[l] || 0) + 1; } for (const l in per) if (per[l] > 4000) (dead[l] ||= []).push(term); }
 const qterms = [...new Set(QS.flatMap((q) => tokenize(q)))];
 const deadQ = qterms.filter((x) => (dead.field || []).includes(x));
-console.log(JSON.stringify({ factor: F, chunks: index.N, terms: Object.keys(index.t).length, build_ms: Math.round(tBuild), heap_after_build_mb: mb(heapBuilt),
-  index_json_mb: mb(json.length), json_ms: Math.round(tJson), blob_b64_mb: blob ? mb(blob.data.length) : null, blob_parts: blob ? Math.ceil(blob.data.length / 1e6) : null,
+console.log(JSON.stringify({ factor: F, mode: MODE, chunks: index.N, terms: Object.keys(index.t).length, build_ms: Math.round(tBuild), heap_after_build_mb: mb(heapBuilt),
+  blob_b64_mb: blob ? mb(blob.data.length) : null, blob_parts: blob ? Math.ceil(blob.data.length / 1e6) : null,
   encode_ms: Math.round(tEnc), decode_ms: Math.round(tDec), decode_err: decErr, per_question_search_ms: +tSearch.toFixed(1), rss_mb: mb(process.memoryUsage().rss),
   zero_weight_words_field: (dead.field || []).length, zero_weight_in_test_questions: deadQ }));

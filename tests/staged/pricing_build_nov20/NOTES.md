@@ -1,5 +1,11 @@
 # Pricing build (Nov 20 2026) — notes
 
+> **v2 IN PROGRESS (Tommy's Nov 20 decisions).** Server side done and tested locally: `sql/01_pricing_limits.sql` (individual
+> $15 a month / $144 a year, plan reading $1 a sheet as a setting, per-company limits table with DIG Civil's row),
+> `sql/undo_01_pricing_limits.sql` (proven by `sql/local/run_undo.sh`), `sql/tests/live_t01.sql` rebuilt (local: 14 groups,
+> 105 checks pass, plain and block mode). Still to do when this line is here: app patch, app test, website text, the rest of
+> this file (sections below are still v1). Old versions are the `*_v1` files.
+
 Everything here is STAGED. Nothing was applied to the server, deployed, committed or pushed. On the live project I ran
 SELECT statements only. The SQL was tested on a throwaway local Postgres, not on live.
 

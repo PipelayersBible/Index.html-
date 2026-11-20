@@ -244,6 +244,13 @@ end $function$;
 revoke all on function public.pb_device_seen(text, text, double precision, double precision, timestamptz, text) from public;
 grant execute on function public.pb_device_seen(text, text, double precision, double precision, timestamptz, text) to authenticated;
 
+-- One note per login per day (UTC), the strongest: far apart, then back and forth, then minutes apart. Last 30 days.
+create or replace view pb_auth.strongest_flags as
+  select distinct on (f.user_id, (f.at at time zone 'utc')::date) f.*
+    from pb_auth.flags f where f.at > now() - interval '30 days'
+   order by f.user_id, (f.at at time zone 'utc')::date, case f.kind when 'far_apart' then 1 when 'back_and_forth' then 2 else 3 end, f.at desc;
+revoke all on pb_auth.strongest_flags from public, anon, authenticated;
+
 -- The company account's quiet notes (owner and managers): the last 30 days, their own people only.
 create or replace function public.pb_share_notes()
  returns jsonb language plpgsql stable security definer set search_path to ''
@@ -258,9 +265,8 @@ begin
     select jsonb_agg(x.j order by x.at desc) from (
       select f.at, jsonb_build_object('who', case when f.user_id = v_owner then 'The company account' else coalesce(pb_crew.display_name(v_co, f.user_id), 'A crew member') end,
                'kind', f.kind, 'at', f.at, 'a', f.kind_a, 'b', f.kind_b, 'miles', f.miles, 'minutes', f.minutes, 'n', f.n) as j
-        from pb_auth.flags f
-       where f.at > now() - interval '30 days'
-         and (f.user_id = v_owner or exists (select 1 from public.company_members m where m.company_id = v_co and m.user_id = f.user_id))
+        from pb_auth.strongest_flags f
+       where (f.user_id = v_owner or exists (select 1 from public.company_members m where m.company_id = v_co and m.user_id = f.user_id))
        order by f.at desc limit 20) x), '[]'::jsonb));
 end $function$;
 revoke all on function public.pb_share_notes() from public;
@@ -277,12 +283,11 @@ begin
       select f.at, jsonb_build_object(
                'who', coalesce(case when c.owner_user_id = f.user_id then 'The company account' else pb_crew.display_name(c.id, f.user_id) end, u.email, 'A login'),
                'company', c.name, 'kind', f.kind, 'at', f.at, 'a', f.kind_a, 'b', f.kind_b, 'miles', f.miles, 'minutes', f.minutes, 'n', f.n) as j
-        from pb_auth.flags f
+        from pb_auth.strongest_flags f
         left join auth.users u on u.id = f.user_id
         left join lateral (select c0.id, c0.name, c0.owner_user_id from public.companies c0
                             where c0.owner_user_id = f.user_id or c0.id = (select m.company_id from public.company_members m where m.user_id = f.user_id limit 1)
                             order by (c0.owner_user_id = f.user_id) desc limit 1) c on true
-       where f.at > now() - interval '30 days'
        order by f.at desc limit 50) x), '[]'::jsonb));
 end $function$;
 revoke all on function public.pb_owner_share_notes() from public;
