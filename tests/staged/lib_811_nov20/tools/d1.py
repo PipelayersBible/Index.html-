@@ -95,8 +95,8 @@ A ticket should cover no more than half a mile. There is no project or long-term
 Designers should not open locate tickets for design; use the Project Design lookup to get operator contacts.""",
       'NAC 455.165, 455.115 (leg.state.nv.us, rev. Aug 2026); USA North 811 Nevada Excavation Handbook (Jan 2025) pp. 5-8', 'https://www.leg.state.nv.us/nac/NAC-455.html', ed='NAC 455 as revised August 2026')
     S('NV', 'marks', 'hand tools within 24 inches, white marking, positive response', """
-Nevada hand dig rule, from the USA North handbook (p. 4): "Use hand tools only to expose and determine the facility's exact location, when digging within 24 inches on either side of the outside diameter" of the line. Report any contact, scrape, dent or nick to the operator.
-White marking (p. 3): "Delineate the excavation site on paved surfaces with white spray chalk, water-based UV paint, or an equivalent non-permanent marking medium." On dirt use white flags, stakes or whiskers.
+Nevada hand dig rule, from the USA North handbook (p. 4): use hand tools only, to expose the line and find its exact location, when digging within 24 inches on either side of the outside diameter of the line. Report any contact, scrape, dent or nick to the operator.
+White marking (p. 3): on pavement, outline the dig with white spray chalk, water-based UV paint or something else that is not permanent. On dirt use white flags, stakes or whiskers.
 Marks follow the APWA uniform color code.
 Positive response: check Electronic Positive Response at usanorth811.org/epr before digging. If a member has not answered by the legal start time, send a No Response notification naming the member; if there is still nothing after an hour you may send it again each hour.
 Operators have 2 working days to mark, or a time you both agree to (NRS 455.130).""",
@@ -214,7 +214,7 @@ No ticket needed (19.122.031): digging less than 12 inches deep on private nonco
 Oregon's dig rules are ORS 757.542 to 757.562 and OAR chapter 952, written by the Oregon Utility Notification Center (Oregon 811).
 Pre-mark the dig area in white, then call at least 2 full business days and not more than 10 business days before digging.
 Do not start until you have "received a response from each operator of underground facilities in the area."
-Ticket life: the Center's 2026 Addendum says the rule was changed "from 45 days to 30 days," effective January 8, 2026. Older copies of the rule and the Center's own FAQ page still say 45 calendar days. Until you confirm with Oregon 811, plan on 30 days. Past ticket life, call in a new locate request.
+Ticket life: the Center's 2026 Addendum says the rule was changed "from 45 days to 30 days," effective January 8, 2026. Older copies of the rule and the Center's own FAQ page still say 45 calendar days, so the current number is not confirmed. Until you check with Oregon 811, plan on 30 days. Past ticket life, call in a new locate request.
 Tolerance zone: 24 inches around the outside of the line on all sides. Use hand tools or other non-invasive methods there.
 Hit a line: tell the operator right away; gas or hazardous liquid release, call 911. Don't bury it without the operator's OK.""",
       ORS_, 'https://digsafelyoregon.com/wp-content/uploads/2026/03/2026-Addendum-to-the-Oregon-Standards-Manual_Final.pdf', ed='2026 Addendum, last updated March 12, 2026', eff='2026-01-08', conf='medium', unc='ticket life 30 vs 45 days: the official rule text with the 2026 change was not opened')
@@ -262,11 +262,11 @@ Meets: if a member is 15 minutes late with no contact, send a Re-Notification.
 Whether an update gets a new ticket number is not confirmed.""",
       COH, COU, ed='Handbook last updated November 2022', lic='summary', conf='medium', unc='new ticket number on an update')
     S('CO', 'marks', 'tolerance zone 18 inches, non-destructive digging, positive response', """
-Colorado tolerance zone: the "width of underground facility plus 18" on each side" (handbook p. 18; C.R.S. 9-1.5-103).
-Inside it: "Use non-destructive means to excavate within the tolerance zone (e.g., hand digging, vacuum excavation)." Power equipment there can damage the line.
-Pre-marking the dig area in white paint is "highly recommended"; the statute calls for white marks on a hard surface when the area can't be described.
+Colorado tolerance zone: the width of the underground line plus 18 inches on each side (handbook p. 18; C.R.S. 9-1.5-103).
+Inside it use non-destructive digging only, such as hand digging or vacuum excavation. Power equipment there can damage the line.
+Pre-marking the dig area in white paint is highly recommended; the statute calls for white marks on a hard surface when the area can't be described.
 Owners must mark with the APWA color code.
-Positive response: "verify the positive responses of all listed facility owner/operator members" before you dig. If a member has not responded by the locate-by date, "submit an Excavator Re-Notification before proceeding with excavation."
+Positive response: verify the positive response of every member listed on the ticket before you dig. If a member has not responded by the locate-by date, send an Excavator Re-Notification before going ahead.
 Marks gone or unclear: ask for a Relocate/Refresh rather than guessing.""",
       COH, COU, ed='Handbook last updated November 2022', lic='summary', conf='medium')
     S('CO', 'damage', 'line hits, emergencies, fines, exemptions', """

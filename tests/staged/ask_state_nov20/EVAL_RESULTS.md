@@ -1,27 +1,106 @@
 # Ask state-aware build: eval on ai-next (Nov 20 2026)
 
-## Recommendation: do NOT promote yet. One cheap same-day check first (about $1), then promote if it comes back clean.
+## Recommendation: do NOT promote today. Run the full set once on the final build `b7ad788e3a62` (about $4.50), then promote if it is clean. I expect it to be.
 
-- The state work itself passes: **36 of 36** state cases (nw1-26, sa1-10), no wrong state number, no unwanted "Which state?".
-- No answer got a fact wrong that the last full run got right, **except web1, and web1 fails the same way on the live build today**
-  (tested, see below), so it is not caused by this build.
-- But by the letter of the pass rule the score is lower: on the 101 cases both runs share, **75 pass now vs 80 in the last
-  full run**. All 10 net losses are answers 2 to 18 words over their word limit. I believe most of that is run-to-run
-  noise (these same cases flip in every past run), but I could not prove it inside the $5: the last full run is from
-  Nov 16, before the live build b4ad and before the Nov 17-20 library edits, so it is not a same-day comparison.
-- The check that settles it: run the 10 too-long cases (and the 9 photo cases not run) on the live build and on this
-  build back to back. If live is over the limit about as often, promote. If not, tighten the wording first.
+Why not today: the build now on `next` (b7ad788e3a62) has two changes made after the big run: shorter state wording, and a fix to
+the quote checker (the safety net that removes made-up OSHA quotes). Both tested well on 20 questions and 38 code tests, but
+the quote checker touches every answer that quotes a rule, and it has not seen the full set. That is the only thing missing.
+
+What round 2 settled (details in "Round 2" below):
+- **The length worry is gone.** Same day, same 10 questions: live passes 6 and averages 125 words; the final build passes 6 and
+  averages 122. The build before the tune passed 2 and averaged 132, so it did run long and the tune fixed it.
+- **Photos: 9 of 9 pass on live and on next.** All 12 photo questions are now run.
+- **State cases: 36 of 36**, and the 8 re-run on the final build still pass, a little shorter.
+- **web1 (pipe price) fails on live too.** Cause found, fix staged and tested once (works). Separate from this build.
+- **tr14 "[quote removed…]" marks:** cause found, fixed in the final build.
+
+Spent: round 1 $4.81 of $5, round 2 $2.85 of $3.
 
 ## What is installed
 | Slot | Build | Note |
 |---|---|---|
 | live | `b4ad91749f6f` | untouched |
-| next | `66c743680d2f65c948aedbf677a089bc9182a7152bfc2f648e02efb03b9de338` | stamp 1120-1631, repo commit 7e19b1f, `data/ask/b-66c743680d2f.txt`; blob md5 in the database equals the file |
+| next | `b7ad788e3a626dc3b73872048b60911029b0476ea68d5210456b0de4ac6e0fae` | stamp 1120-1647, repo commit 9c575fe, `data/ask/b-b7ad788e3a62.txt`; blob md5 in the database equals the file |
 
-- First build `f452a27f6053` (stamp 1120-1624, commit c1dc549) was on next for the first run, then replaced by the tuned build.
-- For one baseline question the live build b4ad was put on next for about a minute, then 66c743680d2f was put back (checked).
+- Builds on next today, in order: `f452a27f6053` (first), `66c743680d2f` (plan-state line; the big run), `b7ad788e3a62` (shorter
+  wording + quote checker; final). Each is a sealed file pushed by the release script.
+- Twice something on the test side was changed for a minute and put back (checked): the live build on next for one baseline
+  question, and the price paragraph on the test prompt row `teacher_v2@next`. Both prompt rows equal their Nov 16 text again.
 - Not done, as told: no promote, KB fix `01_ask_kb_state_fix.sql` not applied, no edge function deployed.
 - Inserted: the 10 eval cases sa1-sa10 (`pb_ai.eval_set`).
+- Staged files now match the final build: `src_patch/apply_patch.py` (adds the guard.ts change), `src_patch/state.ts`,
+  `src_patch/patched/state.ts` and `guard.ts`, `tests/state_test.ts`, `tests/guard_quote_test.ts`. Deno: **38 passed** (36 + 2 new).
+  `apply_patch.py` on the live source reproduces the installed source exactly.
+
+## Round 2 (after the lead approved up to $3 more)
+
+### 1. Live and next back to back, same day (runs `1120-1643-ai-7c03` + `-ai-9ebc` on live, `1120-1643-ai-next-ac59` on next)
+Words per answer; F = over the limit. Facts were right in every one of these answers.
+
+| Case | Limit | Live b4ad | Next before tune (66c7) | Next final (b7ad) |
+|---|---|---|---|---|
+| dw4 | 160 | 162 F | 209 F | 160 |
+| lo1 | 80 | 100 F | 98 F | 81 F |
+| loc6 | 90 | 98 F | 111 F | 93 F |
+| ng2 | 150 | 172 F | 138 | 150 |
+| ng3 | 150 | 138 | 173 F | 170 F |
+| st2 | 90 | 84 | 95 F | 77 |
+| svy2 | 100 | 100 | 104 F | 111 F |
+| svy4 | 100 | 99 | 107 F | 93 |
+| tr4 | 150 | 142 | 111 | 129 |
+| tr9 | 170 | 155 | 174 F | 153 |
+| **Pass / average words** | | **6 / 125** | **2 / 132** | **6 / 122** |
+
+Photo questions not run in round 1 (ph04-ph11, svy3): **9 of 9 pass on live, 9 of 9 on next (66c7)**, similar length.
+So live itself fails 4 of these 10 on length today. The Nov 16 baseline made the new build look worse than it is, but the
+build before the tune did run about 5% longer: for 7 of the 10 the first search now adds one or two California excerpts
+(more to say), and one state line told the model to add the federal rule beside the state rule.
+
+### 2. Tightened wording (Tommy, Nov 20: concise and direct)
+In `state.ts stateLines()` only: "lead with the direct answer", the federal rule beside the state rule is "one short clause",
+"the state must not make the answer longer: its rule takes the place of a general point", and "at the usual short length" on
+the quiet line. Re-run on the final build (run `1120-1648-ai-next-1b75`): the table above, plus 8 state cases, all pass and
+all the same length or shorter (nw14 177 to 159, nw15 133 to 121, nw18 126 to 114, nw26 138 to 131, nw6 120 to 108,
+sa7 131 to 124, sa10 158 to 157; nw17 131 to 140, limit 210).
+Not done: the second half of Tommy's rule ("on complicated subjects offer more info, then dive in"). That belongs in the main
+Ask prompt, changes every answer, and needs its own full run. See decisions.
+
+### 3a. web1: live Ask stopped looking up a price
+- Not the code. I opened the Nov 15 build (which searched, 7 of 7) and the live build: the Ask prompt, the web-search rule and
+  the web tool switch are the same text, and the six excerpts the question gets are unchanged in the library.
+- What is left is the model's own choice. The prompt says "search the web only when … it needs something current", and never
+  names prices, so it now reads the pipe weight and pressure class from the library and says "call your supplier".
+- **Fix staged: `sql/03_ask_web_price_prompt.sql`** (one paragraph added to the prompt row: prices and stock go to web search,
+  give the range with sources and age, say it is not a quote). Tried once on the test row (run `1120-1652-ai-next-b074`):
+  searched, gave $279.80 to $605.40 with sources. Then taken off again. Needs a full run before live, because it changes the
+  main prompt for every answer; it can ride along with the full run of the final build.
+
+### 3b. tr14: "[quote removed…]" in the middle of a sentence
+- Cause: the quote checker only looked at quotes of 20 characters or more, and found them by pairing quote marks. A short
+  quoted phrase first ("20 feet or less", 15 characters) was skipped, so the pairing slipped by one: the text BETWEEN two
+  real quotes was judged as a quote, not found in the OSHA text, and replaced by the mark. The real quotes went unchecked.
+  It can happen in any answer that has a short quoted phrase before a long one. Live has it.
+- Fix (in the final build, `guard.ts`): quote marks are paired at any length, an inch mark (8") is not taken for a quote, and
+  only quotes of 20+ characters are checked, as before. Two new tests (`tests/guard_quote_test.ts`): the tr14 sentence comes
+  through whole, and a made-up OSHA quote is still removed, also after a short quote and an inch mark. tr14 re-run: clean.
+
+### Round 2 cost
+| Run | Slot / build | Cases | Cost |
+|---|---|---|---|
+| `1120-1643-ai-7c03`, `1120-1643-ai-9ebc` | live b4ad | 19 | $1.24 |
+| `1120-1643-ai-next-ac59` | next 66c7 | 19 | $1.07 |
+| `1120-1648-ai-next-c73c` tr14 | next b7ad | 1 | $0.02 |
+| `1120-1648-ai-next-1b75` 10 long + 8 state | next b7ad | 18 | $0.40 |
+| `1120-1652-ai-next-b074` web1 with the price paragraph | next b7ad | 1 | $0.13 |
+| **Round 2 total** | | | **$2.85 of $3** |
+
+## Decisions for Tommy
+1. **Full run of the final build, then promote?** Recommend yes (about $4.50 with the cold start). Pass rule for it: no fact
+   wrong that live gets right, and no more over-length answers than live gets the same day.
+2. **Price paragraph (`03_ask_web_price_prompt.sql`) in that same run?** Recommend yes, on the test row first.
+3. **"Offer more detail" style rule in the main Ask prompt?** Recommend a separate round after this one, so its effect can be told apart.
+
+# Round 1 (the first $5)
 
 ## Checks before the eval
 - The unpatched local source builds **byte for byte** to live b4ad91749f6f (same sha256, stamp 1117-0225). `/home/claude/ask_v24/src` was
@@ -54,7 +133,7 @@ Staged files updated to match: `src_patch/state.ts`, `src_patch/patched/state.ts
   does not go through the changed code. The 3 photo questions run score the same as before.
 - The nw cases and sa1-sa9 ran on the first build; the tune cannot change them (checked with the retrieval tool).
 
-## Scores
+## Scores (round 1, build 66c743680d2f)
 New build, every case run: **113 of 140 pass; facts right in 138 of 140** (web1, ph02).
 Baseline = last full run, `1116-1351-ai-next-c275` plus its lost batch `1116-1403-ai-next-f6f7` (Nov 16, the build promoted that
 day), graded with today's patterns. There has been no full run of b4ad itself. 39 cases have no baseline (nw, sa, cs4, cs5, tr14).
@@ -102,7 +181,7 @@ Failing in both runs (14, all only too long, plus ph02): cut3, eq4, eq5, gn3, hy
 ## Every regression, read by hand (11)
 | Case | What happened | Caused by this build? |
 |---|---|---|
-| web1 "current price of 8 in C900 DR18" | No web search, so no price ("call your supplier"). Failed twice on the new build. Passed 7 of 7 before Nov 17. | **No.** The live build b4ad gives the same no-search answer today (run 1120-1640). The first search hands the model the same six excerpts in both builds. Something since Nov 16 (the Nov 17 build or the library edits) changed it. Live has this problem now. |
+| web1 "current price of 8 in C900 DR18" | No web search, so no price ("call your supplier"). Failed twice on the new build. Passed 7 of 7 before Nov 17. | **No.** The live build b4ad gives the same no-search answer today (run 1120-1640). The first search hands the model the same six excerpts in both builds. Round 2 found the cause (not the code, see 3a). Live has this problem now. |
 | tr4 ladders, 161 words (limit 150) | Now leads with California's rule (Title 8 §1541(c)), then federal. All facts right. | Likely yes: the state's own rule is now in front of the model, one more line. Better content, 11 words over. |
 | tr9 box 2 ft off the bottom, 181 (170) | Says Title 8 1541.1 tracks federal. Before it said "no Cal/OSHA text found". | Partly. Both versions carry a California line. Past runs: 136 to 202 words, passed 6 of 10. |
 | ng3 "can I sign the permit", 163 (150) | Now cites Title 8 sections 1954, 1955, 1959. Before: "the app has no Cal/OSHA excerpt". | Likely yes (California chunk added). Better content, 13 over. |
@@ -125,14 +204,13 @@ No regression gives a wrong number, another state's number, a safety verdict, or
   Virginia each get their own break rule. sa9: MISS DIG from Ohio answers Michigan's 21 days. sa10: pass after the tune.
 - nw cases have never been run on the live build, so there is no before-number for them from the model, only the retrieval check in NOTES.md.
 
-## Other things seen (not from this build)
-- **Live Ask no longer looks up a price on the web for web1.** Worth its own look.
-- tr14 (new case, 20 ft Type B): the answer has two "[quote removed: not found in the OSHA text the app has]" marks in the
-  middle of a sentence. That is the quote checker, unchanged code. Reads badly.
-- Cold starts cost about 9 cents a question for the first few questions of a run. Budget future eval runs with about $1.20 on top.
+## Other things seen
+- web1 and tr14: followed up in round 2 (3a, 3b above).
+- Cold starts cost about 9 cents a question for the first few questions of a run. Budget future full runs with about $1.20 on top,
+  or start with one question and launch the rest right after it.
 
 ## To promote later
-Copy the `next` row of `pb_ai.code` to `live` (DEPLOY_PLAN step 1 is otherwise done). Roll back as in DEPLOY_PLAN. The KB fix
+Copy the `next` row of `pb_ai.code` to `live` (DEPLOY_PLAN step 1 is otherwise done; the Deno count is now 38). Roll back as in DEPLOY_PLAN. The KB fix
 (step 2) still waits until this build is live.
 
 ## DONE

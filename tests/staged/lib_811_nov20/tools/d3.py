@@ -121,7 +121,7 @@ Pick a start date "not sooner than 3 business days after the ticket is initiated
 "A ticket is valid for 12 business days after the selected start work date." If the work won't be done in that time, "repeat the notification" the same way as the first.
 Ticket Check (positive response) is mandatory for owner-members. Check it before digging: 866-821-4226 or online. Code 11 (critical facilities) is not a go-ahead.
 Emergency tickets: owners respond within two hours.
-The 18-inch hand-dig rule and fine amounts in the app's table come from the statute and were not re-read today.""",
+The 18-inch hand-dig rule and fine amounts come from the statute, were not re-read today and are not confirmed here.""",
       MD, MDU, ed='Miss Utility page as posted Nov 20, 2026', lic='summary', conf='medium', unc='18-inch rule and fine amounts not re-read')
 
     # ------------------------------------------------------------------ NEW JERSEY
@@ -145,7 +145,7 @@ Emergency notices are good only while the emergency lasts (14:2-3.5). Operators 
 Operators that fail to mark are liable for the excavator's costs, labor, parts, equipment and downtime (14:2-4.2).
 Fines (14:2-6.2): "not less than $ 1,000 and not more than $ 2,500 per day for each day the violation continues," and "shall not exceed $ 25,000 for any related series of violations." The Board of Public Utilities enforces.
 Routine residential yard and right-of-way maintenance with non-mechanized tools is not "excavation."
-Colors follow ANSI Z535.1.""",
+Colors follow ANSI Z535.1. This is the Board's 2021 readoption text; later changes were not confirmed.""",
       NJ, NJU, ed='BPU rule text dated Oct 28, 2021 (readoption proposal)', conf='medium', unc='this is the 2021 proposal text, not the current code')
 
     # ------------------------------------------------------------------ DIG SAFE STATES

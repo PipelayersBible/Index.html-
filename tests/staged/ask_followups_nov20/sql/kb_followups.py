@@ -3,7 +3,7 @@
 #   kb_followups.jsonl            new field-library chunks (KB rebuild source)
 #   01_ask_kb_followups.sql       staged migration (NOT applied): INSERT ONLY, guarded by id, for KB version VERSION
 #   01_ask_kb_followups_test.sql  same statements in a DO block, checked, rolled back by raising 'RESULT: ...'
-#   02_ask_eval_cases_followups.sql  eval cases wa1-wa5
+#   02_ask_eval_cases_followups.sql  eval cases fwa1-fwa5 (wa1-wa5 are taken on live by water questions)
 # Chunk format (for whoever adds the next state chunks):
 #   {"id","url","text","title","topic","source","confidence","state"}
 #   id     plan-<st>-<subject>-<n>   (plan-wa-trench-1). The ask_state build reads the state from the id (dig-<st>,
@@ -158,18 +158,18 @@ begin
 end $t$;
 """)
 EV = [
- ('wa1', 'trench', 'At what depth do I need shoring or a trench box?', 'Seattle, WA', 'pipelayer', ["4 ?(ft|feet|foot)", "296-155|Washington"], ["is safe"], 190),
- ('wa2', 'trench', 'Do I need a written plan before my guys get in a 6 foot trench?', 'Spokane, WA', 'foreman', ["written", "work plan|trench plan", "competent person"], ["no written plan is (needed|required) (for|in) (a|this) 6"], 200),
- ('wa3', 'trench', 'Type A soil and the trench is only open a few hours. Can I slope it at half to one?', 'Tacoma, WA', 'foreman', ["3/4|0\\.75|three.quarter", "Washington|296-155|Table N-1"], ["yes,? (you can|1/2)", "is safe"], 200),
- ('wa4', 'trench', 'Can the competent person leave the site while the crew is laying pipe in the trench?', 'Seattle, WA', 'foreman', ["on (the )?(job ?)?site|remain|stay", "competent person"], ["is safe"], 190),
+ ('fwa1', 'trench', 'At what depth do I need shoring or a trench box?', 'Seattle, WA', 'pipelayer', ["4 ?(ft|feet|foot)", "296-155|Washington"], ["is safe"], 190),
+ ('fwa2', 'trench', 'Do I need a written plan before my guys get in a 6 foot trench?', 'Spokane, WA', 'foreman', ["written", "work plan|trench plan", "competent person"], ["no written plan is (needed|required) (for|in) (a|this) 6"], 200),
+ ('fwa3', 'trench', 'Type A soil and the trench is only open a few hours. Can I slope it at half to one?', 'Tacoma, WA', 'foreman', ["3/4|0\\.75|three.quarter", "Washington|296-155|Table N-1"], ["yes,? (you can|1/2)", "is safe"], 200),
+ ('fwa4', 'trench', 'Can the competent person leave the site while the crew is laying pipe in the trench?', 'Seattle, WA', 'foreman', ["on (the )?(job ?)?site|remain|stay", "competent person"], ["is safe"], 190),
  # control: the same sloping question on a Texas job gets the federal answer, not Washington's
- ('wa5', 'trench', 'Type A soil and the trench is only open a few hours. Can I slope it at half to one?', 'Houston, TX', 'foreman', ["1/2|half", "12 ?(ft|feet|foot)", "24 hours|short.term"], ["Washington", "Table N-1", "is safe"], 200),
+ ('fwa5', 'trench', 'Type A soil and the trench is only open a few hours. Can I slope it at half to one?', 'Houston, TX', 'foreman', ["1/2|half", "12 ?(ft|feet|foot)", "24 hours|short.term"], ["Washington", "Table N-1", "is safe"], 200),
 ]
 def row(e):
     return "(" + ", ".join(["'" + e[0] + "'", "'" + e[1] + "'", "'" + e[2].replace("'", "''") + "'", "'" + e[3] + "'", "'" + e[4] + "'",
         q(json.dumps(e[5]), 'j') + '::jsonb', q(json.dumps(e[6]), 'j') + '::jsonb', str(e[7]), 'true']) + ")"
 open(os.path.join(HERE, '02_ask_eval_cases_followups.sql'), 'w').write(f"""-- 02_ask_eval_cases_followups.sql (ask_followups_nov20, {TODAY}): {len(EV)} Ask eval questions for the Washington trench chunks. NOT APPLIED.
--- Same columns as 03_ask_eval_cases_nationwide.sql; skipped if the ids exist. Load after 01_ask_kb_followups.sql. Expect: INSERT 0 {len(EV)}.
+-- Same columns as 03_ask_eval_cases_nationwide.sql; skipped if the ids exist. Load after 01_ask_kb_followups.sql. Expect: INSERT 0 {len(EV)} (fewer = an id is already taken; checked free on live {TODAY}).
 insert into pb_ai.eval_set (id, cat, q, "where", level, must, mustnot, maxwords, active) values
  """ + ",\n ".join(row(e) for e in EV) + "\non conflict (id) do nothing;\n")
 # the same cases for the local retrieval checks
