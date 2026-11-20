@@ -1,6 +1,6 @@
-# r17.12 — One device in use, Owner Dashboard, Taper & Cone calculator, Yearly plan, Ask state (weekend update, candidate Nov 20, 2026)
+# r17.12 — One device in use, Owner Dashboard, Taper & Cone calculator, Yearly plan, Ask state (live Nov 20, 2026, commit ec2e22f)
 
-Candidate only: not published. Build stamp `r17.12 · 2026-11-20` in the page and in `sw.js`.
+Published Nov 20 ~2:55 PM. Build stamp `r17.12 · 2026-11-20` in the page and in `sw.js`.
 
 ## What changed
 - **One device in use per login, two signed in.** A login can stay signed in on 2 devices (phone + tablet), but only one is
@@ -58,3 +58,9 @@ Candidate only: not published. Build stamp `r17.12 · 2026-11-20` in the page an
 ## Notes
 - English only for the new words. The Spanish dictionary needs them before Spanish is switched on.
 - Patches: `tests/staged/r1712_candidate/patches/` (1 → 5b). None needed changes to apply together.
+
+## Live, Nov 20
+- App: commit ec2e22f; live sw.js says r17.12 · 2026-11-20. 13 updated tests pass on the release build after the stamp change.
+- Server applied (each rolled-back test first): Owner Dashboard (17 checks pass), Billing yearly + sheets read (all pass),
+  one device 01 + 03 (68 pass; trim job present; overrides = DIG Civil Construction + tfontaine@digcivil.com).
+- NOT yet: one-device gate 02 (planned ~6 PM, after phones have r17.12), Ask follow-ups server add-on (goes with the next Ask build).
