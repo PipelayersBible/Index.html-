@@ -27,7 +27,7 @@ const waitPut = async (p, test) => { for (let i = 0; i < 24; i++) { const a = aw
   f = await p.evaluate(() => window.pbFitCount(window.__pbCsEntry()));
   h.ok(a && JSON.stringify(a.p_status.fit) === JSON.stringify({ n: 2, of: 5, tw: 2, b: 0, s: 0, o: 0 }), 'laid to 50 ft: the phone sends 2 of 5, both tees/wyes: ' + JSON.stringify(a && a.p_status.fit));
   h.ok(f.total === 2 && f.planned === 5 && f.laidOnly === true, 'the same count the daily report makes (counted by the app): ' + f.total + ' of ' + f.planned);
-  h.ok(a && a.p_status.laidFt === 50 && a.p_status.rowsLaid === 5, 'the rest of the status is as before (50 ft, 5 rows laid)');
+  h.ok(a && a.p_status.laidFt === 50 && a.p_status.laidToStation === '50.0' && a.p_status.totalFt === 100, 'the rest of the status is as before (laid 50 of 100 ft): ' + JSON.stringify(a && [a.p_status.laidFt, a.p_status.laidToStation, a.p_status.rowsLaid]));
   // ---- through 90 ft: + the bend and the manhole ----
   for (const i of [6, 7, 8, 9]) { await p.evaluate((i) => window.pbLaidMark(i), i); await p.waitForTimeout(250); }
   a = await waitPut(p, (s) => s.fit && s.fit.n === 4);
