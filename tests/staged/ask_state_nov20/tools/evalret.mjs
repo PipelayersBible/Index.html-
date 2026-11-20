@@ -8,6 +8,7 @@
 import fs from 'fs'; import path from 'path'; import {fileURLToPath} from 'url';
 const H = path.dirname(fileURLToPath(import.meta.url));
 const { buildIndex, search } = await import('/home/claude/index.html-/tests/staged/ask_nationwide_nov20/work/retrieval.mjs');
+globalThis.__PLAIN_MIN = process.env.PLAIN || 0; // PLAIN=2 tries the optional plain-language slots
 const S = await import(path.join(H, '../work/state.mjs'));
 const OLD_STATES = { ...S.US_STATES }; delete OLD_STATES.DC;
 const STATE_CUES = { VA: /\b\d+VAC\d/, TX: /\bTCEQ\b|\bTAC\b/, NY: /\bNYCRR\b/, FL: /\bF\.?A\.?C\.?\b/, WA: /\bWAC\b/, OR: /\bOAR\b/ };
@@ -27,7 +28,7 @@ const kbFile = process.env.KB || path.join(H, '../work/kb_live2.json');
 const kb = JSON.parse(fs.readFileSync(kbFile, 'utf8'));
 const tagsF = path.join(H, '../work/state_tags.json'), tags = !process.env.NOTAGS && fs.existsSync(tagsF) ? JSON.parse(fs.readFileSync(tagsF, 'utf8')) : {};
 const stOf = new Map();
-for (const l of Object.keys(kb)) for (const c of kb[l]) { delete c._ord; if (tags[c.id]) stOf.set(c.id, tags[c.id]); }
+for (const l of Object.keys(kb)) for (const c of kb[l]) { delete c._ord; if (tags[c.id] || c.state) stOf.set(c.id, tags[c.id] || c.state); }
 for (const f of (process.env.EXTRA || '').split(',').filter(Boolean)) for (const line of fs.readFileSync(f, 'utf8').split('\n')) if (line.trim()) { const c = JSON.parse(line); if (c.state) stOf.set(c.id, c.state); (kb[c.lib || 'field'] ||= []).push(c); }
 const { index } = buildIndex(kb, '2026-11-20');
 const withState = (hs) => hs.map((h) => (stOf.has(h.id) ? { ...h, state: stOf.get(h.id) } : h));

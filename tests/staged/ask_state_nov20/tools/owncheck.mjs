@@ -1,6 +1,5 @@
 // which eval questions get one of the job state's own chunks, on a job in ST (to see that unrelated questions get none)
 import fs from 'fs';
-globalThis.__OWN_MIN = process.env.OWN_MIN;
 process.argv[2] = 'none';
 const E = await import('./evalret.mjs');
 const S = await import('../work/state.mjs');

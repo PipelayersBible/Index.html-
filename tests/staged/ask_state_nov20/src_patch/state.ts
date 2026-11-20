@@ -26,8 +26,11 @@ export function statesNamed(text, anyCase) {
 
 // The state(s) a QUESTION names: full names in any case, or a two-letter code written in capitals right after a comma,
 // "in" or "for" ("Reno, NV", "in TX"). A bare "OR", "IN", "OK", "ME", "HI" is a word, not a state.
+// Names that belong to exactly one state: its 811 center, its safety agency, its DOT. (Not "Blue Stake": Arizona and Utah both use it.)
+const Q_ALIASES = [["CA", /\bdig ?alert\b|\bcal[/ -]?osha\b|\bcaltrans\b|\bgreenbook\b/i], ["MI", /\bmiss ?dig\b|\bmiosha\b/i], ["MN", /\bgopher state\b/i], ["IL", /\bJULIE\b/], ["FL", /\bsunshine ?811\b/i], ["WI", /\bdiggers hotline\b/i], ["OK", /\bokie ?811\b/i], ["OH", /\boups\b|\bohio ?811\b/i], ["WA", /\bwsdot\b/i], ["TX", /\btexas ?811\b|\btceq\b/i]];
 export function questionStates(q) {
   const t = String(q || ""), out = statesNamed(t, !0);
+  for (const [c, re] of Q_ALIASES) re.test(t) && !out.includes(c) && out.push(c);
   for (const m of t.matchAll(/(?:,\s*|\b(?:in|for|from)\s+)([A-Z]{2})\b(?!\s*[A-Z]{2,})/g)) okState(m[1]) && !out.includes(m[1]) && out.push(m[1]);
   return out;
 }
@@ -76,17 +79,25 @@ export function keepForState(h, jobState, qStates) {
 export const tenStatesOnly = (h, jobState, q) => jobState === "CA" && /\bTen States\b/i.test(`${h?.title || ""} ${h?.topic || ""} ${h?.source || ""}`) && !/ten states/i.test(String(q || ""));
 
 // Which state is this question for? First hit wins:
-//  1 a state the question names        2 the state the app sent for the job (picked on the phone / address / company)
-//  3 the job's address on the server   4 the company's own state        5 a state named earlier in this conversation
-//  6 the state most of the company's jobs are in.            Nothing: { code: null } and Ask asks, once, when it matters.
+//  1 a state the question names (or an 811 center / agency that belongs to one state)
+//  2 the state the app sent for THIS job (picked on the phone, picked for the company's job, the job address)
+//  3 the job's state on the server (picked for the job, else its address)
+//  4 a state named in the last few questions of this conversation (a follow-up stays on it)
+//  5 the company's own state (from the app or the server)
+//  6 the last job on this phone that has a state, else the state this person told Ask before (both sent by the app)
+//  7 the state most of the company's jobs are in.        Nothing: { code: null } and Ask asks, once, when it matters.
+// The app's own "California when nothing says" fallback (how = "default") is never taken as knowledge.
 export function resolveState(o) {
   const q = questionStates(o?.question);
   if (q.length === 1) return { code: q[0], how: "question", named: q };
-  const app = String(o?.appState || "").toUpperCase(), ah = String(o?.appHow || "");
-  if (okState(app) && ah !== "default") return { code: app, how: ah === "company" ? "company" : "job", named: q };
+  const app = String(o?.appState || "").toUpperCase(), ah = String(o?.appHow || ""), appOk = okState(app);
+  if (appOk && (ah === "phone" || ah === "picked" || ah === "address" || ah === "job")) return { code: app, how: "job", named: q };
   if (okState(o?.addressState)) return { code: o.addressState, how: "job", named: q };
+  for (const t of (o?.earlier || []).slice(0, 3)) { const e = questionStates(t); if (e.length === 1) return { code: e[0], how: "conversation", named: q }; }
+  if (appOk && ah === "company") return { code: app, how: "company", named: q };
   if (okState(o?.companyState)) return { code: o.companyState, how: "company", named: q };
-  for (const t of o?.earlier || []) { const e = questionStates(t); if (e.length === 1) return { code: e[0], how: "conversation", named: q }; }
+  if (appOk && ah === "last_job") return { code: app, how: "last_job", named: q };
+  if (appOk && ah === "told") return { code: app, how: "told", named: q };
   if (okState(o?.majorityState)) return { code: o.majorityState, how: "company_jobs", named: q };
   return { code: null, how: q.length > 1 ? "question_many" : "unknown", named: q };
 }
@@ -153,21 +164,37 @@ export function stateSearch(search, index, query, opts, st, question) {
     if (extra + h.text.length > OWN_CHARS && extra) continue;
     seen.add(h.id), out.push({ ...h, text: h.text.length > OWN_CHARS ? h.text.slice(0, OWN_CHARS) : h.text }), extra += Math.min(h.text.length, OWN_CHARS);
   }
+  // Plain words beside the rule text: OPTIONAL, off by default. When verbatim OSHA text and app tables take the first places, the best general
+  // field-library chunks are added too (up to PLAIN_MIN in all). Same for every state, so no state leans on its own chunks for it.
+  const PLAIN_MIN = Number(globalThis.__PLAIN_MIN ?? 0) || 0; // off unless the edge secret AI_ASK_PLAIN_MIN is set (see NOTES: optional)
+  let plainN = out.filter((h) => h.lib === "field" && !chunkStates(h).length).length, plainChars = 0, plain = 0;
+  for (const h of kept) {
+    if (plainN >= PLAIN_MIN) break;
+    if (h.lib !== "field" || seen.has(h.id) || chunkStates(h).length || h.score < top * 0.6) continue;
+    if (plainChars + h.text.length > OWN_CHARS && plainChars) continue;
+    seen.add(h.id), out.push({ ...h, text: h.text.length > OWN_CHARS ? h.text.slice(0, OWN_CHARS) : h.text }), plainChars += Math.min(h.text.length, OWN_CHARS), plainN++, plain++;
+  }
   out.sort((a, b) => b.score - a.score);
-  return { hits: out, dropped: wide.slice(0, k).filter((h) => !keep(h)).length, own: out.filter((h) => own.some((x) => x.id === h.id)).length, dependent: stateDependent(question, wide) };
+  return { hits: out, dropped: wide.slice(0, k).filter((h) => !keep(h)).length, own: out.filter((h) => own.some((x) => x.id === h.id)).length, plain, dependent: stateDependent(question, wide) };
 }
 const STOP = new Set("what when where which while with without from that this they them their there here have has does into over under about above below after before many much long good need needs must should would could will your ours mine guys crew crews today work working works hour hours rule rules state states apply applies job jobs give gives take takes make makes thing things kind required require requires going want wants know tell says said more most some than then also only just ever every each other another same".split(" "));
 export const subjectWords = (t) => [...new Set(String(t || "").toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !STOP.has(w)).map((w) => w.replace(/(ing|es|s)$/, "")).filter((w) => w.length >= 3))];
-export const OWN_MIN = Number(globalThis.__OWN_MIN || 0.28), OWN_SLOTS = 2, OWN_CHARS = 3000;
+export const OWN_MIN = 0.28, OWN_SLOTS = 2, OWN_CHARS = 3000;
 
+// States whose own OSHA plan covers private-sector crews (osha.gov/stateplans, read 2026-11-20 by ask_nationwide_nov20).
+export const PLAN_STATES = "AK AZ CA HI IN IA KY MD MI MN NV NM NC OR SC TN UT VT VA WA WY".split(" ");
 // The lines the model reads. Short, and the same words every time.
-export function stateLines(st, dependent) {
+export function stateLines(st, dependent, own) {
   const code = st?.code, name = code ? US_STATES[code] : "";
   if (code) {
-    const how = { question: "named in the question", job: "from the job", company: "the company's state", conversation: "named earlier in this conversation", company_jobs: "where most of this company's jobs are" }[st.how] || "from the job";
-    return `JOB STATE: ${name} (${code}), ${how}. Answer for ${name}: where an excerpt gives ${name}'s own rule or number, lead with it and name the state; give the federal rule beside it when there is one. Never give another state's number as theirs. If the excerpts have no ${name} rule for this, say in a few words that the library does not have ${name}'s rule for it, give the federal rule, and name who to check with (the state's OSHA plan, 811 center or agency). Do not ask which state.`;
+    const how = { question: "named in the question", job: "from the job", company: "the company's state", conversation: "named earlier in this conversation", company_jobs: "where most of this company's jobs are", last_job: "from the last job on this phone", told: "the state this person gave Ask before" }[st.how] || "from the job";
+    const head = `JOB STATE: ${name} (${code}), ${how}.`;
+    // most questions do not change with the state: say so, so the state is not dragged into pipe math or a fitting question
+    if (!dependent && !own) return `${head} Use it only if the answer changes by state (811 rules, a state OSHA plan, breaks, pay or heat rules, state specs); then answer for ${name} and never give another state's number as theirs. Otherwise answer as usual and do not mention the state. Do not ask which state.`;
+    const plan = PLAN_STATES.includes(code) ? ` ${name} runs its own OSHA plan, which can be stricter than federal OSHA: if this is a safety-rule question and no excerpt gives ${name}'s rule, search_knowledge once with "${name}" and the topic before answering.` : "";
+    return `${head}${plan} Answer for ${name}: where an excerpt gives ${name}'s own rule or number, lead with it and name the state; give the federal rule beside it when there is one. Never give another state's number as theirs. If the excerpts have no ${name} rule for this, say in a few words that the library does not have ${name}'s rule for it, give the federal rule, and name who to check with (the state's OSHA plan, 811 center or agency). Do not ask which state.`;
   }
   return dependent
     ? "JOB STATE: not known, and this answer changes with the state. Give in one or two lines only what is the same in every state (the federal rule, if there is one). Do not give any one state's number as theirs. Then end with exactly one short question: \"Which state is the job in?\""
-    : "JOB STATE: not known. If, and only if, the answer changes with the state, give what is the same everywhere and end with one short question: \"Which state is the job in?\" Otherwise just answer; do not ask.";
+    : "JOB STATE: not known. If, and only if, the answer changes with the state, give what is the same everywhere and end with one short question: \"Which state is the job in?\" Otherwise just answer; do not ask. In an emergency never ask: give the steps.";
 }
