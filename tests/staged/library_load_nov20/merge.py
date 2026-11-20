@@ -19,7 +19,7 @@ LIVE = {c['id']: dict(c, _lib=lib) for lib, v in kb_live.items() for c in v}
 BASE = {c['id']: dict(c, _lib=lib) for lib, v in kb_fix.items() for c in v}
 
 FILES = ['lib_811_nov20/lib_811_dig.jsonl', 'lib_811_nov20/lib_811_fed.jsonl', 'lib_osha_nov20/lib_osha_fed.jsonl', 'lib_osha_nov20/lib_osha_sp.jsonl',
-         'lib_traffic_nov20/traffic_mutcd.jsonl', 'lib_traffic_nov20/traffic_tc.jsonl', 'lib_specs_nov20/specs.jsonl', 'lib_more_nov20/lib_more.jsonl']
+         'lib_traffic_nov20/traffic_mutcd.jsonl', 'lib_traffic_nov20/v2/traffic_tc.jsonl', 'lib_specs_nov20/specs.jsonl', 'lib_more_nov20/lib_more.jsonl']
 NEW = collections.OrderedDict()
 for f in FILES:
     for c in L(f):
@@ -161,7 +161,7 @@ json.dump({c['id']: c['_from'] for c in NEW.values()}, open(os.path.join(OUT, 'o
 
 # ---- 7. eval cases: one pool, ids unique and not taken on live
 TAKEN = set(open(os.path.join(HERE, 'live_eval_ids.txt')).read().split())
-CF = [('lib_811_nov20/cases_811.jsonl', '811'), ('lib_osha_nov20/cases.jsonl', 'osha'), ('lib_traffic_nov20/traffic_cases.jsonl', 'traffic'),
+CF = [('lib_811_nov20/cases_811.jsonl', '811'), ('lib_osha_nov20/cases.jsonl', 'osha'), ('lib_traffic_nov20/v2/traffic_cases.jsonl', 'traffic'),
       ('lib_specs_nov20/cases.jsonl', 'specs'), ('lib_more_nov20/cases_existing.jsonl', 'more'), ('lib_more_nov20/cases_new.jsonl', 'more')]
 REMAP = {'plan-wa-trench-1': 'sp-wa-trench-1', 'plan-wa-trench-2': 'sp-wa-trench-slope-1'}
 for c in NEW.values():
