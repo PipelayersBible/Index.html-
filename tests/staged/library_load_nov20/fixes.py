@@ -49,5 +49,7 @@ def fix_cases(cases, ALL, say):
             v = [p.replace('not confirmed', UNCONF) if 'not confirmed' in p and UNCONF not in p else p for p in c.get(k, [])]
             if v != c.get(k, []): c[k] = v; n += 1
         if c['id'] in SWAP: c['must'] = [SWAP[c['id']][1] if m == SWAP[c['id']][0] else m for m in c['must']]; c['lead'] = [SWAP[c['id']][1] if m == SWAP[c['id']][0] else m for m in c['lead']]; n += 1
+        # round 6 (lib5 helper): "24-inch" with a hyphen is the right answer
+        if any('24 ?(in|")' in m for m in c['must']): c['must'] = [m.replace('24 ?(in|")', '24[- ]?(in|")') for m in c['must']]; n += 1
         if c['id'] in DROP_MUST: c['must'] = [m for m in c['must'] if m != DROP_MUST[c['id']]]; n += 1
     say(f'fixes.py: {n} case patterns corrected (regex too narrow or a side fact asked as a must); none dropped')

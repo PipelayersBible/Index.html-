@@ -254,4 +254,15 @@ lib_kb 0 errors (33 warnings); core 448 (389 new + 59 in place), 3,229 rows; cas
 10,000 cut; existing 127: none worse than lib4. Overlay `lib6` (64 replaced, 389 added). Deno 54 passed. **Installed on `ai-next`: `13f8e89a0c31`** (commit fd02a7f), serving as build
 stamp `1120-1821`. Test prompt row: reply rule v6c + exChars 10000.
 
+## Round 6 (step d, first of two): lib6 + reply rule v6c ($2.03)
+Run `1120-1838-ai-next-f458` + the six MUTCD questions of batch 9 re-posted one by one (546 three times as a batch; all six answered alone). Grader fixes before the
+final grade (none changes an answer): an emergency is never a "complicated topic" (no offer in an emergency); an offer line may be up to 16 words; an offer on a
+traffic-setup question (sign spacing, tapers) is allowed even when the case is "simple" (Tommy's list); `24-inch` with a hyphen counts for "24 in" (`fixes.py`, 16 cases).
+**Fresh 66 / 72 (92%)**, re-asked 2 / 8, canaries 15 / 15 (all safety canaries pass), style 4 / 5, **wrong state 0**, facts 96 / 100, within limit 93, answer first 94,
+median 68 words (answer + safety line + offer), safety line on 47 of 53 safety topics, competent-person line on 3 non-safety answers.
+Real misses (facts): `lib-us-mutcd-15` (cones in the flagger's short taper: gave "speed in feet", the card says 20 ft), `lib-us-mutcd-55` ("short duration" on a traffic job
+answered with OSHA's 24-hour short-term exposure; the MUTCD card was retrieved), `lib-us-mutcd-40` (third time), `lib-us-osha-12` ("classify the soil" left out), `lib-us-fed-17`
+(library gap, 191 words of "from general knowledge"). Length: 7 answers 3 to 15 words over, plus `lib-us-fed-9` at 163. One filler pattern seen often: a line that only
+says "<state> follows federal OSHA for private crews"; reply rule v6d (test row) drops it.
+
 ## DONE

@@ -17,11 +17,11 @@ LIM = {'simple': 70, 'rule': 100, 'complex': 110, 'steps': 170}
 rx = lambda p: re.compile(p.replace(r'\m', r'\b').replace(r'\M', r'\b').replace(r'\y', r'\b'), re.I)
 def offer(t):
     last = re.split(r'(?<=[.!?])\s+|\n', t.strip())[-1].strip()
-    return bool(re.search(r'\?\s*$', last) and re.match(r'\s*(want|need|should i|do you want|would you like)\b', last, re.I) and len(last.split()) <= 12)
+    return bool(re.search(r'\?\s*$', last) and re.match(r'\s*(want|need|should i|do you want|would you like)\b', last, re.I) and len(last.split()) <= 16)
 # round 5 on (Tommy, Nov 20 10:08): complicated topics must end with an offer; any safety answer ends with the competent-person line.
 # Word limits count the answer only, not those two closing lines.
 COMPLEX_Q = re.compile(r"\b(how do (i|we)|steps? (to|for)|procedure|set ?up|permit (steps|process)|issue (a|the) permit|taper|sign spacing|spacing of (the )?signs|close (a|the|one) (lane|sidewalk|road)|close the sidewalk|detour|what (has|have|needs?) to be on|difference between|what does .{1,30} have to do|bench(ing)? (rules|dimensions)|(options?|instead of|which|what kind|pick|choose).{0,40}(slop|bench|shor|shield|trench box)|(slop|bench|shor|shield|trench box).{0,40}(options?|instead of|which|choose|pick)|test (a|the) (new )?(main|line|pipe)|disinfect|chlorinat)", re.I)
-def complicated(c): return bool(c.get('complex')) or c.get('kind') in ('steps', 'complex') or (c.get('kind') != 'simple' and bool(COMPLEX_Q.search(c.get('q', ''))))
+def complicated(c): return (c.get('cat') != 'emergency' and 'lib-us-em-' not in c['id']) and (bool(c.get('complex')) or c.get('kind') in ('steps', 'complex') or (c.get('kind') != 'simple' and bool(COMPLEX_Q.search(c.get('q', '')))))
 SAFE_COLL = re.compile(r"trench|confined|fall|traffic|safety|heat|silica|osha|excav|flag|power|electr|rigg|crane|ppe|respir", re.I)
 def safety_topic(c):
     if c.get('cat') == 'emergency' or 'lib-us-em-' in c['id']: return False
@@ -59,9 +59,9 @@ for c in cases + [dict(old[i], grp='canary_old') for i in d['canary_old']]:
     of = offer(t)
     if c['grp'] != 'canary_old':
         if complicated(c) and not of: why.append('no offer at the end (complicated topic)')
-        if c.get('kind') == 'simple' and not complicated(c) and of: why.append('offer not wanted')
+        if c.get('kind') == 'simple' and not complicated(c) and not COMPLEX_Q.search(c.get('q', '')) and of: why.append('offer not wanted')
     g.update(ok=not why, why=why, words=w, lim=lim, facts=not miss and r.get('status') == 200, state_ok=not bad and not ws, wrong_state=bool(ws) or any('other state' in x for x in why),
-             concise=wa <= lim, direct=not buried and (c['grp'] == 'canary_old' or (of if complicated(c) else not (of and c.get('kind') == 'simple'))),
+             concise=wa <= lim, direct=not buried and (c['grp'] == 'canary_old' or (of if complicated(c) else not (of and c.get('kind') == 'simple' and not COMPLEX_Q.search(c.get('q', ''))))),
              safety_topic=c['grp'] != 'canary_old' and safety_topic(c), cp_line=bool(CP.search(t)), complicated=complicated(c), offer=of, usd=r.get('usd') or 0, ms=r.get('ms'), text=t, q=c.get('q', ''), safety=bool(c.get('safety')) or c['grp'] == 'canary_new')
     out.append(g)
 json.dump(out, open(os.path.join(R, 'graded.json'), 'w'), indent=0)
