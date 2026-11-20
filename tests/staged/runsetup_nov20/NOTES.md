@@ -141,3 +141,7 @@ New English strings that need entries: `Wall & laying length`, `Fills in from th
     tests/run_all.sh --build <out>/index.html --only '<regex>' --jobs 1
 
 ## DONE
+
+## Tommy's answer (Nov 20, 7:42 AM)
+"If the foreman starts the new run, he should be the pipelayer and the foreman. Just make sure he can change the pipelayer name still."
+=> DROP patch 01 (pipelayer prefill). r17.10 behaviour already fills the signed-in foreman's name and the box stays editable. Ship 02-04 only (re-test 02-04 without 01 before release).
