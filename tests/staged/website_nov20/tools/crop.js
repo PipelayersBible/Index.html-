@@ -1,0 +1,11 @@
+const { chromium } = require('playwright');
+(async () => { const [port, out] = process.argv.slice(2); const b = await chromium.launch();
+  const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }); await ctx.route(/gc\.zgo\.at|goatcounter|supabase/, r => r.abort());
+  const p = await ctx.newPage(); await p.goto('http://127.0.0.1:' + port + '/'); await p.screenshot({ path: out + '/home_phone_fold.png' });
+  await p.evaluate(() => window.scrollTo(0, 700)); await p.screenshot({ path: out + '/home_phone_quick.png' });
+  await p.click('.quick a[href="#q-cost"]'); await p.waitForTimeout(700); await p.screenshot({ path: out + '/home_phone_faq_cost.png' });
+  console.log('open?', await p.evaluate(() => document.getElementById('q-cost').open));
+  await p.setViewportSize({ width: 1280, height: 800 }); await p.goto('http://127.0.0.1:' + port + '/'); await p.evaluate(() => window.scrollTo(0, 600)); await p.screenshot({ path: out + '/home_desk_quick.png' });
+  await p.setViewportSize({ width: 390, height: 844 }); await p.goto('http://127.0.0.1:' + port + '/guides/trench-depth-rules/'); await p.evaluate(() => window.scrollTo(0, 560)); await p.screenshot({ path: out + '/trench_guide_phone_table.png' });
+  console.log(await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, tw: document.querySelector('table').scrollWidth, wrap: document.querySelector('.tbl-wrap').clientWidth })));
+  await b.close(); })();
