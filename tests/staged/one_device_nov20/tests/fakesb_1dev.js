@@ -26,12 +26,12 @@
     auth:{get mfa(){return window.__mfaApi||undefined;},getSession:async()=>{await ready;return{data:{session:S()},error:null};},getUser:async()=>{await ready;return{data:{user:cur},error:null};},
       onAuthStateChange:(cb)=>{cbs.push(cb);ready.then(()=>setTimeout(()=>cb(cur?'SIGNED_IN':'INITIAL_SESSION',S()),0));return{data:{subscription:{unsubscribe(){}}}};},
       signInWithPassword:async(a)=>{await ready;const r=await window.__d1('auth:password',null,a);if(!r||!r.user)return{data:{user:null,session:null},error:{message:'Invalid login credentials'}};return signedIn(r);},
-      signOut:async(o)=>{await ready;(window.__signOuts=window.__signOuts||[]).push((o&&o.scope)||'global');if(sid&&!(o&&o.scope==='local'))await window.__d1('auth:signout',sid);const had=!!cur;cur=null;sid=null;save();if(had)fire('SIGNED_OUT',null);return{error:null};},
+      signOut:async(o)=>{await ready;(window.__signOuts=window.__signOuts||[]).push((o&&o.scope)||'global');if(sid&&navigator.onLine!==false)await window.__d1('auth:signout',sid,{scope:(o&&o.scope)||'global'});const had=!!cur;cur=null;sid=null;save();if(had)fire('SIGNED_OUT',null);return{error:null};},
       setSession:()=>res({session:S()}),updateUser:()=>res({user:cur}),resetPasswordForEmail:()=>res(null),refreshSession:()=>res({session:S()}),
       verifyOtp:async(a)=>{await ready;window.__verifyArgs=a;const r=await window.__d1('auth:verify',null,a);if(!r||!r.user)return{data:{user:null,session:null},error:{message:'Token has expired or is invalid'}};return signedIn(r);}},
     rpc:(n,a)=>(async()=>{await ready;window.__rpcLog.push(n);(window.__rpcArgs=window.__rpcArgs||[]).push([n,a]);const o=window.__rpcOverride[n];
       const r=await window.__d1('rpc',sid,{n,a:a||{},has:o!==undefined});
-      if(r&&r.__error)return{data:null,error:{message:r.__error,details:r.__details||null,code:r.__code||null}};
+      if(r&&r.__error)return{data:null,error:{message:r.__error,details:r.__details||null,hint:r.__hint||null,code:r.__code||null}};
       if(o!==undefined)return{data:typeof o==='function'?o(a):o,error:null};
       return{data:(!r||r.__pass)?null:r,error:null};})(),
     from:qb,functions:{invoke:async(name,opt)=>{await ready;(window.__fnLog=window.__fnLog||[]).push([name,opt&&opt.body]);const r=await window.__d1('fn',sid,{name,body:(opt&&opt.body)||{}});return{data:r,error:null};}},

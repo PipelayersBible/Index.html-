@@ -4,7 +4,10 @@ const fs=require('fs');
 module.exports=async function boot(b,url,srv,opts={}){
   const ctx=await b.newContext({viewport:opts.wide?{width:1200,height:850}:{width:390,height:844},colorScheme:opts.dark?'dark':'light',serviceWorkers:'block',userAgent:opts.ua||undefined});
   await ctx.route(/supabase-js/,r=>r.fulfill({contentType:'application/javascript',body:fs.readFileSync(__dirname+'/fakesb_1dev.js','utf8')}));
-  await ctx.route(/supabase\.co/,r=>r.fulfill({status:200,contentType:'application/json',body:'null'}));
+  await ctx.route(/supabase\.co/,async r=>{const u=r.request().url(),m=/\/rest\/v1\/rpc\/(pb_session_take_slot|pb_session_why)$/.exec(u);
+    if(m&&!/Bearer /.test(r.request().headers()['authorization']||'')){let a={};try{a=JSON.parse(r.request().postData()||'{}');}catch(e){}const d=srv.call('anon',null,{n:m[1],a});
+      return r.fulfill({status:d&&d.__status||200,contentType:'application/json',body:JSON.stringify(d)});} // the app's own key only (no session token)
+    return r.fulfill({status:200,contentType:'application/json',body:'null'});});
   await ctx.exposeBinding('__d1',(src,op,sid,args)=>srv.call(op,sid,args));
   await ctx.addInitScript(`(function(){${opts.user?'window.__d1Start='+JSON.stringify(opts.user)+';':''}
     ${opts.standalone?"try{Object.defineProperty(navigator,'standalone',{get:()=>true});}catch(e){}":''}
