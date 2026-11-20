@@ -1,0 +1,32 @@
+diff -ru src_live/ask.ts src/ask.ts
+--- src_live/ask.ts	2026-11-20 08:42:43.212166013 -0800
++++ src/ask.ts	2026-11-20 08:43:43.332426718 -0800
+@@ -1088,7 +1088,7 @@
+       partial,
+       used,
+       limit: LIMIT,
+-      state: st.code ? { code: st.code, how: st.how } : { code: null, how: st.how, asked: !!usage.stateDep },
++      state: st.code ? { code: st.code, how: st.how, used: !!(usage.stateDep || usage.stateOwn) } : { code: null, how: st.how, asked: !!usage.stateDep },
+       ...streamNote ? { stream_note: streamNote } : {},
+       ...gx?.token ? { answer_id: gx.token } : {},
+       ...R
+diff -ru src_live/state.ts src/state.ts
+--- src_live/state.ts	2026-11-20 08:42:43.212281440 -0800
++++ src/state.ts	2026-11-20 08:43:43.332588603 -0800
+@@ -97,6 +97,7 @@
+   if (appOk && ah === "company") return { code: app, how: "company", named: q };
+   if (okState(o?.companyState)) return { code: o.companyState, how: "company", named: q };
+   if (appOk && ah === "last_job") return { code: app, how: "last_job", named: q };
++  if (appOk && ah === "here") return { code: app, how: "here", named: q }; // where the phone is (photo stamp place, last 12 hours)
+   if (appOk && ah === "told") return { code: app, how: "told", named: q };
+   if (okState(o?.majorityState)) return { code: o.majorityState, how: "company_jobs", named: q };
+   return { code: null, how: q.length > 1 ? "question_many" : "unknown", named: q };
+@@ -194,7 +195,7 @@
+ export function stateLines(st, dependent, own) {
+   const code = st?.code, name = code ? US_STATES[code] : "";
+   if (code) {
+-    const how = { question: "named in the question", job: "from the job", company: "the company's state", conversation: "named earlier in this conversation", company_jobs: "where most of this company's jobs are", last_job: "from the last job on this phone", told: "the state this person gave Ask before" }[st.how] || "from the job";
++    const how = { question: "named in the question", job: "from the job", company: "the company's state", conversation: "named earlier in this conversation", company_jobs: "where most of this company's jobs are", last_job: "from the last job on this phone", told: "the state this person gave Ask before", here: "where this phone is" }[st.how] || "from the job";
+     const head = `JOB STATE: ${name} (${code}), ${how}.`;
+     if (dependent === "plan") return `${head} ${name} runs its own OSHA plan, which can be stricter than federal OSHA, and the library has no ${name} rule for this question. Answer with the federal rule as usual, then add one short line that says this is the federal rule, the library does not have ${name}'s own rule for it, and to confirm with ${name}'s OSHA plan. Never give another state's number as theirs. Do not ask which state.`;
+     // most questions do not change with the state: say so, so the state is not dragged into pipe math or a fitting question

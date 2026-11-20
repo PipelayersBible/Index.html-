@@ -13,7 +13,7 @@ const scr=(p)=>p.evaluate(()=>{const s=document.querySelector('.pb-screen.active
 const modal=(p)=>p.evaluate(()=>{const d=document.getElementById('pbModalOverlay');return d&&getComputedStyle(d).display!=='none'?d.innerText.replace(/\s+/g,' ').trim():'';});
 const modalClick=(p,label)=>p.evaluate((label)=>{const d=document.getElementById('pbModalOverlay');const bt=d&&[...d.querySelectorAll('button')].find(x=>x.textContent.trim()===label);if(bt)bt.click();return !!bt;},label);
 const sheet=(p)=>p.evaluate(()=>{const d=document.getElementById('pbObSheet');return d?d.innerText.replace(/\s+/g,' '):'';});
-const who=(p)=>p.evaluate(()=>{try{return sbUser?sbUser.id:null;}catch(e){return 'n/a';}});
+const who=(p)=>p.evaluate(()=>{try{const v=JSON.parse(localStorage.getItem('fake-sb-session')||'null');return v&&window.__fakeSid()?v.user.id:null;}catch(e){return 'n/a';}}); // the account this browser holds a session for
 const fits=(p,sel)=>p.evaluate((sel)=>{const e=sel?document.querySelector(sel):null;const r=e?e.getBoundingClientRect():{left:0,right:0};return document.documentElement.scrollWidth<=innerWidth&&r.left>=0&&r.right<=innerWidth+0.5;},sel);
 const login=async(p,email)=>{await p.evaluate(()=>{try{pbObClose();}catch(e){}pbGoto('login');});await p.waitForTimeout(400);await p.fill('#loginEmail',email);await p.fill('#loginPassword','pw123456');await p.click('#loginSubmitBtn');await p.waitForTimeout(5500);};
 const reach=async(p)=>{await p.evaluate(()=>window.dispatchEvent(new Event('online')));await p.waitForTimeout(4500);}; // "the next time it reaches the server"
@@ -42,14 +42,13 @@ const EMPTY_DASH=`window.__rpcOverride=Object.assign(window.__rpcOverride||{},{p
   const old=[...srv.D.sess.values()].find(s=>s.device===d1);
   ok(old&&!old.alive&&old.reason==='other_device','1: SERVER: phone 1\'s session was ended, reason other_device');
   ok(await who(P1)===F&&!(await modal(P1)),'1: phone 1 says nothing until it next reaches the server');
-  const before=srv.D.calls.length;
   await reach(P1);
   const m1=await modal(P1);
   ok(m1==='Signed Out '+MSG+' OK','1: phone 1, next time it reaches the server: "'+m1.slice(0,60)+'…"');
   ok(await scr(P1)==='login'&&await who(P1)===null,'1: phone 1 is on Log In, signed out');
   ok(JSON.stringify(await P1.evaluate(()=>window.__signOuts))==='["local"]','1: phone 1 signed out on this phone only (it did not sign phone 2 out)');
   ok(srv.live(F)===1&&await who(P2)===F,'1: phone 2 is still signed in');
-  ok(srv.D.refused.length>0&&!srv.D.calls.slice(before).some(c=>c[1]===F&&c[2]&&false),'1: SERVER: phone 1\'s requests after the takeover were refused ('+srv.D.refused.length+'), none carried out');
+  ok(srv.D.refused.length>0&&srv.D.refused.every(c=>c[1]===F),'1: SERVER: phone 1\'s requests after the takeover were refused ('+srv.D.refused.length+': '+[...new Set(srv.D.refused.map(c=>c[0]))].slice(0,3).join(', ')+')');
   ok(await fits(P1,'#pbModalOverlay'),'1: the message fits 390 px');await P1.screenshot({path:SHOTS+'/signed_out_light.png'});
   await modalClick(P1,'OK');await P1.reload({waitUntil:'load'});await P1.waitForTimeout(7000);await reach(P1);
   ok(!(await modal(P1))&&await scr(P1)==='login','1: after OK and a restart the message is not shown again');

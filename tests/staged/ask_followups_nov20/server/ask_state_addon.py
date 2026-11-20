@@ -20,4 +20,11 @@ patch('state.ts', [
   '  if (appOk && ah === "here") return { code: app, how: "here", named: q }; // where the phone is (photo stamp place, last 12 hours)\n  if (appOk && ah === "told") return { code: app, how: "told", named: q };'),
  ('told: "the state this person gave Ask before" }', 'told: "the state this person gave Ask before", here: "where this phone is" }'),
 ])
+# the ask_state Deno test compares the reply's state object exactly: its six checks get the new field (optional 2nd argument = tests dir)
+if len(sys.argv) > 2:
+    import re
+    p = os.path.join(sys.argv[2], 'state_test.ts'); t = open(p, encoding='utf-8').read()
+    t, n = re.subn(r'(eq\(\w\.state, \{ code: "[A-Z]{2}", how: "\w+")( \}\);)', r'\1, used: true\2', t)
+    assert n == 6, n
+    open(p, 'w', encoding='utf-8').write(t)
 print('ask_state add-on applied to', d)

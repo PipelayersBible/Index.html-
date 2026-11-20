@@ -306,6 +306,41 @@ commit;
     return files
 
 
+# ---------------------------------------------------------------- eval cases (LIBRARY_RULES.md section 5)
+CASE_KEYS = ('id', 'cat', 'q', 'where', 'level', 'must', 'mustnot', 'maxwords', 'lead', 'complex', 'chunks', 'state_strict', 'kind')
+CASE_MAXWORDS = {'simple': 70, 'rule': 100, 'complex': 110, 'steps': 170}     # kind -> word limit
+
+
+def check_case(c, chunk_ids=None):
+    """one eval case -> list of errors. Layout: {"id":"lib-tx-dig-1","cat":"locate","q":"...","where":"Houston, TX","level":"pipelayer",
+       "kind":"simple","must":[regex,...],"mustnot":[regex,...],"lead":[regex,...],"complex":false,"chunks":["dig-tx-handbook-1"],"state_strict":true}"""
+    E = []
+    for k in c:
+        if k not in CASE_KEYS: E.append(f'unknown key "{k}"')
+    for k in ('id', 'cat', 'q', 'where', 'kind'):
+        if not isinstance(c.get(k), str) or not c[k].strip(): E.append(f'missing "{k}"')
+    if E: return E
+    if not re.match(r'^lib-[a-z0-9-]+-\d+$', c['id']): E.append('case id looks like lib-<st or us>-<collection>-<n>')
+    if not re.match(r'^.+, [A-Z]{2}$', c['where']) or c['where'][-2:] not in STATES: E.append('"where" is the job\'s "City, ST"')
+    if c['kind'] not in CASE_MAXWORDS: E.append(f'kind is one of {tuple(CASE_MAXWORDS)}')
+    elif c.get('maxwords', CASE_MAXWORDS[c['kind']]) > CASE_MAXWORDS[c['kind']]: E.append(f'maxwords for a {c["kind"]} case is at most {CASE_MAXWORDS[c["kind"]]}')
+    if c.get('level', 'pipelayer') not in ('individual', 'pipelayer', 'foreman', 'office'): E.append('level: individual / pipelayer / foreman / office')
+    for k in ('must', 'mustnot', 'lead'):
+        v = c.get(k, [])
+        if not isinstance(v, list) or any(not isinstance(x, str) for x in v): E.append(f'{k} is a list of regex strings'); continue
+        for x in v:
+            try: re.compile(x)
+            except re.error as e: E.append(f'{k}: bad regex {x!r}: {e}')
+    if not c.get('must'): E.append('must: at least one regex for the fact a right answer has to contain (a number with its unit, a section number)')
+    if not c.get('lead'): E.append('lead: the regex for the direct answer; it has to appear in the first 40 words')
+    if (c.get('kind') == 'complex') != bool(c.get('complex')): E.append('kind "complex" <-> "complex": true (the answer must end with one short offer)')
+    if not c.get('chunks'): E.append('chunks: the id(s) of the library chunk(s) that hold the answer (the free retrieval check needs them)')
+    elif chunk_ids is not None:
+        for x in c['chunks']:
+            if x not in chunk_ids: E.append(f'chunks: {x} is not in the batch')
+    return E
+
+
 def load_jsonl(path):
     return [json.loads(l) for l in open(path) if l.strip()]
 
@@ -336,6 +371,10 @@ def _selftest():
     assert check_chunk(long_q)[0], 'long quote from copyrighted work'
     assert state_names_in('West Virginia one-call') == ['WV'] and state_names_in('FHWA, Washington, DC') == ['WA']   # the live filter reads it as Washington state: leave the city out
     assert lib_of(dict(id='osha-1926.501(b)(1)-a', kind='verbatim')) == 'osha' and lib_of(dict(id='osha-pl-fall-1', kind='summary')) == 'field'
+    case = dict(id='lib-tx-dig-1', cat='locate', q='How long is my 811 ticket good for?', where='Houston, TX', kind='simple', must=['14 working days'],
+                lead=['14 working days'], mustnot=['28 days'], chunks=['dig-tx-handbook-1'], state_strict=True)
+    assert check_case(case) == [], check_case(case)
+    assert check_case(dict(case, maxwords=200)) and check_case(dict(case, lead=[])) and check_case(dict(case, where='Houston')) and check_case(dict(case, kind='complex'))
     import tempfile
     d = tempfile.mkdtemp()
     b = Batch('selftest', out_dir=d); b.add(**good); b.add(**us); b.add(**dict(good, id='tc-tx-flagger-2', supersedes='tc-2'))
@@ -355,6 +394,13 @@ if __name__ == '__main__':
     if len(sys.argv) >= 2 and sys.argv[1] == 'selftest': _selftest()
     elif len(sys.argv) >= 4 and sys.argv[1] == 'sql':      # python3 lib_kb.py sql chunks.jsonl name  -> regenerate the SQL from a .jsonl (the .jsonl is the source of truth)
         b = Batch(sys.argv[3], out_dir=os.path.dirname(os.path.abspath(sys.argv[2]))); b.chunks = load_jsonl(sys.argv[2]); b.write()
+    elif len(sys.argv) >= 3 and sys.argv[1] == 'cases':    # python3 lib_kb.py cases cases.jsonl [chunks.jsonl]
+        ids = {c['id'] for c in load_jsonl(sys.argv[3])} if len(sys.argv) >= 4 else None
+        cs = load_jsonl(sys.argv[2]); bad = 0; seen = set()
+        for c in cs:
+            e = check_case(c, ids) + (['duplicate case id'] if c.get('id') in seen else []); seen.add(c.get('id'))
+            for x in e: print('ERROR', c.get('id'), x); bad += 1
+        print(f'{len(cs)} cases, {bad} errors'); sys.exit(1 if bad else 0)
     elif len(sys.argv) >= 3 and sys.argv[1] == 'check':
         b = Batch('check', out_dir='.'); b.chunks = load_jsonl(sys.argv[2])
         ex = set()

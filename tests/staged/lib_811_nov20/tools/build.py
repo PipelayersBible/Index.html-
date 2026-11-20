@@ -16,11 +16,13 @@ B = Batch('lib_811_dig', collection='dig', out_dir=OUT)
 FED = Batch('lib_811_fed', out_dir=OUT)
 def S(st, tag, title, text, source, url, ed=None, eff=None, conf='high', lic='gov-state', unc=None, n=1):
     """one state chunk. tag = overview|tickets|marks|damage|penalties. The overview chunk replaces the old one-per-state card dig-<st>."""
-    B.add(id=f'dig-{st.lower()}-{tag}-{n}', state=st, title=f'{STATES[st]} 811: {title}', topic=TOPIC[tag], text=' '.join(text.split()),
+    text = ' '.join(text.split())
+    B.add(id=f'dig-{st.lower()}-{tag}-{n}', state=st, tier=('core' if len(text) <= 1200 else 'shelf'), title=f'{STATES[st]} 811: {title}', topic=TOPIC[tag], text=text,
           source=source, url=url, checked=TODAY, edition=ed, effective=eff, confidence=conf, kind='summary', license=lic,
           unconfirmed=unc, supersedes=(f'dig-{st.lower()}' if tag == 'overview' else None))
 def U(id, title, topic, text, source, url, ed=None, eff=None, conf='high', lic='gov-us'):
-    FED.add(id=id, state='US', title=title, topic=topic, text=' '.join(text.split()), source=source, url=url, checked=TODAY,
+    text = ' '.join(text.split())
+    FED.add(id=id, state='US', tier=('core' if len(text) <= 1200 else 'shelf'), title=title, topic=topic, text=text, source=source, url=url, checked=TODAY,
             edition=ed, effective=eff, confidence=conf, kind='summary', license=lic)
 for m in sorted(f[:-3] for f in os.listdir(HERE) if f.startswith('d') and f[1:-3].isdigit() and f.endswith('.py')):
     importlib.import_module(m).load(S, U)
