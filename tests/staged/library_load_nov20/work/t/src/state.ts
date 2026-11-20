@@ -131,22 +131,26 @@ export function stateSearch(search, index, query, opts, st, question) {
   const keep = (h) => keepForState(h, code, named) && !tenStatesOnly(h, code, question);
   const wide = search(index, query, { ...opts, k: 400, maxChars: 9e6, stats: opts.stats });
   const kept = wide.filter(keep);
+  // a short follow-up ("yes", "go on") has no subject of its own: then the intent's words (which carry the earlier topic) are used
+  const qq = question && question !== query && subjectWords(question).length >= 2 ? question : query;
+  const qWide = qq !== query ? search(index, qq, { ...opts, k: 400, maxChars: 9e6, stats: void 0 }).filter(keep) : kept;
+  const qTop = (qWide.find((h) => h.lib !== "osha") || qWide[0] || { score: 0 }).score;
   // relevance yardstick for a state's chunk: the best plain-language (non-OSHA-text) hit. Verbatim OSHA text is weighted
   // up for rule questions, and a state's chunk should not have to beat that to be shown beside it.
   const top = (kept.find((h) => h.lib !== "osha") || kept[0] || { score: 0 }).score;
   const mine = [code, ...named].filter(Boolean);
-  let own = mine.length ? kept.filter((h) => chunkStates(h).some((c) => mine.includes(c))) : [];
+  let own = mine.length ? qWide.filter((h) => chunkStates(h).some((c) => mine.includes(c))) : [];
   if (code && own.length < 2) { // the question's own words did not reach the state's chunk: look again with the state's name
-    const again = search(index, query + " " + US_STATES[code], { ...opts, k: 30, maxChars: 9e6, stats: void 0 })
+    const again = search(index, qq + " " + US_STATES[code], { ...opts, k: 30, maxChars: 9e6, stats: void 0 })
       .filter((h) => chunkStates(h).includes(code) && !own.some((x) => x.id === h.id));
-    const qs = new Map(wide.map((h) => [h.id, h.score]));
+    const qs = new Map(qWide.map((h) => [h.id, h.score]));
     own = own.concat(again.filter((h) => qs.has(h.id)).map((h) => ({ ...h, score: qs.get(h.id) })));
   }
   // relevant enough to show: scores near the best plain hit, or is plainly about the same thing (its title shares a
   // subject word with the question) and scores at least half of that
   const words = subjectWords(question);
   const about = (h) => { const t = subjectWords(h.title); return words.length > 0 && words.filter((w) => t.includes(w)).length * 2 >= words.length; };
-  own = own.filter((h) => h.score >= top * OWN_MIN || (h.score >= top * OWN_MIN * 0.7 && about(h)))
+  own = own.filter((h) => h.score >= qTop * OWN_MIN || (h.score >= qTop * OWN_MIN * 0.7 && about(h)))
     .sort((a, b) => b.score - a.score).slice(0, OWN_SLOTS);
   // The general excerpts are exactly what the plain search gives once other states' chunks are out. The job state's own
   // chunks that are not already among them are ADDED (at most OWN_SLOTS, OWN_CHARS), so nothing general is pushed out.
@@ -174,7 +178,8 @@ export function stateSearch(search, index, query, opts, st, question) {
     if (plainChars + h.text.length > OWN_CHARS && plainChars) continue;
     seen.add(h.id), out.push({ ...h, text: h.text.length > OWN_CHARS ? h.text.slice(0, OWN_CHARS) : h.text }), plainChars += Math.min(h.text.length, OWN_CHARS), plainN++, plain++;
   }
-  out.sort((a, b) => b.score - a.score);
+  const ownFirst = new Set(EMERGENCY.test(String(question || "")) ? [] : own.map((h) => h.id));
+  out.sort((a, b) => (Number(ownFirst.has(b.id)) - Number(ownFirst.has(a.id))) || b.score - a.score);
   // A state that runs its own OSHA plan, a safety-rule question, and nothing of that state's own anywhere near the
   // question: the federal rule is all the library has, and the answer must say so (dependent = "plan", see stateLines).
   const ownN = out.filter((h) => own.some((x) => x.id === h.id)).length, dep = stateDependent(question, wide);

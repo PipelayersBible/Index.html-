@@ -66,6 +66,7 @@ begin
   select * into f, n from pg_temp.ck(e = 'pb:not_allowed', 'app owner without the two-step code refused', f, n);
   perform set_config('request.jwt.claims', '{"aal":"aal2"}', true);
   r := public.pb_owner_dashboard(30);
+  raise notice 'DUMP %', r::text;  -- the browser test's fake server uses this exact output (sql/local/dump.json)
 
   select * into f, n from pg_temp.ck((r->>'ok')::boolean, 'ok', f, n);
   -- money: Paid Pipe 9900 + 2*1200 = 12300; Year Co past due 9900*10/12 = 8250; individual 14400/12 = 1200
@@ -105,20 +106,20 @@ begin
   select * into f, n from pg_temp.ck((r->'safety'->>'mgmt_reports')::int = 1, 'report counted', f, n);
   -- attention
   a := r->'attention';
-  select * into f, n from pg_temp.ck(a->0->>'level' = 'red', 'red first', f, n);
+  select * into f, n from pg_temp.ck(a->0->>'level' = 'red' and a->0->>'area' = 'safety', 'red first, safety first: ' || (a->0->>'text'), f, n);
   select * into f, n from pg_temp.ck(a::text like '%Confined space permit open 9 hours: Beta Pipe · MH-4%', 'attention: permit', f, n);
   select * into f, n from pg_temp.ck(a::text like '%Emergency notice sent%', 'attention: emergency', f, n);
-  select * into f, n from pg_temp.ck(a::text like '%1 sealed run file(s) no longer match%', 'attention: seal', f, n);
+  select * into f, n from pg_temp.ck(a::text like '%Sealed run files that no longer match their fingerprint: 1.%', 'attention: seal', f, n);
   select * into f, n from pg_temp.ck(a::text like '%Year Co is past due%', 'attention: past due', f, n);
   select * into f, n from pg_temp.ck(a::text like '%Paid Pipe renews%', 'attention: renewal', f, n);
   select * into f, n from pg_temp.ck(a::text like '%Beta Pipe’s beta ends%(5 days)%', 'attention: beta ends', f, n);
   select * into f, n from pg_temp.ck(a::text like '%solo@ind.test has used 104%AI is stopped%', 'attention: AI stop', f, n);
   select * into f, n from pg_temp.ck(a::text like '%Beta Pipe has used 83%', 'attention: AI 80%', f, n);
   select * into f, n from pg_temp.ck(a::text like '%811 ticket T-99%', 'attention: 811', f, n);
-  select * into f, n from pg_temp.ck(a::text like '%plan set(s) stuck%', 'attention: plans', f, n);
+  select * into f, n from pg_temp.ck(a::text like '%Plan sets stuck reading since%: 1.%', 'attention: plans', f, n);
   select * into f, n from pg_temp.ck(a::text like '%Crash reports up: 7 this week vs 1%', 'attention: crashes', f, n);
-  select * into f, n from pg_temp.ck(a::text like '%3 or more devices%', 'attention: sessions', f, n);
-  select * into f, n from pg_temp.ck(a::text like '%NV%' and a::text like '%feedback%' and a::text like '%push%', 'attention: rules, feedback, push', f, n);
+  select * into f, n from pg_temp.ck(a::text like '%3 or more devices right now: 1.%', 'attention: sessions', f, n);
+  select * into f, n from pg_temp.ck(a::text like '%NV%' and a::text like '%Feedback not read yet: 1%' and a::text like '%Push notices not delivered in 7 days: 1. Dead phone push sign-ups: 1 of 2.%', 'attention: rules, feedback, push', f, n);
 
   -- p_days is clamped
   r := public.pb_owner_dashboard(1000);

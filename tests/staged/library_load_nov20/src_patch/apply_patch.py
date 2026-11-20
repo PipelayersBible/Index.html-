@@ -85,7 +85,7 @@ rep('ask.ts', '    STAKE_GLOSSARY = applyOverride(STAKE_GLOSSARY_BUILTIN, pick("
         if (e && e.knobs && typeof e.knobs == "object") globalThis.__pbKnobs = e.knobs;
       }
     } catch {}''')
-rep('ask.ts', 'mergeExcerpts(phone, hits, 9e3)', 'mergeExcerpts(phone, pbTrimHits(hits), Number((globalThis.__pbKnobs || {}).exChars) || 9e3)')
+rep('ask.ts', 'mergeExcerpts(phone, hits, 9e3)', 'mergeExcerpts(phone, pbTrimHits(hits), Number((globalThis.__pbKnobs || {}).exChars) || 1e4)')  # lib5: 10,000 (state cards go first now; at 9,000 one general table fell off, tr11)
 rep('ask.ts', 'globalThis.__PLAIN_MIN = Number(', REPLY + 'globalThis.__PLAIN_MIN = Number(')
 # 6 ---- state.ts: a state under federal OSHA (no state plan for private crews): the federal rule IS the rule; no "the library has no <state> rule" line
 rep('state.ts', """before answering.` : "";""", """before answering.` : ` ${name} has no state OSHA plan for private crews: on a safety rule (trench, confined space, fall protection, silica) federal OSHA IS ${name}'s rule, so give it plainly and do not say the library lacks a ${name} rule.`;""")
@@ -99,13 +99,15 @@ rep('state.ts', """before answering.` : "";""", """before answering.` : ` ${name
 #        Emergencies keep score order (first aid first).
 rep('state.ts', """  const kept = wide.filter(keep);
 """, """  const kept = wide.filter(keep);
-  const qWide = question && question !== query ? search(index, question, { ...opts, k: 400, maxChars: 9e6, stats: void 0 }).filter(keep) : kept;
+  // a short follow-up ("yes", "go on") has no subject of its own: then the intent's words (which carry the earlier topic) are used
+  const qq = question && question !== query && subjectWords(question).length >= 2 ? question : query;
+  const qWide = qq !== query ? search(index, qq, { ...opts, k: 400, maxChars: 9e6, stats: void 0 }).filter(keep) : kept;
   const qTop = (qWide.find((h) => h.lib !== "osha") || qWide[0] || { score: 0 }).score;
 """)
 rep('state.ts', """  let own = mine.length ? kept.filter((h) => chunkStates(h).some((c) => mine.includes(c))) : [];""",
     """  let own = mine.length ? qWide.filter((h) => chunkStates(h).some((c) => mine.includes(c))) : [];""")
 rep('state.ts', """    const again = search(index, query + " " + US_STATES[code], { ...opts, k: 30, maxChars: 9e6, stats: void 0 })""",
-    """    const again = search(index, (question || query) + " " + US_STATES[code], { ...opts, k: 30, maxChars: 9e6, stats: void 0 })""")
+    """    const again = search(index, qq + " " + US_STATES[code], { ...opts, k: 30, maxChars: 9e6, stats: void 0 })""")
 rep('state.ts', """    const qs = new Map(wide.map((h) => [h.id, h.score]));""", """    const qs = new Map(qWide.map((h) => [h.id, h.score]));""")
 rep('state.ts', """  own = own.filter((h) => h.score >= top * OWN_MIN || (h.score >= top * OWN_MIN * 0.7 && about(h)))""",
     """  own = own.filter((h) => h.score >= qTop * OWN_MIN || (h.score >= qTop * OWN_MIN * 0.7 && about(h)))""")

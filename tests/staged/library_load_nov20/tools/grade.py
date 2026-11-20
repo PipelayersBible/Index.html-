@@ -18,6 +18,23 @@ rx = lambda p: re.compile(p.replace(r'\m', r'\b').replace(r'\M', r'\b').replace(
 def offer(t):
     last = re.split(r'(?<=[.!?])\s+|\n', t.strip())[-1].strip()
     return bool(re.search(r'\?\s*$', last) and re.match(r'\s*(want|need|should i|do you want|would you like)\b', last, re.I) and len(last.split()) <= 12)
+# round 5 on (Tommy, Nov 20 10:08): complicated topics must end with an offer; any safety answer ends with the competent-person line.
+# Word limits count the answer only, not those two closing lines.
+COMPLEX_Q = re.compile(r"\b(how do (i|we)|steps? (to|for)|procedure|set ?up|permit (steps|process)|issue (a|the) permit|taper|sign spacing|spacing of (the )?signs|close (a|the|one) (lane|sidewalk|road)|close the sidewalk|detour|what (has|have|needs?) to be on|difference between|what does .{1,30} have to do|bench(ing)? (rules|dimensions)|(options?|instead of|which|what kind|pick|choose).{0,40}(slop|bench|shor|shield|trench box)|(slop|bench|shor|shield|trench box).{0,40}(options?|instead of|which|choose|pick)|test (a|the) (new )?(main|line|pipe)|disinfect|chlorinat)", re.I)
+def complicated(c): return bool(c.get('complex')) or c.get('kind') in ('steps', 'complex') or (c.get('kind') != 'simple' and bool(COMPLEX_Q.search(c.get('q', ''))))
+SAFE_COLL = re.compile(r"trench|confined|fall|traffic|safety|heat|silica|osha|excav|flag|power|electr|rigg|crane|ppe|respir", re.I)
+def safety_topic(c):
+    if c.get('cat') == 'emergency' or 'lib-us-em-' in c['id']: return False
+    return c.get('coll') in ('osha', 'traffic') or bool(SAFE_COLL.search(c.get('cat', '') or '')) or bool(re.search(r"locate marks|near the (gas|line)|excavator", c.get('q', ''), re.I))
+CP = re.compile(r"competent person (decides|makes|checks)|entry supervisor (decides|makes)", re.I)
+def closing_words(t):
+    n = 0
+    for ln in reversed([x for x in t.strip().split('\n') if x.strip()]):
+        x = ln.strip().lstrip('-* ').strip()
+        if CP.search(x) and len(x.split()) <= 14: n += len(ln.split()); continue
+        if re.search(r'\?\s*$', x) and re.match(r'\s*(want|need|should i|do you want|would you like)\b', x, re.I) and len(x.split()) <= 14: n += len(ln.split()); continue
+        break
+    return n
 def other_states(c, t):
     st = c['where'][-2:]; named = lib_kb.state_names_in(c['q']); own = lib_kb.STATES[st]
     hit = [n for k, n in lib_kb.STATES.items() if k != st and k not in named and k != 'DC' and n not in own and not (st == 'WV' and k == 'VA')
@@ -35,16 +52,17 @@ for c in cases + [dict(old[i], grp='canary_old') for i in d['canary_old']]:
     if bad: why.append('forbidden: ' + ' ; '.join(bad))
     ws = other_states(c, t) if c.get('state_strict') else []
     if ws: why.append('other state named: ' + ', '.join(ws))
-    lim = c.get('maxwords') or LIM.get(c.get('kind'), 120)
-    if w > lim: why.append(f'long: {w} > {lim}')
+    lim = c.get('maxwords') or LIM.get(c.get('kind'), 120); wa = w - closing_words(t)
+    if wa > lim: why.append(f'long: {wa} > {lim}')
     first = ' '.join(body.split()[:40]); buried = [p for p in c.get('lead', []) if not rx(p).search(first)]
     if buried: why.append('buried: ' + ' ; '.join(buried))
     of = offer(t)
     if c['grp'] != 'canary_old':
-        if c.get('complex') and not of: why.append('no offer at the end (complex)')
-        if not c.get('complex') and of: why.append('offer not wanted')
+        if complicated(c) and not of: why.append('no offer at the end (complicated topic)')
+        if c.get('kind') == 'simple' and not complicated(c) and of: why.append('offer not wanted')
     g.update(ok=not why, why=why, words=w, lim=lim, facts=not miss and r.get('status') == 200, state_ok=not bad and not ws, wrong_state=bool(ws) or any('other state' in x for x in why),
-             concise=w <= lim, direct=not buried and (c['grp'] == 'canary_old' or bool(c.get('complex')) == of), usd=r.get('usd') or 0, ms=r.get('ms'), text=t, q=c.get('q', ''), safety=bool(c.get('safety')) or c['grp'] == 'canary_new')
+             concise=wa <= lim, direct=not buried and (c['grp'] == 'canary_old' or (of if complicated(c) else not (of and c.get('kind') == 'simple'))),
+             safety_topic=c['grp'] != 'canary_old' and safety_topic(c), cp_line=bool(CP.search(t)), complicated=complicated(c), offer=of, usd=r.get('usd') or 0, ms=r.get('ms'), text=t, q=c.get('q', ''), safety=bool(c.get('safety')) or c['grp'] == 'canary_new')
     out.append(g)
 json.dump(out, open(os.path.join(R, 'graded.json'), 'w'), indent=0)
 G = lambda grp: [g for g in out if g['grp'] == grp]; P = lambda L: sum(1 for g in L if g['ok'])
@@ -53,7 +71,10 @@ can = G('canary_new') + G('canary_old'); safe_fail = [g['id'] for g in can if g.
 line = dict(round=N, n=len(out), got=len(allr), fresh=f"{P(G('fresh'))}/{len(G('fresh'))}", reask=f"{P(G('reask'))}/{len(G('reask'))}", canaries=f"{P(can)}/{len(can)}", safety_canary_fails=safe_fail,
             style=f"{P(G('style'))}/{len(G('style'))}", total=f"{P(out)}/{len(out)}", facts=sum(1 for g in allr if g.get('facts')), wrong_state=sum(1 for g in allr if g.get('wrong_state')),
             median_words=statistics.median([g['words'] for g in lib]) if lib else 0, within_limit=sum(1 for g in allr if g.get('concise')), answer_first=sum(1 for g in allr if g.get('direct')),
-            concise_and_direct=sum(1 for g in allr if g.get('concise') and g.get('direct')), usd=round(sum(g.get('usd', 0) for g in allr), 2))
+            concise_and_direct=sum(1 for g in allr if g.get('concise') and g.get('direct')), usd=round(sum(g.get('usd', 0) for g in allr), 2),
+            safety_line=f"{sum(1 for g in allr if g.get('safety_topic') and g.get('cp_line'))}/{sum(1 for g in allr if g.get('safety_topic'))}",
+            cp_line_off_topic=sum(1 for g in allr if not g.get('safety_topic') and g.get('cp_line') and g['grp'] != 'canary_old'),
+            offers=f"{sum(1 for g in allr if g.get('complicated') and g.get('offer'))}/{sum(1 for g in allr if g.get('complicated'))} complicated; {sum(1 for g in allr if not g.get('complicated') and g.get('offer'))} on others")
 json.dump(line, open(os.path.join(R, 'score.json'), 'w')); print(json.dumps(line))
 kinds = collections.Counter(); 
 for g in out:

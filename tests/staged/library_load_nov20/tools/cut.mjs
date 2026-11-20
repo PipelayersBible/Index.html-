@@ -16,7 +16,7 @@ for (const c of cases) {
   if (c.tier === "shelf" || (only.size && !only.has(c.id))) continue;
   const st = c.where.slice(-2), r = S.resolveState({ question: c.q, addressState: st });
   const ss = S.stateSearch(R.search, index, c.q, { k: 6, level: c.level || "pipelayer", topicBoost: [], maxChars: 9e3 }, r, c.q);
-  const ex = R.mergeExcerpts([], order(ss.hits), 9e3).map((x) => x.id);
+  const ex = R.mergeExcerpts([], order(ss.hits), Number(process.env.EX || 9e3)).map((x) => x.id);
   const ids = ss.hits.map((h) => h.id), a = (c.chunks || []).some((x) => ids.includes(x)), b = (c.chunks || []).some((x) => ex.includes(x));
   n++; inS += a; inC += b; if (a && !b) lost.push(c.id);
   if (only.size) console.log(c.id, "search:", ids.join(","), "\n   after cut:", ex.join(","));

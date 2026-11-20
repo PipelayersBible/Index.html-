@@ -306,9 +306,9 @@ begin
     union all select 1, 'safety', 'Emergency notice sent ' || to_char(max(e.created_at) at time zone 'UTC', 'Mon DD') || ' (' || count(distinct (e.permit_ref, e.started_at)) || ' in 7 days). Call the company.'
       from pb_safety.em_notices e where e.created_at > now() - interval '7 days' having count(*) > 0
     union all select 1, 'reliability', 'Backup: ' || pb_backup.health(now()) where pb_backup.health(now()) is not null
-    union all select 1, 'reliability', count(*) || ' sealed run file(s) no longer match their fingerprint. Look before anyone relies on them.'
+    union all select 1, 'reliability', 'Sealed run files that no longer match their fingerprint: ' || count(*) || '. Look before anyone relies on them.'
       from pb_prod.run_seal_checks x where not x.matches having count(*) > 0
-    union all select 1, 'reliability', count(*) || ' run photo(s) no longer match their fingerprint.' from pb_prod.run_photo_checks x where not x.matches having count(*) > 0
+    union all select 1, 'reliability', 'Run photos that no longer match their fingerprint: ' || count(*) || '.' from pb_prod.run_photo_checks x where not x.matches having count(*) > 0
     union all select case when pb_billing.state_of(ac) = 'read_only' then 1 else 2 end, 'money',
            c.name || case when pb_billing.state_of(ac) = 'read_only' then ' is read-only (not paid).' else ' is past due; locks ' || to_char(ac.paid_through + ac.grace_days, 'Mon DD') || '.' end
       from pb_billing.accounts ac join public.companies c on c.id = ac.company_id where pb_billing.state_of(ac) in ('past_due', 'read_only') and ac.state <> 'canceled'
@@ -322,34 +322,34 @@ begin
            (s->>'who') || ' has used ' || (s->>'pct') || '% of its AI money this month ($' || (s->>'usd') || ' of $' || (s->>'stop') || ')'
            || case when (s->>'pct')::int >= 100 then ': AI is stopped for them.' else '.' end
       from jsonb_array_elements(v_cost->'stops') s where (s->>'pct')::int >= 80
-    union all select 2, 'security', (select sum(v::int) from jsonb_each_text(v_share->'by_kind_7') x(k, v)) || ' account sharing signal(s) in 7 days. See Account sharing.'
+    union all select 2, 'security', 'Account sharing signals in 7 days: ' || (select sum(v::int) from jsonb_each_text(v_share->'by_kind_7') x(k, v)) || '. See Account sharing.'
       where (v_share->>'live')::boolean and v_share->'by_kind_7' <> '{}'::jsonb
-    union all select 2, 'security', jsonb_array_length(v_sec->'many_sessions') || ' login(s) signed in on 3 or more devices right now.'
+    union all select 2, 'security', 'Logins signed in on 3 or more devices right now: ' || jsonb_array_length(v_sec->'many_sessions') || '.'
       where jsonb_array_length(v_sec->'many_sessions') > 0
     union all select 2, 'safety', '811 ticket ' || coalesce(l.ticket_no, '') || ' (' || coalesce(c.name, '') || coalesce(', job ' || l.job_number, '') || ') expired ' || to_char(l.expires_at, 'Mon DD') || ' and is not closed.'
       from pb_prod.locates l left join public.companies c on c.id = l.company_id where not l.closed and l.expires_at < t
-    union all select 2, 'reliability', count(*) || ' plan set(s) stuck reading since ' || to_char(min(s.created_at) at time zone 'UTC', 'Mon DD') || '.'
+    union all select 2, 'reliability', 'Plan sets stuck reading since ' || to_char(min(s.created_at) at time zone 'UTC', 'Mon DD') || ': ' || count(*) || '.'
       from pb_plans.sets s where s.state in ('uploading', 'reading') and s.created_at < now() - interval '2 hours' having count(*) > 0
     union all select 2, 'reliability', 'Crash reports up: ' || (v_rel->>'crashes_7') || ' this week vs ' || (v_rel->>'crashes_prev_7') || ' last week.'
       where (v_rel->>'crashes_7')::int >= 5 and (v_rel->>'crashes_7')::int > 2 * greatest((v_rel->>'crashes_prev_7')::int, 1)
-    union all select 2, 'reliability', (v_rel->>'push_gave_up_7') || ' push notice(s) could not be delivered in 7 days; '
-           || (v_rel->'push_subs'->>'dead') || ' of ' || (v_rel->'push_subs'->>'n') || ' phone push sign-ups are dead.'
+    union all select 2, 'reliability', 'Push notices not delivered in 7 days: ' || (v_rel->>'push_gave_up_7') || '. Dead phone push sign-ups: '
+           || (v_rel->'push_subs'->>'dead') || ' of ' || (v_rel->'push_subs'->>'n') || '.'
       where (v_rel->>'push_gave_up_7')::int > 0
-    union all select 2, 'reliability', (v_rel->>'email_gave_up_7') || ' email(s) gave up in 7 days.' where (v_rel->>'email_gave_up_7')::int > 0
-    union all select 2, 'reliability', (v_rel->>'server_errors_7') || ' server error(s) logged in 7 days.' where (v_rel->>'server_errors_7')::int > 0
-    union all select 2, 'reliability', (v_rel->'legacy_7'->>'people') || ' person(s) on an old app build are still writing the old run table.'
+    union all select 2, 'reliability', 'Emails that gave up in 7 days: ' || (v_rel->>'email_gave_up_7') || '.' where (v_rel->>'email_gave_up_7')::int > 0
+    union all select 2, 'reliability', 'Server errors in 7 days: ' || (v_rel->>'server_errors_7') || '.' where (v_rel->>'server_errors_7')::int > 0
+    union all select 2, 'reliability', 'People on an old app build still writing the old run table: ' || (v_rel->'legacy_7'->>'people') || '.'
       where (v_rel->'legacy_7'->>'people')::int > 0
     union all select 2, 'reliability', 'Weather alerts: ' || (v_rel->'jobs'->0->>'failed') || ' failed in 7 days.' where (v_rel->'jobs'->0->>'failed')::int > 0
     union all select 2, 'legal', 'State rules past their re-check date: ' || (select string_agg(x, ', ') from jsonb_array_elements_text(v_safety->'state_rules_overdue') x) || '.'
       where jsonb_array_length(v_safety->'state_rules_overdue') > 0
-    union all select 2, 'people', (v_safety->>'feedback_new') || ' feedback message(s) not read yet. Open App problems.' where (v_safety->>'feedback_new')::int > 0
-    union all select 2, 'growth', (v_safety->>'trial_requests_new') || ' new beta request(s) from the website.' where (v_safety->>'trial_requests_new')::int > 0
-    union all select 3, 'growth', jsonb_array_length(v_growth->'quiet_companies') || ' company(ies) with no one in the app for 7 days: '
+    union all select 2, 'people', 'Feedback not read yet: ' || (v_safety->>'feedback_new') || '. Open App problems.' where (v_safety->>'feedback_new')::int > 0
+    union all select 2, 'growth', 'New beta requests from the website: ' || (v_safety->>'trial_requests_new') || '.' where (v_safety->>'trial_requests_new')::int > 0
+    union all select 3, 'growth', 'No one in the app for 7 days at: '
            || (select string_agg(x, ', ') from jsonb_array_elements_text(v_growth->'quiet_companies') x) || '.'
       where jsonb_array_length(v_growth->'quiet_companies') > 0
-    union all select 3, 'ask', (v_ask->>'gaps_new') || ' Ask question(s) waiting for a better answer (Documents review).' where (v_ask->>'gaps_new')::int > 0
+    union all select 3, 'ask', 'Ask answers marked to improve, not looked at yet: ' || (v_ask->>'gaps_new') || '.' where (v_ask->>'gaps_new')::int > 0
   )
-  select coalesce(jsonb_agg(jsonb_build_object('level', case lvl when 1 then 'red' when 2 then 'amber' else 'info' end, 'area', area, 'text', msg) order by lvl, area), '[]'::jsonb)
+  select coalesce(jsonb_agg(jsonb_build_object('level', case lvl when 1 then 'red' when 2 then 'amber' else 'info' end, 'area', area, 'text', msg) order by lvl, array_position(array['safety', 'security', 'reliability', 'money', 'costs', 'legal', 'people', 'growth', 'ask'], area)), '[]'::jsonb)
     into v_attn from (select * from a where msg is not null limit 40) z;
 
   return jsonb_build_object('ok', true, 'at', now(), 'days', d, 'attention', v_attn, 'money', v_money, 'costs', v_cost, 'growth', v_growth,

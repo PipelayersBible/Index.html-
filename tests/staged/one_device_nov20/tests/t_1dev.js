@@ -150,11 +150,11 @@ const EMPTY_DASH=`window.__rpcOverride=Object.assign(window.__rpcOverride||{},{p
   srv.D.permit.delete(F);await check(B);
   ok(!(await lock(B))&&srv.holderOf(F)===await sidOf(B),'4: permit closed (A idle): B unlocks');
   // a permit open on THIS device: never covered
-  srv.D.holder.get(F).sid=await sidOf(A);srv.D.holder.get(F).last=Date.now()+srv.D.clock;
-  const local=await B.evaluate(()=>{try{confinedPermit={space:'MH-4'};confinedSessionOwnerUid=sbUser.id;confinedRoster=[];return !!pbOpenPermitOf(sbUser.id);}catch(e){return 'x:'+e.message;}});
+  srv.D.holder.get(F).sid=await sidOf(A);srv.D.holder.get(F).last=Date.now()+srv.D.clock;srv.D.holder.get(F).device=await A.evaluate(()=>localStorage.getItem('pbDeviceId'));
+  const local=await B.evaluate(()=>{window.__pb1dPermitHere=true;return true;}); // (script-scoped permit state isn't reachable from the rig)
   await check(B);
-  ok(local===true&&!(await lock(B))&&/^In use on your other device \(phone\)\. .*This permit keeps working here/.test(await bar(B)),'4: a permit open on B itself: no lock screen, a slim note: "'+(await bar(B)).slice(0,90)+'…"');
-  await B.evaluate(()=>{confinedPermit=null;confinedSessionOwnerUid=null;});
+  await B.screenshot({path:SHOTS+'/permit_here_bar_dark.png'});ok(local===true&&!(await lock(B))&&/^In use on your other device \(phone\)\. .*This permit keeps working here/.test(await bar(B)),'4: a permit open on B itself: no lock screen, a slim note: "'+(await bar(B)).slice(0,90)+'…"');
+  await B.evaluate(()=>{window.__pb1dPermitHere=false;});
   ok(noErr(A,B),'4: no page errors');await close(A,B);
  }
 

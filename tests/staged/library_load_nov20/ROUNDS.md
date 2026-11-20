@@ -162,4 +162,65 @@ with `out/sql/merged_core_00.sql` (+ `merged_core_precheck.sql`; 388 new rows, 5
 `work/round1..4/` (`cases.json`, `results_raw.txt`, `graded.json` with every answer, `fails.txt`, `score.json`), `work/history.json`.
 Note: `src_patch/kb_overlay.ts` on disk is rev lib4 = what is installed. `src_patch/reply_rule.txt` is v5 (the installed build has v4 built in and reads v5 from the prompt row).
 
+---
+# Second helper (Nov 20, from 18:00 UTC): lib5, round 5 on
+
+**Tommy's decisions changed at 10:08 (coordinator) and replace decisions 2 to 4 above:** (1) short answers only if the answer is in the first sentence, checked strictly;
+(2) complicated topics (multi-step procedures, slope / bench / shoring choices, permit steps, traffic setups, anything with a table) END WITH AN OFFER, and a "yes / more /
+go on" reply must CONTINUE where it stopped (no repeat, no restart); (3) "Your competent person decides on site." on ANY safety-related answer (liability), one short line
+at the end; (4) the 39 unconfirmed traffic cards stay as they are (another helper is looking for the manuals).
+
+## Free fixes (step a)
+**Why state cards were not used: two causes, both confirmed free.**
+1. The 9,000-character cut. `stateSearch` adds the job state's cards after the general ones, then sorts everything by score, and `mergeExcerpts` keeps excerpts in that
+   order until 9,000 characters. The state cards score lowest, so they are the ones that fall off. Modelled in `tools/cut.mjs`: with the lib4 search **15 of 668 cases lose
+   their card to the cut, 12 of them state cards** (`lib-ca-sp-7`, `lib-wa-sp-7/8/9/15`, `lib-or-sp-4`, `lib-mi-sp-6/7`, `lib-nv-sp-1/4`, `lib-va-tc-2`, `lib-wa-fup-2`).
+2. The intent keywords. The build searches with the question PLUS 6 to 15 keywords from the intent step. Those pull verbatim federal OSHA text far up. Tried with
+   plausible keywords (`tools/intent_try.mjs`): Michigan's running-soil card (`sp-mi-trench-2`) fails the "near the best hit" test and drops out entirely; Utah's 8-hour /
+   (801) 530-6901 card comes 6th, after four 1904.39 sections (the answer gave the federal 1-800 number, round 4). The two-place limit was not the cause.
+   **Fix (build lib5, `src_patch/apply_patch.py` part 7):** the job state's own cards are picked on the question's own words (the intent words only for a short follow-up
+   like "yes"), and they go FIRST in the excerpts (not in an emergency: first aid stays first). Excerpt budget 9,000 -> 10,000 characters (at 9,000, putting state cards
+   first pushed one general table off, `tr11`). Free check after: 668 cases, 618 have the chunk in the search, **0 lost to the cut (was 15)**; with intent keywords the UT,
+   MI (both), MT cards are excerpt 1. Existing 127 eval questions, every fact in the excerpts after the cut: lib4 113, lib5 117; **none worse** (better: lo7, nw15, nw17, nw26).
+   Deno: 54 passed.
+- **Stacked trench boxes (`lib-us-osha-33`), confirmed:** the answer guard (gonogo.ts) took line 1 ("No, ...", read as calling a box adequate) and put "Your competent person
+  or entry supervisor makes that call on site." in its place, leaving no rule. The reply rule told the model to start with "the yes or no". Fix in reply rule v6: on trench
+  protection / boxes / sloping / shoring / confined space, line 1 says what the rule requires ("OSHA requires ..."), never that their setup is fine or not needed.
+- **Reply rule v6** (`src_patch/reply_rule.txt`, built in to lib5 and in the test prompt row; v5 kept in `work/reply_rule_v5.txt`): Tommy's 10:08 rules: safety line on any
+  safety answer (not on an emergency: the steps end with calling 911), offer on complicated topics, and a FOLLOW-UP paragraph (on "yes / more / go on" give the offered part,
+  pick up where it stopped, no repeat, up to 200 words / 10 steps, numbering continues).
+- How follow-ups work (read in the source): the app sends up to 8 earlier turns (`body.history`, each answer cut to 3,000 characters for the last two); they go into the
+  question as "EARLIER IN THIS CONVERSATION", the intent step sees them (so "yes" searches the earlier topic) and the base prompt already says a short follow-up finishes what
+  was offered. The eval runner passes `history` too, but `eval_start` does not read it from `eval_set`, so 2-turn cases go through `pb_ai.eval_post('ai-next', <cases with history>)` directly.
+
+**Installed on `ai-next` only:** build `40d00759e67d` (lib5; commit ec25df6, `data/ask/b-40d00759e67d.txt`, made with `tools/release_from.sh work/src5`, which does not touch
+`/home/claude/ask_v24/src`). Test prompt row `teacher_v2@next`: reply rule v6 + `{"knobs": {"exChars": 10000}}`. Live slot (`b7ad788e3a62`) and live prompt row untouched.
+
+## Round 5 (step b): the 12 that never came back + the 16 round-4 failures, build lib5 + reply rule v6 ($0.60)
+Run `1120-1813-ai-next-5e5f`, graded with the updated `tools/grade.py` (round 5 on: an offer is required on a complicated topic (Tommy's list), "offer not wanted" only
+on a simple one-number question; word limits count the answer without the safety line and the offer; new counts: safety line on safety topics, offers).
+| Group | Pass | Facts right |
+|---|---|---|
+| The 12 never answered in round 4 (incl. canary `lib-us-osha-1`) | 8 of 12 (canary passes) | 11 of 12 |
+| Round 4's 16 answered failures | 10 of 16 | 14 of 16 |
+Wrong state 0. Safety line on 19 of 20 safety topics. **State cards now used:** `lib-ut-sp-2` (8 hours, (801) 530-6901), `lib-mi-sp-4` (running soil 3:1),
+`lib-mi-sp-1`, `lib-mt-spec-1` (4 ft) all pass. **Stacked boxes `lib-us-osha-33` now gives the rule** ("OSHA says stacked shields don't all have to be designed for the
+deepest part ... each box only at a depth not greater than it is designed for"; 74 words, 4 over). Still failing on facts: `lib-us-osha-62` (fourth time: answers with
+Caltrans road plates instead of the 1926.502(i) twice-the-axle-load card, which is excerpt 1 in the free check) and `lib-us-mutcd-40` (says "off the travel lane with an
+escape route", case wants "shoulder"; close to right). `lib-us-fed-17` (SWPPP records 3 years) is a retrieval gap: "keep ... reports" pulls OSHA 1904 recordkeeping.
+Other failures: 4 to 7 words over 70, offers on two one-number questions, no offer on `lib-us-osha-12` and the two old "complex" probes (HOS, AC pipe bursting).
+After this the rule was tightened in the test prompt row only (v6b, `src_patch/reply_rule.txt`): 45 words before the closing lines; no offer on one-number questions.
+
+**Why batches "never came back" (round 4's 12 and round 5's first try):** the batch got HTTP 546 (worker resource limit) three times and `eval_collect` stops retrying.
+A batch is 6 questions, 3 at a time, in one worker that also builds the 3,228-chunk overlay index. The same 6 questions posted one by one all answered (200). Real app
+questions are one per request, so this hits quality runs, not crews; lib5's extra question-only search adds some CPU. Work-around used: re-post the lost batch one question at a time with
+`pb_ai.eval_post` and grade from `net._http_response` (round 5's raw file has both).
+
+## Follow-through (Tommy's decision 2): 10 two-turn cases, direct posts ($0.43)
+`work/followup/` (cases.json, turn1.json, turn2_graded.md). Turn 1: 10 of 10 complicated questions ended with an offer naming the left-out part. Turn 2 ("yes", "go on",
+"more", "keep going" ...): **8 of 10 continued cleanly where they stopped** (numbering went on 7, 8, 9 ...; nothing repeated, nothing restarted); 2 (benching
+dimensions, fu-2 and fu-8) continued but said the table did not come through: the plain card `osha-appendix-b-c-d-in-words-2` was not retrieved for the follow-up.
+One slip: an Ohio permit follow-up quoted "25 ppm CO (Cal/OSHA)". How it works: the app sends earlier turns as `history`; the server puts them in the question as
+"EARLIER IN THIS CONVERSATION" and the intent step reads them, so "yes" searches the earlier topic.
+
 ## DONE

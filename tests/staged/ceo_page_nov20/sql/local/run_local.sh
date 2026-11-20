@@ -6,7 +6,7 @@ D=$(mktemp -d /tmp/pbdash.XXXXXX); cp "$S"/local/stubs.sql "$S"/local/flags_stub
 su postgres -c "$B/initdb -D $D/data -A trust >/dev/null && $B/pg_ctl -D $D/data -o '-p $P -k $D' -l $D/log start >/dev/null"
 Q="psql -h $D -p $P -U postgres -v ON_ERROR_STOP=1 -q -X"
 echo "== migration x2 + local test (pb_auth not there)"
-su postgres -c "$Q -f $D/stubs.sql && $Q -1 -f $D/01_owner_dashboard.sql && $Q -1 -f $D/01_owner_dashboard.sql && $Q -f $D/local_t01.sql" 2>&1 | grep -E 'RESULT|ERROR|FAIL|CONTEXT|LINE' | head -20
+su postgres -c "$Q -f $D/stubs.sql && $Q -1 -f $D/01_owner_dashboard.sql && $Q -1 -f $D/01_owner_dashboard.sql && $Q -f $D/local_t01.sql" > $D/out.txt 2>&1; grep -E 'RESULT|ERROR|FAIL|CONTEXT|LINE' $D/out.txt | grep -v DUMP | head -20; grep -o 'DUMP .*' $D/out.txt | head -1 | cut -c6- > "$S/local/dump.json"
 echo "== live test block, without pb_auth"
 su postgres -c "$Q -f $D/live_t01.sql" 2>&1 | grep -E 'RESULT|ERROR|FAIL|CONTEXT' | head -10
 echo "== with pb_auth.flags (one_device_nov20 shape) + local test sharing section"

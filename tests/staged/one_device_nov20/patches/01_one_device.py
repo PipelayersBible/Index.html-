@@ -95,12 +95,12 @@ MODULE = r"""  // ---- one device in use per login (Nov 20, v3; server: sql/01_o
   function pb1dShow() {
     const L = PB_1D.lock;
     let cover = document.getElementById('pb1dLock'), bar = document.getElementById('pb1dBar');
-    let localPermit = false; try { localPermit = !!(L && typeof pbOpenPermitOf === 'function' && pbOpenPermitOf(L.uid)); } catch (e) {}
+    let localPermit = false; try { localPermit = !!(L && ((typeof pbOpenPermitOf === 'function' && pbOpenPermitOf(L.uid)) || window.__pb1dPermitHere)); } catch (e) {} /* (__pb1dPermitHere: for the rig) */
     const showCover = !!L && navigator.onLine !== false && !!sbUser && sbUser.id === L.uid && !localPermit; // no signal: keep working on the phone
     const showBar = !!L && navigator.onLine !== false && !!sbUser && sbUser.id === L.uid && localPermit;   // never over a live permit on this device
     if (showCover && !cover) {
       cover = document.createElement('div'); cover.id = 'pb1dLock'; cover.setAttribute('role', 'alertdialog'); cover.setAttribute('aria-modal', 'true'); cover.setAttribute('aria-labelledby', 'pb1dLockH');
-      cover.style.cssText = 'position:fixed;inset:0;z-index:49;display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px));background:var(--pb-canvas,#F4F5F7);color:var(--pb-text,#14171C);box-sizing:border-box;';
+      cover.style.cssText = 'position:fixed;inset:0;z-index:49;display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px));background:var(--pb-canvas,#F4F5F7);color:var(--pb-text,#14171C);font-family:Inter,system-ui,-apple-system,sans-serif;box-sizing:border-box;';
       cover.innerHTML = '<div style="width:100%;max-width:420px;text-align:center;overflow-wrap:anywhere;">'
         + '<h2 id="pb1dLockH" style="margin:0 0 12px;font-size:22px;">In Use on Your Other Device</h2>'
         + '<p id="pb1dLockMsg" style="margin:0 0 12px;font-size:17px;line-height:1.45;"></p>'
@@ -109,7 +109,7 @@ MODULE = r"""  // ---- one device in use per login (Nov 20, v3; server: sql/01_o
         + '<button type="button" class="pb-btn" id="pb1dTry" style="width:100%;min-height:52px;margin:0 0 10px;">Try Now</button>'
         + '<button type="button" class="pb-btn ghost" id="pb1dOut" style="width:100%;min-height:48px;margin:0 0 18px;">Log Out</button>'
         + '<a href="tel:911" style="display:inline-block;min-height:44px;line-height:44px;color:#C62828;font-weight:700;text-decoration:none;">Emergency: Call 911</a></div>';
-      document.body.appendChild(cover);
+      (document.getElementById('pbApp') || document.body).appendChild(cover); // inside the app: its buttons and fonts
       cover.querySelector('#pb1dTry').addEventListener('click', () => { const b = cover.querySelector('#pb1dTry'); b.disabled = true; b.textContent = 'Checking…'; pb1dSeen(true).finally(() => { b.disabled = false; b.textContent = 'Try Now'; }); });
       cover.querySelector('#pb1dOut').addEventListener('click', () => { if (typeof window.pbLogout === 'function') window.pbLogout(); }); // its questions show above this screen
     }
@@ -117,7 +117,7 @@ MODULE = r"""  // ---- one device in use per login (Nov 20, v3; server: sql/01_o
     if (showBar && !bar) {
       bar = document.createElement('div'); bar.id = 'pb1dBar'; bar.setAttribute('role', 'status');
       bar.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:49;padding:calc(8px + env(safe-area-inset-top,0px)) 16px 8px;background:#5D4037;color:#fff;font:600 14px/1.35 system-ui,-apple-system,sans-serif;text-align:center;overflow-wrap:anywhere;';
-      document.body.appendChild(bar);
+      (document.getElementById('pbApp') || document.body).appendChild(bar);
     }
     if (!showBar && bar) bar.remove();
     clearInterval(PB_1D.tick); PB_1D.tick = null;

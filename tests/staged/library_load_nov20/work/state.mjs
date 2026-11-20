@@ -105,13 +105,14 @@ function stateSearch(search, index, query, opts, st, question) {
   const keep = (h) => keepForState(h, code, named) && !tenStatesOnly(h, code, question);
   const wide = search(index, query, { ...opts, k: 400, maxChars: 9e6, stats: opts.stats });
   const kept = wide.filter(keep);
-  const qWide = question && question !== query ? search(index, question, { ...opts, k: 400, maxChars: 9e6, stats: void 0 }).filter(keep) : kept;
+  const qq = question && question !== query && subjectWords(question).length >= 2 ? question : query;
+  const qWide = qq !== query ? search(index, qq, { ...opts, k: 400, maxChars: 9e6, stats: void 0 }).filter(keep) : kept;
   const qTop = (qWide.find((h) => h.lib !== "osha") || qWide[0] || { score: 0 }).score;
   const top = (kept.find((h) => h.lib !== "osha") || kept[0] || { score: 0 }).score;
   const mine = [code, ...named].filter(Boolean);
   let own = mine.length ? qWide.filter((h) => chunkStates(h).some((c) => mine.includes(c))) : [];
   if (code && own.length < 2) {
-    const again = search(index, (question || query) + " " + US_STATES[code], { ...opts, k: 30, maxChars: 9e6, stats: void 0 }).filter((h) => chunkStates(h).includes(code) && !own.some((x) => x.id === h.id));
+    const again = search(index, qq + " " + US_STATES[code], { ...opts, k: 30, maxChars: 9e6, stats: void 0 }).filter((h) => chunkStates(h).includes(code) && !own.some((x) => x.id === h.id));
     const qs = new Map(qWide.map((h) => [h.id, h.score]));
     own = own.concat(again.filter((h) => qs.has(h.id)).map((h) => ({ ...h, score: qs.get(h.id) })));
   }

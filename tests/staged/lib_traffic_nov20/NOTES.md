@@ -126,6 +126,48 @@ Existing ids `tc-1` and `tc-2` do not clash with the new `tc-<st>-...` ids.
 4. Build the taper / cone calculator. Recommend yes; it is small, the math is settled, and crews ask for it.
 
 
-## Pass 2 (Nov 20, afternoon): "Try harder to find those states manuals" - IN PROGRESS
-Goal: check the 39 not-confirmed state cards against each state's own manual. Output goes to `v2/` (the original
-`traffic_tc.jsonl` that `library_load_nov20/merge.py` reads is left as is until the lead swaps it). Running log: `v2/work/state_log.tsv`.
+## Pass 2 (Nov 20, afternoon): "Try harder to find those states manuals"
+39 state cards were marked not confirmed. Each was searched on the state DOT's own site, its rule code and FHWA; every
+URL tried is in `v2/work/state_log.tsv`, every document read is in `v2/sources_v2.csv`. Reads were WebFetch summaries
+(no PDFs downloaded). Search allowance did not run out; I stopped at about 70 searches/fetches when the remaining states
+gave nothing new on two different queries each.
+
+### Result by state
+| Result | States |
+|---|---|
+| **Confirmed from a state source** (11 + 2 secondary) | AK (2026 Alaska Traffic Manual Supplement, eff. Jan 20 2026), MA (Massachusetts Amendments Jan 2026, P-26-003 Mar 2 2026), MN (MN MUTCD 11th Ed, eff. Jan 18 2026), IA (761 IAC 130.1, eff. Apr 22 2026), KY (603 KAR 5:050, eff. Feb 18 2025), IL (Illinois Supplement 11th Ed, Feb 2026), MT (11th Ed as is, eff. Jan 1 2026), NE (11th Ed + Nebraska 2025 Supplement), ND (NDDOT Traffic Operations Manual Jan 2026), TN (TDOT TM 2512, Dec 23 2025), WI (11th Ed WMUTCD, eff. Feb 24 2026); secondary only: MI (2025 MMUTCD, MDOT slides), VT (statute, per VLCT) |
+| **Corrected** (the card said something that was wrong or out of date) | IA (tracker said "with supplement": it is the national manual with two Part 2 rule exceptions, none in Part 6); DE (2011 Delaware MUTCD is still the operative manual; 2026 edition pending approval); MD (MDOT SHA still posts the 2011 MdMUTCD; no 11th Ed MdMUTCD found); RI, WY, NJ (their rules still name the 2009 edition); NY (NYSDOT rulemaking to revise the NYS Supplement was still being prepared in June 2026); MN (card said effective date not confirmed: it is Jan 18 2026) |
+| **Partly** (state manual found, 11th Ed date not) | MO (EPG Article 616, now arranged by 11th Ed chapters 6A-6P), LA (DOTD posts an "Authorization for 11th Edition MUTCD" memo that would not open), SC (SCDOT Flaggers Handbook 2026 and Work Zone Safety Guidelines 2026), ID (2024 rulemaking to adopt 11th Ed; rule copy still says 2009), KS (KDOT review, FHWA approval target Dec 12 2025), OK (only an "Oklahoma 2009 MUTCD Supplement" listed), UT (R920-1 copy still says 2009) |
+| **Still not found** (what was tried is in each card's `note`) | AL, AR, CT, DC, HI, MS, NV, NH, NM, SD, WV |
+
+State-specific Part 6 numbers that differ from the national card (new detail chunks):
+- **`tc-ak-ttc-1` (core)**: Alaska Table 6B-1 sign spacing (urban low speed = 40 mph or less 100 ft; urban high speed = 45 mph or more 350 ft; rural 500 ft; freeway 1,000 / 1,500 / 2,640 ft); paddle 24 in with 8 in letters except local roads 25 mph or less (6D.02); flaggers on state highways certified under Std Spec 643 (6D.01).
+- **`tc-ma-ttc-1` (shelf)**: MassDOT flagger certification (6D.01), flagger kit incl. airhorn and radios, cones at least 36 in (6K.01), POLICE OFFICER AHEAD sign, arrow board modes, fines sign for setups of 24 h or more.
+- IL, IA, KY, MT, NE: Part 6 has no change to tapers, sign spacing or flaggers (cards now say so). WI, MI: Part 6 differences not read.
+- Flagger card wording (Clearinghouse) was not contradicted by any state manual read; AK and MA state manuals agree with it (AK: certification required; MA: MassDOT certification).
+
+### Files (pass 2) and how the lead merges them
+| File | What |
+|---|---|
+| `v2/adopt_v2.py` | The pass-2 adoption facts (one entry per state) and the "what was tried" notes. |
+| `v2/kb_traffic_states_v2.py`, `v2/build_v2.py` | Copy of `kb_traffic_states.py` with `adopt_v2` merged in plus the AK / MA detail chunks. `python3 v2/build_v2.py` rebuilds. |
+| `v2/traffic_tc.jsonl` (+ `v2/sql/`, `v2/traffic_tc_report.txt`) | **70 chunks (65 core, 5 shelf), lib_kb: 0 errors**, 8 warnings (all "numbers but no section in the source line" on cards whose numbers are the Clearinghouse flagger wording; was 12). Same 68 ids as before + `tc-ak-ttc-1`, `tc-ma-ttc-1`. No id clashes with live or other staged files. |
+| `v2/traffic_cases.jsonl` | 147 old cases + 8 new (`lib-ak-tc-2/3`, `lib-ma-tc-2/3`, `lib-mt-tc-2`, `lib-ky-tc-2`, `lib-ia-tc-2`, `lib-de-tc-2`); `lib_kb.py cases`: 0 errors. No new id is in `library_load_nov20/out/cases.jsonl`. |
+| `v2/sources_v2.csv`, `v2/work/state_log.tsv` | Documents read; per-state log with URLs. |
+
+The originals `traffic_tc.jsonl` and `traffic_cases.jsonl` in this folder are untouched, and nothing in `library_load_nov20/`
+was edited (its rounds helper reads those originals). **To merge:** in `library_load_nov20/merge.py`, change
+`'lib_traffic_nov20/traffic_tc.jsonl'` to `'lib_traffic_nov20/v2/traffic_tc.jsonl'` in `FILES` (line 22) and
+`'lib_traffic_nov20/traffic_cases.jsonl'` to `'lib_traffic_nov20/v2/traffic_cases.jsonl'` in `CF` (line 164), then
+`python3 merge.py && python3 build_kb.py` as before. (Or copy the two v2 files over the originals once the rounds helper is
+done.) `fixes.py` and `merge.py` do not touch any `tc-<st>-` chunk text, so nothing else changes. Note for the rounds
+review: the "<state>'s MUTCD edition is not confirmed" line it saw now appears on fewer cards (13 states moved to confirmed).
+
+### For Tommy to get (pass 2 additions)
+1. **Louisiana** "Authorization for 11th Edition MUTCD" memo - dotd.la.gov, Traffic Engineering > Manuals and Policies (link would not open here).
+2. **Massachusetts** amendments chapters 6A, 6B, 6E, 6P - the reading tool did not show them; check for taper / spacing changes.
+3. **Wisconsin WMUTCD Part 6** and **Michigan 2025 MMUTCD Part 6** (and its effective date) - state manuals with their own Part 6, not read.
+4. **Delaware 2026 MUTCD** - watch for approval; the card says 2011 is operative.
+5. One phone call each (traffic engineering office) for: AL, AR, CT, DC, HI, MS, NV, NH, NM, SD, WV, and the 11th Ed date for ID, KS, LA, MD, MO, NJ, NY, OK, RI, SC, UT, WY.
+
+## DONE
