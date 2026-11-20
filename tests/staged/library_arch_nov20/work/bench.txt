@@ -1,10 +1,18 @@
-{"factor":1,"mode":"build","chunks":2840,"terms":10014,"build_ms":862,"heap_after_build_mb":"28.8","blob_b64_mb":"1.8","blob_parts":2,"encode_ms":527,"decode_ms":0,"decode_err":"","per_question_search_ms":15.7,"rss_mb":"156.0","zero_weight_words_field":0,"zero_weight_in_test_questions":[]}
-{"factor":1,"mode":"blob","chunks":2840,"terms":10014,"build_ms":0,"heap_after_build_mb":"31.7","blob_b64_mb":"1.8","blob_parts":2,"encode_ms":0,"decode_ms":100,"decode_err":"","per_question_search_ms":8.2,"rss_mb":"139.4","zero_weight_words_field":0,"zero_weight_in_test_questions":[]}
-{"factor":5,"mode":"build","chunks":14200,"terms":10402,"build_ms":3757,"heap_after_build_mb":"101.8","blob_b64_mb":"9.1","blob_parts":10,"encode_ms":1835,"decode_ms":0,"decode_err":"","per_question_search_ms":25.8,"rss_mb":"323.9","zero_weight_words_field":3,"zero_weight_in_test_questions":["water"] 9: 0x5dc0813 v8::internal::Runtime_GrowArrayElements(int, unsigned long*, v8::internal::Isolate*) [node]
-10: 0x4d1e4f6  [node]
-rts":10,"encode_ms":0,"decode_ms":403,"decode_err":"","per_question_search_ms":31.4,"rss_mb":"279.2","zero_weight_words_field":3,"zero_weight_in_test_questions":["water"]}
-{"factor":10,"mode":"build","chunks":28400,"terms":10887,"build_ms":7414,"heap_after_build_mb":"165.7","blob_b64_mb":"18.5","blob_parts":20,"encode_ms":3295,"decode_ms":0,"decode_err":"","per_question_search_ms":38.9,"rss_mb":"479.7","zero_weight_words_field":36,"zero_weight_in_test_questions":["trench","before","over","water","set"]}
-{"factor":10,"mode":"blob","chunks":28400,"terms":10887,"build_ms":0,"heap_after_build_mb":"193.8","blob_b64_mb":"18.5","blob_parts":20,"encode_ms":0,"decode_ms":887,"decode_err":"","per_question_search_ms":49.9,"rss_mb":"429.3","zero_weight_words_field":36,"zero_weight_in_test_questions":["trench","before","over","water","set"]}
-{"factor":15,"mode":"build","chunks":42600,"terms":11372,"build_ms":9781,"heap_after_build_mb":"221.9","blob_b64_mb":"27.8","blob_parts":30,"encode_ms":5358,"decode_ms":0,"decode_err":"","per_question_search_ms":70,"rss_mb":"463.5","zero_weight_words_field":100,"zero_weight_in_test_questions":["trench","before","cover","over","water","main","osha","say","have","set"]}
-{"factor":20,"mode":"build","chunks":56800,"terms":11857,"build_ms":14422,"heap_after_build_mb":"231.2","blob_b64_mb":"37.1","blob_parts":39,"encode_ms":7939,"decode_ms":0,"decode_err":"","per_question_search_ms":168.6,"rss_mb":"542.6","zero_weight_words_field":169,"zero_weight_in_test_questions":["trench","before","long","ticket","minimum","cover","over","water","main","osha","say","break","have","set","point"]}
-FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory
+Capacity bench, Nov 20 2026. node --max-old-space-size=256 tools/bench.mjs <factor> build|blob   (live library cloned <factor> times)
+The box was shared with other jobs, so times are rough. Raw lines:
+{"factor":1,"mode":"build","chunks":2840,"build_ms":862,"heap_after_build_mb":"28.8","blob_parts":2,"encode_ms":527,"per_question_search_ms":15.7}
+{"factor":1,"mode":"blob","chunks":2840,"decode_ms":100,"heap_mb":"31.7","per_question_search_ms":8.2}
+{"factor":2,"mode":"build","chunks":5680,"build_ms":1646,"heap_after_build_mb":"50.3","blob_parts":4,"encode_ms":912,"per_question_search_ms":14.9}
+{"factor":2,"mode":"blob","chunks":5680,"decode_ms":348,"per_question_search_ms":11.1}
+{"factor":3,"mode":"build","chunks":8520,"build_ms":2538,"heap_after_build_mb":"70.2","blob_parts":6,"encode_ms":1223,"per_question_search_ms":19.9}
+{"factor":3,"mode":"blob","chunks":8520,"decode_ms":270,"per_question_search_ms":17.9}
+{"factor":5,"mode":"build","chunks":14200,"build_ms":3757,"heap_after_build_mb":"101.8","blob_parts":10,"encode_ms":1835,"per_question_search_ms":25.8,"zero_weight_words_field":3,"zero_weight_in_test_questions":["water"]}
+{"factor":5,"mode":"blob","chunks":14200,"decode_ms":403,"per_question_search_ms":31.4}
+{"factor":10,"mode":"build","chunks":28400,"build_ms":7414,"heap_after_build_mb":"165.7","blob_parts":20,"encode_ms":3295,"per_question_search_ms":38.9,"zero_weight_words_field":36,"zero_weight_in_test_questions":["trench","before","over","water","set"]}
+{"factor":10,"mode":"blob","chunks":28400,"decode_ms":887,"heap_mb":"193.8","per_question_search_ms":49.9}
+{"factor":15,"mode":"build","chunks":42600,"build_ms":9781,"heap_after_build_mb":"221.9","blob_parts":30,"encode_ms":5358,"per_question_search_ms":70,"zero_weight_words_field":100}
+factor 15 blob: no result (the code refuses a saved index over 48 MB unpacked: kb_codec.ts KB_MAX_JSON; index JSON is 4.6 MB at 1x)
+{"factor":20,"mode":"build","chunks":56800,"build_ms":14422,"heap_after_build_mb":"231.2","blob_parts":39,"encode_ms":7939,"per_question_search_ms":168.6,"zero_weight_words_field":169}
+factor 30 build: FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory
+Live server log today (2,840 chunks): kb_loaded how=built 1795 ms; how=blob 643 ms. Saved index: 2 parts, 1,879,372 characters.
+Shelf search on local Postgres 16 (tools/pgtest.sh): 15,003 rows 27-165 ms (one first-touch 400 ms); 85,003 rows 112-998 ms, 224 MB.

@@ -1,4 +1,5 @@
 select n.nspname || '.' || p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ') ' || md5(rtrim(pg_get_functiondef(p.oid), E'\n')) || ' ' || p.provolatile::text || p.prosecdef::text
 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
 where (n.nspname, p.proname) in (('public','ai_try_consume'),('public','ai_cost_add'),('public','ai_refund'),('public','pb_my_plan'),('public','pb_storage_put_ok'),('pb_billing','individual_limits'),('pb_plans','limits'),('public','pb_plan_request'),('public','pb_owner_individual_on'),('pb_billing','has_individual'),('public','pb_owner_billing_setting_set'),('public','pb_owner_billing'),('public','pb_owner_individual_off'),('public','ai_daily_limit'),('public','pb_plans_begin'),('pb_docs','limits'),('pb_docs','limits_for'))
+union all select 'constraint ' || conname || ' ' || md5(pg_get_constraintdef(oid)) from pg_constraint where conrelid = 'public.ai_usage'::regclass and contype = 'c'
 union all select 'setting note ' || md5(note) from pb_billing.settings where key = 'plan_reading_cents' order by 1;

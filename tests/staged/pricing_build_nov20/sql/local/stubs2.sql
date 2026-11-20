@@ -144,3 +144,17 @@ insert into auth.users (id, email, aud, role) values ('00000000-0000-4000-8000-0
   ('00000000-0000-4000-8000-0000000000d2', 'demo-foreman@test.invalid', 'authenticated', 'authenticated');
 insert into public.companies (id, name, owner_user_id, status, plan) values ('00000000-0000-4000-8000-0000000000dc', 'DIG Civil Construction', '00000000-0000-4000-8000-0000000000d1', 'active', 'paid');
 insert into public.company_members (company_id, user_id, role) values ('00000000-0000-4000-8000-0000000000dc', '00000000-0000-4000-8000-0000000000d2', 'foreman');
+
+-- v2b (Nov 20, after the first live run): the check constraints and foreign keys live has on the tables the migration and
+-- the test write to, read from live (pg_constraint) and copied here word for word, so the local replica refuses what live refuses.
+alter table public.ai_usage add constraint ai_usage_feature_check check (feature = any (array['cutsheet'::text, 'stake'::text, 'teacher'::text, 'ticket'::text, 'analysis'::text, 'gonogo_q'::text]));
+alter table public.ai_usage add constraint ai_usage_count_check check (count >= 0);
+alter table public.ai_usage add constraint ai_usage_user_id_fkey foreign key (user_id) references auth.users(id) on delete cascade;
+do $s$ begin
+  begin alter table pb_crew.invitations add constraint live_invitations_role_check check (role = any (array['foreman'::text, 'pipelayer'::text, 'pm'::text])); exception when others then raise notice 'skip %', sqlerrm; end;
+  begin alter table pb_crew.invitations add constraint live_invitations_status_check check (status = any (array['pending'::text, 'accepted'::text, 'declined'::text, 'withdrawn'::text, 'expired'::text])); exception when others then raise notice 'skip %', sqlerrm; end;
+  begin alter table public.company_members add constraint live_company_members_role_check check (role = any (array['foreman'::text, 'pipelayer'::text, 'pm'::text])); exception when others then raise notice 'skip %', sqlerrm; end;
+  begin alter table pb_support.messages add constraint live_messages_body_check check (length(body) >= 1 and length(body) <= 4000); exception when others then raise notice 'skip %', sqlerrm; end;
+  begin alter table pb_support.messages add constraint live_messages_client_message_id_check check (length(client_message_id) >= 1 and length(client_message_id) <= 100); exception when others then raise notice 'skip %', sqlerrm; end;
+  begin alter table pb_support.messages alter column client_message_id set not null; exception when others then raise notice 'skip %', sqlerrm; end;
+end $s$;

@@ -100,7 +100,7 @@ MODULE = r"""  // ---- one device per login (Nov 20) ----
   }
   // Get a Code: signing in with it in the Home Screen app signs this page out, so unsent work is named first.
   window.pb1dMoveWarn = async function (id) {
-    try { const uid = sbUser && sbUser.id; if (!uid || typeof pbUnsentSentence !== 'function') return; const t = await pbUnsentSentence(uid); const e = document.getElementById(id); if (t && e) { e.textContent = 'Let this send before you switch. ' + t; e.hidden = false; } } catch (e) {}
+    try { const uid = sbUser && sbUser.id; if (!uid || typeof pbUnsentSentence !== 'function') return; const t = await (window.__pb1dUnsent || pbUnsentSentence)(uid); /* (the rig can stand in for the sentence) */ const e = document.getElementById(id); if (t && e) { e.textContent = 'Let this send before you switch. ' + t; e.hidden = false; } } catch (e) {}
   };
   // The quiet notes: one login used in two places. Words are made here so the time is the reader's own.
   function pb1dNoteText(n) {

@@ -79,7 +79,7 @@ async function askRig(p) {
   // ---------- 3. Company account (owner / PM): asked once when the company has no state; saved for the company; New Job ----------
   {
     const srv = `;window.__co=null;window.__rpcOverride=Object.assign(window.__rpcOverride||{},{pb_state_rules_get:()=>({ok:true,company_state:window.__co,jobs:{},can_set_company:true,server_at:new Date().toISOString()}),pb_job_state_set:(a)=>{if(!a.p_job_number)window.__co=a.p_state;return {ok:true,job_key:String(a.p_job_number||'').toLowerCase(),state:a.p_state};},pb_prod_job_create:(a)=>({ok:true,job_key:String(a.p_job_number).toLowerCase(),job_number:a.p_job_number,version:1,plan:a.p_plan})});`;
-    const { b, p } = await L.boot(L.URL, { init: L.mgr + ACK + srv, wait: 4500 });
+    const { b, p } = await L.boot(L.URL, { init: L.mgr + IND + ACK + srv, wait: 4500 });
     await p.evaluate(() => window.pbRenderHome()); await p.waitForTimeout(600);
     ok(await vis(p, '#homeStateCard') && /Which state does your company work in\?/.test(await txt(p, '#homeStateH') || ''), 'company account, no company state: asked on Home ("' + (await txt(p, '#homeStateH')) + '")');
     const box = await p.evaluate(() => { const e = document.querySelector('#homeStateCard').getBoundingClientRect(); return { r: e.right, w: document.documentElement.clientWidth }; });
@@ -109,7 +109,7 @@ async function askRig(p) {
   // ---------- 4. Company state already set / a crew member: never asked; no Change without a job ----------
   {
     const srv = `;window.__rpcOverride=Object.assign(window.__rpcOverride||{},{pb_state_rules_get:()=>({ok:true,company_state:'TX',jobs:{},can_set_company:true,server_at:new Date().toISOString()})});`;
-    const { b, p } = await L.boot(L.URL, { init: L.mgr + ACK + srv, wait: 4500 });
+    const { b, p } = await L.boot(L.URL, { init: L.mgr + IND + ACK + srv, wait: 4500 });
     await p.evaluate(() => window.pbRenderHome()); await p.waitForTimeout(600);
     ok(!(await vis(p, '#homeStateCard')) && (await p.evaluate(() => window.__debugSt.mine())) === 'TX', 'company state already set: not asked');
     await b.close();

@@ -144,7 +144,7 @@ rep('''  // ---- Settings › Company: the company's state (r17.05; replaced "a 
     const sel = '<span class="pb-ai-st-pick"><label for="aiAskStSel">' + (t.ask ? 'Pick the state' : 'State for your answers') + '</label> <select id="aiAskStSel" onchange="pbAskStSet(this.value)">' + pbSrOptions('', 'Pick a state') + '</select></span>';
     if (t.ask) return i === 0 && !t.done ? '<div class="pb-ai-hint pb-ai-st" id="aiAskSt0">' + sel + '</div>' : '';
     return '<div class="pb-ai-hint pb-ai-st" id="aiAskSt' + i + '">Answered for ' + escapeHtml(pbSrName(t.code)) + '.'
-      + (t.next ? ' Next answers: ' + escapeHtml(pbSrName(t.next)) + '.' : '')
+      + (i === 0 && t.next ? ' Next answers: ' + escapeHtml(pbSrName(t.next)) + '.' : '')
       + (i === 0 && !t.next && pbAskStCanChange() ? (pbAskStPick ? sel : ' <button type="button" class="pb-edu-link" id="aiAskStChange" onclick="pbAskStChange()">Change</button>') : '') + '</div>';
   }
   window.pbAskStChange = function() { pbAskStPick = true; pbAiAskRender(); const e = document.getElementById('aiAskStSel'); if (e) e.focus({ preventScroll: true }); };

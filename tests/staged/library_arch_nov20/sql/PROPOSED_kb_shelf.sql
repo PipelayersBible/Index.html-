@@ -2,7 +2,10 @@
 -- The "shelf": the deep Ask library (regulation text, MUTCD, state supplements, spec books, handbooks) that is NOT loaded into
 -- each Ask worker. It is searched here, in Postgres, the same way company documents already are (public.pb_docs_search).
 -- Adding this table changes nothing for live Ask: the current build never reads it. Tested on a local Postgres 16
--- (tools/pgtest.sh) with 85,000 rows.
+-- (tools/pgtest.sh): 15,000 rows 30-160 ms a search; 85,000 rows 0.2-1.0 s (224 MB with the index).
+-- If the shelf ever gets that big: the cost is ranking every row that matches ANY word. First tuning step: require the
+-- rarest word group (AND it into the query) or rank with ts_rank instead of ts_rank_cd; both are one-line changes here.
+-- Not built: the Ask code that calls pb_ai_kb_shelf_search (LIBRARY_RULES.md section 1, migration step 4).
 begin;
 
 create table if not exists pb_ai.kb_shelf (

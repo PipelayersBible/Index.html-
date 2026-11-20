@@ -46,6 +46,13 @@ delete from pb_billing.settings where key in ('individual_cents', 'individual_ye
 update pb_billing.settings set note = 'Plan reading add-on, per month. Not decided yet (null = price not set).'
   where key = 'plan_reading_cents' and note = 'Not used: plan reading is priced per sheet (plan_sheet_cents). Leave empty.';
 
+-- 3b. public.ai_usage: the feature check as it was (six names). Strong plan look-up counts ('plans_strong') could not
+--     exist before the pricing build, so any that were counted since are removed first.
+delete from public.ai_usage where feature = 'plans_strong';
+alter table public.ai_usage drop constraint if exists ai_usage_feature_check;
+alter table public.ai_usage add constraint ai_usage_feature_check
+  check (feature = any (array['cutsheet'::text, 'stake'::text, 'teacher'::text, 'ticket'::text, 'analysis'::text, 'gonogo_q'::text]));
+
 -- 4. The new functions (nothing calls them once the old texts are back; the app falls back to its old messages).
 drop function if exists public.pb_my_limits(text);
 drop function if exists public.pb_plan_prices();

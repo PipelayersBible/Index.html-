@@ -54,6 +54,8 @@ begin
   perform pg_temp.ok(pg_temp.use(M1, 'cutsheet', 5) = 2, '3e 25 a day in all (8 + 15 + 2)'); perform pg_temp.ok(pg_temp.why(M1, 'cutsheet') = 'person_day', '3f reason person_day');
   perform pg_temp.ok(pg_temp.use(M1, 'gonogo_q', 3, 40) = 3, '3g the question check has its own counter');
   perform pg_temp.ok(pg_temp.use(M1, 'plans_strong', 3, 3) = 2, '3h strong plan reads: 2 a day');
+  perform pg_temp.ok((select u.count from public.ai_usage u where u.user_id = M1 and u.day = today and u.feature = 'plans_strong') = 2
+    and pg_temp.err(format('insert into public.ai_usage (user_id, day, feature, count) values (%L, current_date, %L, 1)', M1, 'other')) like '%ai_usage_feature_check%', '3h2 the strong look-ups are counted in ai_usage (the name is allowed now); an unknown name is still refused');
   perform pg_temp.act(M1); r := public.pb_my_limits('teacher');
   perform pg_temp.ok(r->'day' = '{"used": 25, "limit": 25}'::jsonb and r->'month'->>'limit' = '150' and r->'company_day' = '{"used": 25, "limit": 60}'::jsonb and r->'company_month'->>'limit' = '300' and r->>'people' = '5', '3i pb_my_limits ' || r::text);
 
@@ -92,7 +94,7 @@ begin
   perform pg_temp.ok((select sum(usd) from pb_billing.ai_cost where user_id in (M4, M5)) = 46.51, '6f the per-person cost log still written');
   -- one person's month: 150
   delete from pb_billing.ai_pool where owner_key = C::text;
-  insert into public.ai_usage (user_id, day, feature, count) values (M5, today, 'other', 149) on conflict (user_id, day, feature) do update set count = 149;
+  insert into public.ai_usage (user_id, day, feature, count) values (M5, today, 'stake', 149) on conflict (user_id, day, feature) do update set count = 149;
   perform pg_temp.ok(pg_temp.use(M5, 'cutsheet', 1) = 0 and pg_temp.why(M5, 'cutsheet') = 'person_month', '6g one person: 150 a month');
   -- a read-only company (not paid past the grace days): no AI at all, as before
   update pb_billing.accounts set state = 'read_only' where company_id = C;
@@ -104,7 +106,7 @@ begin
   perform pg_temp.ok(pg_temp.use(IND, 'cutsheet', 1) = 0 and pg_temp.why(IND, 'cutsheet') = 'person_day', '7c 15 a day');
   perform pg_temp.ok(pg_temp.use(IND, 'plans_strong', 1, 3) = 0, '7d no strong plan reads');
   perform pg_temp.ok((select sum(p.n) from pb_billing.ai_pool p where p.owner_key = 'u:' || IND::text) = 15, '7e own total');
-  update public.ai_usage set count = 0 where user_id = IND; insert into public.ai_usage (user_id, day, feature, count) values (IND, today, 'other', 50) on conflict (user_id, day, feature) do update set count = 50;
+  update public.ai_usage set count = 0 where user_id = IND; insert into public.ai_usage (user_id, day, feature, count) values (IND, today, 'stake', 50) on conflict (user_id, day, feature) do update set count = 50;
   perform pg_temp.ok(pg_temp.use(IND, 'teacher', 1) = 0 and pg_temp.why(IND, 'teacher') = 'person_month', '7f 50 a month');
   delete from public.ai_usage where user_id = IND;
   perform public.ai_cost_add(IND, 'stake', 2.49); perform pg_temp.ok(pg_temp.use(IND, 'teacher', 1) = 1, '7g under $2.50');

@@ -77,7 +77,7 @@ filter on the search, not a word in it (already done in the staged build `ask_st
 |---|---|
 | 811 handbooks and one-call laws, 51 | 1,000-1,500 |
 | Federal OSHA construction rules in full (29 CFR 1926, parts of 1910) | 2,000-3,000 |
-| State safety programs (22 state plans for private crews, 7 public-sector plans, state-only laws) | 2,000-3,000 |
+| State safety programs (the state OSHA plans that cover private crews, the public-sector-only plans, state-only laws; list at osha.gov/stateplans) | 2,000-3,000 |
 | MUTCD Part 6 and what it leans on, plus 51 state manuals or supplements | 2,000-2,500 |
 | State DOT spec books (earthwork, pipe, structures, traffic), 51, plus big local agencies | 4,000-6,000 |
 | Everything else (stormwater permits, pipeline safety, CDL / hours, standards and maker guides as summaries) | 1,500-2,500 |
@@ -87,7 +87,7 @@ So the library Tommy asked for does not fit the way search works now. It needs a
 
 ### Recommended design: a small core in the worker, the deep shelf in Postgres
 - **Core (what every worker loads, as today): at most 6,000 chunks.** Today's 2,840 plus short "answer cards": the handful of
-  numbers a crew actually asks for, per state and per federal topic. Same search code, same ranking, so the 190 eval cases keep
+  numbers a crew actually asks for, per state and per federal topic. Same search code, same ranking, so the existing eval cases keep
   meaning what they mean. Budget (enforced by `lib_kb.py`): 40 core chunks per state across all collections
   (811: 6, state safety: 10, traffic: 8, specs: 10, permits / licensing / right-of-way: 2 each) = 2,040, plus 1,000 federal
   (OSHA 500, MUTCD 200, other federal 150, standards 100, makers 50). Total 5,880.
@@ -99,7 +99,7 @@ So the library Tommy asked for does not fit the way search works now. It needs a
     A state's chunks come back only for that state; "US" chunks always. At most 2 per title.
   - Tested on a local Postgres 16 (`tools/pgtest.sh`): 15,000 rows (the size Tommy asked for) **30-160 ms** a search;
     85,000 rows (30x) **0.2-1.0 s**, 224 MB on disk. An Ask answer takes about 6 s, so this is not felt. If 30x is ever
-    reached, the first tuning step is to rank only the best few hundred matches (noted in the SQL file).
+    reached, the first tuning step is to rank only the rows that match the rarest words (noted in the SQL file).
   - Ask uses it in two places (code change, **not built**): (a) the model's own second search (`search_knowledge`,
     `tools.ts:779`) also calls the shelf and merges; (b) the first search calls the shelf at the same time as the in-worker
     search and adds the best 2 shelf hits for the job's state when they score well. One extra database call a question.
@@ -188,7 +188,7 @@ be right under both:
 - Comparing states ("unlike California...") belongs in neither. Each state's chunk states its own rule and the federal one.
 
 ### What makes a good chunk
-- Lead with the answer: "Texas: a ticket is good for 14 working days (Texas Utilities Code 251.xxx)". Then the conditions.
+- Lead with the answer: the state, the number with its unit, and the section it comes from, in the first sentence. Then the conditions.
 - Self-contained. The model may see only this chunk. No "see above", no "as noted".
 - Use the words crews use next to the official ones ("blue stake", "locates", "trench box / shield").
 - One state, one subject, one edition per chunk. Split long sections at natural breaks, and give each piece its own title.
@@ -253,13 +253,14 @@ Rules for every `summary`:
 ## 5. Eval plan
 
 ### What exists
-- Server: `pb_ai.eval_set` (190 active cases), `eval_start('ai-next', label, ids)`, `eval_collect`, `eval_score`. A case passes
+- Server: `pb_ai.eval_set` (160 active cases today), `eval_start('ai-next', label, ids)`, `eval_collect`, `eval_score`. A case passes
   when every `must` regex is in the answer, no `mustnot` regex is, and the answer is within `maxwords`.
 - Cost, from the server's own records: **$0.021 a text question** on the last full run (Nov 16, 74 text cases, 6.2 s each);
   **$0.031 average** over 14,724 results on `ai-next` in the last 10 days (photo and stake cases cost more). Plan on $0.025.
-- Free: the retrieval-only check (`tests/staged/ask_state_nov20/tools/run_retrieval.sh`, `evalret.mjs`). It runs the build's
-  own search over a local copy of the library and reports whether the chunk that holds the answer is in what the model
-  would be handed. No model calls, seconds to run.
+- Free: the retrieval-only check. For library cases: `node tools/retr_cases.mjs cases.jsonl batch.jsonl ...` (this folder;
+  built on `ask_state_nov20`'s state-aware search). It runs the build's own search over a local copy of the live library plus
+  your core chunks and reports whether the chunk that holds the answer is in what the model would be handed for a job at
+  the case's location. No model calls, seconds to run. Example: `examples/cases_example.jsonl` (2 of 2).
 
 ### Tommy's style rule (Nov 20), and where Ask is today
 "The answers should be concise and direct. On complicated subjects, it can offer more info and then dive into more details."
@@ -314,7 +315,7 @@ One JSON object per line, checked by `python3 lib_kb.py cases cases.jsonl chunks
   the first 40 words. `mustnot`: the wrong answers that matter, above all another state's number.
 - `kind` sets the word limit: `simple` 70, `rule` 100, `complex` 110 (answer plus one offer; set `"complex": true`), `steps` 170.
 - `chunks`: the ids that hold the answer. The free check uses them.
-- `state_strict: true`: the loader adds a `mustnot` for every other state's name, so an answer that brings up another state fails.
+- `state_strict: true`: the loader (`tools/cases_sql.py`) adds a `mustnot` for every other state's name, so an answer that brings up another state fails.
 - Two cases per ten chunks, and at least one per state per collection. A third of them on things the library marks "not
   confirmed": the right answer there says so and names who to ask.
 
@@ -329,13 +330,14 @@ Regexes cannot tell a well-put answer from a clumsy one, so each round the lead 
 at random, 10 passes and 10 fails, and notes anything the checks missed. Five minutes; it keeps the checks honest.
 
 ### Step 1, free, before any paid round
-Run every case through the retrieval-only check at its own location. A case whose `chunks` are not in the first search's
+Run every case through the retrieval-only check (`tools/retr_cases.mjs`) at its own location. A case whose `chunks` are not in the first search's
 excerpts will fail the paid run too, for a reason that costs nothing to find: fix the title or topic words, add the missing
 crew word, or mark it as needing the shelf search. Start paid rounds when at least 85% of core-tier cases pass the free
 check. (Shelf-tier cases cannot pass until the shelf search is built; keep them out of rounds until then.)
 
 ### Step 2, the loop: rounds of about 100 on `ai-next` (about $2.50 each, approved by Tommy)
-**How each round's 100 are picked** (`eval_start('ai-next', 'lib round N', array[...])`):
+**How each round's 100 are picked** (`eval_start('ai-next', 'lib round N', array[...])`; the picker script is not built yet,
+the lead picks by this table from the case files and the last round's `eval_score(run)->'fails'`):
 
 | Share | Which | Why |
 |---|---|---|
@@ -367,9 +369,9 @@ More rounds will not fix it; look at the cause table for the one thing that domi
 code or content, re-run the free check, then resume.
 
 ### Step 3, the big run (once)
-Every active case once on `ai-next`: the existing 190 plus the whole new pool. At about 1,500 new cases that is about
+Every active case once on `ai-next`: the existing 160 plus the whole new pool. At about 1,500 new cases that is about
 1,700 questions, about **$45**. It is run in batches of 200 so a bad start can be stopped. Promote to live only if the big
-run holds the stop-rule numbers and the existing 190 are no worse than their last run.
+run holds the stop-rule numbers and the existing cases are no worse than their last run.
 
 ### Budget
 | | Cost |

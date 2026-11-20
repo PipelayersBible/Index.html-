@@ -137,12 +137,12 @@ const EMPTY_DASH=`window.__rpcOverride=Object.assign(window.__rpcOverride||{},{p
  // ===== 4. the Home Screen code moves the session (iPhone Safari -> the Home Screen app) =====
  if(run(4)){const srv=require('./srv1dev')();const OF=srv.OFFICE;
   const SA=track((await boot(b,BASE,srv,{user:srv.USERS[OF],ua:IOS,init:EMPTY_DASH,wait:7500})).p,'4:Safari');
-  await SA.evaluate(()=>{window.pbUnsentSentence=async()=>'Not sent yet: 1 run report. It sends when this account logs in here again.';});
+  await SA.evaluate(()=>{window.__pb1dUnsent=async()=>'Not sent yet: 1 run report. It sends when this account logs in here again.';});
   await SA.evaluate(()=>window.pbObHandoff());await SA.waitForTimeout(2500);
   const sh=await sheet(SA);
   ok(/This page is signed out when you sign in there\./.test(sh),'4: Get a Code says the page is signed out by it');
   const warn=await SA.evaluate(()=>{const e=document.getElementById('pb1dUnsentA');return e&&!e.hidden?e.textContent:'';});
-  ok(warn===''||/^Let this send before you switch\. Not sent yet: 1 run report\./.test(warn),'4: unsent work is named first'+(warn?': "'+warn.slice(0,60)+'…"':' (not testable here: the sentence function could not be stubbed)'));
+  ok(/^Let this send before you switch\. Not sent yet: 1 run report\./.test(warn),'4: unsent work is named first: "'+warn.slice(0,60)+'…"');
   ok(await fits(SA,'#pbObSheet .pbob-card'),'4: the code sheet fits 390 px');await SA.screenshot({path:SHOTS+'/handoff_code.png'});
   await SA.evaluate(()=>window.pbObHandoffCopy());const code=await SA.evaluate(()=>window.__pbObCopied);
   const HS=track((await boot(b,BASE,srv,{ua:IOS,standalone:true,clip:code,init:EMPTY_DASH,wait:3500})).p,'4:HomeScreen');

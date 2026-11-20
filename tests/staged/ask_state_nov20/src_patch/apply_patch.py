@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # ask_state_nov20: makes the patched Ask source from the live source (build b4ad91749f6f).
 #   python3 apply_patch.py /home/claude/ask_v24/src <out dir>
-# Exact-once replacements (assert count == 1). Adds state.ts; changes ask.ts, tools.ts, _shared/retrieval.ts, index.ts (one line). Nothing else.
+# Exact-once replacements (assert count == 1). Adds state.ts; changes ask.ts, tools.ts, _shared/retrieval.ts, index.ts (one line), guard.ts (quote pairing). Nothing else.
 import sys, os, shutil
 SRC, OUT = sys.argv[1], sys.argv[2]
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -185,6 +185,12 @@ globalThis.__PLAIN_MIN = Number(Deno.env.get("AI_ASK_PLAIN_MIN") || 0); // optio
 # 4. index.ts: a quality-run case can be set with NO job state (where = "none"), to test the one short question
 patch("index.ts", [
  ('''where = String(c?.where || "Wildomar, CA").slice(0, 60);''', '''where = c?.where === "none" ? "" : String(c?.where || "Wildomar, CA").slice(0, 60);'''),
+])
+# 5. guard.ts (Nov 20, eval tr14): the OSHA quote checker pairs straight quotes at any length, so a short quoted phrase
+#    can no longer shift the pairing and get the text between two quotes removed
+patch("guard.ts", [
+ ('    new RegExp(`"(${NB(\'"\')})"`, "g"),', '    // straight quotes are paired at ANY length (an opening quote follows a space or "(", a closing one follows a\n    // non-space), and only spans of 20+ characters are checked: with a 20-character minimum in the pattern itself a\n    // short quoted phrase ("20 feet or less") was skipped and the text BETWEEN two quotes was then judged as a quote.\n    /(?<=^|[\\s(\\[:*_>\\u2014\\u2013-])"(?=\\S)([^"]{1,1200}?)(?<=\\S)"(?=$|[\\s.,;:!?)\\]\\[*_\\u2014\\u2013-])/gm,'),
+ ('        (whole, q, offset, src) =>\n          check(q, whole, offset, src) !== "bad"', '        (whole, q, offset, src) =>\n          q.length < 20 || check(q, whole, offset, src) !== "bad"'),
 ])
 shutil.copy(os.path.join(HERE, "state.ts"), os.path.join(OUT, "state.ts"))
 print("patched: ask.ts tools.ts index.ts _shared/retrieval.ts + state.ts ->", OUT)

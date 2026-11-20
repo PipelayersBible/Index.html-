@@ -208,6 +208,14 @@ end $$;
 -- ---------------------------------------------------------------------------------------------------------------------
 -- 4. The AI gates (called by the ai edge function with the service key).
 
+-- CHANGED constraint (found by the first live test run, Nov 20). The ai function counts a strong plan look-up as feature
+-- 'plans_strong' (ai_try_consume, "v22: Opus plan reads"), but public.ai_usage only allowed the six older names, so on live
+-- every such call has been failing on this check and the strong look-up has never run (no 'plans_strong' row exists).
+-- The name is added so the look-up can be counted (2 a day for a person on a company plan; its cost is inside the dollar stop).
+alter table public.ai_usage drop constraint if exists ai_usage_feature_check;
+alter table public.ai_usage add constraint ai_usage_feature_check
+  check (feature = any (array['cutsheet'::text, 'stake'::text, 'teacher'::text, 'ticket'::text, 'analysis'::text, 'gonogo_q'::text, 'plans_strong'::text]));
+
 -- REPLACED. Was: 100 a day for a paid company member or owner, 10 for an individual. The beta lines are unchanged.
 create or replace function public.ai_daily_limit(p_user uuid) returns integer
 language sql stable security definer set search_path to 'public' as $function$
