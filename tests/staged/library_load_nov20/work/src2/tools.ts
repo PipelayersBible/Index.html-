@@ -1,5 +1,4 @@
 import { keepForState, questionStates, tenStatesOnly } from "./state.ts";
-import { SHELF_TOOL } from "./shelf.ts";
 import { search } from "./_shared/retrieval.ts";
 import { cleanUntrusted, docBlock } from "./guard.ts";
 import { calc } from "./calc.ts";
@@ -786,10 +785,7 @@ async function runTool(name, input, cx) {
         // ask_state: the same state rule as the first search (a state's chunk only on that state's job, or when the
         // search or the question names the state); general and federal chunks always
         const stCode = cx.state?.code || null, stNamed = [...(cx.state?.named || []), ...questionStates(q)];
-        // ask_shelf: the deep library too (this job's state + federal). Its excerpts take up to 2 of the same 5 places
-        // and the same 7,000 characters; they are listed after the core ones.
-        const shelf = lib === "app" || !cx.shelfSearch ? [] : (await cx.shelfSearch(q, { ...SHELF_TOOL, coll: lib === "osha" ? ["osha"] : null })).slice(0, SHELF_TOOL.k);
-        let kbChars = shelf.reduce((a, h) => a + h.text.length, 0), kbN = shelf.length;
+        let kbChars = 0, kbN = 0;
         for (
           const h of search(cx.kb, q, {
             k: 20,
@@ -818,11 +814,6 @@ async function runTool(name, input, cx) {
                 h.verbatim ? "OSHA VERBATIM: " + h.source : h.lib + " library: " + h.source
               }) ${h.title}: ${h.text.slice(0, 1800)}`,
             );
-        }
-        for (const h of shelf) {
-          const n = cx.nextExcerpt();
-          cx.sources.push({ n, kind: "kb", title: h.title, lib: h.lib, source: h.source, url: h.url, verbatim: h.verbatim, id: h.id, _text: h.text }),
-            out.push(`[${n}] (${h.verbatim ? "OSHA VERBATIM: " + h.source : h.lib + " library: " + h.source}) ${h.title}: ${h.text}`);
         }
       }
       if (lib === "any" || lib === "documents") {

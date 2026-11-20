@@ -12,6 +12,16 @@ async function loadPromptOverrides(admin) {
     const pick = (n) => (globalThis.PB_ASK_SLOT === "next" && m[n + "@next"]) || m[n];
     TEACHER_V2_SYSTEM = applyOverride(TEACHER_V2_BUILTIN, pick("teacher_v2"));
     STAKE_GLOSSARY = applyOverride(STAKE_GLOSSARY_BUILTIN, pick("stake_glossary"));
+    // library_load: the prompt row's EDITS list may also carry {"reply_rule": "<text>"} and {"knobs": {"exChars": 9000, "verbatimMax": 1800}}
+    // (the table only allows the two prompt names, so these ride in the same row; applyOverride ignores them)
+    globalThis.__pbReply = null, globalThis.__pbKnobs = {};
+    try {
+      const row = pick("teacher_v2");
+      if (typeof row == "string" && row.startsWith("EDITS")) for (const e of JSON.parse(row.slice(5))) {
+        if (e && typeof e.reply_rule == "string" && e.reply_rule.length > 20) globalThis.__pbReply = e.reply_rule;
+        if (e && e.knobs && typeof e.knobs == "object") globalThis.__pbKnobs = e.knobs;
+      }
+    } catch {}
   } catch (_e) {}
 }
 // an override is either the whole text (over 200 characters) or "EDITS" + a JSON list of {old, new} replacements on the built-in text
@@ -51,7 +61,9 @@ import {
 } from "./_shared/retrieval.ts";
 import { gapStep, later, namesOwnJob, REFUSAL_RX } from "./gaps.ts";
 import { addressState, okState, resolveState, stateLines, stateSearch } from "./state.ts";
-const REPLY_RULE = "REPLY FOR THIS ONE (firm): Sentence 1 IS the answer: the number with its unit, the yes or no, or the first step; for their state when an excerpt gives that state's rule. Then at most 3 \"- \" lines, one short sentence each, only what they need to act on. 40 to 60 words in all, never over 90 (a how-to or an emergency: numbered steps, never over 130). No quote longer than 8 words, no background, no second rule they did not ask about, do not repeat the question. On a safety rule the last \"- \" line is that their competent person decides on site. COMPLICATED SUBJECT (the full answer is a table, several cases, a list of 6 or more items, or more than one rule): do not list it all. Give the short answer for their case, or the most common case and say which, then end with exactly one offer of 12 words or fewer in this form: \"Want the details on <the specific part>?\" Any other answer never ends with an offer or a question, except the one \"Which state is the job in?\" question when the JOB STATE line calls for it. Never hold a life-safety limit or a required step back behind an offer.";
+import { SHELF_FIRST, shelfPick, shelfSearch, withShelf } from "./shelf.ts";
+const REPLY_RULE = "REPLY FOR THIS ONE (firm; count before you send): Line 1 is ONE sentence and IS the answer: the number with its unit, the yes or no, or the first step; for their state when an excerpt gives that state's rule. Then at most 2 \"- \" lines, each one sentence of 15 words or fewer, only what they must know to act (the main condition or exception). On a trench, shoring, confined space, fall protection or traffic control rule (never on an emergency, or on tickets, reporting, paperwork, specs or math) the last \"- \" line is \"Your competent person decides on site.\" Then stop: 55 words at most in all. No quotes, no background, no second topic, no line about what the library lacks unless that IS the answer. Give the rule's section number once, in parentheses. If the excerpt says the number or rule is not confirmed, say \"not confirmed\" and who to ask; that line is required. A how-to or an emergency: up to 6 numbered steps, one short sentence each, 110 words at most. COMPLICATED SUBJECT (the full answer is a table, several cases, a list of 6 or more items, or more than one rule): same limits; answer their case, or the most common case and say which, then end with exactly one offer line of 12 words or fewer: \"Want the details on <the specific part>?\" Never add an offer or a question to any other answer, except \"Which state is the job in?\" when the JOB STATE line calls for it. A life-safety limit or a required step is never left for the offer.";
+const pbTrimHits = (hits) => { const v = Number((globalThis.__pbKnobs || {}).verbatimMax) || 0; return v ? hits.map((h) => (h.verbatim && h.text.length > v ? { ...h, text: h.text.slice(0, v) + " \u2026" } : h)) : hits; };
 globalThis.__PLAIN_MIN = Number(Deno.env.get("AI_ASK_PLAIN_MIN") || 2); // optional: plain-language chunks beside OSHA text (0 = off)
 import { docHeader, docSource, docTitle, runTool, toolsFor } from "./tools.ts";
 import { cleanUntrusted, docBlock } from "./guard.ts";
@@ -285,7 +297,7 @@ async function askV2(body, s) {
     kbP = R ? Promise.resolve(R.index) : kb(s.admin),
     ctxLabel = cleanUntrusted(body.ctx?.label, 60),
     curJob = cleanUntrusted(body.ctx?.job, 60);
-  let cityState = "", jobState = null;
+  let cityState = "", jobState = null, shelfP = Promise.resolve([]); // ask_shelf: the deep library's excerpts (shelf.ts)
   // ask_state (Nov 20): one answer to "which state is this for", worked out once and used by the first search, the
   // model's own search, the document search and the prompt. See state.ts resolveState for the order.
   let st = resolveState({ question: q });
@@ -302,7 +314,7 @@ async function askV2(body, s) {
       return r.error || !r.data?.ok ? [] : r.data.rows || [];
     },
     docsP = scopeP.then((sr) => {
-      if (sr?.error || !sr?.data?.ok) return [];
+      if (sr?.error || !sr?.data?.ok) return shelfP = shelfSearch(s.admin, q, st.code, { ...SHELF_FIRST, index: kbP }), [];
       const row = (Array.isArray(sr.data.jobs) ? sr.data.jobs : []).find((j) =>
         String(j[0]).toLowerCase() === curJob.toLowerCase()
       );
@@ -322,6 +334,7 @@ async function askV2(body, s) {
           majorityState: Object.keys(n).sort((x, y) => n[y] - n[x])[0] || null, // v28: where most of the company's jobs are
         });
         jobState = st.code;
+        shelfP = shelfSearch(s.admin, q, st.code, { ...SHELF_FIRST, index: kbP }); // same moment as the document search
         return docsSearch(q);
       });
     }).catch(() => []);
@@ -557,8 +570,13 @@ async function askV2(body, s) {
         text: cleanUntrusted(x?.text, 900),
       })
       ),
-      ex = mergeExcerpts(phone, hits, 9e3),
-      hitText = new Map(hits.map((h) => [h.id, h.text])),
+      // ask_shelf: the deep library's best excerpts for this job's state (and federal) go after the core ones. They only
+      // use the room the core excerpts leave free inside the same 9,000 characters: nothing is pushed out (shelf.ts).
+      exCore = mergeExcerpts(phone, pbTrimHits(hits), Number((globalThis.__pbKnobs || {}).exChars) || 9e3),
+      shelf = analysis || plan ? [] : shelfPick(await shelfP, hits, exCore, q, index),
+      shelfOwn = (usage.shelf = shelf.length, shelf.filter((h) => h.state !== "US").length),
+      ex = withShelf(exCore, shelf),
+      hitText = new Map([...hits, ...shelf].map((h) => [h.id, h.text])),
       sources = ex.map((x) => ({
         n: x.n,
         kind: x.kind,
@@ -614,7 +632,7 @@ Jobs you can see (job | name | city/state | start | end | last activity | closed
           : curJob
           ? "CURRENT JOB: " + curJob
           : "",
-        analysis || plan ? "" : stateLines(st, ss.dependent, ss.own),
+        analysis || plan ? "" : stateLines(st, ss.dependent === "plan" && shelfOwn ? !0 : ss.dependent, ss.own + shelfOwn),
         "TODAY: " + today + (analysis ? "   MODE: business analysis" : ""),
         `<data ref="access">
 YOUR ACCESS: ` + access + `
@@ -639,7 +657,7 @@ CURRENT RUN ON THIS PHONE: ` + run + `
           : [],
         // v28: the length rule again, last, where the model follows it best
         !analysis && !plan
-          ? "\n" + REPLY_RULE
+          ? "\n" + (globalThis.__pbReply || REPLY_RULE)
           : "",
       ].filter((x) => x !== "").join(`
 `),
@@ -854,6 +872,7 @@ CURRENT RUN ON THIS PHONE: ` + run + `
             state: st,
             userRpc,
             docsSearch,
+            shelfSearch: (text, o) => shelfSearch(s.admin, text, st.code, { ...o, index }),
             nextRef: () => ++dataN,
             nextExcerpt: () => ++excerptN,
             resultChars: L.resultChars,
@@ -1058,6 +1077,7 @@ CURRENT RUN ON THIS PHONE: ` + run + `
         state: st.code || null,
         state_how: st.how,
         state_own: usage.stateOwn || 0,
+        shelf: usage.shelf || 0,
         state_asked: !st.code && !!usage.stateDep,
         intent: intentLog,
         plan_images: planImagesSeen,
