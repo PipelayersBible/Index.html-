@@ -587,3 +587,9 @@ Every string below is shown on a confined space, air test, trench or emergency s
 - **permit_active.102**
   - EN: {0} → {1} ({2}, the phone’s time zone when it was locked)
   - ES: {0} → {1} ({2}, la zona horaria del teléfono cuando se bloqueó el permiso)
+
+## permit_emergency
+
+- **permit_emergency.036**
+  - EN: e.g. button bumped in a pocket; dispatcher told no response needed
+  - ES: p. ej. el botón se apretó en la bolsa; se avisó al operador que no hace falta que vengan

@@ -17,10 +17,10 @@ rep(""".pb-fb-pill { position: fixed; left: 14px; bottom: calc(14px + var(--pb-s
 html.pb-kb-open .pb-fb-pill, html.pb-fb-open .pb-fb-pill { display: none !important; }""",
 """.pb-fb-pill { -webkit-appearance: none; appearance: none; position: relative; box-sizing: border-box; flex: 0 0 auto; order: 1; align-self: center; width: auto; min-width: 0; height: 36px; min-height: 0; margin: 0; border: 0; border-radius: 999px; padding: 0 12px; display: inline-flex; align-items: center; justify-content: center; font: 600 14px/1 'Inter', sans-serif; letter-spacing: 0; text-transform: none; white-space: nowrap; color: #14171C; background: var(--pbl-yellow, #F5BF1F); box-shadow: none; cursor: pointer; }
 /* feedback_btn_nov19: in the header bar of the screen that is showing, top-right. 36 px tall to look at, 44 px to tap (the extra is inside the header's own padding) */
-#pbApp#pbApp#pbApp .pb-header > .pb-fb-pill { -webkit-appearance: none; appearance: none; position: relative; flex: 0 0 auto; order: 1; align-self: center; width: auto; min-width: 0; max-width: none; height: 36px; min-height: 0; margin: 0; padding: 0 12px; border: 0; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font: 600 14px/1 'Inter', sans-serif; letter-spacing: 0; text-transform: none; white-space: nowrap; color: #14171C; background: var(--pbl-yellow, #F5BF1F); box-shadow: none; transform: none; filter: none; }
-#pbApp#pbApp#pbApp .pb-header > .pb-fb-pill::after { content: ""; position: absolute; left: -4px; right: -4px; top: -4px; bottom: -4px; }
-#pbApp#pbApp#pbApp .pb-header > .pb-fb-pill:active { filter: brightness(.92); }
-#pbApp#pbApp#pbApp .pb-header > .pb-fb-pill:focus-visible { outline: none; box-shadow: var(--pb-ring, 0 0 0 3px rgba(245,191,31,.5)); }
+:is(#pbApp#pbApp#pbApp .pb-header, html.pb-cx #pbTabBar#pbTabBar#pbTabBar .pbx-side-foot) > .pb-fb-pill { -webkit-appearance: none; appearance: none; position: relative; flex: 0 0 auto; order: 1; align-self: center; width: auto; min-width: 0; max-width: none; height: 36px; min-height: 0; margin: 0; padding: 0 12px; border: 0; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font: 600 14px/1 'Inter', sans-serif; letter-spacing: 0; text-transform: none; white-space: nowrap; color: #14171C; background: var(--pbl-yellow, #F5BF1F); box-shadow: none; transform: none; filter: none; }
+:is(#pbApp#pbApp#pbApp .pb-header, html.pb-cx #pbTabBar#pbTabBar#pbTabBar .pbx-side-foot) > .pb-fb-pill::after { content: ""; position: absolute; left: -4px; right: -4px; top: -4px; bottom: -4px; }
+:is(#pbApp#pbApp#pbApp .pb-header, html.pb-cx #pbTabBar#pbTabBar#pbTabBar .pbx-side-foot) > .pb-fb-pill:active { filter: brightness(.92); }
+:is(#pbApp#pbApp#pbApp .pb-header, html.pb-cx #pbTabBar#pbTabBar#pbTabBar .pbx-side-foot) > .pb-fb-pill:focus-visible { outline: none; box-shadow: var(--pb-ring, 0 0 0 3px rgba(245,191,31,.5)); }
 #pbApp#pbApp#pbApp .pb-header > .pb-eyebrow ~ .pb-fb-pill { margin-left: 0; }
 html.pb-scrolled #pbApp#pbApp#pbApp .pb-screen.active:not(#screen-home) > .pb-header > .pb-fb-pill { height: 34px; font-size: 13px; }
 html:not(.pb-scrolled) #pbApp#pbApp#pbApp .pb-screen:not(#screen-home) > .pb-header.pb-fb-t > .pb-title { font-size: var(--pb-fb-ts); }
@@ -39,7 +39,9 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-screen.active:not(#screen-home) > .pb-he
 #pbApp#pbApp#pbApp #screen-confinedActive > .pb-header > .pb-fb-pill:not(.pb-fb-ic) { height: 30px; padding: 0 10px; font-size: 13px; }
 #pbApp#pbApp#pbApp #screen-confinedActive > .pb-header > .pb-fb-pill::after { top: -7px; bottom: -7px; }
 #pbApp#pbApp#pbApp #screen-confinedActive > .pb-header > .pb-fb-pill { background: none; color: var(--pb-text-2); border: 1px solid var(--pb-control, #8a8f98); font-weight: 600; } /* quiet beside EMERGENCY */
-/* no header showing on this screen: a fixed pill in the top-right corner instead */
+/* computer layout, office Home: that screen's header is hidden, so the button sits in the side menu (always on screen), above Field tools */
+html.pb-cx #pbTabBar#pbTabBar#pbTabBar .pbx-side-foot > .pb-fb-pill { order: 0; align-self: flex-start; margin: 0 0 10px 10px; }
+/* last resort (a screen with no header and no such row): a fixed pill in the top-right corner */
 .pb-fb-pill.pb-fb-float { position: fixed; right: calc(14px + env(safe-area-inset-right, 0px)); top: calc(10px + env(safe-area-inset-top, 0px)); z-index: 39; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
 html.pb-fb-open .pb-fb-pill.pb-fb-float { display: none !important; }
 @media print { .pb-fb-pill { display: none !important; } }""")
@@ -114,7 +116,9 @@ rep("""    function pbBetaRender() {""",
           const scr = document.getElementById('screen-' + scrName) || document.querySelector('#pbApp .pb-screen.active');
           const hd = scr && scr.querySelector(':scope > .pb-header');
           const shown = !!hd && getComputedStyle(hd).display !== 'none';
+          const foot = !shown ? document.getElementById('pbxSideFoot') : null, alt = foot && foot.offsetWidth > 0 ? foot : null;
           if (shown) { if (pill.parentNode !== hd || hd.lastElementChild !== pill) hd.appendChild(pill); pill.classList.remove('pb-fb-float'); if (!pill.hidden) pbFbFit(hd, pill, scr.id); pbFbWatch(hd); }
+          else if (alt) { if (pill.parentNode !== alt || alt.firstElementChild !== pill) alt.insertBefore(pill, alt.firstChild); pill.classList.remove('pb-fb-float', 'pb-fb-sm', 'pb-fb-ic', 'pb-fb-ssm', 'pb-fb-sic'); pill._k = ''; pbFbWatch(alt); }
           else { if (pill.parentNode !== document.body) document.body.appendChild(pill); pill.classList.remove('pb-fb-sm', 'pb-fb-ic', 'pb-fb-ssm', 'pb-fb-sic'); pill.classList.add('pb-fb-float'); pill._k = ''; pbFbWatch(null); }
         } catch (e) {}
       }

@@ -3,8 +3,10 @@
 #  - order by role: a pipelayer gets Start work above his "Yours" rows; a foreman keeps crew status / daily report first,
 #    Crew runs today first in his rows, and Start work in the order he uses it (permit, records, then runs)
 #  - a crew card with no number (dash or 0) becomes one short line; cards with a number stay big
-#  - at most one optional notice at a time; the rest fold into one "Also: ..." line (tap = show all). Anything about
-#    unsaved work, an open permit, people still checked in, or dig tickets is never folded
+#  - optional notices (the yellow ones, the notifications / Home Screen offer) are one sideways row: one card showing,
+#    swipe / arrows / dots, moves on by itself every 7 s (not while touched, typing, off screen or "reduce motion").
+#    Anything about unsaved work, an open permit, people still checked in, dig tickets, or a red card stays a full
+#    card above the row (Tommy, Nov 19)
 #  - "New" tile is named "New record" (the company Home already calls it that); "Work without a run" is not listed twice
 #  - text a crew reads on Home is at least 14 px
 from _rep import P
@@ -21,6 +23,28 @@ p.rep('''<div class="name">Confined Space Permit</div><div class="sub">Start a n
       '''<div class="name">Confined Space Permit</div><div class="sub">Start an entry permit</div>''')
 p.rep('''<div class="sub">Footage, photos and a note: for laser crews or work not set up as a run</div>''',
       '''<div class="sub">Footage, photos and a note. For laser crews.</div>''')
+
+# notices: the page renders the always-show cards and the optional cards into two lists inside #homeAttentionList
+# (every "#homeAttentionList .pb-home-att" style and handler keeps working); the offer card sits in the same row
+p.rep('''    <div id="homeAttentionList"></div>
+    </div>
+    <div id="homePushCard"></div>''',
+      '''    <div id="homeAttentionList"><div id="dcAlwaysList"></div><div id="dcRowWrap" hidden><div id="dcRow" role="region" aria-roledescription="carousel" aria-label="Notices" tabindex="0"><div id="dcOptList"></div><div id="homePushCard"></div></div><div id="dcNav" role="group" aria-label="Choose a notice" hidden></div></div></div>
+    </div>''')
+p.rep('''        const out = items.map(x => x.ngRaw ? x.ngRaw : ''',
+      '''        const dcOpt = (x) => !!(x && x.info && !x.ngRaw && !/^(locates|permitUnsaved|closeout|runsUnsaved|notePhotos|runWork|crewIn)$/.test(String(x.id))); /* declutter 01: these go in the sideways row */
+        const dcMap = (L) => L.map(x => x.ngRaw ? x.ngRaw : ''')
+p.rep('''        pbSetHtml(list, out);
+      }
+      { const pc = document.getElementById('homePushCard');''',
+      '''        const out = dcMap(items.filter(x => !dcOpt(x))), outOpt = dcMap(items.filter(dcOpt));
+        const dcA = document.getElementById('dcAlwaysList'), dcO = document.getElementById('dcOptList');
+        if (dcA && dcO) { pbSetHtml(dcA, out); pbSetHtml(dcO, outOpt); } else pbSetHtml(list, out + outOpt);
+      }
+      { const pc = document.getElementById('homePushCard');''')
+# the offer card's buttons are not "an alert card opened a page" (it was outside the list before)
+p.rep('''const card = b.closest('#homeAttentionList .pb-home-att'), uid = pbArchiveOwnerUid;''',
+      '''const card = b.closest('#homeAttentionList .pb-home-att:not(.push)'), uid = pbArchiveOwnerUid;''')
 
 CSS = r'''
 <style id="dcHomeStyle">
@@ -58,13 +82,20 @@ CSS = r'''
   html.pb-cx.pbx-wide #pbApp#pbApp #screen-home .pbx-pulse .pbx-act { flex: 1 1 180px; }
   html.pb-cx.pbx-wide #pbApp#pbApp #screen-home .pbx-pulse .pbx-act.dc-zero { flex: 0 1 calc(25% - 9px); }
 }
-/* one notice at a time: the rest fold into one line */
-#pbApp#pbApp #screen-home .dc-fold { display: none !important; }
-#pbApp #dcAlso { display: flex; align-items: center; gap: 8px; width: auto; min-height: 44px; margin: 8px 16px 0 16px; padding: 6px 12px; border: 1px dashed var(--pb-divider); border-radius: 10px; background: transparent; color: var(--pb-text-2); font: inherit; font-size: 14px; line-height: 1.3; text-align: left; cursor: pointer; -webkit-appearance: none; appearance: none; }
-#pbApp #dcAlso[hidden] { display: none; }
-#pbApp #dcAlso .dc-also-t { flex: 1 1 auto; min-width: 0; color: var(--pb-text); }
-#pbApp #dcAlso .dc-also-go { flex: 0 0 auto; font-weight: 650; color: var(--pb-brand-text, var(--pb-text)); }
-#pbApp #dcAlso:focus-visible { outline: none; box-shadow: var(--pb-ring); }
+/* optional notices: one sideways row, one card showing; always-show notices stay full cards above it */
+#pbApp #dcRowWrap[hidden], #pbApp #dcNav[hidden] { display: none; }
+#pbApp #dcRow { display: flex; gap: 16px; margin: 10px 16px 0 16px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; border-radius: 14px; }
+#pbApp #dcRow::-webkit-scrollbar { display: none; }
+#pbApp #dcRow:focus-visible { outline: none; box-shadow: var(--pb-ring); }
+#pbApp #dcRow > * { display: contents; }
+#pbApp#pbApp#pbApp #dcRow > * > * { flex: 0 0 100%; box-sizing: border-box; min-width: 0; margin: 0; scroll-snap-align: start; scroll-snap-stop: always; }
+#pbApp #dcNav { display: flex; align-items: center; justify-content: center; gap: 2px; margin: 2px 16px 0 16px; }
+#pbApp #dcNav button { -webkit-appearance: none; appearance: none; display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; margin: 0; padding: 0; border: 0; background: transparent; color: var(--pb-text-2); font: inherit; font-size: 22px; line-height: 1; cursor: pointer; border-radius: 10px; }
+#pbApp #dcNav button:focus-visible { outline: none; box-shadow: var(--pb-ring); }
+#pbApp #dcNav .dc-dot { min-width: 28px; }
+#pbApp #dcNav .dc-dot::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--pb-divider); border: 1px solid var(--pb-text-2); box-sizing: border-box; }
+#pbApp #dcNav .dc-dot[aria-current="true"]::before { width: 11px; height: 11px; background: var(--pb-text); border-color: var(--pb-text); }
+#pbApp #dcNav .dc-count { min-width: 44px; font-size: 14px; color: var(--pb-text-2); text-align: center; }
 /* "Work without a run" has its own Home row: not listed again in the New record sheet opened from that Home */
 #pbApp#pbApp #screen-home.dc-norun #archiveNoRunBtn { display: none !important; }
 </style>
@@ -78,7 +109,7 @@ JS = r'''
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
   var scr = $('screen-home'); if (!scr) return;
-  var openAll = false, busy = false;
+  var busy = false;
   // shown by the page's own rules (ignores this layer's fold)
   function on(el) {
     for (var e = el; e && e !== scr; e = e.parentElement) { if (e.hidden || (e.style && e.style.display === 'none')) return false; }
@@ -92,7 +123,7 @@ JS = r'''
     for (var i = 0; i < want.length; i++) if (kids[i] !== want[i]) { want.forEach(function (e) { box.appendChild(e); }); return; }
   }
   var START0 = ['homeTileNewRun', 'homeTileQuickRun', 'homeTileNoRun', 'homeTileNewPermit', 'homeTileNew'];
-  var START_FM = ['homeTileNewPermit', 'homeTileNew', 'homeTileNoRun', 'homeTileNewRun', 'homeTileQuickRun'];
+  var START_FM = ['homeTileNew', 'homeTileNoRun', 'homeTileNewPermit', 'homeTileQuickRun', 'homeTileNewRun']; // Tommy, Nov 19
   var MINE0 = ['homeProdMine', 'homeInspMine', 'homeCrewView'], MINE_FM = ['homeCrewView', 'homeProdMine', 'homeInspMine'];
   function role() {
     if (scr.classList.contains('pb-coh-on')) return 'co';
@@ -115,33 +146,63 @@ JS = r'''
       cls(el, 'dc-zero', z);
     });
   }
-  // Notices. "always": never folded. The others: the first one shows (only when no "always" one is up), the rest fold.
-  var ALWAYS_ATT = /^homeAttention_(locates|permitUnsaved|closeout|runsUnsaved|notePhotos|runWork|crewIn)$/;
-  function notices() {
-    var always = 0, opt = [];
-    var add = function (el, title) { if (el && on(el) && (el.children.length || txt(el))) opt.push({ el: el, t: title || txt(el.querySelector('.t')) || txt(el).slice(0, 40) }); };
-    if (on($('pbSessionUnreadableBannerHome'))) always++;
-    var bl = $('pbBetaLine'); if (bl && on(bl) && bl.classList.contains('ended')) always++;
-    add($('homeCrewInvite'), 'Company invitation');
-    Array.prototype.forEach.call(scr.querySelectorAll('#homeAttentionList > .pb-home-att'), function (el) {
-      if (!el.classList.contains('info') || ALWAYS_ATT.test(el.id)) { always++; cls(el, 'dc-fold', false); } else add(el);
-    });
-    add($('homePlanAlerts'), 'Plan changes');
-    add($('homeTalkCard'), 'Toolbox talk today');
-    add($('homePushCard'));
-    var keep = always ? 0 : 1, folded = [];
-    opt.forEach(function (o, i) { var f = !openAll && i >= keep; cls(o.el, 'dc-fold', f); if (f) folded.push(o.t); });
-    var b = $('dcAlso');
-    if (!b) {
-      b = document.createElement('button'); b.type = 'button'; b.id = 'dcAlso'; b.hidden = true;
-      b.innerHTML = '<span class="dc-also-t"></span><span class="dc-also-go">Show</span>';
-      b.onclick = function () { openAll = true; sync(); };
-      var at = $('homeAttention'); if (at && at.parentElement === scr) scr.insertBefore(b, at.nextSibling); else return;
+  // Optional notices (dcOptList: the yellow ones, and the notifications / Home Screen offer) sit in one sideways row:
+  // one card showing, swipe or the arrows / dots for the next, and it moves on by itself every 7 s. It stops moving
+  // while it is touched, hovered or holds the focus, while a text box has the cursor, when Home is not on screen, and
+  // for "reduce motion". Every card stays in the page (screen readers read each one; its own buttons work). The row is
+  // as tall as its tallest card, so Home does not jump. This script never writes inside the page-rendered lists.
+  var row = $('dcRow'), wrap = $('dcRowWrap'), nav = $('dcNav'), idx = 0, nShown = -1, holdUntil = 0, touching = false, over = false;
+  var rm = null; try { rm = window.matchMedia('(prefers-reduced-motion: reduce)'); } catch (e) {}
+  function reduce() { return !!(rm && rm.matches); }
+  function slides() { return row ? Array.prototype.slice.call(row.querySelectorAll(':scope > * > *')) : []; }
+  function step() { var s = slides(); return s.length > 1 ? s[1].offsetLeft - s[0].offsetLeft : (row ? row.clientWidth : 0); }
+  function paint(n) {
+    if (!nav) return;
+    if (n !== nShown) {
+      nShown = n; var h = '<button type="button" id="dcPrev" aria-label="Previous notice">‹</button>';
+      for (var i = 0; i < n; i++) h += '<button type="button" class="dc-dot" data-i="' + i + '" aria-label="Notice ' + (i + 1) + ' of ' + n + '"></button>';
+      h += '<button type="button" id="dcNext" aria-label="Next notice">›</button>'; nav.innerHTML = h;
     }
-    if (!folded.length && opt.length < 2) openAll = false;
-    var t = folded.length ? 'Also: ' + folded.join(' · ') : '';
-    var te = b.firstChild; if (te.textContent !== t) te.textContent = t;
-    if (b.hidden !== !folded.length) b.hidden = !folded.length;
+    Array.prototype.forEach.call(nav.querySelectorAll('.dc-dot'), function (d, i) { var c = i === idx ? 'true' : 'false'; if (d.getAttribute('aria-current') !== c) d.setAttribute('aria-current', c); });
+    var lab = 'Notices: ' + (n ? (idx + 1) + ' of ' + n : 'none'); if (row.getAttribute('aria-label') !== lab) row.setAttribute('aria-label', lab);
+  }
+  function go(i, byUser, instant) {
+    var n = slides().length; if (!n) return; idx = ((i % n) + n) % n;
+    if (byUser) holdUntil = Date.now() + 2 * rotateMs();
+    var left = idx * step();
+    try { row.scrollTo({ left: left, behavior: (instant || reduce()) ? 'auto' : 'smooth' }); } catch (e) { row.scrollLeft = left; }
+    paint(n);
+  }
+  function rotateMs() { var t = +window.__dcRotateMs; return t > 0 ? t : 7000; }
+  function typing() { var a = document.activeElement; return !!(a && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a.isContentEditable)); }
+  function onScreen() {
+    if (document.hidden || !scr.classList.contains('active') || !row || !row.getClientRects().length) return false;
+    var r = row.getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight;
+  }
+  function paused() { return reduce() || touching || over || typing() || Date.now() < holdUntil || !onScreen() || (row && row.contains(document.activeElement)) || (nav && nav.contains(document.activeElement)) || !!document.querySelector('body.rpf-sheet-open, .pb-modal-overlay.active'); }
+  window.pbDcNotices = { go: function (i) { go(i, true); }, state: function () { return { n: slides().length, i: idx, paused: paused(), reduce: reduce() }; } };
+  if (row && wrap && nav) {
+    var st = null;
+    row.addEventListener('scroll', function () { clearTimeout(st); st = setTimeout(function () { var w = step(); if (w > 0) { var i = Math.round(row.scrollLeft / w); if (i !== idx) { idx = i; paint(slides().length); } } }, 90); }, { passive: true });
+    ['touchstart', 'pointerdown'].forEach(function (ev) { row.addEventListener(ev, function () { touching = true; }, { passive: true }); });
+    ['touchend', 'touchcancel', 'pointerup', 'pointercancel'].forEach(function (ev) { window.addEventListener(ev, function () { if (touching) { touching = false; holdUntil = Date.now() + 2 * rotateMs(); } }, { passive: true }); });
+    wrap.addEventListener('mouseenter', function () { over = true; }); wrap.addEventListener('mouseleave', function () { over = false; });
+    row.addEventListener('keydown', function (e) { if (e.target !== row) return; if (e.key === 'ArrowRight') { go(idx + 1, true); e.preventDefault(); } else if (e.key === 'ArrowLeft') { go(idx - 1, true); e.preventDefault(); } });
+    nav.addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('button') : null; if (!b) return;
+      if (b.id === 'dcPrev') go(idx - 1, true); else if (b.id === 'dcNext') go(idx + 1, true); else if (b.dataset.i) go(+b.dataset.i, true);
+    });
+    (function tick() { setTimeout(function () { try { if (slides().length > 1 && !paused()) go(idx + 1); } catch (e) {} tick(); }, rotateMs()); })();
+  }
+  function notices() {
+    if (!row || !wrap || !nav) return;
+    var n = slides().length;
+    if (wrap.hidden !== !n) wrap.hidden = !n;
+    if (nav.hidden !== (n < 2)) nav.hidden = n < 2;
+    if (!n) { idx = 0; nShown = -1; return; }
+    if (idx > n - 1) idx = n - 1;
+    var want = idx * step(); if (Math.abs(row.scrollLeft - want) > 2 && !touching && n !== nShown) { try { row.scrollTo({ left: want, behavior: 'auto' }); } catch (e) { row.scrollLeft = want; } }
+    paint(n);
   }
   function sync() {
     if (busy) return; busy = true;
@@ -156,7 +217,7 @@ JS = r'''
   window.pbDcHomeSync = sync;
   var mo = new MutationObserver(function () { if (!busy) { sync(); mo.takeRecords(); } });
   mo.observe(scr, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'style', 'class'] });
-  try { if (Array.isArray(window.pbScreenHooks)) window.pbScreenHooks.push(function (name) { if (name === 'home') { openAll = false; sync(); } }); } catch (e) {}
+  try { if (Array.isArray(window.pbScreenHooks)) window.pbScreenHooks.push(function (name) { if (name === 'home') sync(); }); } catch (e) {}
   sync();
 })();
 </script>

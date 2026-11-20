@@ -36,7 +36,7 @@ const T={};
    const order=await p.evaluate(()=>['homeCurrentJob','homeDxBar','homeFmPulse','homeMine','homeStart','homeShortcuts'].map(id=>Math.round(document.getElementById(id).getBoundingClientRect().top)));
    ok(order.every((v,i)=>i===0||v>order[i-1]),'foreman: job, Add note / Daily report, crew cards, crew + production rows, then Start work, then shortcuts '+order);
    ok(await p.evaluate(()=>[...document.querySelectorAll('#homeMine>.pb-home-tile')].filter(e=>e.getClientRects().length).map(e=>e.id).join())==='homeCrewView,homeProdMine,homeInspMine','foreman: Crew runs today is the first of his rows');
-   ok(await p.evaluate(()=>[...document.querySelectorAll('#homeStart>.pb-home-tile')].filter(e=>e.getClientRects().length).map(e=>e.id).join())==='homeTileNewPermit,homeTileNew,homeTileNoRun,homeTileNewRun,homeTileQuickRun','foreman: Start work = permit, New record, work without a run, then New Run, Quick Run (New Run is NOT moved to the top)');
+   ok(await p.evaluate(()=>[...document.querySelectorAll('#homeStart>.pb-home-tile')].filter(e=>e.getClientRects().length).map(e=>e.id).join())==='homeTileNew,homeTileNoRun,homeTileNewPermit,homeTileQuickRun,homeTileNewRun','foreman: Start work = New record, Log Work Without a Run, Confined Space Permit, Quick Run, New Run (Tommy, Nov 19)');
    ok((await top(p,'homeTileNewRun'))>(await top(p,'homeFmPulse')),'foreman: New Run stays below the crew cards');
    // empty cards
    ok(await p.evaluate(()=>document.getElementById('homeFmClosed').classList.contains('dc-zero'))&&(await hgt(p,'homeFmClosed'))<=64,'foreman: "Permits closed" with no number is one short line ('+(await hgt(p,'homeFmClosed'))+' px)');
@@ -78,18 +78,68 @@ const T={};
   }
   await B.b.close();
  }
- // notices: at most one optional notice; the rest in one "Also" line; dig tickets and unsaved work never folded
+ // notices: always-show ones are full cards; the optional ones are one sideways row (swipe, arrows, dots, moves by itself)
+ const NOTES=(n,dig)=>`;(function(){const mk=(id,t,info,extra)=>()=>({id:id,info:info,html:'<span class="t">'+t+'</span>Body text. '+(extra||'')+'<button type="button" class="pb-btn small" id="tb_'+id+'" onclick="window.__clicked=(window.__clicked||\\'\\')+\\''+id+',\\'">Open '+id+'</button>'});
+  ${n>=1?"window.pbSpHomeAttention=mk('spoils','Spoils near the limit',true);":''}${n>=2?"window.pbR95HomeAttention=mk('dailyMiss','2 daily reports not signed',true,'A longer body so this card is taller than the others. It runs on for a few more lines to check that the row keeps one height. ');":''}${n>=3?"window.pbDocsSpecHomeAttention=mk('docsSpec','Add your spec books',true);":''}
+  ${dig?"window.pbLocHomeAttention=mk('locates','Dig ticket expires tomorrow',true);":''}})();`;
+ const st=(p)=>p.evaluate(()=>{const row=document.getElementById('dcRow'),rr=row.getBoundingClientRect();const sl=[...row.querySelectorAll(':scope > * > *')];
+  return {s:pbDcNotices.state(),always:[...document.querySelectorAll('#dcAlwaysList > .pb-home-att')].filter(e=>e.getClientRects().length).map(e=>e.id),slides:sl.map(e=>e.id),
+   showing:sl.filter(e=>{const r=e.getBoundingClientRect();return r.left>=rr.left-3&&r.right<=rr.right+3}).map(e=>e.id),heights:sl.map(e=>Math.round(e.getBoundingClientRect().height)),rowH:Math.round(rr.height),homeH:document.getElementById('screen-home').scrollHeight,
+   dots:[...document.querySelectorAll('#dcNav .dc-dot')].map(d=>d.getAttribute('aria-current')).join(),navOn:!document.getElementById('dcNav').hidden,wrapOn:!document.getElementById('dcRowWrap').hidden,label:row.getAttribute('aria-label'),role:row.getAttribute('role'),hiddenToSR:sl.some(e=>e.closest('[aria-hidden=true],[inert]'))};});
+ const settle=(p)=>p.waitForTimeout(700);
  for(const role of ['fm','owner']){
-  const B=await L.start(L.BASE,L.ROLES[role]);await B.p.evaluate(NOTE(3)+';pbRenderHome()');await B.p.waitForTimeout(300);const nb=await B.p.evaluate(()=>[...document.querySelectorAll('#homeAttentionList .pb-home-att')].filter(e=>e.getClientRects().length).length);await B.b.close();
-  const {b,p}=await L.start(L.CUR,L.ROLES[role]);await p.evaluate(NOTE(3)+';pbRenderHome()');await p.waitForTimeout(300);
-  const st=()=>p.evaluate(()=>({shown:[...document.querySelectorAll('#homeAttentionList .pb-home-att')].filter(e=>e.getClientRects().length).map(e=>e.id),also:(document.getElementById('dcAlso')&&!document.getElementById('dcAlso').hidden)?document.getElementById('dcAlso').innerText.replace(/\s+/g,' '):''}));
-  let s=await st();ok(nb===3&&s.shown.length===1&&s.shown[0]==='homeAttention_spoils',role+': 3 notices before; after, one shows ('+s.shown+')');
-  ok(/Also: 2 daily reports not signed · Add your spec books/.test(s.also),role+': the other two are named on one line: "'+s.also+'"');
-  await p.click('#dcAlso');await p.waitForTimeout(200);s=await st();ok(s.shown.length===3&&!s.also,role+': tapping the line shows all three');
+  const B=await L.start(L.BASE,L.ROLES[role]);await B.p.evaluate(NOTES(3,true)+';pbRenderHome()');await B.p.waitForTimeout(300);
+  const nb=await B.p.evaluate(()=>({n:[...document.querySelectorAll('#homeAttentionList .pb-home-att')].filter(e=>e.getClientRects().length).length,h:document.getElementById('homeAttentionList').offsetHeight}));await B.b.close();
+  // rotation off for the manual part (a long interval), so the checks are not racing it
+  const {b,p}=await L.start(L.CUR,'window.__dcRotateMs=600000;'+L.ROLES[role]);await p.evaluate(NOTES(3,true)+';pbRenderHome()');await p.waitForTimeout(400);
+  let s=await st(p);const h0=await p.evaluate(()=>document.getElementById('homeAttentionList').offsetHeight);
+  ok(nb.n===4&&s.always.join()==='homeAttention_locates'&&!s.slides.includes('homeAttention_locates'),role+': the dig-ticket notice is a full card above the row, never in it ('+s.always+')');
+  ok(s.slides.join()==='homeAttention_spoils,homeAttention_dailyMiss,homeAttention_docsSpec'&&s.showing.join()==='homeAttention_spoils',role+': the 3 optional notices are one row, one card showing ('+s.showing+'); notices block '+nb.h+' px before, '+h0+' px after');
+  ok(new Set(s.heights).size===1&&s.heights[0]===s.rowH,role+': every card in the row is the same height ('+s.heights+'), the row is '+s.rowH+' px');
+  ok(s.navOn&&s.dots==='true,false,false',role+': 3 dots, the first one marked ('+s.dots+')');
+  ok(s.role==='region'&&/Notices: 1 of 3/.test(s.label)&&!s.hiddenToSR&&await p.evaluate(()=>['dcPrev','dcNext'].every(id=>document.getElementById(id).getAttribute('aria-label'))&&[...document.querySelectorAll('#dcNav .dc-dot')].every(d=>/Notice \d of 3/.test(d.getAttribute('aria-label')))),role+': screen readers: the row is named "'+s.label+'", every notice stays in the page, arrows and dots have names');
+  await p.click('#tb_spoils');ok((await p.evaluate(()=>window.__clicked))==='spoils,',role+': the showing notice\'s own button works');
+  await p.click('#dcNext');await settle(p);s=await st(p);const hA=s.homeH;ok(s.showing.join()==='homeAttention_dailyMiss'&&s.dots==='false,true,false',role+': the right arrow shows the next notice ('+s.showing+')');
+  await p.click('#tb_dailyMiss');ok(/dailyMiss,/.test(await p.evaluate(()=>window.__clicked)),role+': the second notice\'s own button works in the row');
+  await p.click('#dcNav .dc-dot[data-i="2"]');await settle(p);s=await st(p);ok(s.showing.join()==='homeAttention_docsSpec'&&s.dots==='false,false,true',role+': tapping a dot goes to that notice');
+  await p.click('#dcNext');await settle(p);s=await st(p);ok(s.showing.join()==='homeAttention_spoils',role+': past the last one it goes back to the first');
+  await p.click('#dcPrev');await settle(p);s=await st(p);ok(s.showing.join()==='homeAttention_docsSpec'&&s.homeH===hA,role+': the left arrow goes back; Home is the same height on every notice ('+hA+' = '+s.homeH+')');
+  // a swipe (the row scrolled by hand) moves the dots
+  await p.evaluate(()=>{const r=document.getElementById('dcRow');const sl=r.querySelectorAll(':scope > * > *');r.scrollTo({left:sl[1].offsetLeft-sl[0].offsetLeft,behavior:'auto'});});await settle(p);s=await st(p);
+  ok(s.showing.join()==='homeAttention_dailyMiss'&&s.dots==='false,true,false',role+': swiping the row moves the dots too');
+  await p.focus('#dcRow');await p.keyboard.press('ArrowRight');await settle(p);s=await st(p);ok(s.showing.join()==='homeAttention_docsSpec',role+': keyboard arrows work on the row');
+  // the "remind later" menu on a notice still opens
+  if(await p.evaluate(()=>!!document.getElementById('homeNgDots_docsSpec'))){await p.click('#homeNgDots_docsSpec');await p.waitForTimeout(500);const m=await p.evaluate(()=>{const o=document.querySelector('.pb-modal-overlay.active');return o?o.innerText.replace(/\s+/g,' ').slice(0,80):''});ok(!!m,role+': a notice\'s "remind later" menu still opens ('+m+')');await p.keyboard.press('Escape');await p.evaluate(()=>{const o=document.querySelector('.pb-modal-overlay.active');if(o){const x=[...o.querySelectorAll('button')].pop();if(x)x.click();}});}
   await b.close();
-  const C=await L.start(L.CUR,L.ROLES[role]);await C.p.evaluate(NOTE(4)+';pbRenderHome()');await C.p.waitForTimeout(300);s=await C.p.evaluate(()=>[...document.querySelectorAll('#homeAttentionList .pb-home-att')].filter(e=>e.getClientRects().length).map(e=>e.id));
-  ok(s.includes('homeAttention_locates')&&s.length===1,role+': a dig-ticket notice is never folded away ('+s+')');
-  await C.b.close();
+ }
+ { // moves by itself; stops while touched, typing, off Home; never with "reduce motion"
+  const {b,p}=await L.start(L.CUR,'window.__dcRotateMs=700;'+L.ROLES.fm);await p.evaluate(NOTES(3,false)+';pbRenderHome()');await p.waitForTimeout(300);
+  await p.mouse.move(5,5);const seen=new Set();let hs=new Set();for(let i=0;i<9;i++){await p.waitForTimeout(400);const s=await st(p);seen.add(s.s.i);hs.add(s.homeH);}
+  ok(seen.size===3,'by itself: with nobody touching, all 3 notices come round in turn (seen '+[...seen].sort()+')');
+  ok(hs.size===1,'by itself: Home never changes height as it turns ('+[...hs]+' px)');
+  await p.evaluate(()=>{const i=document.createElement('input');i.id='dcTestBox';i.style.cssText='position:fixed;top:0;left:0;z-index:99999';document.body.appendChild(i);i.focus();});
+  let a=(await st(p)).s;await p.waitForTimeout(2300);let c=(await st(p)).s;ok(a.paused&&c.i===a.i,'stops while a text box has the cursor (stayed on '+c.i+')');
+  await p.evaluate(()=>{document.getElementById('dcTestBox').remove();});
+  await p.evaluate(()=>document.getElementById('dcRow').dispatchEvent(new Event('touchstart',{bubbles:true})));a=(await st(p)).s;await p.waitForTimeout(2300);c=(await st(p)).s;
+  ok(a.paused&&c.i===a.i,'stops while a finger is on it (stayed on '+c.i+')');
+  await p.evaluate(()=>window.dispatchEvent(new Event('touchend')));ok((await st(p)).s.paused,'stays put for a moment after the finger lifts');
+  await p.waitForTimeout(2600);
+  await p.evaluate(()=>pbGoto('tools'));await p.waitForTimeout(500);a=(await st(p)).s;await p.waitForTimeout(1800);c=(await st(p)).s;ok(a.paused&&c.i===a.i,'stops when Home is not the screen showing');
+  await p.evaluate(()=>pbGoto('home'));await p.waitForTimeout(400);
+  await p.emulateMedia({reducedMotion:'reduce'});await p.waitForTimeout(300);a=(await st(p)).s;await p.waitForTimeout(2500);c=(await st(p)).s;
+  ok(a.reduce&&c.i===a.i,'"reduce motion": never moves by itself (stayed on '+c.i+')');
+  await p.click('#dcNext');await settle(p);const d=(await st(p));ok(d.s.i===(c.i+1)%3&&d.showing.length===1,'"reduce motion": arrows and dots still work');
+  await b.close();
+ }
+ { // one optional notice: no dots; none: no row; the notifications offer is a card in the row; a red card stays above
+  const {b,p}=await L.start(L.CUR,'window.__dcRotateMs=600000;'+L.ROLES.fm);let s=await st(p);ok(!s.wrapOn&&s.slides.length===0,'no optional notice: no row on Home');
+  await p.evaluate(NOTES(1,false)+';pbRenderHome()');await p.waitForTimeout(300);s=await st(p);ok(s.wrapOn&&!s.navOn&&s.showing.join()==='homeAttention_spoils','one optional notice: a plain card, no arrows or dots');
+  await p.evaluate(()=>{window.pbPushCardHtml=()=>'<div class="pb-home-att info push" id="homeAttention_pushCard"><span class="t">Turn on notifications</span>Text.<div class="pb-pc-act"><button type="button" class="pb-btn small" id="tb_push" onclick="window.__push=1">Turn On</button></div></div>';
+   window.pbCoTzHomeAttention=()=>({id:'redOne',html:'<span class="t">3 records not saved yet</span>Keep the app open.'});pbRenderHome();});await p.waitForTimeout(300);s=await st(p);
+  ok(s.slides.join()==='homeAttention_spoils,homeAttention_pushCard'&&s.navOn,'the "Turn on notifications" offer is the last card in the row ('+s.slides+')');
+  ok(s.always.includes('homeAttention_redOne')&&!s.slides.includes('homeAttention_redOne'),'a red (unsaved work) card is a full card above the row');
+  await p.click('#dcNext');await settle(p);await p.click('#tb_push');ok((await p.evaluate(()=>window.__push))===1,'the offer\'s own button works in the row');
+  ok(p.errs.length===0,'notices: no page errors '+p.errs.slice(0,2));await b.close();
  }
  console.log('\n| Home | height px | buttons on first screen | crew / company cards end at | Jobs heading at | New Run at | text under 14 px | smallest text (not the name mark) |');console.log('|---|---|---|---|---|---|---|---|');
  const sm=(m)=>{const l=(m.smallList||[]).filter(x=>!/^11:The/.test(x)).map(x=>parseFloat(x));return l.length?Math.min(...l):14;};
