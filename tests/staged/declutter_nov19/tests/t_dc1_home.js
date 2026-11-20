@@ -109,7 +109,7 @@ const T={};
   ok(s.showing.join()==='homeAttention_dailyMiss'&&s.dots==='false,true,false',role+': swiping the row moves the dots too');
   await p.focus('#dcRow');await p.keyboard.press('ArrowRight');await settle(p);s=await st(p);ok(s.showing.join()==='homeAttention_docsSpec',role+': keyboard arrows work on the row');
   // the "remind later" menu on a notice still opens
-  if(await p.evaluate(()=>!!document.getElementById('homeNgDots_docsSpec'))){await p.click('#homeNgDots_docsSpec');await p.waitForTimeout(500);const m=await p.evaluate(()=>{const o=document.querySelector('.pb-modal-overlay.active');return o?o.innerText.replace(/\s+/g,' ').slice(0,80):''});ok(!!m,role+': a notice\'s "remind later" menu still opens ('+m+')');await p.keyboard.press('Escape');await p.evaluate(()=>{const o=document.querySelector('.pb-modal-overlay.active');if(o){const x=[...o.querySelectorAll('button')].pop();if(x)x.click();}});}
+  if(await p.evaluate(()=>!!document.getElementById('homeNgDots_docsSpec'))){await p.click('#homeNgDots_docsSpec');await p.waitForTimeout(500);const m=await p.evaluate(()=>{const o=document.getElementById('pbModalOverlay');return o&&o.getClientRects().length?o.innerText.replace(/\s+/g,' ').slice(0,60):''});ok(!!m,role+': a notice\'s "remind later" menu still opens ('+m+')');await p.evaluate(()=>{const o=document.getElementById('pbModalOverlay');const x=o&&[...o.querySelectorAll('button')].find(b=>b.textContent.trim()==='Close');if(x)x.click();});}
   await b.close();
  }
  { // moves by itself; stops while touched, typing, off Home; never with "reduce motion"

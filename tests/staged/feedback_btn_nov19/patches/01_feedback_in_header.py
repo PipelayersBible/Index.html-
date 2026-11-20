@@ -17,14 +17,15 @@ rep(""".pb-fb-pill { position: fixed; left: 14px; bottom: calc(14px + var(--pb-s
 html.pb-kb-open .pb-fb-pill, html.pb-fb-open .pb-fb-pill { display: none !important; }""",
 """.pb-fb-pill { -webkit-appearance: none; appearance: none; position: relative; box-sizing: border-box; flex: 0 0 auto; order: 1; align-self: center; width: auto; min-width: 0; height: 36px; min-height: 0; margin: 0; border: 0; border-radius: 999px; padding: 0 12px; display: inline-flex; align-items: center; justify-content: center; font: 600 14px/1 'Inter', sans-serif; letter-spacing: 0; text-transform: none; white-space: nowrap; color: #14171C; background: var(--pbl-yellow, #F5BF1F); box-shadow: none; cursor: pointer; }
 /* feedback_btn_nov19: in the header bar of the screen that is showing, top-right. 36 px tall to look at, 44 px to tap (the extra is inside the header's own padding) */
-:is(#pbApp#pbApp#pbApp .pb-header, html.pb-cx #pbTabBar#pbTabBar#pbTabBar .pbx-side-foot) > .pb-fb-pill { -webkit-appearance: none; appearance: none; position: relative; flex: 0 0 auto; order: 1; align-self: center; width: auto; min-width: 0; max-width: none; height: 36px; min-height: 0; margin: 0; padding: 0 12px; border: 0; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font: 600 14px/1 'Inter', sans-serif; letter-spacing: 0; text-transform: none; white-space: nowrap; color: #14171C; background: var(--pbl-yellow, #F5BF1F); box-shadow: none; transform: none; filter: none; }
-:is(#pbApp#pbApp#pbApp .pb-header, html.pb-cx #pbTabBar#pbTabBar#pbTabBar .pbx-side-foot) > .pb-fb-pill::after { content: ""; position: absolute; left: -4px; right: -4px; top: -4px; bottom: -4px; }
-:is(#pbApp#pbApp#pbApp .pb-header, html.pb-cx #pbTabBar#pbTabBar#pbTabBar .pbx-side-foot) > .pb-fb-pill:active { filter: brightness(.92); }
-:is(#pbApp#pbApp#pbApp .pb-header, html.pb-cx #pbTabBar#pbTabBar#pbTabBar .pbx-side-foot) > .pb-fb-pill:focus-visible { outline: none; box-shadow: var(--pb-ring, 0 0 0 3px rgba(245,191,31,.5)); }
+#pbApp#pbApp#pbApp .pb-header > .pb-fb-pill, html.pb-cx #pbTabBar#pbTabBar#pbTabBar .pbx-side-foot > .pb-fb-pill { -webkit-appearance: none; appearance: none; position: relative; flex: 0 0 auto; order: 1; align-self: center; width: auto; min-width: 0; max-width: none; height: 36px; min-height: 0; margin: 0; padding: 0 12px; border: 0; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font: 600 14px/1 'Inter', sans-serif; letter-spacing: 0; text-transform: none; white-space: nowrap; color: #14171C; background: var(--pbl-yellow, #F5BF1F); box-shadow: none; transform: none; filter: none; }
+#pbApp#pbApp#pbApp .pb-header > .pb-fb-pill::after, html.pb-cx #pbTabBar#pbTabBar#pbTabBar .pbx-side-foot > .pb-fb-pill::after { content: ""; position: absolute; left: -4px; right: -4px; top: -4px; bottom: -4px; }
+#pbApp#pbApp#pbApp .pb-header > .pb-fb-pill:active, html.pb-cx #pbTabBar#pbTabBar#pbTabBar .pbx-side-foot > .pb-fb-pill:active { filter: brightness(.92); }
+#pbApp#pbApp#pbApp .pb-header > .pb-fb-pill:focus-visible, html.pb-cx #pbTabBar#pbTabBar#pbTabBar .pbx-side-foot > .pb-fb-pill:focus-visible { outline: none; box-shadow: var(--pb-ring, 0 0 0 3px rgba(245,191,31,.5)); }
 #pbApp#pbApp#pbApp .pb-header > .pb-eyebrow ~ .pb-fb-pill { margin-left: 0; }
 html.pb-scrolled #pbApp#pbApp#pbApp .pb-screen.active:not(#screen-home) > .pb-header > .pb-fb-pill { height: 34px; font-size: 13px; }
 html:not(.pb-scrolled) #pbApp#pbApp#pbApp .pb-screen:not(#screen-home) > .pb-header.pb-fb-t > .pb-title { font-size: var(--pb-fb-ts); }
 html.pb-scrolled #pbApp#pbApp#pbApp .pb-screen.active:not(#screen-home):not(#screen-login) > .pb-header.pb-fb-u > .pb-title { font-size: var(--pb-fb-tss); }
+#pbApp#pbApp#pbApp .pb-header.pb-fb-w > .pb-title { overflow-wrap: anywhere; }
 /* sizes: the word when the title has room for it; a smaller word, then the icon alone, when the word would push the title onto another line (picked by pbFbFit, never taller than the header was) */
 .pb-fb-pill > svg { display: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 #pbApp#pbApp#pbApp .pb-header > .pb-fb-pill.pb-fb-sm { height: 30px; padding: 0 8px; font-size: 12px; }
@@ -67,7 +68,7 @@ rep("""    function pbBetaRender() {""",
         if (pill._k === k) return;
         const tsz = (px) => { if (px) { hd.style.setProperty('--pb-fb-ts', px + 'px'); hd.classList.add('pb-fb-t'); } else { hd.style.removeProperty('--pb-fb-ts'); hd.classList.remove('pb-fb-t'); } };
         const tszS = (px) => { if (px) { hd.style.setProperty('--pb-fb-tss', px + 'px'); hd.classList.add('pb-fb-u'); } else { hd.style.removeProperty('--pb-fb-tss'); hd.classList.remove('pb-fb-u'); } };
-        if (k in pbFbSizes) { set(pbFbSizes[k][0]); tsz(pbFbSizes[k][1]); setS(pbFbSizes[k][2]); tszS(pbFbSizes[k][3]); pill._k = k; return; }
+        if (k in pbFbSizes) { set(pbFbSizes[k][0]); tsz(pbFbSizes[k][1]); setS(pbFbSizes[k][2]); tszS(pbFbSizes[k][3]); hd.classList.toggle('pb-fb-w', !!pbFbSizes[k][4]); pill._k = k; return; }
         /* measure the header at full size: if the page is scrolled (compact header), switch that off for the measurement only, with the header's own transitions off so the numbers are final; nothing is painted in between */
         const root = document.documentElement, scrolled = root.classList.contains('pb-scrolled'), els = [hd, t, pill].filter(Boolean), was = els.map(e => e.style.transition);
         els.forEach(e => { e.style.transition = 'none'; }); if (scrolled) root.classList.remove('pb-scrolled');
@@ -76,19 +77,20 @@ rep("""    function pbBetaRender() {""",
         pill.style.display = 'none'; const h0 = hd.getBoundingClientRect().height, s0 = spill(); pill.style.display = '';
         if (h0 > 0) {
           tsz(0); const f0 = t && sid !== 'screen-home' ? parseFloat(getComputedStyle(t).fontSize) || 0 : 0;
-          const steps = f0 > 19 ? [0, Math.max(19, Math.round(f0 * 0.86)), Math.max(19, Math.round(f0 * 0.75))] : [0]; /* the title a little smaller before the word is given up */
+          const steps = f0 > 17 ? [...new Set([0, Math.max(16, Math.round(f0 * 0.86)), Math.max(16, Math.round(f0 * 0.75)), Math.max(16, Math.round(f0 * 0.64))])] : [0]; /* the title a little smaller before the word is given up */
           const tries = []; for (const z of steps) for (const c of ['', 'pb-fb-sm']) tries.push([c, z]); for (const z of steps) tries.push(['pb-fb-ic', z]);
-          pick = tries[tries.length - 1];
-          for (const q of tries) { set(q[0]); tsz(q[1]); if (hd.getBoundingClientRect().height <= h0 + 0.5 && spill() <= s0) { pick = q; break; } }
-          set(pick[0]); tsz(pick[1]); pick[2] = ''; pick[3] = 0; tszS(0);
+          pick = tries[tries.length - 1]; let fit0 = false; hd.classList.remove('pb-fb-w');
+          for (const q of tries) { set(q[0]); tsz(q[1]); if (hd.getBoundingClientRect().height <= h0 + 1 && spill() <= s0) { pick = q; fit0 = true; break; } }
+          set(pick[0]); tsz(pick[1]);
+          pick[4] = !fit0 && spill() > s0; hd.classList.toggle('pb-fb-w', pick[4]); /* nothing fits (very narrow screen or biggest text): the title may break inside a long word instead of running under the buttons */ pick[2] = ''; pick[3] = 0; tszS(0);
           if (sid !== 'screen-home') { /* the same for the compact header of a scrolled page: never bigger than above, smaller if the word would wrap the title there */
             root.classList.add('pb-scrolled'); setS('');
             pill.style.display = 'none'; const h1 = hd.getBoundingClientRect().height, s1 = spill(); pill.style.display = '';
             const ts2 = pick[0] === 'pb-fb-ic' ? [''] : pick[0] === 'pb-fb-sm' ? ['', 'pb-fb-sic'] : ['', 'pb-fb-ssm', 'pb-fb-sic'];
             pick[2] = ts2[ts2.length - 1]; let fit = false;
-            for (const c of ts2) { setS(c); if (hd.getBoundingClientRect().height <= h1 + 0.5 && spill() <= s1) { pick[2] = c; fit = true; break; } }
+            for (const c of ts2) { setS(c); if (hd.getBoundingClientRect().height <= h1 + 1 && spill() <= s1) { pick[2] = c; fit = true; break; } }
             setS(pick[2]);
-            if (!fit && t) for (const z of [17, 16]) { tszS(z); pick[3] = z; if (hd.getBoundingClientRect().height <= h1 + 0.5 && spill() <= s1) { fit = true; break; } }
+            if (!fit && t) for (const z of [17, 16]) { tszS(z); pick[3] = z; if (hd.getBoundingClientRect().height <= h1 + 1 && spill() <= s1) { fit = true; break; } }
             if (!fit) { pick[3] = 0; tszS(0); }
             root.classList.remove('pb-scrolled');
           }
