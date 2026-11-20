@@ -81,7 +81,28 @@ Nov 20: all four values match.
 `fl_open_1280_{light,dark}.png` (a crew's row opened).
 
 ## Tests
-@@TESTS@@
+New, in `tests/` (see `tests/README.md`):
+
+| test | checks | result |
+|---|---|---|
+| `t_fl1_today_fittings.js` (light, and `DARK=1`) | 1440 and 1280: ten columns, fits, nothing off the side; the idle row is a name plus one line across nine columns, soft grey band, readable muted text, no dashes; the side menu covers the window when scrolled to the page's end; live count "3 so far" with the by-type hover; signed 3 beats the phones' 5; unsigned shows 5, signing switches it; signed-with-none keeps the phones' count; yesterday's open run not counted; odd values never shown; a server without `fit` behaves as before; before/after pictures | 33 pass light, 33 pass dark |
+| `t_fl2_phone_status.js` | no fittings: status unchanged; 0 of 5 before any mark; 2, 4, 5 of 5 as rows are marked, by type; equals the daily's `pbFitCount`; ended and ended-short without marks follow the daily; same call, same three arguments; sent once per change | 14 pass |
+| `sql/02_test.sql` (local Postgres, rolled back) | see above | PASS 24/24 |
+
+Both browser tests also pass on the minified hooks build (32 + 32 + 14; the "before" check needs base.html).
+
+No change on phones: officeview's `t_ov3_phone_field.js` against this page, with the r17.11 candidate as base.html:
+**23 of 23** (company at 390; foreman and pipelayer at 390 and 1440: same text and same Records rows as before).
+officeview's `t_ov1_today.js`: 35 of 36, the one being the idle-row line in "Things to know" 5. Its `t_ov2_records.js`
+does not apply: the Records table (officeview p02) is not in the r17.11 candidate.
+
+Existing tests, one at a time (`tests/run_all.sh --build <hooks build> --jobs 1 --only ...`; hooks build made with
+`python3 tests/r1708/speed2/build/build.py <page> <outdir> --hooks` over a copy of the candidate's hooks folder):
+**31 of 31 pass**, goldens unchanged: t124_crewview, t128_betaresults, r1706/office3 (6), bughunt_nov17/office b1-b7, c1,
+d1, d2, m1, n1, s1, t1, x1, office2 (5), plus the fittings / laid-mark tests new/f01_fitresume, grade/t04_laidstats,
+grade/t06_laidlog. Not run: the rest of the regression (shared machine; the lead runs it).
+
+Golden files expected to change: none.
 
 ## How to apply the SQL (the lead; exact steps)
 Apply the SQL BEFORE the app update goes out (see "Order" below). Project `rogfassochneycezecxa`.
@@ -132,3 +153,5 @@ changes (the next row marked laid), so counts sent before the SQL would show up 
 4. **A run with fittings but no rows marked laid, still in progress: 0 so far** (not "all of them"). Recommend this: a
    live count that jumps to the full plan before any pipe is in the ground would mislead the office. Once the run is
    ended it follows the daily's rule.
+
+## DONE

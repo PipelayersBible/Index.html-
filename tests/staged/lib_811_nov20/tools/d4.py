@@ -77,7 +77,7 @@ Hit a line: notify the center. Gas or hazardous liquid pipeline release: "immedi
 Indiana's dig law is Ind. Code 8-1-26, enforced by the Indiana Utility Regulatory Commission. One center: Indiana 811.
 Notice: "at least two (2) full working days but not more than ten (10) calendar days before the commencement of the work." Work may start at 7 a.m. on the next working day after the two full working days, or sooner if every operator has posted an electronic positive response. (The Indiana 811 FAQ says 20 calendar days for the earliest call; the statute copy read says 10.)
 A notice "expires at 11:59 p.m. prevailing time twenty (20) days after the date the notice is received." Not finished: send a new locate request and wait for the operators to mark before going on. Indiana 811 calls it an Extension when the old marks can still be seen: you get a new ticket number and members get two full working days.
-White lining is required when you can't give an address, legal description or highway location.
+White line the site when you can't give an address or highway location.
 Since January 1, 2025 every member must use Positive Response. No answer after two full working days: ask for an Additional (2nd) Notice.
 A Joint Meet is not a ticket to dig on.
 Damaging a pipeline after not calling or not white lining can bring a civil penalty up to $10,000.
@@ -249,7 +249,7 @@ Operators do not locate for depth.""",
 Louisiana's dig law is the Underground Utilities and Facilities Damage Prevention Law, R.S. 40:1749.11 to 1749.27 (amended effective August 1, 2026). One center: Louisiana 811.
 Notice (R.S. 40:1749.13): at least 48 hours and not more than 120 hours ahead, not counting weekends and holidays; the wait runs from 7:00 a.m. on the next working day after you call.
 Marks are good "as long as visible, but not longer than twenty calendar days, including weekends and holidays," from the mark-by time. Marks gone or work not done in time: give another notice to the center. Forestry, farm and marine digging: up to 30 calendar days. A notice designated a large project with a written agreement: 90 calendar days.
-Operators must give a positive response through the center by the mark-by time. Bad weather extends the mark-by time; the operator must tell you first.
+Operators give a positive response through the center by the mark-by time; bad weather extends it.
 The marked location is the width of the line "plus eighteen inches on either side."
 Marks use the APWA color code.
 An excavator who called and followed the law is immune from civil liability to an operator that did not join the center or did not mark, unless the excavator was negligent.
