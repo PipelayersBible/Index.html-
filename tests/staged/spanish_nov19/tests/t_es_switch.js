@@ -7,7 +7,12 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++;};
 const tab=(p)=>p.evaluate(()=>{const n=[...document.querySelectorAll('nav button, nav a, [aria-label="Main"] button, [aria-label="Principal"] button')].filter(e=>e.getClientRects().length);return n.map(e=>{let s='';const w=document.createTreeWalker(e,4);let t;while((t=w.nextNode()))s+=window.__nativeData.get.call(t);return s.trim();}).join('|');});
 const painted=(p,sel)=>p.evaluate((sel)=>{const e=document.querySelector(sel);if(!e)return null;const d=window.__nativeData;let s='';const w=document.createTreeWalker(e,4);let t;while((t=w.nextNode()))s+=d.get.call(t);return s.replace(/\s+/g,' ').trim();},sel);
 const NATIVE="window.__nativeData=Object.getOwnPropertyDescriptor(CharacterData.prototype,'data');window.__nativeTC=Object.getOwnPropertyDescriptor(Node.prototype,'textContent').get;";
-const snap=(p)=>p.evaluate(()=>{const c=document.body.cloneNode(true);c.querySelectorAll('script,style,#pbLangOffer').forEach(e=>e.remove());return c.innerHTML.replace(/\d{1,2}:\d{2}(:\d{2})?( [AP]M)?/g,'T').replace(/\b\d+ ?s\b|\b\d+ seconds\b/g,'S').replace(/ class="[^"]*"/g,'').replace(/ aria-pressed="[^"]*"/g,'').replace(/ style="[^"]*"/g,'');});
+// every piece of text and every label on the whole page (shown or not), as painted; clock times masked
+const snap=(p)=>p.evaluate(()=>{const d=window.__nativeData,out=[];const w=document.createTreeWalker(document.body,5);let n;
+  while((n=w.nextNode())){if(n.nodeType===3){const pt=n.parentNode&&n.parentNode.tagName;if(pt==='SCRIPT'||pt==='STYLE')continue;const s=d.get.call(n).replace(/\s+/g,' ').trim();if(s)out.push(s);}
+   else{if(n.id==='pbLangOffer')continue;for(const a of ['placeholder','aria-label','title','alt','value','lang']){const v=Element.prototype.hasAttribute.call(n,a)?n.attributes[a].value:null;if(v)out.push(a+'='+v);}}}
+  return out.map(s=>s.replace(/\d{1,2}:\d{2}(:\d{2})?( [AP]M)?/g,'T').replace(/\b\d+ ?s\b|\b\d+ seconds\b/g,'S')).sort();});
+const settingsHtml=(p)=>p.evaluate(()=>{const c=document.getElementById('screen-settings').cloneNode(true);return c.innerHTML;});
 (async()=>{const b=await L.chromium.launch();
  // 1. English phone, nothing chosen: English, nothing armed, no offer
  {const p=await L.SC.home_pl(b,{init:NATIVE});
@@ -20,7 +25,7 @@ const snap=(p)=>p.evaluate(()=>{const c=document.body.cloneNode(true);c.querySel
   ok(await p.evaluate(()=>{const t=document.getElementById('langToggle');return !!t&&t.getClientRects().length>0&&document.getElementById('langLabel').textContent==='Language / Idioma'&&[...t.querySelectorAll('button')].map(x=>x.textContent).join('|')==='English|Español'&&t.querySelector('[data-val=en]').getAttribute('aria-pressed')==='true';}),'2: Settings > Preferences shows "Language / Idioma": English (on) | Español');
   await p.evaluate(()=>pbGoto('home'));await p.waitForTimeout(600);await p.evaluate(()=>pbGoto('settings'));await p.waitForTimeout(600); // the same walk as below, so only the language differs
   await p.evaluate(()=>{pbSetLang('es');});await p.waitForTimeout(400);await p.evaluate(()=>{pbSetLang('en');try{localStorage.removeItem('pbLang');}catch(e){}});await p.waitForTimeout(400); // (the app tidies its Run Setup form the first time anything on the page changes; let it, so the two snapshots differ only by language)
-  const before=await snap(p);
+  const before=await snap(p),beforeH=await settingsHtml(p);
   await p.click('#langToggle [data-val=es]');await p.waitForTimeout(500);
   ok(await p.evaluate(()=>pbLang()==='es'&&document.documentElement.lang==='es'&&localStorage.getItem('pbLang')==='es'&&document.querySelector('#langToggle [data-val=es]').getAttribute('aria-pressed')==='true'),'2: tap Español: Spanish is on and saved on this phone');
   ok(/^Inicio\|Calculadoras/.test(await tab(p)),'2: the tab bar is Spanish at once, no reload ('+await tab(p)+')');
@@ -30,9 +35,11 @@ const snap=(p)=>p.evaluate(()=>{const c=document.body.cloneNode(true);c.querySel
   // 3. back to English: everything exactly as before
   await p.evaluate(()=>pbGoto('settings'));await p.waitForTimeout(600);
   await p.click('#langToggle [data-val=en]');await p.waitForTimeout(500);
-  const after=await snap(p);
+  const after=await snap(p),afterH=await settingsHtml(p);
   ok(await p.evaluate(()=>pbLang()==='en'&&document.documentElement.lang==='en'&&localStorage.getItem('pbLang')==='en'),'3: tap English: English is on and saved');
-  ok(after===before,'3: the Settings screen and everything behind it is exactly the English it was before (same HTML, '+after.length+' chars)'+(after===before?'':' first difference at '+[...after].findIndex((c,i)=>c!==before[i])+': "'+after.slice(Math.max(0,[...after].findIndex((c,i)=>c!==before[i])-60),[...after].findIndex((c,i)=>c!==before[i])+60)+'" vs "'+before.slice(Math.max(0,[...after].findIndex((c,i)=>c!==before[i])-60),[...after].findIndex((c,i)=>c!==before[i])+60)+'"'));
+  const d1=after.filter((x,i)=>x!==before[i]);
+  ok(after.length===before.length&&d1.length===0,'3: every text and label on the whole page (shown or hidden, '+after.length+' pieces) is exactly the English it was before'+(d1.length?': '+d1.slice(0,4).join(' | ').slice(0,300):''));
+  ok(afterH===beforeH,'3: the Settings screen\'s HTML is exactly what it was ('+afterH.length+' chars)');
   await p.evaluate(()=>pbGoto('home'));await p.waitForTimeout(500);
   ok(/New Run/.test(await painted(p,'#screen-home'))&&!/Tramo/.test(await painted(p,'#screen-home')),'3: Home is English again');
   await p.evaluate(()=>pbSetLang('es'));await p.reload({waitUntil:'load'});await p.waitForTimeout(3500);
