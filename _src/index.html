@@ -4771,6 +4771,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
     <div id="loginNotice" class="pb-info" style="display:none; margin:8px 16px 0 16px;"></div>
     <div id="loginError" class="pb-warn" style="display:none; margin:8px 16px 0 16px;"></div>
     <div class="pb-btn-wrap"><button class="pb-btn" id="loginSubmitBtn" onclick="pbLogin()">Log In</button></div><p class="pb-help" id="loginTermsNote" style="text-align:center;margin:6px 16px 0;">By logging in you agree to the <a href="terms.html" target="_blank" rel="noopener">Terms of Use</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
+    <div class="pb-btn-wrap" id="loginPasteWrap" hidden><button type="button" class="pb-btn" id="loginPasteBtn" onclick="pbObPasteNow()">Paste Join Code</button></div><!-- streamline 03 -->
     <div class="pb-btn-wrap" id="loginJoinWrap"><button type="button" class="pb-btn secondary" id="loginJoinBtn" onclick="pbObOpenCode()">Join a Crew or Use a Code</button></div><!-- onboard2 -->
     <div class="pb-section" id="forgotPwPanel" style="display:none;">
       <div class="pb-tag">Reset your password</div>
@@ -4786,17 +4787,19 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   <div class="pb-screen" id="screen-setPassword">
     <div class="pb-header">
       <p class="pb-eyebrow"><span>NEW PASSWORD</span></p>
-      <h1 class="pb-title">Set New Password</h1>
+      <h1 class="pb-title" id="setPwTitle">Set New Password</h1>
     </div>
     <div class="pb-section pb-login-card">
       <div class="pb-body">
         <p class="pb-help" id="setPwFor" style="margin-top:0;"></p>
         <div class="pb-field"><label>New password (at least 8 characters)</label><input type="password" enterkeyhint="next" id="setPwNew" autocomplete="new-password"></div>
         <div class="pb-field"><label>Type it again</label><input type="password" enterkeyhint="done" id="setPwConfirm" autocomplete="new-password"></div>
+        <div id="setPwNoticeWrap" hidden><p class="pb-help" style="margin:12px 0 4px;font-weight:700;">What your company sees</p><div id="setPwNotice" style="font-size:.9rem;line-height:1.4;white-space:pre-line;border-radius:12px;padding:10px 12px;background:var(--pb-raised,#f1f2f4);"></div></div>
+        <label id="setPwTermsWrap" hidden style="display:flex;gap:10px;align-items:flex-start;margin:14px 0 2px;"><input type="checkbox" id="setPwTerms" style="width:24px;height:24px;flex:none;margin-top:1px;"><span>I have read and agree to the <a href="terms.html" target="_blank" rel="noopener">Terms of Use</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span></label><!-- streamline 01 -->
       </div>
     </div>
     <div id="setPwError" class="pb-warn" style="display:none; margin:8px 16px 0 16px;"></div>
-    <div class="pb-btn-wrap"><button class="pb-btn" id="setPwBtn" onclick="pbSetNewPassword()">Save New Password</button></div>
+    <div class="pb-btn-wrap"><button class="pb-btn" id="setPwBtn" onclick="pbSetNewPassword()">Save Password</button></div>
     <div class="pb-btn-wrap"><button class="pb-btn ghost" onclick="pbSkipNewPassword()">Cancel</button></div>
   </div>
 
@@ -6767,9 +6770,9 @@ html.pb-scrolled #pbApp#pbApp#pbApp .pb-b6-calc .pb-addhome-wrap > .pb-addhome {
       <p id="crStatus" class="pbc-status" role="status" aria-live="polite"></p>
       <div class="pb-warn photo pbc-offline" id="crOffline" style="display:none;"><strong>Needs signal</strong>Changes here aren&rsquo;t saved to send later.</div>
 
-      <div class="pb-btn-wrap pbc-joinlink" id="crJoinLinkWrap"><button type="button" class="pb-btn" id="crJoinLinkBtn" onclick="pbObOpenInvite()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Text a Join Link</button><p class="pbc-dim" style="margin:6px 0 0;">No email needed. They tap the link and they&rsquo;re in, with the role you pick. Or add by email below.</p></div><!-- onboard2 -->
+      <div class="pb-btn-wrap pbc-joinlink" id="crJoinLinkWrap"><button type="button" class="pb-btn" id="crJoinLinkBtn" onclick="pbObOpenInvite()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-plus"/></svg>Text a Join Link</button><p class="pbc-dim" style="margin:6px 0 0;">No email needed. They tap the link and they&rsquo;re in.</p></div><!-- onboard2 -->
       <section class="pbc-add" id="crAdd" aria-labelledby="crAddHead">
-        <h2 class="pb-h2 pbc-h2" id="crAddHead">Add crew member</h2>
+        <h2 class="pb-h2 pbc-h2" id="crAddHead">Or invite by email</h2>
         <div class="pb-field"><label for="crEmail">Email</label><input type="email" id="crEmail" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" maxlength="254" inputmode="email"></div>
         <div class="pb-field"><label for="crName">Name <span class="pb-opt">(optional)</span></label><input type="text" id="crName" autocomplete="off" enterkeyhint="done" maxlength="80"></div><!-- batch 19 PM: the name your company sees -->
         <p class="pbc-label" id="crRoleLabel">Role</p>
@@ -13222,7 +13225,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   }
 
   // ---------- Supabase client + auth ----------
-  const PB_APP_BUILD = 'r17.09 · 2026-11-19'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
+  const PB_APP_BUILD = 'r17.10 · 2026-11-19'; // batch 10 (W, F19): shown in Settings and sent with app problem reports; the release step bumps it
   window.PB_APP_BUILD = PB_APP_BUILD;
   const SUPABASE_URL = 'https://rogfassochneycezecxa.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ge6vIGj2cJ-GL7gNzF9hhw_1jem-aqA'; // safe to expose client-side by design — this is NOT the secret key
@@ -13378,6 +13381,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!open) return;
     document.getElementById('forgotEmail').value = document.getElementById('loginEmail').value.trim();
     document.getElementById('forgotPwMsg').style.display = 'none';
+    setTimeout(() => { try { panel.scrollIntoView({ block: 'nearest' }); const em = document.getElementById('forgotEmail'); (em.value ? document.getElementById('forgotPwBtn') : em).focus({ preventScroll: true }); } catch (e) {} }, 0); // streamline 07
   };
   let pbResetSending = false;
   window.pbSendPasswordReset = async function() {
@@ -13607,7 +13611,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       }
       return;
     }
-    document.getElementById('setPwFor').textContent = 'For ' + (sbUser.email || 'your account') + '. Choose a new password to finish.';
+    document.getElementById('setPwFor').textContent = 'For ' + (sbUser.email || 'your account') + '.';
+    { const t = document.getElementById('setPwTitle'); if (t) t.textContent = pbUrlAuth.type === 'invite' ? 'Choose Your Password' : 'Set New Password'; }
+    try { window.pbSetPwExtras && window.pbSetPwExtras(); } catch (e) {}
     pbClearSetPasswordForm();
     if (pbCurrentScreen !== 'setPassword') pbGoto('setPassword', false, true);
   }
@@ -13622,6 +13628,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!sbClient) { fail('Can\u2019t reach the login service right now \u2014 check your signal and try again.'); return; }
     const btn = document.getElementById('setPwBtn');
     if (btn.disabled || pbSetPwSaving) return;
+    const agreed = window.pbSetPwAgreeState ? window.pbSetPwAgreeState() : null; // streamline 01: the tick on this screen
+    if (agreed && agreed.need && !agreed.ok) { fail('Tick the box to agree to the Terms first.'); return; }
     btn.disabled = true; btn.textContent = 'Saving\u2026'; pbSetPwSaving = true;
     let res, liveUid;
     // The account this screen is for, taken at the tap: the session read below can take a while.
@@ -13635,7 +13643,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       res = stillLink && (!liveUid || liveUid === linkUid) ? await sbClient.auth.updateUser({ password: a }) : { refused: true };
     }
     catch (e) { res = { error: { status: 0, message: 'network' } }; }
-    finally { btn.disabled = false; btn.textContent = 'Save New Password'; pbSetPwSaving = false; }
+    finally { btn.disabled = false; btn.textContent = 'Save Password'; pbSetPwSaving = false; }
     if (res && res.refused) {
       fail(!linkUid || (!sbUser && !liveUid) ? 'This reset link’s sign-in has ended — open the reset link again.' : 'This phone is now signed in as another account — open the reset link again.');
       return;
@@ -13652,6 +13660,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbClearSetPasswordForm();
     pbRecoveryUserId = null;
     pbLinkPasswordSet = true;
+    try { if (agreed && window.pbSetPwAgreed) window.pbSetPwAgreed(agreed); } catch (e) {} // streamline 01
     { const m = await pbReadLinkSignIn(); if (m && m.tab === pbTabId) pbRawSet(PB_LINK_SIGNIN_KEY, JSON.stringify({ ...m, set: true })); }
     // The session ended while the save was on its way (Log In is showing): never signed back in to say so.
     if (!sbUser) { pbAlertAfterOpen('Password set. Log in with your new password.', 'Password Set'); return; }
@@ -13668,7 +13677,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbRecoveryUserId = null;
     pbClearSetPasswordForm();
     if (pbCurrentScreen === 'setPassword') { pbGoto('home', true, true); try { pbSharedAfterLogin(); } catch (e) {} }
-    pbAlertAfterOpen((invite ? 'Password set. You\u2019re signed in' : 'Password changed. You\u2019re signed in') + (email ? ' as ' + email : '') + ' \u2014 use this password next time you log in.', 'Password Set');
+    try { window.pbSetPwExtrasHide && window.pbSetPwExtrasHide(); } catch (e) {}
+    { const say = (invite ? 'Password set. You\u2019re signed in' : 'Password changed. You\u2019re signed in') + (email ? ' as ' + email : '') + '.';
+      if (typeof window.pbSayDone === 'function') window.pbSayDone(say); else pbAlertAfterOpen(say, 'Password Set'); } // streamline 01: no OK tap
+    try { window.pbObA2hsStepSoon && window.pbObA2hsStepSoon('setpw'); } catch (e) {} // streamline 08
   }
   window.pbSkipNewPassword = function() {
     // Its answer could still set the password: leaving now would say it wasn't changed.
@@ -45124,6 +45136,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
         + '<p class="pbp-dim">' + (P.mode === 'addcrew' ? 'Current pipelayers of your company. A pipelayer has one foreman at a time: picking someone already with another foreman moves them to you.' : 'Current foremen of your company.') + '</p>'
         + (!people ? '<p class="pbp-dim">' + (P.tried ? 'Couldn\u2019t load the list (no signal?). Try again when you have signal.' : 'Loading\u2026') + '</p>' : !people.length ? '<p class="pbp-dim">Nobody to pick right now.</p>'
           : '<div class="pbp-picklist">' + people.map((p, i) => '<button type="button" class="pb-btn ghost pbp-pick" id="pmPick' + i + '" onclick="pbCrewPicked(' + i + ')">' + escapeHtml(p.name) + (p.other ? ' <span class="pbp-dim">(with another foreman)</span>' : '') + '</button>').join('') + '</div>')
+        + (P.mode === 'addcrew' && typeof window.pbObCanFmLink === 'function' && window.pbObCanFmLink() ? '<p class="pbp-dim" id="pmTextJoinLine">Not in the list? Text them a join link.</p><div class="pb-btn-wrap pbp-btns">' + pbCrewBtn('pmTextJoinBtn', 'Text a Join Link', 'pbObOpenInvite()', ' ') + '</div>' : '') /* streamline 06 */
         + '<div class="pb-btn-wrap pbp-btns">' + pbCrewBtn('pmPickCancel', 'Cancel', 'pbCrewPickCancel()', 'ghost') + '</div></section>';
     }
     // crew link card
@@ -65212,6 +65225,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   function pbTermsPermitLive() { try { return !!(confinedPermit || pbClosedEmergencyShown); } catch (e) { return false; } }
   function pbTermsShow(uid) {
     if (document.getElementById('pbTermsSheet')) return;
+    if (pbCurrentScreen === 'setPassword' && typeof window.pbSetPwTermsHere === 'function' && window.pbSetPwTermsHere(uid)) return; // streamline 01
     const again = !!pbTermsLs.get('pbTermsOk:' + uid);
     const d = document.createElement('div'); d.id = 'pbTermsSheet'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-labelledby', 'pbTermsH');
     d.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;padding:16px;';
@@ -65360,6 +65374,47 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // ---- 1. the person who got the link ----
   // What the company sees: the crew notice's own words (r16.83, version 3), shown before he joins.
   const PB_OB_NOTICE = 'Your company can see the work you record in this app: your runs and their reports, photos (with the time, place and direction stamped on them), run notes, delays, breaks taken with the Break button, how long pipes took, check shots, production and footage, permits and daily reports, and when each was made or changed. Crew members linked to the same foreman can see a read-only copy of the crew’s runs (the grade numbers and when rows were marked laid).\n\nYour location is used only while Run Setup or Run Results is open, to stamp photos. The app doesn’t track where you go.\n\nYour company decides how it uses these records.';
+  // ---- streamline 01: one-screen Set Password, and a short "done" note that needs no tap ----
+  window.pbSayDone = function (text) {
+    try {
+      let n = document.getElementById('pbSayDone');
+      if (!n) { n = document.createElement('div'); n.id = 'pbSayDone'; n.setAttribute('role', 'status'); n.setAttribute('aria-live', 'polite');
+        n.style.cssText = 'position:fixed;left:16px;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:60;margin:0 auto;max-width:520px;box-sizing:border-box;padding:12px 14px;border-radius:12px;background:var(--pb-text,#15181d);color:var(--pb-surface,#fff);font-weight:600;font-size:15px;line-height:1.4;box-shadow:0 6px 24px rgba(0,0,0,.3);overflow-wrap:anywhere;';
+        n.addEventListener('click', () => { n.hidden = true; });
+        (document.getElementById('pbApp') || document.body).appendChild(n); }
+      n.textContent = String(text || ''); n.hidden = false;
+      clearTimeout(window.__pbSayDoneT); window.__pbSayDoneT = setTimeout(() => { n.hidden = true; }, 7000);
+    } catch (e) {}
+  };
+  const pbSetPwEl = (id) => document.getElementById(id);
+  window.pbSetPwTermsHere = function (uid) { // the Terms tick on Set Password (instead of the sheet)
+    const w = pbSetPwEl('setPwTermsWrap'); if (!w || !uid || !sbUser || sbUser.id !== uid) return false;
+    if (w.hidden) { w.hidden = false; const b = pbSetPwEl('setPwTerms'); if (b) b.checked = false; }
+    w.dataset.uid = uid; return true;
+  };
+  window.pbSetPwExtras = function () { // the crew notice, for a crew member who hasn't seen it (it shows after the Terms otherwise)
+    try {
+      const uid = sbUser && sbUser.id, w = pbSetPwEl('setPwNoticeWrap'); if (!w || !uid) return;
+      const acc = pbProdAccMem.get(uid), seen = pbObLs.get('pbCrewNotice:' + uid) === PB_OB_NOTICE_VER;
+      const want = pbCurrentScreen === 'setPassword' && !!(acc && acc.member && acc.companyId && !acc.manager) && !seen;
+      if (want && w.hidden) { pbSetPwEl('setPwNotice').textContent = PB_OB_NOTICE; w.dataset.uid = uid; w.hidden = false; }
+      const d = document.getElementById('pbTermsSheet'); // a sheet that went up before this screen opened
+      if (pbCurrentScreen === 'setPassword' && d && window.pbSetPwTermsHere(uid)) d.remove();
+    } catch (e) {}
+  };
+  window.pbSetPwExtrasHide = function () { ['setPwTermsWrap', 'setPwNoticeWrap'].forEach(id => { const e = pbSetPwEl(id); if (e) { e.hidden = true; delete e.dataset.uid; } }); const b = pbSetPwEl('setPwTerms'); if (b) b.checked = false; };
+  window.pbSetPwAgreeState = function () {
+    const uid = sbUser && sbUser.id, w = pbSetPwEl('setPwTermsWrap'), n = pbSetPwEl('setPwNoticeWrap'), b = pbSetPwEl('setPwTerms');
+    const need = !!(w && !w.hidden && w.dataset.uid === uid);
+    return { uid, need, ok: need && !!(b && b.checked), notice: !!(n && !n.hidden && n.dataset.uid === uid) };
+  };
+  window.pbSetPwAgreed = function (a) { // recorded as the sheet's I Agree and the notice's Got It would be
+    const uid = a && a.uid; if (!uid) return;
+    if (a.need && a.ok) { pbTermsLs.set('pbTermsPend:' + uid, JSON.stringify({ t: PB_TERMS_VER, p: PB_PRIV_VER, at: Date.now() })); pbTermsSendPending(uid).catch(() => {}); }
+    if (a.notice) { pbObLs.set('pbCrewNotice:' + uid, PB_OB_NOTICE_VER); pbObLs.set('pbCrewNoticeAck:' + uid, JSON.stringify({ v: PB_OB_NOTICE_VER, at: new Date().toISOString() })); try { pbCrewNoticeAckSend(uid); } catch (e) {} }
+  };
+  window.pbScreenHooks.push((name) => { if (name === 'setPassword') { window.pbSetPwExtras(); setTimeout(window.pbSetPwExtras, 1500); setTimeout(window.pbSetPwExtras, 4000); } });
+  window.pbAccountLoadHooks.push(() => { setTimeout(() => { if (pbCurrentScreen === 'setPassword') window.pbSetPwExtras(); }, 0); });
   function pbObErrSheet(code, title) {
     pbObSheet('<h2>' + escapeHtml(title || 'Can’t Join') + '</h2><p id="pbObErrText">' + escapeHtml(pbObText(code)) + '</p><div class="pbob-btns"><button type="button" class="pb-btn" onclick="pbObClose()">OK</button></div>', title || 'Can’t join');
   }
@@ -65399,7 +65454,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     window.__pbObCopied = txt; // what was offered to the clipboard (read by the rig)
     const b = document.getElementById('pbObCopyBtn'); if (b) b.textContent = ok ? 'Copied. Now Share › Add to Home Screen' : 'Couldn’t copy. Type the code instead';
   };
-  window.pbObJoinHere = function () { if (PB_OB.src) { PB_OB.src.here = true; pbObJoinForm(); } };
+  window.pbObJoinHere = function () { if (PB_OB.src) { PB_OB.src.here = true; PB_OB.skippedHome = true; pbObJoinForm(); } };
   function pbObJoinForm() {
     const d = PB_OB.peek; if (!d) return;
     const role = PB_OB_ROLES[d.role] || 'crew', me = sbUser ? (pbObIsLink(sbUser) ? pbObDisplay(sbUser) : (sbUser.email || 'this account')) : '';
@@ -65430,10 +65485,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     try { await pbRefreshSubscriptionCache(); updateLoginStatusDisplay(); } catch (e) {}
     try { pbProdAccessRefresh(uid); pbReportRefreshAccess(uid); } catch (e) {}
   }
-  function pbObDone(d) {
-    pbObSheet('<h2 data-pbob-focus tabindex="-1">You’re In</h2><p id="pbObDoneText">You joined <strong>' + escapeHtml(d.company_name || 'the company') + '</strong> as ' + escapeHtml(PB_OB_ROLES[d.role] || 'crew') + '.' + (d.paired_with ? ' You’re on ' + escapeHtml(d.paired_with) + '’s crew.' : '') + ' Your work goes to them from now on.</p>'
-      + (pbObIosVer() >= 16.4 && pbObStandalone() ? '<p class="pbob-dim">Turn on notifications in Settings › Notifications when you’re ready.</p>' : '')
-      + '<div class="pbob-btns"><button type="button" class="pb-btn" id="pbObStartBtn" onclick="pbObClose(); pbGotoTab(\'home\')">Start</button></div>', 'Joined');
+  function pbObDone(d) { // streamline 02: no "You're In" sheet and Start tap; a note on Home says it
+    pbObClose(); try { pbGotoTab('home'); } catch (e) {}
+    window.pbSayDone('You joined ' + (d.company_name || 'the company') + ' as ' + (PB_OB_ROLES[d.role] || 'crew') + '.' + (d.paired_with ? ' You\u2019re on ' + d.paired_with + '\u2019s crew.' : ''));
+    try { window.pbObA2hsStepSoon && window.pbObA2hsStepSoon('join'); } catch (e) {} // streamline 08
   }
   const pbObLegal = () => ({ terms: PB_TERMS_VER, privacy: PB_PRIV_VER, notice: PB_OB_NOTICE_VER, phone_at: new Date().toISOString(), build: String(window.PB_APP_BUILD || '').slice(0, 40), ua: String(navigator.userAgent || '').slice(0, 300) });
   window.pbObJoinGo = async function () { // the tap that uses the link
@@ -65489,6 +65544,10 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     return null;
   }
   window.pbObParse = pbObParse;
+  window.pbObPasteNow = function () { window.pbObOpenCode(); window.pbObPaste(); }; // streamline 03: one tap (the tap lets the phone read the clipboard)
+  function pbObPasteRow() { const w = document.getElementById('loginPasteWrap'); if (w) w.hidden = !(pbObIosVer() > 0 && pbObStandalone() && !sbUser); }
+  window.pbScreenHooks.push((name) => { if (name === 'login') pbObPasteRow(); });
+  setTimeout(pbObPasteRow, 0);
   window.pbObPaste = async function () {
     let t = ''; try { t = await navigator.clipboard.readText(); } catch (e) { t = ''; }
     const p = pbObParse(t), err = document.getElementById('pbObErr');
@@ -65518,7 +65577,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const user = await pbObSignInHash(r);
     if (!user) { pbObErrSheet('pb:server', 'Can’t Sign In'); return; }
     const switched = await pbSwitchToSignedInUser(user);
-    if (switched) { pbGoto('home', true); pbObSheet('<h2 data-pbob-focus tabindex="-1">Signed In</h2><p>You’re signed in as ' + escapeHtml(pbObIsLink(user) ? pbObDisplay(user) : (user.email || 'your account')) + '.</p><div class="pbob-btns"><button type="button" class="pb-btn" onclick="pbObClose()">OK</button></div>', 'Signed in'); }
+    if (switched) { window.pbObClose(); pbGoto('home', true); window.pbSayDone('Signed in as ' + (pbObIsLink(user) ? pbObDisplay(user) : (user.email || 'your account')) + '.'); try { window.pbMfaCheck(); } catch (e) {} } // streamline 09
   }
 
   // ---- 3. a code for this account's other screen (the iPhone Home Screen app): made by the person, 15 minutes ----
@@ -65528,7 +65587,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!r.ok) { pbAlert(pbObText(r.code), 'No Code'); return; }
     PB_OB.handoff = r;
     pbObSheet('<h2 data-pbob-focus tabindex="-1">Code for the Home Screen App</h2>'
-      + '<p>In the Home Screen app, tap <strong>Log In</strong>, then <strong>Join a Crew or Use a Code</strong>, then <strong>Paste Join Code</strong> (or type the code). It works once, for 15 minutes. Don’t send it to anyone: it signs in to your account.</p>'
+      + '<p>In the Home Screen app, tap <strong>Paste Join Code</strong> (or type the code). It works once, for 15 minutes. Don’t send it to anyone: it signs in to your account.</p>'
       + '<div class="pbob-code" id="pbObHandoffCode">' + escapeHtml(pbObCodeShown(r.code)) + '</div>'
       + '<div class="pbob-btns"><button type="button" class="pb-btn" id="pbObHandoffCopy" onclick="pbObHandoffCopy()">Copy Code</button><button type="button" class="pb-btn ghost" onclick="pbObClose()">Done</button></div>', 'Code for the Home Screen app');
   };
@@ -65597,7 +65656,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const sw = !I.fmOnly && I.info ? '<label class="pbob-switch" id="pbObFmSwitch"><input type="checkbox" id="pbObFmLinks"' + (I.info.foreman_links !== false ? ' checked' : '') + ' onchange="pbObInvSetting(this.checked)"><span><strong>Foremen can add pipelayers by link</strong><br><span class="pbob-dim">Each person who joins takes a seat. Turning this off also cancels links foremen made that aren’t used yet.</span></span></label>' : '';
     pbObSheet('<h2 data-pbob-focus tabindex="-1">' + (I.fmOnly ? 'Add a Pipelayer by Text' : 'Text a Join Link') + '</h2>'
       + (off ? '<p id="pbObOff">' + escapeHtml(pbObText('pb:foreman_links_off')) + '</p>'
-        : '<p class="pbob-dim">For one person. They tap it and they’re in ' + escapeHtml(I.co || 'the company') + ' with the role you pick. No email, no password. Works once, for 24 hours.' + (I.fmOnly ? ' They go on your crew.' : '') + '</p>'
+        : '<p class="pbob-dim">One link, one person. They tap it and they’re in ' + escapeHtml(I.co || 'the company') + '. Works once, for 24 hours.' + (I.fmOnly ? ' They go on your crew.' : '') + '</p>'
         + pbObSeatLine(I)
         + '<label class="pbob-f" for="pbObInvName">Their name <span class="pbob-dim">(optional)</span></label><input type="text" id="pbObInvName" maxlength="80" autocomplete="off" enterkeyhint="done">'
         + '<p class="pbob-step" style="margin-top:12px;">Role</p><div class="pbob-toggle" role="group" aria-label="Role">' + tog('pipelayer') + (I.fmOnly ? '' : tog('foreman')) + '</div>'
@@ -65703,15 +65762,25 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (d && done1 && done2 && done3) { pbObLs.set('pbObStartHide:' + uid, 'done'); el.hidden = true; el.innerHTML = ''; return; }
     const li = (id, ok, title, sub, btn) => '<li class="' + (ok ? 'done' : '') + '" id="' + id + '" data-done="' + (ok ? '1' : '0') + '"><span class="ck" aria-hidden="true">' + (ok ? '✓' : '') + '</span><span class="tx"><b>' + escapeHtml(title) + '<span class="pb-sr">' + (ok ? ' (done)' : ' (to do)') + '</span></b><span>' + escapeHtml(sub) + '</span>' + (ok ? '' : btn) + '</span></li>';
     const h = '<div class="pbob-start" role="region" aria-labelledby="homeObStartH"><h2 id="homeObStartH">Getting Started</h2>'
-      + '<p class="pbob-dim" style="margin:0;">Three steps to get your crew working in the app.</p><ol>'
-      + li('homeObStep1', done1, 'Add your crew', done1 ? (crew + (crew === 1 ? ' person' : ' people') + ' in the company.') : waiting ? waiting + ' waiting to join. Text a join link or add by email.' : 'Text each foreman and pipelayer a join link, or add them by email.', '<button type="button" class="pb-btn small" id="homeObCrewBtn" onclick="pbOpenCrewMembers()">Add Crew</button>')
+      + '<ol>'
+      + li('homeObStep1', done1, 'Add your crew', done1 ? (crew + (crew === 1 ? ' person' : ' people') + ' in the company.') : waiting ? waiting + ' waiting to join.' : 'Text each person a join link. No email needed.', '<button type="button" class="pb-btn small" id="homeObCrewBtn" onclick="pbObStartText()">Text a Join Link</button> <button type="button" class="pb-btn tertiary small" id="homeObEmailBtn" onclick="pbOpenCrewMembers()">Add by Email</button>')
       + li('homeObStep2', done2, 'Add a job', done2 ? 'Your crews can pick it on their runs.' : 'Job number, name and what’s planned. Crews pick it on their runs.', '<button type="button" class="pb-btn small" id="homeObJobBtn" onclick="pbCxNewOpen()">New Job</button>')
-      + li('homeObStep3', done3, 'Tell the crew to install the app', done3 ? 'Someone on your crew has signed in.' : 'They tap the link you text them. On iPhone, Safari’s Share button, then Add to Home Screen, keeps it one tap away. Checks off when someone on the crew signs in.', '')
+      + li('homeObStep3', done3, 'Tell the crew to install the app', done3 ? 'Someone on your crew has signed in.' : 'They tap the link you text them. Checks off when someone signs in.', '')
       + '</ol><div class="ft"><button type="button" class="pb-btn tertiary small" id="homeObHide" onclick="pbObStartHide()">Hide This</button></div></div>';
     if (el.innerHTML !== h) el.innerHTML = h;
     el.hidden = false;
   }
   window.pbObStartRender = pbObStartRender;
+  window.pbObStartText = async function () { // streamline 04: the link sheet from Home; the crew list loads behind it for the foreman picker
+    const uid = sbUser && sbUser.id; if (!uid) return;
+    window.pbObOpenInvite();
+    try {
+      if (pbCmSt.uid !== uid) pbCmSt = pbCmNew(uid);
+      if (!pbCmSt.data && typeof window.pbCmLoad === 'function') await window.pbCmLoad();
+      const I = PB_OB.inv;
+      if (I && I.uid === uid && pbCmSt.data && document.getElementById('pbObSheet') && !PB_OB.busy) { pbObKeepName(I); if (!I.co) I.co = pbCmSt.data.company_name || ''; pbObInvRender(); }
+    } catch (e) {}
+  };
   window.pbObStartHide = function () { const uid = sbUser && sbUser.id; if (!uid) return; pbObLs.set('pbObStartHide:' + uid, 'hidden'); pbObStartRender(); };
   { const o = window.pbCxRender; if (typeof o === 'function') window.pbCxRender = function () { const r = o.apply(this, arguments); try { pbObStartRender(); } catch (e) {} return r; }; }
 
@@ -65726,9 +65795,9 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!pbObA2hsWant()) return '';
     const link = pbObIsLink(sbUser);
     return '<div class="pb-home-att info push" id="homeAttention_a2hs"><span class="t">Put the App on Your Home Screen</span>'
-      + 'It opens in one tap, works without signal, and on iPhone notifications only work from there.'
-      + '<ol><li>Tap <strong>Share</strong> (the square with the arrow, at the bottom of Safari).</li><li>Tap <strong>Add to Home Screen</strong>, then <strong>Add</strong>.</li><li>Open the new icon. ' + (link ? 'Sign in there with a code: tap <strong>Get a Code</strong> below, then in the new app Log In › Join a Crew or Use a Code › Paste Join Code.' : 'Log in there with your email and password.') + '</li></ol>'
-      + '<div class="pb-pc-act">' + (link ? '<button type="button" class="pb-btn small" id="homeA2hsCode" onclick="pbObHandoff()">Get a Code</button>' : '') + '<button type="button" class="pb-btn tertiary small" id="homeA2hsOk" onclick="pbObA2hsOk()">Got It</button></div></div>';
+      + 'One tap to open, works with no signal, and notifications work there.'
+      + '<ol><li>Tap <strong>Share</strong> (the square with the arrow, at the bottom of Safari).</li><li>Tap <strong>Add to Home Screen</strong>, then <strong>Add</strong>.</li><li>Open the new icon. Tap <strong>Get a Code</strong> below, then <strong>Paste Join Code</strong> in the new app.</li></ol>'
+      + '<div class="pb-pc-act">' + '<button type="button" class="pb-btn small" id="homeA2hsCode" onclick="pbObHandoff()">Get a Code</button>' + '<button type="button" class="pb-btn tertiary small" id="homeA2hsOk" onclick="pbObA2hsOk()">Got It</button></div></div>';
   }
   window.pbObA2hsOk = function () {
     const uid = sbUser && sbUser.id; if (!uid) return;
@@ -65736,6 +65805,78 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     pbObLs.set(uid + ':pushCardSnooze', new Date().toISOString()); // the notifications card's iPhone line rests 30 days too
     try { if (pbCurrentScreen === 'home' && typeof window.pbRenderHome === 'function') window.pbRenderHome(); } catch (e) {}
   };
+  // ---- streamline 08: the Home Screen step at the end of set-up ----
+  let pbObBip = null, pbObA2hsT = null; // Android Chrome's install offer, kept for the Install App tap
+  window.addEventListener('beforeinstallprompt', (e) => { try { const uid = sbUser && sbUser.id; if (!uid || !pbObLs.get('pbObA2hs:' + uid)) e.preventDefault(); } catch (x) {} pbObBip = e; });
+  window.addEventListener('appinstalled', () => { pbObBip = null; try { const uid = sbUser && sbUser.id; if (uid) pbObLs.set('pbObA2hs:' + uid, new Date().toISOString()); } catch (e) {} });
+  function pbObA2hsKind() { // 'ios' | 'android' | null (the Home Screen app itself, a computer)
+    if (pbObStandalone()) return null;
+    if (pbObIosVer() > 0) return 'ios';
+    try { if (/Android/i.test(navigator.userAgent || '')) return 'android'; } catch (e) {}
+    return null;
+  }
+  const pbObA2hsStepWant = (uid) => !!(uid && pbObA2hsKind() && !pbObLs.get('pbObA2hs:' + uid));
+  function pbObA2hsBusy(uid, n) { // something else comes first
+    if (pbCurrentScreen !== 'home') return true;
+    if (['pbTermsSheet', 'pbMfaSheet', 'pbObSheet', 'pbTapLink', 'pbCrewNotice'].some(id => document.getElementById(id))) return true;
+    const ov = document.getElementById('pbModalOverlay'); if (ov && getComputedStyle(ov).display !== 'none') return true;
+    try { if (pbTermsPermitLive()) return true; } catch (e) {}
+    if (pbTermsLs.get('pbTermsOk:' + uid) !== PB_TERMS_KEY && !pbTermsLs.get('pbTermsPend:' + uid)) return true; // the Terms first
+    const acc = pbProdAccMem.get(uid);
+    if (!acc && n < 20) return true; // who this is isn't known yet (the crew notice may be due): up to 10 s
+    if (acc && acc.member && acc.companyId && !acc.manager && pbObLs.get('pbCrewNotice:' + uid) !== PB_OB_NOTICE_VER) return true; // the crew notice first
+    return false;
+  }
+  window.pbObA2hsStepSoon = function (why) {
+    const uid = sbUser && sbUser.id; if (!pbObA2hsStepWant(uid)) return;
+    if (PB_OB.skippedHome && pbObA2hsKind() === 'ios') return; // he tapped "Join Here in Safari" a moment ago; the Home card stays
+    clearInterval(pbObA2hsT); let n = 0;
+    pbObA2hsT = setInterval(() => {
+      n++;
+      if (!sbUser || sbUser.id !== uid || !pbObA2hsStepWant(uid) || n > 240) { clearInterval(pbObA2hsT); return; } // 2 minutes, then the Home card is the reminder
+      if (pbObA2hsBusy(uid, n)) return;
+      clearInterval(pbObA2hsT); pbObA2hsStep();
+    }, 500);
+  };
+  const PB_OB_SHARE_SVG = '<svg viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="the Share button" style="vertical-align:-6px;margin:0 2px;color:var(--pb-brand-text,#0a66c2);" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M7 10H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1"/></svg>';
+  function pbObA2hsStep() {
+    const uid = sbUser && sbUser.id, kind = pbObA2hsKind(); if (!uid || !kind) return;
+    let h = '<h2 data-pbob-focus tabindex="-1">Add the App to Your Home Screen</h2><p>One tap to open, and it works with no signal' + (kind === 'ios' ? '. Notifications work only from there.' : '.') + '</p>';
+    if (kind === 'ios') {
+      const link = pbObIsLink(sbUser);
+      h += '<ol class="pbob-ol" id="pbObA2hsSteps"><li>Tap <strong>Get a Code</strong> below, then <strong>Copy Code</strong>.</li>'
+        + '<li>Tap <strong>Share</strong> ' + PB_OB_SHARE_SVG + ' at the bottom of Safari.</li><li>Tap <strong>Add to Home Screen</strong>, then <strong>Add</strong>.</li>'
+        + '<li>Open the new icon and tap <strong>Paste Join Code</strong>.</li></ol>'
+        + '<div id="pbObA2hsCode"><button type="button" class="pb-btn secondary" id="pbObA2hsCodeBtn" onclick="pbObA2hsCode()" style="width:100%;min-height:52px;">Get a Code</button><p class="pbob-dim" id="pbObA2hsWhy" style="margin:6px 0 0;">' + (link ? 'Your account has no email or password, so the new app signs in with this code.' : 'The new app signs in with this code: no typing your email and password.') + '</p></div>';
+      if (!link) pbMfaFactor().then(f => { const w = document.getElementById('pbObA2hsWhy'); if (f && w) w.textContent += ' Two-step login still asks for its code.'; }).catch(() => {}); // streamline 09
+    } else if (pbObBip) {
+      h += '<div class="pbob-btns"><button type="button" class="pb-btn" id="pbObInstallBtn" onclick="pbObInstall()">Install App</button></div>';
+    } else {
+      h += '<ol class="pbob-ol" id="pbObA2hsSteps"><li>Tap the menu <strong>&#8942;</strong> at the top right of Chrome.</li><li>Tap <strong>Add to Home screen</strong> (or <strong>Install app</strong>), then <strong>Install</strong>.</li></ol>';
+    }
+    h += '<div class="pbob-btns"><button type="button" class="pb-btn' + (kind === 'android' && pbObBip ? ' ghost' : '') + '" id="pbObA2hsDone" onclick="pbObA2hsDone()">Done</button></div>';
+    pbObSheet(h, 'Add the app to your Home Screen');
+    const d = document.getElementById('pbObSheet'); if (d) d.dataset.step = 'a2hs';
+  }
+  window.pbObA2hsStep = pbObA2hsStep;
+  window.pbObA2hsDone = function () { window.pbObClose(); window.pbObA2hsOk(); };
+  window.pbObA2hsCode = async function () {
+    const box = document.getElementById('pbObA2hsCode'), b = document.getElementById('pbObA2hsCodeBtn'); if (!box) return;
+    if (b) { b.disabled = true; b.textContent = 'Getting a code…'; }
+    const r = await pbObRpc('pb_onboard_handoff_make', {});
+    if (!document.getElementById('pbObA2hsCode')) return;
+    if (!r.ok) { if (b) { b.disabled = false; b.textContent = 'Get a Code'; } let e = document.getElementById('pbObA2hsErr'); if (!e) { e = document.createElement('p'); e.id = 'pbObA2hsErr'; e.className = 'pbob-err'; e.setAttribute('role', 'alert'); box.appendChild(e); } e.textContent = pbObText(r.code); return; }
+    PB_OB.handoff = r;
+    box.innerHTML = '<div class="pbob-code" id="pbObHandoffCode">' + escapeHtml(pbObCodeShown(r.code)) + '</div><button type="button" class="pb-btn secondary" id="pbObHandoffCopy" onclick="pbObHandoffCopy()" style="width:100%;min-height:52px;">Copy Code</button><p class="pbob-dim" style="margin:6px 0 0;">Works once, for 15 minutes. Don’t send it to anyone: it signs in to your account.</p>';
+  };
+  window.pbObInstall = async function () {
+    const e = pbObBip; pbObBip = null;
+    if (!e || typeof e.prompt !== 'function') { pbObA2hsStep(); return; }
+    let ok = false; try { e.prompt(); const c = await e.userChoice; ok = !!(c && c.outcome === 'accepted'); } catch (x) {}
+    window.__pbObInstallAsked = ok ? 'accepted' : 'dismissed'; // for the rig
+    if (ok) { window.pbObA2hsDone(); window.pbSayDone('Installed. Open it from your Home Screen.'); } else pbObA2hsStep(); // not now: the menu steps and Done
+  };
+  window.pbAccountLoadHooks.push((uid, info) => { if (info && info.login) setTimeout(() => window.pbObA2hsStepSoon('login'), 0); });
   { const o = window.pbPushCardHtml; window.pbPushCardHtml = function () { try { const h = pbObA2hsHtml(); if (h) return h; } catch (e) {} return typeof o === 'function' ? o.apply(this, arguments) : ''; }; }
 
   // ---- 7. where these show ----
@@ -65747,6 +65888,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       if ((settled && pbCurrentScreen) || tries > 60) { clearInterval(t); window.pbObStartJoin({ token: pbJoinFromUrl }); }
     }, 300);
   }
+  window.pbObCanFmLink = function () { const uid = sbUser && sbUser.id, acc = uid ? pbProdAccMem.get(uid) : null; return !!(acc && acc.member && acc.role === 'foreman' && !acc.manager); }; // streamline 06
   // a foreman's way in (the office has it on Crew members): Settings, under the account
   function pbObFmRow() {
     try {
@@ -65762,7 +65904,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
   // a no-email account: a code for the Home Screen app (Notifications, where the iPhone steps are) and in Settings
   function pbObHandoffRow() {
     try {
-      const show = !!(sbUser && pbObIsLink(sbUser));
+      const show = !!(sbUser && (pbObIsLink(sbUser) || (pbObIosVer() > 0 && !pbObStandalone()))); // streamline 09
       [['notifIosSteps', 'notifHandoffBtn', 'beforebegin'], ['settingsLoginHelp', 'settingsHandoffBtn', 'afterend']].forEach(([a, id, where]) => {
         const anchor = document.getElementById(a); if (!anchor) return;
         let b = document.getElementById(id);
