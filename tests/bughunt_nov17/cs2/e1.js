@@ -1,4 +1,4 @@
-// cs2 01/02: after EMERGENCY, a call button is on screen; it redials; the Feedback pill is not over the panel
+// cs2 01/02: after EMERGENCY, a call button is on screen; it redials; the Feedback button never covers the panel
 const L=require('./lib2');(async()=>{const {b,p,H}=await L({});let fail=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fail++;};
  await H.lock();await H.read(20.9,0,0,0);await H.addPerson('Ed Entrant');await H.checkin('Ed Entrant');
  await p.evaluate(()=>window.scrollTo(0,0));
@@ -6,8 +6,9 @@ const L=require('./lib2');(async()=>{const {b,p,H}=await L({});let fail=0;const 
  const vis=await p.evaluate(()=>{const h=innerHeight;return [...document.querySelectorAll('button')].filter(b=>b.offsetParent&&/^(EMERGENCY|Call .*again)$/i.test(b.textContent.trim())).map(b=>{const r=b.getBoundingClientRect();return {t:b.textContent.trim(),top:Math.round(r.top),bot:Math.round(r.bottom),inView:r.top>=0&&r.bottom<=h};});});
  console.log(JSON.stringify(vis));
  ok(vis.some(v=>v.inView),'a call button is on screen right after EMERGENCY');
- const pill=await p.evaluate(()=>{const e=document.getElementById('pbFbPill');return !!(e&&!e.hidden&&getComputedStyle(e).display!=='none'&&e.getClientRects().length);});
- ok(!pill,'no Feedback pill over the active permit / emergency panel');
+ // r17.11: Feedback sits in the top bar on every screen (Tommy); it must never sit over a button, link or box
+ const over=await p.evaluate(()=>{const e=document.getElementById('pbFbPill');if(!(e&&!e.hidden&&getComputedStyle(e).display!=='none'&&e.getClientRects().length))return [];const r=e.getBoundingClientRect();return [...document.querySelectorAll('button,a,input,select,textarea')].filter(x=>x!==e&&!e.contains(x)&&x.offsetParent).filter(x=>{const q=x.getBoundingClientRect();return q.width&&q.height&&q.left<r.right&&q.right>r.left&&q.top<r.bottom&&q.bottom>r.top;}).map(x=>(x.id||x.textContent||'').trim().slice(0,30));});
+ ok(over.length===0,'no Feedback pill over the active permit / emergency panel '+JSON.stringify(over));
  await p.screenshot({path:((process.env.PB_OUT||'/tmp/claude-0/audit/cs2/t')+'/e1_')+(process.env.FILE||'cur')+(process.env.DARK?'_dark':'')+'.png'});
  const again=vis.find(v=>/again/i.test(v.t));
  if(again){await p.click('#cpEmCallAgain');await p.waitForTimeout(500);}

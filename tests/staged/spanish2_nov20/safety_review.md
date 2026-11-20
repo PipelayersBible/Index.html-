@@ -1544,3 +1544,27 @@ Every string below is shown on a confined space, air test, trench or emergency s
 - **p2_hints.013**
   - EN: e.g. 911, standby rescue team on site, radio channel 2
   - ES: p. ej. 911, equipo de rescate en espera en el lugar, canal 2 del radio
+
+## p2_active_bar
+
+- **p2_active_bar.003**
+  - EN: Permit open — {0}
+  - ES: Permiso abierto — {0:t}
+- **p2_active_bar.004**
+  - EN: Permit open
+  - ES: Permiso abierto
+- **p2_active_bar.005**
+  - EN: confined space
+  - ES: espacio confinado
+- **p2_active_bar.006**
+  - EN: A saved permit couldn’t be read
+  - ES: No se pudo leer un permiso guardado
+- **p2_active_bar.007**
+  - EN: EMERGENCY STILL OPEN
+  - ES: LA EMERGENCIA SIGUE ABIERTA
+- **p2_active_bar.008**
+  - EN: Open panel
+  - ES: Abrir el panel
+- **p2_active_bar.009**
+  - EN: OUTSIDE PERMIT LIMITS — PERMIT DOES NOT ALLOW ENTRY
+  - ES: FUERA DE LOS LÍMITES DEL PERMISO — EL PERMISO NO PERMITE ENTRAR

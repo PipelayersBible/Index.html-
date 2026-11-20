@@ -236,7 +236,10 @@
     if (t === 'TEXTAREA') { if (!skipped(el)) { doAttr(el, 'placeholder'); doAttr(el, 'aria-label'); } return; } // what a person typed is never touched; the hint in an empty box is
     if (el.attributes.length) { for (var a = 0; a < ATTRS.length; a++) if (el.hasAttribute(ATTRS[a])) doAttr(el, ATTRS[a]); }
     if (lang !== 'es' && el.hasAttribute('data-pbi18n-val')) { el.removeAttribute('value'); el.removeAttribute('data-pbi18n-val'); }
-    if (doMixed(el)) return;
+    if (doMixed(el)) { // the sentence is done as one piece; its inline children still get their own labels and links
+      for (var k = el.firstElementChild; k; k = k.nextElementSibling) { if (k.attributes.length) for (var a2 = 0; a2 < ATTRS.length; a2++) if (k.hasAttribute(ATTRS[a2])) doAttr(k, ATTRS[a2]); }
+      return;
+    }
     for (var c = el.firstChild, nx; c; c = nx) { nx = c.nextSibling; if (c.nodeType === 3) doText(c); else if (c.nodeType === 1) visit(c); }
   }
   function touch(node) {

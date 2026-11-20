@@ -21,7 +21,7 @@ const P1={login:null,login_forgot:null,login_bad:null,join:null,join_ios:null,jo
 const P2={home_fm:null};for(const n of ['settings','notifications','dailyReport','tickets','ticketForm','crewMembers','prodMine','prodNoRun','jobs','stats','jobSummary','reportIssue','appProblem','shortcutsEdit','tools','calcHub','confinedHub','confinedPermit','cutsheetImport','reportsAll','myReports','companyPermits'])P2['fm_'+n]='#screen-'+n;
 for(const n of ['crewView','prodMine','settings'])P2['pl_'+n]='#screen-'+n;
 for(const n of ['rodElevCalc','slopeConvCalc','fracCalc','constCalc','trenchCalc','liftCalc','bedShadeCalc','volumeCalc','beddingCalc','pipeWeightCalc','bendCalc','manningCalc','flowCalc','manholeDepthCalc','ventCalc'])P2['calc_'+n]='#screen-'+n;
-Object.assign(P2,{fm_daily_filled:'#screen-dailyReport',fm_daily_hours:'#screen-dailyReport',run_delay:null,run_utility:null,run_endask:null,pl_records:'#screen-archive',fm_records:'#screen-archive',permit_closeask:'#pbModalOverlay',permit_closed:null});
+Object.assign(P2,{fm_daily_filled:'#screen-dailyReport',fm_daily_hours:'#screen-dailyReport',run_delay:null,run_utility:null,run_endask:null,pl_records:null,fm_records:null,permit_closeask:'#pbModalOverlay',permit_closed:null});
 const SCREENS=Object.assign({},P1,P2);const SETS={p1:Object.keys(P1),p2:Object.keys(P2),p2a:Object.keys(P2).slice(0,14),p2b:Object.keys(P2).slice(14,28),p2c:Object.keys(P2).slice(28,40),p2d:Object.keys(P2).slice(40)};
 (async()=>{const b=await L.chromium.launch();const want=process.argv[2]?(SETS[process.argv[2]]||process.argv[2].split(',')):Object.keys(SCREENS);let total=0,hit=0;
  for(const name of want){let p;try{p=await L.SC[name](b,{lang:'es'});}catch(e){ok(false,name+': the screen opens ('+String(e).slice(0,160)+')');continue;}
