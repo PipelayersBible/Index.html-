@@ -21,8 +21,11 @@ let pass=0,fail=0;const fails=[];const ok=(c,m)=>{if(c)pass++;else{fail++;fails.
     ok(m.inView,w+'button not fully in view '+JSON.stringify(m.rect));ok(m.onTop,w+'button is under something');
     ok(!m.covers.length,w+'covers '+JSON.stringify(m.covers));ok(!m.text.length,w+'covers text '+JSON.stringify(m.text.slice(0,3)));
     // the 44 px tap area (4 px wider than the paint) touches no other control
-    const near=await p.evaluate(()=>{const fb=document.getElementById('pbFbPill'),r=fb.getBoundingClientRect(),g=4,out=[];for(const e of document.querySelectorAll('button,a[href],select,textarea,input:not([type=hidden]),summary,[role=button]')){if(e===fb||!e.offsetParent)continue;const q=e.getBoundingClientRect();if(q.width<1||q.height<1)continue;if(!(q.right<=r.left-g||q.left>=r.right+g||q.bottom<=r.top-g||q.top>=r.bottom+g)){const t=document.elementFromPoint(Math.min(Math.max(q.left+q.width/2,0),innerWidth-1),Math.min(Math.max(q.top+q.height/2,0),innerHeight-1));if(t&&(t===e||e.contains(t)))out.push((e.textContent||e.id).trim().slice(0,30));}}return out;});
-    ok(!near.length,w+'tap area touches '+JSON.stringify(near));
+    const near=await p.evaluate(()=>{const fb=document.getElementById('pbFbPill'),r=fb.getBoundingClientRect(),g=4,out=[],hd=fb.closest('.pb-header');const xs=[r.left-g+.5,r.left+r.width/2,r.right+g-.5],ys=[r.top-g+.5,r.top+r.height/2,r.bottom+g-.5];
+     for(const x of xs)for(const y of ys){if(x<0||y<0||x>=innerWidth||y>=innerHeight)continue;const t=document.elementFromPoint(x,y);if(!t||t===fb)continue;const c=t.closest('button,a[href],select,textarea,input,summary,[role=button],[onclick]');if(c)out.push('control:'+(c.textContent||c.id).trim().slice(0,30));else if(hd&&!hd.contains(t))out.push('outside header:'+t.tagName+'.'+String(t.className).slice(0,30));}return [...new Set(out)];});
+    ok(!near.length,w+'44 px tap area reaches '+JSON.stringify(near));
+    const tt=await p.evaluate(()=>{const t=document.querySelector('.pb-screen.active > .pb-header > .pb-title');if(!t||!t.offsetParent)return null;const r=document.createRange();r.selectNodeContents(t);const q=r.getBoundingClientRect(),b=t.getBoundingClientRect();return {over:q.right>b.right+1||q.left<b.left-1,w:Math.round(b.width)};});
+    ok(!tt||!tt.over,w+'title spills out of its space '+JSON.stringify(tt));
     ok(m.rect.h>=34&&m.rect.w>=60,w+'button too small '+JSON.stringify(m.rect));
    }
    dump[vp][id]=hs;
