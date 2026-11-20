@@ -4,6 +4,13 @@ Everything here is STAGED. Nothing was applied to the server, deployed, committe
 SELECT statements only. The SQL was tested on a throwaway local Postgres, not on live. The first version of every file
 I changed is kept beside it as `*_v1` (`NOTES_v1.md`, `sql/01_pricing_limits_v1.sql`, `patches/01_pricing_app_v1.py`, …).
 
+> **v2b (after the lead's first live run of `live_t01.sql`, which failed at check 3h and rolled back).** Cause: live
+> `public.ai_usage` has a check that allows six feature names and not `plans_strong`; my local copy of that table had no
+> check. Fixed in the migration (the check is widened by one name), in the test (it no longer uses a made-up feature name),
+> and in the local replica (it now carries live's constraints and fails the same way without the fix). This also uncovered
+> a bug that is live today: see "Strong plan look-ups have never run on live" in section 6. The files from before this
+> fix are `sql/01_pricing_limits_v2a.sql` and `sql/tests/live_t01_v2a.sql`.
+
 ## 1. The decisions, as built
 
 | | Price | Who counts |
@@ -98,6 +105,7 @@ for ticket reads, analysis and strong plan look-ups. The SQL takes the lower of 
 - **Prices (settings):** `individual_cents` 1500, `individual_year_cents` 14400, `plan_sheet_cents` 100. All three can be changed with the existing Billing setter. `pb_billing.prices()` and `pb_plan_prices()` (no login needed) carry them. The old per-month `plan_reading_cents` setting stays empty and is marked "not used".
 - **AI caps for every path through the `ai` function** (`ai_daily_limit`, `ai_try_consume`, `ai_cost_add`, `ai_refund` replaced; `ai_pool`, `ai_who`, `ai_block` new). No edge function deploy.
 - **Per-company limits (new in v2):** table `pb_billing.limit_overrides (company_id, limits, note)` and `pb_billing.limits_of(company)`. A row holds only the numbers that differ; no row = the standard limits. Every gate reads through `limits_of`: the AI gates, `pb_my_limits`, photo/storage room, plan reading (`pb_plans.limits_for`) and uploaded documents (`pb_docs.limits_for`, which exists on live and is replaced). **No company id is written in any function.** The migration adds one row, found by owner login `tfontaine@digcivil.com` and name `DIG Civil%` (on live: "DIG Civil Construction", id d01a4a5f…, plan paid, no billing account, 3 members). To change it later: one `update pb_billing.limit_overrides set limits = … where company_id = …`; to remove it: delete the row. Both take effect at once.
+- **`public.ai_usage` feature check (new in v2b):** `plans_strong` is added to the allowed names (drop and re-add of `ai_usage_feature_check`; the six old names stay). Without it the gate cannot count a strong plan look-up.
 - **`pb_my_limits(feature)`** tells the app which limit was reached, with the numbers.
 - **Uploads:** `pb_storage_put_ok` also applies the plan's daily cap and the total size. Storage policies untouched.
 - **Plan reading:** the default caps are lowered (was 1,500 sheets / $300 / 20 sets a day). v1's "allowance follows a monthly price" is gone, because the price is now per sheet. The per-company on/off switch is the existing one and is untouched.
@@ -107,21 +115,23 @@ for ticket reads, analysis and strong plan look-ups. The SQL takes the lower of 
 - Seven existing functions are patched by an exact text swap that refuses to run unless it finds the old text exactly once.
 
 ### Is it safe to apply on live? Yes, with these facts
-- **Additive.** New: 3 settings rows, 3 tables (`ai_pool`, `individual_accounts`, `limit_overrides`), 14 functions. Nothing that exists today is dropped; the only existing row it edits is the note text of one unused setting. It runs in one transaction, and any failed self-check rolls all of it back. Applying it twice is safe (tested).
+- **Additive.** New: 3 settings rows, 3 tables (`ai_pool`, `individual_accounts`, `limit_overrides`), 14 functions. Nothing that exists today is dropped. Two existing things are edited: the note text of one unused setting, and the `ai_usage` feature check, which is widened by one name (every row there today already passes it; the re-add takes a short lock on a 39-row table). It runs in one transaction, and any failed self-check rolls all of it back. Applying it twice is safe (tested).
 - **Live matches what it was built against.** I re-read the md5 of the 19 functions the build replaces, patches or leans on, on live today (Nov 20): the same as the local copies, apart from the two known ones (`ai_daily_limit` by a comment, `pb_docs.limits` by line ends), which are replaced in full. None of the new tables or settings exists on live yet.
 - **What current users will notice — only the new caps:**
   - The two beta companies (Scorpion Backhoe, Carrillo Underground): request counts unchanged; added: a $30 a month AI dollar stop, 150 photos a day (was 400), 10 GB. Neither has logged any AI cost this month.
   - DIG Civil: its own high limits (section 3). Without its row, Tommy's company account would have dropped to 5 AI requests a day.
   - The two existing individual plans: 15 AI requests a day (was 10), 50 a month (was 200), $2.50 dollar stop.
   - An account with no plan: 10 photos a day and 0.1 GB (was 400 a day). That includes Tommy's separate admin login.
+  - DIG Civil only, in practice: strong plan look-ups start working (section 6). Customers have no read plan sets, so nothing changes for them.
   - Storage today is 17 files, 0.009 GB in all, so nobody is near a size cap.
-- **Undo file:** `sql/undo_01_pricing_limits.sql` puts back the old text of every replaced or patched function, removes the 3 settings and the new functions, and keeps the 3 new tables. Proven by `sql/local/run_undo.sh`: migration, then undo twice, and all 17 old functions have their old md5 again (the two named above come back with their **live** md5).
-- **Not proven:** the live run itself. `sql/tests/live_t01.sql` is that proof; I could not run it (read-only).
+- **Undo file:** `sql/undo_01_pricing_limits.sql` puts back the old text of every replaced or patched function, removes the 3 settings and the new functions, puts the `ai_usage` check back to six names (after deleting any `plans_strong` counts), and keeps the 3 new tables. Proven by `sql/local/run_undo.sh`: migration, then undo twice, and all 17 old functions have their old md5 again (the two named above come back with their **live** md5).
+- **Local replica re-synced with live (v2b).** Read from live today: every check constraint and foreign key on the 11 tables the migration and the test write to, and the md5 of 47 functions the local base holds. 40 functions are identical; the other 7 are the known stand-ins (`auth.uid/role/jwt`, `pb_prod.my_company`, `pb_plans_begin`) and the two replaced in full (`ai_daily_limit`, `pb_docs.limits`). The constraints the replica lacked (the `ai_usage` feature and count checks and its user foreign key; role, status, body and message-id checks) are now in `sql/local/stubs2.sql`. Proof it bites: with the constraint fix taken out of the migration, the local run fails with the same `ai_usage_feature_check` error the lead saw.
+- **Not proven:** the live run itself. The first live run failed (above); the fixed `sql/tests/live_t01.sql` has not been run on live yet.
 
 ### Server tests (rolled back)
-- `sql/local/run_local.sh` (fresh local Postgres 16 = what is live now, plus a stand-in DIG Civil): migration applied twice, then the test. **14 groups, 104 checks, all pass.** `MODE=block` (migration inside one rolled-back block) passes. `MODE=live` runs the lead's file itself on the local base: **passes (100 checks)**.
+- `sql/local/run_local.sh` (fresh local Postgres 16 = what is live now, plus a stand-in DIG Civil): migration applied twice, then the test. **14 groups, 105 checks, all pass.** `MODE=block` (migration inside one rolled-back block) passes. `MODE=live` runs the lead's file itself on the local base: **passes (101 checks)**.
 - New group 14: exactly one company has its own limits; its company account and members get 300 a day and the $150 stop; a test company with the same row makes 40 Ask questions from the company account and 100 requests from one member in a day, goes past $22, and stops at $150.10; photos, storage, plan reading and documents follow the row; every other company keeps the standard limits; removing the row puts the standard limits back at once.
-- `sql/tests/live_t01.sql` (md5 1d45998e…): ends with an error that starts `RESULT: {`, so everything rolls back. A failed check says `FAIL <n> …`. It inserts test users, companies and storage rows inside the block. On DIG Civil's real people it only reads. I read the triggers it will fire on live (`company_members`, `pb_billing.accounts`, `storage.objects`): none sends email or push.
+- `sql/tests/live_t01.sql` (md5 bcc89520…): ends with an error that starts `RESULT: {`, so everything rolls back. A failed check says `FAIL <n> …`. It inserts test users, companies and storage rows inside the block. On DIG Civil's real people it only reads. I read the triggers it will fire on live (`company_members`, `pb_billing.accounts`, `storage.objects`): none sends email or push.
 
 ### App: `patches/01_pricing_app.py` (applies on `/tmp/claude-0/r1711/src.html`, md5 679cf8ad…; 21 exact-once swaps; all 22 inline scripts pass a syntax check)
 - Individual price everywhere it is said: "Your own plan is $15 a month, or $144 for a year ($12 a month), plus applicable tax." (beta ended, removed from a company, no plan yet), and after the request: "You'll get an email with how to pay: …".
@@ -140,7 +150,7 @@ for ticket reads, analysis and strong plan look-ups. The SQL takes the lower of 
 Individual $15 a month or $144 a year in the section, the strip and the FAQ; the plan reading line with its price. `tests/t_website_text.py`: 11 of 11 pass (numbers match the staged settings and the app patch).
 
 ## 5. What the lead runs, in order
-1. **Prove on live (rolled back):** paste `sql/tests/live_t01.sql` as one query. Success = an error starting `RESULT: {"checks": "all passed"` that lists `"own_limits": [{"company": "DIG Civil Construction", "ai_stop_usd": 150.00}]`. Anything starting `FAIL` or `pb_patch:` = stop and apply nothing.
+1. **Prove on live (rolled back):** paste the fixed `sql/tests/live_t01.sql` (md5 bcc89520…) as one query. Success = an error starting `RESULT: {"checks": "all passed"` that lists `"own_limits": [{"company": "DIG Civil Construction", "ai_stop_usd": 150.00}]`. Anything starting `FAIL` or `pb_patch:` = stop and apply nothing.
 2. **Apply `sql/01_pricing_limits.sql`** as one migration. No edge function deploy.
 3. **Check (read only):** `select c.name, o.limits->'company'->'usd_base' from pb_billing.limit_overrides o join public.companies c on c.id = o.company_id;` → one row: DIG Civil Construction, 150. `select public.pb_plan_prices();` → individual_cents 1500, individual_year_cents 14400, plan_sheet_cents 100.
 4. **App:** `python3 patches/01_pricing_app.py <r17.11 master source> <out>`, bump the build, serve it as cur.html, then `PB_URL=… NODE_PATH=/opt/npm-tools/node_modules node tests/t_price_app.js` (expect 44 pass).
@@ -152,7 +162,8 @@ Server first (steps 1–3) is better than app first: the limits protect the bill
 
 ## 6. Things to know
 - **Plan reading is priced but not sellable yet.** Nothing shows sheets read per company per month, and nothing puts it on an invoice. It is off for every customer now. One trap: a paid company with **no billing account** has plan reading on by default (that is how DIG Civil has it). Make Paid creates the billing account with the tick box off, so always convert a beta with Make Paid, never by setting the plan by hand.
-- **Strong plan look-ups** (the extra pass on a plan question, 2 a day a person) are not in the request counts; their cost is in the dollar stop. The plan question itself is an ordinary Ask request, as Tommy decided.
+- **Strong plan look-ups have never run on live (a bug that is live today).** When a question is about a job's plans, the `ai` function (build 1117-0225) first counts an ordinary Ask request, then calls `ai_try_consume(…, 'plans_strong', 3)` to see if it may use the stronger model (3 a day, `AI_PLAN_STRONG_PER_DAY`). On live that call always errors, because the `ai_usage` check does not allow the name; the function treats the error as "no", so the question is answered by the normal model and nobody sees an error. There is not one `plans_strong` row in `ai_usage`. Beta companies are not affected (their allowance is 0, so nothing is inserted).
+- **After the migration they work, which is a new cost.** A person on a company plan gets 2 a day (DIG Civil 30, the `ai` function's own 3 a day still wins); one look-up may cost up to $1.00 (the function's cap for it). The cost counts toward the company's dollar stop, so the worst case in section 2 does not move; the look-ups are not in the request counts. Only companies with read plan sets can trigger one, and today that is DIG Civil alone. To keep them off instead: set `"plans_strong": 0` for `member` in `pb_billing.plan_limits()`.
 - **A dollar stop can be passed by a little.** Cost is reported when a request finishes, so requests already running still finish (each at most $0.25–$1.00). One request is counted at $50 at most.
 - **Bandwidth and plain server calls are not capped.** They are in the table at a heavy guess.
 - **An override on a beta company** would only change its dollar stop and storage; a beta's request counts stay in `pb_billing.trial_limits`. DIG Civil is a paid company, so its row covers everything.
