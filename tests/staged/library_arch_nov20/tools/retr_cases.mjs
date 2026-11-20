@@ -21,9 +21,9 @@ for (const c of rd(process.argv[2])) {
   if ((c.chunks || []).length && c.chunks.every((x) => shelf.has(x))) { onShelf++; continue; }
   n++;
   const st = c.where.slice(-2), r = S.resolveState({ question: c.q, addressState: st });
-  const hits = S.stateSearch(search, index, c.q, { k: 6, level: c.level || "pipelayer", topicBoost: [], maxChars: 9e3 }, r, c.q);
+  const hits = (S.stateSearch(search, index, c.q, { k: 6, level: c.level || "pipelayer", topicBoost: [], maxChars: 9e3 }, r, c.q)).hits;
   const ids = hits.map((h) => h.id), ok = (c.chunks || []).some((x) => ids.includes(x)), text = hits.map((h) => h.title + " " + h.text).join("\n");
-  const fok = (c.must || []).every((m) => new RegExp(m, "i").test(text));
+  const fok = (c.must || []).every((m) => new RegExp(m.replace(/\\[my]/gi, "\\b"), "i").test(text));
   pass += ok; facts += fok; (by[st] ||= [0, 0])[0] += ok; by[st][1]++;
   if (!ok) console.log(`MISS ${c.id} [${st}] "${c.q}" wanted ${c.chunks} got ${ids.join(", ")}${fok ? "  (facts are in another excerpt)" : ""}`);
 }

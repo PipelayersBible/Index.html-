@@ -37,10 +37,10 @@ rep('''#pbApp .pb-ai-src-k { color: var(--pb-text-2); }''',
 #pbApp .pb-ai-st-pick { display: block; margin-top: 6px; }
 #pbApp #homeStateCard .pbst-f { margin: 10px 0 0 0; padding: 0; }''')
 
-# ---- C. Home: the mount for the one-time State card (above Getting Started)
-rep('''      <div id="homeObStart" hidden></div>''',
-'''      <div id="homeStateAsk" hidden></div><!-- ask_followups: which state (one time) -->
-      <div id="homeObStart" hidden></div>''')
+# ---- C. Home: the mount for the one-time State card (under the notices, above the Company Home)
+rep('''    <section id="homeCompany" class="pb-coh pbx-home" aria-labelledby="homeCoHead" hidden>''',
+'''    <div id="homeStateAsk" hidden></div><!-- ask_followups: which state (asked one time; company account or Individual plan) -->
+    <section id="homeCompany" class="pb-coh pbx-home" aria-labelledby="homeCoHead" hidden>''')
 
 # ---- D. New Job: a State field, shown only when City, State has no state
 rep('''        <div class="pb-field"><label for="cxnStart">Start date <span class="pbx-opt">(optional)</span></label><input type="date" id="cxnStart"></div>''',
