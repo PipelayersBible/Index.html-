@@ -3,7 +3,7 @@ declare
   AD uuid := gen_random_uuid(); OW uuid := gen_random_uuid(); M1 uuid := gen_random_uuid(); M2 uuid := gen_random_uuid(); M3 uuid := gen_random_uuid();
   M4 uuid := gen_random_uuid(); M5 uuid := gen_random_uuid(); IV uuid := gen_random_uuid(); IND uuid := gen_random_uuid(); IND2 uuid := gen_random_uuid();
   BO uuid := gen_random_uuid(); BM uuid := gen_random_uuid(); NP uuid := gen_random_uuid();
-  C uuid := gen_random_uuid(); B uuid := gen_random_uuid();
+  C uuid := gen_random_uuid(); B uuid := gen_random_uuid(); DCO uuid := gen_random_uuid(); DO1 uuid := gen_random_uuid(); DM uuid := gen_random_uuid(); DIG uuid; DIGO uuid;
   r jsonb; res jsonb := '{}'::jsonb; n int; i int; a pb_billing.accounts; d date; today date := (now() at time zone 'utc')::date; L jsonb;
 begin
 -- Pricing build, Nov 20 2026 (STAGED, not applied). Prices, the individual plan, and hard caps on everything that costs money.
@@ -12,8 +12,12 @@ begin
 -- Decisions it carries (the owner, Nov 20):
 --   Company plan  $99 a month, 5 people included, $12 each extra person, yearly = 10 months, founder lock 12 months.
 --                 Everyone with a login counts as a person. The company account (the owner login) is free and is not counted.
---   Individual    $12 a month (recommended; the owner said $10-15), yearly = 10 months. No free tier.
+--   Individual    $15 a month billed monthly, or $144 for a year ($12 a month). No free tier.
+--   Plan reading  an add-on at $1 a sheet, charged once when the sheet is read. It stays OFF for customers until Billing
+--                 can show sheets read; this file only records the price and the caps.
 --   The company account gets tight limits of its own (it is free, so it must not be a way around paying for people).
+--   The app owner's own company (testing and demos) gets high limits through a row in pb_billing.limit_overrides
+--                 (a per-company setting; no company id is written in any function). Its AI still stops at $150 a month.
 --   Limits        worst case (everybody at every limit every day) costs about 30% of the monthly price, so it stays
 --                 under 40% of the money even on the yearly deal with card fees. The math is in NOTES.md.
 --
@@ -23,11 +27,12 @@ begin
 --
 -- Existing functions are changed in two ways:
 --   REPLACED in full:  public.ai_daily_limit, public.ai_try_consume, public.ai_cost_add,
---     public.ai_refund, public.pb_storage_put_ok, pb_billing.individual_limits, pb_billing.has_individual, pb_plans.limits, pb_docs.limits
---     (old text to roll back to: sql/local/stubs2.sql and sql/local/base/, md5-equal to live on Nov 20; see NOTES)
+--     public.ai_refund, public.pb_storage_put_ok, pb_billing.individual_limits, pb_billing.has_individual, pb_plans.limits, pb_docs.limits,
+--     pb_docs.limits_for
+--     (to roll back: sql/undo_01_pricing_limits.sql puts every old text back)
 --   PATCHED in place by pg_temp.pb_patch (one exact piece of text swapped; refuses unless it finds it exactly once):
 --     public.pb_my_plan, public.pb_plan_request, public.pb_plans_begin, public.pb_owner_billing,
---     public.pb_owner_billing_setting_set, public.pb_owner_individual_on
+--     public.pb_owner_billing_setting_set, public.pb_owner_individual_on, public.pb_owner_individual_off
 -- Seat counting is NOT changed: pb_billing.seats_used already counts member logins + waiting invites and never the owner login
 -- (checked by the test).
 
@@ -43,15 +48,20 @@ end $p$;
 -- ---------------------------------------------------------------------------------------------------------------------
 -- 1. Prices
 insert into pb_billing.settings (key, value, note) values
-  ('individual_cents', '1200'::jsonb, 'Individual plan (one person, no company), per month. Yearly = yearly_months of it.')
+  ('individual_cents', '1500'::jsonb, 'Individual plan (one person, no company), billed monthly: per month.'),
+  ('individual_year_cents', '14400'::jsonb, 'Individual plan billed yearly: for the whole year ($144 = $12 a month).'),
+  ('plan_sheet_cents', '100'::jsonb, 'Plan reading add-on: per sheet, charged once when the sheet is read. Keep plan reading off for customers until Billing shows sheets read.')
 on conflict (key) do nothing;
+update pb_billing.settings set note = 'Not used: plan reading is priced per sheet (plan_sheet_cents). Leave empty.'
+  where key = 'plan_reading_cents' and note = 'Plan reading add-on, per month. Not decided yet (null = price not set).';
 
 create or replace function pb_billing.prices() returns jsonb
 language sql stable security definer set search_path to '' as $$
   select jsonb_build_object(
     'base_cents', pb_billing.setting_int('base_cents', 9900), 'base_seats', pb_billing.setting_int('base_seats', 5),
     'seat_cents', pb_billing.setting_int('seat_cents', 1200), 'yearly_months', pb_billing.setting_int('yearly_months', 10),
-    'founder_months', pb_billing.setting_int('founder_months', 12), 'individual_cents', pb_billing.setting_int('individual_cents', 1200),
+    'founder_months', pb_billing.setting_int('founder_months', 12), 'individual_cents', pb_billing.setting_int('individual_cents', 1500),
+    'individual_year_cents', pb_billing.setting_int('individual_year_cents', 14400), 'plan_sheet_cents', pb_billing.setting_int('plan_sheet_cents', 100),
     'plan_reading_cents', pb_billing.setting_int('plan_reading_cents', null), 'tax', 'plus applicable tax')
 $$;
 
@@ -77,9 +87,44 @@ language sql immutable set search_path to '' as $$
     "company":    {"day_per_person": 12, "month_per_person": 60, "usd_base": 22.00, "usd_per_extra": 3.25, "storage_gb_base": 10, "storage_gb_per_extra": 1},
     "beta":       {"usd_month": 30.00, "photos_day": 150, "storage_gb": 10},
     "none":       {"photos_day": 10, "storage_gb": 0.1},
-    "plan_reading": {"sheets_month": 150, "usd_month": 45, "sets_day": 3, "pages_set": 150, "share": 0.33, "usd_sheet": 0.28}
+    "plan_reading": {"sheets_month": 150, "usd_month": 45, "sets_day": 3, "pages_set": 150, "cost_sheet": 0.28}
   }'::jsonb
 $$;
+
+-- One company's own numbers (a per-company setting). "limits" has the same sections as plan_limits() (member, owner, company,
+-- beta, plan_reading) plus "docs" (pb_docs.limits keys); only the numbers written here replace the standard ones.
+-- No row = the standard limits. To change or remove one: update / delete the row (nothing else to redeploy).
+create table if not exists pb_billing.limit_overrides (
+  company_id uuid primary key references public.companies(id) on delete cascade,
+  limits     jsonb not null check (jsonb_typeof(limits) = 'object'),
+  note       text,
+  created_at timestamptz not null default now()
+);
+alter table pb_billing.limit_overrides enable row level security;  -- no policies: read only by the functions below
+
+-- The limits that apply to a company: the standard ones, with that company's own numbers on top if it has a row.
+create or replace function pb_billing.limits_of(p_company uuid) returns jsonb
+language sql stable security definer set search_path to '' as $$
+  select coalesce(
+    (select jsonb_object_agg(e.k, case when jsonb_typeof(o.limits->e.k) = 'object' then e.v || (o.limits->e.k) else e.v end)
+       from pb_billing.limit_overrides o, jsonb_each(pb_billing.plan_limits()) e(k, v) where o.company_id = p_company),
+    pb_billing.plan_limits())
+$$;
+
+-- The app owner's own company (testing and demos with made-up accounts): high limits so a demo never stops, and still a
+-- dollar stop so a bug cannot run up a bill: AI $150 a month, plan reading $75, document AI $20 (today's number).
+-- Found by its owner login and name; on a database without that company this adds nothing.
+insert into pb_billing.limit_overrides (company_id, limits, note)
+select c.id, '{
+    "member":  {"day": 300, "month": 3000, "ask": 150, "analysis": 50, "stake": 200, "cutsheet": 50, "ticket": 100, "plans_strong": 30, "other": 50, "photos_day": 400},
+    "owner":   {"day": 300, "month": 3000, "ask": 150, "analysis": 50, "stake": 200, "cutsheet": 50, "ticket": 100, "plans_strong": 30, "other": 50, "photos_day": 400},
+    "company": {"day_per_person": 400, "month_per_person": 4000, "usd_base": 150.00, "usd_per_extra": 0, "storage_gb_base": 50, "storage_gb_per_extra": 0},
+    "plan_reading": {"sheets_month": 250, "usd_month": 75, "sets_day": 10, "pages_set": 250},
+    "docs":    {"ai_pages_month": 1500, "uploads_day": 30, "check_usd_month": 20}
+  }'::jsonb, 'The app owner''s own company: testing and demos. High limits; AI stops at $150 a month.'
+from public.companies c join auth.users u on u.id = c.owner_user_id
+where lower(u.email) = 'tfontaine@digcivil.com' and c.name ilike 'DIG Civil%'
+on conflict (company_id) do nothing;
 
 -- People a company has paid for: the paid seats, never fewer than the people included in the base price.
 create or replace function pb_billing.paid_people(p_company uuid) returns integer
@@ -127,6 +172,7 @@ declare w record; L jsonb := pb_billing.plan_limits(); P jsonb; C jsonb := pb_bi
 begin
   select * into w from pb_billing.ai_who(p_user);
   if w.who is null then return 'plan'; end if;
+  L := pb_billing.limits_of(w.company_id); C := L->'company';  -- the company's own numbers, if it has any
   select coalesce(sum(a.n), 0), coalesce(sum(a.usd), 0) into v_n, v_usd from pb_billing.ai_pool a where a.owner_key = w.pool and a.day >= m0 and a.day <= today;
   if w.who = 'beta' then return case when v_usd >= (L->'beta'->>'usd_month')::numeric then 'budget' end; end if;  -- the beta's own counts: pb_billing.trial_limits
   P := L->w.who;
@@ -177,7 +223,7 @@ language sql stable security definer set search_path to 'public' as $function$
   select case
     when w.who = 'beta' then case when exists (select 1 from pb_billing.company_of(p_user) x where x.expired) then 0 else 30 end
     when w.who is null then 0
-    else (pb_billing.plan_limits()->w.who->>'day')::int end
+    else (pb_billing.limits_of(w.company_id)->w.who->>'day')::int end
   from pb_billing.ai_who(p_user) w;
 $function$;
 
@@ -230,7 +276,7 @@ begin
     return used;
   end if;
   select coalesce(sum(count), 0) into used from public.ai_usage where user_id = p_user and day = today and feature not in ('gonogo_q', 'plans_strong');
-  lim := (pb_billing.plan_limits()->w.who->>'day')::int;
+  lim := (pb_billing.limits_of(w.company_id)->w.who->>'day')::int;
   if lim <= p_limit then return used; end if;
   return least(p_limit - case when used < lim then 1 else 0 end, ceil(used::numeric * p_limit / lim)::integer);
 end $function$;
@@ -274,6 +320,7 @@ begin
   if v_uid is null then return jsonb_build_object('ok', false, 'code', 'pb:signed_out'); end if;
   select * into w from pb_billing.ai_who(v_uid);
   if w.who is null then return jsonb_build_object('ok', true, 'who', null, 'reached', 'plan'); end if;
+  L := pb_billing.limits_of(w.company_id); C := L->'company';
   select coalesce(sum(u.count) filter (where u.day = today), 0), coalesce(sum(u.count), 0) into v_day, v_month
     from public.ai_usage u where u.user_id = v_uid and u.feature not in ('gonogo_q', 'plans_strong') and u.day >= m0 and u.day <= today;
   r := jsonb_build_object('ok', true, 'who', w.who, 'reached', case when w.who = 'beta' and exists (select 1 from pb_billing.company_of(v_uid) x where x.expired) then 'plan'
@@ -302,7 +349,7 @@ language sql stable security definer set search_path to '' as $$
   select case when p_who in ('member', 'owner') then (L->'company'->>'storage_gb_base')::numeric
                 + (L->'company'->>'storage_gb_per_extra')::numeric * greatest(0, pb_billing.paid_people(p_company) - pb_billing.setting_int('base_seats', 5))
               else (L->coalesce(p_who, 'none')->>'storage_gb')::numeric end
-  from (select pb_billing.plan_limits() L) x
+  from (select pb_billing.limits_of(p_company) L) x
 $$;
 
 create or replace function pb_billing.storage_room(p_user uuid, p_bucket text, p_cap integer) returns boolean
@@ -310,6 +357,7 @@ language plpgsql stable security definer set search_path to '' as $$
 declare w record; L jsonb := pb_billing.plan_limits(); v_cap int; v_bytes numeric;
 begin
   select * into w from pb_billing.ai_who(p_user);
+  L := pb_billing.limits_of(w.company_id);
   v_cap := (L->(case when w.who = 'member' then 'member' when w.who is null then 'none' else w.who end)->>'photos_day')::int;
   if w.who in ('member', 'individual', 'beta') and p_bucket <> 'run-photos' then v_cap := p_cap; end if;  -- sealed runs, cut sheet sources: the policy's own cap
   if (select count(*) from storage.objects o where o.bucket_id = p_bucket and o.owner_id = p_user::text and o.created_at > now() - interval '1 day') >= least(p_cap, v_cap) then return false; end if;
@@ -336,17 +384,12 @@ language sql immutable set search_path to '' as $function$
   from (select pb_billing.plan_limits()->'plan_reading' L) x
 $function$;
 
--- A company with a priced plan reading add-on: the month's reading budget is a third of what it pays for the add-on,
--- and the sheet count follows from it ($0.28 a sheet). No price on the account: the default above.
+-- The add-on is priced per sheet (setting plan_sheet_cents: $1, charged once when the sheet is read; a sheet costs about
+-- $0.28 to read), so the caps here are only a stop against a runaway month. A company's own numbers: pb_billing.limit_overrides.
 create or replace function pb_plans.limits_for(p_company uuid) returns jsonb
 language sql stable security definer set search_path to '' as $$
-  select case when a.plan_reading_cents is null or not a.plan_reading then pb_plans.limits()
-    else pb_plans.limits() || jsonb_build_object(
-      'usd_month', round(a.plan_reading_cents / 100.0 * (L->>'share')::numeric, 2),
-      'sheets_month', floor(a.plan_reading_cents / 100.0 * (L->>'share')::numeric / (L->>'usd_sheet')::numeric)::int,
-      'pages_set', floor(a.plan_reading_cents / 100.0 * (L->>'share')::numeric / (L->>'usd_sheet')::numeric)::int) end
-  from (select pb_billing.plan_limits()->'plan_reading' L) x
-  left join pb_billing.accounts a on a.company_id = p_company
+  select jsonb_build_object('sheets_month', (L->>'sheets_month')::int, 'usd_month', (L->>'usd_month')::numeric, 'sets_day', (L->>'sets_day')::int, 'pages_set', (L->>'pages_set')::int)
+  from (select pb_billing.limits_of(p_company)->'plan_reading' L) x
 $$;
 
 perform pg_temp.pb_patch('public.pb_plans_begin(text, text, integer, text)'::regprocedure,
@@ -368,13 +411,20 @@ language sql immutable set search_path to '' as $function$
               else '{"bytes_total": 1073741824, "file_bytes": 52428800, "file_pages": 1500, "ai_pages_month": 200, "uploads_day": 10, "shares_day_owner": 20, "shares_day_user": 10, "chars_doc_max": 6000000, "share_max_pages": 120, "check_usd_month": 4}'::jsonb end
 $function$;
 
+-- REPLACED (was: the line above only, and marked immutable). A company's own document numbers ("docs" in its override row).
+create or replace function pb_docs.limits_for(p_company uuid) returns jsonb
+language sql stable security definer set search_path to '' as $function$
+  select pb_docs.limits(case when p_company is null then 'individual' else 'company' end)
+      || coalesce((select o.limits->'docs' from pb_billing.limit_overrides o where o.company_id = p_company and jsonb_typeof(o.limits->'docs') = 'object'), '{}'::jsonb)
+$function$;
+
 -- ---------------------------------------------------------------------------------------------------------------------
 -- 8. The individual plan in pb_billing: what the person pays and how far it is paid.
 create table if not exists pb_billing.individual_accounts (
   user_id          uuid primary key references auth.users(id) on delete cascade,
-  cents            integer not null check (cents >= 0),          -- per month, copied from the setting when the plan starts
+  cents            integer not null check (cents >= 0),          -- billed monthly: per month. Copied from the setting when the plan starts
+  year_cents       integer not null check (year_cents >= 0),     -- billed yearly: for the whole year. Copied the same way
   billing_interval text not null default 'month' check (billing_interval in ('month', 'year')),
-  yearly_months    integer not null default 10,
   period_start     date not null,
   paid_through     date not null,
   grace_days       integer not null default 7,
@@ -388,9 +438,9 @@ alter table pb_billing.individual_accounts enable row level security;  -- no pol
 -- Opens (or re-opens) the record when the app owner turns an individual plan on. The price is copied, like a company's.
 create or replace function pb_billing.individual_open(p_user uuid, p_interval text default 'month') returns void
 language sql security definer set search_path to '' as $$
-  insert into pb_billing.individual_accounts (user_id, cents, billing_interval, yearly_months, period_start, paid_through, grace_days, created_by)
-  values (p_user, pb_billing.setting_int('individual_cents', 1200), case when p_interval = 'year' then 'year' else 'month' end,
-          pb_billing.setting_int('yearly_months', 10), current_date,
+  insert into pb_billing.individual_accounts (user_id, cents, year_cents, billing_interval, period_start, paid_through, grace_days, created_by)
+  values (p_user, pb_billing.setting_int('individual_cents', 1500), pb_billing.setting_int('individual_year_cents', 14400),
+          case when p_interval = 'year' then 'year' else 'month' end, current_date,
           pb_billing.period_after(current_date, case when p_interval = 'year' then 'year' else 'month' end), pb_billing.setting_int('grace_days', 7), auth.uid())
   on conflict (user_id) do update set state = 'active', billing_interval = excluded.billing_interval, period_start = excluded.period_start,
       paid_through = excluded.paid_through, updated_at = now()
@@ -400,12 +450,12 @@ $$;
 create or replace function pb_billing.individuals_json() returns jsonb
 language sql stable security definer set search_path to '' as $$
   select coalesce(jsonb_agg(jsonb_build_object('user_id', a.user_id, 'email', (select u.email::text from auth.users u where u.id = a.user_id),
-      'cents', a.cents, 'interval', a.billing_interval, 'paid_through', a.paid_through, 'lock_on', a.paid_through + a.grace_days,
+      'cents', a.cents, 'year_cents', a.year_cents, 'interval', a.billing_interval, 'paid_through', a.paid_through, 'lock_on', a.paid_through + a.grace_days,
       'state', case when a.state = 'canceled' or not exists (select 1 from public.subscriptions s where s.user_id = a.user_id and s.tier = 'individual' and s.status = 'active') then 'canceled'
                     when current_date >= a.paid_through + a.grace_days then 'lapsed'
                     when current_date >= a.paid_through then 'past_due' else 'active' end,
       'next', jsonb_build_object('from', a.paid_through, 'to', pb_billing.period_after(a.paid_through, a.billing_interval),
-        'amount_cents', a.cents * case when a.billing_interval = 'year' then a.yearly_months else 1 end,
+        'amount_cents', case when a.billing_interval = 'year' then a.year_cents else a.cents end,
         'due', a.state <> 'canceled' and a.paid_through <= current_date + pb_billing.setting_int('invoice_ahead_days', 7)))
     order by a.paid_through), '[]'::jsonb)
   from pb_billing.individual_accounts a
@@ -434,12 +484,12 @@ begin
   v_to := pb_billing.period_after(a.paid_through, v_int);
   update pb_billing.individual_accounts x set paid_through = v_to, billing_interval = v_int, updated_at = now() where x.user_id = p_user;
   insert into pb_billing.events (user_id, kind, detail, actor) values (p_user, 'individual_paid',
-    jsonb_build_object('from', a.paid_through, 'to', v_to, 'interval', v_int, 'amount_cents', a.cents * case when v_int = 'year' then a.yearly_months else 1 end), auth.uid());
+    jsonb_build_object('from', a.paid_through, 'to', v_to, 'interval', v_int, 'amount_cents', case when v_int = 'year' then a.year_cents else a.cents end), auth.uid());
   perform pb_audit.admin_note('individual_plan_paid', null, p_user, jsonb_build_object('from', a.paid_through, 'to', v_to));
   return jsonb_build_object('ok', true, 'individuals', pb_billing.individuals_json());
 end $$;
 
--- PATCHED: turning an individual plan on also opens its billing record (monthly, at today's price).
+-- PATCHED: turning an individual plan on also opens its billing record (monthly, at today's prices; Paid can switch it to yearly).
 perform pg_temp.pb_patch('public.pb_owner_individual_on(uuid)'::regprocedure,
   $o$  perform pb_audit.admin_note('individual_plan_on', null, p_user, null);$o$,
   $n$  perform pb_billing.individual_open(p_user, 'month');  -- pricing Nov 20
@@ -461,6 +511,8 @@ perform pg_temp.pb_patch('public.pb_owner_billing()'::regprocedure,
 perform pg_temp.pb_patch('public.pb_owner_billing_setting_set(text, jsonb)'::regprocedure,
   $o$    else null end;$o$,
   $n$    when 'individual_cents' then jsonb_typeof(p_value) = 'number' and (p_value #>> '{}')::numeric between 0 and 1000000 and (p_value #>> '{}')::numeric = trunc((p_value #>> '{}')::numeric)
+    when 'individual_year_cents' then jsonb_typeof(p_value) = 'number' and (p_value #>> '{}')::numeric between 0 and 10000000 and (p_value #>> '{}')::numeric = trunc((p_value #>> '{}')::numeric)
+    when 'plan_sheet_cents' then jsonb_typeof(p_value) = 'number' and (p_value #>> '{}')::numeric between 0 and 100000 and (p_value #>> '{}')::numeric = trunc((p_value #>> '{}')::numeric)
     else null end;$n$);
 
 -- ---------------------------------------------------------------------------------------------------------------------
@@ -485,14 +537,16 @@ perform pg_temp.pb_patch('public.pb_my_plan()'::regprocedure,
 perform pg_temp.pb_patch('public.pb_plan_request(text)'::regprocedure,
   $o$else 'Asked for an individual plan (end of beta).' end,$o$,
   $n$else 'Asked for an individual plan' || case when v_co is null then '.' else ' (end of beta).' end end
-                || ' Price shown: $' || to_char(case when v_kind = 'company' then pb_billing.setting_int('base_cents', 9900) else pb_billing.setting_int('individual_cents', 1200) end / 100.0, 'FM999990.00') || ' a month plus tax.',$n$);
+                || ' Price shown: $' || case when v_kind = 'company' then to_char(pb_billing.setting_int('base_cents', 9900) / 100.0, 'FM999990.00') || ' a month'
+                     else to_char(pb_billing.setting_int('individual_cents', 1500) / 100.0, 'FM999990.00') || ' a month or $' || to_char(pb_billing.setting_int('individual_year_cents', 14400) / 100.0, 'FM999990.00') || ' a year' end || ', plus tax.',$n$);
 
 -- ---------------------------------------------------------------------------------------------------------------------
 -- 10. Who may call what. The helpers are reached only through the functions above.
 revoke all on function pb_billing.prices(), pb_billing.plan_limits(), pb_billing.paid_people(uuid), pb_billing.ai_who(uuid),
   pb_billing.ai_block(uuid, text, integer), pb_billing.storage_gb(text, uuid), pb_billing.storage_room(uuid, text, integer),
-  pb_billing.individual_open(uuid, text), pb_billing.individuals_json(), pb_plans.limits_for(uuid)
+  pb_billing.individual_open(uuid, text), pb_billing.individuals_json(), pb_plans.limits_for(uuid), pb_billing.limits_of(uuid)
   from public, anon, authenticated;
+revoke all on table pb_billing.limit_overrides, pb_billing.ai_pool, pb_billing.individual_accounts from public, anon, authenticated;
 revoke all on function public.pb_my_limits(text) from public, anon;
 revoke all on function public.pb_owner_individual_paid(uuid, date, text) from public, anon;
 revoke all on function public.pb_plan_prices() from public;
@@ -512,11 +566,12 @@ grant execute on function pb_billing.ai_who(uuid), pb_billing.ai_block(uuid, tex
     insert into storage.objects (bucket_id, name, owner_id, metadata) select bucket, u::text || '/t/' || gen_random_uuid()::text, u::text, jsonb_build_object('size', bytes) from generate_series(1, k) $s$;
   create function pg_temp.can(u uuid, bucket text, cap int) returns boolean language plpgsql as $c$ begin perform pg_temp.act(u); return public.pb_storage_put_ok(bucket, cap); end $c$;
 
-  insert into auth.users (id, email, aud, role) select u, 'pr-' || u || '@test.invalid', 'authenticated', 'authenticated' from unnest(array[AD, OW, M1, M2, M3, M4, M5, IV, IND, IND2, BO, BM, NP]) u;
+  insert into auth.users (id, email, aud, role) select u, 'pr-' || u || '@test.invalid', 'authenticated', 'authenticated' from unnest(array[AD, OW, M1, M2, M3, M4, M5, IV, IND, IND2, BO, BM, NP, DO1, DM]) u;
   insert into pb_support.admins (user_id) values (AD);
   insert into public.companies (id, name, owner_user_id, status, plan, trial_ends_at) values
-    (C, 'Price Test Pipeline', OW, 'active', 'paid', null), (B, 'Price Test Beta', BO, 'active', 'trial', now() + interval '10 days');
-  insert into public.company_members (company_id, user_id, role) values (C, M1, 'foreman'), (C, M2, 'pipelayer'), (C, M3, 'pipelayer'), (C, M4, 'pipelayer'), (C, M5, 'pm'), (B, BM, 'foreman');
+    (C, 'Price Test Pipeline', OW, 'active', 'paid', null), (B, 'Price Test Beta', BO, 'active', 'trial', now() + interval '10 days'),
+    (DCO, 'Price Test Demo', DO1, 'active', 'paid', null);   -- paid with no billing account, like the app owner's own company
+  insert into public.company_members (company_id, user_id, role) values (C, M1, 'foreman'), (C, M2, 'pipelayer'), (C, M3, 'pipelayer'), (C, M4, 'pipelayer'), (C, M5, 'pm'), (B, BM, 'foreman'), (DCO, DM, 'foreman');
   insert into pb_crew.invitations (company_id, user_id, role, invited_by, status) values (C, IV, 'pipelayer', OW, 'pending');
   insert into pb_billing.accounts (company_id, legal_name, billing_email, seats_paid, base_seats, base_cents, seat_cents, billing_interval, yearly_months, period_start, paid_through)
     values (C, 'Price Test Pipeline LLC', 'ap@test.invalid', 5, 5, 9900, 1200, 'month', 10, current_date, (current_date + interval '1 month')::date);
@@ -532,7 +587,7 @@ grant execute on function pb_billing.ai_who(uuid), pb_billing.ai_block(uuid, tex
   perform pg_temp.ok(pb_billing.paid_people(C) = 5 and pb_billing.paid_people(B) = 5, '1e paid people');
   r := pb_billing.prices();
   perform pg_temp.ok((r->>'base_cents')::int = 9900 and (r->>'base_seats')::int = 5 and (r->>'seat_cents')::int = 1200 and (r->>'yearly_months')::int = 10
-    and (r->>'founder_months')::int = 12 and (r->>'individual_cents')::int = 1200 and r->'plan_reading_cents' = 'null'::jsonb, '1f prices ' || r::text);
+    and (r->>'founder_months')::int = 12 and (r->>'individual_cents')::int = 1500 and (r->>'individual_year_cents')::int = 14400 and (r->>'plan_sheet_cents')::int = 100 and r->'plan_reading_cents' = 'null'::jsonb, '1f prices: individual $15 a month or $144 a year, plan reading $1 a sheet ' || r::text);
   res := res || jsonb_build_object('seats_used', pb_billing.seats_used(C), 'prices', r);
 
   -- 2. who is who, and the daily number the ai function is given
@@ -609,8 +664,8 @@ grant execute on function pb_billing.ai_who(uuid), pb_billing.ai_block(uuid, tex
   perform pg_temp.act(M1); perform pg_temp.ok(pg_temp.err(format('select public.pb_owner_individual_on(%L)', IND2)) like '%pb:not_allowed%'
     and pg_temp.err(format('select public.pb_owner_individual_paid(%L, current_date)', IND2)) like '%pb:not_allowed%', '8a only the app owner');
   perform pg_temp.act(AD); r := public.pb_owner_individual_on(IND2);
-  perform pg_temp.ok((r->>'ok')::boolean and exists (select 1 from pb_billing.individual_accounts x where x.user_id = IND2 and x.cents = 1200 and x.billing_interval = 'month'
-    and x.paid_through = (current_date + interval '1 month')::date and x.state = 'active'), '8b record opened at $12.00 a month');
+  perform pg_temp.ok((r->>'ok')::boolean and exists (select 1 from pb_billing.individual_accounts x where x.user_id = IND2 and x.cents = 1500 and x.year_cents = 14400 and x.billing_interval = 'month'
+    and x.paid_through = (current_date + interval '1 month')::date and x.state = 'active'), '8b record opened at $15.00 a month, $144.00 a year');
   perform pg_temp.ok(pb_billing.has_individual(IND2) and public.ai_daily_limit(IND2) = 15 and pg_temp.use(IND2, 'teacher', 1) = 1, '8c works');
   update pb_billing.individual_accounts set paid_through = current_date - 3 where user_id = IND2;
   perform pg_temp.ok(pb_billing.has_individual(IND2) and (pb_billing.individuals_json()->0->>'state') = 'past_due' and (pb_billing.individuals_json()->0->'next'->>'due')::boolean, '8d past due: 7 days of grace, listed as due');
@@ -618,15 +673,21 @@ grant execute on function pb_billing.ai_who(uuid), pb_billing.ai_block(uuid, tex
   perform pg_temp.ok(not pb_billing.has_individual(IND2) and pg_temp.use(IND2, 'teacher', 1) = 0 and pg_temp.why(IND2, 'teacher') = 'plan' and (pb_billing.individuals_json()->0->>'state') = 'lapsed', '8e not paid past the grace: AI off');
   perform pg_temp.act(AD); select paid_through into d from pb_billing.individual_accounts where user_id = IND2;
   r := public.pb_owner_individual_paid(IND2, d);
-  perform pg_temp.ok((r->>'ok')::boolean and pb_billing.has_individual(IND2) and (r->'individuals'->0->'next'->>'amount_cents')::int = 1200, '8f Paid: one month on');
+  perform pg_temp.ok((r->>'ok')::boolean and pb_billing.has_individual(IND2) and (r->'individuals'->0->'next'->>'amount_cents')::int = 1500, '8f Paid: one month on, next month $15.00');
   r := public.pb_owner_individual_paid(IND2, d); perform pg_temp.ok(r->>'code' = 'pb:period_changed', '8g pressed twice: nothing');
   select paid_through into d from pb_billing.individual_accounts where user_id = IND2;
   r := public.pb_owner_individual_paid(IND2, d, 'year');
-  perform pg_temp.ok((r->'individuals'->0->>'interval') = 'year' and (r->'individuals'->0->'next'->>'amount_cents')::int = 12000, '8h yearly: $120.00 (10 months)');
+  perform pg_temp.ok((r->'individuals'->0->>'interval') = 'year' and (r->'individuals'->0->'next'->>'amount_cents')::int = 14400
+    and (select paid_through from pb_billing.individual_accounts where user_id = IND2) = (d + interval '1 year')::date, '8h yearly: one year on, $144.00 a year');
   r := public.pb_owner_billing(); perform pg_temp.ok(jsonb_array_length(r->'individuals') = 1 and r->'settings' ? 'individual_cents', '8i Billing lists it');
+  r := public.pb_owner_billing_setting_set('individual_cents', '1800'::jsonb);
+  perform pg_temp.ok((r->>'ok')::boolean and (pb_billing.prices()->>'individual_cents')::int = 1800 and (select cents from pb_billing.individual_accounts where user_id = IND2) = 1500, '8j a new price does not change who already pays');
   r := public.pb_owner_billing_setting_set('individual_cents', '1500'::jsonb);
-  perform pg_temp.ok((r->>'ok')::boolean and (pb_billing.prices()->>'individual_cents')::int = 1500 and (select cents from pb_billing.individual_accounts where user_id = IND2) = 1200, '8j a new price does not change who already pays');
-  r := public.pb_owner_billing_setting_set('individual_cents', '1200'::jsonb);
+  r := public.pb_owner_billing_setting_set('individual_year_cents', '15000'::jsonb); L := public.pb_owner_billing_setting_set('plan_sheet_cents', '125'::jsonb);
+  perform pg_temp.ok((r->>'ok')::boolean and (L->>'ok')::boolean
+    and (pb_billing.prices()->>'individual_year_cents')::int = 15000 and (pb_billing.prices()->>'plan_sheet_cents')::int = 125
+    and public.pb_owner_billing_setting_set('plan_sheet_cents', '1.5'::jsonb)->>'code' = 'pb:bad_value', '8j2 the yearly price and the sheet price can be set');
+  r := public.pb_owner_billing_setting_set('individual_year_cents', '14400'::jsonb); r := public.pb_owner_billing_setting_set('plan_sheet_cents', '100'::jsonb); L := pb_billing.plan_limits();
   r := public.pb_owner_individual_off(IND2); perform pg_temp.ok((r->>'ok')::boolean and not pb_billing.has_individual(IND2) and (select state from pb_billing.individual_accounts where user_id = IND2) = 'canceled', '8k off');
   perform pg_temp.ok(pb_billing.has_individual(IND), '8l an individual plan from before (no record) is unchanged');
 
@@ -651,19 +712,21 @@ grant execute on function pb_billing.ai_who(uuid), pb_billing.ai_block(uuid, tex
 
   -- 11. plan reading and uploaded documents
   perform pg_temp.ok(pb_plans.limits() = '{"sheets_month": 150, "usd_month": 45, "sets_day": 3, "pages_set": 150}'::jsonb, '11a plan reading default ' || pb_plans.limits()::text);
-  perform pg_temp.ok(pb_plans.limits_for(C) = pb_plans.limits() and pb_plans.limits_for(B) = pb_plans.limits(), '11b no priced add-on: the default');
-  update pb_billing.accounts set plan_reading = true, plan_reading_cents = 5900 where company_id = C;
-  r := pb_plans.limits_for(C); perform pg_temp.ok((r->>'usd_month')::numeric = 19.47 and (r->>'sheets_month')::int = 69 and (r->>'pages_set')::int = 69 and (r->>'sets_day')::int = 3, '11c $59 add-on: $19.47 and 69 sheets a month ' || r::text);
+  perform pg_temp.ok(pb_plans.limits_for(C) = pb_plans.limits() and pb_plans.limits_for(B) = pb_plans.limits(), '11b every company: the default');
+  update pb_billing.accounts set plan_reading = true where company_id = C;
+  insert into pb_billing.limit_overrides (company_id, limits, note) values (C, '{"plan_reading": {"sheets_month": 69, "pages_set": 69}}'::jsonb, 'test');
+  r := pb_plans.limits_for(C); perform pg_temp.ok((r->>'usd_month')::numeric = 45 and (r->>'sheets_month')::int = 69 and (r->>'pages_set')::int = 69 and (r->>'sets_day')::int = 3, '11c a company''s own plan reading numbers ' || r::text);
 --@local-only-begin
   perform pg_temp.act(M1);
   perform pg_temp.ok(public.pb_plans_begin('J1', 'Big', 70, repeat('a', 64))->>'code' = 'pb:too_many_pages', '11d a 70-sheet set is over the add-on');
   perform pg_temp.ok((public.pb_plans_begin('J1', 'Fits', 69, repeat('a', 64))->>'ok')::boolean, '11e 69 sheets go');
   perform pg_temp.ok(public.pb_plans_begin('J1', 'One more', 1, repeat('b', 64))->>'code' = 'pb:sheets_month', '11f the month is used');
-  update pb_billing.accounts set plan_reading_cents = null where company_id = C;
+  delete from pb_billing.limit_overrides where company_id = C;
   update pb_plans.sets set usd = 45 where company_id = C;
   perform pg_temp.ok(public.pb_plans_begin('J1', 'More', 10, repeat('c', 64))->>'code' = 'pb:cost_cap', '11g default: $45 a month dollar stop');
 --@local-only-end
-  update pb_billing.accounts set plan_reading = false, plan_reading_cents = null where company_id = C;
+  delete from pb_billing.limit_overrides where company_id = C;
+  update pb_billing.accounts set plan_reading = false where company_id = C;
   perform pg_temp.ok((pb_docs.limits('company')->>'ai_pages_month')::int = 200 and (pb_docs.limits('company')->>'check_usd_month')::numeric = 4 and (pb_docs.limits('company')->>'uploads_day')::int = 10
     and (pb_docs.limits('individual')->>'ai_pages_month')::int = 30 and (pb_docs.limits('individual')->>'check_usd_month')::numeric = 0.5 and (pb_docs.limits('company')->>'bytes_total')::bigint = 1073741824, '11h document limits');
 
@@ -672,21 +735,50 @@ grant execute on function pb_billing.ai_who(uuid), pb_billing.ai_block(uuid, tex
   perform pg_temp.ok(r->>'plan' = 'paid' and (r->'prices'->>'base_cents')::int = 9900 and (r->'prices'->>'seat_cents')::int = 1200, '12a member sees the prices ' || r::text);
   perform pg_temp.act(BM); r := public.pb_my_plan(); perform pg_temp.ok(r->>'plan' = 'trial' and (r->'prices'->>'base_cents')::int = 9900 and r->'limits' is not null, '12b beta sees the prices');
   perform pg_temp.act(NP); r := public.pb_my_plan();
-  perform pg_temp.ok(r->'plan' = 'null'::jsonb and (r->'prices'->>'individual_cents')::int = 1200 and r->>'individual' = 'false' and r->>'requested' = 'false', '12c no plan: individual price ' || r::text);
+  perform pg_temp.ok(r->'plan' = 'null'::jsonb and (r->'prices'->>'individual_cents')::int = 1500 and (r->'prices'->>'individual_year_cents')::int = 14400 and r->>'individual' = 'false' and r->>'requested' = 'false', '12c no plan: individual price ' || r::text);
   r := public.pb_plan_request('individual'); perform pg_temp.ok((r->>'ok')::boolean and (public.pb_my_plan()->>'requested')::boolean, '12d request recorded');
-  perform pg_temp.ok((select m.body from pb_support.messages m where m.user_id = NP order by m.created_at desc limit 1) = 'Asked for an individual plan. Price shown: $12.00 a month plus tax.', '12e the note: ' || coalesce((select m.body from pb_support.messages m where m.user_id = NP limit 1), 'none'));
+  perform pg_temp.ok((select m.body from pb_support.messages m where m.user_id = NP order by m.created_at desc limit 1) = 'Asked for an individual plan. Price shown: $15.00 a month or $144.00 a year, plus tax.', '12e the note: ' || coalesce((select m.body from pb_support.messages m where m.user_id = NP limit 1), 'none'));
   perform pg_temp.act(BM); r := public.pb_plan_request('company');
-  perform pg_temp.ok((select m.body from pb_support.messages m where m.user_id = BM limit 1) = 'Asked for the company to start a paid plan (end of beta). Price shown: $99.00 a month plus tax.', '12f company note');
+  perform pg_temp.ok((select m.body from pb_support.messages m where m.user_id = BM limit 1) = 'Asked for the company to start a paid plan (end of beta). Price shown: $99.00 a month, plus tax.', '12f company note');
   perform pg_temp.act(IND); r := public.pb_my_plan(); perform pg_temp.ok(r->>'individual' = 'true' and r->'plan' = 'null'::jsonb, '12g individual with no company is told so');
-  perform set_config('request.jwt.claims', '{"role":"anon"}', true); r := public.pb_plan_prices(); perform pg_temp.ok((r->>'ok')::boolean and (r->>'individual_cents')::int = 1200, '12h price list without a login');
+  perform set_config('request.jwt.claims', '{"role":"anon"}', true); r := public.pb_plan_prices(); perform pg_temp.ok((r->>'ok')::boolean and (r->>'individual_cents')::int = 1500 and (r->>'plan_sheet_cents')::int = 100, '12h price list without a login');
   perform pg_temp.ok(public.pb_my_limits()->>'code' = 'pb:signed_out', '12i limits need a login');
 
   -- 13. the worst case, from the limits themselves: dollars a month (AI stop + document AI stop) against the monthly price
   select jsonb_object_agg(k, jsonb_build_object('price', price, 'ai_stop', ai, 'docs_stop', docs, 'pct', round(100 * (ai + docs) / price, 1))) into r from (
     select p::text || ' people' k, 99 + 12 * greatest(0, p - 5) price, (L->'company'->>'usd_base')::numeric + (L->'company'->>'usd_per_extra')::numeric * greatest(0, p - 5) ai,
            (pb_docs.limits('company')->>'check_usd_month')::numeric docs from unnest(array[5, 12, 25]) p
-    union all select 'individual', 12, (L->'individual'->>'usd_month')::numeric, (pb_docs.limits('individual')->>'check_usd_month')::numeric) z;
+    union all select 'individual, yearly ($12 a month)', 12, (L->'individual'->>'usd_month')::numeric, (pb_docs.limits('individual')->>'check_usd_month')::numeric
+    union all select 'individual, monthly', 15, (L->'individual'->>'usd_month')::numeric, (pb_docs.limits('individual')->>'check_usd_month')::numeric) z;
   perform pg_temp.ok((select bool_and((v->>'pct')::numeric <= 30) from jsonb_each(r) e(k, v)), '13 worst case over 30% ' || r::text);
-  res := res || jsonb_build_object('worst_case', r, 'checks', 'all passed');
+  res := res || jsonb_build_object('worst_case', r);
+
+  -- 14. one company's own limits (pb_billing.limit_overrides): the app owner's own company, for testing and demos
+  select c.id, c.owner_user_id into DIG, DIGO from public.companies c join auth.users u on u.id = c.owner_user_id where lower(u.email) = 'tfontaine@digcivil.com' and c.name ilike 'DIG Civil%';
+  perform pg_temp.ok(DIG is not null and (select count(*) from pb_billing.limit_overrides) = 1 and exists (select 1 from pb_billing.limit_overrides o where o.company_id = DIG), '14a the migration gave exactly one company its own limits: the app owner''s');
+  -- read only on the real row: who its people are, the daily number, the dollar stop
+  perform pg_temp.ok((select who from pb_billing.ai_who(DIGO)) = 'owner' and public.ai_daily_limit(DIGO) = 300 and (pb_billing.limits_of(DIG)->'company'->>'usd_base')::numeric = 150
+    and (pb_billing.limits_of(DIG)->'company'->>'usd_per_extra')::numeric = 0 and pb_billing.ai_block(DIGO, 'teacher', 1000000) is null
+    and (select bool_and(public.ai_daily_limit(m.user_id) = 300) from public.company_members m where m.company_id = DIG), '14b its company account and its members: 300 a day, $150 a month stop');
+  perform pg_temp.ok(pb_billing.limits_of(C) = pb_billing.plan_limits() and pb_billing.limits_of(null) = pb_billing.plan_limits() and public.ai_daily_limit(DO1) = 5 and public.ai_daily_limit(DM) = 25, '14c every other company: the standard limits');
+  -- the same numbers on a test company (so nothing is written for real people)
+  insert into pb_billing.limit_overrides (company_id, limits, note) select DCO, o.limits, 'test' from pb_billing.limit_overrides o where o.company_id = DIG;
+  perform pg_temp.ok((select who from pb_billing.ai_who(DO1)) = 'owner' and public.ai_daily_limit(DO1) = 300 and public.ai_daily_limit(DM) = 300, '14d who and the daily number');
+  perform pg_temp.ok(pg_temp.use(DO1, 'teacher', 40, 300) = 40 and pg_temp.use(DO1, 'cutsheet', 6, 300) = 6, '14e the company account: 40 Ask questions and 6 cut sheets in a day (standard: 5 and 1)');
+  perform pg_temp.ok(pg_temp.use(DM, 'stake', 70, 300) = 70 and pg_temp.use(DM, 'teacher', 30, 300) = 30 and pg_temp.use(DM, 'plans_strong', 5, 30) = 5, '14f a member: 100 requests in a day, past the standard 25 and the standard company 60');
+  perform pg_temp.act(DM); r := public.pb_my_limits('teacher');
+  perform pg_temp.ok(r->'day' = '{"used": 100, "limit": 300}'::jsonb and r->'company_day' = '{"used": 146, "limit": 2000}'::jsonb and r->'company_month'->>'limit' = '20000' and r->>'reached' is null, '14g pb_my_limits ' || r::text);
+  perform public.ai_cost_add(DM, 'teacher', 22.50); perform pg_temp.ok(pg_temp.use(DM, 'teacher', 1, 300) = 1, '14h past the standard $22: still goes');
+  perform public.ai_cost_add(DM, 'teacher', 50); perform public.ai_cost_add(DM, 'teacher', 50); perform public.ai_cost_add(DM, 'teacher', 27.40);  -- one request is counted at $50 at most perform pg_temp.ok(pg_temp.use(DO1, 'teacher', 1, 300) = 1, '14i $149.90: goes');
+  perform public.ai_cost_add(DO1, 'stake', 0.20);
+  perform pg_temp.ok(pg_temp.use(DO1, 'teacher', 1, 300) = 0 and pg_temp.use(DM, 'stake', 1, 300) = 0 and pg_temp.why(DM, 'stake') = 'budget', '14j $150.10: the dollar stop holds for this company too');
+  perform pg_temp.put(DO1, 'run-photos', 100); perform pg_temp.ok(pg_temp.can(DO1, 'run-photos', 400), '14k the company account: 100 photos in a day (standard: 20)');
+  perform pg_temp.put(DM, 'run-photos', 1, 20.0 * 1073741824); perform pg_temp.ok(pg_temp.can(DM, 'run-photos', 400), '14l 20 GB stored (standard: 10 GB)');
+  perform pg_temp.ok(pb_plans.limits_for(DCO) = '{"sheets_month": 250, "usd_month": 75, "sets_day": 10, "pages_set": 250}'::jsonb, '14m plan reading ' || pb_plans.limits_for(DCO)::text);
+  perform pg_temp.ok((pb_docs.limits_for(DCO)->>'ai_pages_month')::int = 1500 and (pb_docs.limits_for(DCO)->>'check_usd_month')::numeric = 20 and (pb_docs.limits_for(DCO)->>'bytes_total')::bigint = 1073741824
+    and (pb_docs.limits_for(C)->>'ai_pages_month')::int = 200 and (pb_docs.limits_for(C)->>'check_usd_month')::numeric = 4 and pb_docs.limits_for(null) = pb_docs.limits('individual'), '14n uploaded documents: its own numbers; others standard');
+  delete from pb_billing.limit_overrides where company_id = DCO; delete from pb_billing.ai_pool where owner_key = DCO::text;
+  perform pg_temp.ok(public.ai_daily_limit(DO1) = 5 and pg_temp.use(DO1, 'teacher', 1) = 0 and pg_temp.why(DO1, 'teacher') = 'person_month', '14o row removed: back to the standard limits at once (it is past the company account''s 30 a month)');
+  res := res || jsonb_build_object('own_limits', (select jsonb_agg(jsonb_build_object('company', c.name, 'ai_stop_usd', o.limits->'company'->'usd_base')) from pb_billing.limit_overrides o join public.companies c on c.id = o.company_id), 'checks', 'all passed');
   raise exception 'RESULT: %', res;
 end $T$;

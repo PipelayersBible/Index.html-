@@ -175,11 +175,18 @@ export function stateSearch(search, index, query, opts, st, question) {
     seen.add(h.id), out.push({ ...h, text: h.text.length > OWN_CHARS ? h.text.slice(0, OWN_CHARS) : h.text }), plainChars += Math.min(h.text.length, OWN_CHARS), plainN++, plain++;
   }
   out.sort((a, b) => b.score - a.score);
-  return { hits: out, dropped: wide.slice(0, k).filter((h) => !keep(h)).length, own: out.filter((h) => own.some((x) => x.id === h.id)).length, plain, dependent: stateDependent(question, wide) };
+  // A state that runs its own OSHA plan, a safety-rule question, and nothing of that state's own anywhere near the
+  // question: the federal rule is all the library has, and the answer must say so (dependent = "plan", see stateLines).
+  const ownN = out.filter((h) => own.some((x) => x.id === h.id)).length, dep = stateDependent(question, wide);
+  const thin = !dep && !ownN && PLAN_STATES.includes(code) && SAFETY_RULE.test(String(question || "")) && !EMERGENCY.test(String(question || ""))
+    && !kept.some((h) => chunkStates(h).includes(code) && h.score >= top * OWN_MIN * 0.5);
+  return { hits: out, dropped: wide.slice(0, k).filter((h) => !keep(h)).length, own: ownN, plain, dependent: thin ? "plan" : dep };
 }
 const STOP = new Set("what when where which while with without from that this they them their there here have has does into over under about above below after before many much long good need needs must should would could will your ours mine guys crew crews today work working works hour hours rule rules state states apply applies job jobs give gives take takes make makes thing things kind required require requires going want wants know tell says said more most some than then also only just ever every each other another same".split(" "));
 export const subjectWords = (t) => [...new Set(String(t || "").toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !STOP.has(w)).map((w) => w.replace(/(ing|es|s)$/, "")).filter((w) => w.length >= 3))];
 export const OWN_MIN = 0.28, OWN_SLOTS = 2, OWN_CHARS = 3000;
+// questions a state OSHA plan can answer differently from federal OSHA (Washington protects a trench at 4 ft, not 5)
+const SAFETY_RULE = /\b(trench(es)?|excavations?|shor(e|ed|ing)|shields?|trench box(es)?|protective systems?|cave-?ins?|spoils?|ladders?|confined spaces?|permit spaces?|entry permits?|atmospher\w*|gas (monitor|meter|test)\w*|fall protection|guardrails?|harness(es)?|silica|lock ?out|tag ?out|competent person|osha)\b/i;
 
 // States whose own OSHA plan covers private-sector crews (osha.gov/stateplans, read 2026-11-20 by ask_nationwide_nov20).
 export const PLAN_STATES = "AK AZ CA HI IN IA KY MD MI MN NV NM NC OR SC TN UT VT VA WA WY".split(" ");
@@ -189,6 +196,7 @@ export function stateLines(st, dependent, own) {
   if (code) {
     const how = { question: "named in the question", job: "from the job", company: "the company's state", conversation: "named earlier in this conversation", company_jobs: "where most of this company's jobs are", last_job: "from the last job on this phone", told: "the state this person gave Ask before" }[st.how] || "from the job";
     const head = `JOB STATE: ${name} (${code}), ${how}.`;
+    if (dependent === "plan") return `${head} ${name} runs its own OSHA plan, which can be stricter than federal OSHA, and the library has no ${name} rule for this question. Answer with the federal rule as usual, then add one short line that says this is the federal rule, the library does not have ${name}'s own rule for it, and to confirm with ${name}'s OSHA plan. Never give another state's number as theirs. Do not ask which state.`;
     // most questions do not change with the state: say so, so the state is not dragged into pipe math or a fitting question
     if (!dependent && !own) return `${head} Use it only if the answer changes by state (811 rules, a state OSHA plan, breaks, pay or heat rules, state specs); then answer for ${name} and never give another state's number as theirs. Otherwise answer as usual and do not mention the state. Do not ask which state.`;
     const plan = PLAN_STATES.includes(code) ? ` ${name} runs its own OSHA plan, which can be stricter than federal OSHA: if this is a safety-rule question and no excerpt gives ${name}'s rule, search_knowledge once with "${name}" and the topic before answering.` : "";

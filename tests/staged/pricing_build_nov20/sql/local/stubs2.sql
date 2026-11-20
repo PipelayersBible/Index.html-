@@ -128,3 +128,19 @@ begin
   return jsonb_build_object('ok', true, 'set_id', v_id);
 end $function$
 ;
+
+-- v2 (Nov 20): pb_docs.limits_for, the live text (read Nov 20; live has Windows line ends)
+CREATE OR REPLACE FUNCTION pb_docs.limits_for(p_company uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select pb_docs.limits(case when p_company is null then 'individual' else 'company' end)
+$function$;
+-- v2: a stand-in for the app owner's own company as it is on live (paid, no billing account, 3 members), so the
+-- migration's override insert has a row to find.
+insert into auth.users (id, email, aud, role) values ('00000000-0000-4000-8000-0000000000d1', 'tfontaine@digcivil.com', 'authenticated', 'authenticated'),
+  ('00000000-0000-4000-8000-0000000000d2', 'demo-foreman@test.invalid', 'authenticated', 'authenticated');
+insert into public.companies (id, name, owner_user_id, status, plan) values ('00000000-0000-4000-8000-0000000000dc', 'DIG Civil Construction', '00000000-0000-4000-8000-0000000000d1', 'active', 'paid');
+insert into public.company_members (company_id, user_id, role) values ('00000000-0000-4000-8000-0000000000dc', '00000000-0000-4000-8000-0000000000d2', 'foreman');

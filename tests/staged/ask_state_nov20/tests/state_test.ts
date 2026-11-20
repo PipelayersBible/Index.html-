@@ -91,6 +91,9 @@ Deno.test("the lines the model reads", () => {
   ok(/runs its own OSHA plan/.test(S.stateLines({ code: "WA", how: "job" }, true, 1)) && !/OSHA plan, which/.test(S.stateLines({ code: "TX", how: "job" }, true, 1)));
   ok(/Which state is the job in\?/.test(S.stateLines({ code: null, how: "unknown" }, true, 0)));
   ok(/just answer; do not ask/.test(S.stateLines({ code: null, how: "unknown" }, false, 0)));
+  // a plan state the library has nothing on for a safety-rule question: federal rule, and say it is federal (eval sa10)
+  const planLine = S.stateLines({ code: "KY", how: "job" }, "plan", 0);
+  ok(/library has no Kentucky rule/.test(planLine) && /confirm with Kentucky's OSHA plan/.test(planLine) && !/search_knowledge/.test(planLine), planLine);
 });
 
 // ---- Part 2: the whole request
