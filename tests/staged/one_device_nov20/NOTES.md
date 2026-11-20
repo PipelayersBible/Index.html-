@@ -1,10 +1,76 @@
-# One device in use per login, two signed in (staged Nov 20, on r17.11) — version 3, PART DONE
-
-> **Nov 20 (second helper): app patch v3 + tests v3 IN PROGRESS. See the top section when finished.**
+# One device in use per login, two signed in (staged Nov 20, on r17.11) — version 3
 
 **State when work stopped (usage limit): the server part (SQL) is finished and tested locally for Tommy's final rule.
 The app patch and the browser tests are still the earlier version and do NOT match it yet. Do not ship the app patch
 as it is.** Nothing here is live; the server was only read.
+
+## STATUS (Nov 20, second helper): server AND app done for version 3, tested. Ready for the weekend apply.
+
+### App patch v3 — `patches/01_one_device.py` (python3 01_one_device.py _src/index.html out.html; 5 exact-once replacements)
+- Check-in (`pb_device_seen`) every ~90 s while on screen (a 15 s tick, at most one call per 80 s), at start, on resume
+  (`visibilitychange`, `pageshow`), when signal comes back, right after a sign-in. Reads `state` and the gate's
+  `locked` / `full` / `in_use` / `other_device` / `moved` / `ended` answers (both gate-on and gate-off forms).
+- Lock screen: "In use on your other device (phone/tablet/computer). You can use this one when that one has been idle for
+  5 minutes." + live "Unlocks by itself in m:ss"; when it reaches 0 it checks and unlocks itself (no sign-in). Permit
+  variant: "...a confined space permit is open there. You can use this one when that permit is closed." (no countdown).
+  Try Now, Log Out (its questions show above it), Emergency: Call 911. Not shown with no signal (work goes on, waits on
+  the device). Never shown over a confined space permit open on this device: a slim note at the top instead.
+  On unlock every queue is woken (an `online` event + the crew-notice ack, the one record that doesn't listen for it).
+- Refused new sign-in: "This account is in use on another device right now. Try again in 5 minutes."
+- "Signed In on Two Devices": one button per device, last used first ("Sign Out the Tablet (used 6 min ago)"), Cancel.
+  Calls `pb_session_take_slot` by plain fetch with the app's own key only, then reloads signed in.
+- Signed out by another device / moved to the Home Screen app: said once (kept from v2, "device" not "phone").
+- Removed: the Crew members note and the Beta Accounts block (`pb_share_notes`, `pb_owner_share_notes` are gone).
+  Nothing about sharing is shown to users or company accounts (test 9 checks the page).
+- **Log Out now signs out this device only** (`scope: 'local'`; was all devices). See decision 1.
+- Rig-only hooks: `window.__pb1d` (state), `window.__pb1dPermitHere`, `window.__pb1dUnsent`.
+
+### Tests (all on the patched r17.11 copy, one browser at a time, port 10200)
+- `tests/t_1dev.js` v3 + `tests/srv1dev.js` v3 (fake server mirroring the SQL: holder, in_use_by, slots, take_over,
+  gate with details/hints, device_seen, why, take_slot, local/global sign-out, overrides, permit): **ALL PASS (80)**.
+  Sections: 1 A active → B locked, countdown, A idle → B unlocks by itself, refused sign-in, 3rd device while in use;
+  2 queued work on the locked device kept (14 refused as locked, nothing filed), offline keeps working, sent once on
+  unlock; 3 two devices full → buttons, Cancel, take the phone's place, the phone is told once; 4th refused;
+  4 permit priority, permit on this device = no cover; 5 Log Out on the device in use frees it at once, Log Out on
+  the lock screen asks above it; 6 Home Screen code replaces Safari; 7 gate off / nothing installed; 8 override;
+  9 nothing about sharing in the page, 90 s cadence, resume.
+- Sign-in regressions on the patched page: t130_onboard ALL PASS, t_sl4_code all pass, t107_mfa runs clean (no
+  errors; it has no pass/fail lines), t132_setpw_stay all pass, t129_taplink all pass, t133_onetap_text all pass.
+- Screens: `shots/` (v2) are out of date; v3 screens are in `shots/v3/` (lock light, lock permit dark,
+  permit-here note, two devices, refused).
+
+### Live check (read only) of `sql/03_overrides.sql`
+`name ilike 'DIG Civil%'` matches exactly one company: DIG Civil Construction (d01a4a5f-…), owner login
+tfontaine@digcivil.com, 3 members (tfontaine+pm@ pm, tfontaine404@ pipelayer, tommyfontaine1@ foreman). The email
+matches exactly one login. 03 now pins the company by id AND name (so a future customer named "DIG Civil…" can't get it).
+
+### Legal
+`legal/DRAFT_location_sentences_for_lawyer.md` rewritten: Privacy sentence says "we"; no crew-notice sentence; the
+earlier company-sees-it draft withdrawn. Open: the event log (`pb_auth.flags`) has no automatic removal.
+
+## FINAL APPLY ORDER (this weekend)
+1. Release the app with `patches/01_one_device.py` (silent while the server part is missing: test 7).
+2. On live: `sql/tests/block_t01.sql` → expect `RESULT: 65 pass, 0 fail` (rolls itself back).
+3. `sql/01_one_device.sql`, then `sql/03_overrides.sql` (its last result: 1 company, 1 login).
+4. `select public.pb_session_gate();` → no error. Then `sql/02_gate_on.sql`. Open the app signed in and signed out: both load.
+5. Two browsers on a test login outside DIG Civil: second sign-in refused while the first is open; 5 min after closing
+   the first, the second signs in; reopen the first → lock screen, it unlocks by itself ~5 min after the second goes idle.
+6. Wrong: `sql/99_undo.sql` part 1 (gate off, instant), then part 2. App needs no rollback (silent without the server).
+
+## DECISIONS FOR TOMMY (recommendation first)
+1. **Log Out = this device only** (built). With two devices signed in, Log Out on one must not sign the other out;
+   from the lock screen an all-devices Log Out would silently sign out the device in use, maybe mid-permit. Downside:
+   no "sign out everywhere" button any more (a lost phone: the office's Lost Phone, or a 3rd sign-in takes its place).
+   Recommend: keep, add "Sign out everywhere" later only if asked.
+2. **Event log retention**: recommend remove rows after 12 months (one SQL line, not built); the lawyer question 3.
+3. **Override values for DIG Civil + your login: 5 devices, all usable at once** (previous helper's reading of "same
+   override as my own login"). Recommend keep for testing; change the two numbers in 03 if you want them to feel the rule.
+4. **Lock screen shows "Emergency: Call 911"** (added because it covers the app). Recommend keep.
+5. **A locked device can't use photo uploads/edge functions only because the lock screen covers them** (the gate covers
+   the API, not storage/functions). Recommend accept for now.
+
+
+# Earlier notes (first helper; items 1, 2, 3, 5 of NOT DONE are now done above)
 
 ## Tommy's final rule (Nov 20, 9:44 and after)
 

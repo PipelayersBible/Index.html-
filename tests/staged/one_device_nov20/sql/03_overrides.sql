@@ -5,7 +5,7 @@
 --   devices. To give them something else, change the two numbers below; the rule reads these tables on every sign-in.
 -- 1. Every login of the DIG Civil company: its company account (owner login) and all its members, now and later.
 insert into pb_auth.company_allow (company_id, devices, one_at_a_time, note)
-select c.id, 5, false, 'DIG Civil: Tommy''s test company (Nov 20)' from public.companies c where c.name ilike 'DIG Civil%'
+select c.id, 5, false, 'DIG Civil: Tommy''s test company (Nov 20)' from public.companies c where c.id = 'd01a4a5f-312a-418f-9172-ea9aec9784b5' and c.name = 'DIG Civil Construction' -- checked on live Nov 20 (read only): the only company named DIG Civil*; owner tfontaine@digcivil.com, 3 members
 on conflict (company_id) do update set devices = excluded.devices, one_at_a_time = excluded.one_at_a_time, note = excluded.note, set_at = now();
 -- 2. Tommy's own login, whatever company it is or isn't in.
 insert into pb_auth.allow (user_id, devices, one_at_a_time, note)

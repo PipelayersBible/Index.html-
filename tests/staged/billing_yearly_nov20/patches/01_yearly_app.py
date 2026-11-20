@@ -18,7 +18,7 @@ rep("""    const pbPriceInd = () => { const p = pbPr(); return pbUsd(p.ind) + ' 
     /* billing_yearly_nov20: the individual plan is picked Monthly or Yearly; the pick goes with the request ('individual:month' / 'individual:year') */
     const pbIndPick = (attr, pre) => { const p = pbPr(), sv = pbIndSave(), x = pre || '';
       return '<span class="pb-beta-acts pb-ind-pick"><button type="button" class="pb-btn small" ' + attr + '="individual:month">' + x + 'Monthly ' + pbUsd(p.ind) + '</button>'
-        + '<button type="button" class="pb-btn small" ' + attr + '="individual:year">' + x + 'Yearly ' + pbUsd(p.indy) + (sv > 0 ? ' <span style="white-space:nowrap">(save ' + pbUsd(sv) + ')</span>' : '') + '</button></span>'; };""")
+        + '<button type="button" class="pb-btn small" ' + attr + '="individual:year">' + x + 'Yearly ' + pbUsd(p.indy) + (sv > 0 ? ', save ' + pbUsd(sv) : '') + '</button></span>'; };""")
 
 rep("""    const pbReqSent = (kind) => '<span>' + (kind === 'individual' ? 'Request sent. You\\u2019ll get an email with how to pay: ' + pbPriceInd() + '.'""",
 """    const pbReqSent = (kind) => '<span>' + (kind === 'individual:year' ? 'Request sent: yearly, ' + pbUsd(pbPr().indy) + ' a year (' + pbUsd(Math.round(pbPr().indy / 12)) + ' a month), plus applicable tax. You\\u2019ll get an email with how to pay.'

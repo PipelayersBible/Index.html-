@@ -47,7 +47,7 @@ const noSide=(p)=>p.evaluate(()=>document.documentElement.scrollWidth<=window.in
  // 3. a foreman, beta ended: own plan price; the request wording survives a refresh
  p=await open(FOREMAN,MEMBER+plan({ok:true,plan:'trial',trial_ends_at:days(-1),expired:true,closed:false,individual:false,requested:false,days_left:0,limits:{seats:7},prices:PR}));
  t=await line(p);console.log('  3:',t);
- ok(t.includes('Your own plan is $15 a month, or $144 for a year ($12 a month, save $36), plus applicable tax.')&&/Company Plan/.test(t)&&t.includes('My Own Plan: Monthly $15')&&t.includes('My Own Plan: Yearly $144 (save $36)'),'3a member: Company Plan, or their own plan Monthly $15 / Yearly $144 save $36');
+ ok(t.includes('Your own plan is $15 a month, or $144 for a year ($12 a month, save $36), plus applicable tax.')&&/Company Plan/.test(t)&&t.includes('My Own Plan: Monthly $15')&&t.includes('My Own Plan: Yearly $144, save $36'),'3a member: Company Plan, or their own plan Monthly $15 / Yearly $144 save $36');
  ok(await noSide(p),'3a2 no sideways scroll with three buttons');await p.screenshot({path:__dirname+'/../shots/3_ended_member_pick.png'});
  await p.click('#pbBetaLine [data-plan="individual:year"]');await p.waitForTimeout(700);t=await line(p);console.log('  3 after:',t);
  ok(t.includes('Request sent: yearly, $144 a year ($12 a month), plus applicable tax. You’ll get an email with how to pay.'),'3b after Yearly: the yearly price said back');
@@ -66,7 +66,7 @@ const noSide=(p)=>p.evaluate(()=>document.documentElement.scrollWidth<=window.in
  // 5. Settings > What each plan includes (default prices), and a signed-in person with no plan
  p=await open(NOBODY,NONE+plan({ok:true,plan:null,individual:false,requested:false,prices:PR}),{srvPlan:'paid'});
  t=await line(p);console.log('  5:',t);
- ok(/No plan yet/.test(t)&&t.includes('Your own plan is $15 a month, or $144 for a year ($12 a month, save $36), plus applicable tax')&&t.includes('Monthly $15')&&t.includes('Yearly $144 (save $36)')&&!/Get My Own Plan/.test(t),'5a no plan: Monthly $15 / Yearly $144 save $36');
+ ok(/No plan yet/.test(t)&&t.includes('Your own plan is $15 a month, or $144 for a year ($12 a month, save $36), plus applicable tax')&&t.includes('Monthly $15')&&t.includes('Yearly $144, save $36')&&!/Get My Own Plan/.test(t),'5a no plan: Monthly $15 / Yearly $144 save $36');
  await p.screenshot({path:__dirname+'/../shots/5_no_plan_pick.png'});
  await p.click('#pbBetaLine [data-plan="individual:month"]');await p.waitForTimeout(700);t=await line(p);
  ok(t.includes('Request sent: monthly, $15 a month, plus applicable tax. You’ll get an email with how to pay.')&&JSON.stringify(await p.evaluate(()=>window.__reqs))==='["individual:month"]','5b Monthly: request carries the pick, price said back');
@@ -89,7 +89,7 @@ const noSide=(p)=>p.evaluate(()=>document.documentElement.scrollWidth<=window.in
  // 6. removed from a company
  p=await open(NOBODY,NONE+plan({ok:true,plan:null,removed:{company:'DIG Civil',at:days(-1)},individual:false,requested:false,prices:PR}),{srvPlan:'paid'});
  t=await line(p);console.log('  6:',t);
- ok(t.includes('no longer part of DIG Civil')&&t.includes('Would you like your own plan? It’s $15 a month, or $144 for a year ($12 a month, save $36), plus applicable tax.')&&t.includes('Monthly $15')&&t.includes('Yearly $144 (save $36)')&&/Not Now/.test(t),'6a removed: Monthly / Yearly / Not Now');
+ ok(t.includes('no longer part of DIG Civil')&&t.includes('Would you like your own plan? It’s $15 a month, or $144 for a year ($12 a month, save $36), plus applicable tax.')&&t.includes('Monthly $15')&&t.includes('Yearly $144, save $36')&&/Not Now/.test(t),'6a removed: Monthly / Yearly / Not Now');
  await p.click('#pbBetaLine [data-own="individual:year"]');await p.waitForTimeout(700);t=await line(p);
  ok(t.includes('Request sent: yearly, $144 a year ($12 a month)')&&JSON.stringify(await p.evaluate(()=>window.__reqs))==='["individual:year"]','6b removed: Yearly request sent with the pick');await p.context().close();
 
