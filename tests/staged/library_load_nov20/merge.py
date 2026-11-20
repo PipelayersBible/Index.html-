@@ -27,6 +27,10 @@ for f in FILES:
         c['_from'] = f.split('/')[0]; NEW[c['id']] = c
 say(f'staged chunks read: {len(NEW)} from {len(FILES)} files')
 
+# ---- 0. slips reported by the lead: Indiana's 811 overview was written as shelf; it is the state's answer card (it replaces dig-in)
+assert NEW['dig-in-overview-1']['tier'] == 'shelf'; NEW['dig-in-overview-1']['tier'] = 'core'
+_t = NEW['dig-in-overview-1']['text']; _x = ' A Joint Meet is not a ticket to dig on.'; assert _t.count(_x) == 1   # 1,222 characters: one sentence out to fit the 1,200 card limit
+NEW['dig-in-overview-1']['text'] = _t.replace(_x, '')
 # ---- 1. held: low-confidence placeholders the lead said to hold (they only say "not read yet")
 HOLD = {'sp-ia-who-1': 'Iowa plan not read', 'sp-vt-who-1': 'Vermont plan not read', 'sp-wy-who-1': 'Wyoming plan not read',
         'sp-in-who-1': 'Indiana excavation standard not found', 'sp-mi-confined-1': 'MIOSHA Part 35 not opened',
