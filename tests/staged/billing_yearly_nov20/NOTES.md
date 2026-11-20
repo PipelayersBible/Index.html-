@@ -45,11 +45,11 @@ No Stripe product, price or link was created, and none is needed for this change
   - `MODE=live`: the live-shaped file passes and leaves nothing behind.
 - `sql/tests/live_t01.sql` (md5 7c6d121d…) is the migration plus checks. It ends with an error on purpose, so it all rolls back. The test data is fake users and a fake company, inside the rollback.
 
-### App: `patches/01_yearly_app.py` (on `_src/index.html` r17.11, md5 3813d6f2…; 26 exact-once swaps; all 22 inline scripts pass `node --check`)
-- **What people see.** Every place that offers the individual plan now has two buttons, **Monthly $15** and **Yearly $144 (save $36)**:
+### App: `patches/01_yearly_app.py` (on `_src/index.html` r17.11, md5 3813d6f2…; 25 exact-once swaps; all 22 inline scripts pass `node --check`)
+- **What people see.** Every place that offers the individual plan now has two buttons, **Monthly $15** and **Yearly $144, save $36**:
   - no plan yet;
   - removed from a company (plus Not Now);
-  - beta ended for a crew member. There the buttons read "My Own Plan: Monthly $15" and "My Own Plan: Yearly $144 (save $36)", next to Company Plan.
+  - beta ended for a crew member. There the buttons read "My Own Plan: Monthly $15" and "My Own Plan: Yearly $144, save $36", next to Company Plan.
   - The price line reads "$15 a month, or $144 for a year ($12 a month, save $36), plus applicable tax."
   - After the tap it says back what they picked: "Request sent: yearly, $144 a year ($12 a month), plus applicable tax. You'll get an email with how to pay."
   - Settings › What each plan includes adds "save $36".
@@ -65,7 +65,7 @@ No Stripe product, price or link was created, and none is needed for this change
 ### App tests (fake server, 390 px, port 10300)
 - `tests/t_yearly_app.js` (from the pricing build's `t_price_app.js`, updated for the two buttons): **56 of 56 pass** (`tests/out_t_yearly_app.txt`). Screenshots in `shots/`.
 - `t127_billing0_v2.js` (the pricing build's copy): **40 of 40 pass.**
-- `t133_onetap_text.js`: all pass. `t130_onboard.js`: see `tests/out_t130.txt`.
+- `t133_onetap_text.js`: all pass. `t130_onboard.js`: 69 of 69 pass (ALL PASS).
 - `t98_betaend.js` and `t99_removed.js` (print-only scripts) click the old buttons (`data-plan="individual"`, `data-own="1"`), so they time out on the patched page. `tests/t98_betaend_v2.js` and `t99_removed_v2.js` change only the selector, and their output is right (`out_t98_v2.txt`, `out_t99_v2.txt`).
   - In t99, "line hidden=false" after Not Now is the same on live r17.11: the No plan yet card shows. It is not from this change.
 
