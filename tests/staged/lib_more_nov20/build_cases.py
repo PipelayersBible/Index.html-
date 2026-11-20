@@ -125,7 +125,7 @@ EXIST = [
  C('lib-us-em-1', 'emergency', 'Guy is confused and stumbling and its 100 out. What do I do?', 'Jackson, MS', 'pipelayer', 'steps',
    ['911', 'cool|ice|cold water'], ['911'], ['first_aid-16', 'first_aid-19']),
  C('lib-us-em-2', 'emergency', 'Trench wall caved in on a guy up to his waist. Should we jump in and dig him out?', 'Charlotte, NC', 'pipelayer', 'steps',
-   ['911', 'do not|don.t|stay out|secondary|second (collapse|cave)'], ['911|do not|don.t|no'], ['trench-safety-1'], ['jump in and dig']),
+   ['911', 'do not|don.t|stay out|secondary|second (collapse|cave)'], ['911|do not|don.t|no'], ['first_aid-13', 'first_aid-2'], ['jump in and dig']),
  C('lib-us-em-3', 'emergency', 'Laborer got hit in the head by the bucket and says he is fine. Can he go back to work?', 'Milwaukee, WI', 'foreman', 'rule',
    ['concussion|head injury', 'medical|doctor|checked|911|emergency'], ['no|checked|medical|doctor'], ['first_aid-44']),
  # ---- pipe, joints and taps
