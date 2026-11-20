@@ -108,7 +108,7 @@ begin
   a := r->'attention';
   select * into f, n from pg_temp.ck(a->0->>'level' = 'red' and a->0->>'area' = 'safety', 'red first, safety first: ' || (a->0->>'text'), f, n);
   select * into f, n from pg_temp.ck(a::text like '%Confined space permit open 9 hours: Beta Pipe · MH-4%', 'attention: permit', f, n);
-  select * into f, n from pg_temp.ck(a::text like '%Emergency notice sent%', 'attention: emergency', f, n);
+  select * into f, n from pg_temp.ck(a::text like '%Confined space emergency at Beta Pipe, %. Call them.%', 'attention: emergency', f, n);
   select * into f, n from pg_temp.ck(a::text like '%Sealed run files that no longer match their fingerprint: 1.%', 'attention: seal', f, n);
   select * into f, n from pg_temp.ck(a::text like '%Year Co is past due%', 'attention: past due', f, n);
   select * into f, n from pg_temp.ck(a::text like '%Paid Pipe renews%', 'attention: renewal', f, n);
