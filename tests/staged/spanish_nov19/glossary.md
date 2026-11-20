@@ -57,6 +57,8 @@ Sources checked for the safety words: OSHA "Zanjas y excavaciones" fact sheet in
 | jobsite | obra | |
 | report | reporte | Not "informe" (Spain / formal). |
 | office / management | la oficina | "Management report" → "Reporte para la oficina". |
+| field ticket | ticket de campo | Crews say "el ticket". |
+| send | mandar | "Mandar reporte". "Enviar" is also fine; "mandar" is what people say. |
 | Got It / Done / Not Now | Entendido / Listo / Ahora no | |
 | e.g. | p. ej. | |
 
@@ -90,7 +92,7 @@ Sources checked for the safety words: OSHA "Zanjas y excavaciones" fact sheet in
 | benchmark / backsight | banco de nivel / lectura atrás | REVIEW |
 | backflow (pipe running the wrong way) | contrapendiente | Crews: "va en contra", "está al revés". REVIEW |
 | lay / laid | instalar / instalado | "Tubo instalado", "Marcar instalado hasta aquí". Crews also say "poner tubo", "tender tubo". "Instalado" reads right to everybody. REVIEW |
-| lock (a run) | bloquear | The run can't be edited after. |
+| lock (a run) | bloquear | Same word a phone uses for a locked screen; the run can't be edited after. Alternative: "cerrar". REVIEW |
 | row (of the grade sheet) | fila | |
 | delay / rework / utility found | retraso / retrabajo / línea encontrada | |
 | break | descanso | Crews also say "el break". |

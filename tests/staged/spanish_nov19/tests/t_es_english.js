@@ -10,7 +10,7 @@ const where=(a,b)=>{let i=0;while(i<a.length&&a[i]===b[i])i++;return 'at '+i+': 
 (async()=>{const b=await L.chromium.launch();
  for(const name of (process.argv[2]?process.argv[2].split(','):['login','join','setpw','home_pl','settings','run_setup','run_review','run_locked','permit_active','permit_airbad'])){
   const p=await L.SC[name](b,{});const q=await L.SC[name](b,{url:BASE0});
-  const a=await snap(p),c=await snap(q);
+  let a=await snap(p),c=await snap(q);for(let i=0;i<4&&a!==c;i++){await p.waitForTimeout(1500);a=await snap(p);c=await snap(q);} // the app tidies some hidden forms a moment after load: give both pages the same time
   ok(a===c,name+': English is the same as the unpatched page ('+a.length+' chars of HTML)'+(a===c?'':' '+where(a,c)));
   ok(await p.evaluate(()=>document.documentElement.lang==='en'&&!document.getElementById('pbLangOffer')),name+': lang="en", no language question');
   ok(p.errs.length===0,name+': no page errors '+p.errs.join('|').slice(0,160));

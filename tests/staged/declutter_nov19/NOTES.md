@@ -27,8 +27,8 @@ Screenshots: `shots/before_<role>_*.png` and `shots/after_<role>_*.png` (roles: 
 |---|---|---|---|---|---|---|---|
 | pipelayer phone | 1166 → 1120 | 8 → 9 | - | - | 477 → 279 | 9 → 1 | 13 → 14 |
 | pipelayer computer | 1110 → 1101 | 13 → 13 | - | - | 439 → 279 | 9 → 1 | 13 → 14 |
-| foreman phone | 1672 → 1606 | 11 → 11 | 560 → 525 | - | 878 → 1063 (on purpose) | 15 → 1 | 12.5 → 14 |
-| foreman computer | 1599 → 1529 | 12 → 13 | 544 → 515 | - | 843 → 1015 | 15 → 1 | 12.5 → 14 |
+| foreman phone | 1672 → 1606 | 11 → 11 | 560 → 525 | - | 878 → 1064 (on purpose) | 15 → 1 | 12.5 → 14 |
+| foreman computer | 1599 → 1557 | 12 → 13 | 544 → 516 | - | 843 → 1016 | 15 → 1 | 12.5 → 14 |
 | PM / super phone | 1681 → 1688 | 10 → 11 | 583 → 470 | 616 → 503 | in Field tools | 24 → 1 | 12.5 → 14 |
 | PM / super computer | 1095 → 1027 | 14 → 14 | 395 → 289 | 429 → 322 | in Field tools | 23 → 0 | 12.5 → 14 |
 | owner phone | 1629 → 1634 | 10 → 11 | 583 → 470 | 616 → 503 | in Field tools | 24 → 1 | 12.5 → 14 |
@@ -94,7 +94,7 @@ Run: serve a folder holding `cur.html` (patched) and `base.html` (r17.10 `_src/i
 
 | Test | Covers | Result |
 |---|---|---|
-| `tests/t_dc1_home.js` | Each role, before vs after: every button on Home before is still there; order by role (foreman: New Run stays below crew cards); empty card = short line, number = card, EMERGENCY never short; "New record" sheet and no duplicate; 8 foreman rows still open their screens; Tools group; Field tools still opens; "New job" 2 → 1 on a computer and opens the form; text 14 px; Feedback still there; no page errors; notices 3 → 1 + "Also" line, tap shows all, dig ticket never folded | ALL PASS (90 checks) |
+| `tests/t_dc1_home.js` | Each role, before vs after: every button on Home before is still there; order by role (foreman: New Run stays below crew cards); empty card = short line, number = card, EMERGENCY never short; "New record" sheet and no duplicate; 8 foreman rows still open their screens; Tools group; Field tools still opens; "New job" 2 → 1 on a computer and opens the form; text 14 px; Feedback still there; no page errors; notices 3 → 1 + "Also" line, tap shows all, dig ticket never folded | ALL PASS (65 checks) |
 | `tests/t_dc2_more_settings.js` | More: all rows kept + Account & Settings, groups, opens Settings. Settings: every control kept, 6 → 4 cards, text size / crash switch / push row still work, Crew members 2 taps from Home | ALL PASS (25 checks) |
 | `tests/shots.js before\|after` | the screenshots and `counts_*.json` | - |
 
@@ -102,7 +102,25 @@ Existing tests on the patched page (`run_all.sh --build <patched> --jobs 1 --onl
 
 ## Regression (existing tests that read Home / More / Settings)
 
-REGRESSION_PLACEHOLDER
+`tests/run_all.sh --build <patched page> --jobs 1 --only '<list>'`: 23 tests, **20 pass, 3 differ from their golden files**
+(the three that print Home / More / Settings top to bottom). An earlier build of the patches was used for this run; the
+only change after it was layout of the count cards in Large text (CSS), and my own two tests were re-run on the final page.
+
+Pass (unchanged): `t95_beta` (golden), `t116_quickwork` (golden), `t123_newrunshort`, `t130_onboard` (69), `t131_trench20`,
+`t132_setpw_stay`, `t133_onetap_text`, `r1710/streamline/tests/t_sl1..t_sl4`, `bughunt_nov17/critic/t_c01`, `w2`, `w5`,
+`new/f05_mgrsettings`, `new/r_t116_quickwork`, `office/b1_beta`, `office/b3_owner`, `office/c1_crew`, `sync/t03_roles`.
+
+Golden files that change (not updated; update with `--update-golden --only 'critic/w[134]'` after the patches are in):
+- `tests/expect/bughunt_nov17__critic__w1.js.txt`
+- `tests/expect/bughunt_nov17__critic__w3.js.txt`
+- `tests/expect/bughunt_nov17__critic__w4.js.txt`
+
+I compared every differing piece of text: the only differences are the intended ones. Gone: "New", "Field ticket · Work
+without a run · Job book entry · …", the three long second lines, the "Production" heading on More. New: "New record",
+"Field ticket · Job book entry · Management report", "Start an entry permit", "Your crew's grade sheets, read-only",
+"Footage, photos and a note. For laser crews.", "On the job", "Tools", "Your name, crew, text size, help", plus the order
+of the foreman's rows and the Settings / More heights the tests print. `grep` of `tests/expect/` for the changed strings
+finds no other golden file. The full regression (`run_all.sh` with no `--only`) was not run (shared machine rule).
 
 ## Not done, and why
 
@@ -112,7 +130,7 @@ REGRESSION_PLACEHOLDER
 - **Office table on a computer** (critic H: Records is a phone column on a monitor): a build of its own, 3–5 days.
 - I did not hide the foreman's zero crew cards entirely: a zero is information, and each one is still the door to its list.
 - Not tried on a real iPhone. Checked in Chromium at 390x844 and 1440x900, light theme; dark theme and Large text checked
-  by screenshot (`shots/after_fm_dark.png`, `shots/after_fm_large.png`, `shots/after_owner_dark.png`).
+  by screenshot (`tests/shots_modes.js`: `shots/after_fm_dark.png`, `after_owner_dark.png`, `after_fm_large.png`, `after_owner_large.png`); no sideways scroll, no page errors. In Large text the count cards keep the app's own one-per-line layout.
 
 ## Decisions for Tommy (my pick first)
 

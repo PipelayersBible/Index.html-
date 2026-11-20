@@ -9,3 +9,6 @@ Files so far (all in tests/staged/spanish_nov19/):
 - mk.sh: build + write the test page /tmp/claude-0/es19/site/cur.html (server: python3 -m http.server 9300 there).
 - tests/lib.js (scenarios), tests/harvest.js (lists English on a screen that has no Spanish yet).
 To do: tests (switch, leftovers, 390 px, English identical, goldens), glossary.md, second pass, estimate, final notes.
+
+Progress (checkpoint): engine + 547 strings built; t_es_switch.js ALL PASS; t_es_screens.js and t_es_english.js mostly passing, being finished.
+Total app wording (rough count from the source): ~1,750 pieces in the page HTML + ~9,700 wording fragments in the code (~85,000 words), plus ~1,200 long strings in the toolbox-talk library.

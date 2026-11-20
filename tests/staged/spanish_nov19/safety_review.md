@@ -19,7 +19,7 @@ Every string below is shown on a confined space, air test, trench or emergency s
   - ES: Fondo de la zanja hasta {0} ft. Este teléfono no sabe en qué estado es el trabajo, así que se usa la regla más estricta: Washington exige protección desde 4 ft; OSHA federal y la mayoría de los estados desde 5 ft (1926.652(a)(1)).
 - **run_review.024**
   - EN: Check Trench Sloping Calculator
-  - ES: Abrir la calculadora de talud de zanja
+  - ES: Revise con la calculadora de talud de zanja
 - **run_review.025**
   - EN: Based on stake cut data, the trench bottom may be as deep as {0} ft at one point ({1} ft cut to invert + {2} ft pipe wall + {3} ft bedding). OSHA requires "an adequate protective system" (sloping, benching or shoring) unless the excavation is "made entirely in stable rock" (1926.652(a)(1)).
   - ES: Según los cortes de las estacas, el fondo de la zanja puede llegar a {0} ft de profundidad en un punto ({1} ft de corte al invert + {2} ft de pared del tubo + {3} ft de cama). OSHA exige «un sistema de protección adecuado» (talud, escalonado o apuntalamiento), a menos que la excavación esté «hecha completamente en roca estable» (1926.652(a)(1)).
@@ -316,7 +316,7 @@ Every string below is shown on a confined space, air test, trench or emergency s
   - ES: Motivo del cierre
 - **permit_active.095**
   - EN: Completed Normally
-  - ES: Se terminó normal
+  - ES: Terminó normalmente
 - **permit_active.096**
   - EN: Evacuated / Prohibited Condition
   - ES: Evacuación / Condición prohibida
@@ -466,7 +466,7 @@ Every string below is shown on a confined space, air test, trench or emergency s
   - ES: Este permiso ya está cerrado.
 - **permit_entry.019**
   - EN: Air Test Due
-  - ES: Toca prueba de aire
+  - ES: Hora de la prueba de aire
 - **permit_entry.020**
   - EN: Communication Check
   - ES: Revisión de comunicación
