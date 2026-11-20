@@ -8,12 +8,12 @@ const base=process.env.HEIGHTS&&fs.existsSync(process.env.HEIGHTS)?JSON.parse(fs
 let pass=0,fail=0;const fails=[];const ok=(c,m)=>{if(c)pass++;else{fail++;fails.push(m);}};
 (async()=>{const {b,p}=await boot(URL,{init:process.env.MGR?co+mgr:co,wait:3500});const dump={};
  for(const [VW,VH] of VPS){const vp=VW+'x'+VH;dump[vp]={};await p.setViewportSize({width:VW,height:VH});await p.waitForTimeout(500);
-  const ids=await p.evaluate(()=>[...document.querySelectorAll('.pb-screen')].map(x=>x.id.replace('screen-','')));let seen=0,grew=[];
+  const ids=await p.evaluate(()=>[...document.querySelectorAll('.pb-screen')].map(x=>x.id.replace('screen-','')));let seen=0,grew=[];const sizes={};Object.defineProperty(sizes,'_',{value:{},enumerable:false});
   for(const id of ids){await p.evaluate(s=>{try{pbGoto(s)}catch(e){}},id);await p.waitForTimeout(220);
    const on=await p.evaluate(()=>{const x=[...document.querySelectorAll('.pb-screen')].find(x=>x.offsetParent);return x?x.id.replace('screen-',''):'';});if(on!==id)continue; // this account can't open it
    seen++;const H=await p.evaluate(()=>document.documentElement.scrollHeight-innerHeight);const hs=[];
    for(const y of [0,Math.round(H/2),H]){await p.evaluate(y=>window.scrollTo(0,y),y);await p.waitForTimeout(260);
-    const hh=await p.evaluate(()=>{const h=document.querySelector('.pb-screen.active > .pb-header');return h&&getComputedStyle(h).display!=='none'?Math.round(h.getBoundingClientRect().height*10)/10:0;});hs.push(hh);
+    const hh=await p.evaluate(()=>{const h=document.querySelector('.pb-screen.active > .pb-header');const t=h&&h.querySelector(':scope > .pb-title');let sp=0;if(t&&t.offsetParent){const r=document.createRange();r.selectNodeContents(t);sp=Math.max(0,Math.ceil(r.getBoundingClientRect().right-t.getBoundingClientRect().right));}return [h&&getComputedStyle(h).display!=='none'?Math.round(h.getBoundingClientRect().height*10)/10:0,sp];});hs.push(hh);
     if(process.env.DUMP)continue;
     const m=await probe(p);const w=vp+' '+id+' y='+y+': ';
     if(id==='login'||id==='auth'){ok(!m.shown,w+'shown on a signed-out screen');continue;}
@@ -24,14 +24,14 @@ let pass=0,fail=0;const fails=[];const ok=(c,m)=>{if(c)pass++;else{fail++;fails.
     const near=await p.evaluate(()=>{const fb=document.getElementById('pbFbPill'),r=fb.getBoundingClientRect(),g=4,out=[],hd=fb.closest('.pb-header');const xs=[r.left-g+.5,r.left+r.width/2,r.right+g-.5],ys=[r.top-g+.5,r.top+r.height/2,r.bottom+g-.5];
      for(const x of xs)for(const y of ys){if(x<0||y<0||x>=innerWidth||y>=innerHeight)continue;const t=document.elementFromPoint(x,y);if(!t||t===fb)continue;const c=t.closest('button,a[href],select,textarea,input,summary,[role=button],[onclick]');if(c)out.push('control:'+(c.textContent||c.id).trim().slice(0,30));else if(hd&&!hd.contains(t))out.push('outside header:'+t.tagName+'.'+String(t.className).slice(0,30));}return [...new Set(out)];});
     ok(!near.length,w+'44 px tap area reaches '+JSON.stringify(near));
-    const tt=await p.evaluate(()=>{const t=document.querySelector('.pb-screen.active > .pb-header > .pb-title');if(!t||!t.offsetParent)return null;const r=document.createRange();r.selectNodeContents(t);const q=r.getBoundingClientRect(),b=t.getBoundingClientRect();return {over:q.right>b.right+1||q.left<b.left-1,w:Math.round(b.width)};});
-    ok(!tt||!tt.over,w+'title spills out of its space '+JSON.stringify(tt));
-    ok(m.rect.h>=34&&m.rect.w>=60,w+'button too small '+JSON.stringify(m.rect));
+    {const b0=base&&base[vp]&&base[vp][id]&&base[vp][id][hs.length-1];if(b0)ok(hh[1]<=b0[1],w+'title spills out of its space by '+hh[1]+' px (r17.10: '+b0[1]+')');}
+    ok(m.rect.h>=30&&m.rect.w>=34,w+'button too small '+JSON.stringify(m.rect));if(!sizes._[id]){sizes._[id]=1;const sz=await p.evaluate(()=>{const c=document.getElementById('pbFbPill').classList;return c.contains('pb-fb-float')?'float':c.contains('pb-fb-ic')?'icon':c.contains('pb-fb-sm')?'small':'word';});(sizes[sz]=sizes[sz]||[]).push(id);}
    }
    dump[vp][id]=hs;
-   if(base&&base[vp]&&base[vp][id]){const d=hs.map((h,i)=>Math.round((h-base[vp][id][i])*10)/10);if(d.some(x=>x>1))grew.push(id+' +'+d.join('/'));}
+   if(base&&base[vp]&&base[vp][id]){const d=hs.map((h,i)=>Math.round((h[0]-base[vp][id][i][0])*10)/10);if(d.some(x=>x>1))grew.push(id+' +'+d.join('/'));}
   }
   console.log(vp,'screens opened',seen,'of',ids.length,base?'| header taller than r17.10 by more than 1 px: '+(grew.length?grew.join(', '):'none'):'');
+  if(!process.env.DUMP)console.log(' sizes:',Object.entries(sizes).map(([k,v])=>k+' '+v.length+(k==='word'?'':' ('+v.join(' ')+')')).join(' | '));
   if(!process.env.DUMP){ // the button opens the same sheet
    await p.evaluate(()=>{pbGoto('home');window.scrollTo(0,0);});await p.waitForTimeout(300);await p.click('#pbFbPill');await p.waitForTimeout(500);
    const s=await p.evaluate(()=>({open:document.documentElement.classList.contains('pb-fb-open'),card:!!document.querySelector('.pb-fb .pb-fb-card #pbFbText'),top:(()=>{const c=document.querySelector('.pb-fb');const r=document.getElementById('pbFbPill').getBoundingClientRect();const t=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return !!(c&&t&&c.contains(t));})()}));

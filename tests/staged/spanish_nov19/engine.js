@@ -16,7 +16,9 @@
   var arec = new WeakMap();  // Element   -> { attr: { en, es } }
   var cache = Object.create(null), cacheN = 0;
   var ATTRS = ['placeholder', 'aria-label', 'title', 'alt'];
-  var SKIP_SEL = 'script,style,textarea,noscript,svg,canvas,iframe,[contenteditable],[data-noi18n]';
+  // Records, reports and PDF previews are the company's official record: never translated (they stay as written).
+  var NOI = { 'screen-archive': 1, 'screen-reportReceipt': 1, 'screen-reportsAll': 1, 'screen-myReports': 1, 'screen-reportsInbox': 1, 'screen-pdfView': 1, 'screen-companyPermits': 1, 'rrBody': 1 };
+  var SKIP_SEL = 'script,style,textarea,noscript,svg,canvas,iframe,[contenteditable],[data-noi18n],#screen-archive,#screen-reportReceipt,#screen-reportsAll,#screen-myReports,#screen-reportsInbox,#screen-pdfView,#screen-companyPermits,#rrBody';
   var INLINE = { STRONG: 1, B: 1, EM: 1, I: 1, U: 1, A: 1, SPAN: 1, BR: 1, svg: 1, SVG: 1, INPUT: 1, CODE: 1, SMALL: 1, IMG: 1 };
   var dTC, dData, dNV, dIT, dIH, dOH, dOT;
 
@@ -33,6 +35,19 @@
     }
     return null;
   }
+  // a filled-in value that is itself app text: the whole value, else sentence by sentence
+  function trv(g, el) {
+    var k = norm(g), s = k ? look(k, el) : null;
+    if (s != null) return g.match(/^\s*/)[0] + s + g.match(/\s*$/)[0];
+    var bits = g.split(/([.!?;])\s+/), out = '', hit = false;
+    if (bits.length < 3) return g;
+    for (var i = 0; i < bits.length; i += 2) {
+      var sent = bits[i] + (bits[i + 1] || ''), e = norm(sent) ? look(norm(sent), el) : null;
+      if (e != null) hit = true;
+      out += (i ? ' ' : '') + (e != null ? e : sent);
+    }
+    return hit ? out : g;
+  }
   function look(k, el) {
     var v = T[k];
     if (v !== undefined) return pick(v, el);
@@ -46,7 +61,7 @@
       if (p.c) { ctxDep = true; try { if (!(el && el.closest && el.closest(p.c))) continue; } catch (e) { continue; } }
       out = p.es.replace(/\{(\d)(:t)?\}/g, function (_, n, t) {
         var g = m[+n + 1]; if (g == null) g = '';
-        if (t) { var s = look(norm(g), el); return s == null ? g : s; }
+        if (t) return trv(g, el);
         return g;
       });
       break;
@@ -74,34 +89,46 @@
     if (lang !== 'es') return;
     var k = norm(d);
     if (!k || !/[A-Za-z]/.test(k)) return;
-    var es = look(k, p);
-    if (es == null || es === k) return;
-    var out = d.match(/^\s*/)[0] + es + d.match(/\s*$/)[0];
+    var es = look(k, p), out;
+    if (es == null && /\n\s*\n/.test(d)) {
+      // a message made of paragraphs: each paragraph is looked up on its own
+      var parts = d.split(/\n\s*\n/), hit = false;
+      for (var i = 0; i < parts.length; i++) { var pk = norm(parts[i]), pe = pk && /[A-Za-z]/.test(pk) ? look(pk, p) : null; if (pe != null) { parts[i] = pe; hit = true; } }
+      if (!hit) return;
+      out = parts.join('\n\n');
+    } else {
+      if (es == null || es === k) return;
+      out = d.match(/^\s*/)[0] + es + d.match(/\s*$/)[0];
+    }
     if (p.tagName === 'OPTION' && !p.hasAttribute('value')) { p.setAttribute('value', norm(enText(p))); p.setAttribute('data-pbi18n-val', '1'); }
     rec.set(n, { en: d, es: out });
     setData(n, out);
   }
   /* ---- an element whose sentence runs across inline children: "Tap <1>Share</1>, then <2>Add</2>." ---- */
   function atom(c) { var t = c.tagName; return t === 'BR' || t === 'svg' || t === 'SVG' || t === 'INPUT' || t === 'IMG' || !norm(enText(c)); }
-  function doMixed(el) {
-    if (lang !== 'es') return false;
+  function mixedKey(el) {
     var kids = el.childNodes, n = kids.length, i, c, hasEl = false, hasTx = false;
-    if (n < 2 || n > 40) return false;
+    if (n < 2 || n > 40) return null;
     for (i = 0; i < n; i++) {
       c = kids[i];
-      if (c.nodeType === 1) { if (!INLINE[c.tagName] || c.firstElementChild && !(c.tagName === 'svg' || c.tagName === 'SVG')) return false; hasEl = true; }
+      if (c.nodeType === 1) { if (!INLINE[c.tagName] || c.firstElementChild && !(c.tagName === 'svg' || c.tagName === 'SVG')) return null; hasEl = true; }
       else if (c.nodeType === 3) { if (!hasTx && /\S/.test(enOf(c))) hasTx = true; }
     }
-    if (!hasEl || !hasTx) return false;
+    if (!hasEl || !hasTx) return null;
     var key = '', idx = 0, els = [];
     for (i = 0; i < n; i++) {
       c = kids[i];
       if (c.nodeType === 3) key += enOf(c);
       else if (c.nodeType === 1) { idx++; els.push(c); key += atom(c) ? '<' + idx + '/>' : '<' + idx + '>' + enText(c) + '</' + idx + '>'; }
     }
-    key = norm(key);
-    var v = T[key]; if (v === undefined) return false;
-    var es = pick(v, el); if (es == null) return false;
+    return { key: norm(key), els: els };
+  }
+  function doMixed(el) {
+    if (lang !== 'es') return false;
+    var mk = mixedKey(el); if (!mk) return false;
+    var key = mk.key, els = mk.els, kids = el.childNodes, i, c;
+    var v = T[key], es = v !== undefined ? pick(v, el) : (key.length < 400 ? look(key, el) : null);
+    if (es == null) return false;
     // split the Spanish into: gap text, child 1, gap text, child 2, ... (children keep their order)
     var re = /<(\d+)>([\s\S]*?)<\/\1>|<(\d+)\/>/g, m, last = 0, gaps = [], inner = [];
     while ((m = re.exec(es))) { gaps.push(es.slice(last, m.index)); inner.push(m[2] == null ? null : m[2]); last = re.lastIndex; }
@@ -146,7 +173,7 @@
     if (el.nodeType !== 1) return;
     var t = el.tagName;
     if (t === 'SCRIPT' || t === 'STYLE' || t === 'TEXTAREA' || t === 'NOSCRIPT' || t === 'svg' || t === 'SVG' || t === 'CANVAS' || t === 'IFRAME') return;
-    if (el.hasAttribute('data-noi18n') || el.isContentEditable && el.hasAttribute('contenteditable')) return;
+    if (el.hasAttribute('data-noi18n') || el.id && NOI[el.id] === 1 || el.hasAttribute('contenteditable')) return;
     if (el.attributes.length) { for (var a = 0; a < ATTRS.length; a++) if (el.hasAttribute(ATTRS[a])) doAttr(el, ATTRS[a]); }
     if (lang !== 'es' && el.hasAttribute('data-pbi18n-val')) { el.removeAttribute('value'); el.removeAttribute('data-pbi18n-val'); }
     if (doMixed(el)) return;
@@ -249,6 +276,26 @@
   window.pbLang = function () { return lang; };
   window.pbT = function (en) { if (lang !== 'es') return en; compile(); var s = look(norm(String(en)), null); return s == null ? en : s; };
   window.pbI18nStats = function () { var n = 0, k; for (k in T) n++; return { lang: lang, armed: armed, strings: n, patterns: (D.p || []).length }; };
+  /* test/harvest helper: what is on screen and whether the dictionary has it */
+  window.pbI18nScan = function (root) {
+    compile(); var out = [];
+    function vis(el) { try { if (!el.getClientRects().length) return false; var cs = getComputedStyle(el); return cs.visibility !== 'hidden' && cs.display !== 'none'; } catch (e) { return false; } }
+    function has(k, el) { var v = T[k]; if (v !== undefined) return pick(v, el) != null; var s = look(k, el); return s != null; }
+    (function go(el) {
+      if (el.nodeType !== 1) return;
+      var t = el.tagName;
+      if (t === 'SCRIPT' || t === 'STYLE' || t === 'TEXTAREA' || t === 'NOSCRIPT' || t === 'svg' || t === 'SVG' || t === 'CANVAS' || t === 'IFRAME' || el.hasAttribute('data-noi18n') || el.id && NOI[el.id] === 1) return;
+      if (!vis(el) && t !== 'OPTION' && t !== 'OPTGROUP') return;
+      for (var a = 0; a < ATTRS.length; a++) { var av = el.getAttribute(ATTRS[a]); var R = arec.get(el); if (R && R[ATTRS[a]] && R[ATTRS[a]].es === av) av = R[ATTRS[a]].en; if (av && /[A-Za-z]/.test(av)) out.push({ k: norm(av), kind: 'attr:' + ATTRS[a], hit: has(norm(av), el) }); }
+      var mk = mixedKey(el);
+      if (mk) { var mh = has(mk.key, el); out.push({ k: mk.key, kind: 'mixed', hit: mh }); if (mh) return; }
+      for (var c = el.firstChild; c; c = c.nextSibling) {
+        if (c.nodeType === 3) { var raw = enOf(c), k = norm(raw); if (k && /[A-Za-z]/.test(k)) { if (!has(k, el) && /\n\s*\n/.test(raw)) { raw.split(/\n\s*\n/).forEach(function (pp) { var pk = norm(pp); if (pk && /[A-Za-z]/.test(pk)) out.push({ k: pk, kind: 'para', hit: has(pk, el) }); }); } else out.push({ k: k, kind: mk ? 'part' : 'text', hit: has(k, el) }); } }
+        else go(c);
+      }
+    })(root || document.body);
+    return out;
+  };
   if (stored() === 'es') setLang('es', true);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { if (armed) sweep(); syncUi(); });
   else syncUi();

@@ -33,7 +33,9 @@ p.rep('#pbApp #screen-confinedPermit input.pb-cp-auto { color: var(--pb-text-2);
       '#pbApp #screen-confinedPermit .cp-ticks-head, #pbApp #screen-confinedPermit .cp-entrants-line, #pbApp #screen-confinedPermit .cp-limits-line, #pbApp #screen-confinedPermit .cp-reuse-line { margin: 8px 0 2px 0; font-size: 14px; line-height: 1.45; color: var(--pb-text-2); }\n'
       '#pbApp #screen-confinedPermit .cp-limits-line { color: var(--pb-text); }\n'
       '#pbApp #screen-confinedPermit details.cp-more > .pb-field, #pbApp #screen-confinedPermit details.cp-more > .pb-row { margin-top: 8px; }\n'
-      '#pbApp #screen-confinedPermit .cp-review-jump:has(#cpDraftMissing:empty) { display: none; }')
+      '#pbApp #screen-confinedPermit .cp-review-jump:has(#cpDraftMissing:empty) { display: none; }\n'
+      '#pbApp#pbApp #screen-confinedPermit .cp-row-wide { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 0 12px; align-items: end; }\n'
+      '#pbApp#pbApp #screen-confinedPermit .cp-row-wide > .pb-field { width: auto; min-width: 0; }')
 
 # --- 3. a fresh form: the new boxes are emptied, then prefilled
 p.rep("'cpSupervisor','cpSupervisorInitials','cpAttendant','cpMiscNotes','cpEqNotes','cpAddlPermits','cpAtmoInterval','cpCommInterval'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });",
@@ -159,4 +161,10 @@ p.rep("    document.querySelectorAll('#screen-confinedPermit [aria-invalid=\"tru
 p.rep("document.querySelectorAll('#screen-confinedPermit details.cp-group').forEach(d => { d.open = true; }); }\n    pbRenderPermitGroups();\n  });\n  pbRenderPermitGroups();",
       "document.querySelectorAll('#screen-confinedPermit details.cp-group').forEach(d => { d.open = d.id !== 'cpGroupNotes'; }); } /* permit_short: the optional Notes & Photos group starts folded */\n    pbRenderPermitGroups();\n    try { pbCpShortSync(); } catch (e) { console.error(e); }\n  });\n  pbRenderPermitGroups();\n"
       "  { const f = document.getElementById('screen-confinedPermit'); if (f) { const go = () => { try { pbCpShortSync(); } catch (e) { console.error(e); } }; f.addEventListener('input', go); f.addEventListener('change', go); go(); } }")
+# --- 10. the review: no long list on a form nobody has asked to check yet; the air limits in one short line
+p.rep("""        ? '<div class="cp-miss-head">Still missing or to fix (' + missingAll.length + ') — tap one to go to it:</div>'""",
+      """        ? (!pbCpShowMissing && !totalFix) ? '<div class="cp-miss-head">' + missingAll.length + ' required ' + (missingAll.length === 1 ? 'box is' : 'boxes are') + ' still empty.</div><button type="button" class="pb-btn ghost small" id="cpShowMissingBtn" onclick="pbCpReviewPermit()">Show Them</button>' /* permit_short */
+        : '<div class="cp-miss-head">Still missing or to fix (' + missingAll.length + ') — tap one to go to it:</div>'""")
+p.rep("""      ['App air limits', escapeHtml(pbLimitsText(lim)) + (bad ?""",
+      """      ['App air limits', escapeHtml((() => { const n = Object.keys(lim.limitOrigin).filter(k => lim.limitOrigin[k] === 'entered').length; return 'O2 ' + pbMinO2(lim) + ' to ' + pbMaxO2(lim) + '%, LEL up to ' + pbMaxLEL(lim) + '%, H2S up to ' + pbMaxH2S(lim) + ' ppm, CO up to ' + pbMaxCO(lim) + ' ppm (' + (n ? n + ' typed on this permit, the rest standard' : 'standard values') + ')'; })()) + (bad ?""")
 p.save()

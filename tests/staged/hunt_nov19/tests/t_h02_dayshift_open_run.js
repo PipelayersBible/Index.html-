@@ -30,5 +30,17 @@ const L=require(require('path').resolve(__dirname,'../../../r1706/daily3/tests/l
     const d={kind:'run',id:3,jobNumber:'24-017',runStartTime:T('2026-11-19T05:30:00-08:00'),runEndTime:T('2026-11-19T06:00:00-08:00'),completed:true};
     runArchive.push(a,c,d);const r=[__pbDlyRunDay(a),__pbDlyRunDay(c),__pbDlyRunDay(d)];runArchive.length=0;keep.forEach(e=>runArchive.push(e));return r;})()`);
   L.ok(night.join()==='2026-11-18,2026-11-18,2026-11-18','a night shift (19:00, a run still open, runs at 00:30 and 05:30) stays on the shift’s day: '+night.join());
+  // a day crew whose FIRST run of the day started in the afternoon (2:30 PM) and stayed open; next morning 6:15 AM
+  const pm=await L.ev(p,`(()=>{const keep=runArchive.slice();runArchive.length=0;const T=(s)=>Date.parse(s);
+    const a={kind:'run',id:1,jobNumber:'24-017',runStartTime:T('2026-11-18T14:30:00-08:00'),runEndTime:null};
+    const c={kind:'run',id:2,jobNumber:'24-017',runStartTime:T('2026-11-19T06:15:00-08:00'),runEndTime:T('2026-11-19T10:00:00-08:00'),completed:true};
+    runArchive.push(a,c);const r=[__pbDlyRunDay(a),__pbDlyRunDay(c)];runArchive.length=0;keep.forEach(e=>runArchive.push(e));return r;})()`);
+  L.ok(pm.join()==='2026-11-18,2026-11-19','a day crew’s open 2:30 PM run does not catch the next morning’s 6:15 AM run: '+pm.join());
+  // a 6 PM night shift whose first run is still open: a run at 7:30 AM (13.5 h in) is still the shift’s
+  const n2=await L.ev(p,`(()=>{const keep=runArchive.slice();runArchive.length=0;const T=(s)=>Date.parse(s);
+    const a={kind:'run',id:1,jobNumber:'24-017',runStartTime:T('2026-11-18T18:00:00-08:00'),runEndTime:null};
+    const c={kind:'run',id:2,jobNumber:'24-017',runStartTime:T('2026-11-19T07:30:00-08:00'),runEndTime:T('2026-11-19T08:00:00-08:00'),completed:true};
+    runArchive.push(a,c);const r=[__pbDlyRunDay(a),__pbDlyRunDay(c)];runArchive.length=0;keep.forEach(e=>runArchive.push(e));return r;})()`);
+  L.ok(n2.join()==='2026-11-18,2026-11-18','a 6 PM night shift (first run still open) keeps its 7:30 AM run: '+n2.join());
   await L.done(b,p);
 })().catch(e=>{console.log('FAIL exception',e&&e.stack||e);process.exit(1);});

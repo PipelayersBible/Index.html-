@@ -8,9 +8,11 @@
       <div class="pb-body">
         <div class="pb-field"><label for="cpSpace">Space (which manhole, vault or pipe)</label><input type="text" enterkeyhint="next" id="cpSpace" maxlength="200" placeholder="e.g. MH #4, Main St &amp; 3rd"></div>
         <div class="pb-field"><label for="cpPurpose">Purpose of entry</label><input type="text" enterkeyhint="next" id="cpPurpose" maxlength="200" placeholder="e.g. pipe tie-in inspection"></div>
-        <div class="pb-field"><label for="cpJobsite">Jobsite / project</label><input type="text" enterkeyhint="next" id="cpJobsite" maxlength="200" placeholder="e.g. Main St sewer replacement"></div>
-        <div class="pb-field"><label for="cpAddress">Site address (what you&rsquo;d tell 911)</label><input type="text" enterkeyhint="next" id="cpAddress" maxlength="200" placeholder="e.g. 1420 Elm St, Fresno"></div>
-        <div class="pb-field"><label for="cpJobNumber">Job number (optional)</label><input type="text" enterkeyhint="next" id="cpJobNumber" maxlength="200" placeholder="e.g. 24-017"></div>
+        <div class="pb-field"><label for="cpAddress">Site address with state (what you&rsquo;d tell 911)</label><input type="text" enterkeyhint="next" id="cpAddress" maxlength="200" placeholder="e.g. 1420 Elm St, Fresno, CA"></div>
+        <div class="pb-row cp-row-wide">
+          <div class="pb-field"><label for="cpJobsite">Jobsite / project</label><input type="text" enterkeyhint="next" id="cpJobsite" maxlength="200" placeholder="e.g. Main St sewer"></div>
+          <div class="pb-field"><label for="cpJobNumber">Job number</label><input type="text" enterkeyhint="next" id="cpJobNumber" maxlength="200" placeholder="optional"></div>
+        </div>
         <details class="pb-more b4-more cp-more"><summary><span>More details: how to find the entrance</span></summary>
           <div class="pb-field"><label for="cpLandmarks">How responders find the entrance</label><input type="text" enterkeyhint="next" id="cpLandmarks" maxlength="300" placeholder="e.g. north gate, 2nd manhole past the hydrant"></div>
         </details>
@@ -40,8 +42,11 @@
     <div class="pb-section">
       <div class="pb-body">
         <datalist id="cpNamesList"></datalist>
-        <div class="pb-field"><label for="cpSupervisor">Entry supervisor</label><input type="text" enterkeyhint="next" id="cpSupervisor" maxlength="200" list="cpNamesList" autocomplete="off"></div>
-        <div class="pb-field"><label for="cpSupervisorInitials">Supervisor&rsquo;s initials (typed by the supervisor: &ldquo;I reviewed this permit and authorize entry&rdquo;)</label><input type="text" enterkeyhint="next" id="cpSupervisorInitials" maxlength="20" autocomplete="off"></div>
+        <div class="pb-row cp-row-wide">
+          <div class="pb-field"><label for="cpSupervisor">Entry supervisor</label><input type="text" enterkeyhint="next" id="cpSupervisor" maxlength="200" list="cpNamesList" autocomplete="off"></div>
+          <div class="pb-field"><label for="cpSupervisorInitials">Initials</label><input type="text" enterkeyhint="next" id="cpSupervisorInitials" maxlength="20" autocomplete="off" aria-describedby="cpSupervisorInitialsHelp"></div>
+        </div>
+        <p class="pb-help cp-entrants-line" id="cpSupervisorInitialsHelp">The supervisor types the initials: &ldquo;I reviewed this permit and authorize entry.&rdquo;</p>
         <div class="pb-field"><label for="cpAttendant">Attendant</label><input type="text" enterkeyhint="next" id="cpAttendant" maxlength="200" list="cpNamesList" autocomplete="off"></div>
         <p class="pb-help cp-entrants-line">Entrants are checked in by name on the next screen.</p>
         <div class="pb-field"><label for="cpComms">How entrants and the attendant stay in contact</label><textarea id="cpComms" rows="2" maxlength="1000" placeholder="e.g. radio check every 5 min, hand signals if radio fails"></textarea></div>
@@ -90,18 +95,20 @@
     <div class="pb-section">
       <div class="pb-tag">Air Testing</div>
       <div class="pb-body">
-        <div class="pb-field"><label for="cpMeter">Gas meter used (make, model, serial or unit number)</label><input type="text" enterkeyhint="next" id="cpMeter" maxlength="120" placeholder="e.g. BW MicroClip XL, unit 3" autocomplete="off"></div>
-        <div class="pb-field"><label for="cpMeterCal">Meter&rsquo;s last bump test or calibration</label><input type="date" enterkeyhint="next" id="cpMeterCal"></div>
+        <div class="pb-row cp-row-wide">
+          <div class="pb-field"><label for="cpMeter">Gas meter (make, unit number)</label><input type="text" enterkeyhint="next" id="cpMeter" maxlength="120" placeholder="e.g. MicroClip, unit 3" autocomplete="off"></div>
+          <div class="pb-field"><label for="cpMeterCal">Last bump test or calibration</label><input type="date" enterkeyhint="next" id="cpMeterCal"></div>
+        </div>
         <div class="pb-field"><label for="cpAtmoInterval">Air re-test reminder, minutes (blank = off)</label><input type="number" enterkeyhint="next" step="1" id="cpAtmoInterval" placeholder="e.g. 15" inputmode="numeric"><p class="pb-help" style="margin:4px 0 0 0;">Check-in is blocked when the last air test is older than this (20 min if blank).</p></div>
         <p class="pb-help cp-limits-line" id="cpLimitsLine"></p>
         <details class="pb-more b4-more cp-more" id="cpMoreLimits"><summary><span>More details: change air limits, other entry conditions</span></summary>
-        <p class="pb-help">A blank box uses the standard value shown in it; it never turns the check off. Keep using your gas meter&rsquo;s own alarm too. A blank H2S or CO reading means not measured, never zero.</p>
+        <p class="pb-help">A blank box never turns the check off. Keep using your gas meter&rsquo;s own alarm too. A blank H2S or CO reading means not measured, never zero.</p>
         <div class="pb-row cp-limits-row">
-          <div class="pb-field"><label for="cpMinO2">Minimum O2 (%)</label><input type="number" enterkeyhint="next" step="0.1" min="0" max="25" id="cpMinO2" placeholder="19.5" inputmode="decimal"></div>
-          <div class="pb-field"><label for="cpMaxO2">Maximum O2 (%)</label><input type="number" enterkeyhint="next" step="0.1" min="0" max="30" id="cpMaxO2" placeholder="23.5" inputmode="decimal"></div>
-          <div class="pb-field"><label for="cpMaxLEL">Maximum LEL (%)</label><input type="number" enterkeyhint="next" step="0.1" min="0" id="cpMaxLEL" placeholder="10" inputmode="decimal"></div>
-          <div class="pb-field"><label for="cpMaxH2S">Maximum H2S (ppm)</label><input type="number" enterkeyhint="next" step="0.1" min="0" id="cpMaxH2S" placeholder="10" inputmode="decimal"></div>
-          <div class="pb-field"><label for="cpMaxCO">Maximum CO (ppm)</label><input type="number" enterkeyhint="next" step="0.1" min="0" id="cpMaxCO" placeholder="25" inputmode="decimal"></div>
+          <div class="pb-field"><label for="cpMinO2">Minimum acceptable O2 (%) — blank uses 19.5</label><input type="number" enterkeyhint="next" step="0.1" min="0" max="25" id="cpMinO2" placeholder="19.5" inputmode="decimal"></div>
+          <div class="pb-field"><label for="cpMaxO2">Maximum acceptable O2 (%) — blank uses 23.5 (oxygen-enriched air is a fire hazard)</label><input type="number" enterkeyhint="next" step="0.1" min="0" max="30" id="cpMaxO2" placeholder="23.5" inputmode="decimal"></div>
+          <div class="pb-field"><label for="cpMaxLEL">Maximum acceptable LEL (%) — blank uses 10</label><input type="number" enterkeyhint="next" step="0.1" min="0" id="cpMaxLEL" placeholder="10" inputmode="decimal"></div>
+          <div class="pb-field"><label for="cpMaxH2S">Maximum H2S (ppm) — blank uses 10 ppm, the OSHA construction limit (8-hour average)</label><input type="number" enterkeyhint="next" step="0.1" min="0" id="cpMaxH2S" placeholder="10" inputmode="decimal"></div>
+          <div class="pb-field"><label for="cpMaxCO">Maximum CO (ppm) — blank uses 25 ppm, the Cal/OSHA limit (stricter than NIOSH’s 35 and federal OSHA’s 50)</label><input type="number" enterkeyhint="next" step="0.1" min="0" id="cpMaxCO" placeholder="25" inputmode="decimal"></div>
         </div>
         <div class="pb-field"><label for="cpConditions">Other acceptable entry conditions</label><textarea id="cpConditions" rows="2" placeholder="e.g. blower running, no standing water (this text isn&rsquo;t checked by the app)"></textarea></div>
         </details>
@@ -113,9 +120,9 @@
         <div class="cp-ticks">
         <div class="pb-field"><label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="cpEqPPE" style="width:auto;"> PPE</label></div>
         <div class="pb-field"><label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="cpEqTest" style="width:auto;"> Testing equipment</label></div>
-        <div class="pb-field"><label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="cpEqComm" style="width:auto;"> Communications equipment</label></div>
         <div class="pb-field"><label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="cpEqAlarm" style="width:auto;"> Alarm systems</label></div>
         <div class="pb-field"><label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="cpEqRescue" style="width:auto;"> Rescue equipment</label></div>
+        <div class="pb-field" style="grid-column:1 / -1;"><label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="cpEqComm" style="width:auto;"> Communications equipment</label></div>
         </div>
         <details class="pb-more b4-more cp-more"><summary><span>More details: equipment notes, other permits (hot work)</span></summary>
         <div class="pb-field"><label for="cpEqNotes">Equipment notes</label><input type="text" enterkeyhint="next" id="cpEqNotes" maxlength="300"></div>

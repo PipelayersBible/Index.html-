@@ -1,0 +1,2 @@
+const L=require('./_lib');(async()=>{const {b,p}=await L.start(process.argv[2]==='base'?L.BASE:L.CUR);await p.evaluate(()=>pbOpenConfinedPermitForm());await p.waitForTimeout(1200);
+console.log(await p.evaluate(()=>{const s=document.getElementById('screen-confinedPermit');return [...s.children].map(c=>{const r=c.getBoundingClientRect();return Math.round(r.height)+'px '+(c.innerText||'').trim().split(/\s+/).filter(Boolean).length+'w :: '+(c.id||c.className)+' :: '+(c.innerText||'').replace(/\s+/g,' ').slice(0,700);}).join('\n');}));await b.close();})();
