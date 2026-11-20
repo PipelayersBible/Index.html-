@@ -31,6 +31,6 @@ p.rep("if ((await pbBadList()).indexOf(sha) >= 0) return; await pbLazyFetchFor(p
       "if ((await pbBadList()).indexOf(sha) >= 0) return; if (!(await pbLazyFetchFor(pbText(buf))) && (await pbAnyKeptPage())) return; /* hunt_nov19: its parts first */ await pbShellPut(req.url, pbPageResp(copy, buf, sha)); pbLazyTidy(); } catch (e) {} })());")
 # the background check behind the kept copy
 p.rep("""      await pbLazyFetchFor(text);
-      if (kept) await c.put(pbPrevKey(), kept);""", """      if (!(await pbLazyFetchFor(text)) && kept) return; // hunt_nov19: its parts didn't all arrive: the kept copy stays, the next check tries again
+      if (kept) await c.put(pbPrevKey(), kept);""", """      if (!(await pbLazyFetchFor(text)) && (kept || (await pbAnyKeptPage()))) return; // hunt_nov19: its parts didn't all arrive: the kept copy stays (also an older build's, while this worker is still taking over), the next check tries again
       if (kept) await c.put(pbPrevKey(), kept);""")
 p.save()
