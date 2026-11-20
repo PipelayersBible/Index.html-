@@ -1,3 +1,4 @@
+// (streamline: ticks the Terms on the password screen; the "signed in" words are a note, #pbSayDone, not a box)
 // r17.09: after an invite (or reset) link's Save New Password the phone STAYS signed in: Home opens, no log out, no
 // Log In screen, the link's marker is gone. A link left open whose password was already saved is kept signed in too.
 const {chromium}=require('playwright');const fs=require('fs');
@@ -12,13 +13,14 @@ async function open(q,init=''){
   const p=await ctx.newPage();p.errs=[];p.on('pageerror',e=>p.errs.push(e.message));
   await p.goto(BASE+q,{waitUntil:'load'});await p.waitForTimeout(2500);return {b,p};}
 const shown=(p,id)=>p.evaluate(id=>{const e=document.getElementById(id);return !!e&&getComputedStyle(e).display!=='none';},id);
-const modalText=(p)=>p.evaluate(()=>[...document.querySelectorAll('.pb-modal, .pb-modal-overlay, [role=dialog]')].filter(e=>getComputedStyle(e).display!=='none').map(e=>e.textContent).join(' | '));
+const modalText=(p)=>p.evaluate(()=>[document.getElementById('pbSayDone')].filter(e=>e&&!e.hidden).concat([...document.querySelectorAll('.pb-modal, .pb-modal-overlay, [role=dialog]')].filter(e=>getComputedStyle(e).display!=='none')).map(e=>e.textContent).join(' | '));
 (async()=>{
   for(const type of ['invite','recovery']){
     let {b,p}=await open('?token_hash=pkce_abcDEF0123456789&type='+type);
     await p.click('#pbTapLinkGo');await p.waitForTimeout(3500);
     ok(await shown(p,'screen-setPassword'),type+': Set New Password opens');
     if(await p.$('#pbTermsSheet')){await p.check('#pbTermsBox');await p.click('#pbTermsYes');await p.waitForTimeout(1500);}
+    else if(await p.$('#setPwTerms')&&await p.isVisible('#setPwTerms'))await p.check('#setPwTerms'); // streamline 01: the tick is on the screen
     await p.fill('#setPwNew','NewPass1234');await p.fill('#setPwConfirm','NewPass1234');
     await p.click('#setPwBtn');await p.waitForTimeout(3000);
     const st=await p.evaluate(()=>({pw:sessionStorage.getItem('__pw'),outs:+(sessionStorage.getItem('__signOuts')||0),marker:localStorage.getItem('pbLinkSignInOpen'),notice:sessionStorage.getItem('pbLoginNotice')}));

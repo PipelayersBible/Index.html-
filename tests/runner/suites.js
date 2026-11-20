@@ -21,6 +21,7 @@ const suites = [
     't120_csrecord.js', 't121_feedbackall.js', 't122_lowslope.js', 't123_newrunshort.js', 't124_crewview.js', 't126_noticeack.js', 't127_billing0.js', 't128_betaresults.js', 't129_taplink.js', 't130_onboard.js', 't131_trench20.js', 't132_setpw_stay.js', 't133_onetap_text.js']) },
   { name: 'r1706_plain', variant: 'plain', tests: T('r1706/staterules/tests', ['t130_staterules.js']).concat(T('r1706/office3/tests', ['t_o3_31_board.js', 't_o3_32_jobinfo_pms.js', 't_o3_34_36_office.js', 't_o3_35_leave_handover.js'])) },
   { name: 'r1706_hook', variant: 'hook', tests: T('r1706/office3/tests', ['t_o3_30_31_permit.js', 't_o3_37_38_39_records.js']).concat(T('r1706/daily3/tests', ['t01_crew_default.js', 't02_night_shift.js', 't03_safety_daily.js', 't04_safety_search.js', 't05_customer_signature.js', 't06_last_run_crew.js'])) },
+  { name: 'r1710_plain', variant: 'plain', tests: T('r1710/streamline/tests', ['t_sl1_setpw.js', 't_sl2_a2hs.js', 't_sl3_paths.js', 't_sl4_code.js']) },
   { name: 'py', variant: 'plain', tests: T('.', ['permit_active_screen.py']) },
   { name: 'main_older', variant: 'plain', tests: T('.', ['t88.js', 't89_photostamp.js', 't92_backnow.js', 't93_livecam.js', 't94_parallel.js',
     't98_betaend.js', 't99_removed.js', 't100_runpdf.js']) },

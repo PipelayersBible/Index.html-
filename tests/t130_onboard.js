@@ -1,3 +1,4 @@
+// (streamline: Join Crew goes to Home with a note, #pbSayDone, instead of the You're In sheet and its Start button)
 // t130 onboard2 (on r17.04): join by text link, scanner-proof; Terms on the join screen; auto-pair; office switch;
 // lost phone; getting-started card; one-time iPhone Home Screen card. 390 px, light and dark, offline.
 // Run: NODE_PATH=/opt/npm-tools/node_modules PB_URL=http://127.0.0.1:8931/cur.html node t130_onboard.js
@@ -7,6 +8,7 @@ const SHOTS=process.env.PB_OUT||(__dirname+'/../shots');try{fs.mkdirSync(SHOTS,{
 let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++;};
 const IOS='Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
 const AND='Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36';
+const said=(p)=>p.evaluate(()=>{const n=document.getElementById('pbSayDone');return n&&!n.hidden?n.textContent:'';}); // streamline 02: the join is said in a note on Home
 const sheet=(p)=>p.evaluate(()=>{const d=document.getElementById('pbObSheet');return d?d.innerText.replace(/\s+/g,' '):'';});
 const toLocal=(url)=>BASE+url.slice(url.indexOf('#'));
 const fits=(p,sel)=>p.evaluate((sel)=>{const e=sel?document.querySelector(sel):null;const r=e?e.getBoundingClientRect():{left:0,right:0};return document.documentElement.scrollWidth<=innerWidth&&r.left>=0&&r.right<=innerWidth+0.5;},sel);
@@ -97,14 +99,14 @@ const CONTRACTOR=`window.__tableOne={subscriptions:{tier:'contractor',status:'ac
  ok(await fits(H,'#pbObSheet .pbob-card'),'4: the join sheet fits 390 px');await H.screenshot({path:SHOTS+'/join_light.png'});
  ok(!L1.used_at,'4: still not used before the tap');
  await H.fill('#pbObName','Mike Rivera');await H.check('#pbObTerms');await H.click('#pbObJoinBtn');await H.waitForTimeout(3500);
- t=await sheet(H);const me=await H.evaluate(()=>window.__pbObMe());
- ok(/You joined DIG Civil Construction as Pipelayer\. You’re on Ray’s crew\./.test(t),'4: "You\'re In ... You\'re on Ray\'s crew"');
+ t=await said(H);const me=await H.evaluate(()=>window.__pbObMe());
+ ok(/You joined DIG Civil Construction as Pipelayer\. You’re on Ray’s crew\./.test(t)&&!(await H.$('#pbObSheet')),'4: Home, with a note "You joined ... You\'re on Ray\'s crew" (no You\'re In sheet)');
  ok(!!me&&me.link&&/@crew\.pipelayersbible\.com$/.test(me.email),'4: signed in with a new no-email account');
  const fn=await H.evaluate(()=>window.__fnLog);
  ok(fn.length===1&&fn[0][1].action==='join'&&fn[0][1].token===tokOf(url)&&fn[0][1].terms.t==='1.0'&&fn[0][1].notice==='3','4: one crew-join call with the token, Terms 1.0 and notice 3');
  ok(srv.st.members.get(me.id)&&srv.st.members.get(me.id).role==='pipelayer'&&srv.st.crew.some(x=>x[0]===srv.FOREMAN&&x[1]===me.id),'4: server: member as Pipelayer, on Ray\'s crew (#15)');
  ok(srv.st.terms.some(x=>x[0]===me.id&&x[1]==='1.0'&&x[3]==='join')&&srv.st.notices.some(x=>x[0]===me.id&&x[2]==='3'&&x[3]==='join'),'4: Terms and crew notice recorded with the join (#17)');
- await H.click('#pbObStartBtn');await H.waitForTimeout(3000);
+ await H.waitForTimeout(3000);
  ok(await H.evaluate(()=>!document.getElementById('pbTermsSheet')),'4: the Terms sheet does not pop up');
  ok(await H.evaluate(()=>{const o=document.getElementById('pbModalOverlay');return !o||getComputedStyle(o).display==='none'||!/What Your Company Sees/.test(o.innerText);}),'4: the crew notice does not pop up');
  ok(!srv.st.terms.some(x=>x[0]===me.id&&x[3]==='sheet'),'4: no second Terms record from the phone');
@@ -125,7 +127,7 @@ const CONTRACTOR=`window.__tableOne={subscriptions:{tier:'contractor',status:'ac
  await F6.fill('#pbObName','Ana');await F6.check('#pbObTerms');await F6.context().setOffline(true);await F6.click('#pbObJoinBtn');await F6.waitForTimeout(800);
  ok(/Nothing was used up: the link still works/.test(await sheet(F6))&&!L6.used_at,'6: Join Crew with no signal: "Nothing was used up", link unused');
  await F6.context().setOffline(false);await F6.click('#pbObJoinBtn');await F6.waitForTimeout(3500);
- ok(/You joined DIG Civil Construction/.test(await sheet(F6))&&!!L6.used_at,'6: with signal, Join Crew works');
+ ok(/You joined DIG Civil Construction/.test(await said(F6))&&!!L6.used_at,'6: with signal, Join Crew works');
  // ================= 7. a foreman: Pipelayer only, on his crew =================
  const FM=(await boot(b,BASE,srv,{user:{id:srv.FOREMAN,email:'ray@example.com',user_metadata:{full_name:'Ray'},app_metadata:{}},init:CONTRACTOR})).p;pages.push(FM);
  await FM.evaluate(()=>pbOpenSettings());await FM.waitForTimeout(800);
@@ -190,7 +192,7 @@ const CONTRACTOR=`window.__tableOne={subscriptions:{tier:'contractor',status:'ac
  await I.evaluate(()=>pbObClose());
  const H2=(await boot(b,BASE,srv,{ua:IOS,signedOut:true,standalone:true,wait:3500})).p;pages.push(H2);
  await H2.evaluate(()=>pbObOpenCode());await H2.waitForTimeout(300);await H2.fill('#pbObCodeIn',hcode.toLowerCase());await H2.click('#pbObCodeGo');await H2.waitForTimeout(3500);
- ok((await H2.evaluate(()=>(window.__pbObMe()||{}).id))===nu.id&&/Signed In/.test(await sheet(H2)),'11: the typed code signs the Home Screen app in to the same account');
+ ok((await H2.evaluate(()=>(window.__pbObMe()||{}).id))===nu.id&&/^Signed in as /.test(await said(H2)),'11: the typed code signs the Home Screen app in to the same account (a note, no Signed In box)');
  await H2.evaluate(()=>pbObClose());await H2.evaluate(()=>pbLogout());await H2.waitForTimeout(500);
  ok(/No Email or Password/.test(await H2.evaluate(()=>document.getElementById('pbModalOverlay').innerText)),'11: Log Out on a no-email account warns first');
  await O.evaluate(()=>pbObClose());await O.evaluate(()=>pbObOpenInvite());await O.waitForTimeout(700);await O.click('#pbObMakeBtn');await O.waitForTimeout(800);
