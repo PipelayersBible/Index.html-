@@ -83,7 +83,7 @@ const line = (n, x) => n + ': ' + x.h + ' px (' + (x.h / 844).toFixed(1) + ' scr
   // ---- same pipe as the last run on this job ----
   await newRun(p);
   let chip = await p.evaluate(() => { const b = document.getElementById('runSamePipeBtn'); return b && !b.hidden && b.checkVisibility() ? b.textContent : ''; });
-  ok(/^Same as the last run on this job: 8″/.test(chip), 'New Run on the same job offers: "' + chip + '"');
+  ok(chip==='Reuse Pipe Settings', 'New Run on the same job offers: "' + chip + '"');
   ok(await p.evaluate(() => document.getElementById('runIdSel').value === ''), 'nothing is filled until it is tapped');
   await p.click('#runSamePipeBtn'); await p.waitForTimeout(800); const m = await H.modal(); await H.modalClick('OK').catch(() => H.modalClick('Got It').catch(() => {})); await p.waitForTimeout(1200);
   const pv = await p.evaluate(() => ({ id: document.getElementById('runIdSel').selectedOptions[0].text, wt: document.getElementById('runWT').value, chip: !document.getElementById('runSamePipeBtn').hidden }));
