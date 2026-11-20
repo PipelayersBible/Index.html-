@@ -125,4 +125,7 @@ Existing ids `tc-1` and `tc-2` do not clash with the new `tc-<st>-...` ids.
 3. Fix "1926.200-203" in TT-031 / TT-033. Recommend yes, next release.
 4. Build the taper / cone calculator. Recommend yes; it is small, the math is settled, and crews ask for it.
 
-## DONE
+
+## Pass 2 (Nov 20, afternoon): "Try harder to find those states manuals" - IN PROGRESS
+Goal: check the 39 not-confirmed state cards against each state's own manual. Output goes to `v2/` (the original
+`traffic_tc.jsonl` that `library_load_nov20/merge.py` reads is left as is until the lead swaps it). Running log: `v2/work/state_log.tsv`.

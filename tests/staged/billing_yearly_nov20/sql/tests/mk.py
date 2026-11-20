@@ -1,0 +1,7 @@
+# builds local_t01.sql (notice) and live_t01.sql (migration + test; ends with an error so ALL of it rolls back)
+import os; d=os.path.dirname(os.path.abspath(__file__)); b=open(d+'/t01.plpgsql').read()
+loc=b.replace('__RESULT_OK__',"raise notice 'RESULT: all passed (% checks groups)', 9").replace('__RESULT_FAIL__',"raise notice 'RESULT: %', array_to_string(f, ' | ')")
+open(d+'/t01.sql','w').write('do $t$\n'+loc+' $t$;\n')
+liv=b.replace('__RESULT_OK__',"raise exception 'RESULT: {\"checks\": \"all passed\"} (rolled back, nothing kept)'").replace('__RESULT_FAIL__',"raise exception 'RESULT: %', array_to_string(f, ' | ')")
+mig=open(d+'/../01_yearly_sheets.sql').read()
+open(d+'/live_t01.sql','w').write('-- Paste as ONE query on live. It applies the migration and runs the checks, then ENDS WITH AN ERROR on purpose so\n-- everything rolls back. Success = an error starting  RESULT: {"checks": "all passed"}. Anything else (FAIL / pb_patch:) = stop.\n'+mig+'\ndo $t$\n'+liv+' $t$;\n')
