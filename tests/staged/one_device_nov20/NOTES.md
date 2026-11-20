@@ -1,5 +1,7 @@
 # One device in use per login, two signed in (staged Nov 20, on r17.11) — version 3, PART DONE
 
+> **Nov 20 (second helper): app patch v3 + tests v3 IN PROGRESS. See the top section when finished.**
+
 **State when work stopped (usage limit): the server part (SQL) is finished and tested locally for Tommy's final rule.
 The app patch and the browser tests are still the earlier version and do NOT match it yet. Do not ship the app patch
 as it is.** Nothing here is live; the server was only read.
