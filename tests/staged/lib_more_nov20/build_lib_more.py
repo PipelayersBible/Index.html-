@@ -51,7 +51,7 @@ fed('fed-fmcsa-cmv-10001-1', 'The 10,001 lb line: when a pickup and trailer beco
     'A pickup rated under 10,001 lb that pulls nothing, or a light trailer that keeps the total under 10,001 lb, is below the line.' + T_STATE_NOTE,
     '49 CFR 390.5 (definition of commercial motor vehicle, 10,001 lb); 49 CFR 383.5 (26,001 lb CDL line)', LII + '49/390.5')
 
-fed('fed-fmcsa-usdot-number-1', 'Does my work truck need a USDOT number on the door', T_DOT,
+fed('fed-fmcsa-usdot-number-1', 'Do we need a DOT number (USDOT number) on our pickups and work trucks, even if we only work in state', T_DOT,
     'FMCSA says a company needs a USDOT number when it runs a vehicle in interstate commerce that has a weight rating or weight "of 4,536 kg (10,001 pounds) or more, whichever is greater" '
     '(truck alone or truck plus trailer), or carries placarded hazardous materials. Interstate means trade that crosses a state line, "Between a place in a State and a place outside of such State". '
     'For companies that stay inside one state, FMCSA lists the states that also require a USDOT number for in-state commercial trucks: '
@@ -147,8 +147,8 @@ fed('fed-fmcsa-annual-inspection-1', 'Annual DOT inspection: every truck AND tra
     'This applies from the 10,001 lb commercial vehicle line, not only to CDL trucks. A roadside officer will ask for the sticker or report on both units.' + T_STATE_NOTE,
     '49 CFR 396.17(a)-(c); 49 CFR 396.21', LII + '49/396.17')
 
-fed('fed-fmcsa-cargo-check-1', 'Checking the load on the road: first 50 miles, then every 3 hours or 150 miles', T_DOT,
-    '49 CFR 392.9: a commercial truck may not be driven unless the cargo is "properly distributed and adequately secured", '
+fed('fed-fmcsa-cargo-check-1', 'Hauling the excavator: stop and check chains and binders in the first 50 miles, then every 3 hours or 150 miles', T_DOT,
+    'When hauling equipment, pipe or plates, the driver has to stop and check the chains, binders and straps. 49 CFR 392.9: a commercial truck may not be driven unless the cargo is "properly distributed and adequately secured", '
     'and the "tailgate, tailboard, doors, tarpaulins, spare tire and other equipment used in its operation" are secured, and nothing blocks the driver\'s view or movement. '
     'The driver must make sure of that before driving, then "Inspect the cargo and the devices used to secure the cargo within the first 50 miles after beginning a trip" and adjust or add tie-downs as needed. '
     'After that, re-check whenever the driver changes duty status, or the truck "has been driven for 3 hours", or "has been driven for 150 miles, whichever occurs first." '
@@ -186,7 +186,7 @@ CGP_URL = 'https://www.epa.gov/system/files/documents/2025-04/2022-cgp-permit-as
 CGP_ED = '2022 CGP as modified (effective April 8, 2025); expires February 16, 2027'
 CGP_TAIL = (' These are the numbers in EPA\'s own permit. Most states write their own construction stormwater permit, usually close to this one, and the state permit is the one that governs there.')
 
-fed('fed-epa-cgp-who-1', 'Who needs a construction stormwater permit (1 acre) and where EPA\'s own permit applies', T_CGP,
+fed('fed-epa-cgp-who-1', 'How big a job needs a stormwater permit and SWPPP: 1 acre. And where EPA\'s own permit applies', T_CGP,
     'Federal rule of thumb: a job that will disturb one or more acres of land needs stormwater permit coverage before dirt moves, and so does a smaller job that is part of a larger common plan '
     '(a phase of a subdivision, for example) that will disturb an acre or more in total (EPA 2022 Construction General Permit, Part 1.1.2). A long pipeline trench adds up: width of the disturbed strip times the length. '
     'In most states the state environmental agency issues the permit, with its own name, forms and fees. EPA\'s own permit (the CGP) is used only where EPA is the permitting authority (Part 1.1.3, Appendix B): '
@@ -217,8 +217,8 @@ fed('fed-epa-cgp-stabilization-1', 'Stabilization deadline (14 days), silt fence
     'Let it harden and haul it off. Paint, form oil and curing compound wash water are handled the same way.' + CGP_TAIL,
     CGP_SRC + ', Parts 2.2.3, 2.2.14 (Table 2), 2.3.4', CGP_URL, edition=CGP_ED)
 
-fed('fed-epa-cgp-dewatering-1', 'Pumping trench water under the stormwater permit: daily checks, no foam, no sheen, 50 NTU', T_CGP,
-    'Trench and excavation dewatering is a regulated discharge under EPA\'s 2022 Construction General Permit. '
+fed('fed-epa-cgp-dewatering-1', 'Pumping the trench out to a ditch or storm drain: what to check (daily, no foam, no sheen, 50 NTU)', T_CGP,
+    'Pumping water out of a trench or excavation to a ditch, creek or storm drain (dewatering) is a regulated discharge under EPA\'s 2022 Construction General Permit. '
     'What the water must look like (Part 2.4): "Do not discharge visible floating solids or foam", and the discharge must not cause "a visible sheen on the water surface". '
     'Run the pump discharge through a sediment control (dewatering bag, weir tank, sediment basin, or a well-vegetated area) and keep it from eroding the ground where it lands. '
     'Inspection (Part 4.3.2): the dewatering operation is inspected "once per day on which the discharge occurs." '
