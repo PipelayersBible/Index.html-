@@ -200,7 +200,7 @@ F('osha-pl-exc-appb-2', 'Benching and combination cuts under OSHA Appendix B', T
   an overall 1 to 1 (the figures allow benching only in cohesive Type B soil). Type C: simple slope 1 1/2 to 1; the figures show no
   benching for Type C. In any soil, when the lower portion is vertical and is supported or shielded, the support or shield extends at
   least 18 inches above the top of the vertical side, and the slope above it follows the soil type. Layered soils: each layer is cut to
-  its own slope. Bench heights in the figures are pictures in the rule; look at the figure before cutting benches.""",
+  its own slope. Bench step heights are pictures in the rule and are not confirmed here; look at the figure before cutting benches.""",
   '29 CFR 1926 Subpart P Appendix B, Figures B-1.1 to B-1.4', 'https://www.law.cornell.edu/cfr/text/29/appendix-B_to_subpart_P_of_part_1926',
   conf='medium', unc='yes')
 F('osha-pl-exc-appcdef-1', 'OSHA excavation Appendices C, D, E and F: what each one is for', T_EXC,
@@ -309,7 +309,7 @@ F('osha-pl-cs-roles-1', 'Duties of entrants, attendants and entry supervisors', 
   when they notice a warning sign. Attendants know the hazards and the behavioral effects of exposure, keep an accurate count of entrants,
   stay outside the space until relieved by another attendant, keep in contact with entrants, watch conditions inside and outside, order
   evacuation when needed, summon rescue as soon as entrants may need help getting out, keep unauthorized people away, do non-entry rescue
-  as the employer's procedure says, and take on no duty that interferes with watching the entrants. Entry supervisors know the hazards,
+  as the employer's procedure says, and take on no duty that interferes. Entry supervisors know the hazards,
   check that the permit is complete and tests are done before signing, verify rescue services are available and can be reached, remove
   unauthorized people, end the entry and cancel or suspend the permit when required, and check conditions when responsibility is handed
   over. One person can be supervisor and attendant, or supervisor and entrant, if trained and equipped for each role (OSHA FAQ).""",

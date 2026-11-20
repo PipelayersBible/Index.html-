@@ -101,7 +101,7 @@ location for this.
   service key, no claims and a malformed token; grants; why; Home Screen move; two-step login; an allowed exception;
   check-in and all three flags with no duplicates; who can read the notes; the permit hold; a fault in the trigger not
   blocking sign-in; user deletion. 02 and 99 were run locally too.
-- Rig, patched r17.11: `t_1dev.js` sections 1 to 5, 67 checks, all pass, no page errors.
+- Rig, patched r17.11: `t_1dev.js` sections 1 to 5, 58 checks, all pass, no page errors (run whole, one browser).
   1. Two phones on one login: the second sign-in ends the first; the first is told once at its next server contact, not
      again after a restart; flags recorded; notes on Crew members and Beta Accounts; a crew member sees none; the company
      account on a computer does not sign Ray's phone out.
@@ -110,8 +110,8 @@ location for this.
      under the right account after signing in again; back-and-forth flag.
   4. Home Screen code: session moved, Safari told, no flag.
   5. Server part not installed: nothing changes, no errors.
-- Existing tests on the patched page: `t_sl4_code.js` all pass, `t126_noticeack.js` clean; see the end of this file for
-  `t130_onboard.js`.
+- Existing tests on the patched page: `r1710/streamline/tests/t_sl4_code.js` all pass, the updated `t130_onboard.js`
+  ALL PASS, `t126_noticeack.js` and `t107_mfa.js` clean. The full regression was not run (shared machine).
 
 **Not tested:** the gate inside real PostgREST (only the function, with the claims PostgREST sets), and the trigger
 inside the real auth service. The first live check is step 3 below.

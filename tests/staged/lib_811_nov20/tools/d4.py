@@ -317,7 +317,7 @@ Arkansas's dig law is the Arkansas Underground Facilities Damage Prevention Act,
 Notice (14-271-112): "at least two (2), but not more than ten (10), full working days before commencing" the dig.
 The notice is "effective for a period of twenty (20) working days from the date that the notice was given." Work not finished or marks gone: "reinitiate the notice procedure," which means calling it in again with the normal wait.
 The tolerance zone, white lining rule, damage steps and fine amounts were not read in this pass and are not confirmed here. Until they are: hand dig or vacuum to find any marked line before a machine works near it, and if you hit a line call the owner, and 911 if gas or liquid is escaping.""",
-      'Ark. Code 14-271-112 (FindLaw copy, current as of Mar 28, 2024, as quoted in tests/staged/locate_round3_nov20/raw_findings.md)', 'https://codes.findlaw.com/ar/title-14-local-government/ar-code-sect-14-271-112/', ed='FindLaw copy current as of March 28, 2024', conf='medium', unc='tolerance zone, white lining, damage steps, fine amounts')
+      'Ark. Code 14-271-112 (FindLaw copy, current as of Mar 28, 2024, as quoted in tests/staged/locate_round3_nov20/raw_findings.md)', 'https://codes.findlaw.com/', ed='FindLaw copy current as of March 28, 2024', conf='low', unc='tolerance zone, white lining, damage steps, fine amounts')
     # ---------------- MONTANA
     S('MT', 'overview', 'not confirmed yet: what to check with Montana 811', """
 Montana's dig law is Mont. Code Title 69, Chapter 4, Part 5 (underground facility protection). One center: Montana 811.

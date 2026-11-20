@@ -90,7 +90,7 @@ const SERVER=`;(function(){
  // Make Paid form on the beta
  await clickAct(p,C,'paid');
  const f=await txt(p,'#pbMakePaid');console.log('  form:',f.slice(0,500));
- ok(/Company legal name/.test(f)&&/Billing email/.test(f)&&/6 counted now/.test(f)&&/Monthly/.test(f)&&/Yearly/.test(f)&&/Founder price, locked until/.test(f)&&/Plan reading add-on \(price not set yet/.test(f)&&/Signed by/.test(f),'form fields: legal name, email, people now, monthly/yearly, founder lock + date, plan reading, signer');
+ ok(/Company legal name/.test(f)&&/Billing email/.test(f)&&/6 counted now/.test(f)&&/Monthly/.test(f)&&/Yearly/.test(f)&&/Founder price, locked until/.test(f)&&/Plan reading add-on \(\$1 a sheet, charged once when read\)\. Leave it off for customers until Billing shows sheets read/.test(f)&&/Signed by/.test(f),'form fields: legal name, email, people now, monthly/yearly, founder lock + date, plan reading, signer');
  ok(/\$111\.00 a month/.test(await txt(p,'#pbMpPrice')),'price shown: $111.00 a month for 6 people');
  ok(await p.evaluate(()=>!document.getElementById('pbMpFounder').disabled),'founder lock offered while the beta is on');
  await p.click('#pbMakePaid [data-iv="year"]');await p.click('#pbMpFounder');await p.waitForTimeout(200);
@@ -131,7 +131,7 @@ const SERVER=`;(function(){
  ok(/stays open/.test(m3||'')&&(await rpcs(p,'pb_owner_billing_state')).pop().p_state==='canceled'&&/Canceled/.test(await card(p,P))&&/Make Paid/.test(await card(p,P)),'Cancel Plan asks, records canceled, then offers Make Paid again');
  // plan reading on for Acme (now paid)
  await clickAct(p,C,'pr_on');const m4=await modal(p);await modalClick(p,'Turn On');await p.waitForTimeout(800);
- ok(/price not set yet/.test(m4||'')&&(await rpcs(p,'pb_owner_plan_reading_set')).pop().p_on===true&&/Plan reading add-on: on/.test(await card(p,C)),'Plan Reading On (paid company) with the price-not-set warning');
+ ok(/\(\$1 a sheet, charged once when read\. Billing doesn’t show sheets read yet/.test(m4||'')&&/a sheet, charged once when read/.test(await card(p,C))&&(await rpcs(p,'pb_owner_plan_reading_set')).pop().p_on===true&&/Plan reading add-on: on/.test(await card(p,C)),'Plan Reading On (paid company): the confirm and the card say $1 a sheet, and that Billing does not show sheets read yet');
  // Hand Over on the beta-turned-paid company
  await clickAct(p,C,'handover');const h=await txt(p,'#pbHandOver');console.log('  hand over:',h.slice(0,300));
  ok(/super@acme\.test/.test(h)&&/Superintendent/.test(h)&&/Project manager/.test(h)&&/crew0@acme\.test · Foreman/.test(h),'Hand Over lists the members and the old owner\'s new role');

@@ -80,8 +80,8 @@ const rpcs=(p,n)=>p.evaluate(n=>(window.__rpcArgs||[]).filter(x=>x[0]===n).map(x
     ['expires',['2026-11-20','DE'],'2026-12-09','DE: 12 business days after it is sent'],
     ['expires',['2026-11-20','MD'],'2026-12-14','MD: 3-day wait to Wed Nov 25, then 12 business days'],
     ['canDig',['2026-11-20','DC'],'2026-11-30','DC: 96 hours = 4 working days (Thanksgiving + Friday off)'],
-    ['expires',['2026-11-20','AR'],'','AR: ticket life not confirmed -> no date'],
-    ['canDig',['2026-11-20','AR'],'','AR: wait not confirmed -> no date'],
+    ['expires',['2026-11-20','PA'],'','PA: ticket life not confirmed -> no date'],
+    ['canDig',['2026-11-20','PA'],'','PA: wait not confirmed -> no date'],
     ['expires',['2026-11-20','ND'],'2026-12-11','ND: 21 days after the planned dig day; wait unknown so counted from the call (never later)'],
     ['expires',['2026-11-20','XX'],'','unknown state -> no date'],
   ];
@@ -98,8 +98,8 @@ const rpcs=(p,n)=>p.evaluate(n=>(window.__rpcArgs||[]).filter(x=>x[0]===n).map(x
   await p.evaluate(()=>window.pbLocAdd());await p.waitForTimeout(400);
   let called=await val(p,'locCalled'),exp=await val(p,'locExp');
   ok(exp===await M('expires',called,'AZ')&&exp!=='','new ticket: expiry from Arizona\'s rule ('+called+' -> '+exp+')');
-  ok(/^Arizona: Marks are good for 15 working days/.test(await txt(p,'locExpHelp')),'expiry help names Arizona\'s rule');
-  ok(/^Arizona: Call at least 2 working days/.test(await txt(p,'locRuleHelp')),'wait help names Arizona\'s rule');
+  ok((await txt(p,'locExpHelp'))===''&&/^Arizona rule/.test(await txt(p,'locRuleLink')),'no rule text under the expiry; the "Arizona rule" link is there');
+  ok((await txt(p,'locRuleHelp'))==='','no rule text under the dig dates');
   ok((await txt(p,'locFStart'))==='—','Arizona sets no latest start: Start work by shows a dash');
   await p.fill('#locCalled','2026-11-20');await p.dispatchEvent('#locCalled','change');
   ok(await val(p,'locExp')==='2026-12-14','changing the called-in day recomputes Arizona\'s expiry (2026-12-14)');
@@ -113,13 +113,13 @@ const rpcs=(p,n)=>p.evaluate(n=>(window.__rpcArgs||[]).filter(x=>x[0]===n).map(x
   ok(await val(p,'locExp')==='2026-12-18'&&(await txt(p,'locFStart'))==='Fri Dec 18','Nevada: 28 days, start within 28 days');
   await p.evaluate(()=>window.pbLocFormCancel());
   // a state with no confirmed ticket life: no date, "Check your state's 811 rules", saving asks for the date
-  await p.click('#locSrChange');await p.waitForTimeout(200);await p.selectOption('#locSrSel','AR');await p.waitForTimeout(500);
+  await p.click('#locSrChange');await p.waitForTimeout(200);await p.selectOption('#locSrSel','PA');await p.waitForTimeout(500);
   await p.evaluate(()=>window.pbLocAdd());await p.waitForTimeout(300);
-  ok((await val(p,'locExp'))==='','Arkansas: no expiry filled in');
-  ok(/Check your state’s 811 rules\./.test(await txt(p,'locExpHelp'))&&/Check your state’s 811 rules\./.test(await txt(p,'locRuleHelp')),'Arkansas: "Check your state\'s 811 rules" on both help lines');
-  ok((await txt(p,'locFDig'))==='—','Arkansas: Can dig from shows a dash');
+  ok((await val(p,'locExp'))==='','Pennsylvania: no expiry filled in');
+  ok(/^Enter the expiry on your ticket\.$/.test(await txt(p,'locExpHelp'))&&/^Ask 811 when you can dig\.$/.test(await txt(p,'locRuleHelp')),'Pennsylvania: "Enter the expiry on your ticket." and "Ask 811 when you can dig."');
+  ok((await txt(p,'locFDig'))==='—','Pennsylvania: Can dig from shows a dash');
   await p.fill('#locNo','A-1');await p.click('#locSave');await p.waitForTimeout(300);
-  ok(/Pick the day it expires/.test(await txt(p,'locErr')||''),'Arkansas: Save asks for the expiry date');
+  ok(/Pick the day it expires/.test(await txt(p,'locErr')||''),'Pennsylvania: Save asks for the expiry date');
   await p.evaluate(()=>window.pbLocFormCancel());
   // back to the address
   await p.click('#locSrChange');await p.waitForTimeout(200);await p.selectOption('#locSrSel','');await p.waitForTimeout(500);
