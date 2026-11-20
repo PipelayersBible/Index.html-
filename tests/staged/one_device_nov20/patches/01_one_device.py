@@ -84,6 +84,7 @@ MODULE = r"""  // ---- one device in use per login (Nov 20, v3; server: sql/01_o
     const was = !!PB_1D.lock; PB_1D.lock = null; pb1dShow();
     if (was && wake) { // this device is the one in use now: wake every queue at once (they all listen for 'online')
       PB_1D.waking = true; try { window.dispatchEvent(new Event('online')); } catch (e) {} PB_1D.waking = false;
+      try { if (sbUser && typeof window.pbCrewNoticeAckSend === 'function') window.pbCrewNoticeAckSend(sbUser.id); } catch (e) {} // (the one record that doesn't listen for 'online')
     }
   }
   const pb1dClock = (ms) => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ':' + ('0' + (t % 60)).slice(-2); };
@@ -140,7 +141,7 @@ MODULE = r"""  // ---- one device in use per login (Nov 20, v3; server: sql/01_o
     if (PB_1D.full === sid) return; // already asking
     PB_1D.full = sid; pb1dUnlock(false);
     const L = String(hint || '').split(',').map((x) => { const p = x.split('|'); return { kind: pb1dK(p[0]), at: Number(p[1]) * 1000 }; }).filter((x) => isFinite(x.at) && x.at > 0).slice(0, 2);
-    const ago = (t) => { const m = Math.round((Date.now() - t) / 60000); return !isFinite(m) || m < 0 ? '' : m < 2 ? 'used just now' : m < 120 ? 'used ' + m + ' min ago' : m < 2880 ? 'used ' + Math.round(m / 60) + ' h ago' : 'used ' + Math.round(m / 1440) + ' days ago'; };
+    const ago = (t) => { const m = Math.round((Date.now() - t) / 60000); return !isFinite(m) || m < -10 ? '' : m < 2 ? 'used just now' : m < 120 ? 'used ' + m + ' min ago' : m < 2880 ? 'used ' + Math.round(m / 60) + ' h ago' : 'used ' + Math.round(m / 1440) + ' days ago'; };
     const cap = (k) => k.charAt(0).toUpperCase() + k.slice(1);
     const same = L.length === 2 && L[0].kind === L[1].kind;
     const names = L.length === 2 ? L.map((x, i) => (same ? (i === 0 ? cap(x.kind) + ' Used Last' : 'Other ' + cap(x.kind)) : cap(x.kind)) + (ago(x.at) ? ' (' + ago(x.at) + ')' : ''))

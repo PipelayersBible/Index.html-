@@ -89,4 +89,28 @@ rep('ask.ts', 'mergeExcerpts(phone, hits, 9e3)', 'mergeExcerpts(phone, pbTrimHit
 rep('ask.ts', 'globalThis.__PLAIN_MIN = Number(', REPLY + 'globalThis.__PLAIN_MIN = Number(')
 # 6 ---- state.ts: a state under federal OSHA (no state plan for private crews): the federal rule IS the rule; no "the library has no <state> rule" line
 rep('state.ts', """before answering.` : "";""", """before answering.` : ` ${name} has no state OSHA plan for private crews: on a safety rule (trench, confined space, fall protection, silica) federal OSHA IS ${name}'s rule, so give it plainly and do not say the library lacks a ${name} rule.`;""")
+
+
+# 7 ---- state.ts (lib5, Nov 20): the job state's own cards were in the library and in the free check, but answers went without them
+#        (lib-ut-sp-2, lib-mi-sp-4, lib-mt-spec-1). Cause: the intent step adds 6 to 15 keywords to the search; those pull federal
+#        OSHA text far up, so the state card fails the "near the best hit" test (Michigan's running-soil card dropped out) or comes
+#        last behind four verbatim federal sections (Utah's 8-hour / 801 number, answered with the federal 1-800 number).
+#        Now: own cards are judged on the QUESTION's own words, and they go FIRST in the excerpts (also safe from the 9,000 cut).
+#        Emergencies keep score order (first aid first).
+rep('state.ts', """  const kept = wide.filter(keep);
+""", """  const kept = wide.filter(keep);
+  const qWide = question && question !== query ? search(index, question, { ...opts, k: 400, maxChars: 9e6, stats: void 0 }).filter(keep) : kept;
+  const qTop = (qWide.find((h) => h.lib !== "osha") || qWide[0] || { score: 0 }).score;
+""")
+rep('state.ts', """  let own = mine.length ? kept.filter((h) => chunkStates(h).some((c) => mine.includes(c))) : [];""",
+    """  let own = mine.length ? qWide.filter((h) => chunkStates(h).some((c) => mine.includes(c))) : [];""")
+rep('state.ts', """    const again = search(index, query + " " + US_STATES[code], { ...opts, k: 30, maxChars: 9e6, stats: void 0 })""",
+    """    const again = search(index, (question || query) + " " + US_STATES[code], { ...opts, k: 30, maxChars: 9e6, stats: void 0 })""")
+rep('state.ts', """    const qs = new Map(wide.map((h) => [h.id, h.score]));""", """    const qs = new Map(qWide.map((h) => [h.id, h.score]));""")
+rep('state.ts', """  own = own.filter((h) => h.score >= top * OWN_MIN || (h.score >= top * OWN_MIN * 0.7 && about(h)))""",
+    """  own = own.filter((h) => h.score >= qTop * OWN_MIN || (h.score >= qTop * OWN_MIN * 0.7 && about(h)))""")
+rep('state.ts', """  out.sort((a, b) => b.score - a.score);
+""", """  const ownFirst = new Set(EMERGENCY.test(String(question || "")) ? [] : own.map((h) => h.id));
+  out.sort((a, b) => (Number(ownFirst.has(b.id)) - Number(ownFirst.has(a.id))) || b.score - a.score);
+""")
 print('patched', out)

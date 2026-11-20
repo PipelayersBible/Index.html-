@@ -1,0 +1,1 @@
+select 'md5 '||p.oid::regprocedure::text||' '||md5(pg_get_functiondef(p.oid)) from pg_proc p where p.oid in (to_regprocedure('public.pb_plan_request(text)'),to_regprocedure('public.pb_owner_plan_requests()'),to_regprocedure('public.pb_owner_individual_on(uuid)'));

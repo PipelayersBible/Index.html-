@@ -41,7 +41,7 @@ module.exports=function(opt={}){
     const no=(details,hint)=>({__error:'pb:signed_out',__details:details,__hint:hint==null?null:hint,__code:'PT401'});
     if(!s||!s.exists)return no((s&&s.reason)||'ended');
     if(s.reason==='in_use')return no('in_use');
-    if(s.reason==='full')return no('full',slots(s.uid,sid).map(x=>x.kind+'|'+Math.floor(x.act/1000)).join(','));
+    if(s.reason==='full')return no('full',slots(s.uid,sid).map(x=>x.kind+'|'+Math.floor((x.act-D.clock)/1000)).join(','));
     const h=D.holder.get(s.uid);if(!h||!h.sid||h.sid===sid||!S(h.sid)||!oneAtATime(s.uid))return null;
     if(h.last>now()-5*MIN)return no('locked',kindOf(s.uid,h.device)+'|'+Math.max(1,Math.ceil((h.last+5*MIN-now())/1000))+'|0');
     if(D.permit.has(s.uid))return no('locked',kindOf(s.uid,h.device)+'|0|1');

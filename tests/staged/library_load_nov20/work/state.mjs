@@ -105,12 +105,14 @@ function stateSearch(search, index, query, opts, st, question) {
   const keep = (h) => keepForState(h, code, named) && !tenStatesOnly(h, code, question);
   const wide = search(index, query, { ...opts, k: 400, maxChars: 9e6, stats: opts.stats });
   const kept = wide.filter(keep);
+  const qWide = question && question !== query ? search(index, question, { ...opts, k: 400, maxChars: 9e6, stats: void 0 }).filter(keep) : kept;
+  const qTop = (qWide.find((h) => h.lib !== "osha") || qWide[0] || { score: 0 }).score;
   const top = (kept.find((h) => h.lib !== "osha") || kept[0] || { score: 0 }).score;
   const mine = [code, ...named].filter(Boolean);
-  let own = mine.length ? kept.filter((h) => chunkStates(h).some((c) => mine.includes(c))) : [];
+  let own = mine.length ? qWide.filter((h) => chunkStates(h).some((c) => mine.includes(c))) : [];
   if (code && own.length < 2) {
-    const again = search(index, query + " " + US_STATES[code], { ...opts, k: 30, maxChars: 9e6, stats: void 0 }).filter((h) => chunkStates(h).includes(code) && !own.some((x) => x.id === h.id));
-    const qs = new Map(wide.map((h) => [h.id, h.score]));
+    const again = search(index, (question || query) + " " + US_STATES[code], { ...opts, k: 30, maxChars: 9e6, stats: void 0 }).filter((h) => chunkStates(h).includes(code) && !own.some((x) => x.id === h.id));
+    const qs = new Map(qWide.map((h) => [h.id, h.score]));
     own = own.concat(again.filter((h) => qs.has(h.id)).map((h) => ({ ...h, score: qs.get(h.id) })));
   }
   const words = subjectWords(question);
@@ -118,7 +120,7 @@ function stateSearch(search, index, query, opts, st, question) {
     const t = subjectWords(h.title);
     return words.length > 0 && words.filter((w) => t.includes(w)).length * 2 >= words.length;
   };
-  own = own.filter((h) => h.score >= top * OWN_MIN || h.score >= top * OWN_MIN * 0.7 && about(h)).sort((a, b) => b.score - a.score).slice(0, OWN_SLOTS);
+  own = own.filter((h) => h.score >= qTop * OWN_MIN || h.score >= qTop * OWN_MIN * 0.7 && about(h)).sort((a, b) => b.score - a.score).slice(0, OWN_SLOTS);
   const out = [], seen = /* @__PURE__ */ new Set(), perTitle = /* @__PURE__ */ new Map();
   let chars = 0;
   for (const h of kept) {
@@ -141,7 +143,8 @@ function stateSearch(search, index, query, opts, st, question) {
     if (plainChars + h.text.length > OWN_CHARS && plainChars) continue;
     seen.add(h.id), out.push({ ...h, text: h.text.length > OWN_CHARS ? h.text.slice(0, OWN_CHARS) : h.text }), plainChars += Math.min(h.text.length, OWN_CHARS), plainN++, plain++;
   }
-  out.sort((a, b) => b.score - a.score);
+  const ownFirst = new Set(EMERGENCY.test(String(question || "")) ? [] : own.map((h) => h.id));
+  out.sort((a, b) => Number(ownFirst.has(b.id)) - Number(ownFirst.has(a.id)) || b.score - a.score);
   const ownN = out.filter((h) => own.some((x) => x.id === h.id)).length, dep = stateDependent(question, wide);
   const thin = !dep && !ownN && PLAN_STATES.includes(code) && SAFETY_RULE.test(String(question || "")) && !EMERGENCY.test(String(question || "")) && !kept.some((h) => chunkStates(h).includes(code) && h.score >= top * OWN_MIN * 0.5);
   return { hits: out, dropped: wide.slice(0, k).filter((h) => !keep(h)).length, own: ownN, plain, dependent: thin ? "plan" : dep };
@@ -158,7 +161,7 @@ function stateLines(st, dependent, own) {
     const head = `JOB STATE: ${name} (${code}), ${how}.`;
     if (dependent === "plan") return `${head} ${name} runs its own OSHA plan, which can be stricter than federal OSHA, and the library has no ${name} rule for this question. Answer with the federal rule as usual, then add one short line that says this is the federal rule, the library does not have ${name}'s own rule for it, and to confirm with ${name}'s OSHA plan. Never give another state's number as theirs. Do not ask which state.`;
     if (!dependent && !own) return `${head} Use it only if the answer changes by state (811 rules, a state OSHA plan, breaks, pay or heat rules, state specs); then answer for ${name} and never give another state's number as theirs. Otherwise answer as usual, at the usual short length, and do not mention the state. Do not ask which state.`;
-    const plan = PLAN_STATES.includes(code) ? ` ${name} runs its own OSHA plan, which can be stricter than federal OSHA: if this is a safety-rule question and no excerpt gives ${name}'s rule, search_knowledge once with "${name}" and the topic before answering.` : "";
+    const plan = PLAN_STATES.includes(code) ? ` ${name} runs its own OSHA plan, which can be stricter than federal OSHA: if this is a safety-rule question and no excerpt gives ${name}'s rule, search_knowledge once with "${name}" and the topic before answering.` : ` ${name} has no state OSHA plan for private crews: on a safety rule (trench, confined space, fall protection, silica) federal OSHA IS ${name}'s rule, so give it plainly and do not say the library lacks a ${name} rule.`;
     return `${head}${plan} Answer for ${name}: lead with the direct answer. Where an excerpt gives ${name}'s own rule or number, lead with it and name the state; give the federal rule beside it in one short clause when there is one. The state must not make the answer longer: its rule takes the place of a general point, it is not added on top, so keep the usual short length. Never give another state's number as theirs. If the excerpts have no ${name} rule for this, say in a few words that the library does not have ${name}'s rule for it, give the federal rule, and name who to check with (the state's OSHA plan, 811 center or agency). Do not ask which state.`;
   }
   return dependent ? `JOB STATE: not known, and this answer changes with the state. Give in one or two lines only what is the same in every state (the federal rule, if there is one). Do not give any one state's number as theirs. Then end with exactly one short question: "Which state is the job in?"` : 'JOB STATE: not known. If, and only if, the answer changes with the state, give what is the same everywhere and end with one short question: "Which state is the job in?" Otherwise just answer; do not ask. In an emergency never ask: give the steps.';
