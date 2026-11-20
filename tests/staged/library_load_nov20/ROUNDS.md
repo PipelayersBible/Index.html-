@@ -318,4 +318,12 @@ live row. Parts 2 to 7 of `src_patch/apply_patch.py` apply on live too; part 7 (
 Files: `src_patch/apply_patch.py` (part 7 added), `src_patch/reply_rule.txt` (v6d), `tools/cut.mjs`, `tools/intent_try.mjs`, `tools/regress_build.mjs`, `tools/release_from.sh`,
 `tools/grade.py` (round 5 rules; round 4 grader kept as `work/grade_r4.py`), `work/round5..7/`, `work/followup/`, `merge.py` (traffic v2 paths), `fixes.py` (24-inch pattern).
 
-## DONE
+---
+# Third helper (Nov 20, from ~22:40 UTC): Tommy's 14:47 list (all 148, follow-through, strictest rule, 20 ft, checker cut, add-on)
+(in progress; saved early)
+
+## Minimal promotable build (coordinator asked for it first): `4a5c84ce8242`
+- `/home/claude/ask_v24/src` rebuilt with PB_BUILD 1120-1647 is **byte-identical** to live `b7ad788e3a62` (decrypted and compared), so it is the live source.
+- Build = that source + `ask_followups_nov20/server/ask_state_addon.py` + `src_patch/apply_patch_guardsplit.py` (answer checker: no cut at "App." / "Subpart A." / "No." / lone letters; tail pieces under 6 characters glued back). Deno 42 passed (incl. `tests/guardsplit_test.ts`, 3 new; its first test fails on b7ad).
+- Sealed, commit 57230c8, `data/ask/b-4a5c84ce8242.txt`, installed on `ai-next` with `pb_ai.code_install`. Smoke 5 questions $0.55: tr12 keeps "App. B, B-1.3" whole.
+

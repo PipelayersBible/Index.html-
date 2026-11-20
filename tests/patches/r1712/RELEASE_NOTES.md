@@ -64,3 +64,4 @@ Published Nov 20 ~2:55 PM. Build stamp `r17.12 · 2026-11-20` in the page and in
 - Server applied (each rolled-back test first): Owner Dashboard (17 checks pass), Billing yearly + sheets read (all pass),
   one device 01 + 03 (68 pass; trim job present; overrides = DIG Civil Construction + tfontaine@digcivil.com).
 - NOT yet: one-device gate 02 (planned ~6 PM, after phones have r17.12), Ask follow-ups server add-on (goes with the next Ask build).
+- Ask live = 4a5c84ce8242 (live b7ad + follow-ups add-on + abbreviation-cut fix), promoted Nov 20 ~3:05 PM. Rollback b7ad788e3a62 (commit 9c575fe).
