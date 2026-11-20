@@ -36,3 +36,10 @@ grant all on all tables in schema auth to postgres; grant usage on schema auth t
 create schema pb_safety;
 create table pb_safety.open_permits (user_id uuid not null, client_permit_id text not null, snapshot jsonb not null, record_sha256 text not null, bytes int4 not null, saved_at timestamptz not null default now(), primary key (user_id, client_permit_id));
 create table pb_safety.permits (id uuid primary key default gen_random_uuid(), user_id uuid not null, client_permit_id text not null, unique (user_id, client_permit_id));
+-- pg_cron stand-in (live: pg_cron 1.6.4; schedule by name replaces the job of that name)
+create schema cron;
+create table cron.job (jobid bigserial primary key, jobname text unique, schedule text not null, command text not null, active boolean not null default true);
+create function cron.schedule(p_name text, p_schedule text, p_command text) returns bigint language sql as $$
+  insert into cron.job (jobname, schedule, command) values (p_name, p_schedule, p_command)
+  on conflict (jobname) do update set schedule = excluded.schedule, command = excluded.command returning jobid $$;
+create function cron.unschedule(p_name text) returns boolean language sql as $$ with d as (delete from cron.job where jobname = p_name returning 1) select exists (select 1 from d) $$;

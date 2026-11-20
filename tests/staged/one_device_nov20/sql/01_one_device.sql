@@ -462,3 +462,25 @@ begin
 end $function$;
 revoke all on function public.pb_owner_share_events(integer, integer) from public;
 grant execute on function public.pb_owner_share_events(integer, integer) to authenticated;
+
+-- Retention (Tommy, Nov 20): the event log keeps 13 months. Same pattern as the other cleanups on live (a trim function
+-- per schema, run by its own pg_cron job, e.g. pb-locates-trim -> pb_prod.locates_trim()). Daily at 03:47 UTC.
+create or replace function pb_auth.flags_trim()
+ returns integer language plpgsql security definer set search_path to ''
+as $function$
+declare v_n integer;
+begin
+  delete from pb_auth.flags f where f.at < now() - interval '13 months';
+  get diagnostics v_n = row_count;
+  return v_n;
+end $function$;
+revoke all on function pb_auth.flags_trim() from public;
+-- pg_cron 1.6: schedule() by name replaces a job of the same name, so running this file twice keeps one job.
+do $cron$
+begin
+  if exists (select 1 from pg_namespace where nspname = 'cron') then
+    perform cron.schedule('pb-auth-flags-trim', '47 3 * * *', 'select pb_auth.flags_trim()');
+  else
+    raise warning 'pg_cron not installed: pb_auth.flags_trim() is not scheduled';
+  end if;
+end $cron$;

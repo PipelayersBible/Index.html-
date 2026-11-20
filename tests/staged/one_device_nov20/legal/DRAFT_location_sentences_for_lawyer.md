@@ -14,14 +14,15 @@ What the app does (matches `sql/01_one_device.sql` and `patches/01_one_device.py
 - **Only the app owner (us) can see that log**, on the app-owner admin screen: who, which company, when, which kinds of
   device, and for the far-apart case the distance and minutes between the fixes, never the position. Users, crew
   members and company accounts see nothing about it. The earlier draft (company account sees a note) is withdrawn.
-- Device and session rows older than 120 days are removed when the login next signs in. The event log itself has no
-  automatic removal yet (the admin screen reads the last 90 days); see question 3.
+- Device and session rows older than 120 days are removed when the login next signs in. The event log is kept for
+  13 months: a daily job removes older rows (Tommy, Nov 20).
 
 ## Privacy Policy (one sentence, in the section on location / security)
 
 > To keep each login to one person, the app records which devices a login is used on and, only when the app already has
 > your location for a photo stamp, an approximate location of each device; if one login is used on two devices far apart
-> at about the same time, we can see that it happened, how far apart and when, but not where.
+> at about the same time, we can see that it happened, how far apart and when, but not where. We keep these records for
+> 13 months.
 
 ## Crew notice, "What your company sees"
 
@@ -32,4 +33,4 @@ Questions for the lawyer:
    location wording, or does it need the sentence above?
 2. Is a security/anti-sharing purpose enough on its own, or should Terms say that a login is for one person and may be
    limited to one device in use at a time (Terms 1.1 may already say one person per login: please check)?
-3. How long may we keep the event log? Suggest 12 months, then remove (needs one line of SQL; not built).
+3. Is 13 months a reasonable period to keep the event log (built: removed automatically after 13 months)?

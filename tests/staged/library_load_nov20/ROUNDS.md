@@ -223,4 +223,35 @@ dimensions, fu-2 and fu-8) continued but said the table did not come through: th
 One slip: an Ohio permit follow-up quoted "25 ppm CO (Cal/OSHA)". How it works: the app sends earlier turns as `history`; the server puts them in the question as
 "EARLIER IN THIS CONVERSATION" and the intent step reads them, so "yes" searches the earlier topic.
 
+## Full regression (step c): the same 148 existing cases as the last live-build run ($5.01)
+Run `1120-1816-ai-next-a1b6` (build lib5 + reply rule v6/v6b) against `1120-1657-ai-next-9e1a` (b7ad, the live build, + live prompt row), server grading (`pb_ai.eval_score`):
+| | Live build b7ad (1120-1657) | ai-next lib5 (1120-1816) |
+|---|---|---|
+| Pass (facts + nothing forbidden + within limit) | 117 / 148 | **141 / 148** |
+| Facts right | 146 | 141 |
+| Forbidden claims | 1 | **0** |
+| Too long | 29 | **0** |
+| Average words | 118 | **70** |
+| Errors | 0 | 0 |
+| Cost | $4.59 | $5.01 |
+Better: 30 cases (mostly length; `ng2` and `ph02` now have the facts). **Worse on the server's grader: 7** (`brk1`, `ct4`, `nw12`, `ph08`, `tr12`, `tr14`, `wa3`). Read by hand:
+- **Two were real.** `tr12` (Type C, 10 ft, how far back): the go/no-go answer guard replaced the first sentence and left "Your competent person or entry supervisor makes
+  that call on site. B)." with no number (the guard also cut the sentence at "App." in "App. B"). `tr14` (exactly 20 ft in Type B): said 1:1 applies and dropped the engineer.
+  Fix, reply rule v6c (test prompt row + `src_patch/reply_rule.txt`): numbers for their own cut are given as "what the rule allows", and a number right at a limit names
+  which side and the engineer. Re-run 3 times each on lib6 ($0.20): **tr12 3 of 3 give "at least 15 ft back"; tr14 3 of 3 name 20 ft and the engineer.**
+  tr14 is split on the substance (2 say exactly 20 ft is inside "20 feet or less", 1 says Table B-1 covers only "less than 20 feet"): Appendix B's own wording differs
+  (Table B-1 heading vs Figure B-1.2), and the app's sloping tool says Engineer Required at exactly 20 ft. **For Tommy / lead:** decide which reading Ask should give (recommend: the
+  app's, engineer at 20 ft and deeper, the safe side), then add one line to the slope card.
+- **Five are the case pattern, not the answer:** `brk1` "2 unpaid 30-minute duty-free meals" (pattern allows 25 characters between "2" and "meal"; the re-run passes);
+  `ct4` "1-1/2 hours" (pattern wants "1.5 h" or "90 min"); `nw12` now gives Arkansas's 20 working days with the statute (the live build said "not confirmed") but says
+  "811 notice", not "ticket"; `ph08` says "doesn't know what kind of utility" instead of "unknown"; `wa3` dropped the 150 psi side note (re-run includes it).
+  Suggested pattern fixes for the lead (eval tables not touched): ct4 add `1[- ]1/2 ?h`; nw12 add `notice`; brk1 widen to `{0,35}`; ph08 add `doesn.t know`.
+**Net:** by hand nothing is worse once v6c is in; by the server's patterns 3 still read worse (ct4, nw12, ph08) until those patterns are widened.
+
+## Traffic cards v2 folded in (coordinator, 10:2x): build lib6
+`merge.py` lines 22 and 164 now read `lib_traffic_nov20/v2/` (lib5 merge kept as `work/merge_lib5.py`, outputs in `work/out_lib5_backup/`). `merge.py` + `build_kb.py`:
+lib_kb 0 errors (33 warnings); core 448 (389 new + 59 in place), 3,229 rows; cases 688 (676 core; +8 new traffic cases). Free check: 626 of 676 get their chunk, 0 lost to the
+10,000 cut; existing 127: none worse than lib4. Overlay `lib6` (64 replaced, 389 added). Deno 54 passed. **Installed on `ai-next`: `13f8e89a0c31`** (commit fd02a7f), serving as build
+stamp `1120-1821`. Test prompt row: reply rule v6c + exChars 10000.
+
 ## DONE

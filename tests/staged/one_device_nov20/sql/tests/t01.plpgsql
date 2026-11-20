@@ -224,6 +224,16 @@ begin
   if current_setting('pb1dev.as_auth', true) = '1' then set local role supabase_auth_admin; end if; delete from auth.users where id = u2; reset role;
   insert into t_chk (name, ok, got) select '13 user deleted: nothing left', x = '0', x from (select ((select count(*) from pb_auth.sessions_log where user_id = u2) + (select count(*) from pb_auth.devices where user_id = u2) + (select count(*) from pb_auth.holder where user_id = u2))::text x) q;
 
+  -- ===== 14. the event log keeps 13 months (daily pg_cron job) =====
+  insert into pb_auth.flags (user_id, company_id, kind, dedupe, at) values (o1, null, 'tried_full', 't14-old', now() - interval '13 months' - interval '1 day'),
+    (o1, null, 'tried_full', 't14-keep', now() - interval '13 months' + interval '1 day');
+  t := pb_auth.flags_trim()::text; -- (its own statement: a query sees the rows as they were when it started)
+  insert into t_chk (name, ok, got) select '14a trim removes rows older than 13 months, keeps the rest', x = '1|0|1', x from (select t || '|' ||
+    (select count(*) from pb_auth.flags where dedupe = 't14-old')::text || '|' || (select count(*) from pb_auth.flags where dedupe = 't14-keep')::text x) q;
+  insert into t_chk (name, ok, got) select '14b one daily job runs it', x = '1|47 3 * * *|select pb_auth.flags_trim()', x from (select (select count(*) from cron.job where jobname = 'pb-auth-flags-trim')::text || '|' ||
+    coalesce((select schedule || '|' || command from cron.job where jobname = 'pb-auth-flags-trim'), '-') x) q;
+  insert into t_chk (name, ok, got) values ('14c the trim is not callable from the API', not has_function_privilege('authenticated', 'pb_auth.flags_trim()', 'execute') and not has_function_privilege('anon', 'pb_auth.flags_trim()', 'execute'), '');
+
   select count(*) filter (where ok), count(*) filter (where ok is not true), coalesce(string_agg(name || ' [got: ' || coalesce(got, 'null') || ']', ' ; ' order by i) filter (where ok is not true), '') into pass, fail, fails from t_chk;
   raise exception 'RESULT: % pass, % fail% %', pass, fail, case when fail > 0 then ' | FAILED: ' || fails else '' end, notes;
 end $test$;

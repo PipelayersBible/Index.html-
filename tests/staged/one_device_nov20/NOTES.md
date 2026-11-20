@@ -46,27 +46,32 @@ matches exactly one login. 03 now pins the company by id AND name (so a future c
 
 ### Legal
 `legal/DRAFT_location_sentences_for_lawyer.md` rewritten: Privacy sentence says "we"; no crew-notice sentence; the
-earlier company-sees-it draft withdrawn. Open: the event log (`pb_auth.flags`) has no automatic removal.
+earlier company-sees-it draft withdrawn. It now says the event log is kept 13 months.
 
 ## FINAL APPLY ORDER (this weekend)
 1. Release the app with `patches/01_one_device.py` (silent while the server part is missing: test 7).
-2. On live: `sql/tests/block_t01.sql` → expect `RESULT: 65 pass, 0 fail` (rolls itself back).
-3. `sql/01_one_device.sql`, then `sql/03_overrides.sql` (its last result: 1 company, 1 login).
+2. On live: `sql/tests/block_t01.sql` → expect `RESULT: 68 pass, 0 fail` (rolls itself back, the cron job too).
+3. `sql/01_one_device.sql` (also schedules `pb-auth-flags-trim`; check `select * from cron.job where jobname = 'pb-auth-flags-trim'`
+   gives one row), then `sql/03_overrides.sql` (its last result: 1 company, 1 login).
 4. `select public.pb_session_gate();` → no error. Then `sql/02_gate_on.sql`. Open the app signed in and signed out: both load.
 5. Two browsers on a test login outside DIG Civil: second sign-in refused while the first is open; 5 min after closing
    the first, the second signs in; reopen the first → lock screen, it unlocks by itself ~5 min after the second goes idle.
 6. Wrong: `sql/99_undo.sql` part 1 (gate off, instant), then part 2. App needs no rollback (silent without the server).
 
-## DECISIONS FOR TOMMY (recommendation first)
-1. **Log Out = this device only** (built). With two devices signed in, Log Out on one must not sign the other out;
+## DECISIONS FOR TOMMY: ALL 5 APPROVED (Nov 20); retention changed to 13 months
+1. **APPROVED. Log Out = this device only** (built). With two devices signed in, Log Out on one must not sign the other out;
    from the lock screen an all-devices Log Out would silently sign out the device in use, maybe mid-permit. Downside:
    no "sign out everywhere" button any more (a lost phone: the office's Lost Phone, or a 3rd sign-in takes its place).
    Recommend: keep, add "Sign out everywhere" later only if asked.
-2. **Event log retention**: recommend remove rows after 12 months (one SQL line, not built); the lawyer question 3.
-3. **Override values for DIG Civil + your login: 5 devices, all usable at once** (previous helper's reading of "same
+2. **APPROVED, 13 months. Event log retention: built.** `pb_auth.flags_trim()` deletes `pb_auth.flags` rows older than
+   13 months; pg_cron job `pb-auth-flags-trim`, daily 03:47 UTC (live already runs its cleanups this way: one trim
+   function per schema + its own job, e.g. `pb-locates-trim`; live pg_cron 1.6.4, which replaces a job of the same name,
+   so 01 can run twice). In 01, in the rolled-back block (test 14: trim, one job, not callable from the API), removed by
+   99_undo part 3. Local: `RESULT: 68 pass, 0 fail` (plain and block form; nothing left behind; undo leaves 0 jobs).
+3. **APPROVED. Override values for DIG Civil + your login: 5 devices, all usable at once** (previous helper's reading of "same
    override as my own login"). Recommend keep for testing; change the two numbers in 03 if you want them to feel the rule.
-4. **Lock screen shows "Emergency: Call 911"** (added because it covers the app). Recommend keep.
-5. **A locked device can't use photo uploads/edge functions only because the lock screen covers them** (the gate covers
+4. **APPROVED. Lock screen shows "Emergency: Call 911"** (added because it covers the app). Recommend keep.
+5. **APPROVED (accepted). A locked device can't use photo uploads/edge functions only because the lock screen covers them** (the gate covers
    the API, not storage/functions). Recommend accept for now.
 
 

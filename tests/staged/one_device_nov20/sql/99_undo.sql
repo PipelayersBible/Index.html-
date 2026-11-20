@@ -8,6 +8,7 @@ drop trigger if exists pb_one_device_ins on auth.sessions;
 drop trigger if exists pb_one_device_aal on auth.sessions;
 drop trigger if exists pb_one_device_del on auth.sessions;
 -- Part 3: everything else (run only after the app no longer calls these; the app treats a missing function as "no answer")
+select cron.unschedule(jobname) from cron.job where jobname = 'pb-auth-flags-trim'; -- the 13-month cleanup job
 drop function if exists public.pb_owner_share_events(integer, integer);
 drop function if exists public.pb_device_seen(text, text, double precision, double precision, timestamptz, text);
 drop function if exists public.pb_session_why(uuid);

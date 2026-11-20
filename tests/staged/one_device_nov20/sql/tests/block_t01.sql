@@ -465,6 +465,28 @@ end $function$;
 revoke all on function public.pb_owner_share_events(integer, integer) from public;
 grant execute on function public.pb_owner_share_events(integer, integer) to authenticated;
 
+-- Retention (Tommy, Nov 20): the event log keeps 13 months. Same pattern as the other cleanups on live (a trim function
+-- per schema, run by its own pg_cron job, e.g. pb-locates-trim -> pb_prod.locates_trim()). Daily at 03:47 UTC.
+create or replace function pb_auth.flags_trim()
+ returns integer language plpgsql security definer set search_path to ''
+as $function$
+declare v_n integer;
+begin
+  delete from pb_auth.flags f where f.at < now() - interval '13 months';
+  get diagnostics v_n = row_count;
+  return v_n;
+end $function$;
+revoke all on function pb_auth.flags_trim() from public;
+-- pg_cron 1.6: schedule() by name replaces a job of the same name, so running this file twice keeps one job.
+do $cron$
+begin
+  if exists (select 1 from pg_namespace where nspname = 'cron') then
+    perform cron.schedule('pb-auth-flags-trim', '47 3 * * *', 'select pb_auth.flags_trim()');
+  else
+    raise warning 'pg_cron not installed: pb_auth.flags_trim() is not scheduled';
+  end if;
+end $cron$;
+
 -- One device in use per login, two signed in: the test. Runs after 01_one_device.sql in the same transaction and always
 -- ends by raising 'RESULT: ...', so everything it made (and, in the block form, the migration itself) is rolled back.
 create function pg_temp.t_signin(p_user uuid, p_aal text default 'aal1') returns uuid language plpgsql as $f$
@@ -690,6 +712,16 @@ begin
   delete from pb_onboard.links where for_user = u2;
   if current_setting('pb1dev.as_auth', true) = '1' then set local role supabase_auth_admin; end if; delete from auth.users where id = u2; reset role;
   insert into t_chk (name, ok, got) select '13 user deleted: nothing left', x = '0', x from (select ((select count(*) from pb_auth.sessions_log where user_id = u2) + (select count(*) from pb_auth.devices where user_id = u2) + (select count(*) from pb_auth.holder where user_id = u2))::text x) q;
+
+  -- ===== 14. the event log keeps 13 months (daily pg_cron job) =====
+  insert into pb_auth.flags (user_id, company_id, kind, dedupe, at) values (o1, null, 'tried_full', 't14-old', now() - interval '13 months' - interval '1 day'),
+    (o1, null, 'tried_full', 't14-keep', now() - interval '13 months' + interval '1 day');
+  t := pb_auth.flags_trim()::text; -- (its own statement: a query sees the rows as they were when it started)
+  insert into t_chk (name, ok, got) select '14a trim removes rows older than 13 months, keeps the rest', x = '1|0|1', x from (select t || '|' ||
+    (select count(*) from pb_auth.flags where dedupe = 't14-old')::text || '|' || (select count(*) from pb_auth.flags where dedupe = 't14-keep')::text x) q;
+  insert into t_chk (name, ok, got) select '14b one daily job runs it', x = '1|47 3 * * *|select pb_auth.flags_trim()', x from (select (select count(*) from cron.job where jobname = 'pb-auth-flags-trim')::text || '|' ||
+    coalesce((select schedule || '|' || command from cron.job where jobname = 'pb-auth-flags-trim'), '-') x) q;
+  insert into t_chk (name, ok, got) values ('14c the trim is not callable from the API', not has_function_privilege('authenticated', 'pb_auth.flags_trim()', 'execute') and not has_function_privilege('anon', 'pb_auth.flags_trim()', 'execute'), '');
 
   select count(*) filter (where ok), count(*) filter (where ok is not true), coalesce(string_agg(name || ' [got: ' || coalesce(got, 'null') || ']', ' ; ' order by i) filter (where ok is not true), '') into pass, fail, fails from t_chk;
   raise exception 'RESULT: % pass, % fail% %', pass, fail, case when fail > 0 then ' | FAILED: ' || fails else '' end, notes;
