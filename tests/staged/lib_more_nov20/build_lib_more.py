@@ -5,10 +5,13 @@
 import sys, json, os
 sys.path.insert(0, '/home/claude/index.html-/tests/staged/library_arch_nov20')
 from lib_kb import Batch
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import trims
 HERE = os.path.dirname(os.path.abspath(__file__))
 B = Batch('lib_more', out_dir=HERE)
 _add = B.add
 def _tiered(**c):
+    c['text'] = trims.apply(c['id'], c['text'].strip())
     c.setdefault('tier', 'core' if len(c['text'].strip()) <= 1200 else 'shelf')
     _add(**c)
 B.add = _tiered
