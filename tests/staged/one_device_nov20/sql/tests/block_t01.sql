@@ -2,6 +2,7 @@
 begin;
 -- One device per login (staged Nov 20 2026). Safe to run twice. Run as postgres, in one transaction.
 -- What it adds (nothing existing is changed):
+--   (reads pb_onboard.links, pb_safety.open_permits / permits, auth.mfa_factors; writes none of them)
 --   pb_auth.*                 tables: sessions_log (every sign-in and how it ended), devices, allow (exceptions), flags
 --   trigger on auth.sessions  a new sign-in ends the login's other sessions (their refresh tokens go with them)
 --   public.pb_session_gate()  the API's pre-request check: a request from an ended session is refused (02 turns it on)
@@ -77,14 +78,23 @@ on conflict (session_id) do nothing;
 create or replace function pb_auth.take_over(p_session uuid, p_user uuid)
  returns integer language plpgsql security definer set search_path to ''
 as $function$
-declare v_allow integer; v_reason text; r record; n integer := 0;
+declare v_allow integer; v_reason text; v_mfa boolean; r record; n integer := 0;
 begin
   select a.devices into v_allow from pb_auth.allow a where a.user_id = p_user;
   v_allow := coalesce(v_allow, 1);
+  v_mfa := exists (select 1 from auth.mfa_factors f where f.user_id = p_user and f.status = 'verified');
   -- a Home Screen sign-in code used just now (crew-join "signin" stamps used_at before the session is made): the login moved
   v_reason := case when exists (select 1 from pb_onboard.links l where l.kind = 'handoff' and l.for_user = p_user
                                    and l.used_at > now() - interval '3 minutes') then 'moved' else 'other_device' end;
-  for r in select s.id from auth.sessions s where s.user_id = p_user and s.id <> p_session
+  -- SAFETY: a login with a confined space permit open right now (its phone saved it to the server in the last 12 hours
+  -- and has not closed it) is not cut off: the permit phone keeps its backup, the company's live view and emergency
+  -- alerts. Both devices work until the permit is closed; the next check-in after that ends the older one (settle).
+  if v_reason = 'other_device' and exists (select 1 from pb_safety.open_permits o where o.user_id = p_user and o.saved_at > now() - interval '12 hours'
+        and not exists (select 1 from pb_safety.permits p where p.user_id = o.user_id and p.client_permit_id = o.client_permit_id)) then
+    return 0;
+  end if;
+  -- (with two-step login, a session still waiting for its code is left alone: it never took the login)
+  for r in select s.id from auth.sessions s where s.user_id = p_user and s.id <> p_session and (not v_mfa or s.aal = 'aal2')
             order by s.created_at desc nulls last, s.id offset greatest(v_allow - 1, 0) loop
     insert into pb_auth.sessions_log as l (session_id, user_id, started_at, ended_at, end_reason, replaced_by)
     values (r.id, p_user, now(), now(), v_reason, p_session)
@@ -95,6 +105,19 @@ begin
   delete from pb_auth.sessions_log l where l.user_id = p_user and coalesce(l.ended_at, l.started_at) < now() - interval '120 days'
     and not exists (select 1 from auth.sessions s where s.id = l.session_id);
   return n;
+end $function$;
+
+-- More finished sign-ins than allowed (a permit was open when the last one signed in): the newest takes over now.
+create or replace function pb_auth.settle(p_user uuid)
+ returns integer language plpgsql security definer set search_path to ''
+as $function$
+declare v_allow integer; v_mfa boolean; v_new uuid;
+begin
+  select a.devices into v_allow from pb_auth.allow a where a.user_id = p_user;
+  v_mfa := exists (select 1 from auth.mfa_factors f where f.user_id = p_user and f.status = 'verified');
+  if (select count(*) from auth.sessions s where s.user_id = p_user and (not v_mfa or s.aal = 'aal2')) <= coalesce(v_allow, 1) then return 0; end if;
+  select s.id into v_new from auth.sessions s where s.user_id = p_user and (not v_mfa or s.aal = 'aal2') order by s.created_at desc nulls last, s.id limit 1;
+  return pb_auth.take_over(v_new, p_user);
 end $function$;
 
 -- auth.sessions triggers. Whatever goes wrong in here, the sign-in itself goes ahead.
@@ -199,6 +222,7 @@ begin
     fix_at = coalesce(excluded.fix_at, d.fix_at);
   if v_s is null or v_s !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then return jsonb_build_object('ok', true); end if;
   v_sid := v_s::uuid;
+  perform pb_auth.settle(v_uid); -- a permit that held two devices has closed: the newest sign-in takes over
   insert into pb_auth.sessions_log as l (session_id, user_id, device_id, last_seen_at) values (v_sid, v_uid, p_device, now())
   on conflict (session_id) do update set device_id = excluded.device_id, last_seen_at = now() where l.user_id = v_uid;
 
@@ -479,6 +503,27 @@ begin
   j := public.pb_owner_share_notes();
   if (j->>'ok')::boolean and exists (select 1 from jsonb_array_elements(j->'notes') e where e->>'kind' = 'far_apart' and (not member_ok or (e->>'company' = 'PB1DEV A ' || tag and e->>'who' = 'Ray Test')))
   then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9e-admin-notes:' || left(j::text, 200); end if;
+
+  -- ===== 9f. SAFETY: an open confined space permit holds the permit phone; closing it lets the newest sign-in take over =====
+  begin
+    sa := gen_random_uuid(); sb := gen_random_uuid();
+    if as_auth then set local role supabase_auth_admin; end if;
+    insert into auth.sessions (id, user_id, created_at, aal) values (sa, o2, now() - interval '1 hour', 'aal1');
+    reset role;
+    insert into pb_safety.open_permits (user_id, client_permit_id, snapshot, record_sha256, bytes) values (o2, 'pb1dev-' || tag, '{}'::jsonb, md5(tag), 2);
+    if as_auth then set local role supabase_auth_admin; end if;
+    insert into auth.sessions (id, user_id, created_at, aal) values (sb, o2, now(), 'aal1');
+    reset role;
+    if (select count(*) from auth.sessions where id in (sa, sb)) = 2 then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9f-permit-phone-cut-off'; end if;
+    perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', o2, 'session_id', sa)::text, true);
+    j := public.pb_device_seen('devPPPPPPPP', 'phone'); perform public.pb_session_gate(); -- the permit phone still works
+    if (select count(*) from auth.sessions where id in (sa, sb)) = 2 then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9g-check-in-cut-permit-phone'; end if;
+    update pb_safety.open_permits set saved_at = now() - interval '13 hours' where user_id = o2; -- no longer open right now
+    perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', o2, 'session_id', sb)::text, true);
+    j := public.pb_device_seen('devQQQQQQQQ', 'computer');
+    if not exists (select 1 from auth.sessions where id = sa) and exists (select 1 from auth.sessions where id = sb)
+       and public.pb_session_why(sa)->>'reason' = 'other_device' then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9h-not-settled-after-permit'; end if;
+  exception when others then reset role; notes := notes || ' [permit hold not testable here: ' || left(sqlerrm, 80) || ']'; end;
 
   -- ===== 10. a fault inside the trigger never blocks a sign-in =====
   alter table pb_auth.allow rename to allow_broken;

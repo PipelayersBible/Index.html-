@@ -33,3 +33,6 @@ create function pb_support.admin_ok(p_uid uuid, p_aal text) returns boolean lang
 -- as on live: functions made by postgres in public are not runnable by everyone unless granted; postgres is not a superuser there
 alter default privileges in schema public revoke execute on functions from public;
 grant all on all tables in schema auth to postgres; grant usage on schema auth to postgres;
+create schema pb_safety;
+create table pb_safety.open_permits (user_id uuid not null, client_permit_id text not null, snapshot jsonb not null, record_sha256 text not null, bytes int4 not null, saved_at timestamptz not null default now(), primary key (user_id, client_permit_id));
+create table pb_safety.permits (id uuid primary key default gen_random_uuid(), user_id uuid not null, client_permit_id text not null, unique (user_id, client_permit_id));

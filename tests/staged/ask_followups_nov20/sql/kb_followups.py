@@ -63,8 +63,9 @@ add("plan-wa-trench-2", "WA",
  "less. Table N-1 has no such note and the Washington appendix has no short-term allowance, so on a Washington job Type A "
  "is 3/4 to 1 no matter how short a time the trench is open. The Type A, B and C angles themselves are the same as "
  "federal. When the slope shows signs of distress, cut it back at least 1/2 horizontal to 1 vertical flatter than the "
- "maximum allowable slope. The app's Trench Sloping screen uses the same 3/4, 1 and 1 1/2 to 1 values and does not use "
- "the short-term slope, so its result fits Washington; remember that Washington requires protection from 4 ft, not 5 ft. "
+ "maximum allowable slope. In the app's Trench Sloping screen, pick plain Type A (0.75:1) on a Washington job; its "
+ "'Type A, short-term' choice (0.5:1) is the federal note and is not in Washington's table. And remember that Washington "
+ "requires protection from 4 ft, not 5 ft. "
  "The competent person classifies the soil and picks the slope; this is a plain-language summary and the WAC text governs.",
  f"WAC 296-155-66403 Table N-1 and notes (WSR 16-09-085); 29 CFR 1926 Subpart P Appendix B, Table B-1 note 2; checked {TODAY}",
  W + "66403.htm")

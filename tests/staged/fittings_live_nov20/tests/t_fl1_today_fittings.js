@@ -20,7 +20,8 @@ const fitCell = (p, name) => p.evaluate((name) => { const tr = [...document.quer
 const refresh = async (p) => { await p.evaluate(() => window.pbOvRefresh()); await p.waitForTimeout(2500); };
 // a tall window instead of a "full page" picture: a full-page picture stretches the page but not a fixed side menu
 const shot = async (p, name, w) => { const hgt = await p.evaluate(() => Math.max(900, document.documentElement.scrollHeight)); await p.setViewportSize({ width: w, height: Math.min(hgt, 2400) }); await p.waitForTimeout(500); await p.screenshot({ path: L.OUT + '/' + name }); await p.setViewportSize({ width: w, height: 900 }); await p.waitForTimeout(300); };
-const lum = (c) => { const m = String(c).match(/[\d.]+/g).map(Number); return { r: m[0], g: m[1], b: m[2], a: m.length > 3 ? m[3] : 1, y: 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2] }; };
+// a computed colour, 'rgb(…)' or 'color(srgb …)' (what color-mix gives), laid over a background when it is see-through
+const lum = (c, over) => { const k = /^color\(srgb/.test(String(c)) ? 255 : 1, m = String(c).match(/[\d.]+/g).map(Number), a = m.length > 3 ? m[3] : 1, o = over || { r: 0, g: 0, b: 0 }; const r = m[0] * k * a + o.r * (1 - a), g = m[1] * k * a + o.g * (1 - a), b = m[2] * k * a + o.b * (1 - a); return { r, g, b, y: 0.2126 * r + 0.7152 * g + 0.0722 * b }; };
 const idleLook = (p) => p.evaluate(() => { const tr = document.querySelector('#ovTable tr.ov-idle'), other = document.querySelector('#ovTable tr.ov-row:not(.ov-idle)'); if (!tr) return null; const cs = (e) => getComputedStyle(e);
   const over = (fg, bg) => { const a = fg.match(/[\d.]+/g).map(Number), b = bg.match(/[\d.]+/g).map(Number), al = a.length > 3 ? a[3] : 1; return 'rgb(' + [0, 1, 2].map(i => Math.round(a[i] * al + b[i] * (1 - al))).join(', ') + ')'; };
   const surf = cs(document.querySelector('.ov-scroll')).backgroundColor, td = tr.children[1];
@@ -47,7 +48,7 @@ const side = (p) => p.evaluate(async () => { const n = document.getElementById('
     // ---- the idle row: one quiet grey line ----
     const I = await idleLook(p); console.log('  idle row:', JSON.stringify(I));
     L.ok(I && I.n === 2 && I.span === 9 && I.text === 'Nothing sent today' && I.all === 'Pat Ochoa Nothing sent today' && !/–/.test(I.all), w + ' ' + tag + ': the idle foreman is a name and ONE line across the nine empty columns, no dashes');
-    const bg = lum(I.bg), row = lum(I.rowBg), fg = lum(I.color), nm = lum(I.nameColor), st = lum(I.strong);
+    const bg = lum(I.bg), row = lum(I.rowBg), fg = lum(I.color, bg), nm = lum(I.nameColor, bg), st = lum(I.strong);
     L.ok(Math.abs(bg.y - row.y) >= 6 && Math.abs(bg.y - row.y) <= 40 && Math.max(bg.r, bg.g, bg.b) - Math.min(bg.r, bg.g, bg.b) <= 14 && I.bg === I.bg0, w + ' ' + tag + ': the whole row has a soft grey background, clearly not a working row’s (' + I.bg + ' vs ' + I.rowBg + ')');
     const contrast = (a, c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; const y = (x) => 0.2126 * f(x.r) + 0.7152 * f(x.g) + 0.0722 * f(x.b); const A = y(a), C = y(c); return (Math.max(A, C) + 0.05) / (Math.min(A, C) + 0.05); };
     L.ok(contrast(fg, bg) >= 4.5 && contrast(nm, bg) >= 4.5 && Math.abs(nm.y - st.y) > 20, w + ' ' + tag + ': muted text that still reads (contrast ' + contrast(fg, bg).toFixed(1) + ' and ' + contrast(nm, bg).toFixed(1) + ' to 1), quieter than a working crew’s name');

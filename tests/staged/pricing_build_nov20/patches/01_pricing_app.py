@@ -52,7 +52,7 @@ rep("""'. Would you like to sign up for an individual plan?</span>'
 rep("""      } else if (line && plan && plan.plan === 'paid' && plan.paused) { /* billing Phase 0""",
 """      } else if (line && sbUser && plan && plan.ok && plan.plan == null && plan.individual === false) { /* pricing_nov20: no plan yet (the server says so) */
         line.hidden = false; line.classList.add('ended');
-        line.innerHTML = '<span class="pb-beta-chip">No plan yet</span><span>Your own plan is ' + pbPriceInd() + ': New Run, Quick Run, the calculators, Education &amp; Reference, Ask and stake reading. On a crew? Ask your company to invite you instead.</span>'
+        line.innerHTML = '<span class="pb-beta-chip">No plan yet</span><span>Your own plan is ' + pbPriceInd() + '. It has New Run, Quick Run, the calculators, Education &amp; Reference, Ask and stake reading. On a crew? Ask your company to invite you instead.</span>'
           + (plan.requested ? pbReqSent('individual') : '<span class="pb-beta-acts"><button type="button" class="pb-btn small" data-plan="individual">Get My Own Plan</button></span>');
         pbPlanAskBind(line);
       } else if (line && plan && plan.plan === 'paid' && plan.paused) { /* billing Phase 0""")

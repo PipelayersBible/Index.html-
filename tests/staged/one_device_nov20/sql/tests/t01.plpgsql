@@ -183,6 +183,27 @@ begin
   if (j->>'ok')::boolean and exists (select 1 from jsonb_array_elements(j->'notes') e where e->>'kind' = 'far_apart' and (not member_ok or (e->>'company' = 'PB1DEV A ' || tag and e->>'who' = 'Ray Test')))
   then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9e-admin-notes:' || left(j::text, 200); end if;
 
+  -- ===== 9f. SAFETY: an open confined space permit holds the permit phone; closing it lets the newest sign-in take over =====
+  begin
+    sa := gen_random_uuid(); sb := gen_random_uuid();
+    if as_auth then set local role supabase_auth_admin; end if;
+    insert into auth.sessions (id, user_id, created_at, aal) values (sa, o2, now() - interval '1 hour', 'aal1');
+    reset role;
+    insert into pb_safety.open_permits (user_id, client_permit_id, snapshot, record_sha256, bytes) values (o2, 'pb1dev-' || tag, '{}'::jsonb, md5(tag), 2);
+    if as_auth then set local role supabase_auth_admin; end if;
+    insert into auth.sessions (id, user_id, created_at, aal) values (sb, o2, now(), 'aal1');
+    reset role;
+    if (select count(*) from auth.sessions where id in (sa, sb)) = 2 then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9f-permit-phone-cut-off'; end if;
+    perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', o2, 'session_id', sa)::text, true);
+    j := public.pb_device_seen('devPPPPPPPP', 'phone'); perform public.pb_session_gate(); -- the permit phone still works
+    if (select count(*) from auth.sessions where id in (sa, sb)) = 2 then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9g-check-in-cut-permit-phone'; end if;
+    update pb_safety.open_permits set saved_at = now() - interval '13 hours' where user_id = o2; -- no longer open right now
+    perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', o2, 'session_id', sb)::text, true);
+    j := public.pb_device_seen('devQQQQQQQQ', 'computer');
+    if not exists (select 1 from auth.sessions where id = sa) and exists (select 1 from auth.sessions where id = sb)
+       and public.pb_session_why(sa)->>'reason' = 'other_device' then pass := pass + 1; else fail := fail + 1; fails := fails || ' 9h-not-settled-after-permit'; end if;
+  exception when others then reset role; notes := notes || ' [permit hold not testable here: ' || left(sqlerrm, 80) || ']'; end;
+
   -- ===== 10. a fault inside the trigger never blocks a sign-in =====
   alter table pb_auth.allow rename to allow_broken;
   sa := gen_random_uuid();
