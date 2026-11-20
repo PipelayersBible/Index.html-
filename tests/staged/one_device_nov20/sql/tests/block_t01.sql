@@ -15,7 +15,8 @@ begin;
 --                             device id, kind, last GPS fix if it has one; records sharing flags
 --   public.pb_session_why()   a signed-out device asks why (so it can say it once)
 --   public.pb_session_take_slot()  a sign-in refused as "full" signs one of the two other devices out and takes its place
---   public.pb_share_notes()   the quiet notes for a company account; public.pb_owner_share_notes() for the app owner
+--   pb_auth.flags + public.pb_owner_share_events()  the event log (refused sign-ins, sharing signals) for the app owner's
+--                             admin screen only. Nothing is shown to users or company accounts.
 -- 02_gate_on.sql turns the gate on. 99_undo.sql takes all of it out.
 
 create schema if not exists pb_auth;
@@ -51,22 +52,39 @@ create table if not exists pb_auth.devices (
 
 -- Exceptions: a login allowed to stay signed in on more (or fewer) devices than 2. Still one in use at a time.
 create table if not exists pb_auth.allow (
-  user_id uuid primary key references auth.users (id) on delete cascade,
-  devices integer not null check (devices between 1 and 5),
-  note    text,
-  set_at  timestamptz not null default now()
+  user_id        uuid primary key references auth.users (id) on delete cascade,
+  devices        integer not null check (devices between 1 and 5),
+  one_at_a_time  boolean not null default true,   -- false: its devices may be in use at the same time (test logins)
+  note           text,
+  set_at         timestamptz not null default now()
+);
+-- The same, for every login of a company (its owner login and its members). A login's own row in pb_auth.allow wins.
+create table if not exists pb_auth.company_allow (
+  company_id     uuid primary key references public.companies (id) on delete cascade,
+  devices        integer not null check (devices between 1 and 5),
+  one_at_a_time  boolean not null default true,
+  note           text,
+  set_at         timestamptz not null default now()
 );
 
+-- THE EVENT LOG for the app owner's admin screen: one row per event. Never shown to users or company accounts.
+--   kind: tried_in_use   a sign-in was refused because the login was in use on another device
+--         tried_full     a sign-in was refused because the login was already signed in on its 2 devices
+--         took_place     that refused sign-in then signed one of the two devices out and took its place (kind_a = the device signed out)
+--         far_apart      two devices of the login had GPS fixes too far apart to be one person (miles, minutes between the fixes)
+--         back_and_forth a device that was signed out by another one came back within 24 hours (n = switches that day; one row per day)
 create table if not exists pb_auth.flags (
-  id       bigserial primary key,
-  user_id  uuid not null references auth.users (id) on delete cascade,
-  kind     text not null check (kind in ('minutes_apart', 'far_apart', 'back_and_forth', 'tried_in_use')),
-  dedupe   text not null,
-  at       timestamptz not null default now(),
-  kind_a   text, kind_b text,        -- the two devices: phone | tablet | computer
-  miles    integer,
-  minutes  integer,
-  n        integer not null default 1,
+  id         bigserial primary key,
+  at         timestamptz not null default now(),   -- when it happened
+  user_id    uuid not null references auth.users (id) on delete cascade,   -- the login
+  company_id uuid,                                  -- the login's company when it happened (owner or member), else null
+  kind       text not null check (kind in ('tried_in_use', 'tried_full', 'took_place', 'far_apart', 'back_and_forth')),
+  kind_a     text, kind_b text,                     -- the devices involved: phone | tablet | computer (a = the earlier / other one, b = the one acting)
+  miles      integer,                               -- far_apart: distance between the two fixes
+  minutes    integer,                               -- far_apart: minutes between the two fixes
+  n          integer not null default 1,            -- back_and_forth: switches that day
+  detail     jsonb,                                 -- extra facts (session ids)
+  dedupe     text not null,                         -- makes a repeat of the same event a no-op
   unique (user_id, kind, dedupe)
 );
 create index if not exists flags_at on pb_auth.flags (at desc);
@@ -82,6 +100,7 @@ create table if not exists pb_auth.holder (
 alter table pb_auth.sessions_log enable row level security;
 alter table pb_auth.devices enable row level security;
 alter table pb_auth.allow enable row level security;
+alter table pb_auth.company_allow enable row level security;
 alter table pb_auth.flags enable row level security;
 alter table pb_auth.holder enable row level security;
 revoke all on all tables in schema pb_auth from public, anon, authenticated;
@@ -91,11 +110,39 @@ insert into pb_auth.sessions_log (session_id, user_id, started_at)
 select s.id, s.user_id, coalesce(s.created_at, now()) from auth.sessions s
 on conflict (session_id) do nothing;
 
--- How many devices a login may stay signed in on: 2, unless pb_auth.allow says otherwise.
+-- A login's company: the one it owns (the company account), else the one it is a member of.
+create or replace function pb_auth.company_of(p_user uuid)
+ returns uuid language sql stable security definer set search_path to ''
+as $function$
+  select coalesce((select c.id from public.companies c where c.owner_user_id = p_user order by c.created_at desc nulls last limit 1),
+                  (select m.company_id from public.company_members m where m.user_id = p_user limit 1))
+$function$;
+
+-- How many devices a login may stay signed in on: 2, unless its own row (pb_auth.allow) or its company's
+-- (pb_auth.company_allow) says otherwise.
 create or replace function pb_auth.allowed(p_user uuid)
  returns integer language sql stable security definer set search_path to ''
 as $function$
-  select coalesce((select a.devices from pb_auth.allow a where a.user_id = p_user), 2)
+  select coalesce((select a.devices from pb_auth.allow a where a.user_id = p_user),
+                  (select ca.devices from pb_auth.company_allow ca where ca.company_id = pb_auth.company_of(p_user)), 2)
+$function$;
+
+-- Only one of a login's devices in use at a time? Yes, unless its own or its company's row says otherwise.
+create or replace function pb_auth.one_at_a_time(p_user uuid)
+ returns boolean language sql stable security definer set search_path to ''
+as $function$
+  select coalesce((select a.one_at_a_time from pb_auth.allow a where a.user_id = p_user),
+                  (select ca.one_at_a_time from pb_auth.company_allow ca where ca.company_id = pb_auth.company_of(p_user)), true)
+$function$;
+
+-- One row in the event log.
+create or replace function pb_auth.note(p_user uuid, p_kind text, p_dedupe text, p_kind_a text default null, p_kind_b text default null,
+    p_miles integer default null, p_minutes integer default null, p_at timestamptz default null, p_detail jsonb default null)
+ returns void language sql security definer set search_path to ''
+as $function$
+  insert into pb_auth.flags (user_id, company_id, kind, dedupe, at, kind_a, kind_b, miles, minutes, detail)
+  values (p_user, pb_auth.company_of(p_user), p_kind, p_dedupe, coalesce(p_at, now()), p_kind_a, p_kind_b, p_miles, p_minutes, p_detail)
+  on conflict (user_id, kind, dedupe) do nothing
 $function$;
 
 -- A confined space permit open right now: saved to the server in the last 2 hours and not closed.
@@ -114,6 +161,7 @@ as $function$
    where h.user_id = p_user and h.session_id is distinct from p_except
      and exists (select 1 from auth.sessions s where s.id = h.session_id)
      and (h.last_at > now() - interval '5 minutes' or pb_auth.permit_open(p_user))
+     and pb_auth.one_at_a_time(p_user)
 $function$;
 
 -- A login's signed-in devices other than p_except (finished sign-ins that were not refused), most recently used first.
@@ -162,10 +210,7 @@ begin
   if v_why is null then return 'ok'; end if;
   insert into pb_auth.sessions_log as l (session_id, user_id, started_at, ended_at, end_reason) values (p_session, p_user, now(), now(), v_why)
   on conflict (session_id) do update set ended_at = now(), end_reason = v_why;
-  if v_why = 'in_use' then
-    insert into pb_auth.flags as f (user_id, kind, dedupe, at) values (p_user, 'tried_in_use', to_char(now() at time zone 'utc', 'YYYY-MM-DD'), now())
-    on conflict (user_id, kind, dedupe) do update set n = f.n + 1, at = excluded.at;
-  end if;
+  perform pb_auth.note(p_user, 'tried_' || v_why, p_session::text, p_detail => jsonb_build_object('session', p_session));
   return v_why;
 end $function$;
 
@@ -216,7 +261,7 @@ create trigger pb_one_device_del after delete on auth.sessions for each row exec
 -- the work and tries later), a signed-in request
 --   whose session no longer exists or whose sign-in was refused      detail: other_device | moved | ended | in_use | full
 --   from the device that is not the one in use right now             detail: locked, hint: <other device kind>|<seconds until it counts as idle>|<1 if a permit holds it>
--- No session id, the app's own key, the service key: untouched. Three primary-key reads at most; no writes.
+-- No session id, the app's own key, the service key: untouched. A handful of primary-key reads; no writes.
 create or replace function public.pb_session_gate()
  returns void language plpgsql security definer set search_path to ''
 as $function$
@@ -243,6 +288,7 @@ begin
   select hh.session_id, hh.device_id, hh.last_at into h from pb_auth.holder hh where hh.user_id = v_uid;
   if not found or h.session_id is null or h.session_id = v_sid then return; end if;
   if not exists (select 1 from auth.sessions s where s.id = h.session_id) then return; end if;
+  if not pb_auth.one_at_a_time(v_uid) then return; end if;
   if h.last_at > now() - interval '5 minutes' then
     select d.kind into v_kind from pb_auth.devices d where d.user_id = v_uid and d.device_id = h.device_id;
     raise exception using errcode = 'PT401', message = 'pb:signed_out', detail = 'locked',
@@ -287,6 +333,8 @@ begin
     if v_other is null then select x.session_id into v_other from pb_auth.slots(v_user, p_session) x order by x.act asc nulls first limit 1; end if;
     insert into pb_auth.sessions_log as l (session_id, user_id, started_at, ended_at, end_reason, replaced_by) values (v_other, v_user, now(), now(), 'other_device', p_session)
     on conflict (session_id) do update set ended_at = now(), end_reason = 'other_device', replaced_by = p_session where l.ended_at is null;
+    perform pb_auth.note(v_user, 'took_place', p_session::text, (select x.kind from pb_auth.slots(v_user, p_session) x where x.session_id = v_other), null,
+      p_detail => jsonb_build_object('session', p_session, 'signed_out', v_other));
     delete from auth.sessions s where s.id = v_other; -- its refresh tokens go with it
   end if;
   update pb_auth.sessions_log l set ended_at = null, end_reason = null where l.session_id = p_session;
@@ -315,9 +363,7 @@ begin
   if v_hours > 3 then return; end if;
   v_miles := pb_auth.miles(p_lat_a, p_lng_a, p_lat_b, p_lng_b);
   if v_miles >= 10 and v_miles / greatest(v_hours, 1 / 60.0) > 90 then
-    insert into pb_auth.flags (user_id, kind, dedupe, at, kind_a, kind_b, miles, minutes)
-    values (p_user, 'far_apart', p_dedupe, greatest(p_fix_a, p_fix_b), p_kind_a, p_kind_b, v_miles, round(v_hours * 60)::integer)
-    on conflict (user_id, kind, dedupe) do nothing;
+    perform pb_auth.note(p_user, 'far_apart', p_dedupe, p_kind_a, p_kind_b, v_miles, round(v_hours * 60)::integer, greatest(p_fix_a, p_fix_b));
   end if;
 end $function$;
 
@@ -349,7 +395,7 @@ begin
   -- one check-in per login at a time
   insert into pb_auth.holder (user_id) values (v_uid) on conflict (user_id) do nothing;
   select hh.session_id, hh.device_id, hh.last_at into h from pb_auth.holder hh where hh.user_id = v_uid for update;
-  if h.session_id is not null and h.session_id <> v_sid and exists (select 1 from auth.sessions s where s.id = h.session_id) then
+  if h.session_id is not null and h.session_id <> v_sid and pb_auth.one_at_a_time(v_uid) and exists (select 1 from auth.sessions s where s.id = h.session_id) then
     v_permit := not (h.last_at > now() - interval '5 minutes') and pb_auth.permit_open(v_uid);
     if h.last_at > now() - interval '5 minutes' or v_permit then -- the other device has the login
       insert into pb_auth.sessions_log as l (session_id, user_id, device_id) values (v_sid, v_uid, p_device)
@@ -385,9 +431,9 @@ begin
      where l.user_id = v_uid and l.end_reason = 'other_device' and l.ended_at > now() - interval '24 hours'
        and l.device_id is not null and r.device_id is not null and r.device_id <> l.device_id;
     if v_n >= 2 then
-      insert into pb_auth.flags as f (user_id, kind, dedupe, at, kind_a, kind_b, n)
-      values (v_uid, 'back_and_forth', to_char(now() at time zone 'utc', 'YYYY-MM-DD'), now(), v_kind, prev.kind, v_n)
-      on conflict (user_id, kind, dedupe) do update set n = excluded.n, at = excluded.at, kind_b = coalesce(excluded.kind_b, f.kind_b);
+      insert into pb_auth.flags as f (user_id, company_id, kind, dedupe, at, kind_a, kind_b, n)
+      values (v_uid, pb_auth.company_of(v_uid), 'back_and_forth', to_char(now() at time zone 'utc', 'YYYY-MM-DD'), now(), prev.kind, v_kind, v_n)
+      on conflict (user_id, kind, dedupe) do update set n = excluded.n, at = excluded.at, kind_a = coalesce(excluded.kind_a, f.kind_a);
     end if;
   end if;
   return jsonb_build_object('ok', true, 'state', 'active');
@@ -395,54 +441,29 @@ end $function$;
 revoke all on function public.pb_device_seen(text, text, double precision, double precision, timestamptz, text) from public;
 grant execute on function public.pb_device_seen(text, text, double precision, double precision, timestamptz, text) to authenticated;
 
--- One note per login per day (UTC), the strongest: far apart, then back and forth. Last 30 days.
-create or replace view pb_auth.strongest_flags as
-  select distinct on (f.user_id, (f.at at time zone 'utc')::date) f.*
-    from pb_auth.flags f where f.at > now() - interval '30 days' and f.kind in ('far_apart', 'back_and_forth') -- the others are recorded, not shown
-   order by f.user_id, (f.at at time zone 'utc')::date, case f.kind when 'far_apart' then 1 when 'back_and_forth' then 2 else 3 end, f.at desc;
-revoke all on pb_auth.strongest_flags from public, anon, authenticated;
-
--- The company account's quiet notes (owner and managers): the last 30 days, their own people only.
-create or replace function public.pb_share_notes()
- returns jsonb language plpgsql stable security definer set search_path to ''
-as $function$
-declare v_uid uuid := auth.uid(); v_co uuid; v_owner uuid;
-begin
-  if v_uid is null then raise exception 'pb:signed_out'; end if;
-  v_co := pb_prod.managed_company(v_uid);
-  if v_co is null then return jsonb_build_object('ok', false, 'code', 'pb:not_company_account'); end if;
-  select c.owner_user_id into v_owner from public.companies c where c.id = v_co;
-  return jsonb_build_object('ok', true, 'notes', coalesce((
-    select jsonb_agg(x.j order by x.at desc) from (
-      select f.at, jsonb_build_object('who', case when f.user_id = v_owner then 'The company account' else coalesce(pb_crew.display_name(v_co, f.user_id), 'A crew member') end,
-               'kind', f.kind, 'at', f.at, 'a', f.kind_a, 'b', f.kind_b, 'miles', f.miles, 'minutes', f.minutes, 'n', f.n) as j
-        from pb_auth.strongest_flags f
-       where (f.user_id = v_owner or exists (select 1 from public.company_members m where m.company_id = v_co and m.user_id = f.user_id))
-       order by f.at desc limit 20) x), '[]'::jsonb));
-end $function$;
-revoke all on function public.pb_share_notes() from public;
-grant execute on function public.pb_share_notes() to authenticated;
-
--- The app owner's notes: every login, the last 30 days.
-create or replace function public.pb_owner_share_notes()
+-- The app owner's admin screen reads the event log through this (same check as Beta Accounts: the app owner, with the
+-- two-step code when the account has one). Newest first. p_days 1..365 (default 90), p_limit 1..1000 (default 200).
+-- Each row: id, at, kind, user_id, who (the name the company uses, else the email), email, company_id, company,
+--           device_a, device_b, miles, minutes, n, detail.
+create or replace function public.pb_owner_share_events(p_days integer default 90, p_limit integer default 200)
  returns jsonb language plpgsql stable security definer set search_path to ''
 as $function$
 begin
   if not pb_support.admin_ok(auth.uid(), auth.jwt()->>'aal') then raise exception 'pb:not_allowed'; end if;
-  return jsonb_build_object('ok', true, 'notes', coalesce((
-    select jsonb_agg(x.j order by x.at desc) from (
-      select f.at, jsonb_build_object(
-               'who', coalesce(case when c.owner_user_id = f.user_id then 'The company account' else pb_crew.display_name(c.id, f.user_id) end, u.email, 'A login'),
-               'company', c.name, 'kind', f.kind, 'at', f.at, 'a', f.kind_a, 'b', f.kind_b, 'miles', f.miles, 'minutes', f.minutes, 'n', f.n) as j
-        from pb_auth.strongest_flags f
+  return jsonb_build_object('ok', true, 'events', coalesce((
+    select jsonb_agg(x.j order by x.at desc, x.id desc) from (
+      select f.at, f.id, jsonb_build_object('id', f.id, 'at', f.at, 'kind', f.kind, 'user_id', f.user_id,
+               'who', coalesce(case when c.owner_user_id = f.user_id then 'Company account' else pb_crew.display_name(c.id, f.user_id) end, u.email, 'A login'),
+               'email', u.email, 'company_id', c.id, 'company', c.name,
+               'device_a', f.kind_a, 'device_b', f.kind_b, 'miles', f.miles, 'minutes', f.minutes, 'n', f.n, 'detail', f.detail) as j
+        from pb_auth.flags f
         left join auth.users u on u.id = f.user_id
-        left join lateral (select c0.id, c0.name, c0.owner_user_id from public.companies c0
-                            where c0.owner_user_id = f.user_id or c0.id = (select m.company_id from public.company_members m where m.user_id = f.user_id limit 1)
-                            order by (c0.owner_user_id = f.user_id) desc limit 1) c on true
-       order by f.at desc limit 50) x), '[]'::jsonb));
+        left join public.companies c on c.id = coalesce(f.company_id, pb_auth.company_of(f.user_id))
+       where f.at > now() - make_interval(days => least(greatest(coalesce(p_days, 90), 1), 365))
+       order by f.at desc, f.id desc limit least(greatest(coalesce(p_limit, 200), 1), 1000)) x), '[]'::jsonb));
 end $function$;
-revoke all on function public.pb_owner_share_notes() from public;
-grant execute on function public.pb_owner_share_notes() to authenticated;
+revoke all on function public.pb_owner_share_events(integer, integer) from public;
+grant execute on function public.pb_owner_share_events(integer, integer) to authenticated;
 
 -- One device in use per login, two signed in: the test. Runs after 01_one_device.sql in the same transaction and always
 -- ends by raising 'RESULT: ...', so everything it made (and, in the block form, the migration itself) is rolled back.
@@ -500,7 +521,7 @@ begin
   insert into t_chk (name, ok, got) select '2b gate refuses the refused sign-in', x = 'in_use', x from (select pg_temp.t_gate(u1, b) x) q;
   insert into t_chk (name, ok, got) select '2c its check-in is refused too', x = 'ERR pb:signed_out', x from (select pg_temp.t_seen(u1, b, 'devBBBBBBBB', 'tablet') x) q;
   insert into t_chk (name, ok, got) select '2d first device unaffected', x = 'ok', x from (select pg_temp.t_gate(u1, a) x) q;
-  insert into t_chk (name, ok, got) select '2e the try is counted', x = '1', x from (select (select f.n::text from pb_auth.flags f where f.user_id = u1 and f.kind = 'tried_in_use') x) q;
+  insert into t_chk (name, ok, got) select '2e the try is counted', x = '1', x from (select (select count(*)::text from pb_auth.flags f where f.user_id = u1 and f.kind = 'tried_in_use') x) q;
   perform set_config('request.jwt.claims', '{"role":"anon"}', true);
   set local role anon; j := public.pb_session_why(b); reset role;
   insert into t_chk (name, ok, got) select '2f why (app key): in_use, and the refused session is removed', x = 'in_use|gone:in_use|live:-', x from (select (j->>'reason') || '|' || pg_temp.t_reason(b) || '|' || pg_temp.t_reason(a) x) q;
@@ -517,7 +538,7 @@ begin
   insert into t_chk (name, ok, got) select '3f tablet idle 5 min: phone requests pass again, no sign-in', x = 'ok', x from (select pg_temp.t_gate(u1, a) x) q;
   insert into t_chk (name, ok, got) select '3g phone check-in: active', x = 'active', x from (select pg_temp.t_seen(u1, a, 'devAAAAAAAA', 'phone') x) q;
   insert into t_chk (name, ok, got) select '3h now the tablet is the locked one', x ~ '^locked/phone\|', x from (select pg_temp.t_gate(u1, b) x) q;
-  insert into t_chk (name, ok, got) select '3i no sharing flag for phone + tablet with no location', x = '0', x from (select (select count(*)::text from pb_auth.flags where user_id = u1 and kind <> 'tried_in_use') x) q;
+  insert into t_chk (name, ok, got) select '3i no sharing flag for phone + tablet with no location', x = '0', x from (select (select count(*)::text from pb_auth.flags where user_id = u1 and kind not like 'tried%') x) q;
 
   -- ===== 4. a third device: refused (in_use while one is in use; "full" when both are idle); it can sign one out =====
   c := pg_temp.t_signin(u1);
@@ -533,6 +554,7 @@ begin
   perform set_config('request.jwt.claims', '{"role":"anon"}', true);
   set local role anon; j := public.pb_session_take_slot(c, 2); reset role; -- sign out the one used longest ago (the tablet)
   insert into t_chk (name, ok, got) select '4f take the tablet''s place (app key + the refused session id)', x = 'true|live:-|live:-|gone:other_device', x from (select (j->>'ok') || '|' || pg_temp.t_reason(c) || '|' || pg_temp.t_reason(a) || '|' || pg_temp.t_reason(b) x) q;
+  insert into t_chk (name, ok, got) select '4f2 events: refused (full) then took the tablet''s place', x = '1|tablet', x from (select (select count(*)::text from pb_auth.flags where user_id = u1 and kind = 'tried_full') || '|' || (select kind_a from pb_auth.flags where user_id = u1 and kind = 'took_place') x) q;
   insert into t_chk (name, ok, got) select '4g the tablet is told why (other_device); its requests are refused', x = 'other_device|other_device', x from (select (public.pb_session_why(b)->>'reason') || '|' || pg_temp.t_gate(u1, b) x) q;
   insert into t_chk (name, ok, got) select '4h the third device works', x = 'ok|active', x from (select pg_temp.t_gate(u1, c) || '|' || pg_temp.t_seen(u1, c, 'devCCCCCCCC', 'computer') x) q;
   -- the tablet signs in again later and takes a place back: back and forth
@@ -613,22 +635,26 @@ begin
   insert into t_chk (name, ok, got) select '9c a normal drive between two of your own devices is not flagged', x = '0', x from (select (select count(*)::text from pb_auth.flags where user_id = u6) x) q;
   insert into t_chk (name, ok, got) select '9d bad device id refused; signed-out check-in refused', x = 'pb:bad_device', x from (select pg_temp.t_seen(u6, b, 'x') x) q;
 
-  -- ===== 10. the notes: a company account sees its own people; the app owner sees all; refused tries are never shown =====
+  -- ===== 10. the event log: only the app owner reads it; a per-company override =====
   insert into public.companies (name, owner_user_id) values ('PB1DEV A ' || tag, o1) returning id into c1;
-  insert into public.companies (name, owner_user_id) values ('PB1DEV B ' || tag, o2);
-  begin insert into public.company_members (company_id, user_id, role) values (c1, u4, 'foreman'); insert into pb_crew.own_names (user_id, name) values (u4, 'Ray Test');
-  exception when others then member_ok := false; notes := notes || ' [member insert not possible here: ' || left(sqlerrm, 60) || '; 10a skipped]'; end;
-  insert into pb_auth.flags (user_id, kind, dedupe, n) values (u4, 'tried_in_use', 'x', 3);
-  perform pg_temp.t_as(o1, null); j := public.pb_share_notes();
-  if member_ok then insert into t_chk (name, ok, got) select '10a company account: one note for Ray, far apart; tries not shown', x ~ '^1\|Ray Test\|far_apart\|3[3-6]$', x from (select jsonb_array_length(j->'notes') || '|' || (j->'notes'->0->>'who') || '|' || (j->'notes'->0->>'kind') || '|' || (j->'notes'->0->>'miles') x) q; end if;
-  perform pg_temp.t_as(o2, null);
-  insert into t_chk (name, ok, got) select '10b another company sees nothing', x = '0', x from (select jsonb_array_length(public.pb_share_notes()->'notes')::text x) q;
-  perform pg_temp.t_as(u4, null);
-  insert into t_chk (name, ok, got) select '10c crew cannot read notes', x = 'pb:not_company_account', x from (select public.pb_share_notes()->>'code' x) q;
-  begin perform public.pb_owner_share_notes(); t := 'let in'; exception when others then t := sqlerrm; end;
-  insert into t_chk (name, ok, got) values ('10d only the app owner reads all notes', t = 'pb:not_allowed', t);
-  insert into pb_support.admins (user_id) values (ad); perform pg_temp.t_as(ad, null); j := public.pb_owner_share_notes();
-  insert into t_chk (name, ok, got) select '10e app owner: far apart and back-and-forth, no silent kinds', x = 'back_and_forth,far_apart', x from (select (select string_agg(distinct e2->>'kind', ',' order by e2->>'kind') from jsonb_array_elements(j->'notes') e2 where e2->>'who' like '%' ) x) q;
+  begin insert into public.company_members (company_id, user_id, role) values (c1, u6, 'foreman'); insert into pb_crew.own_names (user_id, name) values (u6, 'Ray Test');
+  exception when others then member_ok := false; notes := notes || ' [member insert not possible here: ' || left(sqlerrm, 60) || '; 10c-10f skipped]'; end;
+  perform pg_temp.t_as(o1, null);
+  begin perform public.pb_owner_share_events(); t := 'let in'; exception when others then t := sqlerrm; end;
+  insert into t_chk (name, ok, got) values ('10a a company account cannot read the event log', t = 'pb:not_allowed', t);
+  insert into pb_support.admins (user_id) values (ad); perform pg_temp.t_as(ad, null); j := public.pb_owner_share_events();
+  insert into t_chk (name, ok, got) select '10b app owner: every kind, one row per event, with distance', x ~ '^back_and_forth,far_apart,took_place,tried_full,tried_in_use\|3[3-6]$', x from (select (select string_agg(distinct e2->>'kind', ',' order by e2->>'kind') from jsonb_array_elements(j->'events') e2) || '|' || (select e2->>'miles' from jsonb_array_elements(j->'events') e2 where e2->>'kind' = 'far_apart' limit 1) x) q;
+  if member_ok then
+    -- the whole company (owner login and members) gets an override: 3 devices, usable at the same time
+    insert into pb_auth.company_allow (company_id, devices, one_at_a_time, note) values (c1, 3, false, 'test');
+    insert into t_chk (name, ok, got) select '10c company override applies to the member and the owner login, not to others', x = '3/false|3/false|2/true', x from (select pb_auth.allowed(u6) || '/' || pb_auth.one_at_a_time(u6) || '|' || pb_auth.allowed(o1) || '/' || pb_auth.one_at_a_time(o1) || '|' || pb_auth.allowed(u4) || '/' || pb_auth.one_at_a_time(u4) x) q;
+    a := (select session_id from pb_auth.holder where user_id = u6); b := (select id from auth.sessions where user_id = u6 and id <> a limit 1);
+    insert into t_chk (name, ok, got) select '10d with the override both devices work at once, and a third signs in', x = 'active|ok|ok|live:-', x from (select pg_temp.t_seen(u6, b, 'devAAAAAAAA', 'phone') || '|' || pg_temp.t_gate(u6, a) || '|' || pg_temp.t_gate(u6, b) || '|' || pg_temp.t_reason(pg_temp.t_signin(u6)) x) q;
+    insert into pb_auth.allow (user_id, devices, one_at_a_time) values (u6, 1, true);
+    insert into t_chk (name, ok, got) select '10e a login''s own row wins over its company''s', x = '1/true', x from (select pb_auth.allowed(u6) || '/' || pb_auth.one_at_a_time(u6) x) q;
+    c := pg_temp.t_signin(u6); perform pg_temp.t_as(ad, null); j := public.pb_owner_share_events();
+    insert into t_chk (name, ok, got) select '10f the event row names the login and its company', x = 'Ray Test|PB1DEV A ' || tag, x from (select (select (e2->>'who') || '|' || (e2->>'company') from jsonb_array_elements(j->'events') e2 where e2->>'user_id' = u6::text order by e2->>'at' desc limit 1) x) q;
+  end if;
 
   -- ===== 11. the gate leaves everything else alone; grants =====
   begin

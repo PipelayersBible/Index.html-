@@ -39,6 +39,8 @@ CASE_DROP = {}    # case id -> why
 # round 2 (case, not answer): "wasn't confirmed", "isn't confirmed", "confirm with <agency>" are the right answer; two musts asked for a side fact
 UNCONF = "(?:not |n't |un)confirmed|confirm with|to confirm|confirm "
 DROP_MUST = {'lib-ky-sp-4': '600 volts', 'lib-us-osha-57': 'record'}
+# round 3 (case): "head-injury" with a hyphen; "given a role ... before they take on that role" is "assigned"
+SWAP = {'lib-us-em-3': ('concussion|head injury', 'concussion|head[- ]injur'), 'lib-us-osha-57': ('assign', 'assign|given|take on|takes on')}
 def fix_cases(cases, ALL, say):
     n = 0
     for c in cases:
@@ -46,5 +48,6 @@ def fix_cases(cases, ALL, say):
         for k in ('must', 'lead'):
             v = [p.replace('not confirmed', UNCONF) if 'not confirmed' in p and UNCONF not in p else p for p in c.get(k, [])]
             if v != c.get(k, []): c[k] = v; n += 1
+        if c['id'] in SWAP: c['must'] = [SWAP[c['id']][1] if m == SWAP[c['id']][0] else m for m in c['must']]; c['lead'] = [SWAP[c['id']][1] if m == SWAP[c['id']][0] else m for m in c['lead']]; n += 1
         if c['id'] in DROP_MUST: c['must'] = [m for m in c['must'] if m != DROP_MUST[c['id']]]; n += 1
     say(f'fixes.py: {n} case patterns corrected (regex too narrow or a side fact asked as a must); none dropped')

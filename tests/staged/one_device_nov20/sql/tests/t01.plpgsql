@@ -54,7 +54,7 @@ begin
   insert into t_chk (name, ok, got) select '2b gate refuses the refused sign-in', x = 'in_use', x from (select pg_temp.t_gate(u1, b) x) q;
   insert into t_chk (name, ok, got) select '2c its check-in is refused too', x = 'ERR pb:signed_out', x from (select pg_temp.t_seen(u1, b, 'devBBBBBBBB', 'tablet') x) q;
   insert into t_chk (name, ok, got) select '2d first device unaffected', x = 'ok', x from (select pg_temp.t_gate(u1, a) x) q;
-  insert into t_chk (name, ok, got) select '2e the try is counted', x = '1', x from (select (select f.n::text from pb_auth.flags f where f.user_id = u1 and f.kind = 'tried_in_use') x) q;
+  insert into t_chk (name, ok, got) select '2e the try is counted', x = '1', x from (select (select count(*)::text from pb_auth.flags f where f.user_id = u1 and f.kind = 'tried_in_use') x) q;
   perform set_config('request.jwt.claims', '{"role":"anon"}', true);
   set local role anon; j := public.pb_session_why(b); reset role;
   insert into t_chk (name, ok, got) select '2f why (app key): in_use, and the refused session is removed', x = 'in_use|gone:in_use|live:-', x from (select (j->>'reason') || '|' || pg_temp.t_reason(b) || '|' || pg_temp.t_reason(a) x) q;
@@ -71,7 +71,7 @@ begin
   insert into t_chk (name, ok, got) select '3f tablet idle 5 min: phone requests pass again, no sign-in', x = 'ok', x from (select pg_temp.t_gate(u1, a) x) q;
   insert into t_chk (name, ok, got) select '3g phone check-in: active', x = 'active', x from (select pg_temp.t_seen(u1, a, 'devAAAAAAAA', 'phone') x) q;
   insert into t_chk (name, ok, got) select '3h now the tablet is the locked one', x ~ '^locked/phone\|', x from (select pg_temp.t_gate(u1, b) x) q;
-  insert into t_chk (name, ok, got) select '3i no sharing flag for phone + tablet with no location', x = '0', x from (select (select count(*)::text from pb_auth.flags where user_id = u1 and kind <> 'tried_in_use') x) q;
+  insert into t_chk (name, ok, got) select '3i no sharing flag for phone + tablet with no location', x = '0', x from (select (select count(*)::text from pb_auth.flags where user_id = u1 and kind not like 'tried%') x) q;
 
   -- ===== 4. a third device: refused (in_use while one is in use; "full" when both are idle); it can sign one out =====
   c := pg_temp.t_signin(u1);
@@ -87,6 +87,7 @@ begin
   perform set_config('request.jwt.claims', '{"role":"anon"}', true);
   set local role anon; j := public.pb_session_take_slot(c, 2); reset role; -- sign out the one used longest ago (the tablet)
   insert into t_chk (name, ok, got) select '4f take the tablet''s place (app key + the refused session id)', x = 'true|live:-|live:-|gone:other_device', x from (select (j->>'ok') || '|' || pg_temp.t_reason(c) || '|' || pg_temp.t_reason(a) || '|' || pg_temp.t_reason(b) x) q;
+  insert into t_chk (name, ok, got) select '4f2 events: refused (full) then took the tablet''s place', x = '1|tablet', x from (select (select count(*)::text from pb_auth.flags where user_id = u1 and kind = 'tried_full') || '|' || (select kind_a from pb_auth.flags where user_id = u1 and kind = 'took_place') x) q;
   insert into t_chk (name, ok, got) select '4g the tablet is told why (other_device); its requests are refused', x = 'other_device|other_device', x from (select (public.pb_session_why(b)->>'reason') || '|' || pg_temp.t_gate(u1, b) x) q;
   insert into t_chk (name, ok, got) select '4h the third device works', x = 'ok|active', x from (select pg_temp.t_gate(u1, c) || '|' || pg_temp.t_seen(u1, c, 'devCCCCCCCC', 'computer') x) q;
   -- the tablet signs in again later and takes a place back: back and forth
@@ -167,22 +168,26 @@ begin
   insert into t_chk (name, ok, got) select '9c a normal drive between two of your own devices is not flagged', x = '0', x from (select (select count(*)::text from pb_auth.flags where user_id = u6) x) q;
   insert into t_chk (name, ok, got) select '9d bad device id refused; signed-out check-in refused', x = 'pb:bad_device', x from (select pg_temp.t_seen(u6, b, 'x') x) q;
 
-  -- ===== 10. the notes: a company account sees its own people; the app owner sees all; refused tries are never shown =====
+  -- ===== 10. the event log: only the app owner reads it; a per-company override =====
   insert into public.companies (name, owner_user_id) values ('PB1DEV A ' || tag, o1) returning id into c1;
-  insert into public.companies (name, owner_user_id) values ('PB1DEV B ' || tag, o2);
-  begin insert into public.company_members (company_id, user_id, role) values (c1, u4, 'foreman'); insert into pb_crew.own_names (user_id, name) values (u4, 'Ray Test');
-  exception when others then member_ok := false; notes := notes || ' [member insert not possible here: ' || left(sqlerrm, 60) || '; 10a skipped]'; end;
-  insert into pb_auth.flags (user_id, kind, dedupe, n) values (u4, 'tried_in_use', 'x', 3);
-  perform pg_temp.t_as(o1, null); j := public.pb_share_notes();
-  if member_ok then insert into t_chk (name, ok, got) select '10a company account: one note for Ray, far apart; tries not shown', x ~ '^1\|Ray Test\|far_apart\|3[3-6]$', x from (select jsonb_array_length(j->'notes') || '|' || (j->'notes'->0->>'who') || '|' || (j->'notes'->0->>'kind') || '|' || (j->'notes'->0->>'miles') x) q; end if;
-  perform pg_temp.t_as(o2, null);
-  insert into t_chk (name, ok, got) select '10b another company sees nothing', x = '0', x from (select jsonb_array_length(public.pb_share_notes()->'notes')::text x) q;
-  perform pg_temp.t_as(u4, null);
-  insert into t_chk (name, ok, got) select '10c crew cannot read notes', x = 'pb:not_company_account', x from (select public.pb_share_notes()->>'code' x) q;
-  begin perform public.pb_owner_share_notes(); t := 'let in'; exception when others then t := sqlerrm; end;
-  insert into t_chk (name, ok, got) values ('10d only the app owner reads all notes', t = 'pb:not_allowed', t);
-  insert into pb_support.admins (user_id) values (ad); perform pg_temp.t_as(ad, null); j := public.pb_owner_share_notes();
-  insert into t_chk (name, ok, got) select '10e app owner: far apart and back-and-forth, no silent kinds', x = 'back_and_forth,far_apart', x from (select (select string_agg(distinct e2->>'kind', ',' order by e2->>'kind') from jsonb_array_elements(j->'notes') e2 where e2->>'who' like '%' ) x) q;
+  begin insert into public.company_members (company_id, user_id, role) values (c1, u6, 'foreman'); insert into pb_crew.own_names (user_id, name) values (u6, 'Ray Test');
+  exception when others then member_ok := false; notes := notes || ' [member insert not possible here: ' || left(sqlerrm, 60) || '; 10c-10f skipped]'; end;
+  perform pg_temp.t_as(o1, null);
+  begin perform public.pb_owner_share_events(); t := 'let in'; exception when others then t := sqlerrm; end;
+  insert into t_chk (name, ok, got) values ('10a a company account cannot read the event log', t = 'pb:not_allowed', t);
+  insert into pb_support.admins (user_id) values (ad); perform pg_temp.t_as(ad, null); j := public.pb_owner_share_events();
+  insert into t_chk (name, ok, got) select '10b app owner: every kind, one row per event, with distance', x ~ '^back_and_forth,far_apart,took_place,tried_full,tried_in_use\|3[3-6]$', x from (select (select string_agg(distinct e2->>'kind', ',' order by e2->>'kind') from jsonb_array_elements(j->'events') e2) || '|' || (select e2->>'miles' from jsonb_array_elements(j->'events') e2 where e2->>'kind' = 'far_apart' limit 1) x) q;
+  if member_ok then
+    -- the whole company (owner login and members) gets an override: 3 devices, usable at the same time
+    insert into pb_auth.company_allow (company_id, devices, one_at_a_time, note) values (c1, 3, false, 'test');
+    insert into t_chk (name, ok, got) select '10c company override applies to the member and the owner login, not to others', x = '3/false|3/false|2/true', x from (select pb_auth.allowed(u6) || '/' || pb_auth.one_at_a_time(u6) || '|' || pb_auth.allowed(o1) || '/' || pb_auth.one_at_a_time(o1) || '|' || pb_auth.allowed(u4) || '/' || pb_auth.one_at_a_time(u4) x) q;
+    a := (select session_id from pb_auth.holder where user_id = u6); b := (select id from auth.sessions where user_id = u6 and id <> a limit 1);
+    insert into t_chk (name, ok, got) select '10d with the override both devices work at once, and a third signs in', x = 'active|ok|ok|live:-', x from (select pg_temp.t_seen(u6, b, 'devAAAAAAAA', 'phone') || '|' || pg_temp.t_gate(u6, a) || '|' || pg_temp.t_gate(u6, b) || '|' || pg_temp.t_reason(pg_temp.t_signin(u6)) x) q;
+    insert into pb_auth.allow (user_id, devices, one_at_a_time) values (u6, 1, true);
+    insert into t_chk (name, ok, got) select '10e a login''s own row wins over its company''s', x = '1/true', x from (select pb_auth.allowed(u6) || '/' || pb_auth.one_at_a_time(u6) x) q;
+    c := pg_temp.t_signin(u6); perform pg_temp.t_as(ad, null); j := public.pb_owner_share_events();
+    insert into t_chk (name, ok, got) select '10f the event row names the login and its company', x = 'Ray Test|PB1DEV A ' || tag, x from (select (select (e2->>'who') || '|' || (e2->>'company') from jsonb_array_elements(j->'events') e2 where e2->>'user_id' = u6::text order by e2->>'at' desc limit 1) x) q;
+  end if;
 
   -- ===== 11. the gate leaves everything else alone; grants =====
   begin
