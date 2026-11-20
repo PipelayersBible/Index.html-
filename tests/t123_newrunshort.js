@@ -39,7 +39,7 @@ const liveBase=!!process.env.PB_BASE||!process.env.PB_URL;
  ok(!(await st(p)).more,'changing the rod unit (always shown on the line) does not pop the fold');
  // ---- the common run never opens More ----
  await H.f('saJobNumber','24-017');await H.f('saJobsite','Test Sewer');await H.sel('runIdSel','8"');await p.waitForTimeout(400);
- s=await st(p);ok(!s.more&&await p.evaluate(()=>{const e=document.getElementById('runWT');return e.value!==''&&e.checkVisibility()&&!e.closest('#runSecMore');}),'pipe size fills the wall (auto), shown under the pipe, More stays closed: "'+s.sum+'"');
+ s=await st(p);ok(!s.more&&await p.evaluate(()=>{const e=document.getElementById('runWT'),g=document.getElementById('runWallGroup'),l=document.getElementById('runWallGroupSum');return e.value!==''&&!e.closest('#runSecMore')&&(!g||g.closest('#runPipeGroup'))&&(e.checkVisibility()||(l&&l.checkVisibility()&&l.textContent.indexOf('Wall '+e.value+' ft (auto)')===0));}),'pipe size fills the wall (auto), shown under the pipe (r17.11: on the Wall line when folded), More stays closed: "'+s.sum+'"');
  stake=S('1+50',103.4,3.61,'MH-1','3860');await p.setInputFiles('#startAiStakePhoto',[H.img('p12')]);await p.waitForTimeout(2500);
  await H.f('startStakeReading','4.36');
  stake=S('4+51',104.26,3.83,'MH-2','3863');await p.setInputFiles('#endAiStakePhoto',[H.img('p05')]);await p.waitForTimeout(2500);

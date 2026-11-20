@@ -28,3 +28,16 @@
 - harmful quantity: "violates state water quality standards, causes a film or sheen on the water's surface" or "leaves sludge or emulsion beneath the surface"; notify NRC "immediately after he or she has knowledge of the discharge"; "1-800-424-8802 or 1-202-267-2675"
 ## EPA Region 9 SPCC compliance factsheet (Sept 2025) https://www.epa.gov/system/files/documents/2025-11/spcc-compliance-factsheet_0.pdf
 - "total aggregate capacity of aboveground oil storage containers greater than 1,320 gallons"; "Has the potential to discharge oil in quantities that may be harmful into navigable waters or adjoining shorelines."; PE cert if "total oil storage capacity exceeds 10,000 gallons."
+## EPA 2022 CGP Appendix B (areas of coverage) https://www.epa.gov/system/files/documents/2025-04/appendix-b-areas-of-permit-coverage.pdf
+- Whole state/area: Massachusetts, New Hampshire, New Mexico (except some tribal lands under other permits), District of Columbia, Puerto Rico, Pacific territories (American Samoa, Guam, N. Mariana Is., etc.). Elsewhere: Indian country and/or federal facilities / lands of exclusive federal jurisdiction only (e.g. CA, TX, FL: Indian country only; VT, DE: federal facilities; WA: Indian country + federal operators; CO: federal facilities + Indian country).
+## OSHA letter of interpretation May 29, 2007 (AC water pipe tapping/tie-in) https://www.osha.gov/laws-regs/standardinterpretations/2007-05-29
+- competent person classifies; removal of AC pipe "is normally Class II asbestos work."; could be Class III if repair/maintenance and ACM fits one glove bag/waste bag; unclear -> "should assume the higher class applies."
+- AWWA practices "are generally compliant with OSHA's Asbestos Standard for construction, 1926.1101."
+- Class III training "shall take at least 16 hours"; Class II includes hands-on training. Wet methods, HEPA vacuums, prompt cleanup; no high-speed abrasive disc saws without controls, no compressed air, no dry cleanup.
+- consultant "was in error when he stated that when an activity is below the PEL it is exempt from OSHA's Asbestos Standard."
+## USACE 2026 NWPs news release (Jan 8, 2026) https://www.mvk.usace.army.mil/Media/News-Releases/Article/4373633/us-army-corps-of-engineers-announces-publication-of-2026-nationwide-permits/
+- "The 56 reissued and one new nationwide permit in the final action"; "The nationwide permits in this action take effect March 15, 2026."; "The 2021 permits are set to expire March 14, 2026." FR Jan 8, 2026 (91 FR, doc 2026-00121).
+## TCEQ CGP page https://www.tceq.texas.gov/permitting/stormwater/construction/index (modified 2026-11-16)
+- TXR150000; effective "March 5, 2023", "expires on March 5, 2028."; "disturb an acre or more of soil."; "Large construction activities which disturb 5 or more acres"; "Small construction activities which disturb at least 1 but less than 5 acres"; "develop and implement a Stormwater Pollution Prevention Plan (SWP3) prior to commencing construction."; NOI via STEERS; site notices; renewal stakeholder meeting June 9, 2026.
+## CA HSC 7050.5 https://codes.findlaw.com/ca/health-and-safety-code/hsc-sect-7050-5/
+- "there shall be no further excavation or disturbance of the site" (or nearby area) until county coroner determines; coroner contacts NAHC "by telephone within 24 hours" if Native American.

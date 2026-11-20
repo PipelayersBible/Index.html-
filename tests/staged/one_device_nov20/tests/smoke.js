@@ -1,0 +1,18 @@
+const {chromium}=require('playwright');const boot=require('./boot_1dev');
+const BASE=process.env.PB_URL||'http://127.0.0.1:10100/cur.html';
+const IOS='Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
+(async()=>{const b=await chromium.launch();const srv=require('./srv1dev')();
+ const P1=(await boot(b,BASE,srv,{user:srv.USERS[srv.FOREMAN],ua:IOS,wait:8000})).p;
+ console.log('errs',P1.errs.slice(0,5),'cerrs',(P1.cerrs||[]).slice(0,5));
+ console.log('screen',await P1.evaluate(()=>({scr:document.querySelector('.pb-screen.active')&&document.querySelector('.pb-screen.active').id,dev:localStorage.getItem('pbDeviceId'),last:localStorage.getItem('pb1dLast'),log:window.__rpcLog.filter(x=>/device|session/.test(x))})));
+ console.log('srv',JSON.stringify([...srv.D.sess.values()]),JSON.stringify([...srv.D.devices.values()]));
+ const P2=(await boot(b,BASE,srv,{ua:IOS,wait:4000})).p;
+ console.log('P2 screen',await P2.evaluate(()=>document.querySelector('.pb-screen.active')&&document.querySelector('.pb-screen.active').id));
+ await P2.evaluate(()=>{pbGoto('login');});await P2.waitForTimeout(500);
+ await P2.fill('#loginEmail','ray@example.com');await P2.fill('#loginPassword','pw123456');await P2.click('#loginSubmitBtn');await P2.waitForTimeout(6000);
+ console.log('P2 after',await P2.evaluate(()=>({scr:document.querySelector('.pb-screen.active').id,modal:(document.getElementById('pbModalOverlay')||{}).innerText,sheet:(document.getElementById('pbObSheet')||{}).innerText,err:document.getElementById('loginError').textContent})));
+ console.log('live',srv.live(srv.FOREMAN),'P2 errs',P2.errs.slice(0,3));
+ await P1.evaluate(()=>window.dispatchEvent(new Event('online')));await P1.waitForTimeout(5000);
+ console.log('P1 after',await P1.evaluate(()=>({scr:document.querySelector('.pb-screen.active').id,modal:(()=>{const d=document.getElementById('pbModalOverlay');return d&&getComputedStyle(d).display!=='none'?d.innerText:''})(),so:window.__signOuts})));
+ console.log('flags',JSON.stringify(srv.D.flags),'refused',JSON.stringify(srv.D.refused));
+ await b.close();})();

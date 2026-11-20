@@ -7,9 +7,10 @@
 #     B = Batch('mutcd_part6', collection='mutcd')          # name of your batch, the collection it belongs to
 #     B.add(id='mutcd-6c-taper-1', state='US', title='Taper lengths for lane closures (merging, shifting, shoulder)',
 #           topic='Traffic control: tapers and buffer spaces', text='...', source='MUTCD 11th Edition (Dec 2023), Section 6B.08, Table 6B-3',
-#           url='https://mutcd.fhwa.dot.gov/...', checked='2026-11-20', edition='11th Edition, December 2023', effective='2024-01-18',
+#           tier='core', url='https://mutcd.fhwa.dot.gov/...', checked='2026-11-20', edition='11th Edition, December 2023', effective='2024-01-18',
 #           confidence='high', kind='summary', license='gov-us')
-#     B.write()        # -> <name>.jsonl, sql/<name>_NN.sql (guarded inserts, NOT applied), sql/<name>_precheck.sql (SELECT only), <name>_report.txt
+#     B.write()        # -> <name>.jsonl (the source of truth), <name>_report.txt, and SQL that is NOT applied:
+#                      #    sql/<name>_core_NN.sql + _precheck.sql (tier core -> pb_ai.kb_chunks), sql/<name>_shelf_NN.sql (tier shelf -> pb_ai.kb_shelf)
 # Check an existing file:   python3 lib_kb.py check my_chunks.jsonl
 # Self-test:                python3 lib_kb.py selftest
 import json, os, re, sys, datetime
@@ -48,7 +49,11 @@ COLLECTIONS = {
 KINDS = ('verbatim', 'summary')
 LICENSES = ('gov-us', 'gov-state', 'gov-local', 'summary')   # summary = our own words about a copyrighted work, facts + citation only
 CONF = ('high', 'medium', 'low')
-REQUIRED = ('id', 'state', 'title', 'topic', 'text', 'source', 'url', 'checked', 'confidence', 'kind', 'license')
+TIERS = ('core', 'shelf')   # core = short answer card, loaded in every Ask worker (small budget); shelf = the deep library, searched on the server
+CORE_PER_STATE = 40         # core chunks one state may have across ALL collections (see LIBRARY_RULES.md section 1)
+CORE_SPLIT = {'dig': 6, 'sp': 10, 'tc': 8, 'spec': 10, 'env': 2, 'lic': 2, 'row': 2}          # per state, per collection
+CORE_US = {'osha': 500, 'mutcd': 200, 'fed': 150, 'std': 100, 'mfr': 50}                     # nationwide collections, total
+REQUIRED = ('id', 'state', 'tier', 'title', 'topic', 'text', 'source', 'url', 'checked', 'confidence', 'kind', 'license')
 OPTIONAL = ('edition', 'effective', 'supersedes', 'unconfirmed', 'note')
 COPYRIGHT_COLLECTIONS = ('std', 'mfr')
 UNCONFIRMED_RX = re.compile(r'not confirmed|unconfirmed|could not (be )?confirm|not verified|not checked', re.I)
@@ -131,6 +136,9 @@ def check_chunk(c, collection=None):
     if c['confidence'] not in CONF: E.append(f'confidence must be one of {CONF}')
     if c['kind'] not in KINDS: E.append(f'kind must be one of {KINDS}')
     if c['license'] not in LICENSES: E.append(f'license must be one of {LICENSES}')
+    if c['tier'] not in TIERS: E.append(f'tier must be one of {TIERS}')
+    if c['tier'] == 'core' and c['kind'] == 'verbatim' and coll != 'osha': W.append('verbatim text normally goes on the shelf; core is for short plain-language answer cards')
+    if c['tier'] == 'core' and n > 1200: E.append(f'a core chunk is an answer card: at most 1,200 characters (this is {n})')
     if coll in COPYRIGHT_COLLECTIONS and (c['license'] != 'summary' or c['kind'] != 'summary'):
         E.append(f'{coll}- is a copyrighted source: kind and license must both be "summary" (our own words, facts and citation)')
     if c['license'] == 'summary':
@@ -171,6 +179,13 @@ class Batch:
             seen.add(cid)
             titles.setdefault(c.get('title'), []).append(cid)
             E += [f'{cid}: {x}' for x in e]; W += [f'{cid}: {x}' for x in w]
+        core = {}
+        for c in self.chunks:
+            if c.get('tier') == 'core' and isinstance(c.get('id'), str) and isinstance(c.get('state'), str):
+                k = (c['id'].split('-')[0], c['state']); core[k] = core.get(k, 0) + 1
+        for (coll, st), k in sorted(core.items()):
+            cap = CORE_US.get(coll) if st == 'US' else CORE_SPLIT.get(coll)
+            if cap is not None and k > cap: E.append(f'{coll}/{st}: {k} core chunks, the budget is {cap}: move the detail to tier "shelf"')
         for t, ids in titles.items():
             if len(ids) > 2: W.append(f'{ids[0]}: {len(ids)} chunks share the title "{t}" (Ask shows at most 2 per title): make each title say what that chunk covers')
         return E, W
@@ -184,7 +199,9 @@ class Batch:
         if E and strict: raise SystemExit(f'{len(E)} errors: nothing written. Fix them (see {self.name}_report.txt).')
         with open(os.path.join(self.dir, f'{self.name}.jsonl'), 'w') as f:
             for c in self.chunks: f.write(json.dumps(c, ensure_ascii=False) + '\n')
-        files = write_sql(self.chunks, self.name, os.path.join(self.dir, 'sql'), self.version)
+        files = write_sql([c for c in self.chunks if c['tier'] == 'core'], self.name + '_core', os.path.join(self.dir, 'sql'), self.version)
+        shelf = [c for c in self.chunks if c['tier'] == 'shelf']
+        if shelf: files += write_sql(shelf, self.name + '_shelf', os.path.join(self.dir, 'sql'), self.version, table='pb_ai.kb_shelf')
         print('wrote', f'{self.name}.jsonl', *files)
         return files
 
@@ -194,9 +211,12 @@ def _q(s):
     return '$kb$' + s + '$kb$'
 
 
-def write_sql(chunks, name, sql_dir, version=VERSION):
+def write_sql(chunks, name, sql_dir, version=VERSION, table='pb_ai.kb_chunks'):
     """Guarded SQL, NOT applied by this tool. Each file is one transaction and can be run twice safely:
-       new chunks go in at the next ord numbers only if their id is not there yet; a chunk with `supersedes` replaces that row in place."""
+       new chunks go in at the next ord numbers only if their id is not there yet; a chunk with `supersedes` replaces that row in place.
+       table = pb_ai.kb_chunks (core: what every Ask worker loads) or pb_ai.kb_shelf (the deep library; the table is created by
+       sql/PROPOSED_kb_shelf.sql and does not exist on the server yet)."""
+    if table != 'pb_ai.kb_chunks': return _write_sql_shelf(chunks, name, sql_dir, table)
     new = [c for c in chunks if not c.get('supersedes')]
     rep = [c for c in chunks if c.get('supersedes')]
     parts, cur, size = [], [], 0
@@ -259,12 +279,39 @@ update pb_ai.kb_chunks set lib = '{lib_of(c)}', chunk = {_q(json.dumps(c, ensure
     return files
 
 
+def _write_sql_shelf(chunks, name, sql_dir, table):
+    """shelf rows are keyed by chunk id (no ord numbers, no worker index): insert new ids, replace superseded ones in place"""
+    parts, cur, size = [], [], 0
+    for c in chunks:
+        row = json.dumps(c, ensure_ascii=False)
+        if cur and size + len(row) > SQL_MAX: parts.append(cur); cur, size = [], 0
+        cur.append(row); size += len(row) + 2
+    if cur or not parts: parts.append(cur)
+    files = []
+    for i, rows in enumerate(parts):
+        fn = f'{name}_{i:02d}.sql'
+        open(os.path.join(sql_dir, fn), 'w').write(f"""-- {fn} ({datetime.date.today().isoformat()}): Ask SHELF batch "{name}", part {i + 1} of {len(parts)}. NOT APPLIED. Generated by lib_kb.py.
+-- Needs {table} (sql/PROPOSED_kb_shelf.sql in library_arch_nov20). Adds up to {len(rows)} chunks. Safe to run twice.
+begin;
+-- a chunk that supersedes another: the old id goes, the new one takes its place
+delete from {table} s using jsonb_array_elements({_q('[' + ',\n'.join(rows) + ']')}::jsonb) e
+ where e->>'supersedes' is not null and s.id = e->>'supersedes' and s.id <> e->>'id';
+insert into {table} (id, chunk)
+select e->>'id', e from jsonb_array_elements({_q('[' + ',\n'.join(rows) + ']')}::jsonb) e
+on conflict (id) do update set chunk = excluded.chunk where {table}.chunk is distinct from excluded.chunk;
+select count(*) as shelf_rows from {table};
+commit;
+""")
+        files.append('sql/' + fn)
+    return files
+
+
 def load_jsonl(path):
     return [json.loads(l) for l in open(path) if l.strip()]
 
 
 def _selftest():
-    good = dict(id='tc-tx-flagger-1', state='TX', title='Texas flagger rules: who can flag and what training counts',
+    good = dict(id='tc-tx-flagger-1', state='TX', tier='core', title='Texas flagger rules: who can flag and what training counts',
                 topic='Traffic control: flaggers', text='Texas follows the Texas MUTCD (TMUTCD) for flagging on public roads. ' + 'Flaggers are trained before they flag. ' * 6,
                 source='Texas MUTCD 2011 Rev. 2, Section 6E.01', url='https://www.txdot.gov/example.pdf', checked='2026-11-20', edition='2011 Revision 2',
                 confidence='high', kind='summary', license='gov-state')
@@ -292,14 +339,22 @@ def _selftest():
     import tempfile
     d = tempfile.mkdtemp()
     b = Batch('selftest', out_dir=d); b.add(**good); b.add(**us); b.add(**dict(good, id='tc-tx-flagger-2', supersedes='tc-2'))
+    b.add(**dict(us, id='mutcd-6c-taper-2', tier='shelf', kind='verbatim', title='Taper length text'))
+    assert check_chunk(dict(good, tier='big'))[0] and check_chunk(dict(good, text=good['text'] + ' More detail here.' * 60))[0]
+    many = Batch('many', out_dir=d)
+    for k in range(9): many.add(**dict(good, id=f'tc-tx-flagger-{k}', title=f'Texas flagger rules part {k}'))
+    assert any('budget' in x for x in many.check()[0]), 'core budget'
     files = b.write()
-    s = open(os.path.join(d, 'sql', 'selftest_00.sql')).read()
+    assert os.path.exists(os.path.join(d, 'sql', 'selftest_shelf_00.sql'))
+    s = open(os.path.join(d, 'sql', 'selftest_core_00.sql')).read()
     assert s.count('insert into pb_ai.kb_chunks') == 1 and s.count('update pb_ai.kb_chunks set lib') == 1 and 'commit;' in s
     print('selftest OK', files)
 
 
 if __name__ == '__main__':
     if len(sys.argv) >= 2 and sys.argv[1] == 'selftest': _selftest()
+    elif len(sys.argv) >= 4 and sys.argv[1] == 'sql':      # python3 lib_kb.py sql chunks.jsonl name  -> regenerate the SQL from a .jsonl (the .jsonl is the source of truth)
+        b = Batch(sys.argv[3], out_dir=os.path.dirname(os.path.abspath(sys.argv[2]))); b.chunks = load_jsonl(sys.argv[2]); b.write()
     elif len(sys.argv) >= 3 and sys.argv[1] == 'check':
         b = Batch('check', out_dir='.'); b.chunks = load_jsonl(sys.argv[2])
         ex = set()

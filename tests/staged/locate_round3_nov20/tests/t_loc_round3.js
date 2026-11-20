@@ -59,7 +59,7 @@ const NONE=['CA','NV','HI','RI','OH','NY','AK','WI'];
   ok(await has(p,'loc_'+A+'Dig')&&await has(p,'loc_'+A+'Start')&&!(await p.$('#loc_'+A+'Rb')),'California, new ticket: Can dig from + Start work by, no Renew by');
   ok(!(await p.$('#loc_'+B+'Dig'))&&!(await p.$('#loc_'+B+'Start'))&&await has(p,'loc_'+B+'Exp'),'California, renewed ticket: no "Can dig from", no "Start work by", Expires stays');
   ok(!/Can dig from|Start work by/.test(await txt(p,'locT_'+B)||''),'renewed card has neither start line in its text');
-  const sb=await p.evaluate(()=>{const D=window.__debugLoc28,mk=(r,n)=>({id:'x',job_key:'j-100',job_number:'J-100',called_at:'2026-05-29',expires_at:'2026-06-26',renewed_at:r,renewals:n,closed:false});
+  const sb=await p.evaluate(()=>{const D=window.__debugLoc28,mk=(r,n)=>({id:'x',job_key:'j-100',job_number:'J-100',called_at:'2026-05-22',expires_at:'2026-06-26',renewed_at:r,renewals:n,closed:false});
     return {newS:D.startBy(mk(null,0)),renS:D.startBy(mk('2026-05-30',1)),newK:D.stat(mk(null,0)).k,renK:D.stat(mk('2026-05-30',1)).k,renOnly:D.stat({id:'x',job_key:'j-100',job_number:'J-100',called_at:'2026-06-01',expires_at:'2026-06-26',renewed_at:'2026-06-01',renewals:1,closed:false}).k};});
   ok(sb.newS!==''&&sb.renS===''&&sb.newK==='start'&&sb.renK!=='start'&&sb.renOnly!=='early','start-by / chip: new ticket "'+sb.newK+'" ('+sb.newS+'), renewed "'+sb.renK+'" (no start-by), renewed today is not "not valid yet" ('+sb.renOnly+')');
   // the Edit form of a renewed ticket has no start lines either; a new ticket's form keeps them
@@ -117,9 +117,10 @@ const NONE=['CA','NV','HI','RI','OH','NY','AK','WI'];
     for(const d of [18,19,24]){window.__off=off+(d-1)*864e5;const s=D.stat(l);o[d]=(s.lv||'-')+'|'+s.text;}window.__off=off;return o;});
   ok(ca[18]==='-|8 days left'&&ca[19]==='amber|7 days left'&&ca[24]==='red|2 days left','California (no call-ahead): 7-day and 2-day reminders as before: '+JSON.stringify(ca));
   // Home: the foreman's card names the Renew-by day
+  await state(p,'OK');
+  const home=await p.evaluate(()=>{const off=window.__off;window.__off=off+15*864e5;let h=null;try{h=window.pbLocHomeAttention();}catch(e){h={html:'ERR '+e.message};}window.__off=off;return h?h.html.replace(/<[^>]+>/g,' '):null;});
+  ok(/RB-NEW expires in 10 days \(Jun 26\) — renew by Jun 18/.test(home||''),'Home card on Jun 16 (Oklahoma, expires Jun 26, 10 days out): '+String(home).slice(0,330));
   await state(p,'TN');
-  const home=await p.evaluate(()=>{const off=window.__off;window.__off=off+17*864e5;let h=null;try{h=window.pbLocHomeAttention();}catch(e){h={html:'ERR '+e.message};}window.__off=off;return h?h.html.replace(/<[^>]+>/g,' '):null;});
-  ok(/RB-NEW[^;]*renew by Jun 22/.test(home||''),'Home card on Jun 18 (Tennessee, expires Jun 26): '+String(home).slice(0,230));
 
   // ---- the state rows confirmed Nov 20, and the rule sheet
   const rows=await p.evaluate(()=>{const M=window.pbSrMath,g=(c)=>{const r=M.row(c);return {life:r.life&&(r.life.n+r.life.unit+'/'+r.life.from),notice:r.notice&&(r.notice.n+r.notice.unit),renew:r.renew,checked:r.checked,src:r.sources[0].what};};
@@ -177,7 +178,7 @@ const NONE=['CA','NV','HI','RI','OH','NY','AK','WI'];
   // ---- the new ticket is called in today and added: no gap for D, a one-day gap for E
   await p.evaluate(()=>{const S=window.__srv,t={id:'aaaaaaaa-0000-4000-8000-00000000001n',job_key:'j-100',job_number:'J-100',ticket_no:'NV-NEW',called_at:S.day(0),expires_at:S.day(28),note:null,closed:false,closed_at:null,created_at:new Date().toISOString(),updated_at:new Date().toISOString(),version:1,by:'Maria Office',renewed_at:null,renewals:0};S.tickets.push(t);
     S.log.push({id:++S.seq,locate_id:t.id,action:'on_file',at:t.updated_at,by_name:t.by,ticket_no:t.ticket_no,called_at:t.called_at,expires_at:t.expires_at,renewed_at:null,closed:false,expires_was:null,changes:{}});});
-  await p.reload({waitUntil:'load'});await p.waitForTimeout(3500);await p.evaluate(()=>window.pbOpenLocates('J-100'));await p.waitForTimeout(1500);await state(p,'NV');
+  await p.evaluate(()=>window.pbLocLoad());await p.waitForTimeout(1200);
   const NN=ID('1n');
   ok(await has(p,'loc_'+NN+'Dig')&&await txt(p,'loc_'+NN+'Dig')==='Wed Jun 3'&&!(await p.$('#loc_'+NN+'Rb'))&&!(await p.$('#locLast_'+NN)),'the new Nevada ticket: Can dig from Wed Jun 3, no Renew-by line, no note');
   t=await txt(p,'locLast_'+D);
