@@ -1,5 +1,5 @@
 declare
-  A uuid := gen_random_uuid(); OW uuid := gen_random_uuid(); M1 uuid := gen_random_uuid(); M2 uuid := gen_random_uuid(); M3 uuid := gen_random_uuid();
+  AD uuid := gen_random_uuid(); OW uuid := gen_random_uuid(); M1 uuid := gen_random_uuid(); M2 uuid := gen_random_uuid(); M3 uuid := gen_random_uuid();
   M4 uuid := gen_random_uuid(); M5 uuid := gen_random_uuid(); IV uuid := gen_random_uuid(); IND uuid := gen_random_uuid(); IND2 uuid := gen_random_uuid();
   BO uuid := gen_random_uuid(); BM uuid := gen_random_uuid(); NP uuid := gen_random_uuid();
   C uuid := gen_random_uuid(); B uuid := gen_random_uuid();
@@ -16,8 +16,8 @@ begin
     insert into storage.objects (bucket_id, name, owner_id, metadata) select bucket, u::text || '/t/' || gen_random_uuid()::text, u::text, jsonb_build_object('size', bytes) from generate_series(1, k) $s$;
   create function pg_temp.can(u uuid, bucket text, cap int) returns boolean language plpgsql as $c$ begin perform pg_temp.act(u); return public.pb_storage_put_ok(bucket, cap); end $c$;
 
-  insert into auth.users (id, email, aud, role) select u, 'pr-' || u || '@test.invalid', 'authenticated', 'authenticated' from unnest(array[A, OW, M1, M2, M3, M4, M5, IV, IND, IND2, BO, BM, NP]) u;
-  insert into pb_support.admins (user_id) values (A);
+  insert into auth.users (id, email, aud, role) select u, 'pr-' || u || '@test.invalid', 'authenticated', 'authenticated' from unnest(array[AD, OW, M1, M2, M3, M4, M5, IV, IND, IND2, BO, BM, NP]) u;
+  insert into pb_support.admins (user_id) values (AD);
   insert into public.companies (id, name, owner_user_id, status, plan, trial_ends_at) values
     (C, 'Price Test Pipeline', OW, 'active', 'paid', null), (B, 'Price Test Beta', BO, 'active', 'trial', now() + interval '10 days');
   insert into public.company_members (company_id, user_id, role) values (C, M1, 'foreman'), (C, M2, 'pipelayer'), (C, M3, 'pipelayer'), (C, M4, 'pipelayer'), (C, M5, 'pm'), (B, BM, 'foreman');
@@ -36,7 +36,7 @@ begin
   perform pg_temp.ok(pb_billing.paid_people(C) = 5 and pb_billing.paid_people(B) = 5, '1e paid people');
   r := pb_billing.prices();
   perform pg_temp.ok((r->>'base_cents')::int = 9900 and (r->>'base_seats')::int = 5 and (r->>'seat_cents')::int = 1200 and (r->>'yearly_months')::int = 10
-    and (r->>'founder_months')::int = 12 and (r->>'individual_cents')::int = 1200 and r->'plan_reading_cents' = 'null'::jsonb, '1f prices ' || r);
+    and (r->>'founder_months')::int = 12 and (r->>'individual_cents')::int = 1200 and r->'plan_reading_cents' = 'null'::jsonb, '1f prices ' || r::text);
   res := res || jsonb_build_object('seats_used', pb_billing.seats_used(C), 'prices', r);
 
   -- 2. who is who, and the daily number the ai function is given
@@ -53,7 +53,7 @@ begin
   perform pg_temp.ok(pg_temp.use(M1, 'gonogo_q', 3, 40) = 3, '3g the question check has its own counter');
   perform pg_temp.ok(pg_temp.use(M1, 'plans_strong', 3, 3) = 2, '3h strong plan reads: 2 a day');
   perform pg_temp.act(M1); r := public.pb_my_limits('teacher');
-  perform pg_temp.ok(r->'day' = '{"used": 25, "limit": 25}'::jsonb and r->'month'->>'limit' = '150' and r->'company_day' = '{"used": 25, "limit": 60}'::jsonb and r->'company_month'->>'limit' = '300' and r->>'people' = '5', '3i pb_my_limits ' || r);
+  perform pg_temp.ok(r->'day' = '{"used": 25, "limit": 25}'::jsonb and r->'month'->>'limit' = '150' and r->'company_day' = '{"used": 25, "limit": 60}'::jsonb and r->'company_month'->>'limit' = '300' and r->>'people' = '5', '3i pb_my_limits ' || r::text);
 
   -- 4. the company account: 5 a day, 1 cut sheet, no strong plan reads
   perform pg_temp.ok(pg_temp.use(OW, 'cutsheet', 2) = 1, '4a owner cut sheet: 1 a day');
@@ -112,7 +112,7 @@ begin
   -- 8. the individual plan's billing record
   perform pg_temp.act(M1); perform pg_temp.ok(pg_temp.err(format('select public.pb_owner_individual_on(%L)', IND2)) like '%pb:not_allowed%'
     and pg_temp.err(format('select public.pb_owner_individual_paid(%L, current_date)', IND2)) like '%pb:not_allowed%', '8a only the app owner');
-  perform pg_temp.act(A); r := public.pb_owner_individual_on(IND2);
+  perform pg_temp.act(AD); r := public.pb_owner_individual_on(IND2);
   perform pg_temp.ok((r->>'ok')::boolean and exists (select 1 from pb_billing.individual_accounts x where x.user_id = IND2 and x.cents = 1200 and x.billing_interval = 'month'
     and x.paid_through = (current_date + interval '1 month')::date and x.state = 'active'), '8b record opened at $12.00 a month');
   perform pg_temp.ok(pb_billing.has_individual(IND2) and public.ai_daily_limit(IND2) = 15 and pg_temp.use(IND2, 'teacher', 1) = 1, '8c works');
@@ -120,7 +120,7 @@ begin
   perform pg_temp.ok(pb_billing.has_individual(IND2) and (pb_billing.individuals_json()->0->>'state') = 'past_due' and (pb_billing.individuals_json()->0->'next'->>'due')::boolean, '8d past due: 7 days of grace, listed as due');
   update pb_billing.individual_accounts set paid_through = current_date - 8 where user_id = IND2;
   perform pg_temp.ok(not pb_billing.has_individual(IND2) and pg_temp.use(IND2, 'teacher', 1) = 0 and pg_temp.why(IND2, 'teacher') = 'plan' and (pb_billing.individuals_json()->0->>'state') = 'lapsed', '8e not paid past the grace: AI off');
-  perform pg_temp.act(A); select paid_through into d from pb_billing.individual_accounts where user_id = IND2;
+  perform pg_temp.act(AD); select paid_through into d from pb_billing.individual_accounts where user_id = IND2;
   r := public.pb_owner_individual_paid(IND2, d);
   perform pg_temp.ok((r->>'ok')::boolean and pb_billing.has_individual(IND2) and (r->'individuals'->0->'next'->>'amount_cents')::int = 1200, '8f Paid: one month on');
   r := public.pb_owner_individual_paid(IND2, d); perform pg_temp.ok(r->>'code' = 'pb:period_changed', '8g pressed twice: nothing');
@@ -154,10 +154,10 @@ begin
   perform pg_temp.ok(pg_temp.can(BM, 'run-photos', 400), '10k beta');
 
   -- 11. plan reading and uploaded documents
-  perform pg_temp.ok(pb_plans.limits() = '{"sheets_month": 150, "usd_month": 45, "sets_day": 3, "pages_set": 150}'::jsonb, '11a plan reading default ' || pb_plans.limits());
+  perform pg_temp.ok(pb_plans.limits() = '{"sheets_month": 150, "usd_month": 45, "sets_day": 3, "pages_set": 150}'::jsonb, '11a plan reading default ' || pb_plans.limits()::text);
   perform pg_temp.ok(pb_plans.limits_for(C) = pb_plans.limits() and pb_plans.limits_for(B) = pb_plans.limits(), '11b no priced add-on: the default');
   update pb_billing.accounts set plan_reading = true, plan_reading_cents = 5900 where company_id = C;
-  r := pb_plans.limits_for(C); perform pg_temp.ok((r->>'usd_month')::numeric = 19.47 and (r->>'sheets_month')::int = 69 and (r->>'pages_set')::int = 69 and (r->>'sets_day')::int = 3, '11c $59 add-on: $19.47 and 69 sheets a month ' || r);
+  r := pb_plans.limits_for(C); perform pg_temp.ok((r->>'usd_month')::numeric = 19.47 and (r->>'sheets_month')::int = 69 and (r->>'pages_set')::int = 69 and (r->>'sets_day')::int = 3, '11c $59 add-on: $19.47 and 69 sheets a month ' || r::text);
 --@local-only-begin
   perform pg_temp.act(M1);
   perform pg_temp.ok(public.pb_plans_begin('J1', 'Big', 70, repeat('a', 64))->>'code' = 'pb:too_many_pages', '11d a 70-sheet set is over the add-on');
@@ -173,10 +173,10 @@ begin
 
   -- 12. what the app is told
   perform pg_temp.act(M1); r := public.pb_my_plan();
-  perform pg_temp.ok(r->>'plan' = 'paid' and (r->'prices'->>'base_cents')::int = 9900 and (r->'prices'->>'seat_cents')::int = 1200, '12a member sees the prices ' || r);
+  perform pg_temp.ok(r->>'plan' = 'paid' and (r->'prices'->>'base_cents')::int = 9900 and (r->'prices'->>'seat_cents')::int = 1200, '12a member sees the prices ' || r::text);
   perform pg_temp.act(BM); r := public.pb_my_plan(); perform pg_temp.ok(r->>'plan' = 'trial' and (r->'prices'->>'base_cents')::int = 9900 and r->'limits' is not null, '12b beta sees the prices');
   perform pg_temp.act(NP); r := public.pb_my_plan();
-  perform pg_temp.ok(r->'plan' = 'null'::jsonb and (r->'prices'->>'individual_cents')::int = 1200 and r->>'individual' = 'false' and r->>'requested' = 'false', '12c no plan: individual price ' || r);
+  perform pg_temp.ok(r->'plan' = 'null'::jsonb and (r->'prices'->>'individual_cents')::int = 1200 and r->>'individual' = 'false' and r->>'requested' = 'false', '12c no plan: individual price ' || r::text);
   r := public.pb_plan_request('individual'); perform pg_temp.ok((r->>'ok')::boolean and (public.pb_my_plan()->>'requested')::boolean, '12d request recorded');
   perform pg_temp.ok((select m.body from pb_support.messages m where m.user_id = NP order by m.created_at desc limit 1) = 'Asked for an individual plan. Price shown: $12.00 a month plus tax.', '12e the note: ' || coalesce((select m.body from pb_support.messages m where m.user_id = NP limit 1), 'none'));
   perform pg_temp.act(BM); r := public.pb_plan_request('company');
@@ -190,5 +190,5 @@ begin
     select p::text || ' people' k, 99 + 12 * greatest(0, p - 5) price, (L->'company'->>'usd_base')::numeric + (L->'company'->>'usd_per_extra')::numeric * greatest(0, p - 5) ai,
            (pb_docs.limits('company')->>'check_usd_month')::numeric docs from unnest(array[5, 12, 25]) p
     union all select 'individual', 12, (L->'individual'->>'usd_month')::numeric, (pb_docs.limits('individual')->>'check_usd_month')::numeric) z;
-  perform pg_temp.ok((select bool_and((v->>'pct')::numeric <= 30) from jsonb_each(r) e(k, v)), '13 worst case over 30% ' || r);
+  perform pg_temp.ok((select bool_and((v->>'pct')::numeric <= 30) from jsonb_each(r) e(k, v)), '13 worst case over 30% ' || r::text);
   res := res || jsonb_build_object('worst_case', r, 'checks', 'all passed');
