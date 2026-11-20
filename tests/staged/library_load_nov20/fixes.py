@@ -41,6 +41,7 @@ CASE_DROP = {}    # case id -> why
 UNCONF = "(?:not |n't |un)confirmed|confirm with|to confirm|confirm "
 DROP_MUST = {'lib-ky-sp-4': '600 volts', 'lib-us-osha-57': 'record'}
 # round 3 (case): "head-injury" with a hyphen; "given a role ... before they take on that role" is "assigned"
+MUSTNOT_FIX = {'lib-us-fed-1': ('no CDL (is )?(needed|required)', '^\\s*no\\b[^.\\n]{0,40}CDL')}   # round 8 (lib7): the old pattern hit "Under 26,001 lb ... no CDL is needed" in a right answer
 SWAP = {'lib-us-em-3': ('concussion|head injury', 'concussion|head[- ]injur'), 'lib-us-osha-57': ('assign', 'assign|given|take on|takes on')}
 def fix_cases(cases, ALL, say):
     n = 0
@@ -52,6 +53,7 @@ def fix_cases(cases, ALL, say):
         if c['id'] in SWAP: c['must'] = [SWAP[c['id']][1] if m == SWAP[c['id']][0] else m for m in c['must']]; c['lead'] = [SWAP[c['id']][1] if m == SWAP[c['id']][0] else m for m in c['lead']]; n += 1
         # round 6 (lib5 helper): "24-inch" with a hyphen is the right answer
         if any('24 ?(in|")' in m for m in c['must']): c['must'] = [m.replace('24 ?(in|")', '24[- ]?(in|")') for m in c['must']]; n += 1
+        if c['id'] in MUSTNOT_FIX: c['mustnot'] = [MUSTNOT_FIX[c['id']][1] if m == MUSTNOT_FIX[c['id']][0] else m for m in c.get('mustnot', [])]; n += 1
         if c['id'] in DROP_MUST: c['must'] = [m for m in c['must'] if m != DROP_MUST[c['id']]]; n += 1
     say(f'fixes.py: {n} case patterns corrected (regex too narrow or a side fact asked as a must); none dropped')
 
@@ -82,6 +84,20 @@ LIB7_EDIT = [  # (id, old, new, why) on live chunks (in-place edit rows)
   '(1) covers in roadways and vehicular aisles, steel road plates over a trench included, support at least twice the maximum axle load of the largest vehicle expected to cross;',
   'road plate strength answered with another state\'s plate table (lib-us-osha-62, 4 rounds)'),
 ]
+LIB7_EDIT += [
+ ('kb2-102', 'Flaggers stand where approaching drivers can see them well ahead, off the travel lane when possible, with an escape route,',
+  'Flaggers stand on the shoulder next to the lane they control, or in the closed lane, and step into the open lane only after traffic has stopped (MUTCD flagger procedures); clearly visible well ahead, with an escape route,',
+  'flagger position answered "off the travel lane" (lib-us-mutcd-40, 4 rounds)'),
+ ('tc-2', 'standing where approaching drivers can see them in time and with an escape route;', 'standing on the shoulder next to the lane they control or in the closed lane, where approaching drivers can see them in time, with an escape route;',
+  'flagger position (lib-us-mutcd-40)'),
+ ('trench-crossings-fall-public-4', "Steel plates over open trenches in roadways at the end of the day: Caltrans' Encroachment Permits Manual (section 602.1) gives minimum A-36 plate thickness by trench width for highway loading: 1/2 inch for a 10 inch trench, 3/4 inch to 1 ft 11 in, 7/8 inch to 2 ft 7 in, 1 inch to 3 ft 5 in, 1 3/4 inch to 5 ft 3 in, and an engineered design for anything wider; plates extend at least 12 inches past the trench edges, are pinned or recessed, ramped with asphalt at no more than 8.5 percent, and may be signed Rough Road (W8-8). Cities copy or tighten these in the permit.",
+  "Steel plates over open trenches in roadways at the end of the day: OSHA treats them as covers, which in a roadway must hold at least twice the maximum axle load of the largest vehicle expected to cross and be secured against moving (1926.502(i)); the road agency's encroachment permit sets the plate thickness by trench width, how far the plate laps past the edges, pinning and ramping.",
+  'a general card carried one state\'s plate table, which answers on other states\' jobs quoted (lib-us-osha-62); the table moves to sp-ca-road-plates-1'),
+]
+LIB7_NEW.append(dict(id='sp-ca-road-plates-1', state='CA', tier='core', title='California steel road plates over a trench: Caltrans plate thickness by trench width (Encroachment Permits Manual 602.1)',
+  topic='Trench crossings, walkways, loads, traffic and public protection', source='Caltrans Encroachment Permits Manual section 602.1 (steel plate bridging), as summarized in the live library chunk trench-crossings-fall-public-4; city encroachment permit conditions',
+  url='https://dot.ca.gov/programs/traffic-operations/ep/manual', checked='2026-11-20', edition='as carried in the live library (moved, not re-read)', confidence='medium', kind='summary', license='summary',
+  text="On a California job, steel plates over an open trench in a road follow the road owner's encroachment permit. Caltrans' Encroachment Permits Manual (section 602.1) gives minimum A-36 plate thickness by trench width for highway loading: 1/2 inch for a 10 inch trench, 3/4 inch to 1 ft 11 in, 7/8 inch to 2 ft 7 in, 1 inch to 3 ft 5 in, 1 3/4 inch to 5 ft 3 in, and an engineered design for anything wider. Plates extend at least 12 inches past the trench edges, are pinned or recessed, ramped with asphalt at no more than 8.5 percent, and may be signed Rough Road (W8-8). Cities copy or tighten these in their permits. OSHA's cover rule applies too: at least twice the maximum axle load (1926.502(i)(1))."))
 LIB7_TITLE = {'osha-pl-fall-holes-covers-1': 'Covers and steel road plates over a hole or trench in the road: how strong (twice the axle load), secured, marked'}
 def apply_lib7(NEW, EDITS, BASE, say):
     for c in LIB7_NEW:
@@ -92,4 +108,4 @@ def apply_lib7(NEW, EDITS, BASE, say):
         assert c['text'].count(old) == 1, (cid, old); c['text'] = c['text'].replace(old, new)
     for cid, t in LIB7_TITLE.items():
         (NEW[cid] if cid in NEW else EDITS[cid])['title'] = t
-    say(f'fixes.py lib7: {len(LIB7_NEW)} new cards (flagger position, short duration, SWPPP records), {len(LIB7_EDIT)} text edits (20 ft engineer x2, road plates), {len(LIB7_TITLE)} title')
+    say(f'fixes.py lib7: {len(LIB7_NEW)} new cards (flagger position, short duration, SWPPP records, CA road plates), {len(LIB7_EDIT)} text edits (20 ft engineer x2, road plates x2, flagger position x2), {len(LIB7_TITLE)} title')

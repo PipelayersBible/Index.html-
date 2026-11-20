@@ -327,3 +327,37 @@ Files: `src_patch/apply_patch.py` (part 7 added), `src_patch/reply_rule.txt` (v6
 - Build = that source + `ask_followups_nov20/server/ask_state_addon.py` + `src_patch/apply_patch_guardsplit.py` (answer checker: no cut at "App." / "Subpart A." / "No." / lone letters; tail pieces under 6 characters glued back). Deno 42 passed (incl. `tests/guardsplit_test.ts`, 3 new; its first test fails on b7ad).
 - Sealed, commit 57230c8, `data/ask/b-4a5c84ce8242.txt`, installed on `ai-next` with `pb_ai.code_install`. Smoke 5 questions $0.55: tr12 keeps "App. B, B-1.3" whole.
 
+
+## lib7 build (strictest rule, continuation, 20 ft, checker split) on ai-next
+Source chain (all exact-once patches, reproducible): `/home/claude/ask_v24/src` (= live b7ad) -> `ask_followups_nov20/server/ask_state_addon.py` -> `ask_shelf_nov20/src_patch/apply_patch.py`
+-> `src_patch/apply_patch.py` (lib1-6 parts, reply rule from `src_patch/reply_rule.txt`) -> `src_patch/apply_patch_guardsplit.py` -> `src_patch/apply_patch_lib7.py`. Tree: `work/b7/src7`; tests `work/b7/t7` (Deno **62 passed**:
+the 42 of the minimal build + shelf 14 (one wording check updated to the new line, `tests/shelf_test_lib7.ts`) + kb_next 2 + `tests/lib7_test.ts` 4).
+- **Continuation turns (Tommy item 2, general for every topic):** `continuationOf()` in ask.ts: a short "yes / go on / sure / more / ok go ahead / the table" (8 words or fewer, or 3 or fewer after an offer)
+  with history is a continuation. Retrieval = the thread's ORIGINAL question (the newest earlier question that is not itself a "yes"), i.e. the same search turn 1 ran (turn 1's cards come back),
+  plus up to 3 new cards from "<offered part> + original question" (+ the intent words); excerpt budget +4,000 characters on a continuation. A CONTINUATION line tells the model to deliver
+  the offered part in full (every row / item / step, with numbers), never "did not come through". Free check (`tools/fu_retr.mjs`): the benching card is now in the turn-2 excerpts for both
+  old misses (fu-2, fu-8; the plain "offer + question" search alone found only 1 of 2, which is why turn 1's cards are carried).
+- **Strictest rule (item 3):** state.ts lines (all branches), prompts_v2 (air limits by jurisdiction, labor law), go/no-go line, reply rule v7: give the STRICTER of state and federal
+  with its source in a few words; equal = no extra sentence; unsure = both, follow the stricter; never weaker because it is the state's; never name another state. Retrieval: own card 1,
+  best general (federal) card 2, then the rest, so both sides survive the excerpt cut. Free checks: 676 lib cases 625 with their chunk, 0 lost to the cut (same as lib6); 127 existing: identical to lib6.
+- **20 ft (item 4):** reply rule DEPTH 20 FT line; go/no-go line; card edits `osha-appendix-b-c-d-in-words-1/-2` (exactly 20 ft and deeper = registered PE, as the app's sloping tool).
+- **Cards (item 7):** new `mutcd-6d-flagger-where-1` (shoulder / closed lane), `mutcd-6n-short-def-1` (short duration = up to 1 hour, not OSHA's 24 h), `fed-epa-cgp-records-1` (3 years after
+  coverage ends, CGP 4.7.4 / 5.4.4, re-read Nov 20 from EPA's PDF), `sp-ca-road-plates-1` (Caltrans plate table moved out of the general card, state CA); edits: `kb2-102`, `tc-2` (flagger
+  position), `trench-crossings-fall-public-4` (plate table -> 1926.502(i) twice the axle load), `osha-pl-fall-holes-covers-1` (steel road plates named). `fixes.py` LIB7_*; lib_kb 0 errors.
+- Builds: `7e5e3cf69dc0` (lib7, commit a4f8603) then **`1b7f661c3a5c` (lib7b, commit 2ee399f, installed on ai-next)**: lib7b = lib7 + "equal: no sentence", no federal-OSHA filler line
+  in state.ts, overlay lib7b (68 replaced, 393 added). Test prompt row `teacher_v2@next`: reply rule element = `src_patch/reply_rule.txt` v7b exactly (md5 7d2bb60c... both sides).
+- **Harness (item 8):** `tools/run3.py` inserts `pb_ai.eval_runs` rows of 3 questions (eval_start makes 6) and the usual `eval_collect` pumps 5 in flight; photos/feature fields carried
+  (first pilot missed them for ph08: re-asked in round 8). **Continuation questions hit HTTP 546 even at 3 per batch** (all 5 first batches); one per batch works (26 of 27 first try).
+  `tools/turn2.py` builds turn 2 server-side from the turn-1 answers (`PER=1`).
+
+## Pilot on lib7 (`1120-lib7-pilot`, 57 questions, $2.05) and follow-through turn 2 (`1120-lib7-fu2b`, 27, about $1.25)
+- **Follow-through, 27 two-turn cases (`work/lib7/cases_lib7.py`, graded `work/lib7/fu_graded.json`):** turn 1 ended with an offer on 22 of 27 (the 5 without had already given the whole
+  answer: taper length, NV renewal steps, TX update steps, power-line distances, competent person list). Turn 2: **27 of 27 continued the same topic, none restarted, none repeated turn 1's first line.**
+  The offered part was delivered in 25 of 27 by hand-read. The 2 left: `fu7-04`, `fu7-20` delivered the Appendix D steps but said "the exact table values ... are not in the excerpts":
+  that is true. The library has the how-to card, not the D-1.x table numbers (library gap; see Next). The automatic check passes 15 of 27; the other 10 are length (turn 2 runs
+  124 to 457 words, median 230; the table offered in full is long) and case patterns (`fu7-02`'s offer was Type C options, not bench heights; `fu7-14` "two 28-day extensions").
+- Strictest (12, on lib7): facts right 12 of 12 (WA 4 ft "stricter than federal 5 ft", WA no 1/2:1, UT 8 h, CA CO 25 ppm, CA shade 80 F, GA and WY $7.25 "federal is stricter",
+  Seattle $21.30), **0 weaker rules, 0 other states named**; 5 of 12 failed on length only, mostly the "<state> follows the federal rule here" sentence on equal cases. Fixed in lib7b, re-asked in round 8.
+- Re-asks: `lib-us-mutcd-55` now answers "up to 1 hour (MUTCD 6N.01)" (third-time miss fixed; long); `lib-us-fed-17` "3 years after coverage expires or is terminated" (fixed; long);
+  `lib-us-osha-62` still quoted the Caltrans plate table on a PA job (card fixed in lib7b); `lib-us-mutcd-40` still no "shoulder" (two old cards said "off the travel lane"; fixed in lib7b).
+  Existing: tr12 and tr14 pass (tr14 names exactly 20 ft and the engineer), ct4, nw12, brk1, wa3 pass.

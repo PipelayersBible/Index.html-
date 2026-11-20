@@ -21,7 +21,8 @@ def offer(t):
 # round 5 on (Tommy, Nov 20 10:08): complicated topics must end with an offer; any safety answer ends with the competent-person line.
 # Word limits count the answer only, not those two closing lines.
 COMPLEX_Q = re.compile(r"\b(how do (i|we)|steps? (to|for)|procedure|set ?up|permit (steps|process)|issue (a|the) permit|taper|sign spacing|spacing of (the )?signs|close (a|the|one) (lane|sidewalk|road)|close the sidewalk|detour|what (has|have|needs?) to be on|difference between|what does .{1,30} have to do|bench(ing)? (rules|dimensions)|(options?|instead of|which|what kind|pick|choose).{0,40}(slop|bench|shor|shield|trench box)|(slop|bench|shor|shield|trench box).{0,40}(options?|instead of|which|choose|pick)|test (a|the) (new )?(main|line|pipe)|disinfect|chlorinat)", re.I)
-def complicated(c): return (c.get('cat') != 'emergency' and 'lib-us-em-' not in c['id']) and (bool(c.get('complex')) or c.get('kind') in ('steps', 'complex') or (c.get('kind') != 'simple' and bool(COMPLEX_Q.search(c.get('q', '')))))
+EMERG_Q = re.compile(r"nicked|hit (a|the) (gas|line|main)|smell gas|gas leak|caved? in|not breathing|unconscious|bleeding|collapsed", re.I)  # lib7: emergencies never need an offer
+def complicated(c): return (c.get('cat') != 'emergency' and 'lib-us-em-' not in c['id'] and not EMERG_Q.search(c.get('q', ''))) and (bool(c.get('complex')) or c.get('kind') in ('steps', 'complex') or (c.get('kind') != 'simple' and bool(COMPLEX_Q.search(c.get('q', '')))))
 SAFE_COLL = re.compile(r"trench|confined|fall|traffic|safety|heat|silica|osha|excav|flag|power|electr|rigg|crane|ppe|respir", re.I)
 def safety_topic(c):
     if c.get('cat') == 'emergency' or 'lib-us-em-' in c['id']: return False
@@ -32,6 +33,7 @@ def closing_words(t):
     for ln in reversed([x for x in t.strip().split('\n') if x.strip()]):
         x = ln.strip().lstrip('-* ').strip()
         if CP.search(x) and len(x.split()) <= 14: n += len(ln.split()); continue
+        if re.match(r'(for a specific case|for your specific case)', x, re.I) and len(x.split()) <= 26: n += len(ln.split()); continue  # lib7: the labor-law closing line the prompt requires
         if re.search(r'\?\s*$', x) and re.match(r'\s*(want|need|should i|do you want|would you like)\b', x, re.I) and len(x.split()) <= 14: n += len(ln.split()); continue
         break
     return n
@@ -45,7 +47,8 @@ for c in cases + [dict(old[i], grp='canary_old') for i in d['canary_old']]:
     r = res.get(c['id']); g = dict(id=c['id'], grp=c['grp'], coll=c.get('coll', 'old'), st=(c.get('where') or '')[-2:], kind=c.get('kind'), safety=bool(c.get('safety')) or c['grp'] == 'canary_new')
     if not r: g.update(ok=False, why=['no result'], words=0, text=''); out.append(g); continue
     t = r.get('text') or ''; body = re.sub(r'^\s*TYPE:\s*\w+\s*', '', t); w = len(t.split()); why = []
-    miss = [p for p in c.get('must', []) if not rx(p).search(t)]
+    tn = re.sub(r'(\d+)-(minute|hour|day|foot|inch|second)s?\b', lambda m: m.group(1) + ' ' + m.group(2) + 's', t)  # lib7: "10-minute" counts as "10 minutes"
+    miss = [p for p in c.get('must', []) if not rx(p).search(t) and not rx(p).search(tn)]
     bad = [p for p in c.get('mustnot', []) if rx(p).search(t)]
     if r.get('status') != 200: why.append(f'status {r.get("status")}')
     if miss: why.append('facts: ' + ' ; '.join(miss))

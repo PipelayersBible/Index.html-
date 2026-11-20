@@ -22,6 +22,7 @@ if N == 1: re_ask = sorted([c for c in pool if not free[c['id']]['ok']], key=lam
 else:
     last = [i for i, h in hist.items() if h[-1][0] == N - 1 and not h[-1][1] and i in by and i not in CAN_NEW and i not in STYLE]
     re_ask = sorted([by[i] for i in last], key=lambda c: (SAFE(c), c['id']))[:35]
+if os.environ.get('NO_REASK'): re_ask = []   # lib7 (Tommy: rounds of 100 FRESH): no re-asks, 80 fresh + 15 canaries + 5 style
 # --- fresh
 asked = set(hist) | {c['id'] for c in re_ask}
 fail_states = collections.Counter(by[i]['where'][-2:] for i, h in hist.items() if i in by and not h[-1][1])

@@ -41,10 +41,21 @@ rep('ask.ts', '''    earlier = earlierBlock(hist),''', '''    earlier = earlierB
     cont = continuationOf(q, body.history),
     qSearch = cont ? cont.q + " " + q : q, // lib7: what the library is searched with (a continuation searches its thread's topic)''')
 rep('ask.ts', 'shelfSearch(s.admin, q, st.code, { ...SHELF_FIRST, index: kbP })', 'shelfSearch(s.admin, qSearch, st.code, { ...SHELF_FIRST, index: kbP })', 2)
-rep('ask.ts', '''        ? stateSearch(search, index, intent?.search ? q + " " + intent.search : q, {''', '''        ? stateSearch(search, index, intent?.search ? qSearch + " " + intent.search : qSearch, {''')
+# turn 2 gets the SAME cards as turn 1 (the original question's search: what the offer was made from) plus up to 3 new cards for the
+# offered part; the excerpt budget grows by 4,000 characters on a continuation so the added cards are not cut.
+rep('ask.ts', '''        ? stateSearch(search, index, intent?.search ? q + " " + intent.search : q, {''', '''        ? stateSearch(search, index, cont ? cont.orig : intent?.search ? q + " " + intent.search : q, {''')
 rep('ask.ts', '''          stats: kst,
-        }, st, q)''', '''          stats: kst,
-        }, st, cont ? cont.q : q)''')
+        }, st, q)
+        : { hits: [], dropped: 0, own: 0, dependent: !1 },
+      hits = ss.hits;''', '''          stats: kst,
+        }, st, cont ? cont.orig : q)
+        : { hits: [], dropped: 0, own: 0, dependent: !1 },
+      hits = cont && index ? (() => {
+        const seen = new Set(ss.hits.map((h) => h.id)),
+          more = stateSearch(search, index, intent?.search ? qSearch + " " + intent.search : qSearch, { k: 6, level, topicBoost: [], maxChars: 9e3 }, st, cont.q).hits;
+        return [...ss.hits, ...more.filter((h) => !seen.has(h.id)).slice(0, 3)];
+      })() : ss.hits;''')
+rep('ask.ts', '''mergeExcerpts(phone, pbTrimHits(hits), Number((globalThis.__pbKnobs || {}).exChars) || 1e4)''', '''mergeExcerpts(phone, pbTrimHits(hits), (Number((globalThis.__pbKnobs || {}).exChars) || 1e4) + (cont ? 4e3 : 0))''')
 rep('ask.ts', '''        // v28: the length rule again, last, where the model follows it best''', '''        cont ? "CONTINUATION: this message accepts what your last answer offered" + (cont.part ? ` (\\"${cleanUntrusted(cont.part, 200)}\\")` : "") + `, on the question \\"${cleanUntrusted(cont.orig, 300)}\\". Give that part now, in full and from the excerpts: every row of a table, every item of a list, every step, with the numbers. Do not repeat what the last answer said and do not start over. If no excerpt has it, say in one line which document has it; never say it did not come through.` : "",
         // v28: the length rule again, last, where the model follows it best''')
 
@@ -54,7 +65,9 @@ rep('state.ts', '''    if (dependent === "plan") return `${head} ${name} runs it
 rep('state.ts', '''Use it only if the answer changes by state (811 rules, a state OSHA plan, breaks, pay or heat rules, state specs); then answer for ${name} and never give another state's number as theirs.''',
 '''Use it only if the answer changes by state (811 rules, a state OSHA plan, breaks, pay or heat rules, state specs); then give the STRICTEST rule that applies in ${name} (the state's or the federal one, whichever protects the crew more) and say in a few words where it comes from; never give another state's number or name another state.''')
 rep('state.ts', '''    return `${head}${plan} Answer for ${name}: lead with the direct answer. Where an excerpt gives ${name}'s own rule or number, lead with it and name the state; give the federal rule beside it in one short clause when there is one. The state must not make the answer longer: its rule takes the place of a general point, it is not added on top, so keep the usual short length. Never give another state's number as theirs.''',
-'''    return `${head}${plan} Answer for ${name}: lead with the direct answer. STRICTEST RULE: where ${name}'s own rule and a federal rule (OSHA, MUTCD, EPA) both apply and differ, the answer is the STRICTER one (more protective for the crew and the public), with its source named in a few words: "${name} requires ... (stricter than federal ...)" or "Federal OSHA requires ... (stricter than ${name}'s ...)". If they are the same, say so in a few words. If you cannot tell which is stricter, give both in one short line each and say to follow the stricter. Never give a weaker rule because it is ${name}'s, and never drop a stricter federal rule. A rule only the state has (811 tickets, state specs) is simply ${name}'s rule. The state must not make the answer longer: keep the usual short length. Never give another state's number or name another state, not even as an example.''')
+'''    return `${head}${plan} Answer for ${name}: lead with the direct answer. STRICTEST RULE: where ${name}'s own rule and a federal rule (OSHA, MUTCD, EPA) both apply and differ, the answer is the STRICTER one (more protective for the crew and the public), with its source named in a few words: "${name} requires ... (stricter than federal ...)" or "Federal OSHA requires ... (stricter than ${name}'s ...)". If they are the same, add no sentence about it (at most \"(same as federal)\" inside line 1). If you cannot tell which is stricter, give both in one short line each and say to follow the stricter. Never give a weaker rule because it is ${name}'s, and never drop a stricter federal rule. Compare only the SAME requirement on both sides (a depth, a limit, a deadline both rules set); a rule only the state has (811 notice and ticket life, state specs, a state DOT manual) is simply ${name}'s rule: give it with no federal comparison. The state must not make the answer longer: keep the usual short length. Never give another state's number or name another state, not even as an example.''')
+rep('state.ts', """ ${name} has no state OSHA plan for private crews: on a safety rule (trench, confined space, fall protection, silica) federal OSHA IS ${name}'s rule, so give it plainly and do not say the library lacks a ${name} rule.`;""",
+    """ ${name} has no state OSHA plan for private crews, so on a safety rule the federal OSHA rule applies: give it as the answer with no words about which agency covers ${name}, and do not say the library lacks a ${name} rule.`;""")
 # the job state's first card AND the best general (federal) card lead the excerpts, so neither side falls off the 10,000-character cut
 rep('state.ts', '''  out.sort((a, b) => (Number(ownFirst.has(b.id)) - Number(ownFirst.has(a.id))) || b.score - a.score);
 ''', '''  out.sort((a, b) => (Number(ownFirst.has(b.id)) - Number(ownFirst.has(a.id))) || b.score - a.score);
