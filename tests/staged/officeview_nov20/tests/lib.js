@@ -45,7 +45,7 @@ const DAY = `;(function(){
       {id:P2,name:'Marco Diaz',role:'pipelayer',foreman:'Ray Alvarez',runs:[run('r3','26014','Lateral 12',{total:90,ft:60,upd:14})]},
       {id:P3,name:'Sam Reyes',role:'pipelayer',foreman:'Dana Whitley',runs:[run('r4','26043','CO 2 → MH 1',{total:210,ft:210,upd:45,ended:true})]}]}),
     pb_prod_company_live_permits:()=>window.__ovFail?null:({server_at:new Date().toISOString(),permits:[
-      {who:'Luis Ortega',permit_ref:'1795000000001',closed:false,updated_at:iso(3),status:{permitRef:'1795000000001',space:'MH-4',jobsite:'Sundance',jobNumber:'26014',inside:2,activeSince:ms(50),lastAirAt:ms(9),airOk:true}},
+      {who:'Luis Ortega',permit_ref:'1795000000001',closed:false,updated_at:iso(3),status:{permitRef:'1795000000001',space:'MH-4',jobsite:'Sundance',jobNumber:'26014',inside:2,activeSince:iso(50),lastAirAt:iso(9),airOk:true}},
       {who:'Sam Reyes',permit_ref:'1795000000002',closed:true,updated_at:iso(120),status:{permitRef:'1795000000002',space:'MH-1',jobNumber:'26043',inside:0,closed:true}}]}),
     pb_reports_feed:(a)=>{ if(window.__ovFail)return null; const f=(a&&a.p_filters)||{}; let items=today.concat(older);
       if(f.from) items=items.filter(x=>Date.parse(x.at)>=new Date(f.from+'T00:00:00').getTime());

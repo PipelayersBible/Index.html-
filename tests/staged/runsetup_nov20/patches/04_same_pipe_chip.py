@@ -33,7 +33,7 @@ rep("""  window.pbOpenCutsheetImport = function() {
     if (!b) { b = document.createElement('button'); b.type = 'button'; b.id = 'runSamePipeBtn'; b.className = 'pb-samepipe';
       b.addEventListener('click', () => { const x = pbSamePipeFind(); if (!x) { b.hidden = true; return; } const sel = document.getElementById('duplicateRunSel'); sel.innerHTML = '<option value="' + escapeHtml(String(x.id)) + '"></option>'; sel.value = String(x.id); sel.disabled = false; window.pbApplyDuplicateRun(); sel.innerHTML = ''; b.hidden = true; }); }
     if (b.parentNode !== body) body.appendChild(b);
-    const p = e.summary.pipeInfo[0], ty = typeof e.pipeType === 'string' && e.pipeType ? e.pipeType : (typeof e.statsType === 'string' ? e.statsType : '');
+    const p = e.summary.pipeInfo[0], ty = typeof e.pipeType === 'string' && e.pipeType ? e.pipeType : (typeof e.pipeTypeAuto === 'string' && e.pipeTypeAuto ? e.pipeTypeAuto : (typeof e.statsType === 'string' ? e.statsType : ''));
     const t = 'Same as the last run on this job: ' + String(p.idIn).replace(/\\.0+$/, '') + '\\u2033' + (ty ? ' ' + ty : '');
     if (b.textContent !== t) b.textContent = t;
     if (b.hidden) b.hidden = false;

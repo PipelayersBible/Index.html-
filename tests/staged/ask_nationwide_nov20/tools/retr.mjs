@@ -26,10 +26,17 @@ const ordOf = new Map();
 for (const l of Object.keys(kb)) for (const c of kb[l]) { ordOf.set(c.id, c._ord); delete c._ord; }
 const extra = args.filter((a) => a.endsWith('.jsonl'));
 for (const f of extra) for (const line of fs.readFileSync(f, 'utf8').split('\n')) if (line.trim()) { const c = JSON.parse(line); kb.field.push(c); ordOf.set(c.id, 'NEW'); }
+if (process.env.EDITS) { // {ord: chunk} from sql/kb_nationwide.py (work/edited_chunks.json): the staged edits to existing chunks
+  const ed = JSON.parse(fs.readFileSync(process.env.EDITS, 'utf8'));
+  for (const l of Object.keys(kb)) kb[l] = kb[l].map((c) => { const o = ordOf.get(c.id); if (ed[o]) { const e = { ...ed[o] }; delete e._ord; return e; } return c; });
+}
 const { index, problems } = buildIndex(kb, '2026-11-20');
 if (problems && problems.length) console.log('index problems:', problems.slice(0, 5));
 export function run(q, st, level = 'pipelayer') {
-  const hits = search(index, q, { k: 6, level, topicBoost: [], maxChars: 9e3 });
+  // AUG=1 simulates the proposed code change: add the job's state name to the search words when the question names no state
+  const named = Object.keys(US_STATES).some((c) => new RegExp(`\\b${US_STATES[c]}\\b`, 'i').test(q));
+  const sq = process.env.AUG && st && US_STATES[st] && !named ? q + ' ' + US_STATES[st] : q;
+  const hits = search(index, sq, { k: 6, level, topicBoost: [], maxChars: 9e3 });
   return hits.map((h) => ({ id: h.id, ord: ordOf.get(h.id), title: h.title, lib: h.lib, score: h.score,
     drop: st ? otherStateOnly(`${h.title || ""} ${h.source || ""} ${String(h.text || "").slice(0, 300)}`, st, q) : false, text: h.text }));
 }
