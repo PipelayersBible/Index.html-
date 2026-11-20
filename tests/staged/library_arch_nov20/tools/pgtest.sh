@@ -23,3 +23,27 @@ $P -c "\copy pb_ai.kb_shelf (id, chunk) from '$D/shelf.csv' csv"
 $P -c "analyze pb_ai.kb_shelf" 
 $P -At -c "select 'shelf rows ' || count(*) || ', states ' || count(distinct state) || ', table+index ' || pg_size_pretty(pg_total_relation_size('pb_ai.kb_shelf')) from pb_ai.kb_shelf"
 $P -At -f "$D/time.sql"
+echo "== eval style grading (sql/PROPOSED_eval_style.sql)"
+$P -q -c "create table pb_ai.eval_set (id text primary key, cat text, q text, \"where\" text, level text, must jsonb, mustnot jsonb, maxwords int, active boolean);
+create table pb_ai.eval_results (run text, id text, status int, text text, local boolean, usd numeric, ms int);
+create view pb_ai.eval_graded as select r.run, s.id, s.cat, r.status, r.local, r.usd, r.ms, array_length(regexp_split_to_array(btrim(coalesce(r.text,'')), '\s+'), 1) as words, s.maxwords,
+ (select coalesce(array_agg(m.value), '{}'::text[]) from jsonb_array_elements_text(s.must) m(value) where not (coalesce(r.text,'') ~* m.value)) as missing,
+ (select coalesce(array_agg(m.value), '{}'::text[]) from jsonb_array_elements_text(s.mustnot) m(value) where coalesce(r.text,'') ~* m.value) as forbidden
+ from pb_ai.eval_results r join pb_ai.eval_set s on s.id = r.id;
+create function pb_ai.eval_score(p_run text) returns jsonb language sql as 'select null::jsonb';"
+$P -f sql/PROPOSED_eval_style.sql >/dev/null
+$P -q -c "insert into pb_ai.eval_set (id, must, mustnot, maxwords, lead, complex) values
+ ('a', '[\"14 working days\"]', '[\"28 days\"]', 70, '[\"14 working days\"]', false),
+ ('b', '[\"14 working days\"]', '[\"28 days\"]', 70, '[\"14 working days\"]', false),
+ ('c', '[\"5 ?ft\"]', '[]', 110, '[\"5 ?ft\"]', true),
+ ('d', '[\"5 ?ft\"]', '[]', 110, '[\"5 ?ft\"]', true),
+ ('e', '[\"14 working days\"]', '[]', 170, null, null),
+ ('f', '[\"14 working days\"]', '[]', 70, '[\"14 working days\"]', false);
+insert into pb_ai.eval_results values
+ ('r','a',200,'A Texas ticket is good for 14 working days. - Renew it before it runs out if work goes on.',false,0.02,5000),
+ ('r','b',200,'TYPE: safety' || chr(10) || 'Tickets are set by state law and the rules differ from place to place, so it is worth knowing how the one-call system works before getting to the number, which depends on where the job is and when the ticket was called in and by whom. In Texas the answer is 14 working days.',false,0.02,5000),
+ ('r','c',200,'TYPE: safety' || chr(10) || 'A protective system is required at 5 ft or deeper. - Your competent person decides on site.' || chr(10) || 'Want the details on sloping angles by soil type?',false,0.02,5000),
+ ('r','d',200,'A protective system is required at 5 ft or deeper. Your competent person decides on site.',false,0.02,5000),
+ ('r','e',200,'Old-style case with no lead rule: it is 14 working days.',false,0.02,5000),
+ ('r','f',200,'A Texas ticket is good for 14 working days. Want the details on renewals?',false,0.02,5000);"
+$P -At -c "select 'expect pass a,c,e; b buried; d offer missing; f offer not wanted -> ' || (pb_ai.eval_score('r')->>'pass') || ' pass, fails ' || (pb_ai.eval_score('r')->'fails')::text"
