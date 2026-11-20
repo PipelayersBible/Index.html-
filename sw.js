@@ -21,7 +21,7 @@
  */
 'use strict';
 
-const PB_SW_BUILD = 'r17.10 · 2026-11-19';
+const PB_SW_BUILD = 'r17.11 · 2026-11-20';
 const PB_SB_URL = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'; // the page's supabase-js <script src> (crossorigin), read from the page by mksw.py
 const PB_SHELL_PREFIX = 'pb-shell-';
 const PB_SHELL = PB_SHELL_PREFIX + PB_SW_BUILD.replace(/[^A-Za-z0-9.]+/g, '-');
@@ -69,7 +69,7 @@ self.addEventListener('install', (event) => {
   // 20 s it goes on without them (the next load fills them in).
   event.waitUntil(Promise.race([
     Promise.all([
-      (async () => { try { const res = await fetch(self.registration.scope, { cache: 'no-cache', credentials: 'same-origin' }); if (pbPageOk(res)) { const buf = await res.arrayBuffer(), sha = await pbSha(buf); if ((await pbBadList()).indexOf(sha) >= 0) return; await pbLazyFetchFor(pbText(buf)); await pbShellPut(self.registration.scope, pbPageResp(res, buf, sha)); } } catch (e) {} })(),
+      (async () => { try { const res = await fetch(self.registration.scope, { cache: 'no-cache', credentials: 'same-origin' }); if (pbPageOk(res)) { const buf = await res.arrayBuffer(), sha = await pbSha(buf); if ((await pbBadList()).indexOf(sha) >= 0) return; if (!(await pbLazyFetchFor(pbText(buf))) && (await pbAnyKeptPage())) return; /* hunt_nov19: its parts first */ await pbShellPut(self.registration.scope, pbPageResp(res, buf, sha)); } } catch (e) {} })(),
       (async () => { try { if (!pbIsLib(PB_SB_URL)) return; const res = await fetch(PB_SB_URL, { mode: 'cors', credentials: 'omit', cache: 'no-cache' }); if (pbLibOk(res)) await pbShellPut(PB_SB_URL, res); } catch (e) {} })(),
     ]),
     new Promise((r) => setTimeout(r, 20000)),
@@ -118,7 +118,7 @@ function pbNetFirstResp(event, req, page) {
     const body = await read.blob();
     // the copy for the next open is replaced even when this answer comes too late (speed2: never a page marked broken;
     // the lazily loaded parts it names first, so it works offline)
-    event.waitUntil((async () => { try { const buf = await copy.clone().arrayBuffer(), sha = await pbSha(buf); if ((await pbBadList()).indexOf(sha) >= 0) return; await pbLazyFetchFor(pbText(buf)); await pbShellPut(req.url, pbPageResp(copy, buf, sha)); pbLazyTidy(); } catch (e) {} })());
+    event.waitUntil((async () => { try { const buf = await copy.clone().arrayBuffer(), sha = await pbSha(buf); if ((await pbBadList()).indexOf(sha) >= 0) return; if (!(await pbLazyFetchFor(pbText(buf))) && (await pbAnyKeptPage())) return; /* hunt_nov19: its parts first */ await pbShellPut(req.url, pbPageResp(copy, buf, sha)); pbLazyTidy(); } catch (e) {} })());
     return new Response(body, { status: res.status, statusText: res.statusText, headers: res.headers });
   });
   event.waitUntil(whole.catch(() => {}));
@@ -184,6 +184,14 @@ async function pbLazyFetchFor(text) {
   } catch (e) { all = false; }
   return all;
 }
+// hunt_nov19: any kept app page on this phone (this build's cache, or an older build's that activate carries forward)
+async function pbAnyKeptPage() {
+  try {
+    const key = pbShellKey(self.registration.scope);
+    for (const n of await caches.keys()) { if (n.indexOf(PB_SHELL_PREFIX) !== 0) continue; if (await (await caches.open(n)).match(key)) return true; }
+  } catch (e) {}
+  return false;
+}
 // only the parts the kept page or the previous copy names stay
 async function pbLazyTidy() {
   try {
@@ -226,7 +234,7 @@ function pbRevalidate(force) {
       if (kept && (await pbRespSha(kept)) === sha) return; // the same page: nothing to do
       if ((await pbBadList()).indexOf(sha) >= 0) return; // the page that would not start on this phone
       const text = pbText(buf);
-      await pbLazyFetchFor(text);
+      if (!(await pbLazyFetchFor(text)) && (kept || (await pbAnyKeptPage()))) return; // hunt_nov19: its parts didn't all arrive: the kept copy stays (also an older build's, while this worker is still taking over), the next check tries again
       if (kept) await c.put(pbPrevKey(), kept);
       await c.put(key, pbPageResp(res, buf, sha));
       pbLazyTidy();
