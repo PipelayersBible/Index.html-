@@ -1,0 +1,812 @@
+From 10719456afc3cf3688d7d0dc49a0b53cb01d742f Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 20 Nov 2026 01:24:08 -0800
+Subject: [PATCH] Answer visitor questions and apply legal wording fixes
+
+Home: hero says what the app does, quick-answers strip (who, cost, getting it,
+no signal, who built it), 5 new FAQ questions (cost, phone, crew emails, who
+it's for, who's behind it, OSHA approved), FAQ structured data rebuilt from the
+page. Legal review lines 1-9 applied on the home and feature pages.
+New guide: trench depth rules (4, 5 and 20 feet). Slope conversion table on the
+grade calculator. Sitemap, hub cards, footer links.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_012AuVFXAKJtbd3q3yBau6Wi
+---
+ confined-space-permit-app/index.html          |  12 +-
+ .../index.html                                |   4 +-
+ grade-and-cut-sheet-app/index.html            |   2 +-
+ guides/index.html                             |  10 +-
+ guides/trench-depth-rules/index.html          | 221 ++++++++++++++++++
+ index.html                                    | 152 ++++++++++--
+ sitemap.xml                                   |  18 +-
+ tools/pipe-grade-calculator/index.html        |  15 +-
+ tools/trench-sloping/index.html               |   1 +
+ 9 files changed, 389 insertions(+), 46 deletions(-)
+ create mode 100644 guides/trench-depth-rules/index.html
+
+diff --git a/confined-space-permit-app/index.html b/confined-space-permit-app/index.html
+index 89f99f0..5d48d10 100644
+--- a/confined-space-permit-app/index.html
++++ b/confined-space-permit-app/index.html
+@@ -6,7 +6,7 @@
+ <title>Confined Space Permit App | The Pipelayer's Bible</title>
+ <link rel="preload" href="/fonts/oswald-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+ <link rel="stylesheet" href="/css/site.css">
+-<meta name="description" content="Confined space permit app for pipe crews: entry permit, entrant and attendant roster, air test log with tester and time, one-tap emergency call. No signal needed.">
++<meta name="description" content="Confined space permit app for pipe crews: entry permit, entrant and attendant roster, air test log with tester and time, emergency dial button. Works offline.">
+ <link rel="canonical" href="https://pipelayersbible.com/confined-space-permit-app/">
+ 
+ <meta name="theme-color" content="#111318">
+@@ -14,7 +14,7 @@
+ <meta property="og:type" content="website">
+ <meta property="og:site_name" content="The Pipelayer's Bible">
+ <meta property="og:title" content="Confined Space Permit App | The Pipelayer's Bible">
+-<meta property="og:description" content="Confined space permit app for pipe crews: entry permit, entrant and attendant roster, air test log with tester and time, one-tap emergency call. No signal needed.">
++<meta property="og:description" content="Confined space permit app for pipe crews: entry permit, entrant and attendant roster, air test log with tester and time, emergency dial button. Works offline.">
+ <meta property="og:url" content="https://pipelayersbible.com/confined-space-permit-app/">
+ <meta property="og:image" content="https://pipelayersbible.com/img/og-share.png">
+ <meta property="og:image:width" content="1200">
+@@ -22,7 +22,7 @@
+ <meta property="og:image:alt" content="The Pipelayer's Bible logo, a gold scope on black, with the words Field to office, seamlessly">
+ <meta name="twitter:card" content="summary_large_image">
+ <meta name="twitter:title" content="Confined Space Permit App | The Pipelayer's Bible">
+-<meta name="twitter:description" content="Confined space permit app for pipe crews: entry permit, entrant and attendant roster, air test log with tester and time, one-tap emergency call. No signal needed.">
++<meta name="twitter:description" content="Confined space permit app for pipe crews: entry permit, entrant and attendant roster, air test log with tester and time, emergency dial button. Works offline.">
+ <meta name="twitter:image" content="https://pipelayersbible.com/img/og-share.png">
+ <link rel="icon" href="/favicon.ico" sizes="any">
+ <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+@@ -45,7 +45,7 @@
+    "@id": "https://pipelayersbible.com/confined-space-permit-app/",
+    "url": "https://pipelayersbible.com/confined-space-permit-app/",
+    "name": "Confined space permit app",
+-   "description": "Confined space permit app for pipe crews: entry permit, entrant and attendant roster, air test log with tester and time, one-tap emergency call. No signal needed.",
++   "description": "Confined space permit app for pipe crews: entry permit, entrant and attendant roster, air test log with tester and time, emergency dial button. Works offline.",
+    "inLanguage": "en-US",
+    "isPartOf": {
+     "@id": "https://pipelayersbible.com/#website"
+@@ -128,7 +128,7 @@
+ <li><strong>Roster.</strong> Who's in the space and who's the attendant, with times in and out.</li>
+ <li><strong>Air tests.</strong> Each reading is logged with the tester's name and the time. A reading outside the permit's acceptable entry conditions is flagged.</li>
+ <li><strong>Reminders.</strong> Optional timers for the next air test and the next communication check.</li>
+-<li><strong>Emergency.</strong> A one-tap button that opens the phone's dialer to the number on the permit, 911 unless you change it for a site with its own rescue.</li>
++<li><strong>Emergency.</strong> A button that opens the phone's dialer to the number on the permit, 911 unless you change it for a site with its own rescue.</li>
+ </ul>
+ <p>When the job is done, the permit is closed and the record goes to the company. Closed permits and their air readings are kept.</p>
+ 
+@@ -138,7 +138,7 @@
+ <h2>Know what goes on a permit</h2>
+ <p>For a plain list of what a permit has to cover under federal OSHA and Cal/OSHA, see <a href="/guides/what-goes-on-a-confined-space-permit/">what goes on a confined space permit</a>.</p>
+ </div>
+-<div><figure class="shot"><div class="phone"><img src="/img/shot-office-busy.webp" width="560" height="1212" loading="lazy" decoding="async" alt="Company Home in the app for an example company: 4 active runs and 1 active permit live now, 5 daily reports signed today, 3 delays and extra work, and 5 jobs underway starting with Main St Sewer Replacement"></div><figcaption><b>Company Home</b>Active permits show live for the office, next to the runs.</figcaption></figure><p style="font-size:14px;color:var(--muted)">Real screen from the app, filled in with made-up demo data.</p></div>
++<div><figure class="shot"><div class="phone"><img src="/img/shot-office-busy.webp" width="560" height="1212" loading="lazy" decoding="async" alt="Company Home in the app for an example company: 4 active runs and 1 active permit live now, 5 daily reports signed today, 3 delays and extra work, and 5 jobs underway starting with Main St Sewer Replacement"></div><figcaption><b>Company Home</b>Active permits show for the office next to the runs, as the phones send them.</figcaption></figure><p style="font-size:14px;color:var(--muted)">Real screen from the app, filled in with made-up demo data.</p></div>
+ </div>
+ <section class="related" aria-labelledby="rel-title"><h2 id="rel-title">Related</h2><ul class="cards"><li class="card"><h3><a href="/guides/what-goes-on-a-confined-space-permit/">What goes on a confined space permit</a></h3><p>Each item on the permit, with the OSHA and Cal/OSHA sections.</p></li><li class="card"><h3><a href="/daily-reports-for-underground-crews/">Daily reports</a></h3><p>Runs, delays and extra work, signed and sent from the phone.</p></li></ul></section>
+ </div></div>
+diff --git a/daily-reports-for-underground-crews/index.html b/daily-reports-for-underground-crews/index.html
+index d95a646..16cc1c4 100644
+--- a/daily-reports-for-underground-crews/index.html
++++ b/daily-reports-for-underground-crews/index.html
+@@ -118,10 +118,10 @@
+ <p>The foreman reads it over, adds anything that's missing, signs on the phone and sends it.</p>
+ 
+ <h2>What the office sees</h2>
+-<p>The office gets signed daily reports with production from every job and every crew. Each job shows percent complete by item, from what the crews log. Every record can be searched and exported. A crew's run progress shows live, so nobody has to call the foreman to ask how far they got.</p>
++<p>The office gets signed daily reports with production from every job and every crew. Each job shows percent complete by item, from what the crews log. Records can be searched, and runs, daily reports and permits can be exported. A crew's run progress shows as their phones send it, so the office can see how far they got without calling the foreman. A phone with no signal shows what it last sent.</p>
+ 
+ <h2>811 tickets</h2>
+-<p>Put the 811 ticket on the job and the foreman gets a warning when it's nearly expired: 7 days before, 2 days before, and on the day.</p>
++<p>Put the 811 ticket on the job and the foreman gets a warning when it's nearly expired: 7 days before, 2 days before, and on the day. That works in states where the ticket life is set by law. In the others the app shows no expiry date, so go by your ticket.</p>
+ 
+ <h2>Works with no signal</h2>
+ <p>The crew can keep logging with no signal. Records save on the phone and send when signal is back. Signing in and anything shared with the office need signal, and until a record has sent, the only copy is on that phone.</p>
+diff --git a/grade-and-cut-sheet-app/index.html b/grade-and-cut-sheet-app/index.html
+index b8c73f6..5a498c4 100644
+--- a/grade-and-cut-sheet-app/index.html
++++ b/grade-and-cut-sheet-app/index.html
+@@ -121,7 +121,7 @@
+ <p>Check shots, slope and pipe info are all one tap away. If the inspector shows up late or you hit a utility, the delay log stamps the time, and that delay is already in the foreman's daily report.</p>
+ 
+ <h2>When the run is done</h2>
+-<p>End the run and the phone makes a PDF of it, time-stamped at every point. The office gets a sealed original of each run PDF, so any later change would show. The run goes to the foreman and the office when there's signal, and the footage counts toward the daily report.</p>
++<p>End the run and the phone makes a PDF of it, with the phone's time at every point. The office gets a sealed original of each run PDF, so a later change to that file would show. The run goes to the foreman and the office when there's signal, and the footage counts toward the daily report.</p>
+ 
+ <h2>No signal in the hole</h2>
+ <p>Runs and calculators work with no signal. The run saves on the phone and sends when signal is back. Until it has sent, the only copy is on that phone.</p>
+diff --git a/guides/index.html b/guides/index.html
+index 31d6e3c..a5a9995 100644
+--- a/guides/index.html
++++ b/guides/index.html
+@@ -6,7 +6,7 @@
+ <title>Guides for Pipelayers | The Pipelayer's Bible</title>
+ <link rel="preload" href="/fonts/oswald-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+ <link rel="stylesheet" href="/css/site.css">
+-<meta name="description" content="Plain guides for underground pipe crews: how to read a grade stake, rod reading to invert step by step, and what goes on a confined space entry permit.">
++<meta name="description" content="Plain guides for underground pipe crews: how to read a grade stake, rod reading to invert, what goes on a confined space permit, and trench depth rules.">
+ <link rel="canonical" href="https://pipelayersbible.com/guides/">
+ 
+ <meta name="theme-color" content="#111318">
+@@ -14,7 +14,7 @@
+ <meta property="og:type" content="website">
+ <meta property="og:site_name" content="The Pipelayer's Bible">
+ <meta property="og:title" content="Guides for Pipelayers | The Pipelayer's Bible">
+-<meta property="og:description" content="Plain guides for underground pipe crews: how to read a grade stake, rod reading to invert step by step, and what goes on a confined space entry permit.">
++<meta property="og:description" content="Plain guides for underground pipe crews: how to read a grade stake, rod reading to invert, what goes on a confined space permit, and trench depth rules.">
+ <meta property="og:url" content="https://pipelayersbible.com/guides/">
+ <meta property="og:image" content="https://pipelayersbible.com/img/og-share.png">
+ <meta property="og:image:width" content="1200">
+@@ -22,7 +22,7 @@
+ <meta property="og:image:alt" content="The Pipelayer's Bible logo, a gold scope on black, with the words Field to office, seamlessly">
+ <meta name="twitter:card" content="summary_large_image">
+ <meta name="twitter:title" content="Guides for Pipelayers | The Pipelayer's Bible">
+-<meta name="twitter:description" content="Plain guides for underground pipe crews: how to read a grade stake, rod reading to invert step by step, and what goes on a confined space entry permit.">
++<meta name="twitter:description" content="Plain guides for underground pipe crews: how to read a grade stake, rod reading to invert, what goes on a confined space permit, and trench depth rules.">
+ <meta name="twitter:image" content="https://pipelayersbible.com/img/og-share.png">
+ <link rel="icon" href="/favicon.ico" sizes="any">
+ <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+@@ -44,7 +44,7 @@
+    "@type": "CollectionPage",
+    "name": "Guides for pipe crews",
+    "url": "https://pipelayersbible.com/guides/",
+-   "description": "Plain guides for underground pipe crews: how to read a grade stake, rod reading to invert step by step, and what goes on a confined space entry permit.",
++   "description": "Plain guides for underground pipe crews: how to read a grade stake, rod reading to invert, what goes on a confined space permit, and trench depth rules.",
+    "publisher": {
+     "@id": "https://pipelayersbible.com/#org"
+    },
+@@ -120,7 +120,7 @@
+   <div class="stripe" aria-hidden="true"></div>
+ </section>
+ <div class="content"><div class="wrap">
+-<ul class="cards"><li class="card"><h2><a href="/guides/how-to-read-a-grade-stake/">How to read a grade stake</a></h2><p>Hub and guard stake, station, offset, cut and fill, and how to turn the stake into an invert elevation and feet-inches.</p></li><li class="card"><h2><a href="/guides/rod-reading-to-invert-step-by-step/">Rod reading to invert, step by step</a></h2><p>Benchmark, backsight, HI and foresight, then the invert with the rod on the invert, on top of the pipe or under it.</p></li><li class="card"><h2><a href="/guides/what-goes-on-a-confined-space-permit/">What goes on a confined space permit</a></h2><p>Each item an entry permit has to identify under OSHA and Cal/OSHA, plus signing, posting, canceling and keeping it.</p></li></ul>
++<ul class="cards"><li class="card"><h2><a href="/guides/how-to-read-a-grade-stake/">How to read a grade stake</a></h2><p>Hub and guard stake, station, offset, cut and fill, and how to turn the stake into an invert elevation and feet-inches.</p></li><li class="card"><h2><a href="/guides/rod-reading-to-invert-step-by-step/">Rod reading to invert, step by step</a></h2><p>Benchmark, backsight, HI and foresight, then the invert with the rod on the invert, on top of the pipe or under it.</p></li><li class="card"><h2><a href="/guides/what-goes-on-a-confined-space-permit/">What goes on a confined space permit</a></h2><p>Each item an entry permit has to identify under OSHA and Cal/OSHA, plus signing, posting, canceling and keeping it.</p></li><li class="card"><h3><a href="/guides/trench-depth-rules/">Trench depth rules: 4, 5 and 20 feet</a></h3><p>When a trench needs a ladder, cave-in protection or an engineer under federal OSHA, and who decides.</p></li></ul>
+ <div class="prose" style="margin-top:32px"><p>Want to run the numbers? The <a href="/tools/">free tools</a> do the grade, rod reading, trench sloping and volume math on your phone.</p></div>
+ </div></div>
+ <section class="cta-band" aria-labelledby="cta-title">
+diff --git a/guides/trench-depth-rules/index.html b/guides/trench-depth-rules/index.html
+new file mode 100644
+index 0000000..335c472
+--- /dev/null
++++ b/guides/trench-depth-rules/index.html
+@@ -0,0 +1,221 @@
++<!doctype html>
++<html lang="en">
++<head>
++<meta charset="utf-8">
++<meta name="viewport" content="width=device-width, initial-scale=1">
++<title>Trench Depth Rules: 4, 5 and 20 Feet | The Pipelayer's Bible</title>
++<link rel="preload" href="/fonts/oswald-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
++<link rel="stylesheet" href="/css/site.css">
++<meta name="description" content="How deep can a trench be before it needs shoring or sloping? Federal OSHA's 4, 5 and 20 foot rules in plain words: ladders, cave-in protection, spoil, inspections.">
++<link rel="canonical" href="https://pipelayersbible.com/guides/trench-depth-rules/">
++
++<meta name="theme-color" content="#111318">
++<meta name="color-scheme" content="light">
++<meta property="og:type" content="article">
++<meta property="og:site_name" content="The Pipelayer's Bible">
++<meta property="og:title" content="Trench Depth Rules: 4, 5 and 20 Feet | The Pipelayer's Bible">
++<meta property="og:description" content="How deep can a trench be before it needs shoring or sloping? Federal OSHA's 4, 5 and 20 foot rules in plain words: ladders, cave-in protection, spoil, inspections.">
++<meta property="og:url" content="https://pipelayersbible.com/guides/trench-depth-rules/">
++<meta property="og:image" content="https://pipelayersbible.com/img/og-share.png">
++<meta property="og:image:width" content="1200">
++<meta property="og:image:height" content="630">
++<meta property="og:image:alt" content="The Pipelayer's Bible logo, a gold scope on black, with the words Field to office, seamlessly">
++<meta name="twitter:card" content="summary_large_image">
++<meta name="twitter:title" content="Trench Depth Rules: 4, 5 and 20 Feet | The Pipelayer's Bible">
++<meta name="twitter:description" content="How deep can a trench be before it needs shoring or sloping? Federal OSHA's 4, 5 and 20 foot rules in plain words: ladders, cave-in protection, spoil, inspections.">
++<meta name="twitter:image" content="https://pipelayersbible.com/img/og-share.png">
++<link rel="icon" href="/favicon.ico" sizes="any">
++<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
++<link rel="apple-touch-icon" href="/apple-touch-icon.png">
++<script type="application/ld+json">
++{
++ "@context": "https://schema.org",
++ "@graph": [
++  {
++   "@type": "Organization",
++   "@id": "https://pipelayersbible.com/#org",
++   "name": "The Pipelayer's Bible",
++   "url": "https://pipelayersbible.com/",
++   "logo": "https://pipelayersbible.com/img/logo-192.png",
++   "telephone": "+1-909-435-5250",
++   "email": "tfontaine@pipelayersbible.com"
++  },
++  {
++   "@type": "Article",
++   "@id": "https://pipelayersbible.com/guides/trench-depth-rules/#article",
++   "headline": "Trench depth rules: 4, 5 and 20 feet",
++   "description": "How deep can a trench be before it needs shoring or sloping? Federal OSHA's 4, 5 and 20 foot rules in plain words: ladders, cave-in protection, spoil, inspections.",
++   "url": "https://pipelayersbible.com/guides/trench-depth-rules/",
++   "mainEntityOfPage": "https://pipelayersbible.com/guides/trench-depth-rules/",
++   "image": "https://pipelayersbible.com/img/og-share.png",
++   "inLanguage": "en-US",
++   "datePublished": "2026-11-20",
++   "dateModified": "2026-11-20",
++   "author": {
++    "@type": "Person",
++    "name": "Thomas Fontaine",
++    "url": "https://pipelayersbible.com/"
++   },
++   "publisher": {
++    "@type": "Organization",
++    "@id": "https://pipelayersbible.com/#org",
++    "name": "The Pipelayer's Bible",
++    "logo": {
++     "@type": "ImageObject",
++     "url": "https://pipelayersbible.com/img/logo-192.png",
++     "width": 192,
++     "height": 192
++    }
++   }
++  },
++  {
++   "@type": "BreadcrumbList",
++   "itemListElement": [
++    {
++     "@type": "ListItem",
++     "position": 1,
++     "name": "Home",
++     "item": "https://pipelayersbible.com/"
++    },
++    {
++     "@type": "ListItem",
++     "position": 2,
++     "name": "Guides",
++     "item": "https://pipelayersbible.com/guides/"
++    },
++    {
++     "@type": "ListItem",
++     "position": 3,
++     "name": "Trench depth rules",
++     "item": "https://pipelayersbible.com/guides/trench-depth-rules/"
++    }
++   ]
++  }
++ ]
++}
++</script>
++</head>
++<body>
++<a class="skip" href="#main">Skip to content</a>
++<header class="topbar">
++  <div class="wrap">
++    <a class="brand" href="/" aria-label="The Pipelayer's Bible, home">
++      <img src="/img/logo-96.png" width="40" height="40" alt="">
++      <span><small>The</small>Pipelayer's Bible</span>
++    </a>
++    <nav class="site-nav" aria-label="Main"><ul><li><a href="/">Home</a></li><li><a href="/tools/">Free tools</a></li><li><a href="/guides/" aria-current="page">Guides</a></li><li><a href="/#start" class="nav-cta">Start a free trial</a></li></ul></nav>
++    <a class="top-call" href="tel:+19094355250" aria-label="Call Thomas at (909) 435-5250">
++      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>
++      <span class="word">Call</span><span class="num">(909) 435-5250</span>
++    </a>
++  </div>
++</header>
++
++<main id="main">
++<section class="page-hero" aria-labelledby="page-title">
++  <div class="wrap">
++    <nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">Home</a></li><li><a href="/guides/">Guides</a></li><li><span aria-current="page">Trench depth rules</span></li></ol></nav>
++    <p class="eyebrow" style="margin-top:18px">Guide</p>
++    <h1 id="page-title">Trench depth rules: 4, 5 and 20 feet</h1>
++    <p class="lead">How deep a trench can be before it needs a ladder, cave-in protection or an engineer, under federal OSHA.</p>
++    <p class="byline">By Thomas Fontaine, 12 years in underground construction. November 20, 2026.</p>
++  </div>
++  <div class="stripe" aria-hidden="true"></div>
++</section>
++<div class="content"><div class="wrap"><article class="prose">
++<div class="warn"><p><strong>Your competent person decides what a trench needs.</strong> This is a plain summary of the federal rule, <a href="https://www.osha.gov/laws-regs/regulations/standardnumber/1926/1926.651">29 CFR 1926.651</a> and <a href="https://www.osha.gov/laws-regs/regulations/standardnumber/1926/1926.652">1926.652</a>. It isn't legal advice, it doesn't classify soil, and your state may be stricter. Read the rule for the exact wording.</p></div>
++
++<h2>The short answer</h2>
++<p>Under federal OSHA, a trench 5 feet deep or more needs a protective system (sloping, benching, shoring or a shield) unless it is cut entirely in stable rock. A shallower trench needs one too if the competent person sees any sign it could cave in.</p>
++<div class="tbl-wrap"><table><thead><tr><th>Depth</th><th>What federal OSHA requires</th></tr></thead><tbody>
++<tr><td>Any depth</td><td>A competent person inspects the trench, the area around it and the protective system every day before work starts, and again as needed during the shift and after a rainstorm. <span style="white-space:nowrap">(1926.651(k)(1))</span></td></tr>
++<tr><td>Any depth</td><td>Spoil, materials and equipment stay at least 2 feet back from the edge, or are held back by a retaining device. <span style="white-space:nowrap">(1926.651(j)(2))</span></td></tr>
++<tr><td>4 ft or more</td><td>A stairway, ladder, ramp or other safe way out, placed so nobody has to travel more than 25 feet sideways to reach it. <span style="white-space:nowrap">(1926.651(c)(2))</span></td></tr>
++<tr><td>More than 4 ft</td><td>Test the air before anyone goes in, where low oxygen or a hazardous atmosphere exists or could reasonably be expected, such as near a landfill or stored hazardous substances. <span style="white-space:nowrap">(1926.651(g)(1)(i))</span></td></tr>
++<tr><td>Less than 5 ft</td><td>No protective system is required if a competent person examines the ground and finds no indication of a potential cave-in. <span style="white-space:nowrap">(1926.652(a)(1)(ii))</span></td></tr>
++<tr><td>5 ft or more</td><td>A protective system, unless the excavation is made entirely in stable rock. <span style="white-space:nowrap">(1926.652(a)(1))</span></td></tr>
++<tr><td>20 ft and deeper</td><td>OSHA's slope table only covers excavations less than 20 feet deep. Beyond it, sloping or benching "shall be designed by a registered professional engineer." (Subpart P, Appendix B, Table B-1)</td></tr>
++</tbody></table></div>
++
++<h2>Does a trench under 5 feet need shoring?</h2>
++<p>It can. The 5 foot line isn't a free pass. <a href="https://www.osha.gov/laws-regs/regulations/standardnumber/1926/1926.652">1926.652(a)(1)</a> only lets you skip the protective system below 5 feet when a competent person has looked at the ground and found no indication of a potential cave-in. Wet ground, fill, old utility trenches alongside, cracks at the edge or a machine working next to the cut are all reasons to protect a shallow trench.</p>
++
++<h2>What counts as a protective system</h2>
++<ul>
++<li><strong>Sloping.</strong> Laying the walls back. The steepest slope allowed depends on the soil type: 3/4 to 1 for Type A, 1 to 1 for Type B and 1 1/2 to 1 for Type C, written horizontal to vertical. The <a href="/tools/trench-sloping/">trench sloping calculator</a> works out how far back that is and how wide the top gets.</li>
++<li><strong>Benching.</strong> Cutting the walls in steps. Appendix B shows which layouts are allowed for each soil type.</li>
++<li><strong>Shoring.</strong> Supports that hold the walls, such as hydraulic shores.</li>
++<li><strong>Shielding.</strong> A trench box or shield that protects the people inside it if the wall lets go.</li>
++</ul>
++<p>The soil type is not a guess. A competent person classifies it under <a href="https://www.osha.gov/laws-regs/regulations/standardnumber/1926/1926SubpartPAppA">Appendix A</a>, and that decides how steep a slope can be.</p>
++
++<h2>Who is the competent person?</h2>
++<p>OSHA's definition (<a href="https://www.osha.gov/competent-person">29 CFR 1926.32(f)</a>) is someone "capable of identifying existing and predictable hazards in the surroundings or working conditions" who also "has authorization to take prompt corrective measures to eliminate them." Both halves count: he has to know what he's looking at, and he has to have the authority to pull the crew out. When he finds evidence of a possible cave-in, the people exposed are removed until it's made safe (1926.651(k)(2)).</p>
++
++<h2>Other things the rule covers</h2>
++<ul>
++<li><strong>Utilities.</strong> The estimated location of underground utilities is determined before the excavation is opened (1926.651(b)(1)). That means the 811 ticket is in hand and the marks are on the ground.</li>
++<li><strong>Water.</strong> Nobody works in a trench where water has built up or is building up unless precautions have been taken (1926.651(h)(1)).</li>
++<li><strong>Signs of distress.</strong> If a sloped wall shows signs of distress, it gets cut back flatter than the table's maximum, by at least another 1/2 horizontal to 1 vertical (Appendix B).</li>
++</ul>
++
++<h2>State plans can be stricter</h2>
++<p>Many states run their own OSHA plan, and the numbers above are only the federal floor. Two examples: Washington requires a protective system starting at 4 feet instead of 5 (<a href="https://lawfilesext.leg.wa.gov/Law/WAC/WAC%20296%20%20TITLE/WAC%20296%20-155%20%20CHAPTER/WAC%20296%20-155%20-657.htm">WAC 296-155-657</a>), and California requires a Cal/OSHA permit before workers enter a trench or excavation 5 feet deep or more (<a href="https://dir.ca.gov/Title8/341.html">Title 8, section 341</a>). Check the rules for the state the job is in.</p>
++
++<h2>Quick checks before anyone gets in</h2>
++<ul>
++<li>Has the competent person looked at it today, and since the rain?</li>
++<li>4 feet or deeper: is there a ladder within 25 feet of everyone?</li>
++<li>5 feet or deeper: is the slope, shoring or box in place for the soil you actually have?</li>
++<li>Is the spoil at least 2 feet back?</li>
++<li>Close to 20 feet: is there an engineer's design?</li>
++</ul>
++<p><a href="/">The Pipelayer's Bible</a> has a trench sloping calculator on the phone that works with no signal. Like the free one on this site, it only does the arithmetic on OSHA's table and gives no slope at 20 feet or more.</p>
++</article>
++<section class="related" aria-labelledby="rel-title"><h2 id="rel-title">Related</h2><ul class="cards"><li class="card"><h3><a href="/tools/trench-sloping/">Trench sloping calculator</a></h3><p>Table B-1 slopes and the top width of the cut.</p></li><li class="card"><h3><a href="/guides/what-goes-on-a-confined-space-permit/">What goes on a confined space permit</a></h3><p>Each item on the permit, with the OSHA sections.</p></li></ul></section>
++</div></div>
++<section class="cta-band" aria-labelledby="cta-title">
++  <div class="wrap">
++    <h2 id="cta-title">Try the full app free</h2>
++    <p>The Pipelayer's Bible puts grade, delays, permits and the daily report on the crew's phones, and sends them to the foreman and the office when there's signal. 30 days free for your company and 6 people. No credit card.</p>
++    <div class="btns"><a class="btn btn-primary" href="/#start">Start a free trial</a><a class="btn btn-ghost" href="tel:+19094355250">Call (909) 435-5250</a></div>
++  </div>
++</section>
++</main>
++
++<footer class="site-foot">
++  <div class="wrap">
++    <div class="foot-brand">
++      <a class="brand" href="/" aria-label="The Pipelayer's Bible, home"><img src="/img/logo-96.png" width="40" height="40" alt=""><span><small>The</small>Pipelayer's Bible</span></a>
++      <p>Field to office, seamlessly</p>
++    </div>
++    <div>
++      <p class="foot-h">Free tools and guides</p>
++      <ul class="foot-links">
++        <li><a href="/tools/pipe-grade-calculator/">Pipe grade calculator</a></li>
++        <li><a href="/tools/rod-reading-to-invert/">Rod reading to invert</a></li>
++        <li><a href="/tools/trench-sloping/">Trench sloping</a></li>
++        <li><a href="/tools/pipe-volume-weight/">Pipe volume and backfill</a></li>
++        <li><a href="/guides/">All guides</a></li>
++      </ul>
++    </div>
++    <div>
++      <p class="foot-h">The app</p>
++      <ul class="foot-links">
++        <li><a href="/grade-and-cut-sheet-app/">Grade and cut sheets</a></li>
++        <li><a href="/daily-reports-for-underground-crews/">Daily reports</a></li>
++        <li><a href="/confined-space-permit-app/">Confined space permits</a></li>
++        <li><a href="https://app.pipelayersbible.com">Open the app</a></li>
++        <li><a href="https://app.pipelayersbible.com/terms.html">Terms</a></li>
++        <li><a href="https://app.pipelayersbible.com/privacy.html">Privacy</a></li>
++        <li><a href="tel:+19094355250">(909) 435-5250</a></li>
++        <li><a href="mailto:tfontaine@pipelayersbible.com">tfontaine@pipelayersbible.com</a></li>
++      </ul>
++    </div>
++    <p class="copy">&copy; 2026 The Pipelayer's Bible</p>
++    <p class="copy">This site counts visits with GoatCounter: no cookies and no personal tracking.</p>
++  </div>
++</footer>
++<script data-goatcounter="https://pipelayersbible.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
++</body>
++</html>
+diff --git a/index.html b/index.html
+index c1faea1..1f83448 100644
+--- a/index.html
++++ b/index.html
+@@ -114,6 +114,19 @@ section{padding:56px 0}
+   .hero-phone{display:block;justify-self:center;width:280px}
+ }
+ 
++@media (max-width:519px){.hero-logo{width:60px;height:60px;border-radius:15px;margin-bottom:16px}.hero-sub{margin-bottom:22px}}
++/* quick answers */
++.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
++.quick{padding:26px 0;background:var(--card);border-bottom:1px solid var(--rule)}
++.quick dl{margin:0;display:grid;gap:16px}
++.quick dl>div{border-left:4px solid var(--yellow);padding:2px 0 2px 14px}
++.quick dt{font-family:var(--head);font-weight:600;text-transform:uppercase;letter-spacing:.1em;font-size:14px;color:var(--brand);margin:0 0 2px}
++.quick dd{margin:0;font-size:16px;line-height:1.45}
++.quick dd a{display:inline-block;padding:8px 0;margin:-8px 0;font-weight:700}
++@media (min-width:640px){.quick dl{grid-template-columns:repeat(2,1fr);gap:20px 28px}}
++@media (min-width:1000px){.quick dl{grid-template-columns:repeat(5,1fr);gap:20px}}
++.faq details{scroll-margin-top:16px}
++
+ /* story */
+ .story .wrap{display:grid;gap:24px}
+ .story h2{max-width:20em}
+@@ -240,7 +253,20 @@ form{display:grid;gap:18px}
+    "url": "https://pipelayersbible.com/",
+    "logo": "https://pipelayersbible.com/img/logo-192.png",
+    "telephone": "+1-909-435-5250",
+-   "email": "tfontaine@pipelayersbible.com"
++   "email": "tfontaine@pipelayersbible.com",
++   "founder": {
++    "@type": "Person",
++    "name": "Thomas Fontaine",
++    "jobTitle": "Underground foreman"
++   },
++   "contactPoint": {
++    "@type": "ContactPoint",
++    "telephone": "+1-909-435-5250",
++    "email": "tfontaine@pipelayersbible.com",
++    "contactType": "sales and support",
++    "areaServed": "US",
++    "availableLanguage": "English"
++   }
+   },
+   {
+    "@type": "WebSite",
+@@ -259,7 +285,7 @@ form{display:grid;gap:18px}
+    "url": "https://app.pipelayersbible.com",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "iOS, Android (web app)",
+-   "description": "A phone app built for underground pipe crews. It works with no signal and puts the day's work in front of the foreman and the office without anyone retyping it.",
++   "description": "A phone app built for underground pipe crews: grade sheets, delay logs, confined space permits and daily reports. It works with no signal and puts the day's work in front of the foreman and the office without anyone retyping it.",
+    "image": "https://pipelayersbible.com/img/og-share.png",
+    "screenshot": [
+     "https://pipelayersbible.com/img/shot-grade-sheet.webp",
+@@ -290,10 +316,42 @@ form{display:grid;gap:18px}
+     },
+     {
+      "@type": "Question",
+-     "name": "What phones does it work on?",
++     "name": "What does it cost?",
++     "acceptedAnswer": {
++      "@type": "Answer",
++      "text": "The trial is free for 30 days: your company account plus 6 people, with no credit card. The app is in beta, and pricing is being set before the beta ends. You'll know the price before anyone asks you to pay, and nothing is charged automatically. The calculators and guides on this site are free, with no account."
++     }
++    },
++    {
++     "@type": "Question",
++     "name": "How do I get it on my phone?",
++     "acceptedAnswer": {
++      "@type": "Answer",
++      "text": "It works on iPhone and Android and it isn't in the app store. Ask for a trial and Thomas sets up your company and emails an invite to whoever will run it. They open the link, choose a password, and add the crew from the app. The app then shows how to put it on the home screen so it opens like any other app. On an iPhone: open it in Safari, tap Share, then Add to Home Screen. On Android: tap Install App in Chrome. Do this the first time where there's signal."
++     }
++    },
++    {
++     "@type": "Question",
++     "name": "Does my crew need email addresses?",
++     "acceptedAnswer": {
++      "@type": "Answer",
++      "text": "No. The office or a foreman can text a join link to a foreman or pipelayer. He taps it, agrees to the Terms and he's on the crew, with no email and no password. A link works once and lasts 24 hours."
++     }
++    },
++    {
++     "@type": "Question",
++     "name": "Who is it for?",
++     "acceptedAnswer": {
++      "@type": "Answer",
++      "text": "Crews that put sewer, storm drain and water pipe in the ground, and the people they report to. The pipelayer gets the grade sheet, check shots, the delay log and the permit. The foreman gets his crew's progress and a daily report that's already filled in. The superintendent, PM and office get every job, every signed report and the run records. See grade and cut sheets, daily reports and confined space permits."
++     }
++    },
++    {
++     "@type": "Question",
++     "name": "Who's behind it?",
+      "acceptedAnswer": {
+       "@type": "Answer",
+-      "text": "iPhone and Android. It runs in the phone's browser, and you add it to the home screen so it opens like any other app. No app store needed. The first time, open it and sign in where there's signal."
++      "text": "Thomas Fontaine, an underground foreman with 12 years in underground construction. He built it and he's the one who answers: call or text (909) 435-5250 or email tfontaine@pipelayersbible.com."
+      }
+     },
+     {
+@@ -312,6 +370,14 @@ form{display:grid;gap:18px}
+       "text": "No. The confined space permit form records what your crew enters. It doesn't replace your safety program, your air monitor, training or your competent person. The emergency button opens the phone's dialer to the number on the permit; someone still makes the call, and it needs signal."
+      }
+     },
++    {
++     "@type": "Question",
++     "name": "Is it OSHA approved?",
++     "acceptedAnswer": {
++      "@type": "Answer",
++      "text": "No, and nothing is: OSHA doesn't approve or certify apps. The permit form is built around the permit items in federal OSHA 29 CFR 1926.1206, and the trench calculator does the arithmetic on OSHA's Table B-1. Your state may be stricter than federal OSHA. Your competent person and your company's program decide what's safe and what's required."
++     }
++    },
+     {
+      "@type": "Question",
+      "name": "Is the AI always right?",
+@@ -358,21 +424,34 @@ form{display:grid;gap:18px}
+         <img class="hero-logo" src="/img/logo-192.png" width="88" height="88" alt="The Pipelayer's Bible logo: a gold scope crosshair on black">
+         <h1 id="hero-title">The Pipelayer's <span>Bible</span></h1>
+         <p class="tagline">Field to office, seamlessly</p>
+-        <p class="hero-sub">A phone app built for underground pipe crews. It works with no signal and puts the day's work in front of the foreman and the office without anyone retyping it.</p>
++        <p class="hero-sub">A phone app built for underground pipe crews: grade sheets, delay logs, confined space permits and daily reports. It works with no signal and puts the day's work in front of the foreman and the office without anyone retyping it.</p>
+         <div class="hero-ctas">
+           <a class="btn btn-primary" href="#start">Start a free trial</a>
+           <a class="btn btn-ghost" href="https://app.pipelayersbible.com">Open the app
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+         </div>
+-        <p class="hero-note">30 days free for your company and 6 people. No credit card.</p>
++        <p class="hero-note">30 days free for your company and 6 people. No credit card. Built by an underground foreman.</p>
+       </div>
+       <div class="hero-phone phone">
+-        <img src="/img/shot-office-busy.webp" width="560" height="1212" loading="lazy" decoding="async" alt="Company Home in the app for an example company: 4 active runs and 1 active permit live now, 5 daily reports signed today, 3 delays and extra work, and 5 jobs underway starting with Main St Sewer Replacement">
++        <img src="/img/shot-office-busy.webp" width="560" height="1212" loading="lazy" decoding="async" alt="Company Home in the app for an example company: 4 active runs and 1 active permit under Live now, 5 daily reports signed today, 3 delays and extra work, and 5 jobs underway starting with Main St Sewer Replacement">
+       </div>
+     </div>
+     <div class="stripe" aria-hidden="true"></div>
+   </section>
+ 
++  <section class="quick" aria-labelledby="quick-title">
++    <div class="wrap">
++      <h2 id="quick-title" class="sr">Quick answers</h2>
++      <dl>
++        <div><dt>Who it's for</dt><dd>Sewer, storm drain and water crews: pipelayers, foremen, superintendents and the office.</dd></div>
++        <div><dt>What it costs</dt><dd>Free for 30 days, no card. Pricing is being set before the beta ends. <a href="#q-cost">More</a></dd></div>
++        <div><dt>Getting it</dt><dd>iPhone and Android, no app store. It installs from an invite link. <a href="#q-phone">How</a></dd></div>
++        <div><dt>No signal</dt><dd>Runs, calculators and permits work offline and send later. <a href="#q-signal">Details</a></dd></div>
++        <div><dt>Who built it</dt><dd>Thomas Fontaine, an underground foreman. Call or text <a href="tel:+19094355250">(909) 435-5250</a>.</dd></div>
++      </dl>
++    </div>
++  </section>
++
+   <section class="story" aria-labelledby="story-title">
+     <div class="wrap">
+       <div>
+@@ -380,7 +459,7 @@ form{display:grid;gap:18px}
+         <h2 id="story-title">12 years of underground experience went into building this program.</h2>
+       </div>
+       <div>
+-        <p class="story-body">Thomas Fontaine has spent 12 years in underground construction. He built The Pipelayer's Bible for the things he saw on job after job: grade worked out by hand in the trench, delays nobody wrote down until the end of the day, and a daily report typed up again at night from memory. The app keeps that work on the phone where it happens and sends it to the foreman and the office when there's signal. It's built in the field, for the field, and it keeps getting better every time a crew says what's wrong with it.</p>
++        <p class="story-body">Thomas Fontaine is an underground foreman with 12 years in underground construction. He built The Pipelayer's Bible for the things he saw on job after job: grade worked out by hand in the trench, delays nobody wrote down until the end of the day, and a daily report typed up again at night from memory. The app keeps that work on the phone where it happens and sends it to the foreman and the office when there's signal. It's built in the field, for the field, and it keeps getting better every time a crew says what's wrong with it.</p>
+         <p class="story-sign">Thomas Fontaine</p>
+       </div>
+     </div>
+@@ -397,10 +476,10 @@ form{display:grid;gap:18px}
+             <h3 id="r-pl">Pipelayer</h3>
+           </div>
+           <ul>
+-            <li>Calculates pipe grades from survey stake photos or manually entered survey data</li>
++            <li>Works out pipe grades from survey stake photos (read by AI, then checked by you) or from numbers you enter</li>
+             <li>Check shots, footage, slope and pipe info at a glance</li>
+             <li>Time-stamped delay log: utility conflict, inspector, weather, equipment down, material, survey/stakes, traffic control</li>
+-            <li>Confined space permits and entry log, with a one-tap emergency call</li>
++            <li>Confined space permits and entry log, with an emergency button that opens the phone's dialer</li>
+             <li>Calculators for trenching, grade, materials and more</li>
+             <li>Built-in AI assistant for civil work questions on the job</li>
+           </ul>
+@@ -412,10 +491,10 @@ form{display:grid;gap:18px}
+           </div>
+           <ul>
+             <li>Full access to all pipelayer features</li>
+-            <li>Sees his crew's run progress live</li>
++            <li>Sees his crew's run progress as their phones send it</li>
+             <li>Daily reports filled in automatically from the day's work</li>
+             <li>Field tickets with photo upload</li>
+-            <li>Warnings when an 811 ticket is nearly expired</li>
++            <li>Warnings when an 811 ticket is nearly expired, in states where the ticket life is set by law</li>
+             <li>Extra work documentation</li>
+             <li>Built-in AI assistant for civil work questions on the job</li>
+           </ul>
+@@ -427,11 +506,11 @@ form{display:grid;gap:18px}
+           </div>
+           <ul>
+             <li>Material takeoffs from your plan sets <span class="addon">add-on</span></li>
+-            <li>A PDF of every run, time-stamped at every point</li>
+-            <li>A sealed original of each run PDF, so any later change would show</li>
++            <li>A PDF of every run, with the phone's time at every point</li>
++            <li>A sealed original of each run PDF, so a later change to that file would show</li>
+             <li>Signed daily reports with production from every job and every crew</li>
+-            <li>Search and export every record</li>
+-            <li>Built-in AI for civil work questions, crew management and your company's data</li>
++            <li>Search your records and export runs, daily reports and permits</li>
++            <li>Built-in AI for civil work questions and for questions about your company's own numbers</li>
+           </ul>
+         </article>
+       </div>
+@@ -470,9 +549,10 @@ form{display:grid;gap:18px}
+       <p class="eyebrow">Try it on a real job</p>
+       <h2 id="trial-title">Free 30-day trial</h2>
+       <p class="trial-lead"><strong>Your company account plus 6 people.</strong> No credit card, and no automatic payment when it's over. At the end, whoever ran it gets a one-page summary of what the crew logged (footage, delays, inspections, paperwork sent) to show the owner.</p>
++      <p class="trial-lead" style="font-size:17px">The app is in beta. Pricing is being set before the beta ends, and you'll know the price before anyone asks you to pay.</p>
+       <ol class="steps">
+         <li>Send the email of whoever will run it, usually the superintendent.</li>
+-        <li>Thomas sets up your company the same day and sends them the invite. They add their own crew right from the app.</li>
++        <li>Thomas sets up your company, usually the same day, and sends them the invite. They add their own crew right from the app.</li>
+         <li>The crew installs it from the invite and starts logging runs.</li>
+       </ol>
+       <a class="btn btn-primary" href="#start">Start a free trial</a>
+@@ -493,14 +573,33 @@ form{display:grid;gap:18px}
+       <p class="eyebrow">Straight answers</p>
+       <h2 id="faq-title">Questions</h2>
+       <div class="faq-list">
+-        <details>
++        <details id="q-signal">
+           <summary>Does it work with no signal?</summary>
+           <div class="ans"><p>Yes. Runs, calculators and permits work with no signal. Records save on the phone and send when signal is back.</p>
+           <p>The AI features, signing in and anything shared with the office need signal, and until a record has sent, the only copy is on that phone.</p></div>
+         </details>
++        <details id="q-cost">
++          <summary>What does it cost?</summary>
++          <div class="ans"><p>The trial is free for 30 days: your company account plus 6 people, with no credit card. The app is in beta, and pricing is being set before the beta ends. You'll know the price before anyone asks you to pay, and nothing is charged automatically.</p>
++          <p>The <a href="/tools/">calculators</a> and <a href="/guides/">guides</a> on this site are free, with no account.</p></div>
++        </details>
++        <details id="q-phone">
++          <summary>How do I get it on my phone?</summary>
++          <div class="ans"><p>It works on iPhone and Android and it isn't in the app store. <a href="#start">Ask for a trial</a> and Thomas sets up your company and emails an invite to whoever will run it. They open the link, choose a password, and add the crew from the app.</p>
++          <p>The app then shows how to put it on the home screen so it opens like any other app. On an iPhone: open it in Safari, tap Share, then Add to Home Screen. On Android: tap Install App in Chrome. Do this the first time where there's signal.</p></div>
++        </details>
++        <details>
++          <summary>Does my crew need email addresses?</summary>
++          <div class="ans"><p>No. The office or a foreman can text a join link to a foreman or pipelayer. He taps it, agrees to the Terms and he's on the crew, with no email and no password. A link works once and lasts 24 hours.</p></div>
++        </details>
++        <details>
++          <summary>Who is it for?</summary>
++          <div class="ans"><p>Crews that put sewer, storm drain and water pipe in the ground, and the people they report to. The pipelayer gets the grade sheet, check shots, the delay log and the permit. The foreman gets his crew's progress and a daily report that's already filled in. The superintendent, PM and office get every job, every signed report and the run records.</p>
++          <p>See <a href="/grade-and-cut-sheet-app/">grade and cut sheets</a>, <a href="/daily-reports-for-underground-crews/">daily reports</a> and <a href="/confined-space-permit-app/">confined space permits</a>.</p></div>
++        </details>
+         <details>
+-          <summary>What phones does it work on?</summary>
+-          <div class="ans"><p>iPhone and Android. It runs in the phone's browser, and you add it to the home screen so it opens like any other app. No app store needed. The first time, open it and sign in where there's signal.</p></div>
++          <summary>Who's behind it?</summary>
++          <div class="ans"><p>Thomas Fontaine, an underground foreman with 12 years in underground construction. He built it and he's the one who answers: call or text <a href="tel:+19094355250">(909) 435-5250</a> or email <a href="mailto:tfontaine@pipelayersbible.com">tfontaine@pipelayersbible.com</a>.</p></div>
+         </details>
+         <details>
+           <summary>Who owns our data?</summary>
+@@ -511,6 +610,10 @@ form{display:grid;gap:18px}
+           <summary>Does it replace our safety program?</summary>
+           <div class="ans"><p>No. The confined space permit form records what your crew enters. It doesn't replace your safety program, your air monitor, training or your competent person. The emergency button opens the phone's dialer to the number on the permit; someone still makes the call, and it needs signal.</p></div>
+         </details>
++        <details>
++          <summary>Is it OSHA approved?</summary>
++          <div class="ans"><p>No, and nothing is: OSHA doesn't approve or certify apps. The permit form is built around the permit items in federal OSHA 29 CFR 1926.1206, and the trench calculator does the arithmetic on OSHA's Table B-1. Your state may be stricter than federal OSHA. Your competent person and your company's program decide what's safe and what's required.</p></div>
++        </details>
+         <details>
+           <summary>Is the AI always right?</summary>
+           <div class="ans"><p>No. AI can make mistakes. It can misread a stake or give a wrong answer, so crews check every value against the stake, the plans and their own instrument before using it. On safety questions, your competent person and your site's program decide.</p></div>
+@@ -635,7 +738,9 @@ form{display:grid;gap:18px}
+         <li><a href="/tools/">Free tools</a></li>
+         <li><a href="/guides/">Guides</a></li>
+         <li><a href="/tools/pipe-grade-calculator/">Pipe grade calculator</a></li>
++        <li><a href="/tools/rod-reading-to-invert/">Rod reading to invert</a></li>
+         <li><a href="/tools/trench-sloping/">Trench sloping</a></li>
++        <li><a href="/guides/trench-depth-rules/">Trench depth rules</a></li>
+         <li><a href="/grade-and-cut-sheet-app/">Grade and cut sheets</a></li>
+         <li><a href="/daily-reports-for-underground-crews/">Daily reports</a></li>
+         <li><a href="/confined-space-permit-app/">Confined space permits</a></li>
+@@ -646,6 +751,13 @@ form{display:grid;gap:18px}
+   </div>
+ </footer>
+ 
++<script>
++(function () {
++  // a link to a question (#q-cost and the like) opens that question
++  function openQ() { var id = location.hash.slice(1), el = id && document.getElementById(id); if (el && el.tagName === 'DETAILS') { el.open = true; el.scrollIntoView(); } }
++  window.addEventListener('hashchange', openQ); openQ();
++})();
++</script>
+ <script>
+ (function () {
+   var form = document.getElementById('trial-form');
+diff --git a/sitemap.xml b/sitemap.xml
+index cdaee6e..0dbd6c6 100644
+--- a/sitemap.xml
++++ b/sitemap.xml
+@@ -2,19 +2,19 @@
+ <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+   <url>
+     <loc>https://pipelayersbible.com/</loc>
+-    <lastmod>2026-11-19</lastmod>
++    <lastmod>2026-11-20</lastmod>
+   </url>
+   <url>
+     <loc>https://pipelayersbible.com/grade-and-cut-sheet-app/</loc>
+-    <lastmod>2026-11-19</lastmod>
++    <lastmod>2026-11-20</lastmod>
+   </url>
+   <url>
+     <loc>https://pipelayersbible.com/daily-reports-for-underground-crews/</loc>
+-    <lastmod>2026-11-19</lastmod>
++    <lastmod>2026-11-20</lastmod>
+   </url>
+   <url>
+     <loc>https://pipelayersbible.com/confined-space-permit-app/</loc>
+-    <lastmod>2026-11-19</lastmod>
++    <lastmod>2026-11-20</lastmod>
+   </url>
+   <url>
+     <loc>https://pipelayersbible.com/tools/</loc>
+@@ -22,7 +22,7 @@
+   </url>
+   <url>
+     <loc>https://pipelayersbible.com/tools/pipe-grade-calculator/</loc>
+-    <lastmod>2026-11-19</lastmod>
++    <lastmod>2026-11-20</lastmod>
+   </url>
+   <url>
+     <loc>https://pipelayersbible.com/tools/rod-reading-to-invert/</loc>
+@@ -30,7 +30,7 @@
+   </url>
+   <url>
+     <loc>https://pipelayersbible.com/tools/trench-sloping/</loc>
+-    <lastmod>2026-11-19</lastmod>
++    <lastmod>2026-11-20</lastmod>
+   </url>
+   <url>
+     <loc>https://pipelayersbible.com/tools/pipe-volume-weight/</loc>
+@@ -38,7 +38,7 @@
+   </url>
+   <url>
+     <loc>https://pipelayersbible.com/guides/</loc>
+-    <lastmod>2026-11-19</lastmod>
++    <lastmod>2026-11-20</lastmod>
+   </url>
+   <url>
+     <loc>https://pipelayersbible.com/guides/how-to-read-a-grade-stake/</loc>
+@@ -52,4 +52,8 @@
+     <loc>https://pipelayersbible.com/guides/what-goes-on-a-confined-space-permit/</loc>
+     <lastmod>2026-11-19</lastmod>
+   </url>
++  <url>
++    <loc>https://pipelayersbible.com/guides/trench-depth-rules/</loc>
++    <lastmod>2026-11-20</lastmod>
++  </url>
+ </urlset>
+diff --git a/tools/pipe-grade-calculator/index.html b/tools/pipe-grade-calculator/index.html
+index 45f72d1..2a2c094 100644
+--- a/tools/pipe-grade-calculator/index.html
++++ b/tools/pipe-grade-calculator/index.html
+@@ -6,7 +6,7 @@
+ <title>Pipe Grade Calculator (Invert Elevations) | The Pipelayer's Bible</title>
+ <link rel="preload" href="/fonts/oswald-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+ <link rel="stylesheet" href="/css/site.css">
+-<meta name="description" content="Free pipe grade calculator: start invert, slope or elevation change, and run length give invert elevations at every station, the fall and inches per foot, in feet and feet-inches.">
++<meta name="description" content="Free pipe grade calculator: start invert, slope and run length give the invert at every station, the fall and inches per foot, in feet and feet-inches.">
+ <link rel="canonical" href="https://pipelayersbible.com/tools/pipe-grade-calculator/">
+ 
+ <meta name="theme-color" content="#111318">
+@@ -14,7 +14,7 @@
+ <meta property="og:type" content="website">
+ <meta property="og:site_name" content="The Pipelayer's Bible">
+ <meta property="og:title" content="Pipe Grade Calculator (Invert Elevations) | The Pipelayer's Bible">
+-<meta property="og:description" content="Free pipe grade calculator: start invert, slope or elevation change, and run length give invert elevations at every station, the fall and inches per foot, in feet and feet-inches.">
++<meta property="og:description" content="Free pipe grade calculator: start invert, slope and run length give the invert at every station, the fall and inches per foot, in feet and feet-inches.">
+ <meta property="og:url" content="https://pipelayersbible.com/tools/pipe-grade-calculator/">
+ <meta property="og:image" content="https://pipelayersbible.com/img/og-share.png">
+ <meta property="og:image:width" content="1200">
+@@ -22,7 +22,7 @@
+ <meta property="og:image:alt" content="The Pipelayer's Bible logo, a gold scope on black, with the words Field to office, seamlessly">
+ <meta name="twitter:card" content="summary_large_image">
+ <meta name="twitter:title" content="Pipe Grade Calculator (Invert Elevations) | The Pipelayer's Bible">
+-<meta name="twitter:description" content="Free pipe grade calculator: start invert, slope or elevation change, and run length give invert elevations at every station, the fall and inches per foot, in feet and feet-inches.">
++<meta name="twitter:description" content="Free pipe grade calculator: start invert, slope and run length give the invert at every station, the fall and inches per foot, in feet and feet-inches.">
+ <meta name="twitter:image" content="https://pipelayersbible.com/img/og-share.png">
+ <link rel="icon" href="/favicon.ico" sizes="any">
+ <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+@@ -45,7 +45,7 @@
+    "@id": "https://pipelayersbible.com/tools/pipe-grade-calculator/#app",
+    "name": "Pipe grade calculator",
+    "url": "https://pipelayersbible.com/tools/pipe-grade-calculator/",
+-   "description": "Free pipe grade calculator: start invert, slope or elevation change, and run length give invert elevations at every station, the fall and inches per foot, in feet and feet-inches.",
++   "description": "Free pipe grade calculator: start invert, slope and run length give the invert at every station, the fall and inches per foot, in feet and feet-inches.",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Any (runs in a web browser)",
+    "browserRequirements": "Requires JavaScript",
+@@ -151,7 +151,12 @@
+ <p class="formula">inches per foot = slope % &times; 12 &divide; 100</p>
+ <p>Example: a 250 ft run of 8" sewer at 0.40% falling from 100.00 drops 1.00 ft, so the far end is 99.00. Every 25 ft station is 0.10 ft lower than the one before it. 0.40% is 0.048 inches per foot.</p>
+ <p>The rows go every interval from the start, plus one at the end of the run, the same way the full app lays out a grade sheet. Elevations round to the nearest 0.01 ft, with a half rounding away from zero, and feet-inches round to the nearest 1/16". Stations print the way they read on a cut sheet: 125 ft is 1+25.00.</p>
+-<div class="note"><p>Check every number against the plans, the cut sheet and your own instrument before you lay pipe. This page does straight grades only. The <a href="/grade-and-cut-sheet-app/">full app</a> handles hubs, fittings, slope changes and rod readings for a whole run.</p></div>
++<div class="note"><p>Check every number against the plans, the cut sheet and your own instrument before you lay pipe. This page does straight grades only. The <a href="/grade-and-cut-sheet-app/">full app</a> handles hubs, fittings, slope changes and rod readings for a whole run.</p>
++<h2>Slope in percent, inches per foot and fall per 100 feet</h2>
++<p>Plans for sewer and storm drain give slope in percent (or in feet per foot: 0.0040 is 0.40%). Plumbing work talks in inches per foot. They are the same thing written three ways:</p>
++<div class="tbl-wrap"><table><thead><tr><th class="num">Slope</th><th class="num">Inches per foot</th><th class="num">Fall in 100 ft</th><th class="num">Feet-inches</th></tr></thead><tbody><tr><td class="num">0.20%</td><td class="num">0.024"</td><td class="num">0.20 ft</td><td class="num">0'-2 3/8"</td></tr><tr><td class="num">0.40%</td><td class="num">0.048"</td><td class="num">0.40 ft</td><td class="num">0'-4 13/16"</td></tr><tr><td class="num">0.50%</td><td class="num">0.060"</td><td class="num">0.50 ft</td><td class="num">0'-6"</td></tr><tr><td class="num">1.00%</td><td class="num">0.120"</td><td class="num">1.00 ft</td><td class="num">1'-0"</td></tr><tr><td class="num">1.04% (1/8" per foot)</td><td class="num">0.125"</td><td class="num">1.04 ft</td><td class="num">1'-0 1/2"</td></tr><tr><td class="num">2.00%</td><td class="num">0.240"</td><td class="num">2.00 ft</td><td class="num">2'-0"</td></tr><tr><td class="num">2.08% (1/4" per foot)</td><td class="num">0.250"</td><td class="num">2.08 ft</td><td class="num">2'-1"</td></tr></tbody></table></div>
++<p>To go the other way, percent = inches per foot &divide; 12 &times; 100. A quarter inch per foot is 0.25 &divide; 12 &times; 100 = 2.08%. The minimum slope for a line comes from the plans and the agency's standards, not from this table.</p>
++</div>
+ </div>
+ <section class="related" aria-labelledby="rel-title"><h2 id="rel-title">Related</h2><ul class="cards"><li class="card"><h3><a href="/tools/rod-reading-to-invert/">Rod reading to invert</a></h3><p>Turn a benchmark, backsight and rod reading into an elevation and an invert.</p></li><li class="card"><h3><a href="/guides/how-to-read-a-grade-stake/">How to read a grade stake</a></h3><p>Station, offset, cut and fill, and how they get you to the invert.</p></li></ul></section>
+ </div></div>
+diff --git a/tools/trench-sloping/index.html b/tools/trench-sloping/index.html
+index 05f605e..bd0126c 100644
+--- a/tools/trench-sloping/index.html
++++ b/tools/trench-sloping/index.html
+@@ -151,6 +151,7 @@
+ </ul>
+ <h2>State plans can be stricter</h2>
+ <p>Many states run their own OSHA plan. Two examples: Washington requires a protective system starting at 4 feet instead of 5 (<a href="https://lawfilesext.leg.wa.gov/Law/WAC/WAC%20296%20%20TITLE/WAC%20296%20-155%20%20CHAPTER/WAC%20296%20-155%20-657.htm">WAC 296-155-657</a>), and California requires a Cal/OSHA permit before workers enter a trench or excavation 5 feet deep or more (<a href="https://dir.ca.gov/Title8/341.html">Title 8, section 341</a>). Check the rules for the state the job is in.</p>
++<p>For the ladder, spoil and inspection rules that go with the depth, see <a href="/guides/trench-depth-rules/">trench depth rules: 4, 5 and 20 feet</a>.</p>
+ </div>
+ <section class="related" aria-labelledby="rel-title"><h2 id="rel-title">Related</h2><ul class="cards"><li class="card"><h3><a href="/tools/pipe-volume-weight/">Pipe volume and backfill</a></h3><p>Water in the pipe, bedding and backfill yards for the trench.</p></li><li class="card"><h3><a href="/grade-and-cut-sheet-app/">Grade and cut sheet app</a></h3><p>The run, the grade sheet and the run report on the phone.</p></li></ul></section>
+ </div></div>
+-- 
+2.43.0
+

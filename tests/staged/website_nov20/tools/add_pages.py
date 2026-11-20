@@ -81,6 +81,8 @@ BODY = f'''
 </div></div>
 '''
 t = t[:a] + BODY + t[b:]
+t = t.replace('<th>Depth</th><th>What federal OSHA requires</th><th>Where</th>', '<th>Depth</th><th>What federal OSHA requires</th>')
+t = re.sub(r'</td><td>((?:1926\.65|Subpart P)[^<]*)</td></tr>', r' (\1)</td></tr>', t)
 wr('guides/trench-depth-rules/index.html', t)
 
 # ---- guides hub card, tools pages cross links ----

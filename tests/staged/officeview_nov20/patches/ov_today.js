@@ -25,7 +25,7 @@
     O.busy = true; O.lastTry = Date.now(); pbOvPaint();
     try {
       const day = pbTkToday();
-      try { const R = pbRpfFor(uid); if (!R.meta) R.meta = pbRpfReadMeta(uid); pbRpfMetaLoad(R, false).then(pbOvPaint).catch(() => null); } catch (e) {}
+      try { pbRpfMetaLoad(pbRpfFor(uid), false).then(pbOvPaint).catch(() => null); } catch (e) {} // the foremen's names (the list Records' People filter already loads)
       const r = await pbPermitRpc('pb_reports_feed', { p_filters: { tz: pbRpfTz(), from: day, to: day, types: ['daily', 'ticket', 'event'] }, p_before_at: null, p_before_key: null, p_limit: 100, p_expect_uid: uid }, 30000);
       if (pbOv !== O) return;
       if (r && !r.error && r.data && r.data.ok && Array.isArray(r.data.items)) {
@@ -112,7 +112,7 @@
     if (!pbOvWide() || !uid || uid === 'shared') { if (!el.hidden) { el.hidden = true; el.innerHTML = ''; } return; }
     const O = pbOvFor(uid), B = pbCxBoard(uid), D = pbCxDash(uid), jobs = D ? D.data.jobs : [], now = pbTkToday();
     const day = (B && B.runs && typeof B.runs.today === 'string' && B.runs.today) || now, feed = O.feed && O.day === day ? O.feed : null;
-    let people = []; try { const R = pbRpfFor(uid); const M = R.meta || pbRpfReadMeta(uid); people = M && Array.isArray(M.people) ? M.people : []; } catch (e) {}
+    let people = []; try { const M = pbRpfFor(uid).meta; people = M && Array.isArray(M.people) ? M.people : []; } catch (e) {}
     const all = pbOvBuild(B, feed, people, jobs, O.fit, day), rows = pbOvSorted(all, O.sort);
     const ats = [B && B.at, feed ? O.at : 0].filter(t => t > 0), at = ats.length ? Math.min.apply(null, ats) : 0;
     const cached = !!((B && B.cached) || (feed && O.cached)), busy = !!((B && B.busy) || O.busy);

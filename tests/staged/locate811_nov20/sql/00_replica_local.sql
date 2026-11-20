@@ -4,7 +4,9 @@
 -- managed_company, job_key, versions_locked and pb_audit.direct_write are copied from the live project
 -- (pg_get_functiondef / pg_constraint, read-only, Nov 20 2026). member_name, locate_days and the job tables are small
 -- stand-ins. Seed: the live company's ids (no personal data) plus a second company for the cross-company checks.
-create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls; create role authenticator noinherit login;
+do $r$ begin if not exists (select 1 from pg_roles where rolname = 'anon') then
+  create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls; create role authenticator noinherit login;
+end if; end $r$;
 grant anon, authenticated, service_role to authenticator;
 create schema auth; create schema pb_prod; create schema pb_reports; create schema pb_mat; create schema pb_audit; create schema pb_billing;
 grant usage on schema public, auth to anon, authenticated, service_role;
