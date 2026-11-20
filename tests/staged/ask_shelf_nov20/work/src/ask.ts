@@ -51,7 +51,7 @@ import {
 } from "./_shared/retrieval.ts";
 import { gapStep, later, namesOwnJob, REFUSAL_RX } from "./gaps.ts";
 import { addressState, okState, resolveState, stateLines, stateSearch } from "./state.ts";
-import { SHELF_FIRST, shelfSearch, withShelf } from "./shelf.ts";
+import { SHELF_FIRST, shelfPick, shelfSearch, withShelf } from "./shelf.ts";
 globalThis.__PLAIN_MIN = Number(Deno.env.get("AI_ASK_PLAIN_MIN") || 0); // optional: plain-language chunks beside OSHA text (0 = off)
 import { docHeader, docSource, docTitle, runTool, toolsFor } from "./tools.ts";
 import { cleanUntrusted, docBlock } from "./guard.ts";
@@ -302,7 +302,7 @@ async function askV2(body, s) {
       return r.error || !r.data?.ok ? [] : r.data.rows || [];
     },
     docsP = scopeP.then((sr) => {
-      if (sr?.error || !sr?.data?.ok) return shelfP = shelfSearch(s.admin, q, st.code, SHELF_FIRST), [];
+      if (sr?.error || !sr?.data?.ok) return shelfP = shelfSearch(s.admin, q, st.code, { ...SHELF_FIRST, index: kbP }), [];
       const row = (Array.isArray(sr.data.jobs) ? sr.data.jobs : []).find((j) =>
         String(j[0]).toLowerCase() === curJob.toLowerCase()
       );
@@ -322,7 +322,7 @@ async function askV2(body, s) {
           majorityState: Object.keys(n).sort((x, y) => n[y] - n[x])[0] || null, // v28: where most of the company's jobs are
         });
         jobState = st.code;
-        shelfP = shelfSearch(s.admin, q, st.code, SHELF_FIRST); // same moment as the document search
+        shelfP = shelfSearch(s.admin, q, st.code, { ...SHELF_FIRST, index: kbP }); // same moment as the document search
         return docsSearch(q);
       });
     }).catch(() => []);
@@ -548,11 +548,6 @@ async function askV2(body, s) {
         : { hits: [], dropped: 0, own: 0, dependent: !1 },
       hits = ss.hits;
     usage.stateDropped = ss.dropped, usage.stateOwn = ss.own, usage.stateDep = ss.dependent;
-    // ask_shelf: the deep library's best excerpts for this job's state (and federal), beside the core hits. They are short
-    // and sit inside the same 9,000 characters: the core hits give up only the room the shelf excerpts take.
-    const shelf = analysis || plan ? [] : (await shelfP).filter((h) => !hits.some((x) => x.id === h.id || x.title === h.title)).slice(0, SHELF_FIRST.k),
-      shelfChars = shelf.reduce((a, h) => a + h.text.length, 0), shelfOwn = shelf.filter((h) => h.state !== "US").length;
-    usage.shelf = shelf.length;
     const phone = (Array.isArray(body.excerpts) ? body.excerpts : []).slice(0, 5).map((x, i) => ({
         n: i + 1,
         article: cleanUntrusted(x?.article, 60),
@@ -563,7 +558,12 @@ async function askV2(body, s) {
         text: cleanUntrusted(x?.text, 900),
       })
       ),
-      ex = withShelf(mergeExcerpts(phone, hits, 9e3 - shelfChars), shelf),
+      // ask_shelf: the deep library's best excerpts for this job's state (and federal) go after the core ones. They only
+      // use the room the core excerpts leave free inside the same 9,000 characters: nothing is pushed out (shelf.ts).
+      exCore = mergeExcerpts(phone, hits, 9e3),
+      shelf = analysis || plan ? [] : shelfPick(await shelfP, hits, exCore, q, index),
+      shelfOwn = (usage.shelf = shelf.length, shelf.filter((h) => h.state !== "US").length),
+      ex = withShelf(exCore, shelf),
       hitText = new Map([...hits, ...shelf].map((h) => [h.id, h.text])),
       sources = ex.map((x) => ({
         n: x.n,
@@ -860,7 +860,7 @@ CURRENT RUN ON THIS PHONE: ` + run + `
             state: st,
             userRpc,
             docsSearch,
-            shelfSearch: (text, o) => shelfSearch(s.admin, text, st.code, o),
+            shelfSearch: (text, o) => shelfSearch(s.admin, text, st.code, { ...o, index }),
             nextRef: () => ++dataN,
             nextExcerpt: () => ++excerptN,
             resultChars: L.resultChars,

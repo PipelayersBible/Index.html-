@@ -788,7 +788,7 @@ async function runTool(name, input, cx) {
         const stCode = cx.state?.code || null, stNamed = [...(cx.state?.named || []), ...questionStates(q)];
         // ask_shelf: the deep library too (this job's state + federal). Its excerpts take up to 2 of the same 5 places
         // and the same 7,000 characters; they are listed after the core ones.
-        const shelf = lib === "app" || !cx.shelfSearch ? [] : await cx.shelfSearch(q, { ...SHELF_TOOL, coll: lib === "osha" ? ["osha"] : null });
+        const shelf = lib === "app" || !cx.shelfSearch ? [] : (await cx.shelfSearch(q, { ...SHELF_TOOL, coll: lib === "osha" ? ["osha"] : null })).slice(0, SHELF_TOOL.k);
         let kbChars = shelf.reduce((a, h) => a + h.text.length, 0), kbN = shelf.length;
         for (
           const h of search(cx.kb, q, {

@@ -1,5 +1,7 @@
 # Ask state-aware build: eval on ai-next (Nov 20 2026)
 
+> ROUND 3 IN PROGRESS (full run of b7ad788e3a62 + price paragraph done: run `1120-1657-ai-next-9e1a` + `1120-1656-ai-next-7043`, 149 cases, 118 pass, facts 147, $4.66; does NOT meet the pass rule by the letter: ng2 lost its numbers, over-length 8 vs live 4 on the 20 same-day cases). Write-up follows.
+
 ## Recommendation: do NOT promote today. Run the full set once on the final build `b7ad788e3a62` (about $4.50), then promote if it is clean. I expect it to be.
 
 Why not today: the build now on `next` (b7ad788e3a62) has two changes made after the big run: shorter state wording, and a fix to

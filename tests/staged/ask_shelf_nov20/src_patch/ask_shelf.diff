@@ -1,11 +1,11 @@
-diff -ru work/src_base/ask.ts work/src/ask.ts
+diff -ruN work/src_base/ask.ts work/src/ask.ts
 --- work/src_base/ask.ts	2026-11-20 08:51:06.485969115 -0800
-+++ work/src/ask.ts	2026-11-20 08:59:26.827396476 -0800
++++ work/src/ask.ts	2026-11-20 09:11:44.506059998 -0800
 @@ -51,6 +51,7 @@
  } from "./_shared/retrieval.ts";
  import { gapStep, later, namesOwnJob, REFUSAL_RX } from "./gaps.ts";
  import { addressState, okState, resolveState, stateLines, stateSearch } from "./state.ts";
-+import { SHELF_FIRST, shelfSearch, withShelf } from "./shelf.ts";
++import { SHELF_FIRST, shelfPick, shelfSearch, withShelf } from "./shelf.ts";
  globalThis.__PLAIN_MIN = Number(Deno.env.get("AI_ASK_PLAIN_MIN") || 0); // optional: plain-language chunks beside OSHA text (0 = off)
  import { docHeader, docSource, docTitle, runTool, toolsFor } from "./tools.ts";
  import { cleanUntrusted, docBlock } from "./guard.ts";
@@ -23,7 +23,7 @@ diff -ru work/src_base/ask.ts work/src/ask.ts
      },
      docsP = scopeP.then((sr) => {
 -      if (sr?.error || !sr?.data?.ok) return [];
-+      if (sr?.error || !sr?.data?.ok) return shelfP = shelfSearch(s.admin, q, st.code, SHELF_FIRST), [];
++      if (sr?.error || !sr?.data?.ok) return shelfP = shelfSearch(s.admin, q, st.code, { ...SHELF_FIRST, index: kbP }), [];
        const row = (Array.isArray(sr.data.jobs) ? sr.data.jobs : []).find((j) =>
          String(j[0]).toLowerCase() === curJob.toLowerCase()
        );
@@ -31,29 +31,22 @@ diff -ru work/src_base/ask.ts work/src/ask.ts
            majorityState: Object.keys(n).sort((x, y) => n[y] - n[x])[0] || null, // v28: where most of the company's jobs are
          });
          jobState = st.code;
-+        shelfP = shelfSearch(s.admin, q, st.code, SHELF_FIRST); // same moment as the document search
++        shelfP = shelfSearch(s.admin, q, st.code, { ...SHELF_FIRST, index: kbP }); // same moment as the document search
          return docsSearch(q);
        });
      }).catch(() => []);
-@@ -546,6 +548,11 @@
-         : { hits: [], dropped: 0, own: 0, dependent: !1 },
-       hits = ss.hits;
-     usage.stateDropped = ss.dropped, usage.stateOwn = ss.own, usage.stateDep = ss.dependent;
-+    // ask_shelf: the deep library's best excerpts for this job's state (and federal), beside the core hits. They are short
-+    // and sit inside the same 9,000 characters: the core hits give up only the room the shelf excerpts take.
-+    const shelf = analysis || plan ? [] : (await shelfP).filter((h) => !hits.some((x) => x.id === h.id || x.title === h.title)).slice(0, SHELF_FIRST.k),
-+      shelfChars = shelf.reduce((a, h) => a + h.text.length, 0), shelfOwn = shelf.filter((h) => h.state !== "US").length;
-+    usage.shelf = shelf.length;
-     const phone = (Array.isArray(body.excerpts) ? body.excerpts : []).slice(0, 5).map((x, i) => ({
-         n: i + 1,
-         article: cleanUntrusted(x?.article, 60),
-@@ -556,8 +563,8 @@
+@@ -556,8 +558,13 @@
          text: cleanUntrusted(x?.text, 900),
        })
        ),
 -      ex = mergeExcerpts(phone, hits, 9e3),
 -      hitText = new Map(hits.map((h) => [h.id, h.text])),
-+      ex = withShelf(mergeExcerpts(phone, hits, 9e3 - shelfChars), shelf),
++      // ask_shelf: the deep library's best excerpts for this job's state (and federal) go after the core ones. They only
++      // use the room the core excerpts leave free inside the same 9,000 characters: nothing is pushed out (shelf.ts).
++      exCore = mergeExcerpts(phone, hits, 9e3),
++      shelf = analysis || plan ? [] : shelfPick(await shelfP, hits, exCore, q, index),
++      shelfOwn = (usage.shelf = shelf.length, shelf.filter((h) => h.state !== "US").length),
++      ex = withShelf(exCore, shelf),
 +      hitText = new Map([...hits, ...shelf].map((h) => [h.id, h.text])),
        sources = ex.map((x) => ({
          n: x.n,
@@ -71,7 +64,7 @@ diff -ru work/src_base/ask.ts work/src/ask.ts
              state: st,
              userRpc,
              docsSearch,
-+            shelfSearch: (text, o) => shelfSearch(s.admin, text, st.code, o),
++            shelfSearch: (text, o) => shelfSearch(s.admin, text, st.code, { ...o, index }),
              nextRef: () => ++dataN,
              nextExcerpt: () => ++excerptN,
              resultChars: L.resultChars,
@@ -83,10 +76,128 @@ diff -ru work/src_base/ask.ts work/src/ask.ts
          state_asked: !st.code && !!usage.stateDep,
          intent: intentLog,
          plan_images: planImagesSeen,
-Only in work/src: shelf.ts
-diff -ru work/src_base/tools.ts work/src/tools.ts
+diff -ruN work/src_base/shelf.ts work/src/shelf.ts
+--- work/src_base/shelf.ts	1969-12-31 16:00:00.000000000 -0800
++++ work/src/shelf.ts	2026-11-20 09:11:44.506883693 -0800
+@@ -0,0 +1,115 @@
++// ask_shelf (Nov 20 2026): the deep library ("shelf") is not loaded into the worker. It lives in Postgres
++// (pb_ai.kb_shelf) and is searched there with full-text search, the way company documents are. This file is the only
++// place Ask talks to it: one database call, through the service-role client (the same one that loads the core library),
++// to public.pb_ai_kb_shelf_search. The job's state goes with the call: the answer is that state's chunks plus federal
++// ("US") ones, never another state's. Any failure, a slow call or a missing function means "no shelf excerpts": Ask
++// answers from the core library exactly as before.
++import { queryGroups, stem, tokenize } from "./_shared/retrieval.ts";
++import { keepForState } from "./state.ts";
++
++const ON = (Deno.env.get("AI_ASK_SHELF") || "on").toLowerCase() !== "off"; // edge secret AI_ASK_SHELF=off turns it off
++// First search: at most 2 short excerpts, only when they cover the question about as well as the best core hit does
++// (margin), and only in the room the core excerpts leave free inside the usual 9,000 characters: a shelf excerpt never
++// pushes a core excerpt out. The model's own search (search_knowledge): at most 2, a little longer.
++export const SHELF_FIRST = { k: 2, chars: 700, minCover: 0.3, margin: 0.05, maxChars: 9e3, minPiece: 250, ms: 1200 },
++  SHELF_TOOL = { k: 2, chars: 1200, minCover: 0.5, ms: 1500 };
++let offUntil = 0; // the function is not on the server (yet): stop asking for 10 minutes
++
++// How much each word group matters: how rare its words are in the core library, the same yardstick the core search
++// uses ("mandrel" counts for far more than "pipe" or "trench"). No core index: null, and the database works it out.
++export function groupWeights(index, terms) {
++  if (!index || !index.t || !(index.N > 0)) return null;
++  return terms.map((g) => {
++    let df = 0;
++    for (const w of String(g).split(" ")) df = Math.max(df, (index.t[w] || index.t[stem(w)] || [0])[0] || 0);
++    return Math.round(Math.log(1 + (index.N - df + 0.5) / (df + 0.5)) * 100) / 100;
++  });
++}
++// "cover" = how much of the question (by weight) a chunk has. The database gives it for a shelf row; this gives the
++// same number for a core hit, so the two can be compared.
++export function coverOf(h, terms, weights) {
++  const all = new Set(tokenize(`${h.title || ""} ${h.topic || ""} ${h.text || ""}`));
++  let sum = 0, c = 0;
++  terms.forEach((g, i) => {
++    const w = weights ? weights[i] : 1, ws = String(g).split(" ");
++    sum += w, (ws.some((x) => all.has(x) || all.has(stem(x))) || (ws.length > 1 && all.has(ws.join("")))) && (c += w);
++  });
++  return sum ? c / sum : 0;
++}
++
++// rows from pb_ai_kb_shelf_search -> hits shaped like the core search's (id, lib, title, text, source, url, verbatim)
++export function shelfHits(data, o = {}, state = null) {
++  const rows = data && data.ok === !0 && Array.isArray(data.rows) ? data.rows : [], out = [];
++  for (const r of rows) {
++    if (!r || typeof r.id != "string" || typeof r.text != "string" || !r.text.trim() || typeof r.title != "string") continue;
++    const cover = Number(r.cover) || 0;
++    if (cover < (o.minCover ?? 0.3)) continue; // barely touches the question
++    const st = String(r.state || "US").toUpperCase(), h = {
++      id: r.id, title: r.title.slice(0, 160), topic: String(r.topic || ""), text: r.text.slice(0, 1800), source: String(r.source || "").slice(0, 300),
++      url: typeof r.url == "string" && /^https:\/\//.test(r.url) ? r.url : "", conf: String(r.conf || ""), state: st, shelf: !0, cut: r.cut === !0, cover, score: Number(r.score) || 0,
++      // exact 29 CFR text (osha-1926.651(j)(2)-a, kind verbatim) is the only thing the model may quote as OSHA text
++      verbatim: r.coll === "osha" && r.kind === "verbatim" && /^osha-\d/.test(r.id),
++    };
++    h.lib = h.verbatim ? "osha" : "field";
++    if (st !== "US" && !keepForState(h, state, [])) continue; // belt and braces: the database already filtered by state
++    if (out.some((x) => x.id === h.id)) continue;
++    out.push(h);
++    if (out.length >= (o.k || 2) + 2) break;
++  }
++  return out;
++}
++
++// One call. admin = the service-role client; state = the job's state code or null (then federal chunks only).
++// o.index = the core library's index (or a promise of it), for the word weights.
++export async function shelfSearch(admin, text, state, o = {}) {
++  if (!ON || !admin?.rpc || Date.now() < offUntil) return [];
++  const q = String(text || "").slice(0, 300), terms = queryGroups(q);
++  if (!terms.length) return [];
++  let timer;
++  try {
++    const weights = groupWeights(await Promise.resolve(o.index).catch(() => null), terms);
++    const r = await Promise.race([
++      admin.rpc("pb_ai_kb_shelf_search", { p_q: q, p_state: state || null, p_k: (o.k || 2) + 2, p_terms: terms, p_coll: o.coll || null, p_chars: o.chars || 700, p_weights: weights }),
++      new Promise((res) => { timer = setTimeout(() => res({ data: null, error: { message: "timeout" } }), o.ms || 1200); }),
++    ]);
++    if (r?.error) {
++      if (/PGRST202|42883|could not find the function|does not exist/i.test(`${r.error.code || ""} ${r.error.message || ""}`)) offUntil = Date.now() + 6e5;
++      return [];
++    }
++    return shelfHits(r?.data, o, state);
++  } catch {
++    return [];
++  } finally {
++    clearTimeout(timer);
++  }
++}
++
++// First search: which shelf excerpts go to the model beside the core ones. shelf = shelfSearch's hits, core = the core
++// search's hits, ex = the excerpts already chosen (mergeExcerpts: app pages + core hits, inside 9,000 characters).
++//  - a shelf excerpt must cover the question about as well as the best core hit does (within o.margin);
++//  - it only uses the room ex leaves free: nothing already chosen is dropped, and the 9,000 limit stands. A longer
++//    excerpt is cut back to whole sentences; under o.minPiece characters it is left out.
++export function shelfPick(shelf, core, ex, text, index, o = SHELF_FIRST) {
++  if (!shelf || !shelf.length) return [];
++  const terms = queryGroups(String(text || "").slice(0, 300)), w = groupWeights(index, terms), out = [];
++  let best = 0, room = (o.maxChars ?? 9e3) - ex.reduce((a, x) => a + String(x.text || "").length, 0);
++  for (const h of core) best = Math.max(best, coverOf(h, terms, w));
++  for (const h of shelf) {
++    if (out.length >= (o.k || 2)) break;
++    if (h.cover < best - (o.margin ?? 0.05) || core.some((x) => x.id === h.id || x.title === h.title)) continue;
++    let t = h.text;
++    if (t.length > room) {
++      const end = t.slice(0, Math.max(0, room)).search(/[.;?!][^.;?!]*$/);
++      t = end + 1 >= (o.minPiece ?? 250) ? t.slice(0, end + 1) : "";
++    }
++    if (!t) continue;
++    out.push(t === h.text ? h : { ...h, text: t, cut: !0 }), room -= t.length;
++  }
++  return out;
++}
++
++// Shelf excerpts go after the core ones, numbered on. ex = mergeExcerpts(...) output.
++export function withShelf(ex, shelf) {
++  return ex.concat(shelf.map((h, i) => ({ n: ex.length + i + 1, kind: "kb", title: h.title, text: h.text, lib: h.lib, source: h.source, url: h.url, verbatim: h.verbatim, id: h.id })));
++}
++export const _shelfReset = () => { offUntil = 0; }; // tests
+diff -ruN work/src_base/tools.ts work/src/tools.ts
 --- work/src_base/tools.ts	2026-11-20 08:51:06.485930444 -0800
-+++ work/src/tools.ts	2026-11-20 08:59:26.828237292 -0800
++++ work/src/tools.ts	2026-11-20 09:11:44.506745729 -0800
 @@ -1,4 +1,5 @@
  import { keepForState, questionStates, tenStatesOnly } from "./state.ts";
 +import { SHELF_TOOL } from "./shelf.ts";
@@ -100,7 +211,7 @@ diff -ru work/src_base/tools.ts work/src/tools.ts
 -        let kbChars = 0, kbN = 0;
 +        // ask_shelf: the deep library too (this job's state + federal). Its excerpts take up to 2 of the same 5 places
 +        // and the same 7,000 characters; they are listed after the core ones.
-+        const shelf = lib === "app" || !cx.shelfSearch ? [] : await cx.shelfSearch(q, { ...SHELF_TOOL, coll: lib === "osha" ? ["osha"] : null });
++        const shelf = lib === "app" || !cx.shelfSearch ? [] : (await cx.shelfSearch(q, { ...SHELF_TOOL, coll: lib === "osha" ? ["osha"] : null })).slice(0, SHELF_TOOL.k);
 +        let kbChars = shelf.reduce((a, h) => a + h.text.length, 0), kbN = shelf.length;
          for (
            const h of search(cx.kb, q, {

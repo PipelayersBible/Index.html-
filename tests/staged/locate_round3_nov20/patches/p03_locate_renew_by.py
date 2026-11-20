@@ -76,7 +76,7 @@ rep("""  window.__debugLocRen = { rule: pbLocRenRule, exp: pbLocRenExp, table: P
      PB_LOC_RB0: the law says "by the end of the last day" / "prior to expiration": no call-ahead, no Renew-by line.
      Any other state with a ticket life and a notice wait: its first-call wait (not confirmed; the earlier date). */
   const PB_LOC_RB = { AL: 2, AR: 2, AZ: 2, CO: 2, DC: 3, GA: 3, IA: 2, ID: 2, IN: 2, KY: 2, LA: 3, MA: 3, MD: 3, ME: 3, MI: 3, MN: 2, MS: 3, NH: 3, NJ: 3, OK: 4, OR: 2, TN: 3, TX: 2, UT: 2, VA: 3, VT: 3, WA: 2, WV: 2 };
-  const PB_LOC_RB0 = { CA: 1, HI: 1, NV: 1 }, PB_LOC_LAST_DAYS = 14;
+  const PB_LOC_RB0 = { CA: 1, HI: 1, NV: 1 }, PB_LOC_LAST_DAYS = 7; /* Tommy, Nov 20: 7 days is fine (no work stop if called in time) */
   function pbLocRbCode(code) {
     const has = (o) => Object.prototype.hasOwnProperty.call(o, code), R = pbSrRow(code);
     if (!R || !R.life) return null;

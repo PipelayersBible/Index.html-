@@ -15,18 +15,37 @@ const { index } = buildIndex(KB, "2026-11-20");
 // what pb_ai_kb_shelf_search returns
 const TXT = "Texas requires a flagger to be trained before flagging traffic at a work zone. The flagger uses a STOP/SLOW paddle at least 24 inches wide. ".repeat(3).trim();
 const row = (o: any = {}) => ({ id: "tc-tx-flagger-9", state: "TX", coll: "tc", title: "Texas flagger rules: training and the paddle", topic: "Traffic control: flaggers", text: TXT, cut: false,
-  source: "Texas MUTCD 2011 Revision 2, Section 6E.01", url: "https://www.txdot.gov/x.pdf", conf: "high", kind: "summary", cover: 0.8, title_hits: 2, score: 0.9, ...o });
+  source: "Texas MUTCD 2011 Revision 2, Section 6E.01", url: "https://www.txdot.gov/x.pdf", conf: "high", kind: "summary", cover: 0.9, title_cover: 0.5, score: 0.9, ...o });
 const fakeAdmin = (reply: (args: any) => any, calls: any[] = []) => ({ rpc: async (fn: string, args: any) => { calls.push({ fn, args }); return await reply(args); } });
 
-Deno.test("shelfHits: only excerpts that cover the question, shaped like core hits", () => {
+Deno.test("shelfHits: rows that touch the question, shaped like core hits", () => {
   const good = SH.shelfHits({ ok: true, rows: [row()] }, SH.SHELF_FIRST, "TX");
-  eq(good.length, 1); eq([good[0].id, good[0].lib, good[0].verbatim, good[0].state, good[0].shelf], ["tc-tx-flagger-9", "field", false, "TX", true]);
-  eq(SH.shelfHits({ ok: true, rows: [row({ cover: 0.4, title_hits: 0 })] }, SH.SHELF_FIRST, "TX"), [], "weak cover is not handed over");
-  eq(SH.shelfHits({ ok: true, rows: [row({ cover: 0.5, title_hits: 2 })] }, SH.SHELF_FIRST, "TX").length, 1, "a title that is about it needs a little less");
-  eq(SH.shelfHits({ ok: true, rows: [row({ cover: 0.5, title_hits: 0 })] }, SH.SHELF_TOOL, "TX").length, 1, "the model's own search is a little looser");
-  eq(SH.shelfHits({ ok: true, rows: [row(), row({ id: "a-2" }), row({ id: "a-3" })] }, SH.SHELF_FIRST, "TX").length, 2, "at most 2");
+  eq(good.length, 1); eq([good[0].id, good[0].lib, good[0].verbatim, good[0].state, good[0].shelf, good[0].cover], ["tc-tx-flagger-9", "field", false, "TX", true, 0.9]);
+  eq(SH.shelfHits({ ok: true, rows: [row({ cover: 0.2 })] }, SH.SHELF_FIRST, "TX"), [], "barely touches the question: dropped");
+  eq(SH.shelfHits({ ok: true, rows: [row({ cover: 0.4 })] }, SH.SHELF_FIRST, "TX").length, 1);
+  eq(SH.shelfHits({ ok: true, rows: [row({ cover: 0.4 })] }, SH.SHELF_TOOL, "TX"), [], "the model's own search wants at least half the question");
   for (const bad of [null, undefined, {}, { ok: false, rows: [row()] }, { ok: true, rows: "x" }, { ok: true, rows: [null, { id: 5 }, row({ text: "  " }), row({ title: null })] }]) eq(SH.shelfHits(bad, SH.SHELF_FIRST, "TX"), []);
   eq(SH.shelfHits({ ok: true, rows: [row({ url: "javascript:alert(1)" })] }, SH.SHELF_FIRST, "TX")[0].url, "", "only https links");
+  eq(SH.shelfHits({ ok: true, rows: [row(), row()] }, SH.SHELF_FIRST, "TX").length, 1, "same id once");
+});
+Deno.test("shelfPick: as good as the best core hit, only in the free room, never more than 2", () => {
+  const q = "How wide does the flagger paddle have to be?", S = (o: any = {}) => SH.shelfHits({ ok: true, rows: [row(o)] }, SH.SHELF_FIRST, "TX")[0];
+  const weak = { id: "c-1", title: "Trench boxes", topic: "", text: "A trench box protects the crew in the trench." }, strong = { id: "c-2", title: "Flagger paddle", topic: "", text: "Flaggers have to use a STOP/SLOW paddle 24 inches wide." };
+  const ex = (chars: number) => [{ n: 1, kind: "kb", title: "x", text: "y".repeat(chars) }];
+  eq(SH.shelfPick([S()], [weak], ex(1000), q, index).map((h: any) => h.id), ["tc-tx-flagger-9"], "core is weak on this question: the shelf excerpt goes in");
+  ok(SH.coverOf(strong, queryGroups(q), SH.groupWeights(index, queryGroups(q))) > 0.9, "the yardstick sees the strong core hit");
+  eq(SH.shelfPick([S({ cover: 0.6 })], [weak, strong], ex(1000), q, index), [], "core already covers the question better: left out");
+  eq(SH.shelfPick([S({ cover: 1 })], [weak, strong], ex(1000), q, index).length, 1, "as good as the best core hit: in");
+  eq(SH.shelfPick([S()], [{ ...weak, id: "tc-tx-flagger-9" }], ex(1000), q, index), [], "already among the core hits");
+  eq(SH.shelfPick([S(), S({ id: "a-2" }), S({ id: "a-3" })], [weak], ex(1000), q, index).length, 2, "at most 2");
+  // room: the excerpts already chosen keep their place; the shelf gets what is left of 9,000
+  eq(SH.shelfPick([S()], [weak], ex(9000), q, index), [], "no room: nothing added");
+  eq(SH.shelfPick([S()], [weak], ex(8900), q, index), [], "a scrap of room: nothing added");
+  const part = SH.shelfPick([S()], [weak], ex(9000 - 300), q, index);
+  eq(part.length, 1); ok(part[0].text.length <= 300 && part[0].text.length >= 250 && /[.;?!]$/.test(part[0].text) && TXT.startsWith(part[0].text) && part[0].cut === true, "cut back to whole sentences: " + part[0].text.length);
+  const two = SH.shelfPick([S(), S({ id: "a-2" })], [weak], ex(9000 - TXT.length - 100), q, index);
+  eq(two.map((h: any) => h.id), ["tc-tx-flagger-9"], "the second one does not fit");
+  eq(SH.shelfPick([], [weak], ex(0), q, index), []); eq(SH.shelfPick(null, [weak], ex(0), q, index), []);
 });
 Deno.test("shelfHits: another state's chunk is never handed over, federal always", () => {
   eq(SH.shelfHits({ ok: true, rows: [row()] }, SH.SHELF_FIRST, "OK"), [], "Texas chunk on an Oklahoma job");
@@ -48,6 +67,12 @@ Deno.test("shelfSearch: one call, with the job's state and Ask's own word groups
   const hits = await SH.shelfSearch(fakeAdmin(() => ({ data: { ok: true, rows: [row()] }, error: null }), calls), "How wide does the flagger paddle have to be?", "TX", SH.SHELF_FIRST);
   eq(hits.length, 1); eq(calls.length, 1); eq(calls[0].fn, "pb_ai_kb_shelf_search");
   eq(calls[0].args.p_state, "TX"); eq(calls[0].args.p_terms, queryGroups("How wide does the flagger paddle have to be?")); eq(calls[0].args.p_chars, 700); eq(calls[0].args.p_coll, null);
+  eq(calls[0].args.p_weights, null, "no core index handed in: the database weighs the words itself");
+  const wc: any[] = [];
+  await SH.shelfSearch(fakeAdmin(() => ({ data: { ok: true, rows: [] }, error: null }), wc), "trench mandrel", "TX", { ...SH.SHELF_FIRST, index: Promise.resolve(index) });
+  eq(wc[0].args.p_weights.length, wc[0].args.p_terms.length); ok(wc[0].args.p_weights[1] > wc[0].args.p_weights[0] * 1.5, "a rare word (mandrel) weighs more than a common one (trench): " + wc[0].args.p_weights);
+  await SH.shelfSearch(fakeAdmin(() => ({ data: { ok: true, rows: [] }, error: null }), wc), "trench mandrel", "TX", { ...SH.SHELF_FIRST, index: Promise.reject(new Error("kb down")) });
+  eq(wc[1].args.p_weights, null, "core library failed to load: still asks");
   ok(calls[0].args.p_k >= 2 && calls[0].args.p_k <= 8);
   const none: any[] = [];
   await SH.shelfSearch(fakeAdmin(() => ({ data: { ok: true, rows: [] }, error: null }), none), "What is SDR 35?", null, SH.SHELF_FIRST);
@@ -71,6 +96,7 @@ Deno.test("shelfSearch: function not on the server yet: asks once, then leaves i
 });
 Deno.test("withShelf: shelf excerpts are numbered on after the core ones", () => {
   const ex = SH.withShelf([{ n: 1, kind: "app_page", title: "a", text: "x" }, { n: 2, kind: "kb", title: "b", text: "y" }], SH.shelfHits({ ok: true, rows: [row()] }, SH.SHELF_FIRST, "TX"));
+  eq(SH.withShelf([{ n: 1 }], []), [{ n: 1 }]);
   eq(ex.map((x: any) => x.n), [1, 2, 3]); eq([ex[2].kind, ex[2].id, ex[2].lib], ["kb", "tc-tx-flagger-9", "field"]);
 });
 
@@ -84,11 +110,12 @@ Deno.test("search_knowledge: shelf excerpts share the same 5 places and 7,000 ch
     const r = await runTool("search_knowledge", { query: "flagger paddle stop slow work zone", library }, cx);
     return { r, sources, asked };
   };
-  const hit = SH.shelfHits({ ok: true, rows: [row(), row({ id: "tc-tx-flagger-10", title: "Texas flagger rules: where the flagger stands" })] }, SH.SHELF_TOOL, "TX");
+  const hit = SH.shelfHits({ ok: true, rows: [row(), row({ id: "tc-tx-flagger-10", title: "Texas flagger rules: where the flagger stands" }), row({ id: "tc-tx-flagger-11", title: "Third" })] }, SH.SHELF_TOOL, "TX");
+  eq(hit.length, 3);
   const a = await go("any", hit);
   eq(a.asked.length, 1); eq(a.asked[0].o.coll, null); eq(a.asked[0].o.chars, 1200);
   const kb = a.sources.filter((x: any) => x.kind === "kb");
-  ok(kb.length <= 5, "at most 5 library excerpts: " + kb.length);
+  ok(kb.length <= 5, "at most 5 library excerpts: " + kb.length); eq(kb.filter((x: any) => /^tc-tx-flagger/.test(x.id)).length, 2, "at most 2 of them from the shelf");
   ok(kb.reduce((t: number, x: any) => t + x._text.length, 0) <= 7000 + 1800, "inside the tool's size limit");
   eq(kb.slice(-2).map((x: any) => x.id), ["tc-tx-flagger-9", "tc-tx-flagger-10"], "listed after the core ones");
   ok(/\[\d\] \(field library: Texas MUTCD 2011 Revision 2, Section 6E\.01\) Texas flagger rules: training and the paddle: Texas requires/.test(a.r.text), a.r.text.slice(-600));
@@ -139,8 +166,8 @@ async function ask(question: string, o: { where?: string; shelf?: any; excerpts?
 const Q = "How wide does the flagger paddle have to be?";
 Deno.test("request: the shelf is asked once, for the job's state, and its excerpt sits after the core ones", async () => {
   SH._shelfReset();
-  const r = await ask(Q, { where: "Houston, TX", shelf: { ok: true, rows: [row()] } });
-  eq(r.shelfCalls.length, 1); eq(r.shelfCalls[0].p_state, "TX"); eq(r.shelfCalls[0].p_terms, queryGroups(Q));
+  const r = await ask(Q, { where: "Houston, TX", shelf: { ok: true, rows: [row({ cover: 1 })] } });
+  eq(r.shelfCalls.length, 1); eq(r.shelfCalls[0].p_state, "TX"); eq(r.shelfCalls[0].p_terms, queryGroups(Q)); eq(r.shelfCalls[0].p_weights.length, queryGroups(Q).length);
   const lines = r.exc.trim().split("\n").filter((l) => /^\[\d+\] \(/.test(l));
   ok(lines.length >= 2, "core excerpts are still there: " + lines.length);
   ok(/^\[\d+\] \(field library: Texas MUTCD 2011 Revision 2, Section 6E\.01\) Texas flagger rules: training and the paddle: Texas requires a flagger/.test(lines[lines.length - 1]), "shelf excerpt is the last library excerpt: " + lines[lines.length - 1].slice(0, 160));
@@ -148,32 +175,39 @@ Deno.test("request: the shelf is asked once, for the job's state, and its excerp
 });
 Deno.test("request: no state known: the shelf is asked for federal chunks only", async () => {
   SH._shelfReset();
-  const r = await ask(Q, { shelf: (a: any) => ({ ok: true, rows: a.p_state ? [row()] : [row({ id: "mutcd-6e-paddle-1", state: "US", coll: "mutcd", title: "Flagger STOP/SLOW paddle size", source: "MUTCD 11th Edition, Section 6D.02" })] }) });
+  const r = await ask(Q, { shelf: (a: any) => ({ ok: true, rows: a.p_state ? [row({ cover: 1 })] : [row({ id: "mutcd-6e-paddle-1", state: "US", coll: "mutcd", title: "Flagger STOP/SLOW paddle size", source: "MUTCD 11th Edition, Section 6D.02", cover: 1 })] }) });
   eq(r.shelfCalls[0].p_state, null); ok(/Flagger STOP\/SLOW paddle size/.test(r.exc) && !/Texas flagger rules/.test(r.exc));
 });
 Deno.test("request: a wrong-state row from the database would still not reach the model", async () => {
   SH._shelfReset();
-  const r = await ask(Q, { where: "Tulsa, OK", shelf: { ok: true, rows: [row()] } });
+  const r = await ask(Q, { where: "Tulsa, OK", shelf: { ok: true, rows: [row({ cover: 1 })] } });
   eq(r.shelfCalls[0].p_state, "OK"); ok(!/Texas flagger rules/.test(r.exc), "Texas chunk on an Oklahoma job");
 });
-Deno.test("request: size limits hold: the excerpts stay inside 9,000 characters with the shelf added", async () => {
+Deno.test("request: nothing is pushed out and the 9,000 characters stand, with or without app pages", async () => {
   SH._shelfReset();
   const big = "The flagger stands on the shoulder next to the lane being controlled and is seen by drivers from far enough away to stop. ".repeat(6).slice(0, 700);
   const phone = [1, 2, 3, 4, 5].map((i) => ({ title: "Page " + i, page: "Education " + i, text: ("Education page text about flaggers and work zones number " + i + ". ").repeat(20) }));
-  for (const where of ["Houston, TX", "Wildomar, CA"]) for (const excerpts of [undefined, phone]) for (const q of [Q, "At what depth is a trench box or shoring required?", "How long is my 811 ticket good for?"]) {
-    const rows = [row({ text: big, state: "US", id: "x-1" }), row({ text: big, state: "US", id: "x-2", title: "Second shelf chunk" })];
+  const lines = (t: string) => t.trim().split("\n").filter((l) => /^\[\d+\] \(/.test(l));
+  let added = 0, full = 0;
+  for (const where of ["Houston, TX", "Wildomar, CA"]) for (const excerpts of [undefined, phone]) for (const q of [Q, "At what depth is a trench box or shoring required?", "How long is my 811 ticket good for?", "What is SDR 35?"]) {
+    const rows = [row({ text: big, state: "US", id: "x-1", cover: 1 }), row({ text: big, state: "US", id: "x-2", title: "Second shelf chunk", cover: 1 })];
     const a = await ask(q, { where, excerpts, shelf: { ok: true, rows: [] } }), b = await ask(q, { where, excerpts, shelf: { ok: true, rows } });
-    const body = (t: string) => t.trim().split("\n").filter((l) => /^\[\d+\] \(/.test(l)).map((l) => l.replace(/^\[\d+\] \([^)]*(\)[^)]*)*?\) /, "")).join("").length;
-    ok(/Second shelf chunk/.test(b.exc), "both shelf excerpts are in");
-    // body = "title: text" of every excerpt. The shelf may add at most its own two titles on top of the old limit.
-    ok(body(b.exc) <= Math.max(body(a.exc), 9000) + 400, `${where} / ${q.slice(0, 20)}: excerpt characters ${body(a.exc)} -> ${body(b.exc)}`);
+    const la = lines(a.exc), lb = lines(b.exc), tag = `${where} / ${excerpts ? "app pages" : "no app pages"} / ${q.slice(0, 20)}`;
+    eq(lb.slice(0, la.length), la, tag + ": every excerpt the state-aware build sends is still there, in the same place");
+    const textOf = (srcs: any[]) => srcs.filter((x) => x.kind === "kb" || x.kind === "app_page").length;
+    const extra = lb.slice(la.length); added += extra.length; if (!extra.length) full++;
+    ok(extra.length <= 2 && extra.every((l) => /Texas flagger rules: training and the paddle|Second shelf chunk/.test(l)), tag + ": only shelf excerpts are added");
+    const chars = (ls: string[]) => ls.map((l) => l.replace(/^\[\d+\] \((?:[^()]|\([^()]*\))*\) /, "")).join("").length;
+    ok(chars(lb) <= Math.max(chars(la), 9000 + 60 * lb.length + 300), tag + `: ${chars(la)} -> ${chars(lb)} characters`);
     eq([b.system, b.tools, b.max, b.model], [a.system, a.tools, a.max, a.model], "system prompt, tools, answer length and model are untouched");
+    void textOf;
   }
+  ok(added > 0, "shelf excerpts were added where there was room"); console.log(`shelf excerpts added: ${added}; requests with no room for any: ${full} of 16`);
 });
 Deno.test("request: empty shelf, shelf error, or function missing: the request is exactly the state-aware build's", async () => {
   for (const where of ["Houston, TX", "Seattle, WA", undefined]) for (const q of [Q, "How long is my 811 ticket good for?", "What is SDR 35?"]) {
     SH._shelfReset();
-    const empty = await ask(q, { where, shelf: { ok: true, rows: [] } }), err = await ask(q, { where, shelf: "error" }), weak = await ask(q, { where, shelf: { ok: true, rows: [row({ state: "US", cover: 0.3, title_hits: 0 })] } });
+    const empty = await ask(q, { where, shelf: { ok: true, rows: [] } }), err = await ask(q, { where, shelf: "error" }), weak = await ask(q, { where, shelf: { ok: true, rows: [row({ state: "US", cover: 0.2 })] } });
     eq(err.text, empty.text, "error"); eq(weak.text, empty.text, "weak hit");
     if (BASE) { const base = await ask(q, { where, fn: BASE }); eq(empty.text, base.text, "same as the un-patched build: " + q); eq([empty.system, empty.tools, empty.max], [base.system, base.tools, base.max]); eq(base.shelfCalls.length, 0); }
   }
@@ -183,8 +217,8 @@ Deno.test("request: a shelf excerpt of the job state's own rule counts as the li
   const q = "At what depth is a trench box or shoring required?";
   const without = await ask(q, { where: "Louisville, KY" });
   ok(/the library has no Kentucky rule for this question/.test(without.text), "today: Kentucky plan state, nothing of its own");
-  const withOwn = await ask(q, { where: "Louisville, KY", shelf: { ok: true, rows: [row({ id: "sp-ky-trench-1", state: "KY", coll: "sp", title: "Kentucky trench protection: depth where a protective system is required", source: "803 KAR 2:415", text: "Kentucky adopts the federal excavation standard through 803 KAR 2:415. ".repeat(4) })] } });
+  const withOwn = await ask(q, { where: "Louisville, KY", shelf: { ok: true, rows: [row({ id: "sp-ky-trench-1", state: "KY", coll: "sp", title: "Kentucky trench protection: depth where a protective system is required", source: "803 KAR 2:415", cover: 1, text: "Kentucky adopts the federal excavation standard through 803 KAR 2:415. ".repeat(4) })] } });
   ok(!/the library has no Kentucky rule for this question/.test(withOwn.text) && /Where an excerpt gives Kentucky's own rule or number, lead with it/.test(withOwn.text), "with the shelf's Kentucky chunk the model is told to lead with it");
-  const fed = await ask(q, { where: "Louisville, KY", shelf: { ok: true, rows: [row({ id: "osha-pl-x-1", state: "US", coll: "osha" })] } });
+  const fed = await ask(q, { where: "Louisville, KY", shelf: { ok: true, rows: [row({ id: "osha-pl-x-1", state: "US", coll: "osha", cover: 1 })] } });
   ok(/the library has no Kentucky rule for this question/.test(fed.text), "a federal shelf excerpt does not count as Kentucky's rule");
 });

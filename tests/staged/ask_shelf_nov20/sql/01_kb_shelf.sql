@@ -60,45 +60,52 @@ end $function$;
 revoke all on function pb_ai.kb_shelf_excerpt(text, tsquery[], integer) from public, anon, authenticated, service_role;
 
 -- Search the shelf.
---   p_q      the question as typed (used only when p_terms is empty)
---   p_state  the job's state code ('TX') or null. A state's chunks come back only for that state; 'US' chunks always.
---            With no state: 'US' chunks only (one state's rule is never offered as "the" rule).
---   p_k      how many excerpts (1 to 8)
---   p_terms  the word groups Ask builds for document search (retrieval.ts queryGroups): one entry per typed word,
---            "word synonym synonym". Each group counts once however many of its words a chunk has.
---   p_coll   only these collections (id prefix: 'osha', 'mutcd', 'spec', ...), or null for all
---   p_chars  longest excerpt (200 to 1800). A longer chunk is cut to its best run of whole sentences; 'cut' says so.
+--   p_q       the question as typed (used only when p_terms is empty)
+--   p_state   the job's state code ('TX') or null. A state's chunks come back only for that state; 'US' chunks always.
+--             With no state: 'US' chunks only (one state's rule is never offered as "the" rule).
+--   p_k       how many excerpts (1 to 8)
+--   p_terms   the word groups Ask builds for document search (retrieval.ts queryGroups): one entry per typed word,
+--             "word synonym synonym". Each group counts once however many of its words a chunk has.
+--   p_coll    only these collections (id prefix: 'osha', 'mutcd', 'spec', ...), or null for all
+--   p_chars   longest excerpt (200 to 1800). A longer chunk is cut to its best run of whole sentences; 'cut' says so.
+--   p_weights how much each entry of p_terms matters (same length; Ask sends how rare the word is in its core library,
+--             so "mandrel" counts for more than "pipe"). Empty: worked out here from how rare the group is on the shelf.
 -- Ranking: websearch_to_tsquery per group (so nothing typed can break the query), ts_rank_cd over title (heaviest), topic
--- and text, times how many of the groups the chunk covers, times a title boost (groups found in the title), times a
--- small boost for the job state's own chunk, times 0.8 for confidence "low". At most 2 chunks per title.
+-- and text, times how much of the question the chunk covers (by weight), times a title boost (the share found in the
+-- title), times a small boost for the job state's own chunk, times 0.8 for confidence "low". At most 2 per title.
+-- Each row says how much of the question it covers ('cover', 0 to 1) and how much its title does ('title_cover'): Ask hands
+-- an excerpt to the model only when those are high enough (shelf.ts).
 -- Speed: ranking every row that has ANY of the words is what gets slow on a big shelf (common words match a third of
 -- it). So the rows to rank are picked by the RAREST groups: groups are added, rarest first, while they bring in at most
 -- 5,000 rows in all; when even the rarest group is commoner than that, a row must have the two rarest. Counting a
 -- group's rows is an index-only step. Every picked row is then ranked against all the groups.
 create or replace function public.pb_ai_kb_shelf_search(p_q text, p_state text default null, p_k integer default 3,
-    p_terms text[] default null, p_coll text[] default null, p_chars integer default 700)
+    p_terms text[] default null, p_coll text[] default null, p_chars integer default 700, p_weights real[] default null)
  returns jsonb language plpgsql stable security definer set search_path to '' as $function$
 declare
   v_st text := nullif(upper(btrim(coalesce(p_state, ''))), '');
   v_states text[];
   v_k int := least(greatest(coalesce(p_k, 3), 1), 8);
   v_chars int := least(greatest(coalesce(p_chars, 700), 200), 1800);
-  v_src text[]; v_g tsquery[] := '{}'; v_df int[] := '{}'; v_ord int[]; v_all tsquery; v_drive tsquery;
-  g tsquery; t text; i int; n int; v_sum int := 0; v_cap constant int := 5000; v jsonb;
+  v_own boolean := coalesce(array_length(p_terms, 1), 0) > 0;
+  v_wok boolean := v_own and coalesce(array_length(p_weights, 1), 0) = coalesce(array_length(p_terms, 1), 0);
+  v_src text[]; v_g tsquery[] := '{}'; v_w real[] := '{}'; v_df int[] := '{}'; v_ord int[]; v_all tsquery; v_drive tsquery;
+  g tsquery; t text; i int; k int := 0; n int; v_sum int := 0; v_cap constant int := 5000; v_rows real; v_wsum real; v jsonb;
 begin
   if v_st is not null and v_st !~ '^[A-Z]{2}$' then v_st := null; end if;
   v_states := case when v_st is null or v_st = 'US' then array['US'] else array['US', v_st] end;
   -- the groups: Ask's own (word + synonyms), else the typed words one by one
-  v_src := case when coalesce(array_length(p_terms, 1), 0) > 0 then p_terms[1:12]
-                else (regexp_split_to_array(lower(left(coalesce(p_q, ''), 300)), '[^a-z0-9]+'))[1:24] end;
+  v_src := case when v_own then p_terms[1:12] else (regexp_split_to_array(lower(left(coalesce(p_q, ''), 300)), '[^a-z0-9]+'))[1:24] end;
   if v_src is null then return jsonb_build_object('ok', true, 'rows', '[]'::jsonb, 'groups', 0); end if;
   foreach t in array v_src loop
+    k := k + 1;
     -- letters and digits only, joined with "or": websearch_to_tsquery never raises, whatever is typed
     t := btrim(regexp_replace(lower(left(coalesce(t, ''), 200)), '[^a-z0-9]+', ' ', 'g'));
     continue when t = '' or length(to_tsvector('english', t)) = 0;     -- only stop words: skip (and no NOTICE in the log)
     g := websearch_to_tsquery('english', replace(t, ' ', ' or '));
     continue when g is null or numnode(g) = 0 or g = any (v_g);
     v_g := v_g || g;
+    v_w := v_w || (case when v_wok then least(greatest(coalesce(p_weights[k], 1), 0.05), 100) else null end)::real;
     exit when array_length(v_g, 1) >= 12;
   end loop;
   n := coalesce(array_length(v_g, 1), 0);
@@ -108,6 +115,11 @@ begin
     v_df := v_df || (select count(*)::int from pb_ai.kb_shelf s where s.tsv @@ v_g[i]);
     v_all := case when v_all is null then v_g[i] else v_all || v_g[i] end;
   end loop;
+  if not v_wok then   -- no weights given: a rare group matters more than a common one
+    select greatest(c.reltuples, 1) into v_rows from pg_catalog.pg_class c where c.oid = 'pb_ai.kb_shelf'::regclass;
+    for i in 1..n loop v_w[i] := ln(1 + greatest(v_rows, v_df[i]) / (v_df[i] + 1)); end loop;
+  end if;
+  select sum(x) into v_wsum from unnest(v_w) x;
   select array_agg(x.i order by v_df[x.i], x.i) into v_ord from generate_series(1, n) x(i) where v_df[x.i] > 0;
   if v_ord is null then return jsonb_build_object('ok', true, 'rows', '[]'::jsonb, 'groups', n); end if;
   if v_df[v_ord[1]] > v_cap and array_length(v_ord, 1) >= 2 then
@@ -122,16 +134,16 @@ begin
 
   with hit as materialized (
     select s.id, s.chunk, s.state, s.coll, s.tsv,
-           (select count(*) from unnest(v_g) q where s.tsv   @@ q)::int as m,     -- groups this chunk covers
-           (select count(*) from unnest(v_g) q where s.tsv_t @@ q)::int as mt     -- groups found in its title
+           (select coalesce(sum(v_w[q.i]), 0) from generate_subscripts(v_g, 1) q(i) where s.tsv   @@ v_g[q.i])::real / v_wsum as m,   -- share of the question this chunk covers
+           (select coalesce(sum(v_w[q.i]), 0) from generate_subscripts(v_g, 1) q(i) where s.tsv_t @@ v_g[q.i])::real / v_wsum as mt   -- share found in its title
       from pb_ai.kb_shelf s
      where s.tsv @@ v_drive and s.states && v_states
        and (p_coll is null or s.coll = any (p_coll))
   ), scored as (
     select h.id, h.chunk, h.state, h.coll, h.m, h.mt,
            ts_rank_cd('{0.1, 0.2, 0.6, 1.0}', h.tsv, v_all, 32)
-             * (0.25 + 0.75 * h.m::real / n)                                      -- covers more of the question
-             * (1 + 0.6 * h.mt::real / n)                                         -- title boost
+             * (0.25 + 0.75 * h.m)                                                -- covers more of the question
+             * (1 + 0.6 * h.mt)                                                   -- title boost
              * (case when h.state <> 'US' then 1.25 else 1 end)                   -- the job state's own chunk first
              * (case h.chunk->>'confidence' when 'low' then 0.8 else 1 end) as score
       from hit h
@@ -143,13 +155,13 @@ begin
            'text', x.txt, 'cut', length(b.chunk->>'text') > v_chars,
            'source', b.chunk->>'source', 'url', b.chunk->>'url', 'conf', b.chunk->>'confidence', 'kind', b.chunk->>'kind',
            'edition', b.chunk->>'edition', 'checked', b.chunk->>'checked',
-           'cover', round(b.m::numeric / n, 2), 'title_hits', b.mt, 'score', round(b.score::numeric, 4)) order by b.score desc, b.id), '[]'::jsonb))
+           'cover', round(b.m::numeric, 2), 'title_cover', round(b.mt::numeric, 2), 'score', round(b.score::numeric, 4)) order by b.score desc, b.id), '[]'::jsonb))
     into v
     from best b
     cross join lateral (select pb_ai.kb_shelf_excerpt(b.chunk->>'text', v_g, v_chars) as txt) x;
   return v;
 end $function$;
-revoke all on function public.pb_ai_kb_shelf_search(text, text, integer, text[], text[], integer) from public, anon, authenticated;
-grant execute on function public.pb_ai_kb_shelf_search(text, text, integer, text[], text[], integer) to service_role;
+revoke all on function public.pb_ai_kb_shelf_search(text, text, integer, text[], text[], integer, real[]) from public, anon, authenticated;
+grant execute on function public.pb_ai_kb_shelf_search(text, text, integer, text[], text[], integer, real[]) to service_role;
 
 commit;

@@ -19,30 +19,29 @@ patch('ask.ts', [
   # 1 import
   ('import { addressState, okState, resolveState, stateLines, stateSearch } from "./state.ts";\n',
    'import { addressState, okState, resolveState, stateLines, stateSearch } from "./state.ts";\n'
-   'import { SHELF_FIRST, shelfSearch, withShelf } from "./shelf.ts";\n'),
+   'import { SHELF_FIRST, shelfPick, shelfSearch, withShelf } from "./shelf.ts";\n'),
   # 2 the shelf search starts the moment the job's state is settled, beside the document search: it adds no wait
   ('  let cityState = "", jobState = null;\n',
    '  let cityState = "", jobState = null, shelfP = Promise.resolve([]); // ask_shelf: the deep library\'s excerpts (shelf.ts)\n'),
   ('      if (sr?.error || !sr?.data?.ok) return [];\n      const row =',
-   '      if (sr?.error || !sr?.data?.ok) return shelfP = shelfSearch(s.admin, q, st.code, SHELF_FIRST), [];\n      const row ='),
+   '      if (sr?.error || !sr?.data?.ok) return shelfP = shelfSearch(s.admin, q, st.code, { ...SHELF_FIRST, index: kbP }), [];\n      const row ='),
   ('        jobState = st.code;\n        return docsSearch(q);\n',
-   '        jobState = st.code;\n        shelfP = shelfSearch(s.admin, q, st.code, SHELF_FIRST); // same moment as the document search\n        return docsSearch(q);\n'),
-  # 3 its best excerpts go beside the core hits, inside the same 9,000 characters
-  ('    usage.stateDropped = ss.dropped, usage.stateOwn = ss.own, usage.stateDep = ss.dependent;\n',
-   '    usage.stateDropped = ss.dropped, usage.stateOwn = ss.own, usage.stateDep = ss.dependent;\n'
-   '    // ask_shelf: the deep library\'s best excerpts for this job\'s state (and federal), beside the core hits. They are short\n'
-   '    // and sit inside the same 9,000 characters: the core hits give up only the room the shelf excerpts take.\n'
-   '    const shelf = analysis || plan ? [] : (await shelfP).filter((h) => !hits.some((x) => x.id === h.id || x.title === h.title)).slice(0, SHELF_FIRST.k),\n'
-   '      shelfChars = shelf.reduce((a, h) => a + h.text.length, 0), shelfOwn = shelf.filter((h) => h.state !== "US").length;\n'
-   '    usage.shelf = shelf.length;\n'),
+   '        jobState = st.code;\n        shelfP = shelfSearch(s.admin, q, st.code, { ...SHELF_FIRST, index: kbP }); // same moment as the document search\n        return docsSearch(q);\n'),
+  # 3 its best excerpts go beside the core hits, in the room they leave free inside the same 9,000 characters
   ('      ex = mergeExcerpts(phone, hits, 9e3),\n      hitText = new Map(hits.map((h) => [h.id, h.text])),\n',
-   '      ex = withShelf(mergeExcerpts(phone, hits, 9e3 - shelfChars), shelf),\n      hitText = new Map([...hits, ...shelf].map((h) => [h.id, h.text])),\n'),
+   '      // ask_shelf: the deep library\'s best excerpts for this job\'s state (and federal) go after the core ones. They only\n'
+   '      // use the room the core excerpts leave free inside the same 9,000 characters: nothing is pushed out (shelf.ts).\n'
+   '      exCore = mergeExcerpts(phone, hits, 9e3),\n'
+   '      shelf = analysis || plan ? [] : shelfPick(await shelfP, hits, exCore, q, index),\n'
+   '      shelfOwn = (usage.shelf = shelf.length, shelf.filter((h) => h.state !== "US").length),\n'
+   '      ex = withShelf(exCore, shelf),\n'
+   '      hitText = new Map([...hits, ...shelf].map((h) => [h.id, h.text])),\n'),
   # 4 a shelf excerpt of the job state's own rule counts as "the library has this state's rule"
   ('        analysis || plan ? "" : stateLines(st, ss.dependent, ss.own),\n',
    '        analysis || plan ? "" : stateLines(st, ss.dependent === "plan" && shelfOwn ? !0 : ss.dependent, ss.own + shelfOwn),\n'),
   # 5 the model's own search gets it too
   ('            docsSearch,\n            nextRef: () => ++dataN,\n',
-   '            docsSearch,\n            shelfSearch: (text, o) => shelfSearch(s.admin, text, st.code, o),\n            nextRef: () => ++dataN,\n'),
+   '            docsSearch,\n            shelfSearch: (text, o) => shelfSearch(s.admin, text, st.code, { ...o, index }),\n            nextRef: () => ++dataN,\n'),
   # 6 log line
   ('        state_own: usage.stateOwn || 0,\n', '        state_own: usage.stateOwn || 0,\n        shelf: usage.shelf || 0,\n'),
 ])
@@ -51,7 +50,7 @@ patch('tools.ts', [
   ('        let kbChars = 0, kbN = 0;\n',
    '        // ask_shelf: the deep library too (this job\'s state + federal). Its excerpts take up to 2 of the same 5 places\n'
    '        // and the same 7,000 characters; they are listed after the core ones.\n'
-   '        const shelf = lib === "app" || !cx.shelfSearch ? [] : await cx.shelfSearch(q, { ...SHELF_TOOL, coll: lib === "osha" ? ["osha"] : null });\n'
+   '        const shelf = lib === "app" || !cx.shelfSearch ? [] : (await cx.shelfSearch(q, { ...SHELF_TOOL, coll: lib === "osha" ? ["osha"] : null })).slice(0, SHELF_TOOL.k);\n'
    '        let kbChars = shelf.reduce((a, h) => a + h.text.length, 0), kbN = shelf.length;\n'),
   ('              }) ${h.title}: ${h.text.slice(0, 1800)}`,\n            );\n        }\n      }\n',
    '              }) ${h.title}: ${h.text.slice(0, 1800)}`,\n            );\n        }\n'
@@ -68,4 +67,4 @@ assert s.count('from "./state.ts";') == 1
 s = s[:j] + 'import { SHELF_TOOL } from "./shelf.ts";\n' + s[j:]
 open(p, 'w').write(s)
 shutil.copy(os.path.join(HERE, 'shelf.ts'), os.path.join(OUT, 'shelf.ts'))
-print('patched ask.ts (9 spots), tools.ts (3 spots), added shelf.ts ->', OUT)
+print('patched ask.ts (8 spots), tools.ts (3 spots), added shelf.ts ->', OUT)
