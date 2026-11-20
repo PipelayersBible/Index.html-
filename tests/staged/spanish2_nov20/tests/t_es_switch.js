@@ -81,4 +81,35 @@ const settingsHtml=(p)=>p.evaluate(()=>{const c=document.getElementById('screen-
   ok(es.flat.length>10&&diff.length===0,'7: every word in the Spanish phone\'s record is the same as the English phone\'s ('+es.flat.length+' text values)'+(diff.length?' differs: '+diff.slice(0,5).join(' ; ').slice(0,300):''));
   ok(!/Tramo|Estaci[oó]n|Regla|Lectura|Instalad/.test(es.flat.join('\n')),'7: no Spanish words in the record');
   ok(es.errs.length===0,'7: no page errors '+es.errs.join('|').slice(0,200));}
+ // 8. phase 2: dates, the words drawn by CSS, the laid toast, the Terms links, record text and typed text left alone
+ {const p=await L.SC.laid_done(b,{lang:'es',init:NATIVE});
+  const T=(x)=>p.evaluate((x)=>window.pbT(x),x);
+  const want={'Thu, Nov 19':'jue 19 nov','Nov 19, 10:02 PM':'19 nov, 10:02 PM','Nov 19, 2026, 10:02 PM':'19 nov 2026, 10:02 PM','November 19, 2026':'19 de noviembre de 2026','Thursday, November 19':'jueves 19 de noviembre','Fri 10:04 PM':'vie 10:04 PM','November 2026':'noviembre de 2026','Nov 16 – Nov 22':'16 nov – 22 nov','Locked Nov 19, 10:02 PM':'Bloqueado 19 nov, 10:02 PM','May 5':'5 may','10:02 PM':'10:02 PM','11/19/2026':'11/19/2026'};
+  const got={};for(const k in want)got[k]=await T(k);const bad=Object.keys(want).filter(k=>got[k]!==want[k]);
+  ok(bad.length===0,'8: dates read in Spanish ('+Object.keys(want).length+' shapes; clock times and all-number dates unchanged)'+(bad.length?': '+bad.map(k=>k+' -> '+got[k]).join(' ; '):''));
+  ok(await T('Marcar 5 filas')==='Marcar 5 filas'&&await T('Mark laid to here (and the rows before)')==='Marcar instalado hasta aquí (y las filas de antes)','8: a word that only starts like a month ("Marcar 5") is not taken for a date');
+  const css=await p.evaluate(()=>{const tr=document.querySelector('#resultsBody tr[data-laid-idx]:not([data-laid-strip])');const td=tr.children[1];tr.classList.add('pb-laid-armed');const a=getComputedStyle(td,'::before').content;tr.classList.remove('pb-laid-armed');tr.classList.add('pb-laid-armedundo');const u=getComputedStyle(td,'::before').content;tr.classList.remove('pb-laid-armedundo');return [a,u];});
+  ok(/Suelte: instalado/.test(css[0])&&/Suelte: deshacer/.test(css[1]),'8: press-and-hold cue on a grade row says "Suelte: instalado" / "Suelte: deshacer" ('+css.join(' | ')+')');
+  const toast=await p.evaluate(()=>{const t=document.getElementById('pbLaidToast');if(!t||t.hidden)return null;const x=t.querySelector('.pb-laid-toastt');const r=t.getBoundingClientRect();let s='';const w=document.createTreeWalker(x,4);let n;while((n=w.nextNode()))s+=window.__nativeData.get.call(n);return {txt:s,cut:x.scrollWidth>x.clientWidth+1,l:r.left,r:r.right,W:innerWidth,btn:t.querySelector('button').getBoundingClientRect().width};});
+  ok(toast&&/^Inst\. hasta /.test(toast.txt)&&!toast.cut&&toast.l>=0&&toast.r<=toast.W&&toast.btn>=72,'8: the laid toast shows whole in Spanish, on screen, with its Deshacer button ('+JSON.stringify(toast)+')');
+  await p.setViewportSize({width:320,height:700});await p.waitForTimeout(300);
+  const rod=await p.evaluate(()=>{pbGoto('rodElevCalc',false,true);document.getElementById('pbApp').classList.add('pb-text-big');const s=document.getElementById('screen-rodElevCalc');const i=[...s.querySelectorAll('input')].filter(e=>e.getClientRects().length);i.forEach(e=>{e.value='5';e.dispatchEvent(new Event('input',{bubbles:true}));});[...s.querySelectorAll('button')].filter(e=>e.getClientRects().length&&/Add to List/.test(e.textContent)).forEach(e=>e.click());const td=s.querySelector('#rodElevLogSection table.pb-table tbody tr:not(.pb-shot-setup) td:nth-child(2)');return td?getComputedStyle(td,'::before').content:null;});
+  ok(rod===null||/Lectura/.test(rod),'8: Rod Elevation at large text on a small phone: the row label says "Lectura" ('+rod+')'+(rod===null?' [no row in this state: not checked]':''));
+  await p.setViewportSize({width:390,height:844});
+  const links=await p.evaluate(()=>{pbGoto('settings',false,true);const a=[...document.querySelectorAll('#settingsLegal a')];return a.map(x=>window.__nativeGA.call(x,'href')+'>'+x.getAttribute('href'));});
+  ok(links.join(',')==='terms_es.html>terms.html,privacy_es.html>privacy.html','8: in Spanish the Terms and Privacy links open the Spanish courtesy copies; the app still reads the English addresses ('+links.join(',')+')');
+  const pre=await p.evaluate(()=>{const s=document.getElementById('screen-settings');const x=document.createElement('pre');x.textContent='EMERGENCY\n\nActive Permit\n\nLog In';const ta=document.createElement('textarea');ta.value='Home';ta.setAttribute('placeholder','Quick note');const d=document.createElement('div');d.id='inboxDetail';d.textContent='Home';s.appendChild(x);s.appendChild(ta);s.appendChild(d);return new Promise(r=>setTimeout(()=>{const raw=(e)=>{let t='';const w=document.createTreeWalker(e,4);let n;while((n=w.nextNode()))t+=window.__nativeData.get.call(n);return t;};const o=[raw(x),ta.value,window.__nativeGA.call(ta,'placeholder'),ta.placeholder,raw(d)];x.remove();ta.remove();d.remove();r(o);},200));});
+  ok(pre[0]==='EMERGENCY\n\nActive Permit\n\nLog In'&&pre[1]==='Home'&&pre[4]==='Home','8: report text (<pre>), an opened report and what a person typed are never translated');
+  ok(pre[2]==='Nota rápida'&&pre[3]==='Quick note','8: the hint in an empty text box is Spanish; the app still reads the English hint');
+  await p.evaluate(()=>window.pbSetLang('en'));await p.waitForTimeout(300);
+  const back=await p.evaluate(()=>[...document.querySelectorAll('#settingsLegal a')].map(x=>window.__nativeGA.call(x,'href')).join(','));
+  ok(back==='terms.html,privacy.html','8: back to English: the links are the English documents again');
+  ok(p.errs.length===0,'8: no page errors '+p.errs.join('|').slice(0,200));await p.context().close();}
+ // 9. the Spanish courtesy copies exist, say the English version controls, and are marked draft
+ {const ctx=await b.newContext({viewport:{width:390,height:844}});const p=await ctx.newPage();
+  for(const [f,en] of [['terms_es.html','terms.html'],['privacy_es.html','privacy.html']]){const r=await p.goto(L.BASE.replace(/[^/]+$/,f));const t=r&&r.ok()?await p.evaluate(()=>document.body.innerText):'';
+   ok(/La versión en inglés es la que vale/.test(t.slice(0,600))&&/The English version controls/.test(t.slice(0,900)),'9: '+f+' opens and says at the top that the English version controls (in Spanish and in English)');
+   ok(/BORRADOR \/ DRAFT/.test(t.slice(0,1200))&&await p.evaluate((en)=>document.documentElement.lang==='es'&&!!document.querySelector('a[href="'+en+'"]')&&/noindex/.test(document.querySelector('meta[name=robots]').content),en),'9: '+f+' is marked DRAFT, lang="es", links to the English original, and is not indexed');
+   ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'9: '+f+' fits 390 px');}
+  await ctx.close();}
  await b.close();console.log(fails?'FAILED '+fails:'ALL PASS');process.exit(fails?1:0);})();

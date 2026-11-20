@@ -9,7 +9,8 @@ THE SWITCH: PB_ES_ENABLED below. False = ships hidden (no Language row, no Spani
 ignored, the dictionary is never read). True = Spanish is offered. One edit. (Tests set the env var PB_ES_ENABLED=1.)"""
 import sys, os
 PB_ES_ENABLED = False          # <- flip to True when the safety Spanish has been reviewed
-PB_ES_REVIEW_LINK = True       # while hidden: opening the app once with #es-review turns Spanish on for that one phone (for the reviewer)
+PB_ES_REVIEW_LINK = True       # while hidden: opening the app once with #es-review turns Spanish on for that one phone (for the reviewer).
+                               # False (with PB_ES_ENABLED False) = fully off, and the page then carries no Spanish words at all.
 if os.environ.get('PB_ES_ENABLED') in ('1', '0'): PB_ES_ENABLED = os.environ['PB_ES_ENABLED'] == '1'
 if os.environ.get('PB_ES_REVIEW_LINK') in ('1', '0'): PB_ES_REVIEW_LINK = os.environ['PB_ES_REVIEW_LINK'] == '1'
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -19,6 +20,7 @@ def rep(s, old, new):
     return s.replace(old, new)
 eng = open(os.path.join(HERE, '..', 'engine.js'), encoding='utf-8').read()
 dct = open(os.path.join(HERE, '..', 'dict.json'), encoding='utf-8').read()
+if not PB_ES_ENABLED and not PB_ES_REVIEW_LINK: dct = '{"t":{},"p":[]}'   # fully off: do not ship the Spanish words at all (saves about 220 KB)
 eng = rep(eng, '/*PB_ES_ENABLED*/false/*END*/', 'true' if PB_ES_ENABLED else 'false')
 eng = rep(eng, '/*PB_ES_REVIEW_LINK*/true/*END*/', 'true' if PB_ES_REVIEW_LINK else 'false')
 assert '</script' not in eng.lower() and '</script' not in dct.lower() and '<!--' not in dct

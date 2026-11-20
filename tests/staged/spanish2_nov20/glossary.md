@@ -1,4 +1,4 @@
-# Glossary: English term → Spanish used in the app → why / alternatives
+# Glossary: English term → Spanish used in the app → why / alternatives (phases 1 + 2)
 
 Audience: Spanish-speaking crew members on US underground jobs (mostly Mexican and Central American). Voice: **usted**, short
 sentences, the words said on the job. Not Spain Spanish (no "vosotros", "ordenador", "pulsar", "añadir", "vale").
@@ -31,7 +31,7 @@ Sources checked for the safety words: OSHA "Zanjas y excavaciones" fact sheet in
 | PVC, SDR 35, Sch 40, C900, HDPE | same | Printed on the pipe. |
 | OSHA, NIOSH, 911 | same | |
 | Safari, Chrome | same | App names. |
-| Dates and clock times ("Fri 10:04 PM", "Nov 19") | English for now | Phase 2: the app writes dates in many places; weekday names in the join link line are translated. |
+| Clock times ("10:04 PM") | same | Kept as the phone and the records show them. Dates are Spanish now: "Thu, Nov 19" → "jue 19 nov", "November 19, 2026" → "19 de noviembre de 2026". All-number dates (11/19/2026) stay month/day/year, the US way, the same as on the records. REVIEW: a crew used to day/month could misread 11/12. |
 | The 911 script ("Read this to the dispatcher") | English | It is read out to a 911 operator. Decision for Tommy (see NOTES). |
 
 ## Everyday words
@@ -69,7 +69,7 @@ Sources checked for the safety words: OSHA "Zanjas y excavaciones" fact sheet in
 | pipelayer | tubero | The word on US crews. "Instalador de tubería" is the formal one. REVIEW |
 | pipe | tubo (one joint), tubería (the line) | |
 | run (a pipe run) | tramo | "Tramo nuevo", "Tramo rápido". Crews also say "la corrida" in some places. REVIEW |
-| grade | nivel ("hojas de niveles", "cálculos de nivel") | Crews say both "el nivel" and "el grade" ("está a grade"). "Grado" sounds like school grades or degrees. REVIEW: if Tommy's crews say "grade", change these strings to keep "grade". |
+| grade | **nivel** (constant `WORD_GRADE` in words.py) ("hojas de niveles", "cálculos de nivel") | Crews say both "el nivel" and "el grade" ("está a grade"). "Grado" sounds like school grades or degrees. REVIEW: if Tommy's crews say "grade", change these strings to keep "grade". |
 | grade sheet | hoja de niveles | |
 | slope | pendiente | |
 | stake | estaca | |
@@ -106,7 +106,7 @@ Sources checked for the safety words: OSHA "Zanjas y excavaciones" fact sheet in
 | confined space | espacio confinado | OSHA Spanish. |
 | permit | permiso | OSHA Spanish. |
 | entrant | entrante | OSHA: "entrante autorizado". |
-| attendant | asistente | The two OSHA Spanish fact sheets above say "asistente". Many trainers and Cal/OSHA material say "vigilante" (the hole watch). REVIEW: use the word the company's own Spanish training uses. |
+| attendant | **asistente** (constant `WORD_ATTENDANT` in words.py) | The two OSHA Spanish fact sheets above say "asistente". Many trainers and Cal/OSHA material say "vigilante" (the hole watch). REVIEW: use the word the company's own Spanish training uses. |
 | entry supervisor | supervisor de entrada | OSHA Spanish. |
 | DO NOT ENTER | NO ENTRE | OSHA Spanish uses "No entre…". |
 | EMERGENCY | EMERGENCIA | |
@@ -140,3 +140,118 @@ Sources checked for the safety words: OSHA "Zanjas y excavaciones" fact sheet in
 5. Quotes from OSHA / NIOSH inside a message are my translation of the English rule text, marked in the strings file. They are
    not an official Spanish text of the rule.
 6. No gendered guess about the reader where it can be avoided ("le mandó una invitación", not "lo invitó").
+
+## Phase 2 additions
+
+### Two words that are one edit each (`words.py`, then `sh mk.sh`)
+
+| Constant | Now | Other choice | Where it shows |
+|---|---|---|---|
+| `WORD_ATTENDANT` | asistente | vigilante | 17 strings: roster, DO NOT ENTER sheets, Reassign Attendant, permit form, Tools list |
+| `WORD_GRADE` | nivel | grade | 8 strings: "hojas de niveles", "cálculos de nivel", "Nivel y elevación", "Fuera de nivel" |
+
+Tommy is asking his crews. Both builds were tested (`WORD_ATTENDANT=vigilante WORD_GRADE=grade python3 build.py` builds clean).
+
+### New everyday words
+
+| English | Spanish used | Why / alternatives |
+|---|---|---|
+| daily report | reporte diario | |
+| narrative (of the day) | resumen del día | |
+| sign and send | firmar y mandar | |
+| sent (a status) | enviado; "sin mandar" for not sent | "Mandado" alone also means an errand in Mexico, so the status word is "Enviado". The verb stays "mandar". |
+| management / the office (reports to) | la oficina | "Reporte para la oficina", "Bandeja de la oficina". |
+| manager | gerente | |
+| project manager / superintendent | gerente de proyecto (PM) / superintendente | Crews say "el PM", "el super". |
+| paid seat | usuario pagado | |
+| laborer | ayudante | "Peón" can sound like a put-down. US crews also say "laborer". REVIEW |
+| operator | operador | |
+| owner (of the account / the app) | dueño | |
+| sync | sincronizar | |
+| signal | señal | |
+| storage (phone) | almacenamiento | |
+| backup / backed up | respaldo / respaldado | |
+| overwrite | reemplazar | Not "encimar" or "sobrescribir". |
+| draft | borrador | |
+| shortcut | atajo | |
+| claim (a run, as foreman) | tomar | "Tramos tomados". |
+| nudge | aviso (de un compañero) | |
+| toolbox talk | plática de seguridad | Mexico. Central America: "charla". REVIEW |
+| near miss / first aid / stop work | casi accidente / primeros auxilios / paro de trabajo | |
+| locate ticket (811) | ticket de localización | |
+| job book | libro del trabajo | |
+| inspection check-off | anotar resultado; Pasó / No pasó / Parcial | |
+| two-step login | inicio de sesión en dos pasos | |
+| crash report | reporte de fallas | |
+| Education & Reference | Aprender y consultar | |
+
+### New trade words (calculators, tickets)
+
+| English | Spanish used | Why / alternatives |
+|---|---|---|
+| manhole | manhole | Said in English on US crews; MH on the plans. Mexico: "pozo de visita". REVIEW |
+| rim (manhole) | tapa | "Elevación de la tapa". Mexico also "brocal". REVIEW |
+| barrel section | anillo | REVIEW |
+| manhole bench | media caña | REVIEW |
+| cone / top section | cono / sección de arriba | |
+| lift (of backfill) | capa | "Capas de relleno". |
+| loose / compacted | suelto / compactado | |
+| gravel / sand / silt / loam / clay | grava / arena / limo / tierra franca / arcilla | REVIEW "tierra franca" |
+| soil type (OSHA A, B, C) | tipo de suelo; Tipo A / B / C | OSHA Spanish. |
+| competent person | persona competente | OSHA Spanish. |
+| registered professional engineer | ingeniero profesional registrado (P.E.) | |
+| tabulated data | datos tabulados | |
+| unsupported vertical lower portion | parte baja vertical sin soporte | |
+| cave-in | derrumbe | OSHA Spanish. |
+| bend / fitting | codo / pieza | |
+| bend offset | desvío con codos | REVIEW |
+| center-to-end | centro a extremo (C-E) | |
+| bell | campana | |
+| flow rate | caudal | Crews also say "flujo" or just GPM. |
+| flush (a pressure line) | lavado | REVIEW; crews also say "flushear". |
+| blower | ventilador | |
+| air changes per hour | cambios de aire por hora (ACH) | |
+| encasement (concrete) | recubrimiento de concreto | REVIEW |
+| thrust block | atraque | Mexico. REVIEW |
+| flowable fill | relleno fluido | CLSM kept. |
+| curb / sidewalk | guarnición / banqueta | Mexico. Central America: "cordón / acera". REVIEW |
+| restoration (surface) | reparación de superficie | |
+| slump / PSI / mix design / admixtures | slump / PSI / diseño de mezcla / aditivos | "Slump" is what the ticket says. Mexico: "revenimiento". |
+| truck | camión | Crews say "la troca". |
+| subgrade | subrasante | |
+| utility (found / hit) | línea | "Choque con una línea", "Línea encontrada". |
+| sewer / storm | drenaje sanitario / drenaje pluvial | |
+| engulfment | quedar sepultado o hundido (engulfment) | No single everyday word. REVIEW |
+| lockout/tagout | bloqueo y etiquetado (LOTO) | OSHA Spanish. |
+| hot work permit | permiso de trabajo en caliente | |
+| PPE | equipo de protección personal (PPE) | |
+| standby (time) | tiempo de espera | |
+| rework | retrabajo | |
+| release (a held row): laid / undo | Suelte: instalado / Suelte: deshacer | Drawn by CSS on the grade sheet. |
+
+## REVIEW list for the fluent reviewer (all in one place)
+
+Read `safety_review.md` first (every safety-critical string, English next to Spanish). Then these word choices:
+
+1. attendant: **asistente** or vigilante (one constant)
+2. grade: **nivel** or grade (one constant)
+3. pipelayer: tubero
+4. foreman: foreman (or mayordomo / capataz)
+5. run: tramo (or corrida)
+6. rod: regla (or estadal / mira / rod)
+7. lay / laid: instalar / instalado (or poner / tender)
+8. lock a run / a permit: bloquear (or cerrar)
+9. hub: hub (or trompo); invert: invert (or arrastre); manhole: manhole (or pozo de visita)
+10. shading: relleno sobre el tubo; bedding: cama
+11. backflow: contrapendiente
+12. benchmark / backsight: banco de nivel / lectura atrás
+13. sloping: talud; benching: escalonado; shoring: apuntalamiento
+14. laborer: ayudante
+15. toolbox talk: plática de seguridad
+16. rim: tapa; barrel section: anillo; bench: media caña
+17. thrust block: atraque; encasement: recubrimiento; curb / sidewalk: guarnición / banqueta
+18. flush: lavado; bend offset: desvío con codos; loam: tierra franca
+19. engulfment: quedar sepultado o hundido
+20. The iPhone and Chrome button names ("Agregar a Inicio", "Agregar a pantalla principal", "Instalar app"): check on one iPhone and one Android set to Spanish
+21. All-number dates stay month/day/year (11/19/2026)
+22. The OSHA and NIOSH quotes inside messages are my translation of the English rule text, not an official Spanish text (marked in strings_es.json)

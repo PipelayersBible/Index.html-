@@ -38,7 +38,7 @@
   // never translated, they stay as written. The Records LISTS around them (headings, filters, row labels, buttons) are.
   // Report text is always drawn in a <pre>, so <pre> is never translated anywhere.
   var NOI = { 'screen-pdfView': 1, 'rrBody': 1, 'myReportsDetail': 1, 'inboxDetail': 1 };
-  var SKIP_SEL = 'script,style,textarea,noscript,svg,canvas,iframe,pre,[contenteditable],[data-noi18n],#screen-pdfView,#rrBody,#myReportsDetail,#inboxDetail';
+  var SKIP_SEL = 'script,style,noscript,svg,canvas,iframe,pre,[contenteditable],[data-noi18n],#screen-pdfView,#rrBody,#myReportsDetail,#inboxDetail';
   var INLINE = { STRONG: 1, B: 1, EM: 1, I: 1, U: 1, A: 1, SPAN: 1, BR: 1, svg: 1, SVG: 1, INPUT: 1, CODE: 1, SMALL: 1, IMG: 1 };
   var dTC, dData, dNV, dIT, dIH, dOH, dOT, nGetAttr;
 
@@ -231,8 +231,9 @@
     if (el.nodeType === 3) { doText(el); return; }
     if (el.nodeType !== 1) return;
     var t = el.tagName;
-    if (t === 'SCRIPT' || t === 'STYLE' || t === 'TEXTAREA' || t === 'NOSCRIPT' || t === 'svg' || t === 'SVG' || t === 'CANVAS' || t === 'IFRAME' || t === 'PRE') return;
+    if (t === 'SCRIPT' || t === 'STYLE' || t === 'NOSCRIPT' || t === 'svg' || t === 'SVG' || t === 'CANVAS' || t === 'IFRAME' || t === 'PRE') return;
     if (el.hasAttribute('data-noi18n') || el.id && NOI[el.id] === 1 || el.hasAttribute('contenteditable')) return;
+    if (t === 'TEXTAREA') { if (!skipped(el)) { doAttr(el, 'placeholder'); doAttr(el, 'aria-label'); } return; } // what a person typed is never touched; the hint in an empty box is
     if (el.attributes.length) { for (var a = 0; a < ATTRS.length; a++) if (el.hasAttribute(ATTRS[a])) doAttr(el, ATTRS[a]); }
     if (lang !== 'es' && el.hasAttribute('data-pbi18n-val')) { el.removeAttribute('value'); el.removeAttribute('data-pbi18n-val'); }
     if (doMixed(el)) return;
@@ -263,10 +264,21 @@
     }
   }
   /* ---- the app reads English ---- */
-  function withEn(el, fn) {
+  var AQS = '[placeholder],[aria-label],[title],[alt],[data-laid-tag],a[href]';
+  function withEn(el, fn, attrsToo) {
     var sw = [], w = document.createTreeWalker(el, 4, null), n, r, d;
     while ((n = w.nextNode())) { r = rec.get(n); if (r) { d = rawData(n); if (r.es === d && r.en !== d) { setData(n, r.en); sw.push(n, r); } } }
-    try { return fn(); } finally { for (var i = 0; i < sw.length; i += 2) setData(sw[i], sw[i + 1].es); }
+    // labels and hints (attributes) read English too. (The observer then finds them back in Spanish and does nothing.)
+    var as = [];
+    if (attrsToo && el.querySelectorAll) {
+      var L = el.querySelectorAll(AQS), j, k, R, o;
+      for (j = -1; j < L.length; j++) { o = j < 0 ? el : L[j]; R = arec.get(o); if (!R) continue; for (k in R) { if (R[k] && R[k].es === nGetAttr.call(o, k) && R[k].en !== R[k].es) as.push(o, k, R[k]); } }
+      if (as.length) { for (j = 0; j < as.length; j += 3) as[j].setAttribute(as[j + 1], as[j + 2].en); }
+    }
+    try { return fn(); } finally {
+      for (var i = 0; i < sw.length; i += 2) setData(sw[i], sw[i + 1].es);
+      if (as.length) { for (j = 0; j < as.length; j += 3) as[j].setAttribute(as[j + 1], as[j + 2].es); }
+    }
   }
   function arm() {
     if (armed) return; armed = true; compile();
@@ -287,14 +299,30 @@
       Object.defineProperty(HTMLElement.prototype, 'innerText', { configurable: true, enumerable: dIT.enumerable, set: dIT.set,
         get: function () { var el = this; return withEn(el, function () { return dIT.get.call(el); }); } });
       Object.defineProperty(Element.prototype, 'innerHTML', { configurable: true, enumerable: dIH.enumerable, set: dIH.set,
-        get: function () { var el = this; return withEn(el, function () { return dIH.get.call(el); }); } });
+        get: function () { var el = this; return withEn(el, function () { return dIH.get.call(el); }, true); } });
       Object.defineProperty(Element.prototype, 'outerHTML', { configurable: true, enumerable: dOH.enumerable, set: dOH.set,
-        get: function () { var el = this; return withEn(el, function () { return dOH.get.call(el); }); } });
+        get: function () { var el = this; return withEn(el, function () { return dOH.get.call(el); }, true); } });
       // a copy the app makes of something on screen is a copy of the English
       var nClone = Node.prototype.cloneNode;
-      Node.prototype.cloneNode = function (deep) { var n = this; if (!deep || n.nodeType !== 1 && n.nodeType !== 11) { var c = nClone.call(n, deep); if (n.nodeType === 3) { var r = rec.get(n); if (r && r.es === rawData(n)) setData(c, r.en); } return c; } return withEn(n, function () { return nClone.call(n, true); }); };
+      Node.prototype.cloneNode = function (deep) { var n = this; if (!deep || n.nodeType !== 1 && n.nodeType !== 11) { var c = nClone.call(n, deep); if (n.nodeType === 3) { var r = rec.get(n); if (r && r.es === rawData(n)) setData(c, r.en); } else if (n.nodeType === 1) { var R0 = arec.get(n); if (R0) for (var k0 in R0) { if (R0[k0] && R0[k0].es === c.getAttribute(k0)) c.setAttribute(k0, R0[k0].en); } } return c; } var c2 = withEn(n, function () { return nClone.call(n, true); });
+        try { // labels and hints too: the copy carries the English ones
+          var QS = '[placeholder],[aria-label],[title],[alt],[data-laid-tag],a[href]', A = n.querySelectorAll ? n.querySelectorAll(QS) : [], B = A.length ? c2.querySelectorAll(QS) : [];
+          var fix = function (o, c) { var R = arec.get(o); if (!R) return; for (var k in R) { if (R[k] && R[k].es === nGetAttr.call(o, k)) c.setAttribute(k, R[k].en); } };
+          if (n.nodeType === 1) fix(n, c2);
+          if (A.length === B.length) for (var i = 0; i < A.length; i++) fix(A[i], B[i]);
+        } catch (e) {}
+        return c2; };
       nGetAttr = Element.prototype.getAttribute;
       Element.prototype.getAttribute = function (a) { var v = nGetAttr.call(this, a); if (v != null) { var R = arec.get(this), r = R && R[a]; if (r && r.es === v) return r.en; } return v; };
+      // the same for the properties behind those attributes (the app copies box.placeholder to a fresh box)
+      [[HTMLInputElement, 'placeholder'], [HTMLTextAreaElement, 'placeholder'], [HTMLElement, 'title'], [HTMLImageElement, 'alt'], [Element, 'ariaLabel']].forEach(function (pp) {
+        try {
+          var proto = pp[0].prototype, name = pp[1], attr = name === 'ariaLabel' ? 'aria-label' : name, d = Object.getOwnPropertyDescriptor(proto, name);
+          if (!d || !d.get || !d.configurable) return;
+          Object.defineProperty(proto, name, { configurable: true, enumerable: d.enumerable, set: d.set,
+            get: function () { var v = d.get.call(this), R = arec.get(this), r = R && R[attr]; return r && r.es === v ? r.en : v; } });
+        } catch (e) {}
+      });
       Object.defineProperty(HTMLOptionElement.prototype, 'text', { configurable: true, enumerable: dOT.enumerable, set: dOT.set,
         get: function () { return norm(enText(this)); } });
     } catch (e) {}
@@ -353,7 +381,8 @@
     (function go(el) {
       if (el.nodeType !== 1) return;
       var t = el.tagName;
-      if (t === 'SCRIPT' || t === 'STYLE' || t === 'TEXTAREA' || t === 'NOSCRIPT' || t === 'svg' || t === 'SVG' || t === 'CANVAS' || t === 'IFRAME' || t === 'PRE' || el.hasAttribute('data-noi18n') || el.id && NOI[el.id] === 1) return;
+      if (t === 'SCRIPT' || t === 'STYLE' || t === 'NOSCRIPT' || t === 'svg' || t === 'SVG' || t === 'CANVAS' || t === 'IFRAME' || t === 'PRE' || el.hasAttribute('data-noi18n') || el.id && NOI[el.id] === 1) return;
+      if (t === 'TEXTAREA') { ['placeholder', 'aria-label'].forEach(function (an) { var tv = (all || vis(el)) && el.getAttribute(an); if (tv && /[A-Za-z]/.test(tv)) out.push({ k: norm(tv), kind: 'attr:' + an, hit: has(norm(tv), el) }); }); return; }
       if (!all && !vis(el) && t !== 'OPTION' && t !== 'OPTGROUP') return;
       for (var a = 0; a < ATTRS.length; a++) { var av = t === 'SECTION' || ATTRS[a] === 'href' ? null : el.getAttribute(ATTRS[a]); if (av && /[A-Za-z]/.test(av)) out.push({ k: norm(av), kind: 'attr:' + ATTRS[a], hit: has(norm(av), el) }); }
       var mk = mixedKey(el);

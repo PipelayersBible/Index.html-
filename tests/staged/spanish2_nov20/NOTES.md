@@ -14,3 +14,10 @@ Status log (newest last):
 - batch g (Records LIST labels; record contents stay English: engine now skips only #screen-pdfView, #rrBody, #myReportsDetail, #inboxDetail and every <pre>) -> strings_p2_g.py
 - next: runtime harvest of dialogs/toasts on main flows (tests/harvest.js with scenarios), terms_es/privacy_es, tests, second read, glossary, final NOTES.
 - terms_es.html written (courtesy copy of live Terms v1.0, English controls, DRAFT banner)
+- privacy_es.html written (same structure as privacy.html v1.0: checked h2/tr/li/td counts)
+- strings at 2359 (152 patterns). Hand file has calculator results, run dialogs (delay/utility/rework/equipment/end run), permit reminders, work-without-a-run form, shortcuts editor.
+- Spanish tick lines no longer say "(en inglés)"; engine swaps the links to terms_es.html / privacy_es.html in Spanish.
+- next: tests (lib.js phase 2 scenarios, t_es_screens extended, t_es_hidden.js new, t_es_english on hidden.html), second read, glossary, final NOTES.
+- tests: phase 2 screen sets p2a-p2d pass (56 scenarios); textarea hints now translated; daily report filled states added
+- tests/t_es_hidden.js written (not yet run); phase 1 screens first half pass on new engine; engine: placeholder/title props + innerHTML attrs answer English
+- second read done (fixes applied by script), glossary.md updated with phase 2 words + REVIEW list

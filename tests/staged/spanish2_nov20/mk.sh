@@ -12,3 +12,4 @@ python3 patches/01_spanish.py ../../../_src/index.html $S/hidden.html
 cp ../../../_src/index.html $S/base.html
 cp ../../../terms.html ../../../privacy.html $S/ 2>/dev/null || true
 cp terms_es.html privacy_es.html $S/ 2>/dev/null || true
+PB_ES_REVIEW_LINK=0 python3 patches/01_spanish.py ../../../_src/index.html $S/nolink.html

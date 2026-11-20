@@ -7,7 +7,7 @@ Every string below is shown on a confined space, air test, trench or emergency s
 
 - **setpw.017**
   - EN: In short: check every number against the stakes and plans; AI can be wrong; the app never decides if a trench or space is safe; our liability is limited; disputes go to individual arbitration (you can opt out within 30 days).
-  - ES: En resumen: revise cada número contra las estacas y los planos; la IA se puede equivocar; la app nunca decide si una zanja o un espacio es seguro; nuestra responsabilidad es limitada; las disputas van a arbitraje individual (usted puede salirse de eso dentro de 30 días).
+  - ES: En resumen: revise cada número contra las estacas y los planos; la IA se puede equivocar; la app nunca decide si una zanja o un espacio es seguro; nuestra responsabilidad es limitada; las disputas van a arbitraje individual (usted puede salirse del arbitraje dentro de 30 días).
 
 ## run_review
 
@@ -592,7 +592,7 @@ Every string below is shown on a confined space, air test, trench or emergency s
 
 - **permit_emergency.036**
   - EN: e.g. button bumped in a pocket; dispatcher told no response needed
-  - ES: p. ej. el botón se apretó en la bolsa; se avisó al operador que no hace falta que vengan
+  - ES: p. ej. el botón se apretó en el bolsillo; se avisó al operador que no hace falta que vengan
 
 ## p2_home
 
@@ -643,7 +643,7 @@ Every string below is shown on a confined space, air test, trench or emergency s
 
 - **p2_reportIssue.020**
   - EN: <1>Reports aren’t an emergency line. For anything urgent, call.</1>Sent means your company’s inbox has it, not that a manager has read it or acted on it.
-  - ES: <1>Los reportes no son una línea de emergencia. Si es urgente, llame.</1>Mandado quiere decir que la bandeja de su compañía ya lo tiene, no que un gerente lo leyó o hizo algo.
+  - ES: <1>Los reportes no son una línea de emergencia. Si es urgente, llame.</1>Enviado quiere decir que la bandeja de su compañía ya lo tiene, no que un gerente lo leyó o hizo algo.
 - **p2_reportIssue.021**
   - EN: Reports aren’t an emergency line. For anything urgent, call.
   - ES: Los reportes no son una línea de emergencia. Si es urgente, llame.
@@ -1402,10 +1402,10 @@ Every string below is shown on a confined space, air test, trench or emergency s
   - ES: Falta o hay que corregir ({0}) — toque uno para ir a él:
 - **p2_permit_form.004**
   - EN: • {0}: {1} is required.<1>Go to this field ›</1>
-  - ES: • {0:t}: falta: {1:t}.<1>Ir a este campo ›</1>
+  - ES: • {0:t}: falta «{1:t}».<1>Ir a este campo ›</1>
 - **p2_permit_form.005**
   - EN: • {0}: {1} are required.<1>Go to this field ›</1>
-  - ES: • {0:t}: falta: {1:t}.<1>Ir a este campo ›</1>
+  - ES: • {0:t}: falta «{1:t}».<1>Ir a este campo ›</1>
 - **p2_permit_form.006**
   - EN: Authorized date
   - ES: Fecha autorizada
@@ -1454,3 +1454,93 @@ Every string below is shown on a confined space, air test, trench or emergency s
 - **p2_permit_form.016**
   - EN: For outside emergency response, not routine check-ins. The EMERGENCY button opens your phone’s dialer with <1>{0}</1> (the number below), pauses the reminders, and shows a dispatcher script and a report you can email to whoever dispatch directs.
   - ES: Es para pedir ayuda de emergencia de afuera, no para la comunicación de rutina. El botón EMERGENCIA abre el teléfono para llamar al <1>{0}</1> (el número de abajo), pausa los recordatorios y muestra un texto para leerle al operador del 911 y un reporte que usted puede mandar por correo a quien le diga el operador.
+
+## p2_calc_results
+
+- **p2_calc_results.003**
+  - EN: Max Allowable Slope
+  - ES: Talud máximo permitido
+- **p2_calc_results.004**
+  - EN: {0:d}° from horizontal
+  - ES: {0}° desde la horizontal
+- **p2_calc_results.005**
+  - EN: Horizontal Offset Each Side
+  - ES: Distancia horizontal de cada lado
+- **p2_calc_results.006**
+  - EN: Required Top Width
+  - ES: Ancho requerido arriba
+- **p2_calc_results.007**
+  - EN: {0:d} ft bottom + {1:d} ft offset each side
+  - ES: {0} ft de fondo + {1} ft de cada lado
+- **p2_calc_results.008**
+  - EN: This phone doesn’t know which state it is in. Federal OSHA and most states: protective system from 5 ft. Washington: from 4 ft.
+  - ES: Este teléfono no sabe en qué estado está. OSHA federal y la mayoría de los estados: sistema de protección desde 5 ft. Washington: desde 4 ft.
+- **p2_calc_results.009**
+  - EN: {0:d} ft: a protective system is needed unless it is all stable rock.
+  - ES: {0} ft: hace falta un sistema de protección, a menos que todo sea roca estable.
+- **p2_calc_results.010**
+  - EN: Rules by State
+  - ES: Reglas por estado
+- **p2_calc_results.011**
+  - EN: Not Applicable
+  - ES: No aplica
+- **p2_calc_results.012**
+  - EN: Depth over 12<1> ft</1>
+  - ES: Profundidad de más de 12<1> ft</1>
+- **p2_calc_results.013**
+  - EN: The 0.5:1 short-term Type A exception only applies to excavations 12 ft or less. Use the standard Type A slope (0.75:1) instead.
+  - ES: La excepción de corto plazo de 0.5:1 para Tipo A solo aplica a excavaciones de 12 ft o menos. Use el talud normal de Tipo A (0.75:1).
+- **p2_calc_results.052**
+  - EN: Airflow needed into the space
+  - ES: Flujo de aire que hace falta meter al espacio
+- **p2_calc_results.053**
+  - EN: {0:d} ft³ space × {1:d} ACH ÷ 60. A blower’s rated CFM drops with hose length and bends.
+  - ES: Espacio de {0} ft³ × {1} ACH ÷ 60. El CFM nominal de un ventilador baja con el largo de la manguera y las vueltas.
+- **p2_calc_results.054**
+  - EN: Rule of thumb only — confirm actual entry conditions with a calibrated gas meter, not this number.
+  - ES: Es solo una regla aproximada: confirme las condiciones reales de entrada con un medidor de gases calibrado, no con este número.
+
+## p2_run_dynamic
+
+- **p2_run_dynamic.007**
+  - EN: Stake data puts the trench bottom 4 ft or deeper. The phone didn’t know which state the job is in, so the app used the strictest rule: Washington requires cave-in protection from 4 ft (WAC 296-155-657); federal OSHA and most states from 5 ft (1926.652(a)(1)). The competent person decides on site.
+  - ES: Según los datos de las estacas, el fondo de la zanja queda a 4 ft o más. El teléfono no sabía en qué estado es el trabajo, así que la app usó la regla más estricta: Washington exige protección contra derrumbes desde 4 ft (WAC 296-155-657); OSHA federal y la mayoría de los estados desde 5 ft (1926.652(a)(1)). La persona competente decide en la obra.
+
+## p2_permit_dynamic
+
+- **p2_permit_dynamic.001**
+  - EN: Air test re-check reminder: repeat every how many minutes?
+  - ES: Recordatorio para repetir la prueba de aire: ¿cada cuántos minutos?
+- **p2_permit_dynamic.002**
+  - EN: Communication check reminder: repeat every how many minutes?
+  - ES: Recordatorio de revisión de comunicación: ¿cada cuántos minutos?
+- **p2_permit_dynamic.003**
+  - EN: Close Out Permit?
+  - ES: ¿Cerrar el permiso?
+- **p2_permit_dynamic.004**
+  - EN: Keep Permit Open
+  - ES: Dejar el permiso abierto
+- **p2_permit_dynamic.005**
+  - EN: Enter both times to fill this in
+  - ES: Escriba las dos horas para llenar esto
+
+## p2_hints
+
+- **p2_hints.008**
+  - EN: e.g. radio check every 5 min, hand signals if radio fails
+  - ES: p. ej. revisión por radio cada 5 min, señas con la mano si falla el radio
+- **p2_hints.009**
+  - EN: e.g. oxygen deficiency, H2S, engulfment
+  - ES: p. ej. falta de oxígeno, H2S, quedar sepultado o hundido
+- **p2_hints.010**
+  - EN: e.g. LOTO on pumps, forced-air ventilation running
+  - ES: p. ej. bloqueo y etiquetado (LOTO) en las bombas, ventilación forzada funcionando
+- **p2_hints.011**
+  - EN: e.g. air horn alarm on blower, attendant checks duct airflow every 10 min
+  - ES: p. ej. alarma de corneta en el ventilador, el asistente revisa el flujo de aire del ducto cada 10 min
+- **p2_hints.012**
+  - EN: e.g. blower running, no standing water. Gas limits go in the fields below; this text isn’t checked
+  - ES: p. ej. ventilador funcionando, sin agua estancada. Los límites de gases van en los campos de abajo; este texto no se revisa
+- **p2_hints.013**
+  - EN: e.g. 911, standby rescue team on site, radio channel 2
+  - ES: p. ej. 911, equipo de rescate en espera en el lugar, canal 2 del radio

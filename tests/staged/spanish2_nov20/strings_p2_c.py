@@ -80,7 +80,7 @@ S("Max loose lift thickness (in, before compaction)", "Espesor máximo de la cap
 S("Loose-to-compacted shrink", "Reducción de suelto a compactado")
 S("Gravel / rock — 25%", "Grava / roca — 25%")
 S("Sand — 30%", "Arena — 30%")
-S("Silt / loam — 30%", "Limo / tierra negra — 30%")
+S("Silt / loam — 30%", "Limo / tierra franca — 30%")
 S("Clay — 35%", "Arcilla — 35%")
 S("Custom loose-to-compacted shrink (%)", "Otra reducción de suelto a compactado (%)")
 
@@ -149,6 +149,6 @@ S("Inches, filled into the field above in feet", "Pulgadas; se pasan en pies al 
 S("BOP elevation (ft)", "Elevación del BOP (ft)")
 S("Distance, invert to bottom of manhole (ft)", "Distancia del invert al fondo del manhole (ft)")
 S("Required bedding thickness (ft)", "Espesor de cama requerido (ft)")
-S("Pad length (ft, optional)", "Largo de la plancha (ft, opcional)")
-S("Pad width (ft, optional)", "Ancho de la plancha (ft, opcional)")
+S("Pad length (ft, optional)", "Largo de la base (ft, opcional)")
+S("Pad width (ft, optional)", "Ancho de la base (ft, opcional)")
 S("Quantity (structures this size)", "Cantidad (estructuras de esta medida)")
