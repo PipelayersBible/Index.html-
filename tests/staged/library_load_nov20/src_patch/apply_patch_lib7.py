@@ -7,7 +7,7 @@
 #                  card go first (so the federal side is not cut by the 10,000-character excerpt limit).
 #  C prompts_v2  : the two by-jurisdiction paragraphs (air limits; labor law) say the same: the stricter rule wins.
 #  D ask.ts      : the go/no-go rule-only line: stricter rule first; 20 ft and deeper = registered professional engineer.
-#  E gonogo.ts   : the answer checker no longer cuts sentences at "App. B", "Subpart A.", "No. 5", "e.g." (left fragments like "B).").
+#  E gonogo.ts   : apply_patch_guardsplit.py (run first; it is also the minimal build's fix)
 #  F ask.ts      : built-in reply rule = src_patch/reply_rule.txt (v7), via apply_patch.py (unchanged mechanism).
 import sys, os, shutil
 src, out = sys.argv[1], sys.argv[2]
@@ -76,23 +76,5 @@ rep('ask.ts', '''give the federal rule and, where an excerpt has it, the job sta
 rep('ask.ts', '''Never say their trench, space or readings are safe, OK or adequate. End with one line''',
 '''At 20 ft deep or more, sloping, benching and the protective system must be designed by a registered professional engineer (Table B-1 covers less than 20 ft). Never say their trench, space or readings are safe, OK or adequate. End with one line''')
 
-# ---------------- E: gonogo.ts sentence split ----------------
-rep('gonogo.ts', '''const splitSentences = (t) =>
-    String(t).split(/(?<=[.!?])\\s+|\\n+/).map((x) => x.trim()).filter(Boolean),''', '''// lib7: a period after a short abbreviation or a lone letter ("App. B", "Subpart A.", "No. 5", "e.g.") does not end a sentence, and
-// a piece that is only a few characters ("B).", "A.") is glued back to the sentence before it. Every piece stays an exact substring of
-// the answer (the replace below needs that).
-const ABBR_END = /(?:\\b(?:App|Apps|Appx|No|Nos|Sec|Secs|Fig|Figs|Vol|Pt|Pts|Ch|Art|Para|Ref|Rev|Ed|Std|Tbl|Div|Subpt|approx|vs|etc|Inc|Co|St|Ave|Dept|Gov|Mr|Mrs|Ms|Dr|Jr|Sr)|\\b[A-Z]|\\b(?:e\\.g|i\\.e|U\\.S|C\\.F\\.R))\\.$/;
-const splitSentences = (t) => {
-  const out = [];
-  for (const line of String(t).split(/\\n+/)) {
-    let start = 0;
-    for (const m of line.matchAll(/[.!?]\\s+/g)) {
-      const end = m.index + 1, piece = line.slice(start, end), next = line.slice(m.index + m[0].length);
-      if (ABBR_END.test(piece) || /^[a-z(\\[0-9]/.test(next) || next.trim().length < 6) continue;
-      out.push(piece.trim()), start = m.index + m[0].length;
-    }
-    out.push(line.slice(start).trim());
-  }
-  return out.filter(Boolean);
-},''')
+# ---------------- E: gonogo.ts sentence split: in apply_patch_guardsplit.py (also in the minimal build) ----------------
 print('lib7 patched', out)
