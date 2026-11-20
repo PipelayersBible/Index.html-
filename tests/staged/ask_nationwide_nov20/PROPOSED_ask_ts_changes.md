@@ -8,7 +8,7 @@ line 302) but is not in the search words, and the intent step does not see it ei
 Proposed: when the question names no state, add the state's name:
 `const stq = jobState && US_STATES[jobState] && !Object.values(US_STATES).some((n) => new RegExp("\\b" + n + "\\b", "i").test(q)) ? " " + US_STATES[jobState] : "";`
 then search `q + stq + (intent?.search ? " " + intent.search : "")`.
-Effect in the local check: 15 of 22 → 18 of 22 with the staged chunks; "do we get a lunch break" on a Texas job
+Effect in the local check: 17 of 22 → 19 of 22 with the staged chunks (three 811 questions that do not name the state now find the state chunk; one Colorado trench-depth case got worse, so run the full eval before shipping); "do we get a lunch break" on a Texas job
 finds the Texas chunk first time (today all 6 first hits are other states and are thrown away).
 
 ## 2. State filter: read title + topic, not source + first 300 characters (line 529)
