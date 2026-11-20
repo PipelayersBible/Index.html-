@@ -173,7 +173,7 @@ JS = r'''
     try { row.scrollTo({ left: left, behavior: (instant || reduce()) ? 'auto' : 'smooth' }); } catch (e) { row.scrollLeft = left; }
     paint(n);
   }
-  function rotateMs() { var t = +window.__dcRotateMs; return t > 0 ? t : 3000; // Tommy, Nov 19: every 3 seconds }
+  function rotateMs() { var t = +window.__dcRotateMs; return t > 0 ? t : 3000; /* Tommy, Nov 19: every 3 seconds */ }
   function typing() { var a = document.activeElement; return !!(a && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a.isContentEditable)); }
   function onScreen() {
     if (document.hidden || !scr.classList.contains('active') || !row || !row.getClientRects().length) return false;
