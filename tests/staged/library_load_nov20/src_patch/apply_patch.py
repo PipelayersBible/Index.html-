@@ -11,6 +11,7 @@ shutil.copytree(src, out)
 def rep(f, old, new):
     p = os.path.join(out, f); s = open(p).read(); assert s.count(old) == 1, (f, old[:60], s.count(old)); open(p, 'w').write(s.replace(old, new))
 
+REPLY = 'const REPLY_RULE = ' + __import__('json').dumps(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'reply_rule.txt')).read().strip()) + ';\n'
 # 1 ---- kb.ts + kb_overlay.ts (the overlay file is written by tools/mk_overlay.py from out/rows_changed.jsonl)
 ov = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'kb_overlay.ts')
 shutil.copy(ov, os.path.join(out, 'kb_overlay.ts'))
@@ -66,4 +67,9 @@ rep('_shared/retrieval.ts', '''    [.6, ["purveyor", "supplier", "utility"]],'''
 
 # 3 ---- ask.ts
 rep('ask.ts', 'globalThis.__PLAIN_MIN = Number(Deno.env.get("AI_ASK_PLAIN_MIN") || 0);', 'globalThis.__PLAIN_MIN = Number(Deno.env.get("AI_ASK_PLAIN_MIN") || 2);')
+# 4 ---- ask.ts: the per-question reply reminder (last thing the model reads). The Nov 20 trial showed the LENGTH paragraph in the long
+#        prompt is not followed; this is Tommy's rule next to the question: answer first, short, one named offer on a complicated subject.
+rep('ask.ts', """? "\\nREPLY LENGTH FOR THIS ONE: the first sentence is the answer. Then at most 3 \\"- \\" lines, each one short sentence. Under 100 words in all (a how-to may use numbered steps, under 160 words). No quote longer than one sentence. Nothing after that except, for a safety rule, the one line that their competent person decides on site.\"""",
+    '? "\\n" + REPLY_RULE')
+rep('ask.ts', 'globalThis.__PLAIN_MIN = Number(', REPLY + 'globalThis.__PLAIN_MIN = Number(')
 print('patched', out)

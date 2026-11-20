@@ -51,6 +51,7 @@ import {
 } from "./_shared/retrieval.ts";
 import { gapStep, later, namesOwnJob, REFUSAL_RX } from "./gaps.ts";
 import { addressState, okState, resolveState, stateLines, stateSearch } from "./state.ts";
+const REPLY_RULE = "REPLY FOR THIS ONE (firm): Sentence 1 IS the answer: the number with its unit, the yes or no, or the first step; for their state when an excerpt gives that state's rule. Then at most 3 \"- \" lines, one short sentence each, only what they need to act on. 40 to 60 words in all, never over 90 (a how-to or an emergency: numbered steps, never over 130). No quote longer than 8 words, no background, no second rule they did not ask about, do not repeat the question. On a safety rule the last \"- \" line is that their competent person decides on site. COMPLICATED SUBJECT (the full answer is a table, several cases, a list of 6 or more items, or more than one rule): do not list it all. Give the short answer for their case, or the most common case and say which, then end with exactly one offer of 12 words or fewer in this form: \"Want the details on <the specific part>?\" Any other answer never ends with an offer or a question, except the one \"Which state is the job in?\" question when the JOB STATE line calls for it. Never hold a life-safety limit or a required step back behind an offer.";
 globalThis.__PLAIN_MIN = Number(Deno.env.get("AI_ASK_PLAIN_MIN") || 2); // optional: plain-language chunks beside OSHA text (0 = off)
 import { docHeader, docSource, docTitle, runTool, toolsFor } from "./tools.ts";
 import { cleanUntrusted, docBlock } from "./guard.ts";
@@ -638,7 +639,7 @@ CURRENT RUN ON THIS PHONE: ` + run + `
           : [],
         // v28: the length rule again, last, where the model follows it best
         !analysis && !plan
-          ? "\nREPLY LENGTH FOR THIS ONE: the first sentence is the answer. Then at most 3 \"- \" lines, each one short sentence. Under 100 words in all (a how-to may use numbered steps, under 160 words). No quote longer than one sentence. Nothing after that except, for a safety rule, the one line that their competent person decides on site."
+          ? "\n" + REPLY_RULE
           : "",
       ].filter((x) => x !== "").join(`
 `),
