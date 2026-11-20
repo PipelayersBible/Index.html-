@@ -12,5 +12,6 @@ drop function if exists public.pb_owner_share_notes();
 drop function if exists public.pb_share_notes();
 drop function if exists public.pb_device_seen(text, text, double precision, double precision, timestamptz, text);
 drop function if exists public.pb_session_why(uuid);
+drop function if exists public.pb_session_take_slot(uuid, integer);
 drop function if exists public.pb_session_gate();
 drop schema if exists pb_auth cascade;

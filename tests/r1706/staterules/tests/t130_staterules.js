@@ -72,7 +72,7 @@ const rpcs=(p,n)=>p.evaluate(n=>(window.__rpcArgs||[]).filter(x=>x[0]===n).map(x
     ['expires',['2026-11-20','WA'],'2027-01-04','WA: 45 calendar days'],
     ['startBy',['2026-11-20','WA'],'2026-12-07','WA: no more than 10 business days'],
     ['expires',['2026-11-20','NV'],'2026-12-18','NV: 28 calendar days'],
-    ['expires',['2026-11-20','OR'],'2027-01-04','OR: 45 calendar days'],
+    ['expires',['2026-11-20','OR'],'2026-12-20','OR: 30 calendar days (changed from 45 on Jan 8 2026)'],
     ['expires',['2026-11-20','UT'],'2026-12-11','UT: 21 days'],
     ['expires',['2026-11-20','ID'],'2026-12-18','ID: 4 weeks'],
     ['startBy',['2026-11-20','ID'],'2026-12-11','ID: start within 3 weeks'],
