@@ -11,12 +11,11 @@ declare co uuid; own uuid; fm uuid; pm uuid; pl uuid; other uuid; job text; d da
 begin
   select m.company_id, m.user_id, c.owner_user_id into co, fm, own from public.company_members m join public.companies c on c.id = m.company_id
     where m.role = 'foreman' and c.status = 'active' and exists (select 1 from pb_prod.job_info j where j.company_id = m.company_id)
-      and pb_prod.managed_company(m.user_id) is null
-    order by (select count(*) from public.company_members x where x.company_id = m.company_id) desc limit 1;
+    order by (pb_prod.managed_company(m.user_id) is null) desc, (select count(*) from public.company_members x where x.company_id = m.company_id) desc limit 1;
   if co is null then raise exception 'RESULT: no company with a foreman and a job to test with'; end if;
   select j.job_number into job from pb_prod.job_info j where j.company_id = co order by j.job_key limit 1;
   select m.user_id into pm from public.company_members m where m.company_id = co and m.role = 'pm' limit 1;
-  select m.user_id into pl from public.company_members m where m.company_id = co and m.role = 'pipelayer' limit 1;
+  select m.user_id into pl from public.company_members m where m.company_id = co and m.role = 'pipelayer' and pb_prod.managed_company(m.user_id) is null limit 1;
   select m.user_id into other from public.company_members m join public.companies c on c.id = m.company_id where m.company_id <> co and c.status = 'active' and m.role in ('foreman', 'pm')
     and pb_prod.managed_company(m.user_id) is distinct from co limit 1;
   select count(*) into v_before from pb_prod.locate_log;
