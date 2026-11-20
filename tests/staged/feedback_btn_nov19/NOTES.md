@@ -8,3 +8,4 @@ Job: Tommy wants Feedback on every screen, never covering anything. Compare 4 pl
 - Leaning: button inside each screen's header bar. To verify with screenshots.
 - Built `patches/01_feedback_in_header.py` (button in the showing screen's header, top-right). Mock-ups of the other 3 in `t/proto.js`. Shots: `shots/sheet_A.png`, `sheet_A2.png`, `sheet_B.png`, `sheet_C.png`, `sheet_D.png`. Baseline walk (r17.10, 390x844): pill covers something on 30 of 91 screens.
 - Next: `tests/t_fb1_header.js` walk at 4 sizes; existing pill tests (t121, t95, t99, critic t_cr1).
+- Header button found to wrap long titles (39 screens taller at 375). Added pbFbFit: word -> small word -> title a bit smaller -> icon, so the header is never taller than r17.10. Baseline header heights in `t/h_r1710.json`. Walk test `tests/t_fb1_header.js` (4 sizes).

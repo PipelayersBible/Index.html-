@@ -24,6 +24,7 @@ html.pb-kb-open .pb-fb-pill, html.pb-fb-open .pb-fb-pill { display: none !import
 #pbApp#pbApp#pbApp .pb-header > .pb-eyebrow ~ .pb-fb-pill { margin-left: 0; }
 html.pb-scrolled #pbApp#pbApp#pbApp .pb-screen.active:not(#screen-home) > .pb-header > .pb-fb-pill { height: 34px; font-size: 13px; }
 html:not(.pb-scrolled) #pbApp#pbApp#pbApp .pb-screen:not(#screen-home) > .pb-header.pb-fb-t > .pb-title { font-size: var(--pb-fb-ts); }
+html.pb-scrolled #pbApp#pbApp#pbApp .pb-screen.active:not(#screen-home):not(#screen-login) > .pb-header.pb-fb-u > .pb-title { font-size: var(--pb-fb-tss); }
 /* sizes: the word when the title has room for it; a smaller word, then the icon alone, when the word would push the title onto another line (picked by pbFbFit, never taller than the header was) */
 .pb-fb-pill > svg { display: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 #pbApp#pbApp#pbApp .pb-header > .pb-fb-pill.pb-fb-sm { height: 30px; padding: 0 8px; font-size: 12px; }
@@ -57,12 +58,14 @@ rep("""    function pbBetaRender() {""",
     function pbFbFit(hd, pill, sid) {
       try {
         const t = hd.querySelector(':scope > .pb-title'), app = document.getElementById('pbApp');
-        const k = sid + '|' + window.innerWidth + '|' + (app ? app.className : '') + '|' + (t ? t.textContent.length : 0) + '|' + hd.childElementCount;
+        if (!hd.offsetWidth) return; /* not laid out yet: the next call measures */
+        const k = sid + '|' + window.innerWidth + '|' + (app ? app.className : '') + '|' + (t ? t.textContent : '') + '|' + [...hd.children].map(c => c === pill || c === t ? '' : c.offsetWidth).join(',') + '|' + [...hd.querySelectorAll(':scope > .pb-eyebrow > *')].map(c => c.offsetWidth).join(',');
         const set = (c) => { pill.classList.toggle('pb-fb-sm', c === 'pb-fb-sm'); pill.classList.toggle('pb-fb-ic', c === 'pb-fb-ic'); };
         const setS = (c) => { pill.classList.toggle('pb-fb-ssm', c === 'pb-fb-ssm'); pill.classList.toggle('pb-fb-sic', c === 'pb-fb-sic'); }; /* its size while the page is scrolled (compact header) */
         if (pill._k === k) return;
         const tsz = (px) => { if (px) { hd.style.setProperty('--pb-fb-ts', px + 'px'); hd.classList.add('pb-fb-t'); } else { hd.style.removeProperty('--pb-fb-ts'); hd.classList.remove('pb-fb-t'); } };
-        if (k in pbFbSizes) { set(pbFbSizes[k][0]); tsz(pbFbSizes[k][1]); setS(pbFbSizes[k][2]); pill._k = k; return; }
+        const tszS = (px) => { if (px) { hd.style.setProperty('--pb-fb-tss', px + 'px'); hd.classList.add('pb-fb-u'); } else { hd.style.removeProperty('--pb-fb-tss'); hd.classList.remove('pb-fb-u'); } };
+        if (k in pbFbSizes) { set(pbFbSizes[k][0]); tsz(pbFbSizes[k][1]); setS(pbFbSizes[k][2]); tszS(pbFbSizes[k][3]); pill._k = k; return; }
         /* measure the header at full size: if the page is scrolled (compact header), switch that off for the measurement only, with the header's own transitions off so the numbers are final; nothing is painted in between */
         const root = document.documentElement, scrolled = root.classList.contains('pb-scrolled'), els = [hd, t, pill].filter(Boolean), was = els.map(e => e.style.transition);
         els.forEach(e => { e.style.transition = 'none'; }); if (scrolled) root.classList.remove('pb-scrolled');
@@ -72,17 +75,20 @@ rep("""    function pbBetaRender() {""",
         if (h0 > 0) {
           tsz(0); const f0 = t && sid !== 'screen-home' ? parseFloat(getComputedStyle(t).fontSize) || 0 : 0;
           const steps = f0 > 19 ? [0, Math.max(19, Math.round(f0 * 0.86)), Math.max(19, Math.round(f0 * 0.75))] : [0]; /* the title a little smaller before the word is given up */
-          const tries = []; for (const c of ['', 'pb-fb-sm']) for (const z of steps) tries.push([c, z]); for (const z of steps) tries.push(['pb-fb-ic', z]);
+          const tries = []; for (const z of steps) for (const c of ['', 'pb-fb-sm']) tries.push([c, z]); for (const z of steps) tries.push(['pb-fb-ic', z]);
           pick = tries[tries.length - 1];
           for (const q of tries) { set(q[0]); tsz(q[1]); if (hd.getBoundingClientRect().height <= h0 + 0.5 && spill() <= s0) { pick = q; break; } }
-          set(pick[0]); tsz(pick[1]); pick[2] = '';
+          set(pick[0]); tsz(pick[1]); pick[2] = ''; pick[3] = 0; tszS(0);
           if (sid !== 'screen-home') { /* the same for the compact header of a scrolled page: never bigger than above, smaller if the word would wrap the title there */
             root.classList.add('pb-scrolled'); setS('');
             pill.style.display = 'none'; const h1 = hd.getBoundingClientRect().height, s1 = spill(); pill.style.display = '';
             const ts2 = pick[0] === 'pb-fb-ic' ? [''] : pick[0] === 'pb-fb-sm' ? ['', 'pb-fb-sic'] : ['', 'pb-fb-ssm', 'pb-fb-sic'];
-            pick[2] = ts2[ts2.length - 1];
-            for (const c of ts2) { setS(c); if (hd.getBoundingClientRect().height <= h1 + 0.5 && spill() <= s1) { pick[2] = c; break; } }
-            setS(pick[2]); root.classList.remove('pb-scrolled');
+            pick[2] = ts2[ts2.length - 1]; let fit = false;
+            for (const c of ts2) { setS(c); if (hd.getBoundingClientRect().height <= h1 + 0.5 && spill() <= s1) { pick[2] = c; fit = true; break; } }
+            setS(pick[2]);
+            if (!fit && t) for (const z of [17, 16]) { tszS(z); pick[3] = z; if (hd.getBoundingClientRect().height <= h1 + 0.5 && spill() <= s1) { fit = true; break; } }
+            if (!fit) { pick[3] = 0; tszS(0); }
+            root.classList.remove('pb-scrolled');
           }
         }
         if (scrolled) root.classList.add('pb-scrolled');
@@ -93,6 +99,8 @@ rep("""    function pbBetaRender() {""",
     let pbFbT1 = 0, pbFbT2 = 0; /* again once the new screen has settled (its header can gain a back button or a star a moment later) */
     const pbFbSoon = () => { clearTimeout(pbFbT1); clearTimeout(pbFbT2); pbFbT1 = setTimeout(pbFbPlace, 0); pbFbT2 = setTimeout(pbFbPlace, 350); };
     window.addEventListener('resize', pbFbSoon);
+    let pbFbMo = null, pbFbMoOn = null; /* the header's title or buttons change while the screen is open: fit again */
+    const pbFbWatch = (hd) => { try { if (pbFbMoOn === hd || typeof MutationObserver !== 'function') return; if (!pbFbMo) pbFbMo = new MutationObserver(pbFbSoon); pbFbMo.disconnect(); pbFbMoOn = hd; if (hd) pbFbMo.observe(hd, { childList: true, characterData: true, subtree: true }); } catch (e) {} };
     function pbFbPlace() {
       try {
       let pill = document.getElementById('pbFbPill');
@@ -106,8 +114,8 @@ rep("""    function pbBetaRender() {""",
           const scr = document.getElementById('screen-' + scrName) || document.querySelector('#pbApp .pb-screen.active');
           const hd = scr && scr.querySelector(':scope > .pb-header');
           const shown = !!hd && getComputedStyle(hd).display !== 'none';
-          if (shown) { if (pill.parentNode !== hd || hd.lastElementChild !== pill) hd.appendChild(pill); pill.classList.remove('pb-fb-float'); if (!pill.hidden) pbFbFit(hd, pill, scr.id); }
-          else { if (pill.parentNode !== document.body) document.body.appendChild(pill); pill.classList.remove('pb-fb-sm', 'pb-fb-ic', 'pb-fb-ssm', 'pb-fb-sic'); pill.classList.add('pb-fb-float'); pill._k = ''; }
+          if (shown) { if (pill.parentNode !== hd || hd.lastElementChild !== pill) hd.appendChild(pill); pill.classList.remove('pb-fb-float'); if (!pill.hidden) pbFbFit(hd, pill, scr.id); pbFbWatch(hd); }
+          else { if (pill.parentNode !== document.body) document.body.appendChild(pill); pill.classList.remove('pb-fb-sm', 'pb-fb-ic', 'pb-fb-ssm', 'pb-fb-sic'); pill.classList.add('pb-fb-float'); pill._k = ''; pbFbWatch(null); }
         } catch (e) {}
       }
       } catch (e) {}

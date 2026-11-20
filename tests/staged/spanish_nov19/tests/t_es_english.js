@@ -5,7 +5,7 @@
 const L=require('./lib');const BASE0=process.env.PB_BASE||L.BASE.replace('cur.html','base.html');
 let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++;};
 const snap=(p)=>p.evaluate(()=>{const c=document.body.cloneNode(true);c.querySelectorAll('script,style,#langLabel,#langToggle').forEach(e=>e.remove());
-  return c.innerHTML.replace(/<!-- spanish phase 1 -->/g,'').replace(/\d{1,2}:\d{2}(:\d{2})?( ?[AP]M)?/g,'T').replace(/\b\d+ ?s\b|\b\d+ seconds?\b/g,'S').replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f-]{20,}/g,'ID').replace(/#join=[\w-]+|[A-Z0-9]{3} [A-Z0-9]{3}|\?[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]+/g,'CODE').replace(/\bunder 1 min ago|\b\d+ min ago/g,'AGO').replace(/\s+\n/g,'\n').replace(/\n\s*\n/g,'\n');});
+  return c.innerHTML.replace(/<!-- spanish phase 1 -->/g,'').replace(/\d{1,2}:\d{2}(:\d{2})?( ?[AP]M)?/g,'T').replace(/\b\d+ ?s\b|\b\d+ seconds?\b/g,'S').replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f-]{20,}/g,'ID').replace(/\b1[78]\d{11}\b/g,'STAMP').replace(/#join=[\w-]+|[A-Z0-9]{3} [A-Z0-9]{3}|\?[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]+/g,'CODE').replace(/\bunder 1 min ago|\b\d+ min ago/g,'AGO').replace(/\s+\n/g,'\n').replace(/\n\s*\n/g,'\n');});
 const where=(a,b)=>{let i=0;while(i<a.length&&a[i]===b[i])i++;return 'at '+i+': "'+a.slice(Math.max(0,i-70),i+70)+'" vs "'+b.slice(Math.max(0,i-70),i+70)+'"';};
 (async()=>{const b=await L.chromium.launch();
  for(const name of (process.argv[2]?process.argv[2].split(','):['login','join','setpw','home_pl','settings','run_setup','run_review','run_locked','permit_active','permit_airbad'])){

@@ -15,7 +15,7 @@
   var rec = new WeakMap();   // Text node -> { en, es }   (what the app wrote, what is painted)
   var arec = new WeakMap();  // Element   -> { attr: { en, es } }
   var cache = Object.create(null), cacheN = 0;
-  var ATTRS = ['placeholder', 'aria-label', 'title', 'alt'];
+  var ATTRS = ['placeholder', 'aria-label', 'title', 'alt', 'data-laid-tag']; // data-laid-tag: the Laid / Next tag on a grade sheet row is drawn from it
   // Records, reports and PDF previews are the company's official record: never translated (they stay as written).
   var NOI = { 'screen-archive': 1, 'screen-reportReceipt': 1, 'screen-reportsAll': 1, 'screen-myReports': 1, 'screen-reportsInbox': 1, 'screen-pdfView': 1, 'screen-companyPermits': 1, 'rrBody': 1 };
   var SKIP_SEL = 'script,style,textarea,noscript,svg,canvas,iframe,[contenteditable],[data-noi18n],#screen-archive,#screen-reportReceipt,#screen-reportsAll,#screen-myReports,#screen-reportsInbox,#screen-pdfView,#screen-companyPermits,#rrBody';

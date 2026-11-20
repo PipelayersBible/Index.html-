@@ -13,7 +13,14 @@ dct = open(os.path.join(HERE, '..', 'dict.json'), encoding='utf-8').read()
 a = eng.index('/*PB_I18N_DICT*/'); b = eng.index('/*END_PB_I18N_DICT*/')
 eng = eng[:a] + dct + eng[b + len('/*END_PB_I18N_DICT*/'):]
 assert '</script' not in eng.lower()
-src = rep(src, '</head>\n<body>\n<div id="pbOldPhone"', '</head>\n<body>\n<script id="pbI18n">\n' + eng + '</script>\n<div id="pbOldPhone"')
+# the few words the page draws from CSS (no text node to translate): Spanish versions, used only when <html lang="es">
+CSS = ('<style id="pbI18nCss">\n'
+  'html[lang="es"] #screen-input summary.pb-runsec-head::after { content: \'Cerrar \\25B4\'; }\n'
+  'html[lang="es"] #screen-input details.pb-runsec:not([open]) > summary.pb-runsec-head::after { content: \'Abrir \\25BE\'; }\n'
+  '@container (max-width: 63.9px) { html[lang="es"] #pbTabBar .pb-tab[data-tab="calculators"] .lb::after { content: "Calc."; } }\n'
+  'html[lang="es"] #pbApp .pb-laid-toast { width: max-content; }\n'
+  '</style>\n')
+src = rep(src, '</head>\n<body>\n<div id="pbOldPhone"', '</head>\n<body>\n<script id="pbI18n">\n' + eng + '</script>\n' + CSS + '<div id="pbOldPhone"')
 src = rep(src, '        <p class="pb-help" id="textSizeMsg" style="display:none;"></p>\n',
   '        <p class="pb-help" id="textSizeMsg" style="display:none;"></p>\n'
   '        <p class="pb-set-label" id="langLabel" data-noi18n>Language / Idioma</p><!-- spanish phase 1 -->\n'
