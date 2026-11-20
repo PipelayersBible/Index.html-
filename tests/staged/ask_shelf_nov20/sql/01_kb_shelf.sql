@@ -73,7 +73,7 @@ revoke all on function pb_ai.kb_shelf_excerpt(text, tsquery[], integer) from pub
 -- small boost for the job state's own chunk, times 0.8 for confidence "low". At most 2 chunks per title.
 -- Speed: ranking every row that has ANY of the words is what gets slow on a big shelf (common words match a third of
 -- it). So the rows to rank are picked by the RAREST groups: groups are added, rarest first, while they bring in at most
--- 2,500 rows in all; when even the rarest group is commoner than that, a row must have the two rarest. Counting a
+-- 5,000 rows in all; when even the rarest group is commoner than that, a row must have the two rarest. Counting a
 -- group's rows is an index-only step. Every picked row is then ranked against all the groups.
 create or replace function public.pb_ai_kb_shelf_search(p_q text, p_state text default null, p_k integer default 3,
     p_terms text[] default null, p_coll text[] default null, p_chars integer default 700)
@@ -84,7 +84,7 @@ declare
   v_k int := least(greatest(coalesce(p_k, 3), 1), 8);
   v_chars int := least(greatest(coalesce(p_chars, 700), 200), 1800);
   v_src text[]; v_g tsquery[] := '{}'; v_df int[] := '{}'; v_ord int[]; v_all tsquery; v_drive tsquery;
-  g tsquery; t text; i int; n int; v_sum int := 0; v_cap constant int := 2500; v jsonb;
+  g tsquery; t text; i int; n int; v_sum int := 0; v_cap constant int := 5000; v jsonb;
 begin
   if v_st is not null and v_st !~ '^[A-Z]{2}$' then v_st := null; end if;
   v_states := case when v_st is null or v_st = 'US' then array['US'] else array['US', v_st] end;

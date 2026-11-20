@@ -51,6 +51,7 @@ import {
 } from "./_shared/retrieval.ts";
 import { gapStep, later, namesOwnJob, REFUSAL_RX } from "./gaps.ts";
 import { addressState, okState, resolveState, stateLines, stateSearch } from "./state.ts";
+import { SHELF_FIRST, shelfSearch, withShelf } from "./shelf.ts";
 globalThis.__PLAIN_MIN = Number(Deno.env.get("AI_ASK_PLAIN_MIN") || 0); // optional: plain-language chunks beside OSHA text (0 = off)
 import { docHeader, docSource, docTitle, runTool, toolsFor } from "./tools.ts";
 import { cleanUntrusted, docBlock } from "./guard.ts";
@@ -284,7 +285,7 @@ async function askV2(body, s) {
     kbP = R ? Promise.resolve(R.index) : kb(s.admin),
     ctxLabel = cleanUntrusted(body.ctx?.label, 60),
     curJob = cleanUntrusted(body.ctx?.job, 60);
-  let cityState = "", jobState = null;
+  let cityState = "", jobState = null, shelfP = Promise.resolve([]); // ask_shelf: the deep library's excerpts (shelf.ts)
   // ask_state (Nov 20): one answer to "which state is this for", worked out once and used by the first search, the
   // model's own search, the document search and the prompt. See state.ts resolveState for the order.
   let st = resolveState({ question: q });
@@ -301,7 +302,7 @@ async function askV2(body, s) {
       return r.error || !r.data?.ok ? [] : r.data.rows || [];
     },
     docsP = scopeP.then((sr) => {
-      if (sr?.error || !sr?.data?.ok) return [];
+      if (sr?.error || !sr?.data?.ok) return shelfP = shelfSearch(s.admin, q, st.code, SHELF_FIRST), [];
       const row = (Array.isArray(sr.data.jobs) ? sr.data.jobs : []).find((j) =>
         String(j[0]).toLowerCase() === curJob.toLowerCase()
       );
@@ -321,6 +322,7 @@ async function askV2(body, s) {
           majorityState: Object.keys(n).sort((x, y) => n[y] - n[x])[0] || null, // v28: where most of the company's jobs are
         });
         jobState = st.code;
+        shelfP = shelfSearch(s.admin, q, st.code, SHELF_FIRST); // same moment as the document search
         return docsSearch(q);
       });
     }).catch(() => []);
@@ -546,6 +548,11 @@ async function askV2(body, s) {
         : { hits: [], dropped: 0, own: 0, dependent: !1 },
       hits = ss.hits;
     usage.stateDropped = ss.dropped, usage.stateOwn = ss.own, usage.stateDep = ss.dependent;
+    // ask_shelf: the deep library's best excerpts for this job's state (and federal), beside the core hits. They are short
+    // and sit inside the same 9,000 characters: the core hits give up only the room the shelf excerpts take.
+    const shelf = analysis || plan ? [] : (await shelfP).filter((h) => !hits.some((x) => x.id === h.id || x.title === h.title)).slice(0, SHELF_FIRST.k),
+      shelfChars = shelf.reduce((a, h) => a + h.text.length, 0), shelfOwn = shelf.filter((h) => h.state !== "US").length;
+    usage.shelf = shelf.length;
     const phone = (Array.isArray(body.excerpts) ? body.excerpts : []).slice(0, 5).map((x, i) => ({
         n: i + 1,
         article: cleanUntrusted(x?.article, 60),
@@ -556,8 +563,8 @@ async function askV2(body, s) {
         text: cleanUntrusted(x?.text, 900),
       })
       ),
-      ex = mergeExcerpts(phone, hits, 9e3),
-      hitText = new Map(hits.map((h) => [h.id, h.text])),
+      ex = withShelf(mergeExcerpts(phone, hits, 9e3 - shelfChars), shelf),
+      hitText = new Map([...hits, ...shelf].map((h) => [h.id, h.text])),
       sources = ex.map((x) => ({
         n: x.n,
         kind: x.kind,
@@ -613,7 +620,7 @@ Jobs you can see (job | name | city/state | start | end | last activity | closed
           : curJob
           ? "CURRENT JOB: " + curJob
           : "",
-        analysis || plan ? "" : stateLines(st, ss.dependent, ss.own),
+        analysis || plan ? "" : stateLines(st, ss.dependent === "plan" && shelfOwn ? !0 : ss.dependent, ss.own + shelfOwn),
         "TODAY: " + today + (analysis ? "   MODE: business analysis" : ""),
         `<data ref="access">
 YOUR ACCESS: ` + access + `
@@ -853,6 +860,7 @@ CURRENT RUN ON THIS PHONE: ` + run + `
             state: st,
             userRpc,
             docsSearch,
+            shelfSearch: (text, o) => shelfSearch(s.admin, text, st.code, o),
             nextRef: () => ++dataN,
             nextExcerpt: () => ++excerptN,
             resultChars: L.resultChars,
@@ -1057,6 +1065,7 @@ CURRENT RUN ON THIS PHONE: ` + run + `
         state: st.code || null,
         state_how: st.how,
         state_own: usage.stateOwn || 0,
+        shelf: usage.shelf || 0,
         state_asked: !st.code && !!usage.stateDep,
         intent: intentLog,
         plan_images: planImagesSeen,

@@ -184,7 +184,7 @@ F('osha-pl-exc-appa-2', 'How the competent person classifies soil: visual and ma
   and drying tests tell granular soil from fissured clay. Test a fresh, undisturbed sample right after it is dug. A photo cannot classify
   soil.""",
   '29 CFR 1926 Subpart P Appendix A (c)(1)-(5), (d)(2)', 'https://www.law.cornell.edu/cfr/text/29/appendix-A_to_subpart_P_of_part_1926')
-F('osha-pl-exc-appb-1', 'OSHA maximum slopes for trenches 20 ft deep or less (Table B-1)', T_EXC,
+F('osha-pl-exc-appb-1', 'OSHA maximum slopes for trenches by soil type (Table B-1)', T_EXC,
   """Appendix B to Subpart P, Table B-1, maximum allowable slopes (horizontal to vertical) for excavations less than 20 ft deep: stable
   rock, vertical (90 degrees); Type A, 3/4 to 1 (53 degrees); Type B, 1 to 1 (45 degrees); Type C, 1 1/2 to 1 (34 degrees). Short-term
   exception: a Type A excavation open 24 hours or less and 12 ft or less deep may be sloped 1/2 to 1 (63 degrees). Each side is cut back,
@@ -710,8 +710,8 @@ U('osha-pl-asbestos-pipe-1', 'Asbestos cement (transite) pipe: the OSHA rule', T
 
 # ------------------------------------------------------------------ State plans (general, US scope)
 F('osha-pl-stateplans-1', 'Which states run their own OSHA plan', T_SP,
-  """OSHA lists 29 State Plans. Twenty-two cover private employers and state and local government: AK, AZ, CA, HI, IN, IA, KY, MD, MI,
-  MN, NV, NM, NC, OR, SC, TN, UT, VT, VA, WA, WY and Puerto Rico. Seven cover state and local government workers only: CT, IL, ME, MA,
+  """OSHA lists 29 State Plans. 22 cover private employers and state and local government: AK, AZ, CA, HI, IN, IA, KY, MD, MI,
+  MN, NV, NM, NC, OR, SC, TN, UT, VT, VA, WA, WY and Puerto Rico. 7 cover state and local government workers only: CT, IL, ME, MA,
   NJ, NY and the U.S. Virgin Islands; private crews there are under federal OSHA. Everywhere else federal OSHA covers private employers.
   A State Plan must be at least as effective as federal OSHA, and it can be stricter or have rules federal OSHA does not. Even inside a
   plan state, federal OSHA usually keeps jobs on military bases, tribal lands, some federal enclaves and national parks, and maritime
