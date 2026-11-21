@@ -62,9 +62,9 @@ for c in cases + [dict(old[i], grp='canary_old') for i in d['canary_old']]:
     of = offer(t)
     if c['grp'] != 'canary_old':
         if complicated(c) and not of: why.append('no offer at the end (complicated topic)')
-        if c.get('kind') == 'simple' and not complicated(c) and not COMPLEX_Q.search(c.get('q', '')) and of: why.append('offer not wanted')
+        if c.get('kind') == 'simple' and not complicated(c) and not COMPLEX_Q.search(c.get('q', '')) and c.get('coll') != 'traffic' and of: why.append('offer not wanted')  # round 9: any traffic-control question may offer the setup (Tommy's list: traffic setups)
     g.update(ok=not why, why=why, words=w, lim=lim, facts=not miss and r.get('status') == 200, state_ok=not bad and not ws, wrong_state=bool(ws) or any('other state' in x for x in why),
-             concise=wa <= lim, direct=not buried and (c['grp'] == 'canary_old' or (of if complicated(c) else not (of and c.get('kind') == 'simple' and not COMPLEX_Q.search(c.get('q', ''))))),
+             concise=wa <= lim, direct=not buried and (c['grp'] == 'canary_old' or (of if complicated(c) else not (of and c.get('kind') == 'simple' and c.get('coll') != 'traffic' and not COMPLEX_Q.search(c.get('q', ''))))),
              safety_topic=c['grp'] != 'canary_old' and safety_topic(c), cp_line=bool(CP.search(t)), complicated=complicated(c), offer=of, usd=r.get('usd') or 0, ms=r.get('ms'), text=t, q=c.get('q', ''), safety=bool(c.get('safety')) or c['grp'] == 'canary_new')
     out.append(g)
 json.dump(out, open(os.path.join(R, 'graded.json'), 'w'), indent=0)

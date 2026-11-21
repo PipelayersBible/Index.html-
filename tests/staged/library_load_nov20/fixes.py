@@ -54,6 +54,10 @@ def fix_cases(cases, ALL, say):
         # round 6 (lib5 helper): "24-inch" with a hyphen is the right answer
         if any('24 ?(in|")' in m for m in c['must']): c['must'] = [m.replace('24 ?(in|")', '24[- ]?(in|")') for m in c['must']]; n += 1
         if c['id'] in MUSTNOT_FIX: c['mustnot'] = [MUSTNOT_FIX[c['id']][1] if m == MUSTNOT_FIX[c['id']][0] else m for m in c.get('mustnot', [])]; n += 1
+        # round 9 (lib7e, fourth helper): "doesn't expire" is the right answer (lib-ri-dig-1); the pattern only had "don't expire"
+        for k in ('must', 'lead'):
+            v = [p.replace("don't expire", "don't expire|doesn.t expire") if "don't expire" in p and "doesn.t expire" not in p else p for p in c.get(k, [])]
+            if v != c.get(k, []): c[k] = v; n += 1
         if c['id'] in DROP_MUST: c['must'] = [m for m in c['must'] if m != DROP_MUST[c['id']]]; n += 1
     say(f'fixes.py: {n} case patterns corrected (regex too narrow or a side fact asked as a must); none dropped')
 
@@ -114,6 +118,8 @@ LIB7_NEW += [
       source='29 CFR 1926 Subpart P Appendix D, Table D-1.4 and notes',
       text='Appendix D Table D-1.4, waler systems, Type C. Type C always gets solid sheeting (3x12 timber) behind the wales; wales at 4 ft vertical spacing. Maximum horizontal cylinder spacing by wale section modulus (3.5 / 7.0 / 14.0 cubic inches): over 5 to 10 ft deep, 6.0 / 6.5 / 10.0 ft; over 10 to 15 ft, 4.0 / 5.5 / 8.0 ft; over 15 to 20 ft, 3.5 / 5.0 / 6.0 ft. Cylinders: with the 3.5 wale, 2 inch up to 8 ft wide, 2 inch with oversleeves over 8 to 12 ft, 3 inch over 12 to 15 ft; with the 14.0 wale, and with the 7.0 wale below 10 ft, 3 inch at every width. Example: an 8 ft deep, 4 ft wide Type C trench with 7.0 wales: cylinders at most 6.5 ft apart, 2 inch, wales every 4 ft, solid sheeting. Over 20 ft deep: manufacturer\'s data or a registered professional engineer.'),
 ]
+# round 10 (lib7g, fourth helper): testing-water-8 still gave the 2005 flushing velocity (2.5 ft/s) as AWWA's; quick-reference-3 already says C651-14 = 3.0 ft/s (lib_more F3). Flows recomputed: Q = v x area x 448.83.
+LIB7_EDIT.append(('testing-water-8', "AWWA C651 recommends flushing at a velocity of at least about 2.5 ft per second where possible. Flow needed for 2.5 ft per second (computed from pipe area): 4 inch about 100 gpm; 6 inch about 220 gpm; 8 inch about 390 gpm; 10 inch about 610 gpm; 12 inch about 880 gpm; 16 inch about 1,570 gpm.", "AWWA C651-14 (Sec. 4.4.2) calls for flushing at 3.0 ft per second or more; the 2005 edition said about 2.5 ft per second, and specs written on it still say that. Flow needed for 3.0 ft per second (computed from pipe area): 4 inch about 120 gpm; 6 inch about 265 gpm; 8 inch about 470 gpm; 10 inch about 735 gpm; 12 inch about 1,060 gpm; 16 inch about 1,880 gpm (at 2.5 ft per second, 8 inch is about 390 gpm). Your spec or the water agency governs.", 'flushing velocity: C651-14 3.0 ft/s'))
 LIB7_TITLE = {'osha-pl-fall-holes-covers-1': 'Covers and steel road plates over a hole or trench in the road: how strong (twice the axle load), secured, marked'}
 def apply_lib7(NEW, EDITS, BASE, say):
     for c in LIB7_NEW:

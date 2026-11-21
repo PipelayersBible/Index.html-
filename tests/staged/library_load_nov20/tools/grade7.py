@@ -17,6 +17,8 @@ WIDEN = {
  'ph08': ('unknown|unidentified', 'unknown|unidentified|doesn.t know|don.t know|not (yet )?(known|identified)|unmarked'),
  'brk1': ('2 [^.]{0,25}meal|two [^.]{0,25}meal|second meal|second 30|2nd meal', '2 [^.]{0,35}meal|two [^.]{0,35}meal|second meal|second 30|2nd meal'),
 }
+# round 148 on lib7e (fourth helper): tr11's forbidden pattern hit a right answer ("The one-day exception (1/2:1 for 12 ft or less ...) applies only to Type A").
+NOT_WIDEN = {'tr11': ('1/2\\s*:\\s*1 (for|in|applies)', '1/2\\s*:\\s*1 (for|in|applies)(?![^.]{0,80}type a)')}
 def pg(p):  # Postgres ARE -> Python
     return re.compile(p.replace('\\m', '\\b').replace('\\M', '\\b').replace('\\y', '\\b'), re.I)
 def offer_end(t):
@@ -70,7 +72,7 @@ def grade(res):
             if w - closing(t) > lim: why.append(f'long: {w - closing(t)} > {lim}')
         elif i in OLD:
             c = OLD[i]; must = [WIDEN[i][1] if i in WIDEN and p == WIDEN[i][0] else p for p in c['must']]
-            miss = [p for p in must if not pg(p).search(t)]; bad = [p for p in c['mustnot'] if pg(p).search(t)]
+            miss = [p for p in must if not pg(p).search(t)]; bad = [p for p in [NOT_WIDEN[i][1] if i in NOT_WIDEN and m == NOT_WIDEN[i][0] else m for m in c['mustnot']] if pg(p).search(t)]
             if miss: why.append('facts: ' + ' ; '.join(miss))
             if bad: why.append('forbidden: ' + ' ; '.join(bad))
             if w > c['maxwords']: why.append(f"long: {w} > {c['maxwords']}")

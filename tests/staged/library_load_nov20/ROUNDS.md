@@ -391,3 +391,129 @@ Round cases picked with `NO_REASK=1 python3 tools/pick.py 8` (Tommy: rounds of F
   stub's (`/home/claude/ask_boot/next_index.ts`): the worker could not load the sealed build (blob ~1.35 MB on next because of the library overlay). It is a cold-start failure under many
   new workers, not an answer failure; live's blob is 0.4 MB (no overlay). Lost batches were re-queued (`update pb_ai.eval_runs set req = null, tries = 0` for this job's own rows) and runs
   were then pumped one at a time at the default 5.
+
+# Fourth helper (resumed Nov 21 ~00:30 UTC after a container restart)
+- Collected server-side: `1121-lib7e-r9` 113 / 113 answered; `1121-lib7e-148` 84 + `1121-lib7e-148b` 42 = 117 of the 148 distinct; `1121-lib7e-fu2c` 2 / 2. The 31 missing of the 148 are the
+  queued one-per-batch rows of `148b` (k 43-73); the 20 never-sent batches left in `148` (same questions) stay queued (a delete needed a confirmation that did not come): **never call `eval_collect('1121-lib7e-148')` again** (it pumps); collect it with the insert-only query.
+- **Spend since 14:47 PST (22:47 UTC) Nov 20**, from the reply bodies in `net._http_response` (every answer carries its `usd`): ai-next **$15.40** (202 replies, incl. direct posts and smoke) +
+  one live-slot smoke $0.24 at 22:59 = **$15.63**. Eval-table view: pilot 2.05 + fu2b 0.85 + r8 2.91 + 148 3.77 + r9 2.77 + 148b 1.99 + fu2c 0.07 = $14.41 (rest = direct posts).
+  Batches that failed 546/503 may have used model time not counted. **Left: about $9.37 of $25.**
+
+## Round 9 (`1121-lib7e-r9`, lib7e, 113 questions, $2.77): graded (`work/round9/graded.json`, extras `work/round9/grade7.txt`)
+By the grader: **fresh 72 / 80 (90%)**, canaries 15 / 15 (no safety canary fails), **wrong state 0**, facts 99 / 100, within limit 92, answer first 93, median 69 words
+(answer + safety line + offer), safety line on 54 of 60 safety topics, style 1 / 5. Read by hand, every failure:
+- **Case pattern, not the answer (1):** `lib-ri-dig-1` says "a Dig Safe ticket doesn't expire as long as the marks are maintained"; the pattern lacks `doesn.t expire`. Fixed in `fixes.py` (documented below).
+- **Grader, not the answer (2):** `lib-us-mutcd-24`, `lib-us-mutcd-22` offer sign spacing on a traffic setup question; Tommy's list allows offers on traffic setups (the round-6 grader rule
+  only matched "sign spacing" wording in the question). `lib-us-mutcd-22` is also 3 words over.
+- **Real, small (4 fresh):**
+  - `lib-in-dig-3` (Indiana joint meet): adds "Federal OSHA allows going ahead without a locate only after 24 hours ..." to an 811 answer: a federal comparison on a state-only 811 rule, which Tommy said not to do. 114 words.
+  - `lib-or-sp-6`, `lib-wa-sp-13`: right rule, then a guessing tail line ("If you meant water for dust control ...", "If you meant a 100-degree pipe bend ..."). 109 / 79 words.
+  - `lib-la-dig-3` (Louisiana fine not confirmed): 118 words of side facts around "not confirmed, ask Louisiana 811". `lib-wv-dig-3` 9 words over.
+- Style probes (4): `lib-us-osha-48` gave the whole permit list (169 words) instead of offering it; `lib-us-mutcd-54` sidewalk steps 131 words; `lib-us-fed-11`, `lib-us-fed-19` short and right, no offer. The content is right in all four.
+Extras: re-asks `lib-il-dig-4` (no federal comparison now), `lib-us-mutcd-40` ("on the shoulder"), `lib-us-mutcd-55` (up to 1 hour, MUTCD 6N.01), `lib-us-osha-62` (twice the axle load),
+`lib-wa-fup-5` (line 1 kept) **all pass**. Strictest 5 / 6: `st7-11` (Oakland, depth for a trench box) says "same as federal 5 ft" and leaves out Cal/OSHA's excavation **permit** for
+trenches 5 ft or deeper that people enter (the stricter state part). Follow-through `fu7-04`, `fu7-20` (`1121-lib7e-fu2c`): **both now deliver the table / checklist** (Appendix D cylinder
+sizes, the Type C 8 ft row from Table D-1.4; the box checklist), no "not in the excerpts" line. The two old misses are fixed.
+
+## Promotion SQL: found stale, regenerated, tested locally (free)
+- `promotion/04_library_core.sql` was made before lib7c/d: it **lacked 5 cards that ai-next runs** (`osha-pl-appd-vertical-1`, `osha-pl-appd-waler-b-1`, `osha-pl-appd-waler-c-1`,
+  `mutcd-6d-flagger-where-1`, `mutcd-6n-short-def-1`) and its header said +393 while PROMOTION.md said +396. Regenerated with `tools/mk_sql.py` (old package kept in `work/promo_before_v4/`):
+  now +396 added, 68 replaced in place = exactly `out/rows_changed.jsonl` = the lib7d overlay on ai-next (464 rows; the 9 chunks edited in place also carry a harmless `supersedes` key).
+- `03_library_precheck.sql`: its comment said `already_there = 0`; the right first-run value is **9** (the 9 in-place edits keep their ids). Comment fixed.
+- **Live library changed since our copy:** ords 110-239 (app-data cards: pipe wall / laying lengths, fittings, service intervals, calculator formulas) differ on live from
+  `ask_state_nov20/work/kb_after.json`. None of them is touched by our SQL; the precheck's id/length check still passes. The live md5 today: `6d20fceeb4976ce1f304c75338fd89d3` (ord:lib:chunk, all 2,840).
+- **Rolled-back test, done on a local Postgres 16 copy** (`tools/local_sql_test.sh`; live rows rebuilt locally, md5 equal to the server's): precheck 9 / 68 / 2840 / ids_same, texts_same true;
+  core -> **3,236 rows, ords 0..3235 with no gap, ids unique, kb_versions.n 3236, saved index dropped**; core run twice = no change; shelf twice = 47 rows (10 states);
+  `94_library_rollback.sql` -> **2,840 rows, md5 back to 6d20fcee... exactly**, kb_versions back to 2,840. The loaded rows equal the ai-next library row for row (only differences: 119 live app-data rows in ords 110-239, which come from live, and the `supersedes` key).
+  Nothing was run against the server's library tables.
+
+## The 148 existing cases on lib7e (`1121-lib7e-148` 84 + `1121-lib7e-148b` 64 one per batch; $5.84; graded `work/r148/graded.json`, `work/r148/grade7.txt`)
+**140 / 148 pass** by the server's patterns (+ the 4 documented widenings and one more below); live b7ad was 117 / 148, lib5 141 / 148. Average 80 words (live 118), median 74. Read by hand, the 8:
+- `tr11`: **case pattern, not the answer.** The forbidden pattern `1/2\s*:\s*1 (for|in|applies)` hit "The one-day exception (1/2:1 for 12 ft or less, open 24 hours or less) applies only to Type A",
+  a right answer (1:1 for Type B). Widened to `...(?![^.]{0,80}type a)` (grade7 `NOT_WIDEN`, and `promotion/06_eval_pattern_fixes.sql`). Counted as a pass above.
+- Length only, content right (4): `cut3` 174 / 140 (cut sheet steps), `eq4` 157 / 150, `ph09` 185 / 150 (photo of marks), `tie6` 151 / 150.
+- `ph02` (photo): read the stake as "cut 3.82"; the stake is 3.83. Live b7ad read 3.82 too; lib5 read 3.83. Photo reading varies; not the library.
+- `sa10` (Louisville, depth for a trench box): "OSHA requires ... 5 ft" with no Kentucky. lib7b removed the "follows federal" filler line, and with it the state. Kentucky runs its own plan,
+  so the source should be named. **Fixed in reply rule v7d** (state plan named inside line 1's parentheses when the rules match).
+- `sw1` (8-inch sewer slope, Wildomar): a web-search answer whose first line is missing; it starts "- This is from the Eastern Municipal Water District design guidelines ... 8" mains at.0040".
+  The headline was dropped after the model wrote it (the text blocks of a web answer are joined with nothing between them, and a v28 clean-up drops a first paragraph it reads as a stall).
+  **Live code path** (ask.ts around "web search answers come split", same in 4a5c); seen once here. For the lead: check with one or two web-search questions on live before promotion.
+
+## lib7f on ai-next (free fixes from round 9 and the 148)
+- Reply rule **v7d** (`src_patch/reply_rule.txt`; v7c kept in `work/reply_rule_v7c.txt`): (1) when the state ADDS a requirement the federal rule lacks (a permit, a notice) say it in line 1 or the line under
+  it (`st7-11`, Cal/OSHA excavation permit); (2) in a state with its own OSHA plan, name the plan as the source in line 1's parentheses even when the rules match (`sa10`); (3) 811 / ticket rules: "no
+  comparison and no OSHA line" (`lib-in-dig-3`); (4) no "if you meant ..." guess lines (`lib-or-sp-6`, `lib-wa-sp-13`).
+- Build **`62dd8ef92316`** (lib7f = lib7e source `work/b7/src7` with only the built-in reply rule swapped to v7d: `work/b7/src8`; Deno 62 passed), sealed, commit 1a8bfeb,
+  `data/ask/b-62dd8ef92316.txt`, **installed on ai-next** (`installed next 62dd8ef92316 (1344296 chars)`). Test row `teacher_v2@next` reply_rule element = v7d (md5 of the stripped text
+  `e0687cbaae8092cd0f585c5e44796f57` on both sides). Live slot 4a5c84ce8242 and live row (md5 bbe7c4599587734e6727895da4f2e8d9) untouched.
+- Case / grader fixes: `lib-ri-dig-1` pattern + `doesn.t expire` (fixes.py, out/cases.jsonl); grade.py: any traffic-control question may offer the setup (Tommy's list); grade7.py: `tr11` as above.
+
+## Check run on lib7f (`1121-lib7f-check`, 16 questions, about $0.48): hand-read 15 / 16
+- Fixed: `st7-11` now adds "California adds a Cal/OSHA permit for trenches 5 ft or deeper that a person enters (8 CCR 1539/341)"; `lib-in-dig-3` no OSHA line on the 811 answer;
+  `lib-or-sp-6`, `lib-wa-sp-13` no "if you meant" tail; `lib-la-dig-3` 118 -> about 70 words; `sw1` now leads with 0.40% (0.0040 ft/ft).
+- Guards still right: `tr12` (at least 15 ft back), `tr14` (exactly 20 ft = engineer), `nw12` (Arkansas 20 working days), `cs1` (19.5-23.5%), `st7-01` (WA 4 ft, stricter), `st7-06` (GA: federal $7.25), `lib-il-dig-4` (no federal comparison).
+- Still: `sa10` names no Kentucky (the parenthetical rule did not take; likely no Kentucky card in the excerpts for this wording). Minor: the answer is the right rule.
+- **Live-code issue seen again (web search):** `sw1`'s answer starts with the model's search lead-in and a stray tag: "The libraries don't give a sewer main minimum, so I'll check the web for the agency standard.TYPE: general".
+  Together with the 148-run's `sw1` (headline dropped), web-search answers are where the text clean-up fails. It is in the live build too (not from this job); lead's call.
+
+## Live build without the overlay (for promotion): `8b7042f9dfee`
+`work/b7/src8live` = lib7f source with `kb_overlay.ts` emptied (rev "" turns the overlay off on every slot). Sealed 0.42 MB (lib7f is 1.34 MB because the 464-row overlay rides inside; that size
+is what the 503 "Ask is updating" cold-start failures on ai-next were tied to). Deno 61 passed, 1 failed by design (the test that expects the overlay on ai-next). Commit e5ae1f1,
+`data/ask/b-8b7042f9dfee.txt`. **Not installed anywhere.** Use it for live only after `04_library_core.sql` has put the library into the tables. `promotion/PROMOTION.md` rewritten for lib7f.
+
+## Big partial run (`1121-lib7f-big`, lib7f) - running notes
+241 core cases not asked on any lib7 build: 118 never asked in any round + 48 that failed last time on an older build + 75 earlier passes (osha / specs / more weighted). All read from `pb_ai.eval_set`
+(already inserted, inactive) in batches of 3, one run at a time at 5 in flight. **Budget stop:** at $20.43 spent with 120 answered (about $0.03 a question), the last 8 batches (22 questions:
+lib-ut-tc-3 ... lib-wv-dig-1, mostly VA / WA) were parked (`req = -1`) so the job ends under $25. Note: parked rows count as "running" in `eval_pump`, so it is pumped with `eval_pump(run, 13)`.
+
+## Big partial run results (`1121-lib7f-big`, lib7f, 219 answered of 241, $5.59; graded `work/round10/graded.json`)
+| Group | Pass (grader) | Facts right (grader) |
+|---|---|---|
+| Never asked before (fresh) | 94 / 108 (87%) | 107 / 108 |
+| Failed last time on an older build | 29 / 41 | 37 / 41 |
+| Passed last time (re-check) | 52 / 70 | 68 / 70 |
+| **All answered** | **175 / 219 (80%)** | **212 / 219 (97%)** |
+**Wrong state 0.** Median 69 words. Safety line on 112 of 126 safety topics. By collection: 811 68 / 74, specs 18 / 20, traffic 46 / 56, OSHA 37 / 56, more 6 / 13.
+- **Length is most of the failures: 28** (26 length only), half of them 1 to 4 words over; the long ones are office / environmental questions (`lib-us-fed-18` AC pipe 181 words, `lib-us-fed-15` dewatering 154,
+  `lib-us-test-3` manhole vacuum steps 138). Within 5 words counted as a pass: about 190 / 219 (87%).
+- Read by hand, the 16 non-length failures: **10 are the case pattern, not the answer** (`lib-ks-dig-1` gives Kansas' 20 days and mentions the old 15; `lib-us-osha-51`, `-61`, `-15`, `-2`, `-60`,
+  `lib-us-mutcd-23`, `-41`, `-11`, `lib-us-std-more-3`, `lib-ca-sp-2`, `lib-mi-sp-5`: right answers in other words, or an allowed offer). **6 are real:**
+  - `lib-us-mfr-12` (flushing speed): "AWWA C651 recommends ... about 2.5 ft per second": live card `testing-water-8` still carried the 2005 number while `quick-reference-3` says C651-14 = 3.0. **Fixed: lib7g** (below).
+  - `lib-us-osha-33` (stacked trench boxes): still muddled ("designed for the full depth only when you dig 2 ft below"). Recurring since round 3; the card is right, the answer is not. Not fixed.
+  - `lib-us-mutcd-18` (cone bands for night): "the excerpts don't give the band widths": library gap (6 in and 4 in bands are not in a card).
+  - `lib-us-osha-94` (which states have their own OSHA): a web answer whose headline was dropped (starts with "- Six states ..."), same clean-up failure as `sw1`. Live code.
+  - `lib-sc-sp-1` (South Carolina competent person training): shows "[quote removed: not found in the OSHA text the app has]" in the middle of line 1. The quote check removed a quote of the SC card and left the note. Live code path; the SC card should be reworded without a quote.
+  - `lib-mi-dig-2` (Michigan 48 in caution zone): adds "wider than the common 18 to 24 in elsewhere": other places' number, against Tommy's rule. Minor.
+
+## lib7g on ai-next (the flushing card)
+`testing-water-8` edited (fixes.py `LIB7_EDIT`, out/edits.jsonl): "AWWA C651-14 (Sec. 4.4.2) calls for flushing at 3.0 ft per second or more; the 2005 edition said about 2.5 ...", flows recomputed for 3.0 ft/s
+(Q = v x area x 448.83: 4 in 120, 6 in 265, 8 in 470, 10 in 735, 12 in 1,060, 16 in 1,880 gpm). `build_kb.py`: 3,236 rows, 465 differ from live (396 new, 69 in place). Overlay rev lib7g.
+`promotion/03` (already_there = 10, to_replace 69), `04` regenerated, `94_library_rollback.sql` now generated by `tools/mk_rollback.py` (69 rows back). Local test re-run: precheck 10 / 69 / 2840 / true x3,
+core 3,236 (twice), shelf 47 (twice), rollback to md5 6d20fcee... exactly; loaded rows = overlay rows (465 / 465).
+Build **`9418e997119c`** (`work/b7/src9`: lib7f + overlay lib7g; Deno 62 passed), commit 897e044, installed on ai-next (`installed next 9418e997119c (1346116 chars)`). Prompt row unchanged (v7d).
+The live build `8b7042f9dfee` has no overlay, so it is unchanged by this. (`work/b7/src8` = lib7f as installed before, kept.)
+
+## Spend (fourth helper's job, budget $25 since 14:47 PST = 22:47 UTC Nov 20)
+From the reply bodies in `net._http_response` (each answer carries its `usd`): **ai-next $22.27 (313 replies) + one live-slot smoke $0.24 at 22:59 = $22.51.** By run: lib7 pilot 2.05, fu2b 0.85,
+r8 2.91, 148 3.77 + 148b 2.07, r9 2.77, fu2c 0.07, lib7f check 0.50, big 5.59, lib7g smoke 0.04, plus direct posts by the third helper (smoke, re-checks). Batches that failed with 546 / 503 may have
+used some model time that is not in these numbers. **Left about $2.49; stopped.** Parked, never sent: 22 big-run questions (`req = -1`, run `1121-lib7f-big`) and 20 old duplicate batches in
+`1121-lib7e-148` (never call `eval_collect` on that run).
+
+## Promotion package (final): `promotion/PROMOTION.md`
+- Library: `03_library_precheck.sql` (expect 10 / 69 / 2840 / 2839, true x3) -> `04_library_core.sql` (+396, 69 in place, 3,236 rows) -> optional `05_library_shelf.sql` (47). Rollback `94_library_rollback.sql`.
+  All tested on a local Postgres 16 copy of the live rows (`tools/local_sql_test.sh`); nothing run on the server's library tables.
+- Build for live: **`8b7042f9dfeecc10ec4d2d4143a8ca2cdb0a504fbe629369bf3154ffe58ac391`** (no overlay, 0.42 MB), URL in PROMOTION.md. Tested code on ai-next: `9418e997119c` (lib7g) = same code + overlay.
+- Prompt row: `02_prompt_row_promote.sql` copies `teacher_v2@next` (reply rule v7d, md5 e0687cbaae8092cd0f585c5e44796f57; exChars 10000 = the built-in default) to `teacher_v2`; rollback `92`.
+- Eval pattern fixes (optional): `06_eval_pattern_fixes.sql` (ct4, nw12, ph08, brk1, tr11).
+- Go / no-go table and "For Tommy to get" are in PROMOTION.md. **Recommendation: GO** in the order library -> build -> row, with the 4-question smoke; not "all 148 pass" literally (140; 2 real misses).
+
+## What is on the server because of this helper
+| Thing | State |
+|---|---|
+| `pb_ai.code` slot `next` | `9418e997119c` (lib7g). Before it this helper installed `62dd8ef92316` (lib7f). Live slot `4a5c84ce8242` untouched. |
+| Repo | 3 sealed build files, one commit each: `b-62dd8ef92316.txt` (1a8bfeb), `b-8b7042f9dfee.txt` (e5ae1f1, not installed), `b-9418e997119c.txt` (897e044). |
+| `teacher_v2@next` | reply rule element = v7d. Live row `teacher_v2` untouched (md5 bbe7c4599587734e6727895da4f2e8d9). |
+| `pb_ai.eval_runs` / `eval_results` | runs `1121-lib7f-check`, `1121-lib7f-big` (8 parked batches, req = -1), `1121-lib7g-smoke`; results collected for `1121-lib7e-r9`, `-148`, `-148b`, `-fu2c`. |
+| `pb_ai.eval_set`, library tables, shelf | nothing written. |
+
+## DONE
