@@ -71,3 +71,12 @@ patterns (5 by hand are length or the photo).
 5. **The 39 state DOT traffic manuals marked "not confirmed"** (first NV, UT, NY, NJ, IL, MI, NC): one call to each DOT traffic office.
 6. **Kentucky and the other own-plan states' trench rule pages** (KY OSH 803 KAR 2, IOSHA, VOSHA, Wyoming OSHA, Iowa 875 IAC), so Ask can name the state plan as the source.
 7. Phone calls only a person can make (from the 811 helper): Oregon ticket life 30 or 45 days; does a renewal print a new number in TX, FL, OK, CT, ME; Ohio ticket expiry; Montana 811 rules.
+
+## APPLIED Nov 20 evening (lead)
+- Precheck: already_there 10, to_replace_found 69, rows 2840, ids_same/texts_same true.
+- 04 core applied -> kb_versions n = 3236, rows 3236. 05 shelf applied -> 47 rows.
+- Build: live = 8b7042f9dfee (installed 420084 chars). Prompt row teacher_v2 = teacher_v2@next (v7d), md5 equal.
+- Live smoke (4 questions, about $0.09), build 1121-0043 slot live, all HTTP 200 and right:
+  Type C 10 ft = 15 ft back; Oakland 6 ft = Cal/OSHA permit + protective system; short duration = up to 1 hour (6N.01);
+  20 ft Type B = registered professional engineer (App. F). Competent-person line on all four.
+- Rollback order if needed: build 4a5c (URL above), 92_prompt_row_rollback.sql, 94_library_rollback.sql, delete from pb_ai.kb_shelf.
