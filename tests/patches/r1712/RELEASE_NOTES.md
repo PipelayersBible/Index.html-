@@ -66,3 +66,4 @@ Published Nov 20 ~2:55 PM. Build stamp `r17.12 · 2026-11-20` in the page and in
 - NOT yet: one-device gate 02 (planned ~6 PM, after phones have r17.12), Ask follow-ups server add-on (goes with the next Ask build).
 - Ask live = 4a5c84ce8242 (live b7ad + follow-ups add-on + abbreviation-cut fix), promoted Nov 20 ~3:05 PM. Rollback b7ad788e3a62 (commit 9c575fe).
 - Ask live = 8b7042f9dfee + library 3,236 rows + shelf 47 + reply rule v7d (Nov 20 evening). Rollback steps in tests/staged/library_load_nov20/promotion/PROMOTION.md.
+- One-device gate ON Nov 20 18:31 PT (pgrst.db_pre_request = public.pb_session_gate), after the first r17.12 check-in. Anon RPC + app page checked; no gate errors in logs. Undo: one_device_nov20/sql/99_undo.sql part 1.
