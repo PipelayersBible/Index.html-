@@ -5,7 +5,7 @@
 # How the app counts: canDig = the call day + notice.n working days (the call day itself is day 0). A law that says
 # "48 hours, not counting the day of the notice" (or "starting the next business day") ends at the start of the 3rd
 # working day, so a Monday call can be dug Thursday: n must be 3, not 2.
-#  MN  GSOC (gopherstateonecall.org/?p=3558, read Nov 21 2026): "if you submit a ticket on Tuesday, you can start
+#  MN  GSOC (gopherstateonecall.org/?p=3558, read Nov 20 2026): "if you submit a ticket on Tuesday, you can start
 #      digging on Friday"; the 48 hours begin "12:01 a.m. the business day after the request".            n 2 -> 3
 #  IA  Iowa Code 480.1(6) (2026): the 48-hour period begins "6:00 a.m. the next business day".              n 2 -> 3
 #  IN  Ind. Code 8-1-26-16: work may start at 7 a.m. on the next working day AFTER the two full working days. n 2 -> 3
@@ -44,7 +44,7 @@ sr.rb('MN', 2, 3); sr.rb('IA', 2, 3); sr.rb('IN', 2, 3)
 # Oregon: one more source for the 30 days; Ohio: the center's site address
 T = sr.table(); sr.fix('OR', {}, [ORH])
 T = sr.table(); C = [dict(c) for c in T['states']['OH']['centers']]; assert C[0]['url'] == 'https://oups.org'; C[0]['url'] = 'https://ohio811.org'
-sr.fix('OH', {'centers': C}, [], 'oups.org now redirects to ohio811.org (seen Nov 21 2026)')
+sr.fix('OH', {'centers': C}, [], 'oups.org now redirects to ohio811.org (seen Nov 20 2026)')
 
 # the 811 centers' own extra days off, for the wait only
 p.rep("""  function pbSrWorkDay(d, code, core) {

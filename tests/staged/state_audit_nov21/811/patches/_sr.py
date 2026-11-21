@@ -2,7 +2,7 @@
 # table, so the patches apply alone on r17.13 or stacked in any order (the row is re-serialized, not matched as text).
 import json, re
 dump = lambda o: json.dumps(o, ensure_ascii=False, separators=(',', ':'))
-CHECKED = '2026-11-21'
+CHECKED = '2026-11-20'
 
 class SR:
     def __init__(self, p, changes):

@@ -3,7 +3,7 @@
 # Thursday (the app says Wednesday). python3 p3_wait_not_call_day.py in.html out.html
 # Applies alone on r17.13 or stacked with p1, p2, p4, p5 in any order.
 #  CA Gov. Code 4216(l): "Legal excavation start date and time means two working days, not including the date of
-#     notification"; 4216(v) working day = Mon-Fri 7:00 a.m. to 5:00 p.m. (findlaw, read Nov 21 2026)        2 -> 3
+#     notification"; 4216(v) working day = Mon-Fri 7:00 a.m. to 5:00 p.m. (findlaw, read Nov 20 2026)        2 -> 3
 #  NV NRS 455.110 / USA North handbook: 2 working days (7 AM to 5 PM), the call day not counted (same center as CA) 2 -> 3
 #  NY 16 NYCRR 753-3.1 "at least two ... working days, not including the date of the call"; National Grid: "wait at
 #     least two full working days ... excludes the date of notification" (ngridsafety.com/?p=45)            2 -> 3
