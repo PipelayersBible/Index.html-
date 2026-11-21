@@ -38,7 +38,7 @@ const start = async (init) => { const { b, p } = await boot(BASE + '/' + SET + '
     ok(m.rb.MN === 3 && m.rb.IA === 3 && m.rb.IN === 3 && m.rb.OK === 4, 'Renew-by: MN, IA, IN 3 (new notice waits like the first); OK keeps 4');
     ok(m.ex.MN === '2026-06-19' && m.ex.IA === '2026-06-28', 'ticket life from the real legal start: MN Jun 2 call -> Jun 19; IA (day 1 = Thursday) -> Jun 28: ' + JSON.stringify(m.ex));
     ok(m.holX && JSON.stringify(m.holX.NV) === '["2026-10-30"]' && JSON.stringify(m.holX.UT) === '["2026-07-24","2026-12-24"]' && JSON.stringify(m.holX.SC) === '["2026-05-11","2026-12-24","2026-12-28"]' && m.holX.TX.length === 0, 'center holidays 2026 = their posted lists: ' + JSON.stringify(m.holX));
-    ok(W('NVoct', '2026-11-02') && W('UTjul', SET === 'all' ? '2026-07-28' : '2026-07-27') && W('SCmay', '2026-05-15') && W('SCdec', '2027-01-04'), 'waits skip Nevada Day, Pioneer Day, SC Confederate Memorial Day and Christmas days');
+    ok(W('NVoct', SET === 'all' ? '2026-11-03' : '2026-11-02') && W('UTjul', SET === 'all' ? '2026-07-28' : '2026-07-27') && W('SCmay', '2026-05-15') && W('SCdec', '2027-01-04'), 'waits skip Nevada Day, Pioneer Day, SC Confederate Memorial Day and Christmas days');
     ok(m.ex.SC === '2026-06-26', 'SC ticket life (15 working days, short holiday list) from Fri Jun 5 -> Jun 26: ' + m.ex.SC);
     ok(m.url.OH === 'https://ohio811.org', 'OHIO811 site address');
   }
