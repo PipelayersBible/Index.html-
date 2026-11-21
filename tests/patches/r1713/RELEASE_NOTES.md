@@ -30,3 +30,6 @@ screen, on a new safety event in the Job Book, and on the confined space emergen
 ## Spanish (still switched off)
 Spanish words added for the r17.12 screens (lock screen, two devices, Taper & Cone Spacing, Monthly / Yearly, state
 card, "Answered for") and the new safety lines.
+
+## Live
+Published Nov 20 ~8:20 PM, commit 0641238; live sw.js and page say r17.13 · 2026-11-20. Full regression: 2 of 237 failed, both explained (t130 expected, updated; f06_breakend time-of-day, same on r17.12).
