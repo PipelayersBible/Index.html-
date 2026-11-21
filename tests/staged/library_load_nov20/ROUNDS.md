@@ -516,4 +516,9 @@ used some model time that is not in these numbers. **Left about $2.49; stopped.*
 | `pb_ai.eval_runs` / `eval_results` | runs `1121-lib7f-check`, `1121-lib7f-big` (8 parked batches, req = -1), `1121-lib7g-smoke`; results collected for `1121-lib7e-r9`, `-148`, `-148b`, `-fu2c`. |
 | `pb_ai.eval_set`, library tables, shelf | nothing written. |
 
-## DONE
+---
+# Fifth helper (Nov 20 ~18:40 PST): lib8 fixes on live 8b7042f9dfee + tables 3,236 (in progress; saved early)
+- Base: `work/b7/src10` = copy of `work/b7/src8live` (= live 8b7042f9dfee source). Tests `work/b7/t10` baseline 61 passed / 1 failed by design (kb_next overlay test).
+- Overlay empty -> `overlayOn()` false on every slot -> ai-next reads `pb_ai.kb_chunks` (kb.ts:23, 56). Checked in code.
+- Budget: started at $0; coordinator relayed Tommy's approval at 18:36 of up to $10 for the 148 + 27 follow-through + one fresh round.
+
