@@ -1,0 +1,42 @@
+== pass 1
+reset: 3236|347ae4d8eee91b042fc1ff49baf0fd60 | shelf 47|fa1033cecf0744b3aa3d3ccac028160e  (want 3236|347ae4d8eee91b042fc1ff49baf0fd60 | 47|fa1033cecf0744b3aa3d3ccac028160e)
+psql:sql/11_load.sql:130: NOTICE:  ask_merge 11_load: applied: 3270 rows
+{"post_touched": "dc04fe34412ba2be8650a33893e6d226", "post_new": "a601ba6e4e5441f241200a10877eed04", "post_shelf": "f9472660e426ccf74cb756211ed527c8", "post_all_local": "eb05d565cacc0e0b64a848aa41a5496f"}
+== pass 2
+reset: 3236|347ae4d8eee91b042fc1ff49baf0fd60 | shelf 47|fa1033cecf0744b3aa3d3ccac028160e  (want 3236|347ae4d8eee91b042fc1ff49baf0fd60 | 47|fa1033cecf0744b3aa3d3ccac028160e)
+local copy md5 347ae4d8eee91b042fc1ff49baf0fd60 (server 347ae4d8eee91b042fc1ff49baf0fd60: same); touched 11 ords [405, 598, 648, 1926, 1927, 2255, 2312, 2821, 2857, 2900, 2979]; insert 34; shelf 3; cases 24; expected md5s embedded
+10_precheck.sql 3386 bytes
+11_load.sql 70221 bytes
+91_rollback.sql 17852 bytes
+12_eval_cases_inactive.sql 11687 bytes
+-- precheck before:
+rows max_ord kb_n new_ids_there shelf_rows shelf_new_there touched_ok touched_md5 new_md5 all_md5 shelf_md5
+3236 3235 3236 0 47 0 11 1732d842b4664a3d0caf3b85b6d7c9ee  347ae4d8eee91b042fc1ff49baf0fd60 fa1033cecf0744b3aa3d3ccac028160e
+(1 row)
+-- load:
+psql:sql/11_load.sql:130: NOTICE:  ask_merge 11_load: applied: 3270 rows
+-- load again:
+psql:sql/11_load.sql:130: NOTICE:  ask_merge 11_load: already applied, nothing changed
+-- precheck after:
+rows max_ord kb_n new_ids_there shelf_rows shelf_new_there touched_ok touched_md5 new_md5 all_md5 shelf_md5
+3270 3269 3270 34 50 3 0 dc04fe34412ba2be8650a33893e6d226 a601ba6e4e5441f241200a10877eed04 eb05d565cacc0e0b64a848aa41a5496f f9472660e426ccf74cb756211ed527c8
+(1 row)
+3270|{"app": 238, "osha": 278, "field": 2754}
+0
+-- rollback:
+psql:sql/91_rollback.sql:33: NOTICE:  ask_merge 91_rollback: done, 3236 rows
+after rollback (want 3236|347ae4d8eee91b042fc1ff49baf0fd60 and 47|fa1033cecf0744b3aa3d3ccac028160e): 3236|347ae4d8eee91b042fc1ff49baf0fd60 | 47|fa1033cecf0744b3aa3d3ccac028160e
+3236|{"app": 238, "osha": 278, "field": 2720}
+-- rollback again:
+psql:sql/91_rollback.sql:33: NOTICE:  ask_merge 91_rollback: already rolled back (or never applied), nothing changed
+-- guard: a touched row changed on live -> load must refuse
+FAIL: the rows this load changes are not the live text it was built on
+rows still: 3236
+reset: 3236|347ae4d8eee91b042fc1ff49baf0fd60 | shelf 47|fa1033cecf0744b3aa3d3ccac028160e  (want 3236|347ae4d8eee91b042fc1ff49baf0fd60 | 47|fa1033cecf0744b3aa3d3ccac028160e)
+-- guard: rollback on the unloaded library with one extra row -> must refuse
+FAIL: the library is not in the state 11_load.sql leaves (changed since?): nothing rolled back
+reset: 3236|347ae4d8eee91b042fc1ff49baf0fd60 | shelf 47|fa1033cecf0744b3aa3d3ccac028160e  (want 3236|347ae4d8eee91b042fc1ff49baf0fd60 | 47|fa1033cecf0744b3aa3d3ccac028160e)
+-- eval cases (local stand-in table with the server's columns), run twice
+NOTICE:  table "eval_set" does not exist, skipping
+24
+24|0|70|100
