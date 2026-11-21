@@ -61,3 +61,6 @@ Rollback: `sql/91_rollback.sql` (library + shelf), and the `delete` line at the 
 (+ `retr.mjs`, `regress.mjs` copied from library_load_nov20, `try.mjs`). `work/`: live_rows.jsonl (live copy, 4 MB), kb_before/after.json, retr_*.json, retr_compare.txt, local_test.log, expected.json.
 
 ## DONE
+
+## APPLIED Nov 20 ~10 PM PT (lead)
+Precheck matched (3236 rows, md5 347ae4d8); 11_load applied -> 3270 rows, shelf 50, all expected md5s match; 12 eval cases inserted inactive. Live smoke (3): MN Tuesday ticket -> Friday (216D.04); CO tracer wire C.R.S. 9-1.5-103(10); OR public works OT after 8 h (BOLI). Rollback: 91_rollback.sql.
