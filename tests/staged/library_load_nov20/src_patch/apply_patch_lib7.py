@@ -41,8 +41,8 @@ rep('ask.ts', '''    earlier = earlierBlock(hist),''', '''    earlier = earlierB
     cont = continuationOf(q, body.history),
     qSearch = cont ? cont.q + " " + q : q, // lib7: what the library is searched with (a continuation searches its thread's topic)''')
 rep('ask.ts', 'shelfSearch(s.admin, q, st.code, { ...SHELF_FIRST, index: kbP })', 'shelfSearch(s.admin, qSearch, st.code, { ...SHELF_FIRST, index: kbP })', 2)
-# turn 2 gets the SAME cards as turn 1 (the original question's search: what the offer was made from) plus up to 3 new cards for the
-# offered part; the excerpt budget grows by 4,000 characters on a continuation so the added cards are not cut.
+# turn 2 gets the SAME cards as turn 1 (the original question's search: what the offer was made from) plus up to 3 new cards found with the
+# offered part's own words (plain-language cards first); the excerpt budget grows by 4,000 characters on a continuation so the added cards are not cut.
 rep('ask.ts', '''        ? stateSearch(search, index, intent?.search ? q + " " + intent.search : q, {''', '''        ? stateSearch(search, index, cont ? cont.orig : intent?.search ? q + " " + intent.search : q, {''')
 rep('ask.ts', '''          stats: kst,
         }, st, q)
@@ -52,8 +52,10 @@ rep('ask.ts', '''          stats: kst,
         : { hits: [], dropped: 0, own: 0, dependent: !1 },
       hits = cont && index ? (() => {
         const seen = new Set(ss.hits.map((h) => h.id)),
-          more = stateSearch(search, index, intent?.search ? qSearch + " " + intent.search : qSearch, { k: 6, level, topicBoost: [], maxChars: 9e3 }, st, cont.q).hits;
-        return [...ss.hits, ...more.filter((h) => !seen.has(h.id)).slice(0, 3)];
+          pq = cont.part && cont.part.split(/\\s+/).length >= 3 ? cont.part : cont.q, // the offered part on its own (the original question's cards are already in)
+          more = stateSearch(search, index, intent?.search ? pq + " " + intent.search : pq, { k: 6, level, topicBoost: [], maxChars: 9e3 }, st, pq).hits;
+        // plain-language cards first: they hold the table values (verbatim OSHA text outranks them on rule words)
+        return [...ss.hits, ...more.filter((h) => !seen.has(h.id)).sort((x, y) => Number(x.lib === "osha") - Number(y.lib === "osha")).slice(0, 3)];
       })() : ss.hits;''')
 rep('ask.ts', '''mergeExcerpts(phone, pbTrimHits(hits), Number((globalThis.__pbKnobs || {}).exChars) || 1e4)''', '''mergeExcerpts(phone, pbTrimHits(hits), (Number((globalThis.__pbKnobs || {}).exChars) || 1e4) + (cont ? 4e3 : 0))''')
 rep('ask.ts', '''        // v28: the length rule again, last, where the model follows it best''', '''        cont ? "CONTINUATION: this message accepts what your last answer offered" + (cont.part ? ` (\\"${cleanUntrusted(cont.part, 200)}\\")` : "") + `, on the question \\"${cleanUntrusted(cont.orig, 300)}\\". Give that part now, in full and from the excerpts: every row of a table, every item of a list, every step, with the numbers. Do not repeat what the last answer said and do not start over. If no excerpt has it, say in one line which document has it; never say it did not come through.` : "",

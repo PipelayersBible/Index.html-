@@ -10,7 +10,7 @@ for (const c of cases) {
   const st = S.resolveState({ question: c.q, addressState: c.where.slice(-2) });
   const hitsOf = (q) => S.stateSearch(R.search, index, q, { k: 6, level: c.level || "foreman", topicBoost: [], maxChars: 9e3 }, st, q).hits;
   const run = (q) => R.mergeExcerpts([], hitsOf(q), 1e4).map((x) => x.id);
-  const cont = (part, orig) => { const a = hitsOf(orig), seen = new Set(a.map((h) => h.id)), b = hitsOf(part + " " + orig).filter((h) => !seen.has(h.id)).slice(0, 3); return R.mergeExcerpts([], [...a, ...b], 14e3).map((x) => x.id); };
+  const cont = (part, orig) => { const a = hitsOf(orig), seen = new Set(a.map((h) => h.id)), b = hitsOf(part.split(" ").length >= 3 ? part : part + " " + orig).filter((h) => !seen.has(h.id)).sort((x, y) => Number(x.lib === "osha") - Number(y.lib === "osha")).slice(0, 3); return R.mergeExcerpts([], [...a, ...b], 14e3).map((x) => x.id); };
   const part = c.offer.replace(/^\s*(do you )?(want|need|should i|would you like)\b/i, "").replace(/^\s*(me to )?(give|show|list|go through|walk you through)?\s*(you )?(the rest|more|the details)?\s*(on|of|for)?\s*[:,-]?\s*/i, "").replace(/\?\s*$/, "").trim();
   const t1 = run(c.q), nw = cont(part, c.q), old = run(c.q.split(" ").slice(0, 0).join(" ") + "yes " + (c.intent || ""));
   const has = (ids) => (c.want || []).some((w) => ids.includes(w));

@@ -361,3 +361,33 @@ the 42 of the minimal build + shelf 14 (one wording check updated to the new lin
 - Re-asks: `lib-us-mutcd-55` now answers "up to 1 hour (MUTCD 6N.01)" (third-time miss fixed; long); `lib-us-fed-17` "3 years after coverage expires or is terminated" (fixed; long);
   `lib-us-osha-62` still quoted the Caltrans plate table on a PA job (card fixed in lib7b); `lib-us-mutcd-40` still no "shoulder" (two old cards said "off the travel lane"; fixed in lib7b).
   Existing: tr12 and tr14 pass (tr14 names exactly 20 ft and the engineer), ct4, nw12, brk1, wa3 pass.
+
+## Round 8 (`1121-lib7b-r8`, lib7b, $2.51 for 117 questions incl. strictest + re-asks)
+Round cases picked with `NO_REASK=1 python3 tools/pick.py 8` (Tommy: rounds of FRESH questions): 71 fresh (state caps left no more), 15 canaries, 5 style.
+**Fresh 54 / 71 by the grader, wrong state 0, facts 81 / 88**, median 71 words. Read by hand, about 62 / 71 are right; the rest of the 17:
+- case or grader, not the answer (fixed for later rounds): "10-minute" vs "10 minutes" (`lib-md-sp-4`; the grader now reads "N-minute/hour/day" as "N minutes"); `lib-us-fed-1`'s forbidden pattern
+  hit "no CDL is needed" in the exception line of a right "Yes, a Class A CDL is needed" answer (`fixes.py` MUSTNOT_FIX); gas-line-hit questions counted as "complicated, needs an offer"
+  (the grader now treats them as emergencies: no offer).
+- real: 6 answers 2 to 18 words over; `lib-il-dig-4` compared Illinois' 811 notice with "OSHA's 24-hour response window" (the strictest wording leaking into a state-only rule) ->
+  **lib7c**: compare only the same requirement; 811 / state specs / state DOT manuals get no federal comparison (state.ts + reply rule); `lib-wa-fup-5` (Texas, short-term Type A) lost line 1
+  to the go/no-go guard (old behaviour, live too); `lib-us-mutcd-55` answered OSHA's 24 h again (passed on lib7); `lib-us-mutcd-40` still no "shoulder" (old cards fixed in lib7b; this ran on lib7b).
+- Strictest 9 / 12 (3 length). `lib-us-osha-62`: passed (twice the axle load); `lib-us-fed-17`: right (3 years after coverage ends), long.
+- Canary `tr3` and two more were still running at grading; collected later.
+
+## lib7c / lib7d / lib7e (coordinator, Nov 20 evening)
+- lib7c `6aa26cab381e`: the state-only comparison fix above (not installed alone).
+- **Appendix D table cards** (coordinator: deliver the table values on a continuation): `osha-pl-appd-vertical-1` (D-1.1/D-1.2 vertical shores, Type A/B: spacing 8/8/7 and 8/6.5/5.5 ft,
+  4 ft vertical, cylinder by width), `osha-pl-appd-waler-b-1` (D-1.3), `osha-pl-appd-waler-c-1` (D-1.4, solid sheeting). The federal tables are images in the eCFR; values read twice from
+  Cal/OSHA's identical text copy (8 CCR 1541.1 App. D, dir.ca.gov/Title8/1541_1d.html), consistent, and they match OSHA's own Example 1. **Appendix C (timber) NOT added:** the only text copy is an
+  ASCII grid whose row/column alignment the reader could not confirm (depth bands and upright columns marked unclear); timber sizes from a doubtful read are a safety risk. For Tommy to get:
+  a clean copy of Tables C-1.1 to C-2.3 (OSHA's own PDF of Subpart P, or the Federal Register 1989 final rule tables).
+- Continuation retrieval: the extra cards for the offered part are now searched with the offered part's own words (3+ words), plain-language cards first (verbatim OSHA text outranks them).
+  Free check: fu7-20's turn 2 now gets an Appendix D table card; fu-2 / fu-8 benching card still there.
+- lib7e: reply rule v7c FOLLOW-UP line: give the whole offered table, list or steps with one lead-in sentence and no filler (coordinator: over 200 words is fine for real content).
+- **Installed on ai-next: `ce846c1a3e15` (lib7e, commit 76fe5cc)**, test row reply rule = `src_patch/reply_rule.txt` (md5 8f15b056e6af17964b77a85456b10a18). Deno 62 passed.
+
+## Running notes (lib7e runs)
+- Harness: with two runs pumping (10 batches of 3 in flight, then 15 with a manual `eval_pump(run, 8)`), 58 requests came back **503 "Ask is updating"** in 3 minutes. That reply is the boot
+  stub's (`/home/claude/ask_boot/next_index.ts`): the worker could not load the sealed build (blob ~1.35 MB on next because of the library overlay). It is a cold-start failure under many
+  new workers, not an answer failure; live's blob is 0.4 MB (no overlay). Lost batches were re-queued (`update pb_ai.eval_runs set req = null, tries = 0` for this job's own rows) and runs
+  were then pumped one at a time at the default 5.
