@@ -126,3 +126,10 @@ patterns (5 by hand are length or the photo).
   Type C 10 ft = 15 ft back; Oakland 6 ft = Cal/OSHA permit + protective system; short duration = up to 1 hour (6N.01);
   20 ft Type B = registered professional engineer (App. F). Competent-person line on all four.
 - Rollback order if needed: build 4a5c (URL above), 92_prompt_row_rollback.sql, 94_library_rollback.sql, delete from pb_ai.kb_shelf.
+
+## lib8 APPLIED Nov 20 ~7:05 PM (lead)
+- 07 card applied (text_md5 now 4ece7bdc...). Build live = d881cb695137. Prompt row = v8 (md5 c0aa8fed...).
+- Live smoke (4, build 1121-0305): Louisville names Kentucky's plan, 5 ft; Salt Lake City injury = Utah 8 hours (stricter than 24);
+  stacked boxes = manufacturer's data, bottom box rated full depth; 20 ft Type B = engineer, not 1:1.
+- Old eval rows (20 queued in 1121-lib7e-148, 8 parked in 1121-lib7f-big, 4 queued in 1120-lib7-fu2) NOT deleted: the delete needs a
+  confirmation the session can't give. Harmless as long as nobody pumps/collects those runs.
