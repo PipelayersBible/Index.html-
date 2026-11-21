@@ -12,8 +12,8 @@
 #  NM 18.60.5 NMAC: 2 working days, not counting the notice day                                             2 -> 3
 # NM's renewal is a new locate with the same wait: PB_LOC_RB NM 2 -> 3. (IL names its own window; CA renews by day 28.)
 # NOTE: tests/r1706/staterules/tests/t130_staterules.js pins CA canDig (Fri->Tue, Wed->Tue Dec 1, Sat->Wed): those 3
-# lines need the new dates (Fri Nov 20 -> Wed Nov 25; Wed Nov 25 -> Wed Dec 2; Sat Nov 21 -> Thu Nov 26 is Thanksgiving,
-# so Wed Dec 2). tests/t_811_audit.js prints them.
+# lines need the new dates (Fri Nov 20 -> Wed Nov 25; Wed Nov 25 -> Wed Dec 2; Sat Nov 21 -> Mon Nov 30, since the
+# Saturday call counts from Monday and Thanksgiving + the Friday after are off). tests/t_811_audit.js prints them.
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _rep import P
