@@ -1,6 +1,6 @@
 # apply_patch_lib8.py <src_in> <src_out> : lib8 fixes (fifth helper, Nov 20 evening) on top of the live source
 # (work/b7/src8live = live 8b7042f9dfee). Exact-once replacements.
-#  A state.ts : own-plan states (KY, IN, IA, VT, WY, ...) on a safety-rule question: when the question's words do not reach the
+#  A state.ts : own-plan states (KY, IN, IA, VT, WY, ...) on a safety-rule, injury-reporting or heat question: when the question's words do not reach the
 #               state's plan card, the state's plan card (sp-<st>-trench-* / sp-<st>-who-1) is added as the state's card, so the
 #               answer can name the plan as its source (sa10 Louisville). When the state has no plan card at all, the "plan"
 #               line is used (federal minimum + one line: the state's plan can be stricter) instead of the general line.
@@ -23,9 +23,12 @@ rep('state.ts', '''    .sort((a, b) => b.score - a.score).slice(0, OWN_SLOTS);
 ''', '''    .sort((a, b) => b.score - a.score).slice(0, OWN_SLOTS);
   // lib8: an own-plan state, a safety-rule question, and none of the state's cards made it: add the state's plan card
   // (sp-<st>-trench-* first for trench words, else sp-<st>-who-1), so the answer can name the plan as the source.
-  if (code && !own.length && PLAN_STATES.includes(code) && SAFETY_RULE.test(String(question || "")) && !EMERGENCY.test(String(question || ""))) {
-    const lc = code.toLowerCase(), trenchQ = /\\b(trench|excavat|shor|shield|box|protective|cave|spoil|slop|bench|ladder)/i.test(String(question || ""));
-    const rank = (h) => new RegExp(`^sp-${lc}-trench`).test(h.id) ? (trenchQ ? 0 : 2) : new RegExp(`^sp-${lc}-who-`).test(h.id) ? 1 : 9;
+  const qs0 = String(question || ""), REPORT_Q = /\\b(report\\w*|hospital\\w*|amputat\\w*|fatal\\w*|notify osha)\\b/i, HEAT_Q = /\\b(heat|shade|hot)\\b/i;
+  if (code && !own.length && PLAN_STATES.includes(code) && (SAFETY_RULE.test(qs0) || REPORT_Q.test(qs0) || HEAT_Q.test(qs0)) && !EMERGENCY.test(qs0)) {
+    const lc = code.toLowerCase(), kind = REPORT_Q.test(qs0) ? "report" : HEAT_Q.test(qs0) ? "heat" : /\\b(confined|permit.required|permit spaces?|manhole entry)\\b/i.test(qs0) ? "confined"
+      : /\\b(trench|excavat|shor|shield|box|protective|cave|spoil|slop|bench|ladder)/i.test(qs0) ? "trench" : "";
+    // the state's card for this kind of rule first (sp-<st>-report-*, -heat-*, -confined-*, -trench-*), else its who-enforces card
+    const rank = (h) => kind && new RegExp(`^sp-${lc}-${kind}`).test(h.id) ? 0 : new RegExp(`^sp-${lc}-who-`).test(h.id) ? 1 : 9;
     const pc = search(index, qq + " " + US_STATES[code] + " state OSHA plan", { ...opts, k: 80, maxChars: 9e6, stats: void 0 })
       .filter((h) => rank(h) < 9 && keep(h)).sort((a, b) => rank(a) - rank(b) || b.score - a.score)[0];
     pc && (own = [{ ...pc, score: Math.max(pc.score, qTop * OWN_MIN) }]);
@@ -83,10 +86,11 @@ rep('guard.ts', '''    qn = opts.question ? norm(opts.question) : "",''', '''   
     anyText = Object.values(opts.cites || {}).filter((c) => c && c.text).map((c) => norm(c.text)),''')
 
 # ---------------- D: built-in reply rule ----------------
+import json
 rr = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'reply_rule.txt')).read().strip()
 p = os.path.join(out, 'ask.ts'); s = open(p).read()
-m = re.search(r'const REPLY_RULE = (`(?:[^`\\]|\\.)*`);', s)
-assert m, 'REPLY_RULE not found'
-s = s[:m.start(1)] + '`' + rr.replace('\\', '\\\\').replace('`', '\\`').replace('${', '\\${') + '`' + s[m.end(1):]
+m = re.search(r'^const REPLY_RULE = (".*");$', s, re.M)
+assert m and len(re.findall(r'^const REPLY_RULE = ', s, re.M)) == 1, 'REPLY_RULE not found'
+s = s[:m.start(1)] + json.dumps(rr) + s[m.end(1):]
 open(p, 'w').write(s)
 print('lib8 patch applied ->', out)

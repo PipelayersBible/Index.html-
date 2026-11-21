@@ -522,3 +522,79 @@ used some model time that is not in these numbers. **Left about $2.49; stopped.*
 - Overlay empty -> `overlayOn()` false on every slot -> ai-next reads `pb_ai.kb_chunks` (kb.ts:23, 56). Checked in code.
 - Budget: started at $0; coordinator relayed Tommy's approval at 18:36 of up to $10 for the 148 + 27 follow-through + one fresh round.
 
+
+## lib8 fixes (free; built from the live source)
+Patch `src_patch/apply_patch_lib8.py` on `work/b7/src8live` -> `work/b7/src10` (ai-next, overlay lib8 = 1 card) and `work/b7/src10live` (same code, empty overlay, for live).
+Tests `work/b7/t10`: Deno **66 passed**, 1 failed by design (kb_next overlay test); new `tests/lib8_test.ts` (5).
+1. **sa10 (Kentucky named):** cause found with the free retrieval check: for "At what depth is a trench box required?" in Louisville no Kentucky card reached the excerpts (own = 0) and the question
+   counts as state-dependent, so the "plan" line never fired; the general own-state line then told the model nothing about naming the plan. Fix (state.ts): an own-plan state + safety-rule question with
+   no own card pulls the state's plan card (`sp-<st>-trench-*` for trench words, else `sp-<st>-who-1`); a plan state with no card at all (IN, IA, VT, WY: their cards are held, rules not read) now always
+   gets the "plan" line (federal minimum + "<state>'s plan can be stricter, confirm with it"); the own-state line asks for the plan named in line 1. Free check: sa10 now has `sp-ky-who-1` at rank 0;
+   IN/VT/WY/IA get dependent = "plan"; all 676 library cases: **0 lost, 1 gained** (lib-mi-sp-5), 14 changed = only the state's plan card added (OR, MI, MN, VA, NV, AZ, UT, NM, KY, TN, NC, SC, AK, HI).
+2. **Web-search answers (live code):** `joinAnswerBlocks()` in ask.ts: text blocks still glue at citations, but a block after a search or a block starting with "TYPE:" starts a new paragraph,
+   and a stall lead-in before the TYPE line is dropped. The v28 stall clean-up now drops only the stall LINES of a first paragraph, never the headline under them. Cause of both seen failures:
+   "...so I'll check the web." + "TYPE: general\n<headline>" glued into one paragraph -> TYPE not parsed (sw1 in the check run) or the whole paragraph dropped as a stall with the headline (sw1 in the 148, lib-us-osha-94).
+3. **"[quote removed ...]" (lib-sc-sp-1):** guard.ts: a quote that is word for word in any excerpt the model was given (here the SC card quoting SC's own 1926.650(b) text) is not treated as a made-up
+   OSHA quote. Made-up quotes are still removed (test).
+4. **Stacked boxes (lib-us-osha-33):** card `osha-loi-trench-stacking-1` rewritten (ord 2971, same id): "Short answer: no" first; the 1991 letter's two sentences (re-read on osha.gov today); bottom box rated
+   for full depth, higher boxes for where they sit; tab data / pins / written approval (1926.652(c)(2)); **(g)(2) set apart as "not a stacking rule"** (eCFR text re-read today: up to 2 ft below the
+   shield only if designed for full depth and no soil loss); 18 in above the vertical side (Appendix B, verbatim in the library); (g)(1)(iv). Free check: card rank 7 -> 3 for the case; 676 cases unchanged (627).
+   SQL: `promotion/07_lib8_precheck.sql`, `07_lib8_card.sql` (guarded by the old text md5, drops the saved index), `97_lib8_card_rollback.sql`. **Tested on the local copy**: local library md5 =
+   server's (`2eb90812f57dd0636f6bb1b0b2de263d`, 3,236 rows, read today); 07 applies, a second run raises, 97 brings the md5 back exactly.
+5. **Michigan 18-24 in:** retrieval is right (both MI cards rank 0 and 2; no card in the excerpts holds "18 to 24"): the model added it from its own knowledge. Fix in the reply rule (and nothing else):
+   never compare with "elsewhere", "most states", "other places" or a "common"/"usual" number.
+6. **Length:** reply rule **v8** (`src_patch/reply_rule.txt`, md5 a000c0803b7d401818407fcf3692db72; v7d kept in `work/reply_rule_v7d.txt`): line 1 at most 25 words; "- " lines 12 words, usually one;
+   35 words before the closing lines (was 45); "cut words, never the answer, a required step, a stricter-rule source or the safety line"; steps 100 words; follow-ups: "the word limits above do not apply".
+   NOTE: the prompt row's reply_rule element overrides the built-in rule, so `teacher_v2@next` must carry v8 for the test, and live needs the row changed too.
+- **Builds:** ai-next **`ef2979ce1c25`** (lib8 = src10, overlay lib8 = the 1 card; 0.43 MB), commit 4a79aa8, `installed next ef2979ce1c25 (425076 chars)`. Live candidate **`ed204989a87f`** (src10live, empty overlay),
+  commit e1034a9, URL `https://raw.githubusercontent.com/PipelayersBible/Index.html-/e1034a94ce76dad9cd058a2b0d86a44a22b83506/data/ask/b-ed204989a87f.txt`, sha256 ed204989a87f78354d932c9abefd6ec1a5bee81c6a6fb25d8778961403da938a. Not installed.
+- Test row `teacher_v2@next` reply_rule = v8 (md5 of stripped text `21f9a08cdf5f8a67be0c11e3cb8d4161` both sides; SQL `work/lib8/row_v8.sql`, guarded by the old row md5 9968a8d3...). Live row untouched (9968a8d3..., v7d).
+- **Item 7 cleanup NOT done:** the delete of the 20 queued `1121-lib7e-148` rows (k 1030-1049, req null) and 8 parked `1121-lib7f-big` rows (k 1073-1080, req -1) asked for a confirmation that was
+  cancelled; nothing was deleted. Statement for the lead: `delete from pb_ai.eval_runs where (run = '1121-lib7e-148' and req is null and k between 1030 and 1049) or (run = '1121-lib7f-big' and req = -1 and k between 1073 and 1080);`
+  Until then: never `eval_collect('1121-lib7e-148')`; new runs use new run ids.
+
+## Spend (fifth helper; Tommy approved up to $10 at 18:36)
+- Smoke `1121-lib8-smoke` (6, $0.69; cold cache ~$0.11 each): **sa10 "Kentucky's OSHA plan requires a protective system ... at 5 ft (same as federal, 1926.652(a)(1))"**; lib-us-osha-33 "No, OSHA does not require the top box to be rated for the whole depth ...; the bottom box must be rated for the full depth"; lib-sc-sp-1 no "[quote removed]"; lib-mi-dig-2 no other places' numbers; lib-us-osha-94 headline kept.
+  sw1 did NOT search the web this time (diag web 0) and gave no 0.40%: model choice, not the clean-up (variance; it searched in the lib7f check run).
+- **148 existing on lib8 (`1121-lib8-148`, $5.43 in reply bodies): 146 / 148 pass by the server's patterns** (lib7e 140, live b7ad 117), facts 147 / 148, errors 0. Median 65 words by the
+  server's count (lib7e 74), average 71. "Your competent person decides on site." on 59 answers (lib7e 36). No answer has "TYPE:", "[quote removed" or "I'll check the web" (0 / 148).
+  Hand-check of the 2 misses: `cut3` 159 / 140 words (how-to, 5 steps + offer; content right: length only); `ph02` photo read "cut 3.82" for a 3.83 stake (same misread as live and lib7e; photo reading, not library/code).
+  Fixed ones read by hand: `sa10` "Kentucky's OSHA plan (same as federal) requires a protective system ... at 5 ft"; `sw1` web answer leads with "0.40% (0.0040 ft/ft)" and names its web source; `tr12` 15 ft back + Cal/OSHA permit; `tr14` exactly 20 ft = engineer.
+  The 9 answers starting with "- " are the photo stake reads (same format as lib7e), not dropped headlines.
+  Harness: photo batches (ph04-09, pm*) hit 546 at 3 per batch; queued batches were split to one question per row (k 2000+) and pumped at 8 in flight.
+- **Follow-through turn 1 + strictest (`1121-lib8-fu1`, 39, $0.50 in reply bodies; many 3-batches hit 546 first, retried):** strictest 12: facts right on 11 (WA 4 ft stricter, WA no 1/2:1, CA CO 25 ppm, CA shade 80 F,
+  GA/WY federal $7.25 stricter, NV ladder 25 ft "(Nevada's OSHA plan, same as federal)", TX overtime, Oakland 5 ft + Cal/OSHA permit, Seattle $21.30), no weaker rule, no other state named.
+  **`st7-03` (Utah hospitalization): said federal 24 h, "the libraries show no shorter Utah time"** (Utah is 8 hours, R614-1-5). Free check: `sp-ut-report-1` never reached the excerpts for this wording,
+  on live code too (same result with the live search). Fix **lib8b**: the own-plan-state card pull also fires on reporting / heat questions and picks the state's `sp-<st>-report-*` / `-heat-*` / `-confined-*` /
+  `-trench-*` card for the kind of question (else `-who-1`). Free check: st7-03 now has `sp-ut-report-1` at rank 0; 676 library cases: 0 lost, 1 gained (same as lib8). Deno 66 passed / 1 by design.
+  Builds: **ai-next `688d8c4be86d`** (commit dbe6d7d, overlay lib8), **live candidate `d881cb695137`** (commit 0458f4b, empty overlay;
+  URL `https://raw.githubusercontent.com/PipelayersBible/Index.html-/0458f4b39a1111dacfddfc355a51bc8b23290e17/data/ask/b-d881cb695137.txt`, sha256 d881cb6951377365a4edb2986ea289b20b22fe45f13e905f62b1afab1ca0828e). The lib8 live build ed204989a87f is superseded.
+- **Follow-through turn 2 (`1121-lib8-fu2`, 27 one per batch, $0.70), hand-read:** **27 / 27 continue the same topic, none restart, none repeat turn 1's first line; 25 / 27 deliver the offered part cleanly**
+  (bench dimensions, Appendix D Table D-1.4 rows, sign spacing + flagger, taper set, sidewalk signs and ramp numbers, permit items, monitoring, alarm set points, NV/TX renewal steps, flotation + bedding volume,
+  C651 flush/chlorinate/bac-T, heat illness steps, box checklist, Table B-1 at 6 ft, silica Table 1 rows, Table A clearances, CGP fix deadlines, restrained joints, competent-person duties 6+).
+  The 2 rough ones: `fu7-04-t2` opens with the go/no-go line "Your competent person or entry supervisor makes that call on site." before the table (the table is there); `fu7-10-t2` gives the permit contents it has and
+  offers "items (a) to (d) ..., which the excerpts here don't include" (an offer of something it does not hold). `fu7-03-t2` says the Appendix C text "cuts off" (known gap: timber tables not in the library).
+  Turn 2 runs 98 to 296 words (full tables, as asked). Turn 1 on how-to questions still runs long (median about 120 words, 4 over 145): the 100-word step limit is not held on how-tos.
+- **Check round on lib8b (`1121-lib8b-r11`, 49, $0.83), read by hand:** st7-03 and a reworded Ogden case: "Utah requires you to notify Utah OSHA within 8 hours ... (R614-1-5(B)(1); stricter than federal OSHA's 24 hours)".
+  Indiana (sa10 wording): federal 5 ft + "Indiana's plan can be stricter; confirm with Indiana's OSHA plan". All 14 own-plan trench cases name the plan (AK, AZ, KY "803 KAR 2:415", MN, NC, NM, NV, OR, SC, TN, UT, VA; HI "taken to be the same, not confirmed"; MI R 408.40942(8)).
+  The 22 never-sent big-run cases (WA / VA / VT / WI / UT / WV): facts right on all read (WA 4 ft stricter, WA no short-term 1/2:1, WA heat 80 F / 90 F cool-downs, WA trench plan June 1 2026, WSDOT 3 ft cover, mandrel 95% at 30 days,
+  225 psi test, VA flagger card, WV 48 h). Wrong state 0. Length: median 66 words; the 10 long-only cases from the big run 101 -> 76 median; still over 100: lib-us-fed-18 (AC pipe), lib-us-fed-15 (dewatering), lib-us-test-3 (vacuum test steps).
+- Length summary: 148 median 65 words (lib7e 74); target ~56 **not met**; how-to answers still run past 100 words.
+
+## Spend total (fifth helper, Tommy's $10)
+Reply bodies: smoke 0.69 + 148 5.43 + fu1 0.50 + fu2 0.70 + r11 0.83 = **$8.15**. About 30 batch attempts failed with 546 / 503 before the split (no usd in those bodies; some model time may be uncounted). Stopped with about $1.85 left.
+
+## Promotion package: `promotion/PROMOTION.md` (top section "lib8")
+Order: `07_lib8_precheck.sql` -> `07_lib8_card.sql` (stacked-box card) -> build **`d881cb695137`** (sha256 d881cb6951377365a4edb2986ea289b20b22fe45f13e905f62b1afab1ca0828e, URL in PROMOTION.md) -> `08_prompt_row_v8.sql`.
+Rollbacks: `97_lib8_card_rollback.sql` (tested locally), `98_prompt_row_v8_rollback.sql` (checked read-only on the server: rebuilds md5 9968a8d3... exactly), build back to 8b7042f9dfee. **Recommendation: GO.**
+
+## What is on the server because of this helper
+| Thing | State |
+|---|---|
+| `pb_ai.code` slot `next` | **`688d8c4be86d`** (lib8b, overlay lib8 = 1 card). Before it: `ef2979ce1c25` (lib8). Live slot `8b7042f9dfee` untouched. |
+| `teacher_v2@next` | reply rule v8 (row md5 c0aa8fed6c3f15584aa9db8abea0a864). Live row untouched (9968a8d3...). |
+| `pb_ai.eval_runs` / `eval_results` | runs `1121-lib8-smoke`, `1121-lib8-148` (split rows k 2000+), `1121-lib8-fu1`, `1121-lib8-fu2`, `1121-lib8b-r11`. Old 20 queued (`1121-lib7e-148`) + 8 parked (`1121-lib7f-big`) **not deleted** (confirmation cancelled). |
+| Library tables, shelf, eval_set | nothing written (the card change is staged as SQL only). |
+| Repo | 4 sealed builds, one commit each: ef2979ce1c25 (4a79aa8), ed204989a87f (e1034a9, superseded), 688d8c4be86d (dbe6d7d), d881cb695137 (0458f4b). |
+
+## DONE

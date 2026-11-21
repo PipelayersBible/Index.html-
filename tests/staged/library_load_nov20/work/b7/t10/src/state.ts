@@ -153,6 +153,18 @@ export function stateSearch(search, index, query, opts, st, question) {
   const about = (h) => { const t = subjectWords(h.title); return words.length > 0 && words.filter((w) => t.includes(w)).length * 2 >= words.length; };
   own = own.filter((h) => h.score >= qTop * OWN_MIN || (h.score >= qTop * OWN_MIN * 0.7 && about(h)))
     .sort((a, b) => b.score - a.score).slice(0, OWN_SLOTS);
+  // lib8: an own-plan state, a safety-rule question, and none of the state's cards made it: add the state's plan card
+  // (sp-<st>-trench-* first for trench words, else sp-<st>-who-1), so the answer can name the plan as the source.
+  const qs0 = String(question || ""), REPORT_Q = /\b(report\w*|hospital\w*|amputat\w*|fatal\w*|notify osha)\b/i, HEAT_Q = /\b(heat|shade|hot)\b/i;
+  if (code && !own.length && PLAN_STATES.includes(code) && (SAFETY_RULE.test(qs0) || REPORT_Q.test(qs0) || HEAT_Q.test(qs0)) && !EMERGENCY.test(qs0)) {
+    const lc = code.toLowerCase(), kind = REPORT_Q.test(qs0) ? "report" : HEAT_Q.test(qs0) ? "heat" : /\b(confined|permit.required|permit spaces?|manhole entry)\b/i.test(qs0) ? "confined"
+      : /\b(trench|excavat|shor|shield|box|protective|cave|spoil|slop|bench|ladder)/i.test(qs0) ? "trench" : "";
+    // the state's card for this kind of rule first (sp-<st>-report-*, -heat-*, -confined-*, -trench-*), else its who-enforces card
+    const rank = (h) => kind && new RegExp(`^sp-${lc}-${kind}`).test(h.id) ? 0 : new RegExp(`^sp-${lc}-who-`).test(h.id) ? 1 : 9;
+    const pc = search(index, qq + " " + US_STATES[code] + " state OSHA plan", { ...opts, k: 80, maxChars: 9e6, stats: void 0 })
+      .filter((h) => rank(h) < 9 && keep(h)).sort((a, b) => rank(a) - rank(b) || b.score - a.score)[0];
+    pc && (own = [{ ...pc, score: Math.max(pc.score, qTop * OWN_MIN) }]);
+  }
   // The general excerpts are exactly what the plain search gives once other states' chunks are out. The job state's own
   // chunks that are not already among them are ADDED (at most OWN_SLOTS, OWN_CHARS), so nothing general is pushed out.
   const out = [], seen = new Set(), perTitle = new Map();
@@ -188,8 +200,9 @@ export function stateSearch(search, index, query, opts, st, question) {
   // A state that runs its own OSHA plan, a safety-rule question, and nothing of that state's own anywhere near the
   // question: the federal rule is all the library has, and the answer must say so (dependent = "plan", see stateLines).
   const ownN = out.filter((h) => own.some((x) => x.id === h.id)).length, dep = stateDependent(question, wide);
-  const thin = !dep && !ownN && PLAN_STATES.includes(code) && SAFETY_RULE.test(String(question || "")) && !EMERGENCY.test(String(question || ""))
-    && !kept.some((h) => chunkStates(h).includes(code) && h.score >= top * OWN_MIN * 0.5);
+  // lib8: an own-plan state with no card of its own for a safety rule always gets the "plan" line (was: only when the question
+  // did not look state-dependent, so "depth for a trench box" in Indiana got the general line and named no state)
+  const thin = !ownN && PLAN_STATES.includes(code) && SAFETY_RULE.test(String(question || "")) && !EMERGENCY.test(String(question || ""));
   return { hits: out, dropped: wide.slice(0, k).filter((h) => !keep(h)).length, own: ownN, plain, dependent: thin ? "plan" : dep };
 }
 const STOP = new Set("what when where which while with without from that this they them their there here have has does into over under about above below after before many much long good need needs must should would could will your ours mine guys crew crews today work working works hour hours rule rules state states apply applies job jobs give gives take takes make makes thing things kind required require requires going want wants know tell says said more most some than then also only just ever every each other another same".split(" "));
@@ -209,7 +222,7 @@ export function stateLines(st, dependent, own) {
     if (dependent === "plan") return `${head} ${name} runs its own OSHA plan, which must be at least as protective as federal OSHA and can be stricter, and the library has no ${name} rule for this question. Give the federal rule as the minimum, then one short line: ${name}'s plan can be stricter, confirm with ${name}'s OSHA plan. Never give another state's number or name another state. Do not ask which state.`;
     // most questions do not change with the state: say so, so the state is not dragged into pipe math or a fitting question
     if (!dependent && !own) return `${head} Use it only if the answer changes by state (811 rules, a state OSHA plan, breaks, pay or heat rules, state specs); then give the STRICTEST rule that applies in ${name} (the state's or the federal one, whichever protects the crew more) and say in a few words where it comes from; never give another state's number or name another state. Otherwise answer as usual, at the usual short length, and do not mention the state. Do not ask which state.`;
-    const plan = PLAN_STATES.includes(code) ? ` ${name} runs its own OSHA plan, which can be stricter than federal OSHA: if this is a safety-rule question and no excerpt gives ${name}'s rule, search_knowledge once with "${name}" and the topic before answering.` : ` ${name} has no state OSHA plan for private crews, so on a safety rule the federal OSHA rule applies: give it as the answer with no words about which agency covers ${name}, and do not say the library lacks a ${name} rule.`;
+    const plan = PLAN_STATES.includes(code) ? ` ${name} runs its own OSHA plan, which can be stricter than federal OSHA: if this is a safety-rule question and no excerpt gives ${name}'s rule, search_knowledge once with "${name}" and the topic before answering. On a safety rule name ${name}'s plan as the source in line 1 even when it matches federal, e.g. "(${name}'s OSHA plan, same as federal 29 CFR 1926.652)".` : ` ${name} has no state OSHA plan for private crews, so on a safety rule the federal OSHA rule applies: give it as the answer with no words about which agency covers ${name}, and do not say the library lacks a ${name} rule.`;
     return `${head}${plan} Answer for ${name}: lead with the direct answer. STRICTEST RULE: where ${name}'s own rule and a federal rule (OSHA, MUTCD, EPA) both apply and differ, the answer is the STRICTER one (more protective for the crew and the public), with its source named in a few words: "${name} requires ... (stricter than federal ...)" or "Federal OSHA requires ... (stricter than ${name}'s ...)". If they are the same, add no sentence about it (at most "(same as federal)" inside line 1). If you cannot tell which is stricter, give both in one short line each and say to follow the stricter. Never give a weaker rule because it is ${name}'s, and never drop a stricter federal rule. Compare only the SAME requirement on both sides (a depth, a limit, a deadline both rules set); a rule only the state has (811 notice and ticket life, state specs, a state DOT manual) is simply ${name}'s rule: give it with no federal comparison. The state must not make the answer longer: keep the usual short length. Never give another state's number or name another state, not even as an example. If the excerpts have no ${name} rule for this, say in a few words that the library does not have ${name}'s rule for it, give the federal rule, and name who to check with (the state's OSHA plan, 811 center or agency). Do not ask which state.`;
   }
   return dependent

@@ -1,3 +1,49 @@
+# Ask promotion package: lib8 (Nov 20 evening, fifth helper), on top of live 8b7042f9dfee + library 3,236 rows + prompt row v7d
+
+Live now: code slot `live` = `8b7042f9dfee`, prompt row `teacher_v2` md5 `9968a8d39e4919bb8230f417bcadff5f` (reply rule v7d), library `b3e91f6c47d2` 3,236 rows
+(md5 of ord:lib:chunk `2eb90812f57dd0636f6bb1b0b2de263d`, read Nov 20), shelf 47. Nothing in the lib8 section has been applied to live.
+
+## lib8: what goes live (order 1 -> 2 -> 3)
+| Step | Thing | Exact value |
+|---|---|---|
+| 1 | Library: 1 card edited in place (`osha-loi-trench-stacking-1`, ord 2971) | `07_lib8_precheck.sql` (SELECT; expect text_md5 `050fee8ec65b86586cddbdf5241cf210`, rows 3236) then `07_lib8_card.sql` (guarded; drops the saved index, rebuilt once ~2 s). After: text_md5 `4ece7bdce9e350fe3d09da62dfbbff48`. |
+| 2 | Ask build (slot `live`) | **`d881cb6951377365a4edb2986ea289b20b22fe45f13e905f62b1afab1ca0828e`** (lib8b-live), `https://raw.githubusercontent.com/PipelayersBible/Index.html-/0458f4b39a1111dacfddfc355a51bc8b23290e17/data/ask/b-d881cb695137.txt` (empty overlay; same code as ai-next `688d8c4be86d`) |
+| 3 | Prompt row `teacher_v2` | `08_prompt_row_v8.sql` (first select must say `next_has_v8 = true, live_unchanged = true`); after: md5 `c0aa8fed6c3f15584aa9db8abea0a864` |
+
+Install step 2: `select net.http_get('<URL>');` then `select pb_ai.code_install('live', <req id>, '<sha256 above>', '<URL>');` (expect `installed live d881cb695137 (...)`).
+Smoke (about $0.45 with a cold cache): sa10 (Louisville: "Kentucky's OSHA plan ... 5 ft"), st7-03 (Salt Lake City hospitalization: Utah 8 hours), lib-us-osha-33 (stacked boxes: "No ..."), tr12 (Type C 10 ft: 15 ft back), tr14 (20 ft: engineer).
+
+**Rollback, each step on its own:** build -> `8b7042f9dfee` (URL `https://raw.githubusercontent.com/PipelayersBible/Index.html-/e5ae1f18eda2021b3ddbfacd124d992afe6b9029/data/ask/b-8b7042f9dfee.txt`, sha256 `8b7042f9dfeecc10ec4d2d4143a8ca2cdb0a504fbe629369bf3154ffe58ac391`);
+row -> `98_prompt_row_v8_rollback.sql` (checked on the server, read-only: it rebuilds md5 `9968a8d3...` exactly); card -> `97_lib8_card_rollback.sql` (tested on the local copy: library md5 back to `2eb90812...`).
+
+**What lib8 changes** (details in ROUNDS.md "Fifth helper"): own-plan states named (sa10; IN/IA/VT/WY get the "state plan can be stricter" line), web-search answers keep their first line and lose the
+"I'll check the web ... TYPE:" text, a quote word for word from a card is not replaced by "[quote removed ...]", stacked-box card rewritten, reply rule v8 (shorter; no "elsewhere / common" numbers).
+The code parts also apply without the card (step 1 is only the stacked-box answer).
+
+## lib8 test results (Tommy's $10; $8.15 spent by the reply bodies; failed 546 attempts may add a little)
+| Check | lib8 / lib8b | Before (lib7e/f, same cases) | Bar |
+|---|---|---|---|
+| 148 existing (`1121-lib8-148`, $5.43) | **146 / 148** by the server's patterns; facts 147 / 148; 0 errors | 140 / 148 (live b7ad 117) | all 148: 2 left |
+| The 2 misses, read by hand | `cut3` length only (159 / 140 words, content right); `ph02` photo read 3.82 for a 3.83 stake (live and lib7e misread it the same way) | | |
+| The fixed items, read by hand | sa10 names Kentucky's plan; sw1's web answer leads with 0.40%; lib-sc-sp-1 has no "[quote removed]"; lib-us-osha-33 says "No ... the bottom box is rated for full depth"; lib-mi-dig-2 gives no other places' numbers; 0 / 148 answers contain "TYPE:" or "I'll check the web" | 2 real misses (sa10, sw1) | met |
+| Strictest 12 (`1121-lib8-fu1`) | 11 / 12 on lib8. The miss: Utah's 8-hour reporting card was not retrieved (live code too). Fixed in lib8b and asked twice more: **"Utah requires ... within 8 hours ... stricter than federal OSHA's 24 hours"** | 12 / 12 on lib7 (the card got there by luck) | met on lib8b |
+| Follow-through, 27 two-turn cases (`fu1` + `fu2`, $1.20 including the 12) | **27 / 27 stay on the topic, none restart; 25 / 27 give the offered part cleanly** (fu7-04 opens with a go/no-go line; fu7-10 offers items the excerpts do not have) | 27 / 27, 25 delivered (lib7) | met |
+| Check round on lib8b (`1121-lib8b-r11`, 49 questions, $0.83): 22 never-sent big-run cases, 14 own-plan trench cases, 10 long ones, 3 new | read by hand: facts right on all 49; **all 14 own-plan states name their plan**; Indiana gets "Indiana's plan can be stricter"; wrong state 0; the 10 long ones drop from a median of 101 words to 76; 3 are still over 100 (AC pipe, dewatering, vacuum-test steps) | | |
+| Length | median **65** words (148) and 66 (round), down from 74 and 69 | | ~56: **not met** (closer) |
+| Safety line | on 59 of 148 answers (36 on lib7e) | | |
+
+**Go / no-go: GO** for lib8b in this order: card (07), then build d881cb695137, then the prompt row (08), with the 5-question smoke. Every step has a tested rollback: 07/97 on the local copy (its md5 matches the server's), 98 checked read-only on the server, and the build goes back to 8b7042f9dfee.
+Not perfect: 2 of the 148 miss by pattern (one length, one photo read); the median is 65 words, not ~56; how-to answers still run past 100 words; and the 20 queued + 8 parked old eval rows were not deleted (the lead needs to do it; the statement is in ROUNDS.md).
+**NO-GO only if** the bar is literally "all 148 pass".
+
+## Cost plan for later rounds (today's actual rates on ai-next, warm cache)
+- 148 existing: **about $5.50** (photos and how-tos cost more; photo cases fail with 546 in 3-question batches, so run them one per row).
+- One round of 100 library questions: **about $2 to $3** ($0.017 to $0.03 each; a cold start adds about $0.10 a question for the first few).
+- Follow-through 27 (two turns) + strictest 12: **about $1.20**.
+- All three together: **about $9 to $10**. Today's lib8 runs: smoke 0.69 + 148 5.43 + follow-through 1.20 + check round 0.83 = **$8.15**.
+
+---
+# Earlier package (lib7f / lib7g), APPLIED Nov 20 evening; kept for the record
 # Ask promotion package: lib7f / lib7g (Nov 21), built on live 4a5c84ce8242
 
 Live today: code slot `live` = `4a5c84ce8242`, prompt row `teacher_v2` md5 `bbe7c4599587734e6727895da4f2e8d9`, library version `b3e91f6c47d2` with 2,840 rows

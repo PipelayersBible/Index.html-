@@ -87,6 +87,7 @@ function checkOshaQuotes(answer, verbatimTexts, opts = {}) {
       ),
     ].map(norm),
     qn = opts.question ? norm(opts.question) : "",
+    anyText = Object.values(opts.cites || {}).filter((c) => c && c.text).map((c) => norm(c.text)),
     inAll = (q, hs) => {
       const pieces = q.split(/\s*\[?(?:\.\.\.|\u2026)\]?\s*/).map(norm).filter(Boolean);
       return pieces.length > 0 && pieces.join(" ").length >= 8 &&
@@ -126,6 +127,8 @@ function checkOshaQuotes(answer, verbatimTexts, opts = {}) {
     judge = (q, whole, offset, src) => {
       if (qn && norm(q).length >= 8 && qn.includes(norm(q))) return "keep";
       if (inAll(q, hay)) return "ok";
+      // lib8: word for word in an excerpt the model was given (a state card quoting its own rule): not a made-up quote
+      if (anyText.length && inAll(q, anyText)) return "ok";
       if (oshaAttributed(whole, offset, src)) return "bad";
       const c = citeOf(whole, offset, src), info = c && opts.cites ? opts.cites[c] : void 0;
       return info?.kind === "data" || !info && c && c.startsWith("D")
