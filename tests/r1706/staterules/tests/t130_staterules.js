@@ -81,7 +81,9 @@ const rpcs=(p,n)=>p.evaluate(n=>(window.__rpcArgs||[]).filter(x=>x[0]===n).map(x
     ['expires',['2026-11-20','MD'],'2026-12-14','MD: 3-day wait to Wed Nov 25, then 12 business days'],
     ['canDig',['2026-11-20','DC'],'2026-11-30','DC: 96 hours = 4 working days (Thanksgiving + Friday off)'],
     ['expires',['2026-11-20','PA'],'','PA: ticket life not confirmed -> no date'],
-    ['canDig',['2026-11-20','PA'],'','PA: wait not confirmed -> no date'],
+    ['canDig',['2026-11-20','PA'],'2026-11-25','PA: 3 business days (73 P.S. 180(2.1); r17.13)'],
+    ['expires',['2026-11-20','MT'],'','MT: ticket life not confirmed -> no date'],
+    ['canDig',['2026-11-20','MT'],'','MT: wait not confirmed -> no date'],
     ['expires',['2026-11-20','ND'],'2026-12-11','ND: 21 days after the planned dig day; wait unknown so counted from the call (never later)'],
     ['expires',['2026-11-20','XX'],'','unknown state -> no date'],
   ];
@@ -113,13 +115,13 @@ const rpcs=(p,n)=>p.evaluate(n=>(window.__rpcArgs||[]).filter(x=>x[0]===n).map(x
   ok(await val(p,'locExp')==='2026-12-18'&&(await txt(p,'locFStart'))==='Fri Dec 18','Nevada: 28 days, start within 28 days');
   await p.evaluate(()=>window.pbLocFormCancel());
   // a state with no confirmed ticket life: no date, "Check your state's 811 rules", saving asks for the date
-  await p.click('#locSrChange');await p.waitForTimeout(200);await p.selectOption('#locSrSel','PA');await p.waitForTimeout(500);
+  await p.click('#locSrChange');await p.waitForTimeout(200);await p.selectOption('#locSrSel','MT');await p.waitForTimeout(500);
   await p.evaluate(()=>window.pbLocAdd());await p.waitForTimeout(300);
-  ok((await val(p,'locExp'))==='','Pennsylvania: no expiry filled in');
-  ok(/^Enter the expiry on your ticket\.$/.test(await txt(p,'locExpHelp'))&&/^Ask 811 when you can dig\.$/.test(await txt(p,'locRuleHelp')),'Pennsylvania: "Enter the expiry on your ticket." and "Ask 811 when you can dig."');
-  ok((await txt(p,'locFDig'))==='—','Pennsylvania: Can dig from shows a dash');
+  ok((await val(p,'locExp'))==='','Montana (nothing confirmed; r17.13: Pennsylvania now has its wait): no expiry filled in');
+  ok(/^Enter the expiry on your ticket\.$/.test(await txt(p,'locExpHelp'))&&/^Ask 811 when you can dig\.$/.test(await txt(p,'locRuleHelp')),'Montana: "Enter the expiry on your ticket." and "Ask 811 when you can dig."');
+  ok((await txt(p,'locFDig'))==='—','Montana: Can dig from shows a dash');
   await p.fill('#locNo','A-1');await p.click('#locSave');await p.waitForTimeout(300);
-  ok(/Pick the day it expires/.test(await txt(p,'locErr')||''),'Pennsylvania: Save asks for the expiry date');
+  ok(/Pick the day it expires/.test(await txt(p,'locErr')||''),'Montana: Save asks for the expiry date');
   await p.evaluate(()=>window.pbLocFormCancel());
   // back to the address
   await p.click('#locSrChange');await p.waitForTimeout(200);await p.selectOption('#locSrSel','');await p.waitForTimeout(500);
@@ -183,7 +185,7 @@ const rpcs=(p,n)=>p.evaluate(n=>(window.__rpcArgs||[]).filter(x=>x[0]===n).map(x
   ok(p.errs.length===0,'no page errors '+JSON.stringify(p.errs));await b.close();
 
   // ---------- E) Trench Sloping note and the run flag depth ----------
-  for(const [st,depth,want,shot] of [['WA','4.5',/Washington.*4 ft/,'trench_wa'],['CA','4.5',/California.*5 ft/,'trench_ca'],[null,'5.5',/doesn’t know which state/,'trench_unknown']]){
+  for(const [st,depth,want,shot] of [['WA','4.5',/Washington.*4 ft/,'trench_wa'],['CA','4.5',/California.*5 ft/,'trench_ca'],[null,'5.5',/state isn’t known/,'trench_unknown']]){
     ({b,p}=await boot({init:st?`;localStorage.setItem('pbHereState',JSON.stringify({s:'${st}',at:Date.now()}));`:'',dark:st==='CA'}));
     await p.evaluate(()=>pbGoto('trenchCalc'));await p.fill('#trenchDepth',depth);await p.evaluate(()=>window.pbCalcTrench());await p.waitForTimeout(200);
     const t=await txt(p,'trenchStateNote');ok(want.test(t||''),(st||'unknown')+' '+depth+' ft: '+t);

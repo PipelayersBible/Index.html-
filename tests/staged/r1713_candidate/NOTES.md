@@ -104,3 +104,62 @@ injury lines, the Washington trench line and the "not known" note. Left in Engli
 app owner's billing admin lines (owner only), the 811 Rules view's state texts (that view was never translated), the
 Toolbox Talks (never translated), state names. Word choices follow spanish2_nov20/glossary.md; not yet read by a fluent
 person in the trade.
+
+## Tests
+**New feature test** `tests/t_r1713.js` (one browser, 390 px): **ALL PASS (39 checks)** on the source and on the minified
+build (`results/t_r1713_on_build.txt`). It checks every changed 811 row, GA / ND untouched, the dates (VA Mon Jun 1 call
+-> dig Thu Jun 4; PA dig Thu, latest start Jun 15, no expiry), the injury line for WA, CA, TX, NY, IA, UT, HI, AK, KY and
+"not known", job state before company state, the Rules view section (fits 390 px), the Job Book safety form on a WA job,
+the emergency panel line, the talks, and Trench Sloping / the note / `pbCaveTrig` for: nothing known (federal list, 4 ft),
+WA job with the phone in TX (WA rule, no short-term Type A, 4 ft), TX job with the phone in WA (federal, 5 ft), company
+state only (stays "not known").
+
+**r17.12 feature tests re-run on r17.13 in Spanish** (used to collect the missing Spanish): t_ask_followups_app 43/43,
+t_ask_state_app all pass, t_yearly_app all pass, t_taper_ui all pass before the new Spanish; with it, 4 checks fail only
+because the test reads the painted Spanish text (e.g. it expects "From your company." and sees "De su compañía.").
+
+**Spanish screen test** (`spanish2_nov20/tests/t_es_screens.js`, all 5 sets, Spanish switched on in a copy):
+r17.13 and r17.12 fail the same checks (16 / 14 / 14 / 12 / 9: leftover English from r17.11 features such as the
+feedback button's label and the permit's gas meter lines); r17.13 has more text in Spanish (p1 1372 vs 1370, p2b 392 vs
+385), nothing worse. `results/es_screens_r1713_vs_r1712.txt`.
+
+**Full regression** (`tests/run_all.sh --build <site>/index.html --jobs 2`; site = `build_hooks/` + sw.js, icons,
+manifest, data, terms/privacy; recreate it as in r17.12): **2 FAIL of 237**, the rest pass or skip as on r17.12
+(`results/full_regression_summary.txt`, wall 46 min).
+| Test | Verdict |
+|---|---|
+| r1706/staterules/t130_staterules.js | **Expected change.** PA now has its 3-business-day wait (canDig Fri Nov 20 -> Wed Nov 25), so the "nothing confirmed" checks move to Montana; the trench "not known" note has new words. Updated copy in `test_updates/` passes on r17.13: "t130 done: all pass". |
+| bughunt_nov17/new/f06_breakend.js | **Not this release.** Fails the same way on the r17.12 build run now (`results/f06_r1712`); passed on r17.12 earlier today. It moves a run 21 h back from the wall clock and types an end time 90 min after the start as HH:MM; run in the evening (start + 90 min crosses midnight) the end lands on the start's date, before the start, and is refused. A clock-dependent test; re-run it in the morning. |
+No real bug found.
+
+**Test updates:** `sh tests/staged/r1713_candidate/apply_test_updates.sh` (absolute root) copies 1 file:
+`tests/r1706/staterules/tests/t130_staterules.js`.
+
+## Release steps
+1. Publish `build/index.html` -> `index.html`, `build/pbx/`, `sw.js` -> `sw.js`, `index.src.html` -> `_src/index.html` in one commit; run `apply_test_updates.sh`.
+2. Check the live page and sw.js say r17.13.
+
+**Server SQL: none.** No apply order and no rolled-back tests for this update. (The Ask library has its own 811 / OSHA
+chunks in lib_811_nov20 and lib_osha_nov20, still staged separately; this update does not load them.)
+
+## Not done / follow-ups
+- North Dakota (decision 2). Georgia waits on Tommy's call. Michigan Table 1 on hold.
+- `pbDepthFlagText` (the saved run's deep-trench sentence) still says "The phone didn't know which state the job is in"
+  for runs flagged with nothing known; left as is so old records read the same.
+- The other state plans' injury-reporting rules (AZ, IA, IN, MD, MN, NC, NM, NV, SC, TN, VT, WY) were not read: the app
+  says "report within 8 hours to be safe" for them.
+- Pre-existing Spanish leftovers from r17.11 (feedback button label, permit gas meter lines, price notes) are still English.
+
+## Decisions for Tommy (5)
+1. **Ship r17.13 now?** Recommend yes: every 811 change is from the law or the 811 center's current rules, and the
+   safety lines only ever point to the stricter time.
+2. **North Dakota: use the 2020 handbook's "48 hours, hand dig within 24 inches" now, or wait for the current handbook?**
+   Recommend wait (left unchanged); one look at ndonecall.com's current handbook settles it.
+3. **Unread state plans say "report within 8 hours to be safe."** Recommend keeping it (strictest wins) until each plan's
+   rule is read; the alternative is to show only the federal 8 / 24 hours there.
+4. **Trench depth never uses the company's state** (only the job's state, then the phone). Recommend keeping it: with no
+   job state, "not known" gives Washington's 4 ft, which is never less strict than any company state.
+5. **Washington short-term Type A: removed from the list on a Washington job, with a line saying why** (instead of
+   leaving it with a warning). Recommend as built: the slope is not in Washington's table at all.
+
+## DONE

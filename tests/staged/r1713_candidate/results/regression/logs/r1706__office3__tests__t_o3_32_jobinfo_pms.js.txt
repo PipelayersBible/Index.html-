@@ -1,0 +1,19 @@
+  sent: [{"p_job_number":"26014","p_project_name":"Sundance Sewer Phase 2","p_address":"Banning, CA","p_start_date":"2026-10-29","p_expect_uid":"00000000-0000-4000-8000-000000000001","p_expect_ver":1}]
+  modal after first save: 
+PASS job details: B's date saved on version 1, A's name and City, State kept
+  race: [{"p_job_number":"26014","p_project_name":"Sundance Phase 2 (B)","p_address":"Banning, CA","p_start_date":"2026-10-29","p_expect_uid":"00000000-0000-4000-8000-000000000001","p_expect_ver":2},{"p_job_number":"26014","p_project_name":"Sundance Phase 2 (B)","p_address":"Calimesa, CA","p_start_date":"2026-10-29","p_expect_uid":"00000000-0000-4000-8000-000000000001","p_expect_ver":3}]
+  modal after race save:  {"project_name":"Sundance Phase 2 (B)","address":"Calimesa, CA","start_date":"2026-10-29","info_ver":4}
+PASS job details race: refused on version 2, merged (A's Calimesa kept) and saved on version 3
+  clash modal: Job details · Job 26014  Someone else changed the job name meanwhile (now “Name by A”). Check it, then Save again. Shown on the Home card, the job page and report headers.  Job name City, State Start 
+PASS job details clash: nothing sent, "Someone else changed the job name meanwhile" with the server's value
+  pms sent: [{"p_job_number":"26014","p_user_ids":["u-ann","u-bob","u-cal"],"p_expect_uid":"00000000-0000-4000-8000-000000000001","p_expect_ver":3}]
+PASS PMs: saved on version 3 with Bob (A's add) kept and Cal added
+PASS PMs: the line says Bob was kept
+  pms race: [{"p_job_number":"26014","p_user_ids":["u-cal"],"p_expect_uid":"00000000-0000-4000-8000-000000000001","p_expect_ver":7},{"p_job_number":"26014","p_user_ids":["u-cal"],"p_expect_uid":"00000000-0000-4000-8000-000000000001","p_expect_ver":8}]
+PASS PMs race: refused, A's removal of Ann and B's removal of Bob both kept (only Cal left)
+PASS 390-400 px: nothing runs off the side []
+PASS older server: job details saved with the old call (no version)
+PASS no page errors []
+RESULT PASS 9
+
+[exit 0] 25.7 s
