@@ -1,0 +1,5 @@
+// node t_stake_cf_unit.js <extracted pbStakeAiFromReply module> (see work/sa3.js)
+const f=require(process.argv[2]);
+const mk=(aw,dir,feet,sta)=>JSON.stringify({is_stake:true,station:{value:sta||'1+50',conf:'high'},cut_fill:{direction:dir,feet,as_written:aw,conf:'high'},stake_elevation:{feet:null,as_written:null,conf:'uncertain'}});
+const C=[['C-6.09','cut',6.09],['C 6.09','cut',6.09],['CUT 6.09','cut',6.09],['6.09 CUT','cut',6.09],['F+0.03','fill',0.03],['FILL 0.32','fill',0.32],['F. 8 11 TW','fill',8.11],['C-3 83 IE','cut',3.83],["C 6'-01 1/8\"",'cut',6.09375],['-4.68','cut',4.68],['+0.50','fill',0.5],['↓ 4.68','cut',4.68],['4.68','cut',4.68],[null,'cut',4.68],['O/G','cut',0],['ON GRADE','fill',0],['C 1.250 m','cut',1.25],['C 1.25','cut',1.25,'1+000'],['TO FL C 4.68','cut',4.68],['FL C4.68','cut',4.68],['C4.68','fill',4.68]];
+for(const [aw,d,ft,sta] of C){const r=f(mk(aw,d,ft,sta));console.log(String(aw).padEnd(16),(sta||'').padEnd(6),'=>',r.flags.cf?'FLAGGED':'filled '+r.vals.cfDir+' '+r.vals.cfVal);}
