@@ -1,0 +1,113 @@
+-- security_nov22 02 test: removed members and company permits / sealed runs. Ends with 'RESULT: ...' (rolled back).
+create function pg_temp.s2_as(p_user uuid) returns void language sql as $f$
+  select set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', p_user, 'aal', 'aal1')::text, true); $f$;
+create function pg_temp.s2_bk(p_user uuid, p_cid text, p_rec jsonb) returns text language plpgsql as $f$
+declare j jsonb;
+begin perform pg_temp.s2_as(p_user); j := public.pb_permit_backup(p_cid, p_rec, p_user);
+  return case when (j->>'same')::boolean then 'same' else 'v' || (j->>'version') end;
+exception when others then return 'ERR ' || sqlerrm; end $f$;
+create function pg_temp.s2_rec(p_n integer, p_lock text default null) returns jsonb language sql as $f$
+  select jsonb_strip_nulls(jsonb_build_object('kind', 'confined', 'space', 'MH-12', 'jobsite', 'Test', 'jobNumber', 'J1', 'n', p_n, 'lockTime', p_lock)) $f$;
+create function pg_temp.s2_seal(p_user uuid, p_entry text, p_path text, p_sha text) returns text language plpgsql as $f$
+declare j jsonb;
+begin perform pg_temp.s2_as(p_user); j := public.pb_run_seal_add(p_entry, p_path, p_sha, 1000, 'k', now(), 'test');
+  return 'v' || (j->>'version') || case when (j->>'again')::boolean then ' again' else '' end;
+exception when others then return 'ERR ' || sqlerrm; end $f$;
+
+do $test$
+declare
+  pass integer; fail integer; fails text; notes text := ''; tag text := substr(md5(random()::text), 1, 10);
+  o uuid := gen_random_uuid(); m uuid := gen_random_uuid(); m2 uuid := gen_random_uuid(); solo uuid := gen_random_uuid(); o2 uuid := gen_random_uuid();
+  c uuid := gen_random_uuid(); c2 uuid := gen_random_uuid(); x text; t1 timestamptz := now() - interval '3 hours'; t2 timestamptz := now() - interval '1 hour';
+  sha text; path text; sha2 text; path2 text; seal_ok boolean := true;
+begin
+  create temp table t_chk (i serial, name text, ok boolean, got text) on commit drop;
+  insert into auth.users (id, email) select v, 'pbsec02-' || tag || '-' || row_number() over () || '@example.invalid' from unnest(array[o, m, m2, solo, o2]) v;
+  insert into public.companies (id, name, owner_user_id, status, plan) values (c, 'pbsec02 ' || tag, o, 'active', 'trial'), (c2, 'pbsec02b ' || tag, o2, 'active', 'trial');
+  insert into public.company_members (company_id, user_id, role, created_at) values (c, m, 'foreman', now() - interval '1 day'), (c, m2, 'foreman', now() - interval '1 day');
+
+  -- ===== permits =====
+  x := pg_temp.s2_bk(m, 'p1-' || tag, pg_temp.s2_rec(1));
+  insert into t_chk (name, ok, got) select '2a member files a permit (v1) under the company', x = 'v1' and (select company_id from pb_safety.permits where user_id = m and client_permit_id = 'p1-' || tag) = c, x;
+  x := pg_temp.s2_bk(m, 'p1-' || tag, pg_temp.s2_rec(2));
+  insert into t_chk (name, ok, got) values ('2b member adds v2', x = 'v2', x);
+  delete from public.company_members where user_id = m and company_id = c;   -- removed from the company
+  x := pg_temp.s2_bk(m, 'p1-' || tag, pg_temp.s2_rec(3));
+  insert into t_chk (name, ok, got) values ('2c removed member: new version refused', x = 'ERR pb:not_company_member', x);
+  insert into t_chk (name, ok, got) select '2d nothing was added', (select version_count from pb_safety.permits where user_id = m and client_permit_id = 'p1-' || tag) = 2, '';
+  x := pg_temp.s2_bk(m, 'p1-' || tag, pg_temp.s2_rec(2));
+  insert into t_chk (name, ok, got) values ('2e removed member re-sending the filed version: ok/same (queue clears)', x = 'same', x);
+  insert into public.company_members (company_id, user_id, role) values (c2, m, 'foreman');
+  x := pg_temp.s2_bk(m, 'p1-' || tag, pg_temp.s2_rec(4));
+  insert into t_chk (name, ok, got) values ('2f now in another company: still refused for the old company''s permit', x = 'ERR pb:not_company_member', x);
+  x := pg_temp.s2_bk(m, 'p9-' || tag, pg_temp.s2_rec(1));
+  insert into t_chk (name, ok, got) select '2g a new permit files under the new company', x = 'v1' and (select company_id from pb_safety.permits where user_id = m and client_permit_id = 'p9-' || tag) = c2, x;
+  -- owner of the company (owners are not member rows)
+  insert into pb_safety.permits (user_id, company_id, client_permit_id) values (o, c, 'po-' || tag);
+  x := pg_temp.s2_bk(o, 'po-' || tag, pg_temp.s2_rec(1));
+  insert into t_chk (name, ok, got) values ('2h the company owner may add versions to a permit filed under it', x = 'v1', x);
+  -- a closed or unpaid company never blocks the crew's backups
+  update public.companies set status = 'inactive' where id = c;
+  x := pg_temp.s2_bk(m2, 'p2-' || tag, pg_temp.s2_rec(1, t1::text));
+  insert into t_chk (name, ok, got) values ('2i member of an inactive company: still backs up', x = 'v1', x);
+  update public.companies set status = 'active' where id = c;
+  -- closed_at never moves
+  x := pg_temp.s2_bk(m2, 'p2-' || tag, pg_temp.s2_rec(2, t2::text));
+  insert into t_chk (name, ok, got) select '2j a later version with another close time: filed, close time kept',
+    x = 'v2' and (select closed_at from pb_safety.permits where user_id = m2 and client_permit_id = 'p2-' || tag) = t1, x;
+  x := pg_temp.s2_bk(m2, 'p2-' || tag, pg_temp.s2_rec(3));
+  insert into t_chk (name, ok, got) select '2k a version without a close time: close time kept',
+    x = 'v3' and (select closed_at from pb_safety.permits where user_id = m2 and client_permit_id = 'p2-' || tag) = t1, x;
+  -- personal permits
+  x := pg_temp.s2_bk(solo, 'ps-' || tag, pg_temp.s2_rec(1)) || '/' || pg_temp.s2_bk(solo, 'ps-' || tag, pg_temp.s2_rec(2));
+  insert into t_chk (name, ok, got) values ('2l someone with no company: personal permit unchanged', x = 'v1/v2', x);
+  -- the freeze option
+  insert into t_chk (name, ok, got) values ('2m freeze switch is OFF by default', not pb_safety.closed_frozen(), '');
+  create or replace function pb_safety.closed_frozen() returns boolean language sql immutable set search_path = '' as 'select true';
+  x := pg_temp.s2_bk(m2, 'p2-' || tag, pg_temp.s2_rec(4, t1::text));
+  insert into t_chk (name, ok, got) values ('2n freeze ON: a closed permit refuses a new version', x = 'ERR pb:permit_closed', x);
+  x := pg_temp.s2_bk(m2, 'p2-' || tag, pg_temp.s2_rec(3));
+  insert into t_chk (name, ok, got) values ('2o freeze ON: re-sending the filed version still ok/same', x = 'same', x);
+  x := pg_temp.s2_bk(m2, 'p3-' || tag, pg_temp.s2_rec(1, t1::text)) || '/' || pg_temp.s2_bk(m2, 'p4-' || tag, pg_temp.s2_rec(1)) || '/' || pg_temp.s2_bk(m2, 'p4-' || tag, pg_temp.s2_rec(2));
+  insert into t_chk (name, ok, got) values ('2p freeze ON: first (closed) version files; open permits unaffected', x = 'v1/v1/v2', x);
+  create or replace function pb_safety.closed_frozen() returns boolean language sql immutable set search_path = '' as 'select false';
+  -- the app's 4-argument call ends in the 3-argument one (live only)
+  if to_regprocedure('public.pb_permit_backup(text,jsonb,uuid,text)') is not null then
+    perform pg_temp.s2_as(m);
+    begin perform public.pb_permit_backup('p1-' || tag, pg_temp.s2_rec(5), m, null); x := 'filed';
+    exception when others then x := sqlerrm; end;
+    insert into t_chk (name, ok, got) values ('2q the app''s 4-argument call is refused the same way', x = 'pb:not_company_member', x);
+  end if;
+
+  -- ===== sealed run PDFs =====
+  delete from public.company_members where user_id = m and company_id = c2;
+  insert into public.company_members (company_id, user_id, role) values (c, m, 'foreman'); -- back in c for the seal part
+  sha := encode(extensions.digest('a' || tag, 'sha256'), 'hex'); path := m::text || '/runs/r1-' || tag || '/20261121T101010-' || left(sha, 16) || '.pdf';
+  sha2 := encode(extensions.digest('b' || tag, 'sha256'), 'hex'); path2 := m::text || '/runs/r1-' || tag || '/20261121T111111-' || left(sha2, 16) || '.pdf';
+  insert into pb_prod.run_records (company_id, user_id, entry_id, record, record_md5) values (c, m, 'r1-' || tag, '{}', '');
+  begin
+    insert into storage.objects (bucket_id, name, owner_id, metadata) values ('run-seals', path, m::text, '{"size": 1000}'), ('run-seals', path2, m::text, '{"size": 1000}');
+  exception when others then seal_ok := false; notes := notes || ' [seal checks skipped: storage.objects not writable here: ' || sqlerrm || ']'; end;
+  if seal_ok then
+    x := pg_temp.s2_seal(m, 'r1-' || tag, path, sha);
+    insert into t_chk (name, ok, got) values ('2r member seals a run PDF', x = 'v1', x);
+    delete from public.company_members where user_id = m and company_id = c;
+    x := pg_temp.s2_seal(m, 'r1-' || tag, path2, sha2);
+    insert into t_chk (name, ok, got) values ('2s removed member: a new seal is refused', x = 'ERR pb:not_company_member', x);
+    x := pg_temp.s2_seal(m, 'r1-' || tag, path, sha);
+    insert into t_chk (name, ok, got) values ('2t removed member re-sending the filed seal: again (queue clears)', x = 'v1 again', x);
+    insert into public.company_members (company_id, user_id, role) values (c2, m, 'foreman');
+    x := pg_temp.s2_seal(m, 'r1-' || tag, path2, sha2);
+    insert into t_chk (name, ok, got) values ('2u in another company now: still refused for the old company''s run', x = 'ERR pb:not_company_member', x);
+  end if;
+
+  insert into t_chk (name, ok, got) select '2v both live functions saved for undo', (select count(*) from pb_sec.fn_backup where fn_backup.tag = 'nov22_02') = 2, '';
+  -- undo: the old permit backup takes the removed member's version again
+  perform pb_sec.restore('nov22_02');
+  delete from public.company_members where user_id = m;
+  x := pg_temp.s2_bk(m, 'p1-' || tag, pg_temp.s2_rec(6));
+  insert into t_chk (name, ok, got) values ('2w undo (restore) brings back the old function', coalesce(x, '(local stand-in)') <> 'ERR pb:not_company_member', x);
+
+  select count(*) filter (where ok), count(*) filter (where ok is not true), coalesce(string_agg(name || ' [got: ' || coalesce(got, 'null') || ']', ' ; ' order by i) filter (where ok is not true), '') into pass, fail, fails from t_chk;
+  raise exception 'RESULT: % pass, % fail% %', pass, fail, case when fail > 0 then ' | FAILED: ' || fails else '' end, notes;
+end $test$;

@@ -6,6 +6,7 @@
 // Secrets: RESEND_API_KEY (already set, same as notify-report and feedback-notify). Optional: REPORT_FROM (sender, same
 // default as the other functions), TRIAL_NOTIFY_TO (comma-separated; default tfontaine@pipelayersbible.com),
 // TRIAL_IP_SALT (key for the IP hash; default: the service role key), TRIAL_ALLOW_LOCAL=0 to stop answering localhost.
+// TRIAL_CONFIRM=0 stops the confirmation email to the requester (firstweek_web_nov22; on by default).
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are provided by Supabase. Logs: counts and statuses only, no form content.
 
 import { handle } from './logic.ts';
@@ -13,6 +14,7 @@ import { handle } from './logic.ts';
 const FROM = Deno.env.get('REPORT_FROM') ?? "The Pipelayer's Bible <reports@pipelayersbible.com>";
 const TO = (Deno.env.get('TRIAL_NOTIFY_TO') ?? 'tfontaine@pipelayersbible.com').split(',').map((s) => s.trim()).filter((s) => /^[^@\s]+@[^@\s]+$/.test(s));
 const ALLOW_LOCAL = Deno.env.get('TRIAL_ALLOW_LOCAL') !== '0';
+const CONFIRM = Deno.env.get('TRIAL_CONFIRM') !== '0'; // firstweek_web_nov22: confirmation email to the requester (TRIAL_CONFIRM=0 turns it off)
 
 async function rpc(name: string, args: Record<string, unknown>) {
   const url = Deno.env.get('SUPABASE_URL')!, key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -45,5 +47,5 @@ const sendEmail = rk ? async (payload: Record<string, unknown>) => {
 
 Deno.serve((req, info) => {
   const addr = info && (info.remoteAddr as Deno.NetAddr | undefined);
-  return handle(req, { rpc, sendEmail, hashIp, from: FROM, to: TO, log: (...a) => console.log(...a) }, { allowLocal: ALLOW_LOCAL, remoteIp: addr && 'hostname' in addr ? addr.hostname : '' });
+  return handle(req, { rpc, sendEmail, hashIp, from: FROM, to: TO, confirm: CONFIRM, log: (...a) => console.log(...a) }, { allowLocal: ALLOW_LOCAL, remoteIp: addr && 'hostname' in addr ? addr.hostname : '' });
 });

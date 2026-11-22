@@ -1,7 +1,7 @@
 // deno test edge/trial-request/logic_test.ts   (no network: the database and Resend are mocked)
 // Part 1 runs logic.ts with injected mocks. Part 2 loads index.ts itself with Deno.serve captured and global fetch mocked,
 // so the real wiring (REST RPC call with the service key, Resend call, IP hash) is exercised too.
-import { allowedOrigin, emailFor, handle, isBot, validate, type Deps } from './logic.ts';
+import { allowedOrigin, confirmEmailFor, emailFor, handle, isBot, validate, type Deps } from './logic.ts';
 
 let fails = 0, passes = 0;
 function ok(c: unknown, m: string) { if (c) { passes++; console.log('PASS', m); } else { fails++; console.log('FAIL', m); } }
@@ -12,13 +12,13 @@ const req = (body: unknown, o: { origin?: string | null; method?: string; raw?: 
   if (o.origin !== null) h.set('origin', o.origin ?? 'https://pipelayersbible.com');
   return new Request('https://x.supabase.co/functions/v1/trial-request', { method: o.method ?? 'POST', headers: h, body: (o.method ?? 'POST') === 'POST' ? (o.raw ?? JSON.stringify(body)) : undefined });
 };
-function mock(over: Partial<{ add: unknown; addStatus: number; email: { ok: boolean; status: number } | null }> = {}) {
+function mock(over: Partial<{ add: unknown; addStatus: number; email: { ok: boolean; status: number } | null; confirm: boolean }> = {}) {
   const calls: { rpc: [string, Record<string, unknown>][]; email: Record<string, unknown>[] } = { rpc: [], email: [] };
   const deps: Deps = {
     rpc: async (n, a) => { calls.rpc.push([n, a]); if (n === 'pb_trial_request_add') return { ok: (over.addStatus ?? 200) < 300, status: over.addStatus ?? 200, data: over.add ?? { ok: true, id: '0b7c3c1e-1111-4111-8111-111111111111' } }; return { ok: true, status: 200, data: { ok: true } }; },
     sendEmail: over.email === null ? null : async (p) => { calls.email.push(p); return over.email ?? { ok: true, status: 200 }; },
     hashIp: async (ip) => 'h' + ip.replace(/\D/g, '').padEnd(31, '0').slice(0, 31).replace(/[^0-9a-f]/g, '0'),
-    from: "The Pipelayer's Bible <reports@pipelayersbible.com>", to: ['tfontaine@pipelayersbible.com'],
+    from: "The Pipelayer's Bible <reports@pipelayersbible.com>", to: ['tfontaine@pipelayersbible.com'], confirm: over.confirm,
   };
   return { deps, calls };
 }
@@ -95,6 +95,39 @@ Deno.test('trial-request logic', async () => {
   m = mock({ email: null }); r = await handle(req(GOOD), m.deps); j = await r.json();
   ok(r.status === 200 && j.ok && m.calls.email.length === 0, 'no Resend key: stored only, still ok');
 
+  // ---- firstweek_web_nov22: state + confirmation email ----
+  ok(validate({ ...GOOD, state: 'Texas' }).ok && (validate({ ...GOOD, state: 'Texas' }) as { value: { state: string } }).value.state === 'Texas', 'state: a real state passes');
+  ok(validate({ ...GOOD, state: 'District of Columbia' }).ok && validate({ ...GOOD, state: 'More than one state' }).ok, 'state: DC and "More than one state" pass');
+  ok((validate({ ...GOOD, state: '' }) as { value: { state: unknown } }).value.state === null && (validate(GOOD) as { value: { state: unknown } }).value.state === null, 'state: optional, empty stored as null');
+  const bs = validate({ ...GOOD, state: 'Narnia' });
+  ok(!bs.ok && (bs as { fields: string[] }).fields.join() === 'state', 'state: anything else is refused with fields ["state"]');
+  m = mock(); r = await handle(req({ ...GOOD, state: 'Nevada' }), m.deps); j = await r.json();
+  const addS = m.calls.rpc.find((c) => c[0] === 'pb_trial_request_add');
+  ok(r.status === 200 && addS && addS[1].p_message === 'State: Nevada\n\nTwo crews.\nStart Monday?', 'state stored at the top of the message (no database change)');
+  ok(/State: Nevada/.test(String((m.calls.email[0] as Record<string, unknown>).text)), "state in Thomas's email");
+  m = mock(); r = await handle(req({ ...GOOD, state: 'Nevada', message: 'z'.repeat(2000) }), m.deps);
+  ok(String(m.calls.rpc.find((c) => c[0] === 'pb_trial_request_add')![1].p_message).length === 2000, 'state + a 2,000-character message: stored message kept to 2,000 (the column limit)');
+  m = mock(); r = await handle(req({ ...GOOD, state: 'Narnia' }), m.deps); j = await r.json();
+  ok(r.status === 400 && JSON.stringify(j.fields) === '["state"]' && m.calls.rpc.length === 0, 'bad state: 400 with fields ["state"] (the page marks that field)');
+  // confirmation
+  m = mock(); r = await handle(req({ ...GOOD, name: 'Visit http://spam.example now', company: 'Buy pills <a href=x>' }), m.deps);
+  ok(m.calls.email.length === 2, 'happy path: two emails (Thomas, then the requester)');
+  const cf = m.calls.email[1] as Record<string, unknown>;
+  ok(cf && (cf.to as string[]).join() === 'joe@example.com' && cf.reply_to === 'tfontaine@pipelayersbible.com' && cf.from === "The Pipelayer's Bible <reports@pipelayersbible.com>", 'confirmation: to the requester, Reply-To Thomas, the usual sender');
+  ok(/\(909\) 435-5250/.test(String(cf.text)) && /tel:\+19094355250/.test(String(cf.html)) && /What happens next/.test(String(cf.text)) && /pipelayersbible\.com\/tools\/pipe-grade-calculator\//.test(String(cf.text)), "confirmation: what happens next, Thomas's phone, links to the free tools");
+  ok(!/spam\.example|pills|Joe|Acme/i.test(String(cf.text) + String(cf.html) + String(cf.subject)), 'confirmation repeats nothing that was typed (name, company, message)');
+  m = mock({ add: { ok: false, error: 'rate' } }); r = await handle(req(GOOD), m.deps);
+  ok(m.calls.email.length === 0, 'rate limited: no confirmation either');
+  m = mock({ addStatus: 500, add: null }); r = await handle(req(GOOD), m.deps);
+  ok(m.calls.email.length === 1 && (m.calls.email[0].to as string[])[0] === 'tfontaine@pipelayersbible.com', 'row not stored: no confirmation (only rate-limited, stored requests get one)');
+  m = mock({ confirm: false }); r = await handle(req(GOOD), m.deps);
+  ok(m.calls.email.length === 1, 'TRIAL_CONFIRM=0: no confirmation');
+  m = mock({ email: { ok: false, status: 500 } }); r = await handle(req(GOOD), m.deps); j = await r.json();
+  ok(r.status === 200 && j.ok && m.calls.email.length === 2, 'Resend refusing does not change the answer (stored: ok)');
+  m = mock({ addStatus: 500, add: null }); r = await handle(req({ ...GOOD, website: 'x' }), m.deps);
+  ok(m.calls.email.length === 0, 'honeypot: no confirmation');
+  ok(!('reply_to' in confirmEmailFor((validate(GOOD) as unknown as { value: never }).value, 'f', null)), 'no Thomas address configured: no Reply-To');
+
   if (fails) throw new Error(`${fails} failed`);
 });
 
@@ -127,6 +160,8 @@ Deno.test('trial-request index.ts wiring (Deno.serve captured, fetch mocked)', a
     const rs = seen.find((s) => s.url === 'https://api.resend.com/emails');
     ok(rs && rs.headers.get('authorization') === 'Bearer re_testkey_123' && (rs.body as Record<string, unknown>).from === "The Pipelayer's Bible <reports@pipelayersbible.com>" && ((rs.body as Record<string, unknown>).to as string[])[0] === 'tfontaine@pipelayersbible.com', 'Resend call: RESEND_API_KEY, the REPORT_FROM default sender, to Thomas');
     ok(seen.some((s) => s.url.endsWith('/pb_trial_request_notified')), 'notified RPC called after the email');
+    const rs2 = seen.filter((s) => s.url === 'https://api.resend.com/emails');
+    ok(rs2.length === 2 && ((rs2[1].body as Record<string, unknown>).to as string[])[0] === 'joe@example.com', 'index.ts: the confirmation goes to the requester (TRIAL_CONFIRM not set = on)');
   } finally {
     globalThis.fetch = realFetch;
     // deno-lint-ignore no-explicit-any

@@ -1,0 +1,74 @@
+-- security_nov22 01 test: two-step login at the gate. Runs after 01_mfa_gate.sql in the same transaction and always ends
+-- by raising 'RESULT: ...', so everything (in the block form, the migration too) is rolled back.
+create function pg_temp.s1_signin(p_user uuid, p_aal text) returns uuid language plpgsql as $f$
+declare v uuid := gen_random_uuid(); as_auth boolean := current_setting('pbsec.as_auth', true) = '1';
+begin
+  if as_auth then set local role supabase_auth_admin; end if;
+  insert into auth.sessions (id, user_id, created_at, aal) values (v, p_user, now(), 'aal1');
+  if p_aal = 'aal2' then update auth.sessions set aal = 'aal2' where id = v; end if;
+  reset role; return v;
+end $f$;
+create function pg_temp.s1_gate(p_role text, p_user uuid, p_sid uuid, p_aal text) returns text language plpgsql as $f$
+declare d text;
+begin
+  perform set_config('request.jwt.claims', jsonb_strip_nulls(jsonb_build_object('role', p_role, 'sub', p_user, 'session_id', p_sid, 'aal', p_aal))::text, true);
+  perform public.pb_session_gate(); return 'ok';
+exception when others then get stacked diagnostics d = pg_exception_detail;
+  return case when sqlstate = 'PT401' and sqlerrm = 'pb:signed_out' then 'refused:' || coalesce(d, '') else 'ERR ' || sqlstate || ' ' || sqlerrm end;
+end $f$;
+
+do $test$
+declare
+  pass integer; fail integer; fails text; notes text := ''; tag text := substr(md5(random()::text), 1, 10);
+  um uuid := gen_random_uuid(); up uuid := gen_random_uuid(); uu uuid := gen_random_uuid();
+  sm1 uuid; sm2 uuid; sp uuid; su uuid; x text; n integer;
+begin
+  create temp table t_chk (i serial, name text, ok boolean, got text) on commit drop;
+  insert into auth.users (id, email) select v, 'pbsec01-' || tag || '-' || row_number() over () || '@example.invalid' from unnest(array[um, up, uu]) v;
+  insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, created_at, updated_at)
+    values (gen_random_uuid(), um, 't', 'totp', 'verified', now(), now()), (gen_random_uuid(), uu, 't', 'totp', 'unverified', now(), now());
+  begin set local role supabase_auth_admin; reset role; perform set_config('pbsec.as_auth', '1', true); notes := ' [sessions as supabase_auth_admin]';
+  exception when others then perform set_config('pbsec.as_auth', '0', true); notes := ' [sessions as ' || current_user || ']'; end;
+  sm1 := pg_temp.s1_signin(um, 'aal1');   -- password only
+  sm2 := pg_temp.s1_signin(um, 'aal2');   -- password + code
+  sp := pg_temp.s1_signin(up, 'aal1');    -- no two-step login
+  su := pg_temp.s1_signin(uu, 'aal1');    -- started turning it on, never finished
+
+  x := pg_temp.s1_gate('authenticated', um, sm1, 'aal1');
+  insert into t_chk (name, ok, got) values ('1a two-step on, password only (aal1): refused, code_needed', x = 'refused:code_needed', x);
+  x := pg_temp.s1_gate('authenticated', um, sm1, null);
+  insert into t_chk (name, ok, got) values ('1b two-step on, token without aal claim: refused', x = 'refused:code_needed', x);
+  x := pg_temp.s1_gate('authenticated', um, sm2, 'aal2');
+  insert into t_chk (name, ok, got) values ('1c two-step on, code entered (aal2): passes', x = 'ok', x);
+  x := pg_temp.s1_gate('authenticated', up, sp, 'aal1');
+  insert into t_chk (name, ok, got) values ('1d no two-step login, aal1: passes (crews unchanged)', x = 'ok', x);
+  x := pg_temp.s1_gate('authenticated', uu, su, 'aal1');
+  insert into t_chk (name, ok, got) values ('1e unfinished (unverified) factor, aal1: passes', x = 'ok', x);
+  x := pg_temp.s1_gate('anon', null, null, null);
+  insert into t_chk (name, ok, got) values ('1f app key only (anon: take-slot, why, peek): passes', x = 'ok', x);
+  x := pg_temp.s1_gate('service_role', null, null, null);
+  insert into t_chk (name, ok, got) values ('1g service role: passes', x = 'ok', x);
+  -- an ended session still says ended (order of checks kept)
+  delete from auth.sessions where id = sm1;
+  x := pg_temp.s1_gate('authenticated', um, sm1, 'aal1');
+  insert into t_chk (name, ok, got) values ('1h ended aal1 session: still "ended", not code_needed', x ~ '^refused:(ended|other_device)$', x);
+  -- the detail is not one the app signs out on (pb1dEnded acts only on these five)
+  insert into t_chk (name, ok, got) values ('1i code_needed is not a sign-out reason in the app', not ('code_needed' = any (array['other_device', 'moved', 'ended', 'in_use', 'full'])), '');
+  -- pb_session_ok: the edge functions' check
+  perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', um, 'session_id', sm2, 'aal', 'aal2')::text, true);
+  insert into t_chk (name, ok, got) select '1j pb_session_ok() true for a good session', public.pb_session_ok(), '';
+  insert into t_chk (name, ok, got) values ('1k pb_session_ok: authenticated may call, anon may not',
+    has_function_privilege('authenticated', 'public.pb_session_ok()', 'execute') and not has_function_privilege('anon', 'public.pb_session_ok()', 'execute'), '');
+  insert into t_chk (name, ok, got) values ('1l gate still the pre-request function name', to_regprocedure('public.pb_session_gate()') is not null, '');
+  select count(*) into n from pb_sec.fn_backup where fn_backup.tag = 'nov22_01';
+  insert into t_chk (name, ok, got) values ('1m the live gate was saved for undo', n = 1, n::text);
+  insert into t_chk (name, ok, got) values ('1n pb_sec not reachable from the API', not has_schema_privilege('authenticated', 'pb_sec', 'usage') and not has_schema_privilege('anon', 'pb_sec', 'usage'), '');
+  -- undo puts the old gate back: password-only passes again (as before)
+  sm1 := pg_temp.s1_signin(um, 'aal1');
+  perform pb_sec.restore('nov22_01');
+  x := pg_temp.s1_gate('authenticated', um, sm1, 'aal1');
+  insert into t_chk (name, ok, got) values ('1o undo (restore) brings back the old gate exactly (aal1 passes again)', x = 'ok', x);
+
+  select count(*) filter (where ok), count(*) filter (where ok is not true), coalesce(string_agg(name || ' [got: ' || coalesce(got, 'null') || ']', ' ; ' order by i) filter (where ok is not true), '') into pass, fail, fails from t_chk;
+  raise exception 'RESULT: % pass, % fail% %', pass, fail, case when fail > 0 then ' | FAILED: ' || fails else '' end, notes;
+end $test$;

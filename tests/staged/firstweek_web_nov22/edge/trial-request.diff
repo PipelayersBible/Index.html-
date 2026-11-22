@@ -1,0 +1,235 @@
+diff -u trial-request_before/index.ts trial-request/index.ts
+--- trial-request_before/index.ts	2026-11-21 20:35:16.613846834 -0800
++++ trial-request/index.ts	2026-11-21 20:35:44.604182304 -0800
+@@ -6,6 +6,7 @@
+ // Secrets: RESEND_API_KEY (already set, same as notify-report and feedback-notify). Optional: REPORT_FROM (sender, same
+ // default as the other functions), TRIAL_NOTIFY_TO (comma-separated; default tfontaine@pipelayersbible.com),
+ // TRIAL_IP_SALT (key for the IP hash; default: the service role key), TRIAL_ALLOW_LOCAL=0 to stop answering localhost.
++// TRIAL_CONFIRM=0 stops the confirmation email to the requester (firstweek_web_nov22; on by default).
+ // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are provided by Supabase. Logs: counts and statuses only, no form content.
+ 
+ import { handle } from './logic.ts';
+@@ -13,6 +14,7 @@
+ const FROM = Deno.env.get('REPORT_FROM') ?? "The Pipelayer's Bible <reports@pipelayersbible.com>";
+ const TO = (Deno.env.get('TRIAL_NOTIFY_TO') ?? 'tfontaine@pipelayersbible.com').split(',').map((s) => s.trim()).filter((s) => /^[^@\s]+@[^@\s]+$/.test(s));
+ const ALLOW_LOCAL = Deno.env.get('TRIAL_ALLOW_LOCAL') !== '0';
++const CONFIRM = Deno.env.get('TRIAL_CONFIRM') !== '0'; // firstweek_web_nov22: confirmation email to the requester (TRIAL_CONFIRM=0 turns it off)
+ 
+ async function rpc(name: string, args: Record<string, unknown>) {
+   const url = Deno.env.get('SUPABASE_URL')!, key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+@@ -45,5 +47,5 @@
+ 
+ Deno.serve((req, info) => {
+   const addr = info && (info.remoteAddr as Deno.NetAddr | undefined);
+-  return handle(req, { rpc, sendEmail, hashIp, from: FROM, to: TO, log: (...a) => console.log(...a) }, { allowLocal: ALLOW_LOCAL, remoteIp: addr && 'hostname' in addr ? addr.hostname : '' });
++  return handle(req, { rpc, sendEmail, hashIp, from: FROM, to: TO, confirm: CONFIRM, log: (...a) => console.log(...a) }, { allowLocal: ALLOW_LOCAL, remoteIp: addr && 'hostname' in addr ? addr.hostname : '' });
+ });
+diff -u trial-request_before/logic.ts trial-request/logic.ts
+--- trial-request_before/logic.ts	2026-11-21 20:35:16.613901659 -0800
++++ trial-request/logic.ts	2026-11-21 20:36:15.324709327 -0800
+@@ -9,23 +9,37 @@
+ //  * checks and length-limits every field (400 {ok:false,error:'invalid',fields:[...]})
+ //  * stores the row through public.pb_trial_request_add (5 an hour per hashed IP, 200 a day in all: 429 {error:'rate'})
+ //  * emails Thomas a plain summary through Resend, Reply-To set to the requester; marks the row notified when accepted
++//  * firstweek_web_nov22: optional `state` (a US state, DC, or "More than one state"); it goes in Thomas's email and is
++//    stored at the top of the message ("State: Texas"), so pb_trial_request_add is unchanged
++//  * firstweek_web_nov22: once the row is stored (so the database's rate limits apply), a confirmation email goes to the
++//    requester: what happens next, Thomas's phone, the free tools. It repeats nothing they typed (the form can't be used
++//    to send someone else a message), Reply-To is Thomas. deps.confirm === false turns it off (TRIAL_CONFIRM=0).
+ //  * answers {ok:true} when the row was stored or the email went (either is enough for Thomas to see it), else 502
+ 
+ export const ROLES = ['Owner', 'PM', 'Superintendent', 'Foreman', 'Other'] as const;
+ export const LIMITS = { name: 100, company: 120, email: 254, phone: 40, crew_size: 40, message: 2000 } as const;
++export const STATES = ['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia',
++  'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts',
++  'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York',
++  'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee',
++  'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming', 'More than one state'] as const;
++export const PHONE_SHOWN = '(909) 435-5250';
++const PHONE_TEL = '+19094355250';
++const SITE = 'https://pipelayersbible.com';
+ export const MIN_FILL_MS = 3000;
+ export const MAX_BODY = 8192;
+ const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
+ const ORIGINS = ['https://pipelayersbible.com', 'https://www.pipelayersbible.com'];
+ const LOCAL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d{1,5})?$/;
+ 
+-export type Clean = { name: string; company: string; role: string; email: string; phone: string | null; crew_size: string | null; message: string | null };
++export type Clean = { name: string; company: string; role: string; email: string; phone: string | null; crew_size: string | null; state?: string | null; message: string | null };
+ export type Deps = {
+   rpc: (name: string, args: Record<string, unknown>) => Promise<{ ok: boolean; status: number; data: unknown }>;
+   sendEmail: ((payload: Record<string, unknown>) => Promise<{ ok: boolean; status: number }>) | null; // null: no RESEND_API_KEY
+   hashIp: (ip: string) => Promise<string>;
+   from: string;
+   to: string[];
++  confirm?: boolean; // false: no confirmation email to the requester (TRIAL_CONFIRM=0)
+   log?: (...a: unknown[]) => void;
+ };
+ 
+@@ -55,7 +69,7 @@
+   const b = (body && typeof body === 'object' && !Array.isArray(body) ? body : {}) as Record<string, unknown>;
+   const v = {
+     name: line(b.name), company: line(b.company), role: line(b.role), email: line(b.email).toLowerCase(),
+-    phone: line(b.phone), crew_size: line(b.crew_size), message: block(b.message),
++    phone: line(b.phone), crew_size: line(b.crew_size), state: line(b.state), message: block(b.message),
+   };
+   const bad: string[] = [];
+   if (!v.name || v.name.length > LIMITS.name) bad.push('name');
+@@ -64,9 +78,10 @@
+   if (!v.email || v.email.length > LIMITS.email || !EMAIL.test(v.email)) bad.push('email');
+   if (v.phone.length > LIMITS.phone || (v.phone && !/^[0-9+().\-\s xextEXT]{7,40}$/.test(v.phone))) bad.push('phone');
+   if (v.crew_size.length > LIMITS.crew_size) bad.push('crew_size');
++  if (v.state && !(STATES as readonly string[]).includes(v.state)) bad.push('state');
+   if (v.message.length > LIMITS.message) bad.push('message');
+   if (bad.length) return { ok: false, fields: bad };
+-  return { ok: true, value: { ...v, phone: v.phone || null, crew_size: v.crew_size || null, message: v.message || null } };
++  return { ok: true, value: { ...v, phone: v.phone || null, crew_size: v.crew_size || null, state: v.state || null, message: v.message || null } };
+ }
+ 
+ // true when the request looks like a bot: honeypot filled, or sent too fast (or with no fill time at all)
+@@ -88,7 +103,7 @@
+ export function emailFor(c: Clean, from: string, to: string[]) {
+   const subject = `Trial request: ${c.company} (${c.role})`.slice(0, 150);
+   const rows: [string, string][] = [['Name', c.name], ['Company', c.company], ['Role', c.role], ['Email', c.email],
+-    ['Phone', c.phone || '-'], ['Crew size', c.crew_size || '-']];
++    ['Phone', c.phone || '-'], ['Crew size', c.crew_size || '-'], ['State', c.state || '-']];
+   const text = rows.map(([k, v]) => `${k}: ${v}`).join('\n') + `\n\nMessage:\n${c.message || '-'}\n\n` +
+     'Sent from the trial form on pipelayersbible.com. Reply to this email to answer them.';
+   const html = '<p><strong>New trial request</strong> from the website.</p><table cellpadding="4" style="border-collapse:collapse">' +
+@@ -103,6 +118,34 @@
+   return { from, to, reply_to: c.email, subject, text, html };
+ }
+ 
++// the requester's confirmation: fixed text only (nothing they typed), so the form can't be used to mail a stranger a message
++export function confirmEmailFor(c: Clean, from: string, replyTo: string | null) {
++  const subject = "Your free trial request: The Pipelayer's Bible";
++  const tools: [string, string][] = [['Pipe grade calculator', SITE + '/tools/pipe-grade-calculator/'], ['Rod reading to invert', SITE + '/tools/rod-reading-to-invert/'],
++    ['Trench sloping', SITE + '/tools/trench-sloping/'], ['All free tools and guides', SITE + '/tools/']];
++  const text = 'Thanks for asking for a free 30-day trial of The Pipelayer\'s Bible. We got your request.\n\n' +
++    'What happens next:\n' +
++    '1. Thomas sets up your company, usually the same day.\n' +
++    '2. He emails an invite to this address. Open it on your phone and choose a password.\n' +
++    '3. Add your crew from the app. A foreman or pipelayer can join from a text, with no email.\n\n' +
++    'The trial is free for your company and 6 people, with no credit card. Nothing is charged when it ends.\n\n' +
++    `Questions? Call or text Thomas at ${PHONE_SHOWN}, or reply to this email.\n\n` +
++    'While you wait, the free tools work on any phone:\n' + tools.map(([k, u]) => `${k}: ${u}`).join('\n') + '\n\n' +
++    'You got this because this address was entered on the trial form at pipelayersbible.com. If that wasn\'t you, ignore this email: nothing else will be sent.';
++  const html = '<p>Thanks for asking for a free 30-day trial of The Pipelayer\'s Bible. We got your request.</p>' +
++    '<p><strong>What happens next</strong></p><ol>' +
++    '<li>Thomas sets up your company, usually the same day.</li>' +
++    '<li>He emails an invite to this address. Open it on your phone and choose a password.</li>' +
++    '<li>Add your crew from the app. A foreman or pipelayer can join from a text, with no email.</li></ol>' +
++    '<p>The trial is free for your company and 6 people, with no credit card. Nothing is charged when it ends.</p>' +
++    `<p>Questions? Call or text Thomas at <a href="tel:${PHONE_TEL}">${PHONE_SHOWN}</a>, or reply to this email.</p>` +
++    '<p>While you wait, the free tools work on any phone:</p><ul>' + tools.map(([k, u]) => `<li><a href="${esc(u)}">${esc(k)}</a></li>`).join('') + '</ul>' +
++    '<p style="color:#666;font-size:13px">You got this because this address was entered on the trial form at pipelayersbible.com. If that wasn\'t you, ignore this email: nothing else will be sent.</p>';
++  const out: Record<string, unknown> = { from, to: [c.email], subject, text, html };
++  if (replyTo) out.reply_to = replyTo;
++  return out;
++}
++
+ const json = (status: number, body: unknown, extra: Record<string, string> = {}) =>
+   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...extra } });
+ 
+@@ -131,7 +174,7 @@
+   let stored = false, id: string | null = null;
+   const r = await deps.rpc('pb_trial_request_add', {
+     p_name: c.name, p_company: c.company, p_role: c.role, p_email: c.email, p_phone: c.phone, p_crew_size: c.crew_size,
+-    p_message: c.message, p_ip_hash: ipHash, p_user_agent: ua,
++    p_message: c.state ? (`State: ${c.state}` + (c.message ? '\n\n' + c.message : '')).slice(0, LIMITS.message) : c.message, p_ip_hash: ipHash, p_user_agent: ua,
+   }).catch(() => ({ ok: false, status: 0, data: null }));
+   const d = (r.data && typeof r.data === 'object' ? r.data : {}) as Record<string, unknown>;
+   if (r.ok && d.ok === true) { stored = true; id = typeof d.id === 'string' ? d.id : null; }
+@@ -147,7 +190,14 @@
+     if (e.ok && id) await deps.rpc('pb_trial_request_notified', { p_id: id }).catch(() => null);
+   } else log('trial-request: no RESEND_API_KEY, not emailed');
+ 
+-  log(`trial-request: stored ${stored}, emailed ${emailed}`);
++  let confirmed = false; // firstweek_web_nov22: only for a stored row (the database's rate limits apply)
++  if (stored && deps.sendEmail && deps.confirm !== false) {
++    const e = await deps.sendEmail(confirmEmailFor(c, deps.from, deps.to[0] || null)).catch(() => ({ ok: false, status: 0 }));
++    confirmed = e.ok;
++    if (!e.ok) log('trial-request: confirmation refused, status', e.status);
++  }
++
++  log(`trial-request: stored ${stored}, emailed ${emailed}, confirmed ${confirmed}`);
+   if (!stored && !emailed) return json(502, { ok: false, error: 'server' }, cors);
+   return json(200, { ok: true }, cors);
+ }
+diff -u trial-request_before/logic_test.ts trial-request/logic_test.ts
+--- trial-request_before/logic_test.ts	2026-11-21 20:35:16.613881674 -0800
++++ trial-request/logic_test.ts	2026-11-21 20:36:35.515671622 -0800
+@@ -1,7 +1,7 @@
+ // deno test edge/trial-request/logic_test.ts   (no network: the database and Resend are mocked)
+ // Part 1 runs logic.ts with injected mocks. Part 2 loads index.ts itself with Deno.serve captured and global fetch mocked,
+ // so the real wiring (REST RPC call with the service key, Resend call, IP hash) is exercised too.
+-import { allowedOrigin, emailFor, handle, isBot, validate, type Deps } from './logic.ts';
++import { allowedOrigin, confirmEmailFor, emailFor, handle, isBot, validate, type Deps } from './logic.ts';
+ 
+ let fails = 0, passes = 0;
+ function ok(c: unknown, m: string) { if (c) { passes++; console.log('PASS', m); } else { fails++; console.log('FAIL', m); } }
+@@ -12,13 +12,13 @@
+   if (o.origin !== null) h.set('origin', o.origin ?? 'https://pipelayersbible.com');
+   return new Request('https://x.supabase.co/functions/v1/trial-request', { method: o.method ?? 'POST', headers: h, body: (o.method ?? 'POST') === 'POST' ? (o.raw ?? JSON.stringify(body)) : undefined });
+ };
+-function mock(over: Partial<{ add: unknown; addStatus: number; email: { ok: boolean; status: number } | null }> = {}) {
++function mock(over: Partial<{ add: unknown; addStatus: number; email: { ok: boolean; status: number } | null; confirm: boolean }> = {}) {
+   const calls: { rpc: [string, Record<string, unknown>][]; email: Record<string, unknown>[] } = { rpc: [], email: [] };
+   const deps: Deps = {
+     rpc: async (n, a) => { calls.rpc.push([n, a]); if (n === 'pb_trial_request_add') return { ok: (over.addStatus ?? 200) < 300, status: over.addStatus ?? 200, data: over.add ?? { ok: true, id: '0b7c3c1e-1111-4111-8111-111111111111' } }; return { ok: true, status: 200, data: { ok: true } }; },
+     sendEmail: over.email === null ? null : async (p) => { calls.email.push(p); return over.email ?? { ok: true, status: 200 }; },
+     hashIp: async (ip) => 'h' + ip.replace(/\D/g, '').padEnd(31, '0').slice(0, 31).replace(/[^0-9a-f]/g, '0'),
+-    from: "The Pipelayer's Bible <reports@pipelayersbible.com>", to: ['tfontaine@pipelayersbible.com'],
++    from: "The Pipelayer's Bible <reports@pipelayersbible.com>", to: ['tfontaine@pipelayersbible.com'], confirm: over.confirm,
+   };
+   return { deps, calls };
+ }
+@@ -95,6 +95,39 @@
+   m = mock({ email: null }); r = await handle(req(GOOD), m.deps); j = await r.json();
+   ok(r.status === 200 && j.ok && m.calls.email.length === 0, 'no Resend key: stored only, still ok');
+ 
++  // ---- firstweek_web_nov22: state + confirmation email ----
++  ok(validate({ ...GOOD, state: 'Texas' }).ok && (validate({ ...GOOD, state: 'Texas' }) as { value: { state: string } }).value.state === 'Texas', 'state: a real state passes');
++  ok(validate({ ...GOOD, state: 'District of Columbia' }).ok && validate({ ...GOOD, state: 'More than one state' }).ok, 'state: DC and "More than one state" pass');
++  ok((validate({ ...GOOD, state: '' }) as { value: { state: unknown } }).value.state === null && (validate(GOOD) as { value: { state: unknown } }).value.state === null, 'state: optional, empty stored as null');
++  const bs = validate({ ...GOOD, state: 'Narnia' });
++  ok(!bs.ok && (bs as { fields: string[] }).fields.join() === 'state', 'state: anything else is refused with fields ["state"]');
++  m = mock(); r = await handle(req({ ...GOOD, state: 'Nevada' }), m.deps); j = await r.json();
++  const addS = m.calls.rpc.find((c) => c[0] === 'pb_trial_request_add');
++  ok(r.status === 200 && addS && addS[1].p_message === 'State: Nevada\n\nTwo crews.\nStart Monday?', 'state stored at the top of the message (no database change)');
++  ok(/State: Nevada/.test(String((m.calls.email[0] as Record<string, unknown>).text)), "state in Thomas's email");
++  m = mock(); r = await handle(req({ ...GOOD, state: 'Nevada', message: 'z'.repeat(2000) }), m.deps);
++  ok(String(m.calls.rpc.find((c) => c[0] === 'pb_trial_request_add')![1].p_message).length === 2000, 'state + a 2,000-character message: stored message kept to 2,000 (the column limit)');
++  m = mock(); r = await handle(req({ ...GOOD, state: 'Narnia' }), m.deps); j = await r.json();
++  ok(r.status === 400 && JSON.stringify(j.fields) === '["state"]' && m.calls.rpc.length === 0, 'bad state: 400 with fields ["state"] (the page marks that field)');
++  // confirmation
++  m = mock(); r = await handle(req({ ...GOOD, name: 'Visit http://spam.example now', company: 'Buy pills <a href=x>' }), m.deps);
++  ok(m.calls.email.length === 2, 'happy path: two emails (Thomas, then the requester)');
++  const cf = m.calls.email[1] as Record<string, unknown>;
++  ok(cf && (cf.to as string[]).join() === 'joe@example.com' && cf.reply_to === 'tfontaine@pipelayersbible.com' && cf.from === "The Pipelayer's Bible <reports@pipelayersbible.com>", 'confirmation: to the requester, Reply-To Thomas, the usual sender');
++  ok(/\(909\) 435-5250/.test(String(cf.text)) && /tel:\+19094355250/.test(String(cf.html)) && /What happens next/.test(String(cf.text)) && /pipelayersbible\.com\/tools\/pipe-grade-calculator\//.test(String(cf.text)), "confirmation: what happens next, Thomas's phone, links to the free tools");
++  ok(!/spam\.example|pills|Joe|Acme/i.test(String(cf.text) + String(cf.html) + String(cf.subject)), 'confirmation repeats nothing that was typed (name, company, message)');
++  m = mock({ add: { ok: false, error: 'rate' } }); r = await handle(req(GOOD), m.deps);
++  ok(m.calls.email.length === 0, 'rate limited: no confirmation either');
++  m = mock({ addStatus: 500, add: null }); r = await handle(req(GOOD), m.deps);
++  ok(m.calls.email.length === 1 && (m.calls.email[0].to as string[])[0] === 'tfontaine@pipelayersbible.com', 'row not stored: no confirmation (only rate-limited, stored requests get one)');
++  m = mock({ confirm: false }); r = await handle(req(GOOD), m.deps);
++  ok(m.calls.email.length === 1, 'TRIAL_CONFIRM=0: no confirmation');
++  m = mock({ email: { ok: false, status: 500 } }); r = await handle(req(GOOD), m.deps); j = await r.json();
++  ok(r.status === 200 && j.ok && m.calls.email.length === 2, 'Resend refusing does not change the answer (stored: ok)');
++  m = mock({ addStatus: 500, add: null }); r = await handle(req({ ...GOOD, website: 'x' }), m.deps);
++  ok(m.calls.email.length === 0, 'honeypot: no confirmation');
++  ok(!('reply_to' in confirmEmailFor((validate(GOOD) as unknown as { value: never }).value, 'f', null)), 'no Thomas address configured: no Reply-To');
++
+   if (fails) throw new Error(`${fails} failed`);
+ });
+ 
+@@ -127,6 +160,8 @@
+     const rs = seen.find((s) => s.url === 'https://api.resend.com/emails');
+     ok(rs && rs.headers.get('authorization') === 'Bearer re_testkey_123' && (rs.body as Record<string, unknown>).from === "The Pipelayer's Bible <reports@pipelayersbible.com>" && ((rs.body as Record<string, unknown>).to as string[])[0] === 'tfontaine@pipelayersbible.com', 'Resend call: RESEND_API_KEY, the REPORT_FROM default sender, to Thomas');
+     ok(seen.some((s) => s.url.endsWith('/pb_trial_request_notified')), 'notified RPC called after the email');
++    const rs2 = seen.filter((s) => s.url === 'https://api.resend.com/emails');
++    ok(rs2.length === 2 && ((rs2[1].body as Record<string, unknown>).to as string[])[0] === 'joe@example.com', 'index.ts: the confirmation goes to the requester (TRIAL_CONFIRM not set = on)');
+   } finally {
+     globalThis.fetch = realFetch;
+     // deno-lint-ignore no-explicit-any

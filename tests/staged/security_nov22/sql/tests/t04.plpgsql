@@ -1,0 +1,77 @@
+-- security_nov22 04 test: the wrong-code brake counts per caller, with a whole-app backstop. Ends with 'RESULT: ...'.
+-- who: 'anon:<ip>' (signed out, from that IP), 'anon:' (no IP header), 'user:<uuid>', 'svc:<key>' (crew-join), 'svc:' (no key)
+create function pg_temp.s4_who(p_who text) returns void language plpgsql as $f$
+declare k text := split_part(p_who, ':', 1); v text := substr(p_who, length(k) + 2);
+begin
+  if k = 'anon' then
+    perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+    perform set_config('request.headers', case when v = '' then '{}' else jsonb_build_object('x-forwarded-for', v || ', 10.0.0.1', 'x-pb-caller', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')::text end, true);
+  elsif k = 'user' then
+    perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', v)::text, true);
+    perform set_config('request.headers', '{"x-forwarded-for":"198.51.100.7"}', true);
+  else
+    perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+    perform set_config('request.headers', case when v = '' then '{}' else jsonb_build_object('x-pb-caller', v)::text end, true);
+  end if;
+end $f$;
+-- one wrong typed code from p_who: 'none' (not braked, no match) or 'busy'
+create function pg_temp.s4_try(p_who text) returns text language plpgsql as $f$
+declare v uuid;
+begin perform pg_temp.s4_who(p_who); v := pb_onboard.find(null, 'QQ' || lpad((floor(random() * 9999))::int::text, 4, '0'), 'join');
+  return coalesce(v::text, 'none');
+exception when others then return case when sqlerrm like 'pb:busy%' then 'busy' else 'ERR ' || sqlerrm end; end $f$;
+create function pg_temp.s4_many(p_who text, p_n integer) returns text language plpgsql as $f$
+declare i integer; r text; last text;
+begin for i in 1..p_n loop r := pg_temp.s4_try(p_who); last := r; if r <> 'none' then return r || '@' || i; end if; end loop; return last; end $f$;
+
+do $test$
+declare
+  pass integer; fail integer; fails text; notes text := ''; u uuid := gen_random_uuid(); x text; base integer; k1 text; k2 text;
+begin
+  create temp table t_chk (i serial, name text, ok boolean, got text) on commit drop;
+  -- start from a quiet table (inside this rolled-back test only)
+  delete from pb_onboard.misses;
+
+  x := pg_temp.s4_many('anon:203.0.113.5', 30);
+  insert into t_chk (name, ok, got) values ('4a 30 wrong codes from one phone: none braked yet', x = 'none', x);
+  x := pg_temp.s4_try('anon:203.0.113.5');
+  insert into t_chk (name, ok, got) values ('4b 31st from that phone: braked (pb:busy)', x = 'busy', x);
+  x := pg_temp.s4_try('anon:203.0.113.99');
+  insert into t_chk (name, ok, got) values ('4c another phone (IP) at the same time: NOT braked (was braked app-wide before)', x = 'none', x);
+  x := pg_temp.s4_try('user:' || u);
+  insert into t_chk (name, ok, got) values ('4d a signed-in person: not braked by the stranger', x = 'none', x);
+  x := pg_temp.s4_try('svc:0123456789abcdef0123456789abcdef');
+  insert into t_chk (name, ok, got) values ('4e crew-join for another phone (its key): not braked', x = 'none', x);
+  -- spoofing: a signed-out caller cannot pick its own key with x-pb-caller (only the service role may)
+  perform pg_temp.s4_who('anon:203.0.113.5'); k1 := pb_onboard.caller();
+  perform pg_temp.s4_who('svc:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'); k2 := pb_onboard.caller();
+  insert into t_chk (name, ok, got) values ('4f x-pb-caller from a signed-out caller is ignored (key = its IP hash)', k1 like 'i:%' and k1 <> 'e:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' and k2 = 'e:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', k1 || ' | ' || k2);
+  insert into t_chk (name, ok, got) select '4g the IP is never stored (only a 32-hex keyed hash)',
+    not exists (select 1 from pb_onboard.misses where who like '%203.0.113%' or who like '%198.51%') and exists (select 1 from pb_onboard.misses where who ~ '^i:[0-9a-f]{32}$'), '';
+  -- a signed-in caller is keyed by login, not IP
+  perform pg_temp.s4_who('user:' || u); k1 := pb_onboard.caller();
+  insert into t_chk (name, ok, got) values ('4h signed-in key is a hash of the login', k1 = 'u:' || md5(u::text), k1);
+  -- no IP header at all: one shared bucket with the old limit (never worse than before)
+  x := pg_temp.s4_many('anon:', 30) || '/' || pg_temp.s4_try('anon:');
+  insert into t_chk (name, ok, got) values ('4i callers with no IP header share the old limit (30)', x = 'none/busy', x);
+  x := pg_temp.s4_try('anon:203.0.113.77');
+  insert into t_chk (name, ok, got) values ('4j ... which does not brake callers that have an IP', x = 'none', x);
+  x := pg_temp.s4_many('svc:', 30) || '/' || pg_temp.s4_try('svc:');
+  insert into t_chk (name, ok, got) values ('4k crew-join without a key: its own bucket of 30', x = 'none/busy', x);
+  -- whole-app backstop: many IPs together
+  select count(*) into base from pb_onboard.misses where at > now() - interval '10 minutes';
+  insert into pb_onboard.misses (at, kind, who) select now(), 'code', 'i:' || md5(g::text) from generate_series(1, 600 - base) g;
+  x := pg_temp.s4_try('anon:192.0.2.1');
+  insert into t_chk (name, ok, got) values ('4l 600 wrong codes in 10 minutes from everyone: everyone braked (backstop)', x = 'busy', x);
+  update pb_onboard.misses set at = now() - interval '11 minutes';
+  x := pg_temp.s4_try('anon:203.0.113.5');
+  insert into t_chk (name, ok, got) values ('4m 10 minutes later: free again', x = 'none', x);
+  insert into t_chk (name, ok, got) values ('4n caller() and the key table are not reachable from the API',
+    not has_function_privilege('anon', 'pb_onboard.caller()', 'execute') and not has_function_privilege('authenticated', 'pb_onboard.caller()', 'execute')
+    and not has_table_privilege('anon', 'pb_onboard.caller_salt', 'select') and not has_table_privilege('authenticated', 'pb_onboard.caller_salt', 'select'), '');
+  insert into t_chk (name, ok, got) select '4o one key, 32 random bytes', (select count(*) = 1 and min(length(k)) = 32 from pb_onboard.caller_salt), '';
+  insert into t_chk (name, ok, got) select '4p both live functions saved for undo', (select count(*) from pb_sec.fn_backup where fn_backup.tag = 'nov22_04') = 2, '';
+
+  select count(*) filter (where ok), count(*) filter (where ok is not true), coalesce(string_agg(name || ' [got: ' || coalesce(got, 'null') || ']', ' ; ' order by i) filter (where ok is not true), '') into pass, fail, fails from t_chk;
+  raise exception 'RESULT: % pass, % fail% %', pass, fail, case when fail > 0 then ' | FAILED: ' || fails else '' end, notes;
+end $test$;

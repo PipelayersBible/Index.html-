@@ -1,0 +1,3 @@
+| State | Field | Old | New | Source |
+|---|---|---|---|---|
+| AZ | notice | {"n": 2, "unit": "wd", "text": "Call at least 2 working days before digging. Working days skip weekends, legal holidays and the Friday after Thanksgiving."} | {"n": 3, "unit": "wd", "text": "Call at least 2 full working days before digging, not counting the call day: a Monday call can be dug Thursday. Working days skip weekends, legal holidays and the Friday after Thanksgiving. In an apartment community or mobile home park, the landlord has up to 10 working days to mark its own lines: ask the landlord early (by certified mail)."} | Arizona Corporation Commission, Call Before You Dig: "two full working days to respond" |

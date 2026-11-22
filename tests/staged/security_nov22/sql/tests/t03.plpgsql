@@ -1,0 +1,85 @@
+-- security_nov22 03 test: a removed uploader loses control of the company's documents and plan sets. Ends with 'RESULT: ...'.
+create function pg_temp.s3_as(p_user uuid) returns void language sql as $f$
+  select set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', p_user, 'aal', 'aal1')::text, true); $f$;
+create function pg_temp.s3_j(p_user uuid, p_what text, p_doc uuid) returns text language plpgsql as $f$
+declare j jsonb; b boolean;
+begin
+  perform pg_temp.s3_as(p_user);
+  if p_what = 'can' then b := pb_docs.can_manage(p_doc); return b::text; end if;
+  if p_what = 'can_api' then b := public.pb_docs_can_manage(p_doc); return b::text; end if;
+  if p_what = 'remove' then j := public.pb_docs_remove(p_doc);
+  elsif p_what = 'private' then j := public.pb_docs_set_scope(p_doc, 'private');
+  elsif p_what = 'jobs' then j := public.pb_docs_set_jobs(p_doc, array['J9']);
+  elsif p_what = 'pages' then j := public.pb_docs_put_pages(p_doc, '[{"n": 1, "text": "hello"}]'::jsonb);
+  elsif p_what = 'plan_remove' then j := public.pb_plans_remove(p_doc);
+  elsif p_what = 'plan_upload' then b := pb_plans.can_upload_to(p_doc::text || '/sheet-1.png'); return b::text;
+  end if;
+  return coalesce(j->>'code', case when (j->>'ok')::boolean then 'ok' else 'not ok' end);
+exception when others then return 'ERR ' || sqlerrm; end $f$;
+
+do $test$
+declare
+  pass integer; fail integer; fails text; notes text := ''; tag text := substr(md5(random()::text), 1, 10);
+  o uuid := gen_random_uuid(); m uuid := gen_random_uuid(); m2 uuid := gen_random_uuid(); solo uuid := gen_random_uuid(); o2 uuid := gen_random_uuid();
+  c uuid := gen_random_uuid(); c2 uuid := gen_random_uuid();
+  d1 uuid := gen_random_uuid(); d2 uuid := gen_random_uuid(); d3 uuid := gen_random_uuid(); d4 uuid := gen_random_uuid(); d5 uuid := gen_random_uuid();
+  s1 uuid := gen_random_uuid(); s2 uuid := gen_random_uuid(); s3 uuid := gen_random_uuid(); s4 uuid := gen_random_uuid(); x text;
+begin
+  create temp table t_chk (i serial, name text, ok boolean, got text) on commit drop;
+  insert into auth.users (id, email) select v, 'pbsec03-' || tag || '-' || row_number() over () || '@example.invalid' from unnest(array[o, m, m2, solo, o2]) v;
+  insert into public.companies (id, name, owner_user_id, status, plan) values (c, 'pbsec03 ' || tag, o, 'active', 'trial'), (c2, 'pbsec03b ' || tag, o2, 'active', 'trial');
+  insert into public.company_members (company_id, user_id, role) values (c, m, 'foreman'), (c, m2, 'foreman');
+  -- documents: d1, d3 (uploading), d4 by m in c; d5 by m2 in c; d2 by someone with no company
+  -- (live checks: a private doc has exactly one owner, company OR person; sha256 is 64 hex)
+  insert into pb_docs.documents (id, owner_company, owner_user, state, title, mime, sha256, pages) values
+    (d1, c, null, 'live', 't1', 'application/pdf', md5('s1' || tag) || md5('x'), 1), (d2, null, solo, 'live', 't2', 'application/pdf', md5('s2' || tag) || md5('x'), 1),
+    (d3, c, null, 'uploading', 't3', 'application/pdf', md5('s3' || tag) || md5('x'), 1), (d4, c, null, 'live', 't4', 'application/pdf', md5('s4' || tag) || md5('x'), 1),
+    (d5, c, null, 'uploading', 't5', 'application/pdf', md5('s5' || tag) || md5('x'), 1);
+  insert into pb_docs.provenance (doc_id, company_id, user_id, sha256) values (d1, c, m, md5('s1' || tag) || md5('x')), (d2, null, solo, md5('s2' || tag) || md5('x')),
+    (d3, c, m, md5('s3' || tag) || md5('x')), (d4, c, m, md5('s4' || tag) || md5('x')), (d5, c, m2, md5('s5' || tag) || md5('x'));
+  insert into pb_plans.sets (id, company_id, created_by, job_key, job_number, title, pages, sha256, state) values
+    (s1, c, m, 'j1', 'J1', 'p1', 1, 'x1' || tag, 'uploading'), (s2, c, m2, 'j1', 'J1', 'p2', 1, 'x2' || tag, 'uploading'),
+    (s3, null, solo, 'j1', 'J1', 'p3', 1, 'x3' || tag, 'uploading'), (s4, c, m, 'j1', 'J1', 'p4', 1, 'x4' || tag, 'ready');
+
+  x := pg_temp.s3_j(m, 'can', d1) || '/' || pg_temp.s3_j(m, 'can_api', d1) || '/' || pg_temp.s3_j(m, 'plan_upload', s1);
+  insert into t_chk (name, ok, got) values ('3a uploader still in the company: manages the doc, uploads plan sheets', x = 'true/true/true', x);
+
+  delete from public.company_members where user_id = m and company_id = c;   -- removed
+  x := pg_temp.s3_j(m, 'can', d1) || '/' || pg_temp.s3_j(m, 'can_api', d1);
+  insert into t_chk (name, ok, got) values ('3b removed uploader: can_manage false (also what the docs edge function asks)', x = 'false/false', x);
+  x := pg_temp.s3_j(m, 'remove', d1);
+  insert into t_chk (name, ok, got) select '3c removed uploader: remove refused, doc still there', x = 'pb:not_yours' and (select state from pb_docs.documents where id = d1) = 'live', x;
+  x := pg_temp.s3_j(m, 'private', d1);
+  insert into t_chk (name, ok, got) values ('3d removed uploader: change scope refused', x = 'pb:not_yours', x);
+  x := pg_temp.s3_j(m, 'jobs', d1);
+  insert into t_chk (name, ok, got) values ('3e removed uploader: re-tag jobs refused', x = 'not ok', x);
+  x := pg_temp.s3_j(m, 'pages', d3);
+  insert into t_chk (name, ok, got) values ('3f removed uploader: put page text refused', x = 'pb:not_yours', x);
+  x := pg_temp.s3_j(m, 'plan_remove', s4) || '/' || pg_temp.s3_j(m, 'plan_upload', s1);
+  insert into t_chk (name, ok, got) select '3g removed uploader: plan set remove refused, sheet upload refused', x = 'pb:not_yours/false' and (select state from pb_plans.sets where id = s4) = 'ready', x;
+  insert into public.company_members (company_id, user_id, role) values (c2, m, 'foreman');
+  x := pg_temp.s3_j(m, 'can', d1) || '/' || pg_temp.s3_j(m, 'plan_upload', s1);
+  insert into t_chk (name, ok, got) values ('3h joined another company: still nothing on the old company''s items', x = 'false/false', x);
+  -- the office keeps control
+  x := pg_temp.s3_j(o, 'can', d1) || '/' || pg_temp.s3_j(o, 'jobs', d1) || '/' || pg_temp.s3_j(o, 'private', d1) || '/' || pg_temp.s3_j(o, 'remove', d4) || '/' || pg_temp.s3_j(o, 'plan_remove', s4);
+  insert into t_chk (name, ok, got) values ('3i the owner (office) still manages them: can/jobs/scope/remove/plan remove', x = 'true/ok/ok/ok/ok', x);
+  -- uploaders still in the company: unchanged
+  x := pg_temp.s3_j(m2, 'pages', d5) || '/' || pg_temp.s3_j(m2, 'plan_upload', s2) || '/' || pg_temp.s3_j(m2, 'plan_remove', s2);
+  insert into t_chk (name, ok, got) values ('3j an uploader still in the company: pages/upload/remove plan unchanged', x = 'ok/true/ok', x);
+  -- another member who did not upload it: no
+  x := pg_temp.s3_j(m2, 'can', d1);
+  insert into t_chk (name, ok, got) values ('3k a crew member who did not upload it: no', x = 'false', x);
+  -- someone with no company: their own items unchanged
+  x := pg_temp.s3_j(solo, 'can', d2) || '/' || pg_temp.s3_j(solo, 'private', d2) || '/' || pg_temp.s3_j(solo, 'plan_upload', s3) || '/' || pg_temp.s3_j(solo, 'remove', d2);
+  insert into t_chk (name, ok, got) values ('3l individual (no company): own doc and plan set unchanged', x = 'true/ok/true/ok', x);
+  -- a company that is no longer active: its former uploader no, its owner neither (managed_company needs active) - as before for the office
+  insert into t_chk (name, ok, got) values ('3m still_in is not callable from the API',
+    not has_function_privilege('authenticated', 'pb_docs.still_in(uuid,uuid)', 'execute') and not has_function_privilege('anon', 'pb_docs.still_in(uuid,uuid)', 'execute'), '');
+  insert into t_chk (name, ok, got) select '3n six live functions saved for undo', (select count(*) from pb_sec.fn_backup where fn_backup.tag = 'nov22_03') = 6, '';
+  perform pb_sec.restore('nov22_03');
+  x := pg_temp.s3_j(m, 'can', d1);
+  insert into t_chk (name, ok, got) values ('3o undo (restore) brings back the old test (live: removed uploader true again)', x = case when current_setting('pb_sec.guard', true) = 'skip-local-test' then 'false' else 'true' end, x);
+
+  select count(*) filter (where ok), count(*) filter (where ok is not true), coalesce(string_agg(name || ' [got: ' || coalesce(got, 'null') || ']', ' ; ' order by i) filter (where ok is not true), '') into pass, fail, fails from t_chk;
+  raise exception 'RESULT: % pass, % fail% %', pass, fail, case when fail > 0 then ' | FAILED: ' || fails else '' end, notes;
+end $test$;
