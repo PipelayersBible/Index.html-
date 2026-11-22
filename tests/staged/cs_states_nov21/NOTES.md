@@ -62,3 +62,6 @@ The Rules screen state records have no confined space field. Only a code comment
 - Indiana has a unique excavations standard per OSHA's IN page, but the app and library say IOSHA uses the federal trench rule (620 IAC 1-1-30). That is a trench item, outside this task, worth a check.
 
 ## DONE
+
+## APPLIED Nov 21 ~7:40 PM PT (lead)
+Rolled-back live test OK (131904c2 -> a9e67ec6 -> 131904c2). 21_load applied: 3240 rows, md5 a9e67ec6527df46b665cbc03bdb6ca6c. No build change.
