@@ -12,6 +12,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _rep import P
 p = P()
 
+# $1,110 not $1110 (amounts of a thousand or more now show up: a yearly company plan)
+p.rep("""    const pbUsd = (c) => { const d = Number(c || 0) / 100; return '$' + (Number.isInteger(d) ? String(d) : d.toFixed(2)); };""",
+"""    const pbUsd = (c) => { const d = Number(c || 0) / 100; return '$' + (Number.isInteger(d) ? d.toLocaleString('en-US') : d.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })); }; /* billing_nov22: $1,110 */""")
 # --- helpers next to the price list ---
 p.rep("""    const pbIndSave = () => { const p = pbPr(); return Math.max(0, p.ind * 12 - p.indy); }; /* billing_yearly_nov20: 12 months minus the yearly price ($36) */""",
 """    const pbIndSave = () => { const p = pbPr(); return Math.max(0, p.ind * 12 - p.indy); }; /* billing_yearly_nov20: 12 months minus the yearly price ($36) */

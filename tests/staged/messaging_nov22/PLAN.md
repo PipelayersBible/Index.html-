@@ -135,9 +135,10 @@ CRC-32 checked). Measured sizes and costs: section 8 and NOTES.md.
 - Screens: Messages (list: job chats then direct messages, unread first), Chat (messages, photo, send), Chat info
   (people, Include pipelayers, Pipelayers see, change log, Mute, office tools: Add person, Take off, Save archive now,
   Download archive, Close chat), Message settings (alerts, lock screen words, quiet hours; office: Keep messages).
-- **Yellow rule**: solid yellow only on **Send** when there is something to send (the next step) and on a choice
-  waiting for an answer; the message box gets the yellow outline only when a message is half-typed and not sent
-  (a box still to fill); the unread count is a plain white/grey chip, not yellow. Every button and row 44 px or more.
+- **Yellow rule**: solid yellow only on **Send** when there is something to send (the next step). The message box has
+  no yellow outline (nothing has to be filled in to use a chat); the unread count is a plain white/grey chip; a chosen
+  option on the message screens (Pipelayers see, Keep messages) is shown inverted, not yellow, because nothing is
+  waiting for a decision there. Every button and row 44 px or more.
 - **Spanish**: every new string has a Spanish line in `pbI18nDict` (Spanish stays switched off). Message text itself is
   never translated (`data-noi18n`).
 
@@ -148,18 +149,28 @@ CRC-32 checked). Measured sizes and costs: section 8 and NOTES.md.
 `sql/tests/block_t0N.sql` (rolled back, `RESULT: N pass, M fail`), undo `sql/undo/`. `edge/msg-archive/` (writer +
 zip + tests), `edge/pb-offsite/index.ts` (lock days for msg-archives). `patches/m1_messages.py` (app), `tests/t_msg.js`.
 
-## 8. Costs (numbers; measured archive sizes in NOTES.md)
+## 8. Costs (measured archive sizes; prices read Nov 22 2026)
 
-Prices used: Supabase Storage $0.021 per GB-month over the 100 GB included in Pro; Backblaze B2 $6 per TB-month
-($0.006 per GB-month), no fee to copy in. A photo is about 120 KB (900 px JPEG 0.72).
+Prices: Supabase Pro file storage 100 GB included, then **$0.0213 per GB-month**; database disk 8 GB included, then
+**$0.125 per GB-month** (supabase.com/pricing). Backblaze B2 **$6.95 per TB-month** = $0.00695 per GB-month, no
+minimum storage duration (backblaze.com/pricing). A message photo is about 120 KB (900 px JPEG 0.72; the rig's test
+photo came out at 112 KB).
 
-| A busy job chat, 6 months | Size |
+Measured (`edge/msg-archive/test.mjs`, the real archive writer on a made-up busy job chat):
+
+| A busy job chat, 6 months: 5,400 messages (30 a day), 300 photos | Size |
 |---|---|
-| 5,400 messages (30 a day) | transcript text + JSON about 3 MB raw, about 0.4 MB in the ZIP |
-| 300 photos | about 36 MB |
-| **The archive file** | **about 37 MB** |
+| transcript.txt | 562 KB raw, 131 KB in the ZIP |
+| chat.json (everything incl. versions) | 1.48 MB raw, 186 KB in the ZIP |
+| **the whole archive file (README, manifest, txt, html, json, 300 photos)** | **36.5 MB (34.8 MiB), one file, made in 1.3 s** |
+| the same chat with no photos | 0.47 MB |
+| for comparison: a PDF of the same transcript text alone | about 0.35 MB, 133 pages (photos would add the same 36 MB) |
 
-Keeping it forever: Supabase about **$0.0008 a month** per job (37 MB x $0.021/GB), B2 copy about **$0.0002 a month**.
-100 such jobs a year for 10 years = 1,000 archives = 37 GB: about **$0.78 a month** on Supabase (inside the included
-100 GB on Pro, so $0 until other files fill it) plus **$0.22 a month** on B2. The live photos in `msg-photos` are the
-same bytes again until the company deletes them (decision 4).
+| Keeping it | Per busy job | 1,000 busy jobs (100 a year for 10 years) |
+|---|---|---|
+| archive in Supabase Storage | $0.0008 a month ($0.09 over 10 years) | 36.5 GB: $0 inside the included 100 GB, else $0.78 a month |
+| archive copy in B2 | $0.00025 a month | $0.25 a month |
+| messages in the database (measured 602 B a message with indexes) | 3.3 MB | 3.3 GB: inside the included 8 GB, else $0.41 a month |
+| the live photos in `msg-photos` (same bytes as the archive) | 36 MB | 36 GB: $0.77 a month over the included 100 GB |
+
+So keeping every chat forever costs cents a month even for a large company; photos are 95%+ of it.

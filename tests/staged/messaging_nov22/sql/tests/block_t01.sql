@@ -846,7 +846,7 @@ begin
   select * into c from pb_msg.chats where id = ar.chat_id;
   select s.retention into ret from pb_msg.company_settings s where s.company_id = c.company_id;
   return jsonb_build_object('ok', true, 'archive', jsonb_build_object('id', ar.id, 'reason', ar.reason, 'requested_at', ar.requested_at),
-    'retention', coalesce(ret, 'forever'),
+    'retention', coalesce(ret, 'forever'), 'tz', pb_msg.tz_for(c.id, null),
     'company', jsonb_build_object('id', c.company_id, 'name', (select co.name from public.companies co where co.id = c.company_id)),
     'chat', jsonb_build_object('id', c.id, 'kind', c.kind, 'job_number', c.job_number, 'job_key', c.job_key, 'created_at', c.created_at, 'closed_at', c.closed_at,
        'include_pipelayers', c.include_pipelayers, 'pipelayer_history', c.pipelayer_history,
