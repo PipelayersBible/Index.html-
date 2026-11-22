@@ -1,0 +1,87 @@
+  <!-- messaging_nov22: company messages (job chats + direct messages). Opened from the Home card, a notification, or Settings. -->
+  <div class="pb-screen" id="screen-messages">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>Messages</span><button type="button" class="pb-back" title="Back" aria-label="Back" onclick="pbHeaderBack()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
+      <h1 class="pb-title">Messages</h1>
+    </div>
+    <div class="pbm-bar">
+      <button type="button" class="pbm-btn" id="pbmNewBtn" aria-expanded="false" aria-controls="pbmNew" onclick="pbMsgNewToggle()">New message</button>
+      <button type="button" class="pbm-btn pbm-icon" id="pbmSetBtn" onclick="pbMsgOpenSettings()" aria-label="Message settings">Settings</button>
+    </div>
+    <p class="pbm-line" id="pbmListLine" role="status"></p>
+    <div class="pbm-new" id="pbmNew" hidden>
+      <p class="pbm-h">Job chat</p>
+      <div class="pbm-picks" id="pbmNewJobs"></div>
+      <div class="pbm-jobtype"><label class="pb-sr" for="pbmJobNum">Job number</label><input type="text" id="pbmJobNum" maxlength="60" placeholder="Job number" autocomplete="off" enterkeyhint="go" onkeydown="if(event.key==='Enter'){pbMsgOpenJobTyped()}"><button type="button" class="pbm-btn" onclick="pbMsgOpenJobTyped()">Open</button></div>
+      <p class="pbm-h">Direct message</p>
+      <div class="pbm-picks" id="pbmNewPeople"></div>
+    </div>
+    <div id="pbmList" class="pbm-list"></div>
+    <p class="pbm-foot">Messages are company records. For an emergency, call.</p>
+  </div>
+
+  <div class="pb-screen" id="screen-msgChat">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span id="pbmChatEyebrow">Messages</span><button type="button" class="pb-back" title="Back" aria-label="Back" onclick="pbHeaderBack()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
+      <h1 class="pb-title" id="pbmChatTitle" data-noi18n></h1>
+      <button type="button" class="pbm-btn pbm-info" id="pbmInfoBtn" onclick="pbMsgOpenInfo()">Info</button>
+    </div>
+    <p class="pbm-line" id="pbmChatLine" role="status"></p>
+    <button type="button" class="pbm-btn pbm-older" id="pbmOlder" hidden onclick="pbMsgOlder()">Show earlier messages</button>
+    <div id="pbmMsgs" class="pbm-msgs" aria-live="polite"></div>
+    <div class="pbm-compose" id="pbmCompose">
+      <p class="pbm-editing" id="pbmEditing" hidden><span>Editing your message</span><button type="button" class="pbm-btn" onclick="pbMsgEditCancel()">Cancel</button></p>
+      <div class="pbm-thumbs" id="pbmThumbs"></div>
+      <div class="pbm-crow">
+        <button type="button" class="pbm-btn pbm-photo" id="pbmPhotoBtn" onclick="document.getElementById('pbmPhotoIn').click()" aria-label="Add a photo">Photo</button>
+        <input type="file" id="pbmPhotoIn" accept="image/*" multiple hidden onchange="pbMsgPhotoPicked(this)">
+        <label class="pb-sr" for="pbmText">Message</label>
+        <textarea id="pbmText" rows="1" maxlength="4000" placeholder="Message" oninput="pbMsgTyped()"></textarea>
+        <button type="button" class="pbm-send" id="pbmSend" disabled onclick="pbMsgSend()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pb-screen" id="screen-msgInfo">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>Chat info</span><button type="button" class="pb-back" title="Back" aria-label="Back" onclick="pbHeaderBack()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
+      <h1 class="pb-title" id="pbmInfoTitle" data-noi18n></h1>
+    </div>
+    <p class="pbm-line" id="pbmInfoLine" role="status"></p>
+    <div id="pbmInfoBody"></div>
+  </div>
+
+  <div class="pb-screen" id="screen-msgSettings">
+    <div class="pb-header">
+      <p class="pb-eyebrow"><span>Messages</span><button type="button" class="pb-back" title="Back" aria-label="Back" onclick="pbHeaderBack()"><svg class="pb-ic" aria-hidden="true" focusable="false"><use href="#pb-i-back"/></svg></button></p>
+      <h1 class="pb-title">Message settings</h1>
+    </div>
+    <div class="pb-section">
+      <div class="pb-tag">Alerts on this account</div>
+      <div class="pb-body">
+        <label class="pb-set-switch pbm-sw" for="pbmPrefPush"><span>Message alerts</span><input type="checkbox" role="switch" id="pbmPrefPush" checked onchange="pbMsgPrefsChanged()"></label>
+        <label class="pb-set-switch pbm-sw" for="pbmPrefWords"><span>Show message words on the lock screen</span><input type="checkbox" role="switch" id="pbmPrefWords" checked onchange="pbMsgPrefsChanged()"></label>
+        <p class="pb-help">Off: the alert only says who wrote and in which chat.</p>
+        <label class="pb-set-switch pbm-sw" for="pbmPrefQuiet"><span>Quiet hours</span><input type="checkbox" role="switch" id="pbmPrefQuiet" checked onchange="pbMsgPrefsChanged()"></label>
+        <div class="pbm-times" id="pbmQuietTimes">
+          <label for="pbmQuietFrom">From</label><input type="time" id="pbmQuietFrom" value="19:00" onchange="pbMsgPrefsChanged()">
+          <label for="pbmQuietTo">To</label><input type="time" id="pbmQuietTo" value="06:00" onchange="pbMsgPrefsChanged()">
+        </div>
+        <p class="pb-help">In the job's time. Alerts wait until quiet hours end. Mute one chat from its Info.</p>
+        <p class="pb-help" id="pbmPrefMsg" role="status" hidden></p>
+      </div>
+    </div>
+    <div class="pb-section" id="pbmRetSection" hidden>
+      <div class="pb-tag">Company</div>
+      <div class="pb-body">
+        <p class="pb-set-label" id="pbmRetLabel">Keep messages</p>
+        <div class="pb-toggle" id="pbmRetToggle" role="group" aria-labelledby="pbmRetLabel">
+          <button type="button" data-val="forever" aria-pressed="true" class="active" onclick="pbMsgRetention('forever')">Forever</button>
+          <button type="button" data-val="13m" aria-pressed="false" onclick="pbMsgRetention('13m')">Delete after 13 months</button>
+        </div>
+        <p class="pb-help">Each job chat is also saved as one archive file when it closes. Download it from the chat's Info.</p>
+        <p class="pb-help" id="pbmRetMsg" role="status" hidden></p>
+      </div>
+    </div>
+  </div>
+

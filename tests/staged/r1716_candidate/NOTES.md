@@ -100,3 +100,10 @@ Trench Sloping Calculator inside their warnings, plus Lock This Run); the Ask ta
    manager. Recommend: fine for a few days; apply the b8 SQL soon after r17.16.
 
 ## DONE
+
+## Lead: variant Bx (B + p2x Station/Distance toggle fix), Nov 22 afternoon
+- Built with `EXTRA=1 sh build.sh B` -> work/Bx (build/index.html md5 b2f9a43c…).
+- Full regression (two overlapping runs after a container restart): 215 pass, 7 fail. w1, w2, w3, a7 = B's expected goldens
+  (test_updates/B verified on the Bx build: 4/4 pass). a4, t00_smoke, t07_sw failed only under the doubled load: re-run alone
+  they pass on B and on Bx.
+- Ready to ship as r17.16 if Tommy picks the new look; otherwise ship A.

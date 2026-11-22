@@ -1,0 +1,75 @@
+/* messaging_nov22: company messages. Yellow rule: solid yellow only on Send when there is something to send (the next step);
+   nothing else here is yellow. Every control 44 px or more (gloves). */
+#pbApp .pbm-bar { display: flex; gap: 8px; margin: 12px var(--pb-gutter, 16px) 0; }
+#pbApp .pbm-bar > button, #pbApp .pbm-picks > button, #pbApp .pbm-actions > button, #pbApp .pbm-person > button, #pbApp .pbm-jobtype > button { width: auto; flex: 0 0 auto; }
+#pbApp .pbm-btn { min-height: 44px; min-width: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--pb-divider, #2C323B); background: var(--pb-raised, #1C2026); color: var(--pb-text, #F4F6F8); font: 600 15px/1.2 var(--pb-font, 'Inter', sans-serif); cursor: pointer; }
+#pbApp .pbm-btn:disabled { opacity: .5; }
+#pbApp .pbm-btn:focus-visible, #pbApp .pbm-send:focus-visible, #pbApp .pbm-row:focus-visible { outline: none; box-shadow: var(--pb-ring, 0 0 0 3px rgba(245,191,31,.5)); }
+#pbApp .pbm-line { margin: 8px var(--pb-gutter, 16px) 0; color: var(--pb-text-2, #B3BBC6); font-size: 14px; min-height: 0; }
+#pbApp .pbm-line:empty { display: none; }
+#pbApp .pbm-h { margin: 14px 0 6px; font-weight: 700; color: var(--pb-text-2, #B3BBC6); font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+#pbApp .pbm-new { margin: 4px var(--pb-gutter, 16px) 0; }
+#pbApp .pbm-picks { display: flex; flex-wrap: wrap; gap: 8px; }
+#pbApp .pbm-picks .pbm-btn { font-weight: 500; }
+#pbApp .pbm-jobtype { display: flex; gap: 8px; margin-top: 8px; }
+#pbApp .pbm-jobtype input { flex: 1; min-height: 44px; font-size: 16px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--pb-divider, #2C323B); background: var(--pb-input, var(--pb-surface)); color: var(--pb-text); }
+#pbApp .pbm-list { margin: 10px var(--pb-gutter, 16px) 0; display: flex; flex-direction: column; gap: 8px; }
+#pbApp .pbm-row { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--pb-divider, #2C323B); background: var(--pb-surface, #14171B); color: var(--pb-text); text-align: left; width: 100%; font: inherit; cursor: pointer; }
+#pbApp .pbm-row .tx { flex: 1; min-width: 0; }
+#pbApp .pbm-row .nm { display: block; font-weight: 700; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#pbApp .pbm-row .sb { display: block; color: var(--pb-text-2); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+#pbApp .pbm-row .tm { color: var(--pb-text-2); font-size: 12px; white-space: nowrap; align-self: flex-start; margin-top: 2px; }
+#pbApp .pbm-row.unread .nm { font-weight: 800; }
+/* the unread count: a plain chip (white on dark, dark on light), never yellow */
+#pbApp .pbm-chip { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; padding: 0 8px; border-radius: 13px; background: var(--pb-text, #F4F6F8); color: var(--pb-surface, #14171B); font: 800 14px/1 var(--pb-font, sans-serif); }
+#pbApp .pbm-foot { margin: 18px var(--pb-gutter, 16px) 24px; color: var(--pb-text-2); font-size: 13px; }
+#pbApp #screen-msgChat .pb-header { position: relative; }
+#pbApp .pbm-info { position: absolute; right: var(--pb-gutter, 16px); top: 50%; transform: translateY(-20%); }
+#pbApp .pbm-older { display: block; margin: 8px auto 0; }
+#pbApp .pbm-msgs { margin: 8px var(--pb-gutter, 16px) 0; display: flex; flex-direction: column; gap: 8px; padding-bottom: 8px; }
+#pbApp .pbm-m { max-width: 86%; align-self: flex-start; padding: 8px 12px; border-radius: 14px; background: var(--pb-raised, #1C2026); border: 1px solid var(--pb-divider, #2C323B); color: var(--pb-text); position: relative; }
+#pbApp .pbm-m.mine { align-self: flex-end; background: var(--pb-surface, #14171B); }
+#pbApp .pbm-m .who { font-weight: 700; font-size: 13px; color: var(--pb-text-2); }
+#pbApp .pbm-m .bd { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 16px; line-height: 1.4; margin-top: 2px; }
+#pbApp .pbm-m .meta { font-size: 12px; color: var(--pb-text-2); margin-top: 4px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+#pbApp .pbm-m.del .bd { font-style: italic; color: var(--pb-text-2); }
+#pbApp .pbm-m.wait { border-style: dashed; }
+#pbApp .pbm-m.refused { border-color: var(--pb-danger, #B42332); }
+#pbApp .pbm-m .more { min-width: 44px; min-height: 44px; margin: -6px -8px -6px auto; border: 0; background: transparent; color: var(--pb-text-2); font-size: 20px; cursor: pointer; }
+#pbApp .pbm-ph { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+#pbApp .pbm-ph button { padding: 0; border: 1px solid var(--pb-divider); border-radius: 8px; background: var(--pb-surface); min-width: 88px; min-height: 88px; overflow: hidden; cursor: pointer; color: var(--pb-text-2); font-size: 12px; }
+#pbApp .pbm-ph img { display: block; width: 120px; height: 90px; object-fit: cover; }
+#pbApp .pbm-compose { position: sticky; bottom: calc(var(--pb-shell-h, 0px)); z-index: 5; margin-top: 8px; padding: 8px var(--pb-gutter, 16px); background: var(--pb-canvas, #0E1013); border-top: 1px solid var(--pb-divider, #2C323B); }
+#pbApp .pbm-crow { display: flex; gap: 8px; align-items: flex-end; }
+#pbApp .pbm-crow > button { flex: 0 0 auto; width: auto; }
+#pbApp .pbm-crow textarea { flex: 1 1 auto; min-width: 0; width: auto; min-height: 44px; max-height: 160px; resize: none; font-size: 16px; line-height: 1.35; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--pb-divider, #2C323B); background: var(--pb-input, var(--pb-surface)); color: var(--pb-text); }
+#pbApp .pbm-send { min-height: 44px; min-width: 72px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--pb-divider, #2C323B); background: var(--pb-raised, #1C2026); color: var(--pb-text-2); font: 700 16px/1 var(--pb-font, sans-serif); cursor: pointer; }
+#pbApp .pbm-send.on { background: var(--pbl-yellow, #F5BF1F); border-color: var(--pbl-yellow, #F5BF1F); color: #14171C; }
+#pbApp .pbm-thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
+#pbApp .pbm-thumbs:empty { display: none; }
+#pbApp .pbm-thumbs span { position: relative; display: inline-block; margin-bottom: 6px; }
+#pbApp .pbm-thumbs img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; display: block; }
+#pbApp .pbm-thumbs button { position: absolute; right: -10px; top: -10px; min-width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--pb-text); font-size: 20px; cursor: pointer; }
+#pbApp .pbm-editing { display: flex; align-items: center; justify-content: space-between; margin: 0 0 6px; color: var(--pb-text-2); font-size: 14px; }
+#pbApp .pbm-closed { margin: 0; color: var(--pb-text-2); font-size: 14px; min-height: 44px; display: flex; align-items: center; }
+#pbApp .pbm-sec { margin: 14px var(--pb-gutter, 16px) 0; padding: 12px; border-radius: 12px; border: 1px solid var(--pb-divider); background: var(--pb-surface); }
+#pbApp .pbm-sec h2 { margin: 0 0 8px; font-size: 15px; }
+#pbApp .pbm-person { display: flex; align-items: center; gap: 8px; min-height: 44px; border-top: 1px solid var(--pb-divider); }
+#pbApp .pbm-person:first-of-type { border-top: 0; }
+#pbApp .pbm-person .tx { flex: 1; min-width: 0; }
+#pbApp .pbm-person .rl { color: var(--pb-text-2); font-size: 13px; }
+#pbApp .pbm-log { margin: 0; padding: 0; list-style: none; font-size: 14px; color: var(--pb-text-2); }
+#pbApp .pbm-log li { padding: 6px 0; border-top: 1px solid var(--pb-divider); }
+#pbApp .pbm-log li:first-child { border-top: 0; }
+#pbApp .pbm-sw { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 4px 0; cursor: pointer; }
+#pbApp .pbm-sw input[type=checkbox] { min-width: 44px; min-height: 28px; flex: 0 0 auto; }
+/* a chosen option on these screens is shown plainly (light/dark inverted), not in yellow: nothing is waiting for a decision */
+#pbApp #screen-msgInfo .pb-toggle button, #pbApp #screen-msgSettings .pb-toggle button { min-height: 44px; }
+#pbApp #screen-msgInfo .pb-toggle button.active, #pbApp #screen-msgSettings .pb-toggle button.active { background: var(--pb-text, #F4F6F8); color: var(--pb-surface, #14171B); border-color: var(--pb-text, #F4F6F8); }
+#pbApp .pbm-times { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
+#pbApp .pbm-times input { min-height: 44px; font-size: 16px; padding: 0 8px; border-radius: 10px; border: 1px solid var(--pb-divider); background: var(--pb-input, var(--pb-surface)); color: var(--pb-text); }
+#pbApp .pbm-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+#pbApp .pbm-full { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,.92); display: flex; align-items: center; justify-content: center; }
+#pbApp .pbm-full img { max-width: 100%; max-height: 100%; }
+#pbApp .pbm-full button { position: absolute; top: 12px; right: 12px; }
+#pbApp #homeMsgCard .pbm-chip { margin-right: 8px; }
