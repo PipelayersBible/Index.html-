@@ -54,9 +54,9 @@ begin
   delete from pb_ai.kb_chunks k using (values (270, $kb$ca-cal-osha-trench-and-confined-1$kb$), (271, $kb$ca-cal-osha-trench-and-confined-2$kb$), (302, $kb$ca-dig-alert-4216-9$kb$), (2383, $kb$cal-1$kb$), (2788, $kb$dig-ca-overview-1$kb$), (2989, $kb$sp-wa-trench-other-1$kb$), (3205, $kb$sp-al-trench-1$kb$), (3206, $kb$sp-ar-trench-1$kb$), (3207, $kb$sp-co-trench-1$kb$), (3208, $kb$sp-de-trench-1$kb$), (3209, $kb$sp-dc-trench-1$kb$), (3210, $kb$sp-fl-trench-1$kb$), (3211, $kb$sp-ga-trench-1$kb$), (3212, $kb$sp-id-trench-1$kb$), (3213, $kb$sp-ks-trench-1$kb$), (3214, $kb$sp-la-trench-1$kb$), (3215, $kb$sp-ms-trench-1$kb$), (3216, $kb$sp-mo-trench-1$kb$), (3217, $kb$sp-mt-trench-1$kb$), (3218, $kb$sp-ne-trench-1$kb$), (3219, $kb$sp-nh-trench-1$kb$), (3220, $kb$sp-nd-trench-1$kb$), (3221, $kb$sp-oh-trench-1$kb$), (3222, $kb$sp-ok-trench-1$kb$), (3223, $kb$sp-pa-trench-1$kb$), (3224, $kb$sp-ri-trench-1$kb$), (3225, $kb$sp-sd-trench-1$kb$), (3226, $kb$sp-tx-trench-1$kb$), (3227, $kb$sp-wv-trench-1$kb$), (3228, $kb$sp-wi-trench-1$kb$), (3254, $kb$sp-in-trench-1$kb$)) t(o, id) where k.version = 'b3e91f6c47d2' and k.ord = t.o and k.chunk->>'id' = t.id;
   get diagnostics vk = row_count; if vk <> 31 then raise exception 'FAIL: deleted % rows, expected 31', vk; end if;
 
-  -- 3. renumber the survivors 0..3238 in the same order (through negative ords, so the primary key never clashes)
-  update pb_ai.kb_chunks set ord = -1 - ord where version = 'b3e91f6c47d2';
-  update pb_ai.kb_chunks k set ord = m.n from (select ord as neg, (row_number() over (order by ord desc) - 1)::int as n from pb_ai.kb_chunks where version = 'b3e91f6c47d2') m
+  -- 3. renumber the survivors 0..3238 in the same order (through ords + 1000000, so the primary key never clashes; live has CHECK ord >= 0)
+  update pb_ai.kb_chunks set ord = ord + 1000000 where version = 'b3e91f6c47d2';
+  update pb_ai.kb_chunks k set ord = m.n from (select ord as neg, (row_number() over (order by ord) - 1)::int as n from pb_ai.kb_chunks where version = 'b3e91f6c47d2') m
    where k.version = 'b3e91f6c47d2' and k.ord = m.neg;
   get diagnostics vk = row_count; if vk <> 3239 then raise exception 'FAIL: renumbered % rows, expected 3239', vk; end if;
 
