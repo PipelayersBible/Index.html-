@@ -49,7 +49,7 @@ was checked read-only on the live server to occur exactly once.
    closed < 1 year ago: "Back It Up First" (OSHA 1926.1205(f)), except a company manager; > 1 year: the strong warning.
 3. `a3_legacy_sync_offline.py` — a legacy copy try that never reached the server is 'offline' (no try used); on 'online'
    the owed pass runs and runs marked "no cloud copy" are retried quietly (5 at a time); Retry Sync with no signal says so.
-4. `a5a6a7_logout_keep_storage.py` — A5 link account: Log Out blocked while Not sent ("Not Sent Yet", See What's
+4. `a5a6a7_logout_keep_storage.py` — A5 link account: Log Out and Lock This Phone blocked while Not sent ("Not Sent Yet", See What's
    Waiting / Stay Logged In). A6 `window.pbStoreKept`; Home's Not sent line adds "Add to Home Screen so this phone keeps
    your work." (not kept, not the Home Screen app); Settings + Home Screen step: "Don't delete the app icon while anything
    shows Not sent." A7 advice by store: Records → free space on the phone; small store → photos on unsent daily
@@ -80,8 +80,8 @@ there exactly once). Local results: all PASS (`sql/local/tests.sql`).
    flows; b3's drop sets it); report_photos FK CASCADE → plain. Local: PASS.
 4. `b5_talk_versions.sql` — pb_prod.talk_versions (insert-only) filled by trigger + backfill. Local: PASS.
 5. `b8_run_versions_export.sql` — `pb_prod_run_versions(run, uid)` manager-only: versions (newest 40 with records),
-   events (incl. removal reasons), setup changes. Local: PASS. App follow-up: Export for Records files + "Changes after
-   the run" page on the office PDF.
+   events (incl. removal reasons), setup changes. Local: PASS. App half staged: `patches/phaseb/b8_export_versions.py` (history.json +
+   versions/run-vN.json in Export for Records; applies on the candidate, syntax OK). Still to do: "Changes after the run" page on the office PDF.
 6. `a9_run_remove_reason.sql` — server refuses an empty reason. ONLY after r17.15 is live (older phones send null).
 7. `b6_daily_keep_both.sql` — the foreman's later signed daily is kept beside the office fill (answer `office_filled:
    true`). Pieces checked live (CRLF). App follow-up: office list shows both; Fill In warns the PM.
@@ -104,8 +104,26 @@ Trench protection block on deep runs; locate check (marks photos, positive respo
 stamps for permits and dailies; off-site retention of dailies/permits for 4 years; legal hold / whole-job export;
 individual-plan run backup; 2000 px originals; GPS on permit photos.
 
-## Regression
-(filled in below when the run finishes)
+## Regression (hooks build of PHASE A, `--jobs 2`)
+Full run (`results/regression/summary.txt`): pass 207, FAIL 15, skip 15 of 237 (live r17.14 on Nov 20: 220 / 2 fails).
+Then fixed and re-run (`results/rerun*`, `results/base_rerun_r1714.log`):
+- BUG found by the run, FIXED: t102_seal, t108_export, t110_clockpdf, sync/repo_t102, sync/t01_photos_retry — a run
+  changed in memory but not yet saved was taken as unchanged (the fingerprint cache was per Records save). The send pass,
+  delete and Log Out now work the fingerprint out fresh; Home keeps the per-save cache. All 5 pass now.
+- FIXED: offline/t12_killend[1.5s] — the new retry on 'online' logged "Supabase run sync failed: Failed to fetch" as an
+  error; a no-signal try now logs a warning. Passes.
+- EXPECTED wording/line changes (update goldens with `--update-golden --only ...` when shipping): critic/w3 + offline/
+  t02_day + offline/t13_queues (Home Not sent line + "Add to Home Screen so this phone keeps your work."; headless Chrome
+  doesn't grant persist), critic/w4 (Settings "Don't delete the app icon…" line, page taller), offline/t01_kill (Home now
+  shows "Not sent · 1 run record" for the run the fake server never accepted), offline/t10_quota (A7 advice).
+- NOT this change: new/f06_breakend fails on live r17.14 too today (timeout under load); offline/t09_bigweek prints storage
+  usage 2 MB instead of 3 MB (rounded browser estimate; less storage, and one send pass with 41 runs took 252 ms vs 428 ms
+  on r17.14).
+- PHASE A test `tests/t_records_a.js`: 35 PASS, 0 FAIL (`results/t_records_a.txt`).
+- Lock This Phone on a no-email account is blocked the same way as Log Out (added after the full run; t130/t132/t133
+  re-run: pass).
+
+Final candidate md5: index.src.html 99efa91d…, build/index.html 6dd54bf6…, build_hooks/index.html 9d484abb….
 
 ## Decisions for Tommy (≤6)
 1. Old runs (A4): send any run not accepted if locked in the last 21 days, after the person joined this company, or
@@ -118,3 +136,5 @@ individual-plan run backup; 2000 px originals; GPS on permit photos.
    shown first.**
 5. Removed member grace (B7): 14 days for runs locked before removal. **Recommend: yes, runs first; dailies later.**
 6. A9 server rule goes live only after r17.15 is on phones (≥ a week). **Recommend: yes.**
+
+## DONE
