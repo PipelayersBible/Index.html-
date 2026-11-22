@@ -42,3 +42,9 @@ Observations (not caused by this change, both also possible on live): (1) AR and
 - No fact lost (fact map, 166 facts, 13 hand-checked); lib_kb 0 errors; promotion SQL tested on the local copy (load, re-run, rollback to md5 eb05d565... exactly, both guards).
 - Honest limits: 811 shrinks by almost nothing (every state has its own law); every trench / 811 answer now carries one more ~1.1 KB table card (+4% excerpt size); the table cards list all states, so a wrong-state slip is possible in principle (0 seen in 254 answers).
 
+
+## APPLIED Nov 21 ~7:15 PM PT (lead)
+- First apply refused safely: live has CHECK (ord >= 0); renumbering through negative ords failed and rolled back. Fixed to ord + 1000000 (21_load md5 b50270bf, 91_rollback md5 74e65220); rolled-back live test: after load 3243 / a9af05ee, after rollback 3270 / eb05d565. Then applied.
+- Library 3243 rows md5 a9af05ee. Build live = e661cb967ceb.
+- Smoke (4): Spokane 4 ft (WAC 296-155-657, stricter than federal); San Antonio federal 5 ft; Fresno 5 ft + Cal/OSHA permit 341; Cleveland: no confirmed ticket life, 2 working days not counting call day. Note: the Cleveland answer (analysis mode) compared with CA and IA, which the reply rule says not to do; watch it.
+- Rollback: 91_rollback.sql then reinstall build d881cb695137.
