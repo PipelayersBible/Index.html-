@@ -197,8 +197,8 @@ const rpcs=(p,n)=>p.evaluate(n=>(window.__rpcArgs||[]).filter(x=>x[0]===n).map(x
     await p.screenshot({path:OUT+'/'+shot+'.png',fullPage:true});
     ok(p.errs.length===0,'no page errors '+JSON.stringify(p.errs));await b.close();}
   ({b,p}=await boot());
-  const ft=await p.evaluate(()=>({WA:window.pbSrMath.row('WA').trench.ft,NV:window.pbSrMath.row('NV').trench.ft,HI:window.pbSrMath.row('HI').trench.ft}));
-  ok(ft.WA===4&&ft.NV===5&&ft.HI===null,'run flag depth source: WA 4, NV 5, HI not checked (null -> the federal 5 ft floor)');
+  const ft=await p.evaluate(()=>({WA:window.pbSrMath.row('WA').trench.ft,NV:window.pbSrMath.row('NV').trench.ft,IA:window.pbSrMath.row('IA').trench.ft}));
+  ok(ft.WA===4&&ft.NV===5&&ft.IA===null,'run flag depth source: WA 4, NV 5, IA not checked (null -> the federal 5 ft floor; HI got its row in r17.14)');
   await b.close();
   console.log('t130 done: '+(fails?fails+' FAIL':'all pass'));process.exit(fails?1:0);
 })().catch(e=>{console.error(e);process.exit(1);});
