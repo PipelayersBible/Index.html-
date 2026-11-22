@@ -1,0 +1,26 @@
+  remove button: pbCmAct('remove',1)
+PASS remove asks first
+  handover modal: Hand Over to a Foreman  Who takes Rick’s crew runs that are waiting for a foreman, and the pipelayers who were on his crew?  Ann  Run reports already sent to Rick go to the foreman each pipelayer is linked to, so they follow the crew.  Not Now Hand Over
+PASS after removing a foreman: who takes his runs and crew, other foremen listed (not pipelayers)
+PASS 390 px: handover sheet fits []
+  handover rpc: {"p_from":"00000001-0000-4000-8000-000000000001","p_to":"00000002-0000-4000-8000-000000000002","p_expect_uid":"00000000-0000-4000-8000-000000000001"}
+PASS pb_crew_handover from Rick to Ann (the only other foreman, picked already)
+  status: 2 waiting runs and 1 pipelayer from Rick went to Ann. Ann was told.
+PASS the line says what moved and that Ann was told
+PASS owner: no page errors []
+PASS removing a pipelayer: no handover question
+  settings block: Your company |  | You are in Acme Pipeline as Foreman. |  | Leave Company
+PASS Settings: "You are in Acme Pipeline as Foreman." and Leave Company
+  confirm: Leave Company  Leave Acme Pipeline?  What this does: you stop being part of the company in the app. You lose its screens, your runs and reports stop going to the company from now on, and your foreman link ends. The owner is told.  What it doesn’t do: production, tickets and permits you already filed stay the company’s. Your own records on this phone stay on this phone. Your account isn’t closed, a
+PASS the confirm says what leaving does and doesn't do (no em-dash)
+PASS Stay: nothing sent
+  leave rpc: {"p_expect_uid":"00000000-0000-4000-8000-000000000001","p_expect_company":"11111111-1111-4111-8111-111111111111"}
+PASS pb_crew_leave with this account and the company it is leaving
+  alert: Left the Company  You left Acme Pipeline. Your records on this phone stay here.  OK
+PASS the alert says you left
+PASS after leaving, the block is gone (company checked again)
+PASS member: no page errors []
+PASS the company account: no Leave Company
+RESULT PASS 15
+
+[exit 0] 35.2 s
