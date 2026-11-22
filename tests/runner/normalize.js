@@ -35,7 +35,7 @@ const RULES = [
   [/"bytes":(\d+),"real":(\d+)/g, (m, a, b) => (a === b ? '"bytes":N,"real":N' : m)],
   [/\bzip bytes \d+/g, 'zip bytes N'],
   [/(Manifest fingerprint:? )[0-9a-f]+/g, '$1HASH'],
-  [/ref PB-[A-Z]-\w+/g, 'REF'],
+  [/[Rr]ef PB-[A-Z]-\w+/g, 'REF'],
   [/\bblob:http:\/\/127\.0\.0\.1:\d+\/[\w-]+/g, 'BLOB'],
   // the test server's address and the per-test scratch folder
   [/http:\/\/127\.0\.0\.1:\d+\//g, 'http://HOST/'],
