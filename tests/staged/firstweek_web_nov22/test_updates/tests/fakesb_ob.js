@@ -1,1 +1,1 @@
-/home/claude/index.html-/tests/fakesb_ob.js
+../../../../fakesb_ob.js

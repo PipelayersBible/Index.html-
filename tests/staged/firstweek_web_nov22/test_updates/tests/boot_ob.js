@@ -1,1 +1,1 @@
-/home/claude/index.html-/tests/boot_ob.js
+../../../../boot_ob.js
