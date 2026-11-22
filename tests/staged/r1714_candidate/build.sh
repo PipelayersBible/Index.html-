@@ -7,7 +7,7 @@ P=$D/patches
 W=$D/work; mkdir -p $W $P/results
 cp $ROOT/_src/index.html $W/s00.html
 i=0; prev=$W/s00.html
-for f in 811/p1_wait_days_confirmed.py 811/p2_wait_full_days.py 811/p4_rules_hit_line_fills.py 811/p5_state_phone_location.py \
+for f in 811/p1_wait_days_confirmed.py 811/p2_wait_full_days.py 811/p3_wait_not_call_day.py 811/p4_rules_hit_line_fills.py 811/p5_state_phone_location.py \
          safety/p1_injury_states.py safety/p2_trench_rows.py safety/p3_rules_safety_lines.py safety/p4_talks.py safety/p5_permit_rules.py \
          specs/1_xing_state_rule.py specs/2_spec_words.py \
          survey/s1_cutsheet_lt_rt.py survey/s2_cutsheet_cut_fill_words.py survey/s3_stake_cut_fill_needs_letter.py survey/s4_slope_ftft_hv.py survey/s5_glossary_datum_units.py \

@@ -58,9 +58,9 @@ const rpcs=(p,n)=>p.evaluate(n=>(window.__rpcArgs||[]).filter(x=>x[0]===n).map(x
   ok(emb&&Object.keys(emb.states).length===51&&JSON.stringify(emb.states.TX)===JSON.stringify(J.states.find(x=>x.code==='TX')),'the page carries the same table (TX row identical)');
   const M=(fn,...a)=>p.evaluate(([fn,a])=>window.pbSrMath[fn](...a),[fn,a]);
   const cases=[
-    ['canDig',['2026-11-20','CA'],'2026-11-24','CA: Fri call, 2 working days -> Tue'],
-    ['canDig',['2026-11-25','CA'],'2026-12-01','CA: Wed before Thanksgiving (Thu, Fri off) -> Tue Dec 1'],
-    ['canDig',['2026-11-21','CA'],'2026-11-25','CA: Saturday call counts from Monday -> Wed'],
+    ['canDig',['2026-11-20','CA'],'2026-11-25','CA: Fri call, Mon + Tue are the 2 working days -> Wed'],
+    ['canDig',['2026-11-25','CA'],'2026-12-02','CA: Wed before Thanksgiving (Thu, Fri off) -> Wed Dec 2'],
+    ['canDig',['2026-11-21','CA'],'2026-11-30','CA: Saturday call counts from Monday; Tue, Wed, then Thanksgiving + Friday off -> Mon Nov 30'],
     ['expires',['2026-11-20','CA'],'2026-12-18','CA: 28 days'],
     ['startBy',['2026-11-20','CA'],'2026-12-04','CA: start within 14 days'],
     ['canDig',['2026-11-25','AZ'],'2026-12-01','AZ: Thanksgiving and the Friday after are days off for the wait'],
@@ -68,7 +68,7 @@ const rpcs=(p,n)=>p.evaluate(n=>(window.__rpcArgs||[]).filter(x=>x[0]===n).map(x
     ['expires',['2026-12-21','TX'],'2027-01-12','TX: 14 working days across Christmas and New Year'],
     ['canDig',['2026-12-24','TX'],'2026-12-29','TX: Thu Dec 24 call, Fri 25 off -> Tue Dec 29'],
     ['expires',['2026-11-20','CO'],'2026-12-25','CO: 30 calendar days after the due date (Wed Nov 25: the call day does not count)'],
-    ['expires',['2026-07-02','NM'],'2026-07-28','NM: wait ends Tue Jul 7 (Jul 3 off), then 15 working days'],
+    ['expires',['2026-07-02','NM'],'2026-07-29','NM: wait ends Wed Jul 8 (Jul 3 off, the call day not counted), then 15 working days'],
     ['expires',['2026-11-20','WA'],'2027-01-04','WA: 45 calendar days'],
     ['startBy',['2026-11-20','WA'],'2026-12-07','WA: no more than 10 business days'],
     ['expires',['2026-11-20','NV'],'2026-12-18','NV: 28 calendar days'],

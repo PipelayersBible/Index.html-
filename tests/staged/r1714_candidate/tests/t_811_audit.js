@@ -2,10 +2,10 @@
 // the "Hit a line" section and fills (p4), the phone's location before the California default (p5).
 // Usage: PB_BASE=http://127.0.0.1:10520 NODE_PATH=/opt/npm-tools/node_modules node t_811_audit.js <set>
 //   set: live | p1 | p2 | p3 | p4 | p5 | all | r1714   (the page is <PB_BASE>/<set>.html)
-//   r17.14 copy: set r1714 = p1 + p2 + p4 + p5 (p3 waits on Tommy's California ticket check)
+//   r17.14 copy: set r1714 = p1 + p2 + p3 + p4 + p5 (p3 added after Tommy confirmed a Monday CA call digs Thursday)
 const R = '/home/claude/index.html-/tests/rig/'; const boot = require(R + 'boot'), co = require(R + 'co');
 const SET = process.argv[2] || 'all', BASE = process.env.PB_BASE || 'http://127.0.0.1:10520';
-const has = (k) => SET === 'all' || SET === k || (SET === 'r1714' && ['p1', 'p2', 'p4', 'p5'].includes(k));
+const has = (k) => SET === 'all' || SET === k || (SET === 'r1714' && ['p1', 'p2', 'p3', 'p4', 'p5'].includes(k));
 const UID = '00000000-0000-4000-8000-000000000001';
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const here = (st) => `;try{localStorage.setItem('pbHereState',JSON.stringify({s:'${st}',at:Date.now()}));}catch(e){}`;

@@ -1,0 +1,22 @@
+A {"crew":["Tommy Fontaine=8","Joe Laborer=8"],"equip":[],"events":0}
+PASS a short day: everyone defaults to 8 h (Joe was logged 2 h)
+ line: Hours start at 8 h (first start 7:00 AM to last stop 9:00 AM is not more than 8 h). Change any box that is wrong.
+PASS the line under Crew Today says the 8 h rule
+B {"crew":["Tommy Fontaine=10.5","Joe Laborer=10.5"],"equip":[],"events":0}
+PASS first start to last stop (10.5 h) is the default when longer than 8 h, setup and the gap included
+ line: Hours start at the crew’s day: first start 7:00 AM to last stop 5:30 PM, 10.5 h. Change any box that is wrong.
+PASS the line names first start, last stop and 10.5 h
+signed [{"name":"Tommy Fontaine","user_id":"00000000-0000-4000-8000-000000000001","hours":10.5},{"name":"Joe Laborer","user_id":null,"hours":9,"log_h":6.5}] {"hours":10.5,"first_start":"2026-11-20T15:00:00.000Z","last_stop":"2026-11-21T01:30:00.000Z","rule":"8 h, or first start to last stop when longer"}
+PASS what the foreman typed (9 h) is what is signed
+PASS the others are signed at the default (10.5 h)
+PASS the logged run time stays on the report (log_h 6.5)
+PASS the report keeps the day default and its first start / last stop
+C {"crew":["Tommy Fontaine=1.5","Joe Laborer=3"],"equip":[],"events":0}
+PASS second job: the day (12 h) less the hours on the signed report (Joe 12-9=3, foreman 12-10.5=1.5)
+PASS the second-job line still shows
+PASS offline: the same defaults (Tommy Fontaine=1.5, Joe Laborer=3)
+PASS t01_crew: 390 px light/dark without sideways scroll (390/390)
+errs []
+PASS no page errors
+
+[exit 0] 58.2 s

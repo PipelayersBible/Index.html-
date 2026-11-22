@@ -1,0 +1,25 @@
+tile: 3 Safety events Last 30 days, all jobs
+tile call {"p_from":"2026-10-21","p_limit":20,"p_offset":0,"p_expect_uid":"00000000-0000-4000-8000-000000000001"}
+PASS the office Home has a Safety events tile (asks for the last 30 days)
+PASS the tile opens the Safety events screen
+first: 3 events | Stop work Thu, Nov 12, 2026 · 13:00 Job 24-017 Gas smell, stopped work Done: Gas company called People: Sam Operator · Logged by Tommy Fontaine · Closed · 2 photos Open Job Book Near miss Tue, Nov 10,
+PASS it searches at once and lists every job’s events, newest first
+PASS the job filter lists the jobs that have safety events
+call {"p_job_number":"24-017","p_kinds":["Stop work","Incident"],"p_from":"2026-11-01","p_to":"2026-11-15","p_who":"sam","p_limit":50,"p_offset":0,"p_expect_uid":"00000000-0000-4000-8000-000000000001"}
+PASS Search sends job, types, dates and who to the server
+filtered: 1 event | Stop work Thu, Nov 12, 2026 · 13:00 Job 24-017 Gas smell, stopped work Done: Gas company called People: Sam Operator · Logged by Tommy Fontaine · Closed · 2 photos Open Job Book
+PASS the result shows kind, when, job, what, done, people, who logged it, photos
+PASS the type chips show what is picked
+PASS t04_search: 390 px light/dark without sideways scroll (390/390)
+PASS Open Job Book opens that job’s Job Book on the Safety tab
+PASS Back returns to the search with its filters
+PASS Show More when there are more than one page
+PASS Show More adds the next page
+offline: No signal. Showing your last search, from 9:20 PM.
+PASS offline: says no signal and keeps showing the last search
+missing: The company server isn’t ready for this search yet.
+PASS a server without the search says so in plain words
+errs []
+PASS no page errors
+
+[exit 0] 24.3 s
