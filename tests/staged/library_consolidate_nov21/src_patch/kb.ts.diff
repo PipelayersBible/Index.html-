@@ -1,0 +1,20 @@
+--- /home/claude/index.html-/tests/staged/library_load_nov20/work/b7/src10live/kb.ts	2026-11-20 19:05:39.570519230 -0800
++++ work/src_live/kb.ts	2026-11-21 18:04:52.572054277 -0800
+@@ -14,11 +14,15 @@
+     else byLib[at[0]][at[1]] = null, (byLib[e.lib] ||= []).push(e.chunk);
+     replaced++;
+   }
++  // consolidate: chunks the promotion SQL deletes are dropped here too (by id)
++  const gone = new Set(OVERLAY.remove || []);
++  let removed = 0;
++  for (const lib of Object.keys(byLib)) byLib[lib] = byLib[lib].map((c) => c && gone.has(c.id) ? (removed++, null) : c);
+   const have = new Set();
+   for (const lib of Object.keys(byLib)) { byLib[lib] = byLib[lib].filter(Boolean); for (const c of byLib[lib]) have.add(c.id); }
+   for (const e of OVERLAY.add || []) if (!have.has(e.chunk.id)) (byLib[e.lib] ||= []).push(e.chunk), have.add(e.chunk.id), added++;
+-  console.log(JSON.stringify({ ai: "kb_overlay", rev: OVERLAY.rev, replaced, missing, added }));
+-  return added;
++  console.log(JSON.stringify({ ai: "kb_overlay", rev: OVERLAY.rev, replaced, missing, added, removed }));
++  return added - removed;
+ }
+ const overlayOn = () => globalThis.PB_ASK_SLOT === "next" && OVERLAY && OVERLAY.rev;
+ let KB = null, KB_VERSION = "", KB_RETRY_AT = 0, KB_LOADING = null, KB_SAVING = null;

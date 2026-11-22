@@ -1,0 +1,40 @@
+== pass 1
+reset: 3270|eb05d565cacc0e0b64a848aa41a5496f (want 3270|eb05d565cacc0e0b64a848aa41a5496f)
+psql:promotion/21_load.sql:85: NOTICE:  consolidate 21_load: applied, 3243 rows
+{"post_all": "a9af05ee01c9f8d4be6054b27f48bfb8"}
+== pass 2
+reset: 3270|eb05d565cacc0e0b64a848aa41a5496f (want 3270|eb05d565cacc0e0b64a848aa41a5496f)
+3270 -> 3243: delete 31, in place 9, new 4; expected md5 a9af05ee01c9f8d4be6054b27f48bfb8
+20_precheck.sql 53733 bytes
+21_load.sql 44993 bytes
+91_rollback.sql 54478 bytes
+-- precheck before:
+rows max_ord kb_n all_md5 touched_ok new_ids_there
+3270 3269 3270 eb05d565cacc0e0b64a848aa41a5496f 40 0
+(1 row)
+-- load:
+psql:promotion/21_load.sql:85: NOTICE:  consolidate 21_load: applied, 3243 rows
+-- load again:
+psql:promotion/21_load.sql:85: NOTICE:  consolidate 21_load: already applied, nothing changed
+-- precheck after:
+rows max_ord kb_n all_md5 touched_ok new_ids_there
+3243 3242 3243 a9af05ee01c9f8d4be6054b27f48bfb8 0 4
+(1 row)
+3243|{"app": 238, "osha": 278, "field": 2727}
+0
+loaded rows = work/after_rows.jsonl (what the free check and the ai-next overlay used): True 3243 3243
+-- rollback:
+psql:promotion/91_rollback.sql:32: NOTICE:  consolidate 91_rollback: done, 3270 rows
+after rollback (want 3270|eb05d565cacc0e0b64a848aa41a5496f): 3270|eb05d565cacc0e0b64a848aa41a5496f
+3270|{"app": 238, "osha": 278, "field": 2754}
+-- rollback again:
+psql:promotion/91_rollback.sql:32: NOTICE:  consolidate 91_rollback: already rolled back (or never applied), nothing changed
+-- guard: one live row changed -> load must refuse, nothing changed
+FAIL: library is not the live state this was built on 
+rows still: 3270
+reset: 3270|eb05d565cacc0e0b64a848aa41a5496f (want 3270|eb05d565cacc0e0b64a848aa41a5496f)
+-- guard: rollback on a changed result -> must refuse
+FAIL: the library is not in the state 21_load.sql leaves 
+rows still: 3243
+reset: 3270|eb05d565cacc0e0b64a848aa41a5496f (want 3270|eb05d565cacc0e0b64a848aa41a5496f)
+22 tested: twice -> 204 rows, all inactive
