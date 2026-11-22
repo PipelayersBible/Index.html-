@@ -53,4 +53,5 @@ Fixes from the Nov 21 review chats (records, 811 dates, first week, Ask safety, 
 ## Tests
 - Focused: records 0 FAIL, design p1/p1b 0 FAIL, dates/crossings ALL PASS, first week ALL PASS, Ask emergency ALL OK,
   CSP smoke 11/11 with no violations.
-- Full regression on the combined build: see tests/staged/r1715_candidate/results/full_regression2.log.
+- Full regression on the combined build: 220 pass, 15 skipped; 1 fail (f06_breakend, time-of-day, fails the same on r17.14). Live page md5 67a8a7f2 = tested build. Published Nov 22 ~12 AM (commit e9131f4).
+- Server rule "a run removal needs a reason" (records A9) waits until at least Nov 29.
