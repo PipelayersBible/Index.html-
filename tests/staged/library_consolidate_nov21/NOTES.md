@@ -1,4 +1,4 @@
-# Ask library consolidation: trench / excavation and 811 (Nov 21, 2026)
+# Ask library consolidation: trench / excavation and 811 (Nov 21, 2026) - finished
 
 Tommy approved (Nov 21): universal rules once, state exceptions only where a state differs; first two topics trench/excavation and 811.
 Base: LIVE Ask build `d881cb695137` (source `library_load_nov20/work/b7/src10live`; the search code bundled from it is byte-identical to what the state-audit check used),
@@ -61,4 +61,34 @@ Two fixes came from this check: "excavator" no longer counts as a trench questio
 
 ## Promotion package: `promotion/PROMOTION.md` (20 precheck, 21 load, 91 rollback, optional 22 eval cases), tested on the local copy (`work/local_test.log`).
 
-RESULTS_PLACEHOLDER
+## Paid checks on ai-next `3f9c941db076` (same prompt row as live). Spend **$7.98** of $10 (reply bodies: smoke $0.36, subset $1.38, state cases $6.24)
+| Run | Result | Before (live code) |
+|---|---|---|
+| `1121-consol-148sub`: the trench + 811 subset of the 148 (50 cases: lo1-7, loc5-6, ng1, ng4, nw1-17, nw22, sa1, sa4, sa5, sa9, sa10, tr1-14, eq5, em1), 3 per batch | **50 / 50 pass** on the server's patterns (`eval_score`), facts 50 / 50, 0 errors, 0 forbidden, avg 63 words | `1121-lib8-148`, same 50 ids: 50 / 50, avg 67 words |
+| `1121-consol-state`: 204 new state cases (51 x trench follow / trench number / 811 follow / 811 ticket life), 3 per batch | **189 / 204 by pattern; wrong state 0; over 110 words 0; median 53 words.** Number questions **102 / 102** (trench depth 51/51: WA 4 ft, every other state 5 ft; ticket life 51/51 incl. "no set expiry" NY/OH/AK/RI/WI and "not confirmed" MO/MT/NE/PA/WV) | not run (the before-library has no table cards) |
+| The 15 pattern misses, read by hand | **all case pattern, answer right**: 5 x 811 "follow federal" give the right wait in other words (IL "2 days", AR "two (2) ... full working days", CT "two full days", NY "two but not more than ten working days", PA "three nor more than ten business days") and say no federal wait; 10 x trench "follow federal" correctly say the state follows federal Subpart P with no state rule (NV names its plan; IA, WY say not in the library, check the state plan) but do not repeat the 5 ft number the question did not ask for | |
+Read by hand besides the misses (about 25): WA 4 ft "stricter than federal 5 ft"; KY / CA plans named; CA adds the Cal/OSHA permit; TX "48 hours ... no federal rule sets the wait (49 CFR 196 only)"; GA 2 business days from 7 AM; NY no expiry; MI Part 9; IN "plan same as federal".
+Observations (not caused by this change, both also possible on live): (1) AR and IL 811 answers open with the raw statute quote on its own line; (2) nw15 (Detroit) now says MIOSHA's "more than 5 ft" is "a little less strict than federal ... follow that" (the strictest-rule wording; on live d881 the same question listed both rules without that line).
+
+## Go / no-go: **GO** (library 21 -> build e661cb967ceb, smoke 4 questions)
+- Free check: 0 worse of 700 + 127 existing, 204 / 204 state cases retrieve the state card or table; paid: the 50 existing trench / 811 cases hold 50 / 50, state number questions 102 / 102, wrong state 0, every pattern miss read by hand is a right answer.
+- No fact lost (fact map, 166 facts, 13 hand-checked); lib_kb 0 errors; promotion SQL tested on the local copy (load, re-run, rollback to md5 eb05d565... exactly, both guards).
+- Honest limits: 811 shrinks by almost nothing (every state has its own law); every trench / 811 answer now carries one more ~1.1 KB table card (+4% excerpt size); the table cards list all states, so a wrong-state slip is possible in principle (0 seen in 254 answers).
+
+
+## Decisions for Tommy / the lead
+1. **Promote** (library 21_load.sql, then build e661cb967ceb). Recommend: yes, with the 4-question smoke in PROMOTION.md.
+2. **811 next step:** the five Dig Safe states (MA, ME, NH, RI, VT) share near-identical overview and damage cards (same manual text, own fine amounts). A "Dig Safe states" card cannot name 5 states (lib_kb limit 4), so they stay as they are. Recommend: leave them; they are true state cards with state numbers.
+3. **Next topics for the same treatment:** the state "who enforces" cards (`sp-<st>-who-1`) and the `st-<st>` spec-book cards still repeat "federal OSHA 5 ft" lines; they are multi-topic, so I left them. Recommend: do confined space next (same pattern: federal card + exceptions + table).
+4. **Case patterns:** the 15 "follow federal" misses are narrow regexes; if 22_eval_cases_inactive.sql is loaded, widen the 811 wait patterns (allow "2 days", "two full days", "three nor more than ten") and accept "follows federal / Subpart P" for the trench follow cases.
+
+## Files
+`cards/build_cards.py`, `cards/consolidate.jsonl` (+report), `cards/edits.json`; `tools/` (build_after, factmap, mk_overlay, mk_cases, retr.mjs, regress.mjs, retr_all.sh, compare.py, mk_sql.py, local_test.sh, grade_sql.py);
+`src_patch/apply_patch_consol.py` (+ state.ts.diff, kb.ts.diff); `cases_new.jsonl` (204); `work/` (after_rows.jsonl, overlay.json, factmap*.tsv, retr_compare_p0/p2.txt, local_test.log, t11 Deno tests, grade_state_compact.sql, src_live / src_next);
+`promotion/` (PROMOTION.md, 20_precheck.sql, 21_load.sql, 91_rollback.sql, 22_eval_cases_inactive.sql).
+
+## On the server because of this job
+code slot `next` = `3f9c941db076` (was `688d8c4be86d`); live slot `d881cb695137` untouched; eval runs `1121-consol-smoke`, `1121-consol-148sub`, `1121-consol-state` (all collected, none queued). Library tables, shelf, eval_set, prompt rows: nothing written.
+Repo: 2 sealed builds, one commit each (77e5151 `b-3f9c941db076.txt`, 64a8a02 `b-e661cb967ceb.txt`).
+
+## DONE

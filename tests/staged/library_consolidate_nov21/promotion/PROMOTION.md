@@ -28,4 +28,17 @@ Smoke after promotion (about $0.40 cold): "At what depth does a trench need a tr
 "How long is my locate ticket good for?" in Cleveland OH (no expiry given, not confirmed).
 
 ## Results
-RESULTS_PLACEHOLDER
+### Paid checks on ai-next `3f9c941db076` (same prompt row as live). Spend **$7.98** of $10 (reply bodies: smoke $0.36, subset $1.38, state cases $6.24)
+| Run | Result | Before (live code) |
+|---|---|---|
+| `1121-consol-148sub`: the trench + 811 subset of the 148 (50 cases: lo1-7, loc5-6, ng1, ng4, nw1-17, nw22, sa1, sa4, sa5, sa9, sa10, tr1-14, eq5, em1), 3 per batch | **50 / 50 pass** on the server's patterns (`eval_score`), facts 50 / 50, 0 errors, 0 forbidden, avg 63 words | `1121-lib8-148`, same 50 ids: 50 / 50, avg 67 words |
+| `1121-consol-state`: 204 new state cases (51 x trench follow / trench number / 811 follow / 811 ticket life), 3 per batch | **189 / 204 by pattern; wrong state 0; over 110 words 0; median 53 words.** Number questions **102 / 102** (trench depth 51/51: WA 4 ft, every other state 5 ft; ticket life 51/51 incl. "no set expiry" NY/OH/AK/RI/WI and "not confirmed" MO/MT/NE/PA/WV) | not run (the before-library has no table cards) |
+| The 15 pattern misses, read by hand | **all case pattern, answer right**: 5 x 811 "follow federal" give the right wait in other words (IL "2 days", AR "two (2) ... full working days", CT "two full days", NY "two but not more than ten working days", PA "three nor more than ten business days") and say no federal wait; 10 x trench "follow federal" correctly say the state follows federal Subpart P with no state rule (NV names its plan; IA, WY say not in the library, check the state plan) but do not repeat the 5 ft number the question did not ask for | |
+Read by hand besides the misses (about 25): WA 4 ft "stricter than federal 5 ft"; KY / CA plans named; CA adds the Cal/OSHA permit; TX "48 hours ... no federal rule sets the wait (49 CFR 196 only)"; GA 2 business days from 7 AM; NY no expiry; MI Part 9; IN "plan same as federal".
+Observations (not caused by this change, both also possible on live): (1) AR and IL 811 answers open with the raw statute quote on its own line; (2) nw15 (Detroit) now says MIOSHA's "more than 5 ft" is "a little less strict than federal ... follow that" (the strictest-rule wording; on live d881 the same question listed both rules without that line).
+
+### Go / no-go: **GO** (library 21 -> build e661cb967ceb, smoke 4 questions)
+- Free check: 0 worse of 700 + 127 existing, 204 / 204 state cases retrieve the state card or table; paid: the 50 existing trench / 811 cases hold 50 / 50, state number questions 102 / 102, wrong state 0, every pattern miss read by hand is a right answer.
+- No fact lost (fact map, 166 facts, 13 hand-checked); lib_kb 0 errors; promotion SQL tested on the local copy (load, re-run, rollback to md5 eb05d565... exactly, both guards).
+- Honest limits: 811 shrinks by almost nothing (every state has its own law); every trench / 811 answer now carries one more ~1.1 KB table card (+4% excerpt size); the table cards list all states, so a wrong-state slip is possible in principle (0 seen in 254 answers).
+
