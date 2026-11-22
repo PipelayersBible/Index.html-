@@ -13,8 +13,8 @@ for (const c of C) {
   for (const mode of ["raw", "kw"]) {
     if (mode === "kw" && !c.kw) continue;
     const r = S.resolveState({ question: c.q, addressState: c.st || null });
-    const sq = (mode === "kw" ? c.q + " " + c.kw : c.q) + (S.esSearchWords ? S.esSearchWords(c.q) : "");
-    const ss = S.stateSearch(R.search, index, sq, { k: 6, level: "pipelayer", topicBoost: [], maxChars: 9e3 }, r, c.q);
+    const es = S.esSearchWords ? S.esSearchWords(c.q) : "", sq = (mode === "kw" ? c.q + " " + c.kw : c.q) + es;
+    const ss = S.stateSearch(R.search, index, sq, { k: 6, level: "pipelayer", topicBoost: [], maxChars: 9e3 }, r, c.q + es);
     const ids = ss.hits.map((h) => h.id), first = ss.hits[0] || {};
     const long = !!(ss.own || ss.dependent);
     const want = c.want ? new RegExp(c.want) : null, bad = c.bad ? new RegExp(c.bad) : null;
