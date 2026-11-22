@@ -42,3 +42,8 @@ kb_versions back to {app 238, osha 278, field 2727}; rollback again -> "already 
 | `1121-cs-148sub`: the confined space subset of the 148 (cs1-cs5, ng2, ng3, nw18-nw21), 3 per batch | **11 / 11 pass** (`eval_score`), facts 11 / 11, 0 errors, 0 forbidden, avg 86 words (live `1121-lib8-148`, same ids: 80 words) |
 | `1121-cs-state`: 51 x "does <state> follow federal?", 51 x "CO limit for a manhole", 6 state-specific, 5 office-level 811 rule questions | **112 / 113**; wrong state 0; "elsewhere / most states / other states" 0; median 61 words. Follow-federal 51 / 51 by the table; CO limit 50 / 51 (CA 25 ppm, every other state 50 ppm federal; the one miss is Indiana at 111 words, right answer); CA rescue at the site (1960(a)), CA test order, WA 1 year, OR signature, MI Part 35, MD federal by reference: all right |
 | Office-level 811 (the Cleveland bug) | Cleveland, San Antonio, Colorado Springs, Savannah: were routed to MODE business analysis on live code (route test), now normal Ask: Ohio only, no other state named |
+
+## APPLIED Nov 21 evening (lead)
+- Rolled-back live test: before 3243/a9af05ee, after load 3240/131904c2, after rollback 3243/a9af05ee. Applied 21_load (md5 18575f54). Build live = 4776ad1c5afb.
+- Smoke 5/5: Fresno CO 25 ppm (stricter than 50); Texas follows Subpart AA; Seattle cite 296-809 WAC; Salem entry supervisor must sign (OAR 437-002-0146); Cleveland office-level: Ohio only, teacher mode, no other state named.
+- Rollback: 91_rollback.sql, then reinstall build e661cb967ceb.
