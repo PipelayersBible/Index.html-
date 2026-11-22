@@ -1,19 +1,19 @@
-# r17.14 candidate, built Nov 20 2026 (Pacific)
+# r17.14 candidate, built Nov 20 2026, p3 added and rebuilt Nov 21 2026 (Pacific)
 
 Nothing published, pushed or applied. The server was not touched (no SQL: every change lives in the page).
 The repo's tests/ are unchanged (updates are in `test_updates/`, copied by `apply_test_updates.sh`).
 
 ## What is in it (applied in this order on `_src/index.html` r17.13, md5 4f2101b2…)
-All 17 audit patches stacked with **no anchor changes** (copies in `patches/`). Only behaviour change vs the audit
+All 18 audit patches stacked with **no anchor changes** (copies in `patches/`; p3 added Nov 21 after p2, applies as is). Only behaviour change vs the audit
 patches: item 3 (specs 1), job state not known -> strictest crossing rule.
 
 | # | Patch (`patches/`) | What |
 |---|---|---|
 | 1 | `811/p1_wait_days_confirmed.py` | MN, IA, IN, SD, OK wait 2 -> 3 wd; SC 3 -> 4; Renew-by MN, IA, IN; NV/UT/SC center holidays (wait only); OR source; OHIO811 URL |
 | 1 | `811/p2_wait_full_days.py` | "full days" states AR, CO, CT, FL, KS, KY, NE, OR, WA, WY, UT 2 -> 3; NC 3 -> 4; Renew-by CT, OR, WA, AR, NC |
+| 1 | `811/p3_wait_not_call_day.py` (**added Nov 21**) | CA, NV, NY, OH, IL, NM: "not including the date of notification" -> wait 2 -> 3 wd (Monday call good Thursday; CA Fri -> Wed); NM Renew-by 3. Tommy, Nov 21: "In CA you'd have to wait for Thursday" for a Monday ticket. Table: `patches/results/p3_changes.md` |
 | 1 | `811/p4_rules_hit_line_fills.py` | "Hit a line" section in Rules (all states + 8 state extras); IL 2-hour emergency; 10 blank fields |
 | 1 | `811/p5_state_phone_location.py` | 811 state: job, company, phone location, then the CA default |
-| – | p3 (CA, NV, NY, OH, IL, NM "not the call day") | **NOT applied**: waiting on Tommy's California ticket |
 | 2 | `safety/p1..p5` | injury lines 12 states; trench rows 8 states + CA permit; Rules: Heat / Toolbox talks / First aid / Flaggers; talk schedule line + 5 talks; permit rule MI Part 35 + CA 2026 form note |
 | 3 | `specs/1_xing_state_rule.py` (**changed**) | crossing rule by job state; **state not known: water above, at least 2 ft (Texas), labeled "Job state not known — strictest rule used"**, for every sewer/storm/recycled/force-main crossing (was Ten States 18 in) |
 | 3 | `specs/2_spec_words.py` | spec books card words; test Details example by type |

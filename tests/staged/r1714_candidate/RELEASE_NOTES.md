@@ -1,4 +1,4 @@
-# r17.14 · Nov 20, 2026
+# r17.14 · Nov 21, 2026
 
 ## 811: the first dig day is no longer a day early
 In many states the law says the call day doesn't count ("2 full working days", "starting the next business day"). The
@@ -9,11 +9,12 @@ used the same date. Fixed:
 - **Same words in the law ("full" working or business days), strictest reading used:** Arkansas, Colorado, Connecticut,
   Florida, Kansas, Kentucky, Nebraska, Oregon, Washington, Wyoming and Utah: Monday call digs Thursday. North Carolina:
   Friday.
-- The "call in the renewal by" day moves with it where a renewal is a new notice (MN, IA, IN, CT, OR, WA, AR, NC).
+- The "call in the renewal by" day moves with it where a renewal is a new notice (MN, IA, IN, CT, OR, WA, AR, NC, NM).
 - **811 center holidays** now skipped in the wait: Nevada Day (NV), Pioneer Day and Christmas Eve (UT), Confederate
   Memorial Day, Christmas Eve and Dec 26 (SC).
-- **California, Nevada, New York, Ohio, Illinois, New Mexico not changed yet:** waiting on one California ticket's
-  "Legal Start" to settle how the call day counts.
+- **California, Nevada, New York, Ohio, Illinois, New Mexico:** the law says 2 working days "not including the date of
+  notification", so the call day doesn't count: **a Monday call is good Thursday** (it showed Wednesday). Confirmed from
+  the field for California. A Friday call in California is good Wednesday.
 - Georgia not changed (waiting on a phone call).
 
 ## 811: hit a line, and the right state
