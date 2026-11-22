@@ -1,0 +1,41 @@
+== pass 1
+reset: 3243|a9af05ee01c9f8d4be6054b27f48bfb8 (want 3243|a9af05ee01c9f8d4be6054b27f48bfb8)
+psql:promotion/21_load.sql:99: NOTICE:  consolidate_cs 21_load: applied, 3240 rows
+{"post_all": "131904c2de6b687c14ff4d68ccaea531"}
+== pass 2
+reset: 3243|a9af05ee01c9f8d4be6054b27f48bfb8 (want 3243|a9af05ee01c9f8d4be6054b27f48bfb8)
+3243 -> 3240: delete 9, in place 12, new 6; expected md5 131904c2de6b687c14ff4d68ccaea531
+20_precheck.sql 33039 bytes
+21_load.sql 57002 bytes
+91_rollback.sql 34329 bytes
+-- precheck before:
+rows max_ord kb_n all_md5 touched_ok new_ids_there
+3243 3242 3243 a9af05ee01c9f8d4be6054b27f48bfb8 21 0
+(1 row)
+-- load:
+psql:promotion/21_load.sql:99: NOTICE:  consolidate_cs 21_load: applied, 3240 rows
+-- load again:
+psql:promotion/21_load.sql:99: NOTICE:  consolidate_cs 21_load: already applied, nothing changed
+-- precheck after:
+rows max_ord kb_n all_md5 touched_ok new_ids_there
+3240 3239 3240 131904c2de6b687c14ff4d68ccaea531 0 6
+(1 row)
+3240|{"app": 238, "osha": 278, "field": 2724}
+0
+loaded rows = work/after_rows.jsonl (what the free check and the ai-next overlay used): True 3240 3240
+-- rollback:
+psql:promotion/91_rollback.sql:32: NOTICE:  consolidate_cs 91_rollback: done, 3243 rows
+after rollback (want 3243|a9af05ee01c9f8d4be6054b27f48bfb8): 3243|a9af05ee01c9f8d4be6054b27f48bfb8
+3243|{"app": 238, "osha": 278, "field": 2727}
+-- rollback again:
+psql:promotion/91_rollback.sql:32: NOTICE:  consolidate_cs 91_rollback: already rolled back (or never applied), nothing changed
+-- guard: one live row changed -> load must refuse, nothing changed
+FAIL: library is not the live state this was built on 
+rows still: 3243
+reset: 3243|a9af05ee01c9f8d4be6054b27f48bfb8 (want 3243|a9af05ee01c9f8d4be6054b27f48bfb8)
+-- guard: rollback on a changed result -> must refuse
+FAIL: the library is not in the state 21_load.sql leaves 
+rows still: 3240
+reset: 3243|a9af05ee01c9f8d4be6054b27f48bfb8 (want 3243|a9af05ee01c9f8d4be6054b27f48bfb8)
+-- constraints on the local copy:
+kb_chunks_chunk_check kb_chunks_lib_check kb_chunks_ord_check kb_chunks_pkey kb_chunks_version_fkey 

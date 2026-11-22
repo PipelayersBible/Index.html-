@@ -1,0 +1,261 @@
+# build_cards.py (library_consolidate_cs_nov21, Nov 21 2026): confined space consolidation (same design as library_consolidate_nov21).
+# Run: python3 cards/build_cards.py -> cards/consolidate_cs.jsonl (+ report). Promotion SQL is made by tools/mk_sql.py.
+# Base: LIVE library b3e91f6c47d2, 3,243 rows, md5 a9af05ee... (work/live_rows_3243.json). Facts come from live cards unless marked
+# "read 2026-11-21" (new reads: OSHSB rulemaking page + OAL-approved text for 8 CCR 1951-1960; WAC 296-809-099 (2024 archive);
+# MOSH adoption page for Subpart AA; MOSH Maryland-specific page; MIOSHA confined spaces page).
+import sys, os
+sys.path.insert(0, '/home/claude/index.html-/tests/staged/library_arch_nov20')
+from lib_kb import Batch
+HERE = os.path.dirname(os.path.abspath(__file__))
+B = Batch('consolidate_cs', out_dir=HERE)
+ECFR = 'https://www.ecfr.gov/current/title-29/subtitle-B/chapter-XVII/part-1926/subpart-AA'
+ED = 'eCFR current text, read 2026-11-20'
+
+# ------------------------------------------------------------------ national cards, one per sub-topic
+B.add(id='osha-pl-cs-scope-1', state='US', tier='core', supersedes='osha-pl-cs-scope-1',
+      title='When the construction confined space rule applies, and when it does not',
+      topic='Confined space rules (OSHA Subpart AA)',
+      text=('29 CFR 1926 Subpart AA (1926.1201 to 1926.1213, in effect since August 3, 2015) protects employees doing construction work at a '
+            'site with one or more confined spaces. The rule\'s own examples include manholes, sewers, storm drains, pits, vaults, tanks, lift '
+            'stations and pipe; on utility jobs manholes, vaults, wet wells and large pipes are typically confined spaces, and sewer manholes are '
+            'usually permit spaces because of hydrogen sulfide, methane and low oxygen. It does not apply to construction work regulated by '
+            'Subpart P (excavations), Subpart S (underground construction, caissons, cofferdams and compressed air) or Subpart Y (diving) '
+            '(1926.1201(b)). So an open trench is under the excavation rule, but a manhole, a vault or the inside of a pipe is a confined space '
+            'even when it sits in an excavation. Where another OSHA rule also covers a hazard in the space, follow both (1926.1201(c)). Maintenance '
+            'work that is not construction is under the general industry rule, 29 CFR 1910.146. Before any entry use the company\'s written program '
+            'and the app\'s confined space permit. A state with its own OSHA plan may have its own rule: see the confined space state tables.'),
+      source='29 CFR 1926.1201(a)-(c); OSHA Confined Spaces in Construction FAQ', url=ECFR, checked='2026-11-20', edition=ED,
+      confidence='high', kind='summary', license='gov-us',
+      note='Takes in confined-space-silica-1 (retired: the plain overview; its program items are in osha-pl-cs-first-steps-1 / -program-1).')
+
+B.add(id='osha-pl-cs-air-1', state='US', tier='core',
+      title='Confined space air limits for manhole and vault entry: oxygen, LEL, hydrogen sulfide (H2S) and carbon monoxide (CO)',
+      topic='Confined space rules (OSHA Subpart AA)',
+      text=('Air limits for a permit space under the construction rule (29 CFR 1926.1202, hazardous atmosphere): oxygen below 19.5 percent is '
+            'deficient and above 23.5 percent is enriched (a fire hazard); flammable gas, vapor or mist over 10 percent of its lower flammable limit '
+            '(LFL, also called LEL); combustible dust at or above its LFL; any substance above its OSHA permissible exposure limit; or anything '
+            'immediately dangerous to life or health. Subpart AA sets no H2S or CO number; the exposure limit tables do: H2S 10 ppm 8-hour average '
+            '(1926.55 Appendix A), CO 50 ppm (federal construction PEL; NIOSH recommends 35 ppm, which most monitor alarms use). NIOSH IDLH: H2S '
+            '100 ppm, CO 1,200 ppm. App permit defaults: O2 19.5 to 23.5 percent, LEL 10 percent, H2S 10 ppm, CO 25 ppm (stricter than federal); a '
+            'state plan or company program may be stricter. An open excavation uses 20 percent of the LFL (1926.651(g)(1)(iii)); a confined space, 10 '
+            'percent. These numbers do not by themselves make a space safe: the entry supervisor signs only when testing at all levels, ventilation, '
+            'attendant, communication, retrieval and rescue are in place.'),
+      source='29 CFR 1926.1202 (hazardous atmosphere); 1926.651(g)(1)(iii); 1926.55 Appendix A; NIOSH Pocket Guide; app permit defaults r15.95',
+      url='https://www.osha.gov/laws-regs/regulations/standardnumber/1926/1926.1202', checked='2026-11-20', edition=ED,
+      confidence='high', kind='summary', license='gov-us',
+      note='Takes in confined-space-field-numbers-1 (retired). Its state numbers (15 ppm / 50 ppm H2S, 25 ppm CO PEL) are in sp-ca-confined-air-1.')
+
+B.add(id='osha-pl-cs-monitor-1', state='US', tier='core', supersedes='osha-pl-cs-monitor-1',
+      title='Working in a live sewer that could flood: OSHA early-warning system, air testing order, continuous monitoring',
+      topic='Confined space rules (OSHA Subpart AA)',
+      text=('29 CFR 1926.1204(e). Test from outside before entry with a calibrated, bump-tested direct-reading meter, in this order: "oxygen first, '
+            'then combustible gases and vapors, then toxic gases and vapors" ((e)(3); the LEL sensor needs oxygen to read right; 1910.146(d)(5)(iii) '
+            'is the same). Test top, middle and bottom: H2S and CO2 settle low, methane rises. Then monitor continuously where entrants work, or '
+            'periodically if continuous equipment is not commercially available or periodic is shown to be enough ((e)(2)). Ventilate with fresh air; '
+            'get out at once on an alarm. Entrants may watch the testing, get a re-test on request and get the results right away ((e)(4) to (e)(6)). A '
+            'sewer that cannot be isolated: test to the extent feasible and use an early-warning system that watches for engulfment and alerts '
+            'entrants and attendants in time to get out ((e)(1)). Log readings on the permit at its interval; the app blocks check-in until a fresh '
+            'good test is logged.'),
+      source='29 CFR 1926.1204(e)(1)-(6); 1926.1202; 1910.146(d)(5)', url='https://www.law.cornell.edu/cfr/text/29/1926.1204',
+      checked='2026-11-20', edition=ED, confidence='high', kind='summary', license='gov-us',
+      note='Takes in confined-space-field-numbers-2 and confined-space-silica-2 (retired). The state test-order cite (8 CCR 1953(a)(5)) is in sp-ca-confined-1.')
+
+B.add(id='osha-pl-cs-permit-1', state='US', tier='core', supersedes='osha-pl-cs-permit-1',
+      title='The entry permit: the 16 items and how long to keep it',
+      topic='Confined space rules (OSHA Subpart AA)',
+      text=('29 CFR 1926.1206 lists what the permit identifies: (a) the space; (b) the purpose of entry; (c) the date and authorized duration; (d) '
+            'the entrants, by name or by a roster or tracking system; (e) how a rise in air hazard is detected if ventilation stops; (f) each attendant '
+            'by name; (g) each entry supervisor by name, with the signature or initials of each supervisor who authorizes entry; (h) the hazards of '
+            'the space; (i) the isolation and control measures; (j) the acceptable entry conditions; (k) test results with the tester\'s name or '
+            'initials and when; (l) rescue and emergency services and how to summon them; (m) communication procedures; (n) equipment: PPE, testing, '
+            'communications, alarms, rescue; (o) other information needed for safety; (p) other permits, such as hot work. The supervisor signs before '
+            'entry and "The entry employer must retain each canceled entry permit for at least 1 year" (1926.1205(b), (f)); the permit process card '
+            'has posting, duration, cancel or suspend and problems noted.'),
+      source='29 CFR 1926.1205(b), (f); 1926.1206(a)-(p)', url='https://www.law.cornell.edu/cfr/text/29/1926.1206',
+      checked='2026-11-20', edition=ED, confidence='high', kind='summary', license='gov-us',
+      note='The 1926.1205 process sentences moved to osha-pl-cs-permit-keep-1.')
+
+B.add(id='osha-pl-cs-permit-keep-1', state='US', tier='core',
+      title='Confined space permit process: sign before entry, post it, cancel or suspend, keep canceled permits 1 year',
+      topic='Confined space rules (OSHA Subpart AA)',
+      text=('29 CFR 1926.1205. The entry employer documents the measures on a permit (a); the entry supervisor named on it signs before entry (b). '
+            'It is available to entrants at entry, posted at the portal or an equally effective way (c), for no longer than the task needs (d). The '
+            'supervisor cancels it when the work is done, or suspends or cancels it and fully reassesses before re-entry when a temporary condition not '
+            'allowed arises; any other such condition means cancel (e). "The entry employer must retain each canceled entry permit for at least 1 '
+            'year", with problems met noted on it so the program can be fixed (f); the program review uses them within 1 year after each '
+            'entry; one yearly review can cover all (1926.1204(n)). Entry is any body part breaking the plane of the opening (1926.1202): a head in a '
+            'manhole counts. The app keeps every closed permit in Records. A new condition (alarm, weather, new hazard): out, cancel, re-evaluate.'),
+      source='29 CFR 1926.1205(a)-(f); 1926.1204(n); 1926.1202 (entry)', url='https://www.osha.gov/laws-regs/regulations/standardnumber/1926/1926.1205',
+      checked='2026-11-21', edition='29 CFR 1926.1205 as in the library\'s verbatim text (eCFR, read 2026-11-20)', confidence='high', kind='summary', license='gov-us',
+      note='Takes in confined-space-field-numbers-4 (retired) and the 1205 sentences of osha-pl-cs-permit-1.')
+
+B.add(id='osha-pl-cs-retrieval-1', state='US', tier='core',
+      title='Confined space retrieval: harness, line, and a mechanical device for vertical spaces over 5 ft (non-entry rescue)',
+      topic='Confined space rules (OSHA Subpart AA)',
+      text=('29 CFR 1926.1211(c): "Non-entry rescue is required unless the retrieval equipment would increase the overall risk of entry or would '
+            'not contribute to the rescue of the entrant." Otherwise the employer designates an entry rescue service; with non-entry rescue it confirms '
+            'before entry that help is available if it fails. Each entrant wears a chest or full body harness, line at the center of the back near '
+            'shoulder level or above the head (wristlets or anklets only if a harness is infeasible or more hazardous). The other end goes to a '
+            'mechanical device or fixed point outside, and "A mechanical device must be available to retrieve personnel from vertical type permit '
+            'spaces more than 5 feet (1.52 meters) deep": a tripod and winch or davit, so every manhole and most vaults. No lines that could tangle. '
+            'The attendant stays outside and does non-entry rescue only (1926.1209(d), (i)); a trained team does entry rescue. No retrieval set up, '
+            'no entry.'),
+      source='29 CFR 1926.1211(c)(1)-(3); 1926.1209(d), (i), (j)', url='https://www.osha.gov/laws-regs/regulations/standardnumber/1926/1926.1211',
+      checked='2026-11-21', edition='29 CFR 1926.1211 as in the library\'s verbatim text (eCFR, read 2026-11-20)', confidence='high', kind='summary', license='gov-us',
+      note='Takes in confined-space-field-numbers-3 (retired) and the retrieval half of osha-pl-cs-rescue-1.')
+
+B.add(id='osha-pl-cs-rescue-1', state='US', tier='core', supersedes='osha-pl-cs-rescue-1',
+      title='Confined space rescue: rescue has to be arranged before entry; 911 alone is not a plan',
+      topic='Confined space rules (OSHA Subpart AA)',
+      text=('29 CFR 1926.1211(a): an employer who names an outside rescue service (fire department, contract team) first evaluates whether it can '
+            'respond in a timely manner for this space\'s hazards and can rescue from this type of space (a vertical manhole, a deep wet well); picks '
+            'one that can; tells it the hazards; gives it access to plan and practice; and has it agree to say right away when it is unavailable. '
+            'OSHA\'s Appendix F to 1910.146: posting the number or relying on 911 at the time of an emergency does not comply, so 911 is not a plan '
+            'unless that service was evaluated and agreed. (b) An own rescue team: PPE, training, first aid and CPR (one member certified), a practice '
+            'rescue every 12 months. (d) The SDS for any substance an injured entrant met goes to the medical facility. In practice: call the station '
+            'before the job, confirm confined space rescue and response time, write it on the permit, keep retrieval set up, know the address and cross '
+            'street (the app\'s EMERGENCY button shows a script). If they cannot respond in time, entry waits.'),
+      source='29 CFR 1926.1211(a), (b), (d); 1910.146 Appendix F', url=ECFR, checked='2026-11-21', edition=ED,
+      confidence='high', kind='summary', license='gov-us',
+      note='Takes in confined-space-field-numbers-5 (retired). Retrieval detail moved to osha-pl-cs-retrieval-1; the state rescue section (8 CCR 1960) is in the state cards.')
+
+B.add(id='osha-pl-cs-altproc-1', state='US', tier='core', supersedes='osha-pl-cs-altproc-1',
+      title='Alternate procedures: ventilation-only entry into a permit space, and when it is not allowed',
+      topic='Confined space rules (OSHA Subpart AA)',
+      text=('29 CFR 1926.1203(e)(1): alternate procedures (no full permit) only when the employer shows all physical hazards are eliminated or '
+            'isolated so the only hazard is the atmosphere, and continuous forced air ventilation alone keeps the space safe, backed by documented '
+            'monitoring data available to entrants; an entry to get that data is a full permit entry. (e)(2): make it safe to open the cover and guard '
+            'the opening; test before entry "for oxygen content, for flammable gases and vapors, and for potential toxic air contaminants, in that '
+            'order"; no hazardous atmosphere while anyone is inside; forced air at the work area from a clean source, from before entry until all are '
+            'out; continuous monitoring (periodic only under the exception); all out at once on a hazard; safe access; a written certification (date, '
+            'location, signature) at the entrance. Any engulfment, machinery, electrical or other physical hazard, such as sewer flow that can surge, '
+            'means a full permit. The entry supervisor and the company program decide; Ask does not.'),
+      source='29 CFR 1926.1203(e)(1)-(2)', url=ECFR, checked='2026-11-20', edition=ED, confidence='high', kind='summary', license='gov-us',
+      note='Takes in confined-space-field-numbers-6 (retired). The reclassification sentence moved to osha-pl-cs-reclass-1.')
+
+B.add(id='osha-pl-cs-reclass-1', state='US', tier='core',
+      title='Reclassifying a permit space as non-permit (and back): what the competent person must find and write down',
+      topic='Confined space rules (OSHA Subpart AA)',
+      text=('29 CFR 1926.1203(g): a permit space may be reclassified as a non-permit confined space only when a competent person determines that '
+            'the space has no actual or potential atmospheric hazard and every hazard in it is eliminated or isolated without entry (unless that is '
+            'shown infeasible), and only while they stay that way. An entry needed to eliminate or isolate them is a full permit entry. Forced air '
+            'ventilation does not count as eliminating or isolating a hazard (ventilation-only entry is 1203(e), not a reclassification). The basis '
+            'is documented in a certification with the date, the location of the space and the signature of the person deciding, available to each '
+            'entrant (g)(3). If hazards arise, everyone exits and the space is re-evaluated and reclassified as a permit space as needed (g)(4). The '
+            'other way: when use or configuration changes might increase the hazards, or the first evaluation may have been inadequate, a competent '
+            'person re-evaluates the non-permit space and reclassifies it if necessary (1203(f)).'),
+      source='29 CFR 1926.1203(f), (g)(1)-(4)', url=ECFR, checked='2026-11-21',
+      edition='29 CFR 1926.1203 as in the library\'s verbatim text (eCFR, read 2026-11-20)', confidence='high', kind='summary', license='gov-us',
+      note='New: reclassification on its own card (was one sentence of osha-pl-cs-altproc-1).')
+
+# ------------------------------------------------------------------ which states follow federal (tables)
+B.add(id='osha-pl-cs-states-1', state='US', tier='core',
+      title='Does my state follow the federal confined space rule? States where federal OSHA\'s Subpart AA applies to private crews',
+      topic='Confined space rules: which states follow federal OSHA',
+      text=('Where a state has no state OSHA plan for private employers, federal OSHA covers private construction crews and its confined space in '
+            'construction rule, 29 CFR 1926 Subpart AA, applies with no state difference: the same air limits, the 16 permit items, the attendant, '
+            'rescue and retrieval rules and the 1 year permit retention. Use only the line for the job\'s state. Federal rule, no state OSHA plan '
+            '(OSHA list of State Plans): Alabama, Arkansas, Colorado, Delaware, District of Columbia, Florida, Georgia, Idaho, Kansas, Louisiana, '
+            'Mississippi, Missouri, Montana, Nebraska, New Hampshire, North Dakota, Ohio, Oklahoma, Pennsylvania, Rhode Island, South Dakota, Texas, '
+            'West Virginia, Wisconsin. Federal rule for private crews, state plan for public employees only: Connecticut, Illinois, Maine, '
+            'Massachusetts, New Jersey, New York (a city\'s or district\'s own employees on the same job are under the state plan). In these states '
+            'there is no separate state confined space rule for private crews in the library. The other 21 states run their own plan for private '
+            'crews (see the state-plan confined space table).'),
+      source='29 CFR 1926 Subpart AA; OSHA State Plans list (osha.gov/stateplans), read 2026-11-20', url='https://www.osha.gov/stateplans',
+      checked='2026-11-21', edition='29 CFR 1926 Subpart AA as in effect Nov 2026; OSHA State Plans list read 2026-11-20',
+      confidence='medium', kind='summary', license='gov-us')
+B.add(id='osha-pl-cs-states-2', state='US', tier='core',
+      title='State OSHA plans and confined space: which plan states use federal Subpart AA, which have their own rule',
+      topic='Confined space rules: which states follow federal OSHA',
+      text=('Twenty-one states run their own OSHA plan for private construction crews. A plan must be at least as effective as federal OSHA\'s '
+            'confined space in construction rule (29 CFR 1926 Subpart AA) and may be stricter, so name the plan as the source. Use only the line for '
+            'the job\'s state. As checked by 2026-11-21. Uses the federal rule: Alaska (8 AAC 61.1010(c)), Maryland (by reference from January 2, '
+            '2017; a MOSH supplement is listed, text not read, not confirmed), Michigan (Part 35, except as amended), Minnesota (old state rule '
+            'repealed), New Mexico, Tennessee, Utah, Virginia (from January 1, 2016). Not on the plan\'s unique list, so taken as federal: Arizona, '
+            'Nevada, North Carolina, Hawaii (not confirmed). Own rule, each has its own card: California (8 CCR 1950 to 1962, amended January 1, '
+            '2026, stricter CO limit), Washington (chapter 296-809, all industries), Oregon (437-002-0146; supervisor signs, not initials). Not '
+            'checked: Indiana, Kentucky, South Carolina, Iowa, Vermont, Wyoming: federal Subpart AA is the floor; ask the state plan.'),
+      source='osha.gov/stateplans; 8 AAC 61.1010(c); MIOSHA Part 35 R 408.43510; Minn. R. 5207.0300 (repealed); MOSH Subpart AA adoption page; each state card',
+      url='https://www.osha.gov/stateplans', checked='2026-11-21', edition='State plan rules as read 2026-11-19 to 2026-11-21',
+      confidence='medium', kind='summary', license='gov-us', unconfirmed='yes',
+      note='Built from the sp-<st>-who-1 / sp-<st>-confined-* cards; Maryland from the MOSH adoption page read 2026-11-21.')
+
+# ------------------------------------------------------------------ California exception cards
+B.add(id='sp-ca-confined-1', state='CA', tier='core', supersedes='sp-ca-confined-1',
+      title='California confined space rule for construction (8 CCR 1950 to 1962, Article 37), not federal Subpart AA',
+      topic='State safety plan: confined space',
+      text=('California\'s construction confined space rule is 8 CCR 1950 to 1962 (Article 37), in effect since December 30, 2015, amended '
+            'January 1, 2026 (see the 2026 card). It mirrors federal Subpart AA: 1951 definitions, 1952 general requirements, 1953 program, 1954 '
+            'permitting, 1955 permit, 1956 training, 1957 to 1959 entrant, attendant and supervisor duties, 1960 rescue. The 1955(a) permit items are '
+            'the same 16 as 1926.1206; supervisor signs before entry (1954(b)), permit available at entry (1954(c)), kept 1 year (1954(f)). Test from '
+            'outside: oxygen, flammable, toxic (1953(a)(5)(C)); monitor continuously unless periodic is shown enough (1953(a)(5)(B)); a sewer gets '
+            'continuous monitoring and an engulfment early warning (1953(a)(5)(A)). Not for Article 6 excavations, tunnels, diving or pressurized work '
+            '(1950(b)); its note lists manholes, sewers, tanks and vaults. Maintenance (not construction) is 8 CCR 5157; 5158 was the construction rule '
+            'before 2015. CO and H2S limits are stricter than federal (air limits card).'),
+      source='8 CCR 1950(a)-(c), 1951-1960, 1953(a)(5), 1954, 1955; 8 CCR 5156(b), 5157, 5158', url='https://www.dir.ca.gov/Title8/1950.html',
+      checked='2026-11-20', edition='Title 8 CCR Article 37 operative 12-30-2015 (Register 2016, No. 1); permit cites read 2026-11-19, 1950 read 2026-11-20',
+      effective='2015-12-30', confidence='high', kind='summary', license='gov-state',
+      note='Takes in ca-cal-osha-trench-and-confined-4 (retired: the same Article 37 summary) and the Cal/OSHA cites of the retired confined-space-field-numbers cards.')
+B.add(id='sp-ca-confined-2026-1', state='CA', tier='core', supersedes='sp-ca-confined-2026-1',
+      title='California confined space changes from January 1, 2026: site survey, testing, inerting and rescue at the site',
+      topic='State safety plan: confined space',
+      text=('California amended 8 CCR 1951, 1952, 1953, 1955, 1956 and 1960 (and 5156) effective January 1, 2026 (filed November 4, 2025). Text '
+            'approved by OAL (read 2026-11-21): a competent person must "conduct an initial survey of its work area for confined spaces existing at the '
+            'time work begins" (1952(a)(1)) and inspect often enough to find new ones (1952(a)(2)); evaluation includes testing (1952(a)(4)); if '
+            'flammables cannot be brought under 10 percent LFL, entry only after inerting, with PPE (1953(a)(3)(D)); the permit says how to summon '
+            'rescue and emergency medical services (1955(a)(12)); and "the rescue services at the site are trained, immediately available, properly '
+            'equipped" (1960(a)), with a note on a standby person able to rescue at once. Federal 1926.1211(a) accepts an evaluated service that can '
+            'respond in a timely manner: follow California\'s stricter wording. Which words are new is not confirmed from the text (no underline); the '
+            'Final Statement of Reasons (2025-09-18) shows no permit item change.'),
+      source='OSHSB rulemaking Confined Spaces in Construction: Text Approved by OAL; Final Statement of Reasons updated 2025-09-18; 8 CCR 1952, 1953, 1955, 1960',
+      url='https://dir.ca.gov/OSHSB/documents/Confined-Spaces-in-Construction-OAL-Changes-Text.pdf', checked='2026-11-21',
+      edition='Amendments effective 2026-01-01, filed 2025-11-04', effective='2026-01-01', confidence='medium', kind='summary', license='gov-state',
+      unconfirmed='yes', note='Rewritten from the OAL-approved text (read 2026-11-21); keeps every fact of the FSOR-based card.')
+B.add(id='sp-ca-confined-air-1', state='CA', tier='core', supersedes='ca-cal-osha-trench-and-confined-3',
+      title='California confined space air limits: Cal/OSHA CO 25 ppm and H2S 10 / 15 / 50 ppm (8 CCR 5155), stricter than federal',
+      topic='State safety plan: confined space',
+      text=('California\'s permissible exposure limits (Title 8 section 5155, Table AC-1) are stricter than federal for gases crews meet in manholes '
+            'and vaults. Carbon monoxide: Cal/OSHA PEL 25 ppm 8-hour average with a 200 ppm ceiling (federal construction PEL 50 ppm; NIOSH REL 35 '
+            'ppm, which many monitors use as the alarm). Hydrogen sulfide: Cal/OSHA 10 ppm 8-hour average, 15 ppm short-term (15-minute) limit, and a '
+            '50 ppm ceiling never to be exceeded; federal construction 10 ppm. Carbon dioxide: 5,000 ppm PEL, 30,000 ppm STEL. The confined space '
+            'limits are the same in both systems: oxygen 19.5 to 23.5 percent and 10 percent of the LEL. The app\'s permit defaults (O2 19.5-23.5, '
+            'LEL 10, H2S 10, CO 25) already use this CO limit everywhere; a company program may set stricter limits, and 15 ppm H2S is a 15-minute '
+            'limit, not a working level. None of this is a go/no-go: the entry supervisor and the company program decide.'),
+      source='8 CCR 5155 Table AC-1 (carbon monoxide, hydrogen sulfide, carbon dioxide rows); 29 CFR 1926.55 Appendix A; NIOSH Pocket Guide',
+      url='https://www.dir.ca.gov/Title8/5155.html', checked='2026-11-20', edition='Title 8 section 5155 as posted on dir.ca.gov',
+      confidence='high', kind='summary', license='gov-state',
+      note='Same facts as ca-cal-osha-trench-and-confined-3 (this ord), now a CA state card (state field, title starts with the state).')
+
+# ------------------------------------------------------------------ Washington, Michigan
+B.add(id='sp-wa-confined-1', state='WA', tier='core', supersedes='sp-wa-confined-1',
+      title='Washington confined space rule (chapter 296-809 WAC): one rule for all industries',
+      topic='State safety plan: confined space',
+      text=('Washington has one confined space rule for all industries, chapter 296-809 WAC, instead of the federal construction rule; OSHA\'s '
+            'adoption table lists it as different but at least as effective. Air numbers match federal: flammables over 10 percent of the LFL or LEL, '
+            'oxygen below 19.5 or above 23.5 percent (296-809-099). Its definitions add: any physical hazard (electrical shock, moving parts) makes a '
+            'space permit-required; where the opening is big enough to fully enter, a permit is needed even for partial body entry; excavations and '
+            'pits are among its examples. Permit (read 2026-11-19): the same 15 items as the federal general industry list, in another order '
+            '(296-809-50004), with equipment to detect a rise in hazard if ventilation stops (federal construction item (e)); available at entry '
+            '(50002(5)); problems noted on it (50002(7)); kept 1 year (50006(2)). Air is tested with a calibrated, direct-reading instrument '
+            '(60004(3)(a)). The app\'s permit form covers these items.'),
+      source='WAC 296-809-099 (WSR 18-02-071, eff. 2/5/18), 296-809-50002, 296-809-50004, 296-809-50006, 296-809-60004',
+      url='https://lawfilesext.leg.wa.gov/Law/WACArchive/2024/htm/WAC%20296%20-809%20%20CHAPTER/WAC%20296%20-809%20-099.htm', checked='2026-11-21',
+      edition='Chapter 296-809 WAC: permit sections read 2026-11-19; 296-809-099 as archived 2024, read 2026-11-21', confidence='medium',
+      kind='summary', license='gov-state', note='Adds the 296-809-099 definitions (read 2026-11-21). "Not re-read on 2026-11-20" replaced by the dates in edition.')
+B.add(id='sp-mi-confined-2', state='MI', tier='core', supersedes='sp-mi-confined-2',
+      title='Michigan confined space in construction: MIOSHA Part 35 adopts the federal rule',
+      topic='State safety plan: confined space',
+      text=('Michigan\'s Construction Safety Standard Part 35, Confined Space in Construction, adopts 29 CFR 1926.1202 (definitions) through '
+            '1926.1212 (employee participation) by reference, except as amended in the rules (R 408.43510, via the scope rule R 408.43501(4)). That '
+            'includes the federal permit items in 1926.1206, so a federal-style entry permit covers Michigan. Part 35 does not apply to work covered '
+            'by Part 9 (excavation, trenching and shoring), Part 14 (tunnels, shafts, caissons, cofferdams), Part 504 (diving) or Part 665 '
+            '(underground construction and compressed air); where another standard also covers a confined space hazard, both apply (R 408.43501(2), '
+            '(3)). Part 35 has three rules: scope, provision of documents, and adopted standards. Work that is not construction (an owner\'s plant or '
+            'utility staff) falls under MIOSHA\'s general industry rule, which MIOSHA lists as Part 90, Permit-Required Confined Spaces (read '
+            '2026-11-21; its text was not read here).'),
+      source='Mich. Admin. Code R 408.43501, R 408.43505, R 408.43510 (MIOSHA Part 35); MIOSHA confined spaces page',
+      url='https://www.law.cornell.edu/regulations/michigan/Mich-Admin-Code-R-408-43501', checked='2026-11-21',
+      edition='Part 35 as posted by Cornell LII, read 2026-11-20; MIOSHA page read 2026-11-21', confidence='medium', kind='summary', license='gov-state',
+      note='Adds the Part 90 pointer (MIOSHA page read 2026-11-21).')
+
+B.write()

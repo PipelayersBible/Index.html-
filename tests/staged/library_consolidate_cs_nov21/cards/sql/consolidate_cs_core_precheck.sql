@@ -1,0 +1,5 @@
+-- consolidate_cs_core_precheck.sql: SELECT only. Expect already_there = 0 (first run), to_replace_found = 10, and rows = max_ord + 1.
+select (select count(*) from pb_ai.kb_chunks where version = 'b3e91f6c47d2' and chunk->>'id' in ('osha-pl-cs-scope-1', 'osha-pl-cs-air-1', 'osha-pl-cs-monitor-1', 'osha-pl-cs-permit-1', 'osha-pl-cs-permit-keep-1', 'osha-pl-cs-retrieval-1', 'osha-pl-cs-rescue-1', 'osha-pl-cs-altproc-1', 'osha-pl-cs-reclass-1', 'osha-pl-cs-states-1', 'osha-pl-cs-states-2', 'sp-ca-confined-1', 'sp-ca-confined-2026-1', 'sp-ca-confined-air-1', 'sp-wa-confined-1', 'sp-mi-confined-2')) as already_there,
+       (select count(*) from pb_ai.kb_chunks where version = 'b3e91f6c47d2' and chunk->>'id' in ('osha-pl-cs-scope-1', 'osha-pl-cs-monitor-1', 'osha-pl-cs-permit-1', 'osha-pl-cs-rescue-1', 'osha-pl-cs-altproc-1', 'sp-ca-confined-1', 'sp-ca-confined-2026-1', 'ca-cal-osha-trench-and-confined-3', 'sp-wa-confined-1', 'sp-mi-confined-2')) as to_replace_found,
+       (select count(*) from pb_ai.kb_chunks where version = 'b3e91f6c47d2') as rows,
+       (select max(ord) from pb_ai.kb_chunks where version = 'b3e91f6c47d2') as max_ord;

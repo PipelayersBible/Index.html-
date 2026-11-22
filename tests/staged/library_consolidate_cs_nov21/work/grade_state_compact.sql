@@ -1,0 +1,3 @@
+-- grade_state_compact.sql: SELECT only. Grades run 1121-cs-state on the server (facts by the case's must regex, wrong state = names another state, words <= 110).
+-- The must patterns are the same as cases_cs.jsonl (built server-side by id). Used Nov 21.
+-- (Text as run: see the query in the job's transcript; identical logic to tools/grade_sql.py.)

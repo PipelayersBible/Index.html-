@@ -1,0 +1,44 @@
+--- ../../library_consolidate_nov21/work/src_live/state.ts	2026-11-21 18:04:52.571816393 -0800
++++ src_cs_live/state.ts	2026-11-21 18:56:16.530019770 -0800
+@@ -216,6 +216,13 @@
+ export const TRENCH_TOPIC = /\b(trench(es|ing)?|excavat(e|es|ed|ing|ions?)|shor(e|ed|ing)|shields?|trench box(es)?|cave-?ins?|protective systems?)\b/i;
+ export const DIG_TOPIC = /\b(811|one[- ]?call|locates?|locate (ticket|request|marks?)|locators?|dig ?(ticket|law|alert)|tickets?|tolerance zone|hand[- ]?dig\w*|white[- ]?lin\w*|positive response|call before you dig|blue ?stakes?|miss ?dig|miss utility|gopher state|julie|sunshine ?811|diggers hotline|okie ?811|dig ?safe|utility marks?)\b/i;
+ const TRENCH_TABLES = ["osha-pl-trench-states-1", "osha-pl-trench-states-2"];
++// consolidate_cs (Nov 21): confined space questions carry the job state's confined space card (if any) and the state table card.
++export const CS_TOPIC = /\b(confined[- ]spaces?|permit[- ]required|permit[- ]spaces?|entry permits?|entrants?|entry supervisors?|attendants?|(4|four)[- ]gas|gas (monitor|meter|detector)s?|subpart aa|1926\.12\d\d|1910\.146)\b/i;
++const CS_SPACE = /\b(manholes?|vaults?|wet ?wells?|lift stations?|sewers?|tanks?|pits?|culverts?|large pipes?|inside (the|a) pipe)\b/i;
++const CS_ACT = /\b(enter\w*|entry|go(ing)? (in|into|down)|get(ting)? (in|into|down)|climb\w*|inside|lel|lfl|o2|oxygen|h2s|hydrogen sulfide|carbon monoxide|co (level|limit|reading)s?|gas|air (in|inside)|atmospher\w*|ventilat\w*|blower|rescue|retrieval|tripod|winch|harness|911)\b/i;
++const CS_GAS = /\b(lel|lfl|o2|oxygen|h2s|hydrogen sulfide)\b/i, CS_ENTER = /\b(enter\w*|entry|go(ing)? (in|down)|get(ting)? in)\b/i;
++export const csTopic = (q) => CS_TOPIC.test(q) || (CS_SPACE.test(q) && CS_ACT.test(q)) || (CS_GAS.test(q) && CS_ENTER.test(q));
++const CS_TABLES = ["osha-pl-cs-states-1", "osha-pl-cs-states-2"];
+ const DIG_TABLES = [["fed-811-zone-1", /\b(tolerance|hand[- ]?dig\w*|how close|caution zone|inch(es)?|vacuum|pothol\w*|soft dig\w*|by hand)\b/i],
+   ["fed-811-ticketlife-1", /\b(good for|expir\w*|valid|ticket life|last(s)?|renew\w*|updat\w*|extend\w*|refresh\w*|how many days .*ticket)\b/i],
+   ["fed-811-wait-1", /\b(wait\w*|how (long|soon)|before (i|we|you) (can )?dig|when can|notice|ahead|hours|working days|business days|start digging)\b/i]];
+@@ -241,6 +248,14 @@
+       if (t && new RegExp(`\\b${name}\\b`).test(t.text.replace(/West Virginia/g, code === "WV" ? "West Virginia" : ""))) { outC.push(t); break; }
+     }
+   }
++  if (csTopic(q)) {
++    const re = new RegExp(`^sp-${lc}-confined`);
++    if (!has(re)) { const h = best(re, "confined space permit entry"); h && outC.push({ ...h, score: Math.max(h.score, sc), exc: !0 }); }
++    for (const id of CS_TABLES) {
++      const t = docHit(index, id, sc, !1);
++      if (t && new RegExp(`\\b${name}\\b`).test(t.text.replace(/West Virginia/g, code === "WV" ? "West Virginia" : ""))) { outC.push(t); break; }
++    }
++  }
+   if (DIG_TOPIC.test(q)) {
+     const re = code === "CA" ? /^(dig-ca-|ca-dig-alert-)/ : new RegExp(`^dig-${lc}-(?!locatable)`);
+     if (!has(re)) { const h = best(re, "811 dig law ticket"); h && outC.push({ ...h, score: Math.max(h.score, sc), exc: !0 }); }
+@@ -258,6 +273,12 @@
+ // States whose own OSHA plan covers private-sector crews (osha.gov/stateplans, read 2026-11-20 by ask_nationwide_nov20).
+ export const PLAN_STATES = "AK AZ CA HI IN IA KY MD MI MN NV NM NC OR SC TN UT VT VA WA WY".split(" ");
+ // The lines the model reads. Short, and the same words every time.
++// consolidate_cs (Nov 21): business-analysis answers skip stateLines and the reply rule; when the job state is known they still must not
++// name or compare other states (the excerpts can hold a by-state table card).
++export function analysisStateLine(st) {
++  const code = st?.code;
++  return code ? `JOB STATE: ${US_STATES[code]} (${code}). If the answer uses any rule or legal number from the excerpts, give only ${US_STATES[code]}'s, from its own line; never name another state, give another state's number or compare with other states, "elsewhere" or "most states".` : "";
++}
+ export function stateLines(st, dependent, own) {
+   const code = st?.code, name = code ? US_STATES[code] : "";
+   if (code) {
