@@ -26,6 +26,7 @@ firstweek_web_nov22/patches/03_login_trial_link.py
 firstweek_web_nov22/patches/04_in_use_msg.py
 firstweek_web_nov22/patches/05_join_link_expired.py
 ask_quality_nov22/app_patch/p_emergency_app.py
+r1715_candidate/patches/i1_emergency_ask_only.py
 design_nov22/patches/p1/a4_tab_origin.py
 design_nov22/patches/p1/a3_back_arrows.py
 design_nov22/patches/p1/c1_job_follows.py

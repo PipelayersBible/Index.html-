@@ -17640,6 +17640,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       return m ? { why: w, message: m } : null;
     } catch (e) { return null; }
   }
+  const pbAiNoEmg = (m) => String(m == null ? '' : m).replace(' Emergency? Call 911.', ''); // r17.15: the photo readers don't add the Ask line
   const PB_AI_MSG = {
     plan: 'AI is part of the paid plans (Individual or Contractor). Your plan on this phone doesn’t include it. Emergency? Call 911.',
     offline: 'No signal. AI needs a connection — nothing was sent. Runs, calculators and permits still work offline. Emergency? Call 911.',
@@ -17875,7 +17876,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     const r = await pbAiRequest('cutsheet', payload);
     if (btn && btn._pbAiReq === reqTok) btn.disabled = false; // (a newer read on this button owns it otherwise)
     if (myGen !== pbCutsheetImportGen) return; // context moved on while the request was in flight: discarded
-    if (!r.ok) { pbAiShow(statusEl, 'warn', 'AI reading didn’t work.', r.message + ' Nothing here was changed.'); return; }
+    if (!r.ok) { pbAiShow(statusEl, 'warn', 'AI reading didn’t work.', pbAiNoEmg(r.message) + ' Nothing here was changed.'); return; }
     if (myManualGen !== pbCutsheetManualParseGen) {
       pbAiShow(statusEl, 'warn', 'AI result not used.', 'AI finished reading, but you’d already made manual changes since starting it — your edits were kept, and the AI result was discarded rather than overwrite them. Run AI reading again if you want it re-read.');
       return;
@@ -18141,7 +18142,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     if (!r.ok) {
       const net = /^(offline|timeout|network|dropped|ai_busy|ai_failed|ai_incomplete|unavailable|http_5\d\d)$/.test(r.code || '');
       const keepOnly = !net && /^(daily_limit|plan|signed_out)$/.test(r.code || ''); /* bughunt 05: no read, but the photo taken at the stake stays with the point */
-      pbAiShow(stNow, 'warn', 'Stake not read.', r.message + (net ? ' The photos are kept on this point.' : keepOnly ? ' The photo is kept on this point. Type the values from the stake.' : ' Nothing on this point was changed.'));
+      pbAiShow(stNow, 'warn', 'Stake not read.', pbAiNoEmg(r.message) + (net ? ' The photos are kept on this point.' : keepOnly ? ' The photo is kept on this point. Type the values from the stake.' : ' Nothing on this point was changed.'));
       if (keepOnly) pbStakeAiKeepPhotos(prefix, ctx, only === 'back' ? [null, img] : [img, back]);
       if (net) { pbStakeAiLast[prefix] = { ctx, img, back }; pbStakeAiKeepPhotos(prefix, ctx, only === 'back' ? [null, img] : [img, back]); if (stNow) stNow.insertAdjacentHTML('beforeend', '<div class="pb-btn-row"><button type="button" class="pb-btn small" onclick="pbStakeAiRetry(\'' + prefix + '\')">Try Again</button></div>'); }
       return;
@@ -18200,7 +18201,7 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       const one = async (it) => {
         const r = await pbAiRequest('stake', { image: { mediaType: it.img.mediaType, data: it.img.data }, images: (it.img.extras || []).slice(0, 5) });
         done++; pbAiShow(st, 'info', 'Reading stake photos… ' + done + ' of ' + items.length, 'Keep working. The points fill in when it’s done.');
-        if (!r.ok) { if (r.code === 'daily_limit') limitHit = r.message; else netFail++; return; }
+        if (!r.ok) { if (r.code === 'daily_limit') limitHit = pbAiNoEmg(r.message); else netFail++; return; }
         const got = pbStakeAiFromReply(r.text); if (got.refused || got.bad) return;
         if (r.truncated) got.notes.unshift('The AI’s answer was cut off — check every value.');
         it.got = got; it.sta = pbStakeAiParseStation(got.vals.station || '');
@@ -44515,8 +44516,8 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
     finally { if (pbAiQuota !== keep) { if (pbAiQuota && r && r.ok !== undefined) pbTkAiQuota = pbAiQuota; pbAiQuota = keep; } const b = pbTkEl('tkAiBtn'); if (b) b.disabled = false; }
     if (!pbTkForm || pbTkForm.gen !== gen || pbTkForm.photo !== photo) return; // another ticket, or a new photo
     if (!r.ok) {
-      if (r.code === 'daily_limit') { pbTkAiQuota = { left: 0, limit: (pbTkAiQuota && pbTkAiQuota.limit) || 60 }; pbTkAiShow('warn', 'Ticket not read.', (r.why ? r.message : 'No AI readings left today.') + ' Type the values from the ticket.'); return; }
-      pbTkAiShow('warn', 'Ticket not read.', r.message + ' Nothing on the form was changed.'); return;
+      if (r.code === 'daily_limit') { pbTkAiQuota = { left: 0, limit: (pbTkAiQuota && pbTkAiQuota.limit) || 60 }; pbTkAiShow('warn', 'Ticket not read.', (r.why ? pbAiNoEmg(r.message) : 'No AI readings left today.') + ' Type the values from the ticket.'); return; }
+      pbTkAiShow('warn', 'Ticket not read.', pbAiNoEmg(r.message) + ' Nothing on the form was changed.'); return;
     }
     const got = pbTkAiParse(r.text, type);
     if (got.refused) { pbTkAiShow('warn', 'AI couldn’t read a ticket.', got.refused + '. Nothing on the form was changed.'); return; }

@@ -1,0 +1,10 @@
+const open = require('./probe.js');
+(async () => { const url = process.argv[2], pfx = process.argv[3];
+  const { b, p } = await open(url, 360, 740);
+  await p.evaluate(() => pbSetTextSize(140)); await p.waitForTimeout(800);
+  await p.evaluate(() => { const b = document.getElementById('pbRsTopBtn'); if (b) b.click(); }); await p.waitForTimeout(400);
+  await p.evaluate(() => { const r = document.getElementById('runDetails'); r.scrollIntoView(); }); await p.waitForTimeout(300);
+  await p.screenshot({ path: __dirname + '/../work/' + pfx + '_xl_top.png' });
+  await p.evaluate(() => { document.getElementById('laidProgress').scrollIntoView(); window.scrollBy(0, -100); }); await p.waitForTimeout(300);
+  await p.screenshot({ path: __dirname + '/../work/' + pfx + '_xl_stats.png' });
+  await b.close(); })();

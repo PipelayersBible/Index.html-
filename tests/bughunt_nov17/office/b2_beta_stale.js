@@ -6,12 +6,12 @@ const line=(p)=>p.evaluate(()=>{const l=document.getElementById('pbBetaLine');re
  // 1. kept copy says 3 days left, but the beta ended 7 days ago and the server can't be reached
  {const cached={ok:true,plan:'trial',expired:false,closed:false,days_left:3,trial_ends_at:iso(-7)};
   const {b,p}=await L.boot(L.URL,{init:L.co+`;try{localStorage.setItem('pbPlan:${UID}',${JSON.stringify(JSON.stringify(cached))});}catch(e){};window.__rpcOverride.pb_my_plan=()=>null;`,wait:6000});
-  const t=await line(p);console.log('1 stale copy, no server:',t);if(/days? left/.test(t)||!/Beta ended/.test(t)){ok=false;console.log('  FAIL: still counts days after the end');}
+  const t=await line(p);console.log('1 stale copy, no server:',t);if(/days? left/.test(t)||!/(Beta|Trial) ended/.test(t)){ok=false;console.log('  FAIL: still counts days after the end');}
   await b.close();}
  // 2. kept copy says 9 days left as of 4 days ago (ends in 5): shows 5
  {const cached={ok:true,plan:'trial',expired:false,closed:false,days_left:9,trial_ends_at:iso(4.6)};
   const {b,p}=await L.boot(L.URL,{init:L.co+`;try{localStorage.setItem('pbPlan:${UID}',${JSON.stringify(JSON.stringify(cached))});}catch(e){};window.__rpcOverride.pb_my_plan=()=>null;`,wait:6000});
-  const t=await line(p);console.log('2 old count:',t);if(!/5 days left/.test(t)){ok=false;console.log('  FAIL: expected 5 days left');}
+  const t=await line(p);console.log('2 old count:',t);if(t!=='(hidden)'){ok=false;console.log('  FAIL: a crew member sees no trial countdown (firstweek Nov 22: only the office does)');}
   await b.close();}
  // 3. beta ended; the owner makes the company paid; the app comes back to the front later: the line goes
  {const ended={ok:true,plan:'trial',expired:true,closed:true,individual:false,requested:true,days_left:0,trial_ends_at:iso(-5)};
