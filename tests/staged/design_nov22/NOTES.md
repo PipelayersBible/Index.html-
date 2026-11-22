@@ -66,5 +66,55 @@ Tests: `results/t_design_p1_on_phase1.txt` (all pass) vs `_on_r1714.txt` (28 FAI
 - Side effect: the small trench icon beside calculator titles no longer shows (title row = back · title · Feedback).
 Tests: `results/t_design_p2_on_full.txt`.
 
-## Regression
-(filled in below when the runs finish)
+## Builds (final; the regressions ran on exactly these)
+| | index.src.html | build/index.html | build_hooks/index.html | sw.js |
+|---|---|---|---|---|
+| p1 | 578a0436… | 27c31791… (5,838,607 B; live 5,832,349) | f50472e4… | ff5fb111… |
+| full | b00e269a… | f74c663a… (5,845,519 B) | ea52075c… | ff5fb111… |
+build/pbx/ = the 4 r17.14 parts (unchanged) + the 4 font files (107 KB).
+
+## Regression (`tests/run_all.sh --build <build_hooks> --jobs 2`, from scratch)
+- **PHASE 1 build: pass 198, FAIL 24, skip 15 of 237** (`results/p1/full_regression.log`, logs in `results/p1/regression/`).
+- **PHASE 1+2 build: pass 198, FAIL 24, skip 15 of 237** (`results/full/full_regression.log`). Same 24 tests.
+- **No real bug.** 23 are expected changes, 1 is pre-existing:
+| Test(s) | Why it changed |
+|---|---|
+| critic/w2, w4, w5, grade/g1, cs2/s1, safety/d1, office/c1, n1, p2_viewer, t1, x1, offline/t04_cv, sync/t03 | H-3: the hidden ALL-CAPS kicker ("NEW RUN", "ACTIVE PERMIT"…) is no longer in the page text. (p2_viewer: the plan set name sat in the plan sheet's hidden kicker; it was never visible.) w2/w4 also count the new Back buttons. |
+| critic/w1 | C-4: the 4 calcCat screens gone from the screen list (+ the Feedback size it measures). |
+| critic/w3, offline/t02_day | C-1 + B-3: after End Run Home shows "Job 24-017 — …" and no second "Not sent · 1 run report" row. |
+| offline/t06_twotabs | A-3: Run Results' first button is now Back. |
+| offline/t07_sw | A-12: the service worker's lazy cache now holds the font files (proof that offline caching works with no sw.js change). |
+| t89_photostamp | A-12: one failed outside request fewer (Google Fonts), so its error list prints on one line. |
+| new/a7 | A-3 / A-10: Run Results' header (+4 px) and, in the full build, the yellow "Flagged at Lock" box move the progress row down. |
+| safety/d2 | G-4: a permit closed after an out-of-range reading now records "Evacuated / Prohibited Condition" (it did not pick a reason). |
+| t104_permitack | G-3: the test locked an EMPTY permit and expected the acknowledgment first. Rewritten: empty -> no acknowledgment, the 15 missing fields listed; complete -> acknowledgment, then active. |
+| permit_active_screen.py | G-1: a Check In that isn't allowed now takes the full row (was column 2). Check updated to allow that. |
+| new/f06_breakend | **Pre-existing**: fails the same way on r17.14 `_src/index.html` run alone tonight (its 21-hour shift depends on the time of day; r17.14 notes call it intermittent). |
+- **Test updates:** `sh tests/staged/design_nov22/apply_test_updates.sh p1` (or `full`), absolute default ROOT `/home/claude/index.html-`:
+  `common/` (t104_permitack.js + its expect, permit_active_screen.py) + 21 golden files per build. Checked on a copy of tests/
+  with the updates applied: **23/23 pass on each build** (`results/*/test_updates_verify.log`; `tests/verify_updates.sh`).
+- Feature tests on the final minified builds: `t_design_p1` all pass on both (28 FAIL on r17.14), `t_design_p1b` all pass on
+  both (7 FAIL + crash on r17.14), `t_design_p2` all pass on full, 25 FAIL on the PHASE 1 build (it checks the look).
+
+## Release steps (lead)
+PHASE 1 only: publish `candidates/p1/build/index.html` -> `index.html`, `candidates/p1/build/pbx/*` -> `pbx/` (adds the 4 woff2),
+`candidates/p1/sw.js` -> `sw.js`, `candidates/p1/index.src.html` -> `_src/index.html`, then `apply_test_updates.sh p1`; one commit.
+With the look (after Tommy's OK): the same from `candidates/full/` and `apply_test_updates.sh full`.
+
+## Decisions for Tommy
+1. **The look (PHASE 2)**: approve as shown in `shots/sheet_*.png`? Recommend yes: yellow now only marks the next step and a box
+   still to fill (his Nov 21 rule), Feedback one quiet size, red only for danger. PHASE 1 ships either way.
+2. **Long titles**: at most 2 lines at one size (recommended) vs one line cut with "…" (the review's suggestion; would cut
+   "Education & Reference", "Rod Reading → Elevation").
+3. **Foreman Home order**: put Start work above Crew runs / My production / inspections (review B-3)? Recommend yes for foremen
+   (it is their main use); not done because it changes his decided Home layout.
+4. **Records vs Reports merge, My production tabs (B-1/B-2/B-4)**: recommend a separate pass with his walk-through; not done
+   here because each removes a way in that someone may use.
+5. **Cutsheet rows with no Northing/Easting (G-13)**: recommend making coordinates optional with a one-line reason on every
+   "Not used" row, built against 3-4 real sheets from different surveyors before shipping (the parser drives grade).
+
+## Proposed, not built (verified where noted)
+G-13 (verified), G-10, G-11, F1, F4-F10, H-1 inline links, H-4, H-5, G-5..G-9, A-5, A-8, A-13, D table rest; "Couldn't load"
+wording when online but the server is down (A-7 remainder); "Nothing in progress." showing above the run-ended card.
+
+## DONE
