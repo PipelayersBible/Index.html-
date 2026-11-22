@@ -1,0 +1,35 @@
+-- messaging_nov22 03: chat archives are copied off-site like run photos and sealed records (pb-offsite, Backblaze B2).
+-- Replaces public.pb_offsite_todo(integer): the same list plus bucket 'msg-archives'. Refuses if the live definition is not
+-- the one read Nov 22 2026 (md5 45901ab80847fafa890d8532337ac31e); keeps the live text for the undo. Needs 01.
+-- Deploy edge/pb-offsite/index.ts with it (lock days for msg-archives). Safe to run twice. Undo: undo/99_undo_03.sql.
+create table if not exists pb_msg.fn_backup (sig text primary key, def text not null, md5 text not null, saved_at timestamptz not null default now());
+alter table pb_msg.fn_backup enable row level security;
+revoke all on table pb_msg.fn_backup from public;
+revoke all on table pb_msg.fn_backup from anon, authenticated;
+do $g$ declare v text := pg_get_functiondef('public.pb_offsite_todo(integer)'::regprocedure); begin
+  if md5(v) = '45901ab80847fafa890d8532337ac31e' then
+    insert into pb_msg.fn_backup (sig, def, md5) values ('public.pb_offsite_todo(integer)', v, md5(v)) on conflict (sig) do nothing;
+  elsif exists (select 1 from pb_msg.fn_backup b where b.sig = 'public.pb_offsite_todo(integer)') then
+    null; -- this file ran before
+  elsif current_setting('pb_msg.guard', true) = 'skip-local-test' then
+    insert into pb_msg.fn_backup (sig, def, md5) values ('public.pb_offsite_todo(integer)', v, md5(v)) on conflict (sig) do nothing;
+  else
+    raise exception 'pb_msg: public.pb_offsite_todo(integer) changed on live since Nov 22 2026 (md5 %). Nothing was applied. Re-read it and rebase 03_offsite.sql.', md5(v);
+  end if;
+end $g$;
+
+CREATE OR REPLACE FUNCTION public.pb_offsite_todo(p_limit integer DEFAULT 50)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  if not pb_push.is_service() then raise exception 'pb:not_allowed'; end if;
+  return coalesce((select jsonb_agg(jsonb_build_object('bucket', o.bucket_id, 'name', o.name, 'bytes', (o.metadata->>'size')::bigint, 'at', o.created_at) order by o.created_at)
+    from (select x.* from storage.objects x
+          where (x.bucket_id in ('run-photos', 'run-seals', 'plan-sets', 'msg-archives') or (x.bucket_id = 'pb-backups' and x.created_at > now() - interval '3 days'))  -- messaging_nov22: + msg-archives
+            and x.name not like '%/.emptyFolderPlaceholder'
+            and not exists (select 1 from pb_backup.offsite c where c.bucket = x.bucket_id and c.name = x.name)
+          order by x.created_at limit greatest(1, least(coalesce(p_limit, 50), 200))) o), '[]'::jsonb);
+end $function$;

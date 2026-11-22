@@ -1,0 +1,282 @@
+--@DECL
+  q_tag text; q_today date; q_tm uuid; q_o1 uuid; q_o2 uuid; q_o3 uuid; q_f1 uuid; q_p1 uuid; q_p2 uuid; q_p3 uuid; q_ind uuid; q_x1 uuid;
+  q_c1 uuid; q_c2 uuid; q_c3 uuid; q_r jsonb; q_a jsonb; q_n integer; q_t text; q_inv uuid; q_d date; q_b boolean;
+  q_pass integer; q_fail integer; q_fails text; q_notes text := '';
+--@BODY
+  create temp table q_chk (i serial, name text, ok boolean, got text) on commit drop;
+  create or replace function pg_temp.q_ck(p_name text, p_ok boolean, p_got text) returns void language sql as $q$
+    insert into pg_temp.q_chk (name, ok, got) values (p_name, coalesce(p_ok, false), p_got) $q$;
+  -- "signed in as": the JWT claims PostgREST sets and the role the app's requests run as (authenticated). aal2 = two-step login done.
+  create or replace function pg_temp.q_call(p_uid uuid, p_aal text, p_sql text) returns jsonb language plpgsql as $q$
+  declare r jsonb;
+  begin
+    perform set_config('request.jwt.claim.sub', '', true);
+    perform set_config('request.jwt.claims', jsonb_build_object('sub', p_uid, 'role', 'authenticated', 'aal', p_aal)::text, true);
+    begin
+      if current_setting('pbbill.as_auth', true) = '1' then set local role authenticated; end if;
+      execute p_sql into r;
+      reset role;
+    exception when others then r := jsonb_build_object('error', sqlerrm);
+    end;
+    return r;
+  end $q$;
+  -- the crew-admin edge function's service call (pb_crew_svc runs these as the service role)
+  create or replace function pg_temp.q_svc(p_sql text) returns jsonb language plpgsql as $q$
+  declare r jsonb;
+  begin
+    perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+    begin execute p_sql into r; exception when others then r := jsonb_build_object('error', sqlerrm); end;
+    return r;
+  end $q$;
+  begin
+    set local role authenticated; reset role;
+    perform set_config('pbbill.as_auth', '1', true); q_notes := ' [app and owner calls ran as role authenticated]';
+  exception when others then
+    perform set_config('pbbill.as_auth', '0', true); q_notes := ' [calls ran as ' || current_user || ', not authenticated]';
+  end;
+
+  -- ===== fixtures (throwaway; rolled back) =====
+  q_tag := substr(md5(random()::text), 1, 10);
+  q_today := (now() at time zone 'America/Los_Angeles')::date;
+  q_tm := gen_random_uuid(); q_o1 := gen_random_uuid(); q_o2 := gen_random_uuid(); q_o3 := gen_random_uuid();
+  q_f1 := gen_random_uuid(); q_p1 := gen_random_uuid(); q_p2 := gen_random_uuid(); q_p3 := gen_random_uuid(); q_ind := gen_random_uuid(); q_x1 := gen_random_uuid();
+  q_c1 := gen_random_uuid(); q_c2 := gen_random_uuid(); q_c3 := gen_random_uuid();
+  insert into auth.users (id, email) select u.v, 'pbbill-' || q_tag || '-' || u.o || '@example.invalid'
+    from unnest(array[q_tm, q_o1, q_o2, q_o3, q_f1, q_p1, q_p2, q_p3, q_ind, q_x1]) with ordinality u(v, o);
+  insert into pb_support.admins (user_id) values (q_tm);
+  -- c1: trial, ends in 2 hours (2 members + 1 waiting invite). c2: trial ended 4 days ago, no request. c3: trial ended 1 day ago, asked 2 days ago.
+  insert into public.companies (id, name, owner_user_id, status, plan, trial_ends_at) values
+    (q_c1, 'pbbill one ' || q_tag, q_o1, 'active', 'trial', now() + interval '2 hours'),
+    (q_c2, 'pbbill two ' || q_tag, q_o2, 'active', 'trial', now() - interval '4 days'),
+    (q_c3, 'pbbill three ' || q_tag, q_o3, 'active', 'trial', now() - interval '1 day');
+  insert into public.company_members (company_id, user_id, role) values (q_c1, q_f1, 'foreman'), (q_c1, q_p1, 'pipelayer');
+  insert into pb_crew.invitations (company_id, user_id, role, invited_by) values (q_c1, q_p2, 'pipelayer', q_o1);
+  insert into pb_billing.plan_requests (user_id, company_id, kind, billing_interval, created_at) values (q_o3, q_c3, 'company', 'month', now() - interval '2 days');
+
+  -- ===== apply 01 again (safe to run twice) =====
+--@APPLY:01
+
+  -- ===== A. settings and the Pacific day =====
+  perform pg_temp.q_ck('A1 billing_tz setting is America/Los_Angeles', pb_billing.setting('billing_tz') #>> '{}' = 'America/Los_Angeles', pb_billing.setting('billing_tz')::text);
+  perform pg_temp.q_ck('A2 today() is the Pacific date', pb_billing.today() = q_today, pb_billing.today()::text);
+  perform pg_temp.q_ck('A3 grace_days, due_offset_days, catchup_part_month are settings', pb_billing.setting_int('grace_days', -1) = 7 and pb_billing.setting_int('due_offset_days', -1) = 0
+    and pb_billing.setting('catchup_part_month') #>> '{}' = 'down', null);
+
+  -- ===== B. #1 #21: trial, company account vs crew =====
+  q_r := pg_temp.q_call(q_o1, 'aal1', 'select public.pb_my_plan()');
+  perform pg_temp.q_ck('B1 company account: is_owner, people 3 (2 joined + 1 invite), no billing yet', (q_r->>'is_owner')::boolean and (q_r->>'people')::int = 3 and (q_r->>'joined')::int = 2 and q_r->'billing' = 'null'::jsonb, q_r::text);
+  q_r := pg_temp.q_call(q_f1, 'aal1', 'select public.pb_my_plan()');
+  perform pg_temp.q_ck('B2 foreman: not owner, no people / billing / request keys', not (q_r->>'is_owner')::boolean and not (q_r ? 'people') and not (q_r ? 'billing') and not (q_r ? 'request') and q_r->>'plan' = 'trial', q_r::text);
+  q_r := pg_temp.q_call(q_f1, 'aal1', 'select public.pb_plan_request(''company:year'')');
+  perform pg_temp.q_ck('B3 a foreman cannot ask for the company plan', q_r->>'code' = 'pb:not_company_account', q_r::text);
+  q_r := pg_temp.q_call(q_o1, 'aal1', 'select public.pb_plan_request(''company:year'')');
+  perform pg_temp.q_ck('B4 company account asks (yearly) before the end: ok, before_end, 3 people, $99 a month', (q_r->>'ok')::boolean and q_r->>'interval' = 'year' and (q_r->>'before_end')::boolean and (q_r->>'people')::int = 3 and (q_r->>'month_cents')::int = 9900, q_r::text);
+  select m.body into q_t from pb_support.messages m where m.user_id = q_o1 order by m.created_at desc limit 1;
+  perform pg_temp.q_ck('B5 the message to Tommy: before the end, founder, yearly $990.00 for 3 people', q_t like '%before the trial ended: founder price%' and q_t like '%$990.00 a year for 3 people%', q_t);
+  q_r := pg_temp.q_call(q_o1, 'aal1', 'select public.pb_my_plan()');
+  perform pg_temp.q_ck('B6 after asking: requested, request yearly and before_end', (q_r->>'requested')::boolean and q_r->'request'->>'interval' = 'year' and (q_r->'request'->>'before_end')::boolean, q_r::text);
+  q_r := pg_temp.q_call(q_o1, 'aal1', 'select public.pb_plan_request(''company:month'')');
+  select r.billing_interval into q_t from pb_billing.plan_requests r where r.user_id = q_o1 and r.kind = 'company';
+  perform pg_temp.q_ck('B7 asking again changes the pick to monthly (one request)', q_t = 'month' and (select count(*) from pb_billing.plan_requests r where r.user_id = q_o1) = 1, q_t);
+
+  -- ===== C. #17: Make Paid and the founder price =====
+  q_r := pg_temp.q_call(q_f1, 'aal2', format('select public.pb_owner_make_paid(%L, ''X'', ''ap@x.com'', null, ''month'', false, false, ''Jo Doe'', ''{"state":"CA"}''::jsonb)', q_c3));
+  perform pg_temp.q_ck('C1 Make Paid refused for a non-admin', q_r->>'error' like '%pb:not_allowed%', q_r::text);
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_make_paid(%L, ''Two LLC'', ''ap@two.com'', null, ''month'', true, false, ''Jo Doe'', ''{"state":"CA"}''::jsonb)', q_c2));
+  perform pg_temp.q_ck('C2 founder refused: trial over and no request before the end', q_r->>'code' = 'pb:founder_late', q_r::text);
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_make_paid(%L, ''Three LLC'', ''ap@three.com'', null, ''month'', true, false, ''Jo Doe'', ''{}''::jsonb)', q_c3));
+  perform pg_temp.q_ck('C3 Make Paid needs the billing state', q_r->>'code' = 'pb:no_state', q_r::text);
+  q_r := pg_temp.q_call(q_tm, 'aal2', 'select public.pb_owner_billing()');
+  perform pg_temp.q_ck('C4 Billing: founder_ok for c3 (asked before the end), not for c2', exists (select 1 from jsonb_array_elements(q_r->'companies') x where x->>'id' = q_c3::text and (x->>'founder_ok')::boolean and (x->'request'->>'before_end')::boolean)
+    and exists (select 1 from jsonb_array_elements(q_r->'companies') x where x->>'id' = q_c2::text and not (x->>'founder_ok')::boolean), null);
+  insert into public.company_members (company_id, user_id, role) values (q_c3, q_p3, 'pipelayer');
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_make_paid(%L, ''Three LLC'', ''ap@three.com'', 7, ''month'', true, false, ''Jo Doe, Owner'', ''{"line1":"1 Main","city":"Fresno","state":"ca","zip":"93701"}''::jsonb, ''Jo Doe 555-0100'', ''v1.1'')', q_c3));
+  q_a := q_r->'account';
+  perform pg_temp.q_ck('C5 founder given after the end for a request sent before it', (q_r->>'ok')::boolean and q_a->>'founder_until' = (q_today + interval '12 months')::date::text, q_r::text);
+  perform pg_temp.q_ck('C6 state stored upper case, contact and Terms version kept', q_a->>'tax_state' = 'CA' and q_a->>'billing_contact' = 'Jo Doe 555-0100' and q_a->>'terms_version' = 'v1.1', q_a::text);
+
+  -- ===== D. #3 #5: the first invoice is sent and not paid =====
+  perform pg_temp.q_ck('D1 first invoice: paid_through = start = today, due in 7 days, active', q_a->>'paid_through' = q_today::text and (q_a->>'first_invoice')::boolean and q_a->>'due_on' = (q_today + 7)::text and q_a->>'state' = 'active', q_a::text);
+  perform pg_temp.q_ck('D2 first invoice: 7 seats bought (1 joined), $123, in Billing due now', (q_a->'next'->>'seats')::int = 7 and (q_a->'next'->>'amount_cents')::int = 12300 and (q_a->'next'->>'due')::boolean and (q_a->>'seats_min')::int = 7, (q_a->'next')::text);
+  q_r := pg_temp.q_call(q_tm, 'aal2', 'select public.pb_owner_billing()');
+  perform pg_temp.q_ck('D3 Billing due lists c3 with first_invoice and due_on', exists (select 1 from jsonb_array_elements(q_r->'due') x where x->>'company_id' = q_c3::text and (x->>'first_invoice')::boolean and x->>'due_on' = (q_today + 7)::text), null);
+  -- 8 days later (the dates moved back instead of the clock forward)
+  update pb_billing.accounts set period_start = q_today - 8, paid_through = q_today - 8, invoice_from = q_today - 8, invoice_sent_on = q_today - 8, invoice_due = q_today - 1 where company_id = q_c3;
+  q_r := pg_temp.q_call(q_o3, 'aal1', 'select public.pb_my_plan()');
+  perform pg_temp.q_ck('D4 first invoice not paid by its due date: the company account sees past due, locks due + 7', q_r->'billing'->>'state' = 'past_due' and q_r->'billing'->>'lock_on' = (q_today + 6)::text and not (q_r->>'paused')::boolean, (q_r->'billing')::text);
+  q_r := pg_temp.q_call(q_p3, 'aal1', 'select public.pb_my_plan()');
+  perform pg_temp.q_ck('D5 the crew member sees no billing (no price, no past due)', not (q_r ? 'billing') and not (q_r->>'paused')::boolean, q_r::text);
+  update pb_billing.accounts set period_start = q_today - 14, paid_through = q_today - 14, invoice_from = q_today - 14, invoice_sent_on = q_today - 14, invoice_due = q_today - 7 where company_id = q_c3;
+  q_r := pg_temp.q_call(q_o3, 'aal1', 'select public.pb_my_plan()');
+  perform pg_temp.q_ck('D6 7 days after the due date: read-only, reason unpaid', (q_r->>'paused')::boolean and q_r->'billing'->>'paused_reason' = 'unpaid', (q_r->'billing')::text);
+  update pb_billing.accounts set period_start = q_today, paid_through = q_today, invoice_from = q_today, invoice_sent_on = q_today, invoice_due = q_today + 7 where company_id = q_c3;
+  insert into public.company_members (company_id, user_id, role) values (q_c3, q_x1, 'pipelayer');
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_billing_paid(%L, %L, 99, 12300)', q_c3, q_today));
+  q_a := q_r->'account';
+  perform pg_temp.q_ck('D7 Paid marks the invoiced 7 seats (not the 99 sent), period moves one month', (q_r->>'ok')::boolean and (q_a->>'seats_paid')::int = 7 and q_a->>'paid_through' = (q_today + interval '1 month')::date::text and not (q_a->>'first_invoice')::boolean and q_a->'invoice' = 'null'::jsonb, q_a::text);
+  select (e.detail->>'invoiced')::boolean and (e.detail->>'amount_cents')::int = 12300 into q_b from pb_billing.events e where e.company_id = q_c3 and e.kind = 'paid' order by e.id desc limit 1;
+  perform pg_temp.q_ck('D8 the Paid event records the invoiced amount', q_b, null);
+
+  -- ===== E. #2 #5: Invoice Sent, due date and lock =====
+  update pb_billing.accounts set paid_through = q_today + 3 where company_id = q_c3;
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_billing_invoice_sent(%L, %L)', q_c3, q_today + 3));
+  q_a := q_r->'account';
+  perform pg_temp.q_ck('E1 Invoice Sent 3 days before paid-through: due = today + 7 (at least 7 days to pay), 7 seats bought', (q_r->>'ok')::boolean and q_a->>'due_on' = (q_today + 7)::text and (q_a->'invoice'->>'seats')::int = 7 and q_a->'invoice'->>'sent_on' = q_today::text, q_a::text);
+  update pb_billing.accounts set paid_through = q_today - 2, invoice_from = q_today - 2, invoice_due = q_today + 5 where company_id = q_c3;
+  q_r := pg_temp.q_call(q_o3, 'aal1', 'select public.pb_my_plan()');
+  perform pg_temp.q_ck('E2 paid-through passed but the sent invoice is not due yet: not past due', q_r->'billing'->>'state' = 'active', (q_r->'billing')::text);
+  update pb_billing.accounts set invoice_from = null where company_id = q_c3;
+  q_r := pg_temp.q_call(q_o3, 'aal1', 'select public.pb_my_plan()');
+  perform pg_temp.q_ck('E3 no invoice sent: due = paid-through, past due the day after, lock 7 days after due', q_r->'billing'->>'state' = 'past_due' and q_r->'billing'->>'lock_on' = (q_today + 5)::text, (q_r->'billing')::text);
+  update pb_billing.accounts set paid_through = q_today where company_id = q_c3;
+  perform pg_temp.q_ck('E4 on the due date itself it is not past due yet', (select pb_billing.state_of(a) from pb_billing.accounts a where a.company_id = q_c3) = 'active', null);
+  update pb_billing.accounts set paid_through = q_today - 7 where company_id = q_c3;
+  perform pg_temp.q_ck('E5 7 days after the due date: read-only', (select pb_billing.state_of(a) from pb_billing.accounts a where a.company_id = q_c3) = 'read_only', null);
+  update pb_billing.accounts set paid_through = q_today - 2 where company_id = q_c3;
+  q_t := pb_billing.alert_text();
+  perform pg_temp.q_ck('E7 the daily alert: past due since the due date, locks on due + 7', q_t like '%Three LLC is past due since ' || to_char(q_today - 2, 'Mon DD') || ' and locks (read-only) on ' || to_char(q_today + 5, 'Mon DD') || '%', q_t);
+
+  -- ===== F. #13: Paid - restart from today =====
+  update pb_billing.accounts set paid_through = q_today - 60 where company_id = q_c3;
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_billing_paid(%L, %L)', q_c3, q_today - 60));
+  perform pg_temp.q_ck('F1 (old way) Paid once leaves a long-locked company read-only', q_r->'account'->>'state' = 'read_only', q_r->'account'->>'state');
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_billing_restart(%L, null, 12300, ''check 1001'')', q_c3));
+  q_a := q_r->'account';
+  perform pg_temp.q_ck('F2 Restart From Today: active, period starts today, paid a month from today', (q_r->>'ok')::boolean and q_a->>'state' = 'active' and q_a->>'period_start' = q_today::text and q_a->>'paid_through' = (q_today + interval '1 month')::date::text, q_a::text);
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_billing_restart(%L)', q_c3));
+  perform pg_temp.q_ck('F3 Restart is refused for a company in good standing', q_r->>'code' = 'pb:not_locked', q_r::text);
+
+  -- ===== G. #14: Edit Billing, Switch at Renewal, Undo Cancel =====
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_billing_edit(%L, ''{"legal_name":"Three Pipe LLC","billing_email":"AP2@three.com","billing_address":{"line1":"2 Oak","city":"Reno","state":"nv"},"seats_min":8}''::jsonb)', q_c3));
+  q_a := q_r->'account';
+  perform pg_temp.q_ck('G1 Edit Billing: name, email (lower case), address state NV, seats bought 8 -> next bill 8 seats $135', (q_r->>'ok')::boolean and q_a->>'legal_name' = 'Three Pipe LLC' and q_a->>'billing_email' = 'ap2@three.com' and q_a->>'tax_state' = 'NV' and (q_a->'next'->>'seats')::int = 8 and (q_a->'next'->>'amount_cents')::int = 13500, q_a::text);
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_billing_edit(%L, ''{"billing_address":{"city":"Reno"}}''::jsonb)', q_c3));
+  perform pg_temp.q_ck('G2 Edit Billing refuses an address without a state', q_r->>'code' = 'pb:no_state', q_r::text);
+  q_r := pg_temp.q_call(q_f1, 'aal2', format('select public.pb_owner_billing_edit(%L, ''{"seats_min":0}''::jsonb)', q_c3));
+  perform pg_temp.q_ck('G3 Edit Billing refused for a non-admin', q_r->>'error' like '%pb:not_allowed%', q_r::text);
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_billing_next_interval(%L, ''year'')', q_c3));
+  q_a := q_r->'account';
+  perform pg_temp.q_ck('G4 Switch to Yearly at Renewal: next period yearly, 8 seats x 10 months = $1,350', q_a->>'interval' = 'month' and q_a->>'next_interval' = 'year' and q_a->'next'->>'interval' = 'year' and (q_a->'next'->>'amount_cents')::int = 135000, (q_a->'next')::text);
+  q_d := (q_a->>'paid_through')::date;
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_billing_paid(%L, %L)', q_c3, q_d));
+  q_a := q_r->'account';
+  perform pg_temp.q_ck('G5 Paid applies the switch: yearly, a year on, switch cleared', q_a->>'interval' = 'year' and q_a->>'paid_through' = (q_d + interval '1 year')::date::text and q_a->>'next_interval' is null, q_a::text);
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_billing_state(%L, ''canceled'')', q_c3));
+  perform pg_temp.q_ck('G6 Cancel: open until midnight Pacific of the paid-through date', (q_r->'account'->>'cancel_at')::timestamptz = (((q_d + interval '1 year')::date)::timestamp at time zone 'America/Los_Angeles'), q_r->'account'->>'cancel_at');
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_billing_state(%L, ''active'')', q_c3));
+  perform pg_temp.q_ck('G7 Undo Cancel while paid time remains: active again, no end date', (q_r->>'ok')::boolean and q_r->'account'->>'state' = 'active' and q_r->'account'->>'cancel_at' is null, q_r::text);
+  update pb_billing.accounts set state = 'canceled', cancel_at = now() - interval '1 hour' where company_id = q_c3;
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_billing_state(%L, ''active'')', q_c3));
+  perform pg_temp.q_ck('G8 Undo Cancel refused once the paid time is over', q_r->>'code' = 'pb:cancel_over', q_r::text);
+  q_r := pg_temp.q_call(q_p3, 'aal1', 'select public.pb_my_plan()');
+  perform pg_temp.q_ck('G9 #20 the crew of a canceled plan whose time is over: ended', (q_r->>'ended')::boolean and (q_r->>'paused')::boolean, q_r::text);
+  q_r := pg_temp.q_call(q_o3, 'aal1', 'select public.pb_my_plan()');
+  perform pg_temp.q_ck('G10 the company account: ended, reason ended', (q_r->>'ended')::boolean and q_r->'billing'->>'paused_reason' = 'ended', (q_r->'billing')::text);
+
+  -- ===== H. #4 #18: yearly catch-up at the yearly rate, joined people only =====
+  update pb_billing.accounts set state = 'active', cancel_at = null, billing_interval = 'year', seats_paid = 5, seats_min = 0,
+    period_start = q_today - 1, paid_through = (q_today - 1 + interval '1 year')::date where company_id = q_c3;
+  delete from public.company_members where company_id = q_c3;
+  insert into public.company_members (company_id, user_id, role) select q_c3, u, 'pipelayer' from unnest(array[q_p3, q_x1, q_f1, q_p1, q_p2, q_ind]) u
+    on conflict (user_id) do update set company_id = excluded.company_id;
+  insert into pb_crew.invitations (company_id, user_id, role, invited_by) values (q_c3, q_o2, 'pipelayer', q_o3);
+  select pb_billing.account_json(a) into q_a from pb_billing.accounts a where a.company_id = q_c3;
+  perform pg_temp.q_ck('H1 6 joined + 1 waiting invite on 5 paid seats: catch-up for 1 person (the invite does not count)', (q_a->'catchup'->>'people')::int = 1 and (q_a->>'waiting')::int = 1, (q_a->'catchup')::text);
+  perform pg_temp.q_ck('H2 the day after signing yearly: 11 full months left (part month down) = $110, not $144', (q_a->'catchup'->>'months')::int = 11 and (q_a->'catchup'->>'cents')::int = 11000, (q_a->'catchup')::text);
+  update pb_billing.settings set value = '"up"' where key = 'catchup_part_month';
+  select pb_billing.account_json(a) into q_a from pb_billing.accounts a where a.company_id = q_c3;
+  perform pg_temp.q_ck('H3 setting up: 12 months = $120 (the yearly rate)', (q_a->'catchup'->>'cents')::int = 12000, (q_a->'catchup')::text);
+  update pb_billing.settings set value = '"down"' where key = 'catchup_part_month';
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_billing_catchup_paid(%L, 7, 11000)', q_c3));
+  perform pg_temp.q_ck('H4 Catch-up Paid for 7 (counting the invite) refused', q_r->>'code' = 'pb:no_catchup', q_r::text);
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_billing_catchup_paid(%L, 6, 11000)', q_c3));
+  perform pg_temp.q_ck('H5 Catch-up Paid for the 6 joined: ok, nothing left to catch up', (q_r->>'ok')::boolean and (q_r->'account'->'catchup'->>'cents')::int = 0, q_r::text);
+
+  -- ===== I. #15: AI pool follows the people now; #7 crew screen numbers =====
+  update pb_billing.accounts set seats_paid = 5 where company_id = q_c3;
+  insert into public.company_members (company_id, user_id, role) values (q_c3, q_o2, 'pipelayer') on conflict (user_id) do update set company_id = excluded.company_id;
+  insert into public.company_members (company_id, user_id, role) values (q_c3, q_tm, 'pipelayer'), (q_c3, q_o1, 'pipelayer') on conflict (user_id) do update set company_id = excluded.company_id;
+  q_r := pg_temp.q_call(q_p3, 'aal1', 'select public.pb_my_limits(''teacher'')');
+  perform pg_temp.q_ck('I1 9 people on 5 paid seats: company day pool 12 x 9 = 108', (q_r->'company_day'->>'limit')::int = 108 and (q_r->>'people')::int = 9, q_r::text);
+  perform pg_temp.q_ck('I2 the dollar stop still follows paid seats', pb_billing.paid_people(q_c3) = 5, null);
+  q_r := pg_temp.q_call(q_o3, 'aal1', 'select public.pb_crew_list()');
+  perform pg_temp.q_ck('I3 Crew members: billing count, joined, waiting, paid seats, interval', (q_r->'billing'->>'joined')::int = 9 and (q_r->'billing'->>'paid')::int = 5 and q_r->'billing'->>'interval' = 'year' and (q_r->'billing'->>'waiting')::int = 0, (q_r->'billing')::text);
+  delete from public.company_members where company_id = q_c3 and user_id in (q_tm, q_o1, q_o2, q_ind);
+
+  -- ===== J. #24: email invites refused like join links =====
+  q_r := pg_temp.q_svc(format('select pb_crew.svc_invite_begin(%L, null, %L, ''pipelayer'')', q_o2, 'new-' || q_tag || '@example.invalid'));
+  perform pg_temp.q_ck('J1 email invite refused for a trial ended 3+ days ago', q_r->>'code' = 'pb:beta_ended', q_r::text);
+  update pb_billing.accounts set paid_through = q_today - 30 where company_id = q_c3;
+  q_r := pg_temp.q_svc(format('select pb_crew.svc_invite_begin(%L, null, %L, ''pipelayer'')', q_o3, 'new2-' || q_tag || '@example.invalid'));
+  perform pg_temp.q_ck('J2 email invite refused for a read-only company', q_r->>'code' = 'pb:read_only', q_r::text);
+  delete from public.company_members where user_id = q_x1;
+  insert into pb_crew.invitations (company_id, user_id, role, invited_by) values (q_c3, q_x1, 'pipelayer', q_o3) returning id into q_inv;
+  q_r := pg_temp.q_svc(format('select pb_crew.answer_invitation(%L, %L, true)', q_x1, q_inv));
+  perform pg_temp.q_ck('J3 accepting an invite to a read-only company refused, not a member', q_r->>'code' = 'pb:read_only' and not exists (select 1 from public.company_members m where m.user_id = q_x1), q_r::text);
+  q_r := pg_temp.q_svc(format('select pb_crew.svc_invite_begin(%L, null, %L, ''pipelayer'')', q_o1, 'new3-' || q_tag || '@example.invalid'));
+  perform pg_temp.q_ck('J4 email invite still works for a running trial', (q_r->>'ok')::boolean, q_r::text);
+  update pb_billing.accounts set paid_through = q_today + 20 where company_id = q_c3;
+
+  -- ===== K. #16: individual plans =====
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_individual_on(%L, ''month'')', q_ind));
+  q_a := q_r->'account';
+  perform pg_temp.q_ck('K1 Individual On: first invoice sent, not paid (paid_through today, due in 7 days), still open', (q_r->>'ok')::boolean and q_a->>'paid_through' = q_today::text and (q_a->>'first_invoice')::boolean and q_a->>'due_on' = (q_today + 7)::text and q_a->>'state' = 'active' and (q_a->'next'->>'due')::boolean and pb_billing.has_individual(q_ind), q_a::text);
+  insert into public.company_members (company_id, user_id, role) values (q_c1, q_ind, 'pipelayer');
+  perform pg_temp.q_ck('K2 Billing shows the company an individual is also in', (select x->>'company' from jsonb_array_elements(pb_billing.individuals_json()) x where x->>'user_id' = q_ind::text) = 'pbbill one ' || q_tag, null);
+  delete from public.company_members where user_id = q_ind;
+  update pb_billing.individual_accounts set due_on = q_today - 1, paid_through = q_today - 1 where user_id = q_ind;
+  q_r := pg_temp.q_call(q_ind, 'aal1', 'select public.pb_my_plan()');
+  perform pg_temp.q_ck('K3 a day after the due date: payment due, still has the plan', q_r->>'individual_state' = 'past_due' and (q_r->>'individual')::boolean, q_r::text);
+  update pb_billing.individual_accounts set due_on = q_today - 7, paid_through = q_today - 7 where user_id = q_ind;
+  q_r := pg_temp.q_call(q_ind, 'aal1', 'select public.pb_my_plan()');
+  perform pg_temp.q_ck('K4 7 days after the due date: lapsed, the plan is off (individual false)', q_r->>'individual_state' = 'lapsed' and not (q_r->>'individual')::boolean, q_r::text);
+  q_r := pg_temp.q_call(q_tm, 'aal2', format('select public.pb_owner_individual_paid(%L, %L)', q_ind, q_today - 7));
+  perform pg_temp.q_ck('K5 Paid: a month on, due date cleared, plan back on', (q_r->>'ok')::boolean and pb_billing.has_individual(q_ind)
+    and (select a.paid_through = (q_today - 7 + interval '1 month')::date and a.due_on is null from pb_billing.individual_accounts a where a.user_id = q_ind), q_r::text);
+
+  -- ===== L. #19: removed member, Not Now =====
+  delete from public.company_members where user_id = q_p1;
+  q_r := pg_temp.q_call(q_p1, 'aal1', 'select public.pb_my_plan()');
+  perform pg_temp.q_ck('L1 removed member: the removed offer', q_r->'removed' is not null and q_r->'removed' <> 'null'::jsonb, q_r::text);
+  q_r := pg_temp.q_call(q_p1, 'aal1', 'select public.pb_removed_dismiss()');
+  q_r := pg_temp.q_call(q_p1, 'aal1', 'select public.pb_my_plan()');
+  perform pg_temp.q_ck('L2 after Not Now: dismissed (Home shows nothing)', (q_r->>'dismissed')::boolean and q_r->>'plan' is null, q_r::text);
+
+  -- ===== M. settings keys =====
+  q_r := pg_temp.q_call(q_tm, 'aal2', 'select public.pb_owner_billing_setting_set(''billing_tz'', ''"Mars/Base"''::jsonb)');
+  perform pg_temp.q_ck('M1 a made-up time zone is refused', q_r->>'code' = 'pb:bad_value', q_r::text);
+  q_r := pg_temp.q_call(q_tm, 'aal2', 'select public.pb_owner_billing_setting_set(''catchup_part_month'', ''"up"''::jsonb)');
+  perform pg_temp.q_ck('M2 catchup_part_month can be set to up', (q_r->>'ok')::boolean and q_r->'settings'->>'catchup_part_month' = 'up', q_r::text);
+  q_r := pg_temp.q_call(q_tm, 'aal2', 'select public.pb_owner_billing_setting_set(''due_offset_days'', ''15''::jsonb)');
+  perform pg_temp.q_ck('M3 due_offset_days can be set (Net 15)', (q_r->>'ok')::boolean, q_r::text);
+  select pb_billing.account_json(a) into q_a from pb_billing.accounts a where a.company_id = q_c3;
+  perform pg_temp.q_ck('M4 with Net 15 the due date is paid-through + 15', q_a->>'due_on' = (q_today + 35)::text, q_a->>'due_on');
+
+  -- ===== N. who can run what (the morning bug: nothing new is reachable by, or needed from, the app role) =====
+  select count(*) into q_n from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'pb_billing' and p.proname in ('tz', 'today', 'day_start', 'due_on', 'lock_on', 'ind_due_on', 'catchup_months', 'pool_people', 'crew_seats_json', 'owner_plan_json')
+      and (has_function_privilege('authenticated', p.oid, 'execute') or has_function_privilege('anon', p.oid, 'execute'));
+  perform pg_temp.q_ck('N1 the new pb_billing helpers are closed to the app roles', q_n = 0, q_n::text);
+  select count(*) into q_n from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname in ('pb_owner_billing_invoice_sent', 'pb_owner_billing_restart', 'pb_owner_billing_edit', 'pb_owner_billing_next_interval')
+      and has_function_privilege('authenticated', p.oid, 'execute') and not has_function_privilege('anon', p.oid, 'execute') and p.prosecdef;
+  perform pg_temp.q_ck('N2 the 4 new owner tools: signed-in only (admin checked inside), security definer', q_n = 4, q_n::text);
+  select count(*) into q_n from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where (n.nspname, p.proname) in (('public', 'pb_my_plan'), ('public', 'pb_plan_request'), ('public', 'pb_crew_list'), ('public', 'pb_my_limits'), ('public', 'pb_owner_make_paid'),
+      ('public', 'pb_owner_billing_paid'), ('public', 'pb_owner_billing'), ('public', 'pb_owner_billing_state'), ('public', 'pb_owner_billing_catchup_paid'),
+      ('public', 'pb_owner_individual_paid'), ('public', 'pb_owner_billing_setting_set'))
+      and has_function_privilege('authenticated', p.oid, 'execute') and p.prosecdef and not has_function_privilege('anon', p.oid, 'execute');
+  perform pg_temp.q_ck('N3 the changed app RPCs are still security definer and signed-in only', q_n = 11, q_n::text);
+  select count(*) into q_n from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where not p.prosecdef and has_function_privilege('authenticated', p.oid, 'execute') and n.nspname not in ('pg_catalog', 'information_schema')
+      and p.prosrc ~ 'pb_billing\.(tz|today|day_start|due_on|lock_on|ind_due_on|catchup_months|pool_people|crew_seats_json|owner_plan_json|state_of)\(';
+  perform pg_temp.q_ck('N4 no caller-rights function the app can run calls a new helper or state_of', q_n = 0, q_n::text);
+  select count(*) into q_n from pg_policies where coalesce(qual, '') || coalesce(with_check, '') ~ 'pb_billing\.';
+  perform pg_temp.q_ck('N5 no row policy calls pb_billing', q_n = 0, q_n::text);
+
+  -- ===== O. undo puts back the exact live texts, then apply again =====
+--@UNDO:01
+  perform pg_temp.q_ck('O1 undo: helpers gone, state_of back to the live text', to_regprocedure('pb_billing.today()') is null and md5(pg_get_functiondef('pb_billing.state_of(pb_billing.accounts)'::regprocedure)) = 'f6e8211e6489d0bfbe37c523882cfdb9', null);
+  perform pg_temp.q_ck('O2 undo: pb_my_plan back to the live text', md5(pg_get_functiondef('public.pb_my_plan()'::regprocedure)) = '095045832c60bbae5d9eea31090725aa', null);
+--@APPLY:01
+  perform pg_temp.q_ck('O3 apply again after undo works', to_regprocedure('pb_billing.today()') is not null, null);

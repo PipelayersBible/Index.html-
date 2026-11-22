@@ -1,0 +1,28 @@
+-- messaging_nov22 03 test: archives go off-site like run photos. Rolled back.
+create function pg_temp.as_role(p_role text, p_sql text) returns jsonb language plpgsql as $f$
+declare r jsonb;
+begin
+  begin
+    perform set_config('request.jwt.claims', jsonb_build_object('role', p_role, 'sub', gen_random_uuid())::text, true);
+    perform set_config('role', p_role, true);
+    execute p_sql into r;
+    perform set_config('role', 'none', true);
+    return coalesce(r, 'null'::jsonb);
+  exception when others then return jsonb_build_object('err', sqlerrm);
+  end;
+end $f$;
+do $test$
+declare pass integer; fail integer; fails text; notes text := ''; tag text := substr(md5(random()::text), 1, 8); j jsonb; nm text := gen_random_uuid()::text || '/keep/' || gen_random_uuid()::text || '/t-' || tag || '.zip';
+begin
+  create temp table t_chk (i serial, name text, ok boolean, got text) on commit drop;
+  insert into storage.objects (bucket_id, name, owner_id, metadata) values ('msg-archives', nm, null, '{"size": 4321}');
+  j := pg_temp.as_role('service_role', 'select public.pb_offsite_todo(200)');
+  insert into t_chk (name, ok, got) values ('5a the off-site list includes a new chat archive', exists (select 1 from jsonb_array_elements(j) e where e->>'bucket' = 'msg-archives' and e->>'name' = nm), left(j::text, 200));
+  j := pg_temp.as_role('authenticated', 'select public.pb_offsite_todo(200)');
+  insert into t_chk (name, ok, got) values ('5b the app cannot read the off-site list', coalesce(j->>'err', '') ~ 'permission denied|pb:not_allowed', j::text);
+  insert into t_chk (name, ok, got) values ('5c the live text is kept for the undo', exists (select 1 from pb_msg.fn_backup where sig = 'public.pb_offsite_todo(integer)'), '');
+  insert into t_chk (name, ok, got) values ('5d still service-role only, still SECURITY DEFINER with a pinned search_path',
+    (select prosecdef and proconfig::text like '%search_path=%' from pg_proc where oid = 'public.pb_offsite_todo(integer)'::regprocedure), '');
+  select count(*) filter (where ok), count(*) filter (where ok is not true), coalesce(string_agg(name || ' [got: ' || coalesce(got, 'null') || ']', ' ; ' order by i) filter (where ok is not true), '') into pass, fail, fails from t_chk;
+  raise exception 'RESULT: % pass, % fail% %', pass, fail, case when fail > 0 then ' | FAILED: ' || fails else '' end, notes;
+end $test$;

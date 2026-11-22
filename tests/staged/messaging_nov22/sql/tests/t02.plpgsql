@@ -1,0 +1,122 @@
+-- messaging_nov22 02 test: the photo and archive policies, run AS ROLE authenticated (inserting / selecting storage.objects
+-- the way the Storage API does for a signed-in user). Also checks that every function a msg_* policy uses is executable by
+-- authenticated (this morning's live bug: a policy calling a function authenticated could not run). Rolled back.
+create function pg_temp.q(p_user uuid, p_sql text) returns jsonb language plpgsql as $f$
+declare r jsonb;
+begin
+  begin
+    perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', p_user, 'aal', 'aal1')::text, true);
+    perform set_config('role', 'authenticated', true);
+    execute p_sql into r;
+    perform set_config('role', 'none', true);
+    return coalesce(r, 'null'::jsonb);
+  exception when others then return jsonb_build_object('err', sqlerrm);
+  end;
+end $f$;
+create function pg_temp.svc(p_sql text) returns jsonb language plpgsql as $f$
+declare r jsonb;
+begin
+  begin
+    perform set_config('request.jwt.claims', '{"role": "service_role"}', true);
+    perform set_config('role', 'service_role', true);
+    execute p_sql into r;
+    perform set_config('role', 'none', true);
+    return coalesce(r, 'null'::jsonb);
+  exception when others then return jsonb_build_object('err', sqlerrm);
+  end;
+end $f$;
+create function pg_temp.e(j jsonb) returns text language sql as $f$ select coalesce(j->>'err', case when (j->>'ok')::boolean then 'ok' else j::text end) $f$;
+-- upload as the user: an insert into storage.objects through the policies (what the Storage API does with the user's token)
+create function pg_temp.up(p_user uuid, p_bucket text, p_name text, p_size integer) returns text language sql as $f$
+  select pg_temp.e(pg_temp.q(p_user, format('with i as (insert into storage.objects (bucket_id, name, owner_id, metadata) values (%L, %L, %L, %L) returning 1) select jsonb_build_object(''ok'', count(*) = 1) from i',
+    p_bucket, p_name, p_user::text, jsonb_build_object('size', p_size, 'mimetype', 'image/jpeg')))) $f$;
+create function pg_temp.sees(p_user uuid, p_bucket text, p_name text) returns text language sql as $f$
+  select coalesce(pg_temp.q(p_user, format('select to_jsonb(count(*)) from storage.objects where bucket_id = %L and name = %L', p_bucket, p_name))::text, 'null') $f$;
+
+do $test$
+declare
+  pass integer; fail integer; fails text; notes text := ''; tag text := substr(md5(random()::text), 1, 8);
+  o uuid := gen_random_uuid(); pm uuid := gen_random_uuid(); f1 uuid := gen_random_uuid(); p1 uuid := gen_random_uuid(); p3 uuid := gen_random_uuid();
+  x uuid := gen_random_uuid(); o2 uuid := gen_random_uuid(); c uuid := gen_random_uuid(); c2 uuid := gen_random_uuid();
+  job text := 'MSGP-' || tag; j jsonb; ch uuid; m1 uuid; m2 uuid; s text; n integer; k1 text; k2 text; k3 text; ar uuid; apath text; can_write boolean := true;
+begin
+  create temp table t_chk (i serial, name text, ok boolean, got text) on commit drop;
+  perform set_config('pb_msg.no_kick', 'on', true);
+  -- ---- every function used by our policies is executable by authenticated ----
+  select count(*), string_agg(pr.oid::regprocedure::text || ' in ' || po.polname, ', ') into n, s
+    from pg_policy po join pg_depend d on d.classid = 'pg_policy'::regclass and d.objid = po.oid and d.refclassid = 'pg_proc'::regclass
+    join pg_proc pr on pr.oid = d.refobjid
+   where po.polrelid = 'storage.objects'::regclass and po.polname like 'msg\_%' and not has_function_privilege('authenticated', pr.oid, 'execute');
+  insert into t_chk (name, ok, got) values ('4a every function a msg_* storage policy calls is executable by authenticated', n = 0, coalesce(s, ''));
+  select count(*) into n from pg_policy po join pg_depend d on d.classid = 'pg_policy'::regclass and d.objid = po.oid and d.refclassid = 'pg_proc'::regclass
+   where po.polrelid = 'storage.objects'::regclass and po.polname like 'msg\_%';
+  insert into t_chk (name, ok, got) values ('4b (the check above saw the policy functions: 3 policies, 3 functions)', n = 3 and (select count(*) from pg_policy where polrelid = 'storage.objects'::regclass and polname like 'msg\_%') = 3, n::text);
+  select count(*) into n from pg_policy po where po.polrelid = 'storage.objects'::regclass and po.polname like 'msg\_%' and po.polcmd in ('w', 'd', '*');
+  insert into t_chk (name, ok, got) values ('4c no update/delete policy on message photos or archives', n = 0, n::text);
+  insert into t_chk (name, ok, got) values ('4d both buckets private, jpeg only for photos', (select count(*) from storage.buckets where id in ('msg-photos', 'msg-archives') and not public) = 2
+    and (select allowed_mime_types from storage.buckets where id = 'msg-photos') = array['image/jpeg'], '');
+
+  insert into auth.users (id, email) select v, 'pbmsgp-' || tag || '-' || row_number() over () || '@example.invalid' from unnest(array[o, pm, f1, p1, p3, x, o2]) v;
+  insert into public.companies (id, name, owner_user_id, status, plan) values (c, 'pbmsgp ' || tag, o, 'active', 'paid'), (c2, 'pbmsgp other ' || tag, o2, 'active', 'paid');
+  insert into public.company_members (company_id, user_id, role) values (c, pm, 'pm'), (c, f1, 'foreman'), (c, p1, 'pipelayer'), (c, p3, 'pipelayer'), (c2, x, 'foreman');
+  insert into pb_prod.site_log (user_id, company_id, client_item_id, kind, job_number, job_key, data) values (f1, c, 'msgp-' || tag || '-1', 'delay', job, lower(job), '{}');
+  insert into pb_prod.crew_links (company_id, foreman_id, pipelayer_id) values (c, f1, p1);
+  ch := (pg_temp.q(f1, format('select public.pb_msg_open_job(%L, %L)', job, f1))->'chat'->>'id')::uuid;
+  perform pg_temp.q(pm, format('select public.pb_msg_set(%L, true, %L, %L)', ch, 'from_added', pm));
+  k1 := c::text || '/' || ch::text || '/' || f1::text || '/cli' || tag || 'a-1.jpg';
+
+  s := pg_temp.up(f1, 'msg-photos', k1, 120000);
+  if s like '%permission denied for table objects%' then can_write := false; notes := ' (NOTE: storage.objects not writable by authenticated here: 4e-4n skipped)'; end if;
+  if can_write then
+    insert into t_chk (name, ok, got) values ('4e a foreman in the chat uploads a photo into his own folder', s = 'ok', s);
+    s := pg_temp.up(pm, 'msg-photos', c::text || '/' || ch::text || '/' || f1::text || '/cli' || tag || 'b-1.jpg', 1000) || '/'
+      || pg_temp.up(p3, 'msg-photos', c::text || '/' || ch::text || '/' || p3::text || '/cli' || tag || 'c-1.jpg', 1000) || '/'
+      || pg_temp.up(x, 'msg-photos', c::text || '/' || ch::text || '/' || x::text || '/cli' || tag || 'd-1.jpg', 1000) || '/'
+      || pg_temp.up(f1, 'msg-photos', c2::text || '/' || ch::text || '/' || f1::text || '/cli' || tag || 'e-1.jpg', 1000) || '/'
+      || pg_temp.up(f1, 'msg-photos', c::text || '/' || ch::text || '/' || f1::text || '/cli' || tag || 'f-1.png', 1000);
+    insert into t_chk (name, ok, got) values ('4f refused: into someone else''s folder, a pipelayer not in the chat, another company, a wrong company in the path, not .jpg',
+      s ~ '^new row violates row-level security policy.*/new row violates.*/new row violates.*/new row violates.*/new row violates', s);
+    j := pg_temp.q(f1, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli' || tag || 'a', 'MH4 grade', jsonb_build_array(jsonb_build_object('path', k1, 'w', 900, 'h', 675)), f1));
+    m1 := (j->'message'->>'id')::uuid;
+    insert into t_chk (name, ok, got) values ('4g the message with the photo is sent (size from storage)', m1 is not null and (j->'message'->'photos'->0->>'bytes')::int = 120000, j::text);
+    s := pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli' || tag || 'z', 'x', jsonb_build_array(jsonb_build_object('path', c::text || '/' || ch::text || '/' || f1::text || '/cli' || tag || 'z-1.jpg')), f1)))
+      || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli' || tag || 'y', 'x', jsonb_build_array(jsonb_build_object('path', k1)), f1)));
+    insert into t_chk (name, ok, got) values ('4h a message naming a photo not uploaded, or another message''s photo, is refused', s = 'pb:photo_missing/pb:bad_photo', s);
+    s := pg_temp.sees(pm, 'msg-photos', k1) || '/' || pg_temp.sees(f1, 'msg-photos', k1) || '/' || pg_temp.sees(p3, 'msg-photos', k1) || '/' || pg_temp.sees(x, 'msg-photos', k1);
+    insert into t_chk (name, ok, got) values ('4i who can open the photo: office yes, author yes, a pipelayer not in the chat no, another company no', s = '1/1/0/0', s);
+    s := pg_temp.sees(p1, 'msg-photos', k1);
+    insert into t_chk (name, ok, got) values ('4j a pipelayer added "from when added", AFTER... (added before this photo: sees it)', s = '1', s);
+    -- a photo sent before a second pipelayer was added
+    perform pg_temp.q(pm, format('select public.pb_msg_set(%L, false, %L, %L)', ch, 'from_added', pm));
+    k2 := c::text || '/' || ch::text || '/' || f1::text || '/cli' || tag || 'g-1.jpg';
+    s := pg_temp.up(f1, 'msg-photos', k2, 90000);
+    m2 := (pg_temp.q(f1, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli' || tag || 'g', null, jsonb_build_array(jsonb_build_object('path', k2)), f1))->'message'->>'id')::uuid;
+    s := s || '/' || pg_temp.sees(p1, 'msg-photos', k2);
+    perform pg_temp.q(pm, format('select public.pb_msg_set(%L, true, %L, %L)', ch, 'from_added', pm));
+    s := s || '/' || pg_temp.sees(p1, 'msg-photos', k2);
+    perform pg_temp.q(pm, format('select public.pb_msg_set(%L, true, %L, %L)', ch, 'all', pm));
+    s := s || '/' || pg_temp.sees(p1, 'msg-photos', k2);
+    insert into t_chk (name, ok, got) values ('4k pipelayers off: no photo; back on "from when added": not the earlier photo; "whole chat": yes', m2 is not null and s = 'ok/0/0/1', s);
+    perform pg_temp.q(f1, format('select public.pb_msg_delete(%L, %L)', m2, f1));
+    s := pg_temp.sees(pm, 'msg-photos', k2) || '/' || pg_temp.sees(p1, 'msg-photos', k2);
+    insert into t_chk (name, ok, got) values ('4l a deleted message''s photo is hidden from everyone in the app', s = '0/0', s);
+    -- the daily photo cap (live: pb_billing.storage_room with photos_day; the local stand-in allows 3 a day)
+    k3 := c::text || '/' || ch::text || '/' || pm::text || '/cli' || tag || 'h-1.jpg';
+    s := pg_temp.up(pm, 'msg-photos', k3, 1000);
+    insert into t_chk (name, ok, got) values ('4m the office can attach photos too (its own folder)', s = 'ok', s);
+    -- archives: only the office of that company may download a finished one
+    perform pg_temp.q(pm, format('select public.pb_msg_close(%L, true, %L)', ch, pm));
+    ar := (select a.id from pb_msg.archives a where a.chat_id = ch order by a.requested_at desc limit 1);
+    apath := c::text || '/keep/' || ch::text || '/t-' || tag || '.zip';
+    j := pg_temp.svc(format('with i as (insert into storage.objects (bucket_id, name, owner_id, metadata) values (%L, %L, null, %L) returning 1) select jsonb_build_object(''ok'', count(*) = 1) from i',
+      'msg-archives', apath, '{"size": 5000}'));
+    perform pg_temp.svc('select public.pb_msg_svc_archive_next()');
+    perform pg_temp.svc(format('select public.pb_msg_svc_archive_done(%L, true, %L, 5000, 2, 1, 2, null)', ar, jsonb_build_array(jsonb_build_object('path', apath, 'bytes', 5000))));
+    s := pg_temp.e(j) || '/' || pg_temp.sees(o, 'msg-archives', apath) || '/' || pg_temp.sees(pm, 'msg-archives', apath) || '/' || pg_temp.sees(f1, 'msg-archives', apath) || '/' || pg_temp.sees(x, 'msg-archives', apath)
+      || '/' || pg_temp.up(o, 'msg-archives', c::text || '/keep/' || ch::text || '/fake.zip', 10);
+    insert into t_chk (name, ok, got) values ('4n archive: company account and PM can download; foreman and other company cannot; nobody uploads one from the app', s ~ '^ok/1/1/0/0/new row violates', s);
+  end if;
+
+  select count(*) filter (where ok), count(*) filter (where ok is not true), coalesce(string_agg(name || ' [got: ' || coalesce(got, 'null') || ']', ' ; ' order by i) filter (where ok is not true), '') into pass, fail, fails from t_chk;
+  raise exception 'RESULT: % pass, % fail% %', pass, fail, case when fail > 0 then ' | FAILED: ' || fails else '' end, notes;
+end $test$;
