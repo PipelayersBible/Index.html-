@@ -57,3 +57,6 @@ The crew hours section says: "Job record, not a time card: meal and rest breaks 
 
 ## Spanish (still switched off)
 Spanish added for the 12 new injury lines. Other new lines are English for now (list in NOTES.md).
+
+## Live
+Published Nov 21 ~6:55 PM, commit e85bf91; live sw.js and page say r17.14 · 2026-11-21. Full regression on the candidate: 220 pass, 2 explained (t130 expected, updated; t07_sw test setup). Smoke on the stamped build: t130 (97 PASS), s1_smoke, t00b, t03_roles pass.
