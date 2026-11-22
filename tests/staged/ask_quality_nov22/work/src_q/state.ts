@@ -134,7 +134,7 @@ export function addressState(a) {
 // Does the answer change with the state? Used only when NO state is known, to decide whether to ask.
 const DEPENDS = /\b(811|one[- ]?call|dig ?alert|blue ?stake|miss ?dig|locate (ticket|request|marks?)|dig ticket|ticket (life|good|expire|valid)|marks? (good|valid|expire)|tolerance zone|hand ?dig|white ?lin|call(ed)? in (the )?locates?|(lunch|meal|rest) (break|period)s?|breaks?\b.*\b(crew|guys|hours)|overtime|double ?time|minimum wage|prevailing wage|pay ?(day|check|stub)|final pay|sick (leave|pay|time)|heat (illness|rule|standard|plan)|shade\b|state (law|rule|plan|osha|spec|standard)|my state|this state|our state|here\b.*\b(rule|law|require)|(rule|law|require)\w*\b.*\bhere\b|spec ?book|dot spec|standard spec|water (and|&|\/) ?sewer separation|separation (between|of|from)|flagger (card|cert)|contractor'?s? licen[cs]e|trench permit|excavation permit|annual permit)\b/i;
 // ask_quality_nov22 (review 4): with NO state known, safety-rule questions also change with the state (WA trench at 4 ft, CA permit, state air limits, state reporting times)
-const DEPENDS_SAFETY = /\b(trench\w*|excavat\w*|shor(e|ing)|trench box|shields?|slop(e|ed|ing) (the |a |my |our )?(trench|cut|walls?|sides?|bank|excavation|hole|ditch)|sloping|benching|type [abc] soil|cave[- ]?ins?|protective system|confined space|permit[- ]required|manhole entry|vault entry|enter(ing)? (a |the )?(manhole|vault|wet ?well|tank|pit)|(co|h2s|lel|oxygen|o2|carbon monoxide|hydrogen sulfide)\b.{0,20}\b(limit|level|ppm|percent|%|alarm|reading)|(limit|level|alarm)s?\b.{0,15}\b(co|h2s|lel|oxygen|carbon monoxide|hydrogen sulfide)|report\w*\b.{0,30}\b(injur\w*|hospital\w*|amputat\w*|death|fatalit\w*|accident|incident)|(injur\w*|hospital\w*|amputat\w*|death|fatalit\w*)\b.{0,30}\breport\w*|heat|fall protection|flaggers?|traffic control)\b/i;
+const DEPENDS_SAFETY = /\b((trench\w*|excavat\w*)\b.{0,40}\b(box|shor\w*|shield|slop\w*|bench\w*|protect\w*|deep|depth|permit|cave)\w*|(how deep|what depth|at what depth)\b.{0,30}\b(trench|excavat\w*|box|shor\w*|protect\w*)|shor(e|ing)|trench box|shields?|slop(e|ed|ing) (the |a |my |our )?(trench|cut|walls?|sides?|bank|excavation|hole|ditch)|sloping|benching|type [abc] soil|cave[- ]?ins?|protective system|confined space|permit[- ]required|manhole entry|vault entry|enter(ing)? (a |the )?(manhole|vault|wet ?well|tank|pit)|(co|h2s|lel|oxygen|o2|carbon monoxide|hydrogen sulfide)\b.{0,20}\b(limit|level|ppm|percent|%|alarm|reading)|(limit|level|alarm)s?\b.{0,15}\b(co|h2s|lel|oxygen|carbon monoxide|hydrogen sulfide)|report\w*\b.{0,30}\b(injur\w*|hospital\w*|amputat\w*|death|fatalit\w*|accident|incident)|(injur\w*|hospital\w*|amputat\w*|death|fatalit\w*)\b.{0,30}\breport\w*|heat|fall protection|flaggers?|traffic control)\b/i;
 const EMERGENCY = /\b(911|bleed|caved? ?in|cave-?in|collaps|buried|trapped|pinned|not breathing|unconscious|unresponsive|passed out|blowing|gas (leak|smell)|smell gas|hit (a|the) (gas|power|electric)|(touched|contacted) (a|the) (power|overhead|electric)|on fire|electrocut|shock(ed)?|heat ?stroke|seizure|chest pain|amputat|crush|run over|alarm (went|is going|going) off|in alarm|atrapad|desmay|no responde|no respira|fuga de gas)/i;
 export function stateDependent(q, rawHits, code) {
   const t = String(q || "");
@@ -248,6 +248,8 @@ const DIG_TABLES = [["fed-811-zone-1", /\b(tolerance|hand[- ]?dig\w*|how close|c
   ["fed-811-ticketlife-1", /\b(good for|expir\w*|valid|ticket life|last(s)?|renew\w*|updat\w*|extend\w*|refresh\w*|how many days .*ticket)\b/i],
   ["fed-811-wait-1", /\b(wait\w*|how (long|soon)|before (i|we|you) (can )?dig|when can|notice|ahead|hours|working days|business days|start digging)\b/i]];
 export const FORCED_CHARS = 2600;
+// ask_quality_nov22
+export const REPORT_TOPIC = /\b(report\w*|notify\w*|call (osha|the state|cal\/osha|l&i))\b.{0,50}\b(injur\w*|hurt|hospital\w*|admitted|amputat\w*|death|fatal\w*|died|killed|accident|incident|er|emergency room|eye|finger\w*)\b|\b(injur\w*|hospital\w*|admitted|amputat\w*|death|fatal\w*|died|accident|incident|emergency room|\ber\b)\b.{0,50}\b(report\w*|notify\w*|call (osha|the state))\b|\b(do i|do we|have to|need to) call osha\b/i;
 function docHit(index, id, score, exc) {
   const d = index?.docs ? index.docs.findIndex((r) => r[0] === id) : -1;
   if (d < 0) return null;
@@ -276,6 +278,12 @@ export function topicCards(search, index, qq, opts, code, question, own, qTop) {
       const t = docHit(index, id, sc, !1);
       if (t && new RegExp(`\\b${name}\\b`).test(t.text.replace(/West Virginia/g, code === "WV" ? "West Virginia" : ""))) { outC.push(t); break; }
     }
+  }
+  if (REPORT_TOPIC.test(q) && !DIG_TOPIC.test(q)) {
+    const re = new RegExp(`^sp-${lc}-report`);
+    if (!has(re)) { const h = best(re, "injury reporting hospitalization report hours"); h && outC.push({ ...h, score: Math.max(h.score, sc), exc: !0 }); }
+    const t = docHit(index, "osha-pl-report-states-1", sc, !1);
+    t && outC.push(t);
   }
   if (DIG_TOPIC.test(q)) {
     const re = code === "CA" ? /^(dig-ca-|ca-dig-alert-)/ : new RegExp(`^dig-${lc}-(?!locatable)`);

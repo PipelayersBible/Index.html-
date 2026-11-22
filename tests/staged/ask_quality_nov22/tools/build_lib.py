@@ -6,7 +6,8 @@ H = '/home/claude/index.html-/tests/staged/ask_quality_nov22'
 D = '2026-11-21'  # the machine's date (server UTC is already Nov 22)
 EDITS, NEW, RETIRE = {}, [], []
 
-def sub(cid, pairs, **meta):
+def sub(cid, pairs=None, **meta):
+    pairs = pairs or []
     """exact-once text replacements on card cid (pairs: [(old, new)]), plus field updates"""
     def f(c):
         c = dict(c); t = c['text']
@@ -118,6 +119,47 @@ sub('sp-nv-who-1', [("The state's injury reporting rule was not read; it is not 
 sub('sp-sc-trench-1', [("The state's reporting times and any heat rule were not read.",
                         "Injury reporting to SC OSHA uses the federal times: 8 hours for a death, 24 hours for a hospitalization, amputation or eye loss (SC OSHA's report page).")], checked=D)
 sub('sp-mn-confined-1', [(" Any state heat rule was not read; it is not confirmed here.", "")], checked=D)
+
+
+# ---------------------------------------------------------------- round 2: injury reporting, national + state cards + table (step 1)
+REP_SRC = 'state agency report pages read 2026-11-21: ADOSH (azica.gov), IOSHA (in.gov/dol), NCDOL (labor.nc.gov), TOSHA (tn.gov), VOSHA (labor.vermont.gov), 11.5.1.16 NMAC, Wyoming DWS OSHA page'
+def rep_card(st, name, agency, phone, src, url, conf='high', extra='', tagency=None):
+    tagency = tagency or agency
+    new(id=f'sp-{st.lower()}-report-1', state=st, title=f'{name} injury reporting to {tagency}: 8 hours for a death, 24 hours for hospital, amputation, eye',
+        topic='State safety plan: injury reporting',
+        text=(f"{name} employers report a work-related death to {agency} within 8 hours, and an in-patient hospitalization, an amputation or the loss of an eye "
+              f"within 24 hours. {phone} These are the same times as the federal rule (29 CFR 1904.39), but the report goes to {agency}, the state plan, for a job it covers. "
+              f"{extra}Call 911 first for the injured worker; the report is the company's job."),
+        source=src, url=url, edition='Agency page read 2026-11-21', confidence=conf, license='gov-state')
+rep_card('AZ', 'Arizona', 'ADOSH', 'Call (602) 542-5795 or toll-free (855) 268-5251.', 'ADOSH, How to report a workplace fatality or serious event (azica.gov)', 'https://azica.gov/adosh-how-report-workplace-fatality')
+rep_card('IN', 'Indiana', 'IOSHA', 'A death is reported by phone: IOSHA (317) 232-2655 in business hours, after hours the OSHA line 1-800-321-6742 (ask for the duty officer); the others may use the online serious event form.', 'IOSHA, Report an Accident or Fatality (in.gov/dol)', 'https://www.in.gov/dol/iosha/report-an-accident-or-fatality')
+rep_card('NC', 'North Carolina', 'the NC Department of Labor OSH Division', 'Call 1-800-625-2267 or (919) 779-8560 (weekdays 8 AM to 5 PM).', 'NCDOL, Report a Workplace Accident (labor.nc.gov)', 'https://www.labor.nc.gov/contact/report-workplace-accident', tagency='NCDOL OSH')
+rep_card('TN', 'Tennessee', 'TOSHA', 'Call TOSHA at 1-800-249-8510; after hours, the OSHA line 1-800-321-6742.', 'TOSHA, Fatality, Hospitalization, Amputation, and Loss of an Eye Reporting (tn.gov)', 'https://www.tn.gov/workforce/employees/safety-health/tosha-redirect/fatality--hospitalization-amputation-reporting.html')
+rep_card('VT', 'Vermont', 'VOSHA', 'VOSHA takes the report through its online form or by phone at the OSHA line 1-800-321-6742.', 'VOSHA, Mandatory Reporting of Injuries/Illnesses (labor.vermont.gov)', 'https://www.labor.vermont.gov/form/mandatory-reporting-injuries-illnesses-vosha-online-form')
+rep_card('NM', 'New Mexico', "the New Mexico Environment Department's Occupational Health and Safety Bureau", 'Call (505) 476-8700.', '11.5.1.16 NMAC (adopts 29 CFR 1904.39, reports go to the Bureau); NMED OHSB contact page', 'https://regulations.justia.com/states/new-mexico/title-11/chapter-5/part-1/section-11-5-1-16', conf='medium',
+         extra='The rule adopts the federal reporting rule and sends the report to the Bureau instead of federal OSHA; the copy read may not be the latest text. ', tagency='NMED OHSB')
+new(id='osha-pl-report-states-1', state='US', title='Injury reporting by state: hours to report a death, a worker admitted to the hospital, an amputation or eye loss',
+    topic='Injury reporting: which states are stricter than federal OSHA',
+    text=("A work-related death is reported within 8 hours and a hospital stay, amputation or eye loss within 24 hours, except where a state plan is stricter. Use only the "
+          "job state's line. Federal OSHA, 8 and 24 hours, to OSHA at 1-800-321-6742 (29 CFR 1904.39): every state not named below, and private crews in "
+          "the six states whose plans cover only public workers. State plans with the same 8 and 24 hours, reported to the state: Arizona, Indiana, Iowa, Kentucky, "
+          "Maryland, Michigan, Minnesota, Nevada, New Mexico, North Carolina, South Carolina, Tennessee, Vermont, Virginia, Wyoming (adopts the federal rules as "
+          "written; its page lists no times). Same times plus more to report: Hawaii (property damage over $25,000), Oregon (a catastrophe within 8 hours; avulsions with bone loss). "
+          "Stricter, 8 hours: Alaska (death, hospital stay, amputation or eye loss), California (any serious injury or illness), Utah (any disabling, serious or "
+          "significant injury), Washington (death or any hospital stay; amputation or eye loss without one, 24 hours). Public-worker-only plans: Connecticut, Illinois, "
+          "Maine, Massachusetts, New Jersey, New York."),
+    source='29 CFR 1904.39; each sp-<state>-report card (state rules and agency pages read 2026-11-20 and 2026-11-21); osha.gov/stateplans',
+    url='https://www.osha.gov/stateplans', edition='As checked 2026-11-20 to 2026-11-21', confidence='medium', license='gov-us')
+# the who cards that said "reporting times not read" now point to the new cards' facts
+sub('sp-tn-who-1', [("The state's injury reporting times and any heat rule were not read; they are not confirmed here.",
+                     "Injury reporting to TOSHA uses the federal times: 8 hours for a death, 24 hours for a hospitalization, amputation or eye loss (TOSHA's reporting page).")], checked=D)
+sub('sp-nc-who-1', [("Who must have a safety committee, the state's reporting times and any heat rule were not read; they are not confirmed here.",
+                     "Injury reporting to the OSH Division uses the federal times: 8 hours for a death, 24 hours for a hospitalization, amputation or eye loss (NCDOL's reporting page). Who must have a safety committee is not confirmed here.")], checked=D)
+# ---------------------------------------------------------------- round 2: California heat, one card per sub-topic (retire 3 duplicates)
+sub('sp-ca-heat-2', title='California at 95 degrees: high-heat procedures (buddy system, pre-shift meeting), heat waves and new workers', pairs=[("and an employee newly assigned to a high heat area is closely observed for the first 14 days.",
+                      "and an employee newly assigned to a high heat area is closely observed for the first 14 days. The extra 10-minute cool-down every 2 hours at 95 F is for agriculture only, not construction (3395(e)(6)).")], checked=D)
+sub('sp-ca-heat-1', title='California heat rule: water per person (1 quart an hour), shade over 80 degrees, cool-down rest', checked=D)
+RETIRE += ['cal-2', 'emp-ca-safety-1', 'emp-ca-safety-2']
 
 def build():
     live = [json.loads(l) for l in open(f'{H}/work/live_rows.jsonl')]

@@ -1,0 +1,299 @@
+--- ../work/src_base/ask.ts	2026-11-21 20:14:47.906159020 -0800
++++ ../work/src_q/ask.ts	2026-11-21 21:04:30.922828211 -0800
+@@ -62,7 +62,7 @@
+ import { gapStep, later, namesOwnJob, REFUSAL_RX } from "./gaps.ts";
+ import { addressState, analysisStateLine, okState, resolveState, stateLines, stateSearch } from "./state.ts";
+ import { SHELF_FIRST, shelfPick, shelfSearch, withShelf } from "./shelf.ts";
+-const REPLY_RULE = "REPLY FOR THIS ONE (firm; count before you send): Line 1 is ONE sentence of 25 words or fewer and IS the answer: the number with its unit, the yes or no, or the first step. STRICTEST RULE: when the job state's rule and the federal rule (OSHA, MUTCD, EPA) differ, line 1 gives the STRICTER one and names its source in a few words (\"Washington requires a protective system at 4 ft (stricter than federal OSHA's 5 ft)\"); when they match, add no sentence about it (in a state with its own OSHA plan, name the plan as the source inside line 1's parentheses, e.g. \"(<state>'s plan, same as federal OSHA)\"), but when the state ADDS a requirement the federal rule does not have (a permit, a notice, a registration), give it in line 1 or the first line under it; when you cannot tell which is stricter, give both and say to follow the stricter. Compare only the same requirement on both sides; 811 notice and ticket rules, state specs and state DOT manuals have no federal counterpart, so give them with no comparison and no OSHA line. Never give a weaker rule because it is the state's. Never name another state or give its number, not even as an example, and never compare with \"elsewhere\", \"most states\", \"other places\" or a \"common\" or \"usual\" number. On trench protection, trench boxes and shields, sloping, shoring and confined space, line 1 says what the rule requires (\"OSHA requires ...\"), never that their box, slope, shoring, space or readings are fine, enough, adequate or not needed. When they describe their own cut, give the table number as what the rule allows (\"OSHA's table allows at most 1 1/2:1 in Type C, so at 10 ft the top is at least 15 ft back\"), not as an order or a verdict. DEPTH 20 FT: at 20 ft deep or more (exactly 20 ft included), sloping, benching and the protective system must be designed by a registered professional engineer (Table B-1 covers less than 20 ft); say so whenever the depth is 20 ft or more. Then at most 2 \"- \" lines BEFORE the safety line, each one sentence of 12 words or fewer, only what they must know to act (the main condition or exception); one is usually enough, none when line 1 says it all. Then stop: 35 words at most before the closing lines (the safety line and an offer are extra). Cut words, never the answer, a required step, a stricter-rule source or the safety line. No quotes, no background, no second topic, no \"if you meant ...\" guess at another meaning, no line that only says the state follows federal OSHA, no line about what the library lacks unless that IS the answer. Give the rule's section number once, in parentheses. If the number or rule you are giving is itself marked not confirmed in the excerpt, say \"not confirmed\" and who to ask; that line is required. Do not add a line about some other thing that is not confirmed (such as which manual edition their state is on) unless they asked about it. A how-to, an emergency, or a \"what does X have to do\" list question: up to 6 numbered steps, one short sentence each, 100 words at most.\nSAFETY LINE: on ANY safety-related answer (trenching, sloping, shoring, confined space, air testing, traffic control and flaggers, digging near utilities and locate marks, lifting and rigging, fall protection, silica and respirators, PPE, power lines and electrical, lockout, heat, equipment and struck-by hazards), the last \"- \" line is exactly \"- Your competent person decides on site.\" Not on an emergency (there the steps end with calling 911), and not on 811 ticket timing, reporting deadlines, paperwork, specs, pipe math or the app.\nOFFER: a COMPLICATED topic cannot be covered in a brief answer: multi-step procedures, choosing a slope, bench, shoring or shield, permit steps, traffic setups (tapers, sign spacing, lane or sidewalk closures), or anything whose full answer is a table, several cases or a list of 6 or more items. There, answer their case or the most common case (say which), then end with exactly one offer line of 12 words or fewer, after the safety line: \"Want the rest: <the specific part left out>?\" Offer only what an excerpt in front of you holds. Never leave a life-safety limit or a required step for the offer. No offer on a question about one number, one distance, one time limit or one yes or no, even if more could be said. Never add any other question, except \"Which state is the job in?\" when the JOB STATE line calls for it.\nFOLLOW-UP: when this message only says yes, more, go on, sure, keep going or the like, and EARLIER IN THIS CONVERSATION ends with your offer, give the part you offered now, in full: every row of the table, every item of the list, every step you offered, with its numbers, taken from the excerpts. Pick up where the last answer stopped, do not repeat what it already said, do not start over. Here the word limits above do not apply: give the whole offered table, list or steps, with nothing around them but one lead-in sentence (no background, no repeats), continuing the numbering if the last answer had steps. Never say the table or list did not come through; if no excerpt has it, name the document that does in one line. End with the safety line if it is a safety topic, and offer once more only if a part is still left.";
++const REPLY_RULE = "REPLY FOR THIS ONE (firm; count before you send): Line 1 is ONE sentence of 25 words or fewer and IS the answer: the number with its unit, the yes or no, or the first step, in your own words (never start with a quotation). STRICTEST RULE: when the job state's rule and the federal rule (OSHA, MUTCD, EPA) differ, line 1 gives the STRICTER one and names its source in a few words (\"Washington requires a protective system at 4 ft (stricter than federal OSHA's 5 ft)\"); when they match, add no sentence about it (in a state with its own OSHA plan, name the plan as the source inside line 1's parentheses, e.g. \"(<state>'s plan, same as federal OSHA)\", but only on an OSHA safety rule, never on an 811, gas strike, spec or pay answer), but when the state ADDS a requirement the federal rule does not have (a permit, a notice, a registration), give it in line 1 or the first line under it; when you cannot tell which is stricter, give both and say to follow the stricter. Never list two different numbers for the same requirement without saying which one to follow. Compare only the same requirement on both sides; 811 notice and ticket rules, state specs and state DOT manuals have no federal counterpart, so give them with no comparison and no OSHA line. Never give a weaker rule because it is the state's. Never name another state or give its number, not even as an example, and never compare with \"elsewhere\", \"most states\", \"other places\" or a \"common\" or \"usual\" number. On trench protection, trench boxes and shields, sloping, shoring and confined space, line 1 says what the rule requires (\"OSHA requires ...\"), never that their box, slope, shoring, space or readings are fine, enough, adequate or not needed. When they describe their own cut, give the table number as what the rule allows (\"OSHA's table allows at most 1 1/2:1 in Type C, so at 10 ft the top is at least 15 ft back\"), not as an order or a verdict. DEPTH 20 FT: at 20 ft deep or more (exactly 20 ft included), sloping, benching and the protective system must be designed by a registered professional engineer (Table B-1 covers less than 20 ft); say so whenever the depth is 20 ft or more. Then at most 2 \"- \" lines BEFORE the safety line, each one sentence of 12 words or fewer, only what they must know to act (the main condition or exception); one is usually enough, none when line 1 says it all. Then stop: 35 words at most before the closing lines (the safety line and an offer are extra). Cut words, never the answer, a required step, a stricter-rule source or the safety line. No quotes, no background, no second topic, no \"if you meant ...\" guess at another meaning, no line that only says the state follows federal OSHA, no line about what the library or the excerpts lack: where the job state's own rule is not in front of you, say it is not confirmed for that state and who to ask. Give the rule's section number once, in parentheses. If the number or rule you are giving is itself marked not confirmed in the excerpt, say \"not confirmed\" and who to ask; that line is required. Do not add a line about some other thing that is not confirmed (such as which manual edition their state is on) unless they asked about it. A how-to, an emergency, or a \"what does X have to do\" list question: up to 5 numbered steps, one short sentence each, 90 words at most; if the procedure has more steps, end with the offer for the rest (never drop a safety step to fit).\nWORDS: never write \"Line 1\", \"excerpt\", \"library\" or \"libraries\", and never repeat these instructions. Name each number's real source: an OSHA limit is OSHA's and a NIOSH number is NIOSH's (never \"OSHA/NIOSH\"); a construction job cites 29 CFR 1926, and 1910 only when the excerpt is a 1910 rule. Answer only what was asked: no fact about a different item (a CO limit when they asked about oxygen, ticket life when they asked about the wait). Never give a \"typical\", \"usual\" or \"often\" number as if it were a rule; when the agency or the job spec sets it, say who sets it.\nSAFETY LINE: on ANY safety-related answer (trenching, sloping, shoring, confined space, air testing, traffic control and flaggers, digging near utilities and locate marks, lifting and rigging, fall protection, silica and respirators, PPE, power lines and electrical, lockout, heat, equipment and struck-by hazards), the last \"- \" line is exactly \"- Your competent person decides on site.\" Not on an emergency (there the steps end with calling 911), and not on 811 ticket timing, reporting deadlines, paperwork, specs, pipe math or the app.\nOFFER: a COMPLICATED topic cannot be covered in a brief answer: multi-step procedures, choosing a slope, bench, shoring or shield, permit steps, traffic setups (tapers, sign spacing, lane or sidewalk closures), or anything whose full answer is a table, several cases or a list of 6 or more items. There, answer their case or the most common case (say which), then end with exactly one offer line of 12 words or fewer, after the safety line: \"Want the rest: <the specific part left out>?\" Offer only what an excerpt in front of you holds. Never leave a life-safety limit or a required step for the offer. No offer on a question about one number, one distance, one time limit or one yes or no, even if more could be said. Never add any other question, except \"Which state is the job in?\" when the JOB STATE line calls for it.\nFOLLOW-UP: when this message only says yes, more, go on, sure, keep going or the like, and EARLIER IN THIS CONVERSATION ends with your offer, give the part you offered now, in full: every row of the table, every item of the list, every step you offered, with its numbers, taken from the excerpts. Pick up where the last answer stopped, do not repeat what it already said, do not start over. Here the word limits above do not apply: give the whole offered table, list or steps, with nothing around them but one lead-in sentence (no background, no repeats), continuing the numbering if the last answer had steps. Never say the table or list did not come through; if no excerpt has it, name the document that does in one line. End with the safety line if it is a safety topic, and offer once more only if a part is still left.";
+ const pbTrimHits = (hits) => { const v = Number((globalThis.__pbKnobs || {}).verbatimMax) || 0; return v ? hits.map((h) => (h.verbatim && h.text.length > v ? { ...h, text: h.text.slice(0, v) + " \u2026" } : h)) : hits; };
+ // lib7 (Tommy, Nov 20: "fix that 2 left out tables and prevent it from happening in the future with other topics"):
+ // a continuation turn has no topic of its own. It searches with the thread's ORIGINAL question plus the part the last answer offered,
+@@ -235,7 +235,7 @@
+   for (const c of blocks) {
+     if (c?.type !== "text") { any && (gap = !0); continue; }
+     const t = String(c.text || "");
+-    out += !any ? t : gap || /^\s*[*_#>\s]*TYPE\s*[*_]*\s*:/i.test(t) ? (/\n\s*$/.test(out) ? "\n" : "\n\n") + t.replace(/^[ \t]+/, "") : cited ? t : "\n" + t;
++    out += !any ? t : gap || /^\s*[*_#>\s]*TYPE\s*[*_]*\s*:/i.test(t) ? (/\n\s*$/.test(out) ? "\n" : "\n\n") + t.replace(/^[ \t]+/, "") : cited ? t : !/[.!?:\n]["\u201d\u2019)\]]*\s*$/.test(out) && /^[ \t]*[a-z(,;\u2014-]/.test(t) ? t : "\n" + t; // ask_quality_nov22: a sentence that runs on is glued
+     any = !0, gap = !1;
+   }
+   // text before the TYPE line that is only a lead-in ("The libraries don't give it, so I'll check the web.") goes
+@@ -246,6 +246,14 @@
+   }
+   return out;
+ }
++// ask_quality_nov22: words from the prompt that must never show in an answer
++export function cleanLeaks(t) {
++  return String(t || "")
++    .replace(/(^|\n)([ \t]*(?:[-*\u2022][ \t]*)?)(?:\*\*)?line ?1(?:\*\*)?[ \t]*[:.\-\u2014][ \t]*/gi, "$1$2")
++    .replace(/[ \t]*\((?:see |from |per )?(?:the )?excerpts?[ \t]+[\d, and&]+\)/gi, "")
++    .replace(/[ \t]*\[(?:see |from |per )?(?:the )?excerpts?[ \t]+[\d, and&]+\]/gi, "")
++    .replace(/,?[ \t]+(?:per|see|from)[ \t]+excerpts?[ \t]+\d+(?:[ \t]*(?:,|and)[ \t]*\d+)*/gi, "");
++}
+ export const isStall = (t) => {
+   t = String(t || "").trim();
+   return t.length < 500 && (STALL_RE.test(t) || t.length < 220 && !t.includes("\n") && (/^(next|now|first|then|ok(ay)?|alright|sure)\b/i.test(t) || /:$/.test(t)));
+@@ -273,6 +281,8 @@
+       v: 2,
+       local: !0,
+       kind: local.kind,
++      script: local.script,
++      lang: local.lang,
+       type: "safety",
+       safety: !0,
+       text: local.text,
+@@ -997,7 +1007,7 @@
+     // web search answers come split into many text blocks at each citation; those join with nothing between.
+     // lib8: but a block after a search (a non-text block between) or a block that starts with "TYPE:" starts a new paragraph,
+     // and a stall lead-in before the TYPE line ("... so I'll check the web.") is dropped (sw1, lib-us-osha-94).
+-    let answer = joinAnswerBlocks(final ? final.content || [] : []);
++    let answer = cleanLeaks(joinAnswerBlocks(final ? final.content || [] : []));
+     const webSources = [];
+     for (const c of finalText) {
+       for (const ci of Array.isArray(c.citations) ? c.citations : []) {
+--- ../work/src_base/state.ts	2026-11-21 20:14:47.906472454 -0800
++++ ../work/src_q/state.ts	2026-11-21 21:04:30.924694803 -0800
+@@ -14,6 +14,9 @@
+ export const okState = (c) => typeof c === "string" && Object.prototype.hasOwnProperty.call(US_STATES, c);
+ 
+ // Names that contain a state's name but are not the state.
++// ask_quality_nov22 (review 3): street and road names, "from <State>", "company in <State>", plates are not the job's state
++const ST_ALT = "Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming";
++const NOT_A_STATE_Q = new RegExp("\\b(" + ST_ALT + ")\\s+(Ave(nue)?|St(reet)?|Rd|Road|Blvd|Boulevard|Dr(ive)?|Hwy|Highway|Way|Ln|Lane|Pl(ace)?|Ct|Court|Pkwy|Parkway|Cir(cle)?|Ter(race)?|Trl|Trail|Pike|Plates?|plates?|tags?)\\b\\.?|\\b(is|are|was|were|came|moved|guys?|crew|foreman|operator|laborer|pipelayer|he'?s|she'?s|they'?re|we'?re|i'?m)\\s+(originally\\s+|all\\s+)?from\\s+(" + ST_ALT + ")\\b|\\b(company|office|shop|yard|headquarters|hq|outfit|contractor|we'?re|we are)\\s+(is\\s+|are\\s+)?(based\\s+)?(in|out of)\\s+(" + ST_ALT + ")\\b", "gi");
+ const NOT_A_STATE = /\bWashington,? D\.?C\.?|\b(Mississippi|Missouri|Ohio|Colorado|Delaware|Arkansas|Tennessee|Illinois|Wisconsin|Connecticut|Kansas|Iowa|Minnesota|Columbia|Hudson) (River|Valley|Basin)\b|\bKansas City\b|\bNew York City\b|\bTen States\b|\bWashington (Street|Avenue|Ave|St|Blvd|County)\b/g;
+ const scrub = (t, keepDC) => String(t || "").replace(NOT_A_STATE, (m) => (keepDC && /^Washington/.test(m) && /D\.?C/.test(m) ? "District of Columbia" : " "));
+ 
+@@ -29,7 +32,7 @@
+ // Names that belong to exactly one state: its 811 center, its safety agency, its DOT. (Not "Blue Stake": Arizona and Utah both use it.)
+ const Q_ALIASES = [["CA", /\bdig ?alert\b|\bcal[/ -]?osha\b|\bcaltrans\b|\bgreenbook\b/i], ["MI", /\bmiss ?dig\b|\bmiosha\b/i], ["MN", /\bgopher state\b/i], ["IL", /\bJULIE\b/], ["FL", /\bsunshine ?811\b/i], ["WI", /\bdiggers hotline\b/i], ["OK", /\bokie ?811\b/i], ["OH", /\boups\b|\bohio ?811\b/i], ["WA", /\bwsdot\b/i], ["TX", /\btexas ?811\b|\btceq\b/i]];
+ export function questionStates(q) {
+-  const t = String(q || ""), out = statesNamed(t, !0);
++  const t = String(q || "").replace(NOT_A_STATE_Q, " "), out = statesNamed(t, !0);
+   for (const [c, re] of Q_ALIASES) re.test(t) && !out.includes(c) && out.push(c);
+   for (const m of t.matchAll(/(?:,\s*|\b(?:in|for|from)\s+)([A-Z]{2})\b(?!\s*[A-Z]{2,})/g)) okState(m[1]) && !out.includes(m[1]) && out.push(m[1]);
+   return out;
+@@ -89,8 +92,12 @@
+ // The app's own "California when nothing says" fallback (how = "default") is never taken as knowledge.
+ export function resolveState(o) {
+   const q = questionStates(o?.question);
+-  if (q.length === 1) return { code: q[0], how: "question", named: q };
+   const app = String(o?.appState || "").toUpperCase(), ah = String(o?.appHow || ""), appOk = okState(app);
++  // ask_quality_nov22 (review 3): with the job's state known, a different state named only in passing does not replace it;
++  // the job state leads and the named one stays in `named` (its cards may still show). Plain about-that-state wording switches.
++  const jobKnown = appOk && (ah === "phone" || ah === "picked" || ah === "address" || ah === "job") ? app : okState(o?.addressState) ? o.addressState : null;
++  if (q.length === 1 && jobKnown && q[0] !== jobKnown && !aboutState(o?.question, q[0])) return { code: jobKnown, how: "job", named: [jobKnown, q[0]] };
++  if (q.length === 1) return { code: q[0], how: "question", named: q };
+   if (appOk && (ah === "phone" || ah === "picked" || ah === "address" || ah === "job")) return { code: app, how: "job", named: q };
+   if (okState(o?.addressState)) return { code: o.addressState, how: "job", named: q };
+   for (const t of (o?.earlier || []).slice(0, 3)) { const e = questionStates(t); if (e.length === 1) return { code: e[0], how: "conversation", named: q }; }
+@@ -102,6 +109,17 @@
+   if (okState(o?.majorityState)) return { code: o.majorityState, how: "company_jobs", named: q };
+   return { code: null, how: q.length > 1 ? "question_many" : "unknown", named: q };
+ }
++// Does the question ask ABOUT this state ("in Oregon", "Oregon's rule", "for an Oregon job", "does Oregon ...", "Oregon OSHA")?
++export function aboutState(question, code) {
++  const n = US_STATES[code];
++  if (!n) return !1;
++  if (Q_ALIASES.some(([c, re]) => c === code && re.test(String(question || "")))) return !0; // its 811 center / agency named
++  const t = String(question || "").replace(NOT_A_STATE_Q, " "), N = n.replace(/ /g, "\\s+");
++  if (new RegExp("\\b(in|for|at|on|under|per|about|across|throughout|within|to|into|of)\\s+(the\\s+state\\s+of\\s+|an?\\s+|the\\s+|my\\s+|our\\s+|this\\s+)?" + N + "\\b", "i").test(t)) return !0;
++  if (new RegExp("\\b" + N + "('s|s'|\\s+state)?\\s+(rules?|laws?|requirements?|regs?|regulations?|osha|plan|811|one[- ]?call|tickets?|jobs?|projects?|work|dot|specs?|standards?|limits?|code|version|manual|mutcd|supplement|heat|trench|wage|pay|breaks?|permits?|license|says|requires?|uses?|follows?|has|have|does|do|is|allow\\w*|counts?)\\b", "i").test(t)) return !0;
++  if (new RegExp("\\b(does|do|is|are|did|will|would|can|should|how does|what does)\\s+" + N + "\\b", "i").test(t)) return !0;
++  return new RegExp("^\\W*" + N + "\\b", "i").test(t) || new RegExp("\\b" + N + "\\s*[?!.]?\\s*$", "i").test(t);
++}
+ // state from the end of an address: "Phoenix, AZ", "Phoenix, AZ 85004", "Boise, Idaho"
+ export function addressState(a) {
+   let t = String(a || "").replace(/\s+/g, " ").replace(/,?\s*(u\.?s\.?a?\.?|united states( of america)?)$/i, "").trim();
+@@ -115,11 +133,14 @@
+ 
+ // Does the answer change with the state? Used only when NO state is known, to decide whether to ask.
+ const DEPENDS = /\b(811|one[- ]?call|dig ?alert|blue ?stake|miss ?dig|locate (ticket|request|marks?)|dig ticket|ticket (life|good|expire|valid)|marks? (good|valid|expire)|tolerance zone|hand ?dig|white ?lin|call(ed)? in (the )?locates?|(lunch|meal|rest) (break|period)s?|breaks?\b.*\b(crew|guys|hours)|overtime|double ?time|minimum wage|prevailing wage|pay ?(day|check|stub)|final pay|sick (leave|pay|time)|heat (illness|rule|standard|plan)|shade\b|state (law|rule|plan|osha|spec|standard)|my state|this state|our state|here\b.*\b(rule|law|require)|(rule|law|require)\w*\b.*\bhere\b|spec ?book|dot spec|standard spec|water (and|&|\/) ?sewer separation|separation (between|of|from)|flagger (card|cert)|contractor'?s? licen[cs]e|trench permit|excavation permit|annual permit)\b/i;
+-const EMERGENCY = /\b(911|bleed|caved? ?in|cave-?in|collaps|buried|trapped|not breathing|unconscious|passed out|blowing|gas (leak|smell)|smell gas|hit (a|the) (gas|power|electric)|on fire|electrocut|shock(ed)?|heat ?stroke|seizure|chest pain|amputat|crush)/i;
+-export function stateDependent(q, rawHits) {
++// ask_quality_nov22 (review 4): with NO state known, safety-rule questions also change with the state (WA trench at 4 ft, CA permit, state air limits, state reporting times)
++const DEPENDS_SAFETY = /\b((trench\w*|excavat\w*)\b.{0,40}\b(box|shor\w*|shield|slop\w*|bench\w*|protect\w*|deep|depth|permit|cave)\w*|(how deep|what depth|at what depth)\b.{0,30}\b(trench|excavat\w*|box|shor\w*|protect\w*)|shor(e|ing)|trench box|shields?|slop(e|ed|ing) (the |a |my |our )?(trench|cut|walls?|sides?|bank|excavation|hole|ditch)|sloping|benching|type [abc] soil|cave[- ]?ins?|protective system|confined space|permit[- ]required|manhole entry|vault entry|enter(ing)? (a |the )?(manhole|vault|wet ?well|tank|pit)|(co|h2s|lel|oxygen|o2|carbon monoxide|hydrogen sulfide)\b.{0,20}\b(limit|level|ppm|percent|%|alarm|reading)|(limit|level|alarm)s?\b.{0,15}\b(co|h2s|lel|oxygen|carbon monoxide|hydrogen sulfide)|report\w*\b.{0,30}\b(injur\w*|hospital\w*|amputat\w*|death|fatalit\w*|accident|incident)|(injur\w*|hospital\w*|amputat\w*|death|fatalit\w*)\b.{0,30}\breport\w*|heat|fall protection|flaggers?|traffic control)\b/i;
++const EMERGENCY = /\b(911|bleed|caved? ?in|cave-?in|collaps|buried|trapped|pinned|not breathing|unconscious|unresponsive|passed out|blowing|gas (leak|smell)|smell gas|hit (a|the) (gas|power|electric)|(touched|contacted) (a|the) (power|overhead|electric)|on fire|electrocut|shock(ed)?|heat ?stroke|seizure|chest pain|amputat|crush|run over|alarm (went|is going|going) off|in alarm|atrapad|desmay|no responde|no respira|fuga de gas)/i;
++export function stateDependent(q, rawHits, code) {
+   const t = String(q || "");
+   if (EMERGENCY.test(t)) return !1;
+   if (DEPENDS.test(t)) return !0;
++  if (!code && DEPENDS_SAFETY.test(t)) return !0;
+   // the library itself says so: 2 or more of the best hits are one state's own rule
+   return (rawHits || []).slice(0, 6).filter((h) => chunkStates(h).length > 0).length >= 2;
+ }
+@@ -206,7 +227,7 @@
+   }
+   // A state that runs its own OSHA plan, a safety-rule question, and nothing of that state's own anywhere near the
+   // question: the federal rule is all the library has, and the answer must say so (dependent = "plan", see stateLines).
+-  const ownN = out.filter((h) => own.some((x) => x.id === h.id) || forced.some((x) => x.id === h.id)).length, dep = stateDependent(question, wide);
++  const ownN = out.filter((h) => own.some((x) => x.id === h.id) || forced.some((x) => x.id === h.id)).length, dep = stateDependent(question, wide, code);
+   // lib8: an own-plan state with no card of its own for a safety rule always gets the "plan" line (was: only when the question
+   // did not look state-dependent, so "depth for a trench box" in Indiana got the general line and named no state)
+   const thin = !ownN && PLAN_STATES.includes(code) && SAFETY_RULE.test(String(question || "")) && !EMERGENCY.test(String(question || ""));
+@@ -227,6 +248,8 @@
+   ["fed-811-ticketlife-1", /\b(good for|expir\w*|valid|ticket life|last(s)?|renew\w*|updat\w*|extend\w*|refresh\w*|how many days .*ticket)\b/i],
+   ["fed-811-wait-1", /\b(wait\w*|how (long|soon)|before (i|we|you) (can )?dig|when can|notice|ahead|hours|working days|business days|start digging)\b/i]];
+ export const FORCED_CHARS = 2600;
++// ask_quality_nov22
++export const REPORT_TOPIC = /\b(report\w*|notify\w*|call (osha|the state|cal\/osha|l&i))\b.{0,50}\b(injur\w*|hurt|hospital\w*|admitted|amputat\w*|death|fatal\w*|died|killed|accident|incident|er|emergency room|eye|finger\w*)\b|\b(injur\w*|hospital\w*|admitted|amputat\w*|death|fatal\w*|died|accident|incident|emergency room|\ber\b)\b.{0,50}\b(report\w*|notify\w*|call (osha|the state))\b|\b(do i|do we|have to|need to) call osha\b/i;
+ function docHit(index, id, score, exc) {
+   const d = index?.docs ? index.docs.findIndex((r) => r[0] === id) : -1;
+   if (d < 0) return null;
+@@ -256,6 +279,12 @@
+       if (t && new RegExp(`\\b${name}\\b`).test(t.text.replace(/West Virginia/g, code === "WV" ? "West Virginia" : ""))) { outC.push(t); break; }
+     }
+   }
++  if (REPORT_TOPIC.test(q) && !DIG_TOPIC.test(q)) {
++    const re = new RegExp(`^sp-${lc}-report`);
++    if (!has(re)) { const h = best(re, "injury reporting hospitalization report hours"); h && outC.push({ ...h, score: Math.max(h.score, sc), exc: !0 }); }
++    const t = docHit(index, "osha-pl-report-states-1", sc, !1);
++    t && outC.push(t);
++  }
+   if (DIG_TOPIC.test(q)) {
+     const re = code === "CA" ? /^(dig-ca-|ca-dig-alert-)/ : new RegExp(`^dig-${lc}-(?!locatable)`);
+     if (!has(re)) { const h = best(re, "811 dig law ticket"); h && outC.push({ ...h, score: Math.max(h.score, sc), exc: !0 }); }
+@@ -284,13 +313,13 @@
+   if (code) {
+     const how = { question: "named in the question", job: "from the job", company: "the company's state", conversation: "named earlier in this conversation", company_jobs: "where most of this company's jobs are", last_job: "from the last job on this phone", told: "the state this person gave Ask before", here: "where this phone is" }[st.how] || "from the job";
+     const head = `JOB STATE: ${name} (${code}), ${how}.`;
+-    if (dependent === "plan") return `${head} ${name} runs its own OSHA plan, which must be at least as protective as federal OSHA and can be stricter, and the library has no ${name} rule for this question. Give the federal rule as the minimum, then one short line: ${name}'s plan can be stricter, confirm with ${name}'s OSHA plan. Never give another state's number or name another state. Do not ask which state.`;
++    if (dependent === "plan") return `${head} ${name} runs its own OSHA plan, which must be at least as protective as federal OSHA and can be stricter, and no excerpt gives ${name}'s own rule for this question. Give the federal rule as the minimum, then one short line: ${name}'s plan can be stricter, confirm with ${name}'s OSHA plan (never the words "library" or "excerpts"). Never give another state's number or name another state. Do not ask which state.`;
+     // most questions do not change with the state: say so, so the state is not dragged into pipe math or a fitting question
+     if (!dependent && !own) return `${head} Use it only if the answer changes by state (811 rules, a state OSHA plan, breaks, pay or heat rules, state specs); then give the STRICTEST rule that applies in ${name} (the state's or the federal one, whichever protects the crew more) and say in a few words where it comes from; never give another state's number or name another state. Otherwise answer as usual, at the usual short length, and do not mention the state. Do not ask which state.`;
+     const plan = PLAN_STATES.includes(code) ? ` ${name} runs its own OSHA plan, which can be stricter than federal OSHA: if this is a safety-rule question and no excerpt gives ${name}'s rule, search_knowledge once with "${name}" and the topic before answering. On a safety rule name ${name}'s plan as the source in line 1 even when it matches federal, e.g. "(${name}'s OSHA plan, same as federal 29 CFR 1926.652)".` : ` ${name} has no state OSHA plan for private crews, so on a safety rule the federal OSHA rule applies: give it as the answer with no words about which agency covers ${name}, and do not say the library lacks a ${name} rule.`;
+-    return `${head}${plan} Answer for ${name}: lead with the direct answer. STRICTEST RULE: where ${name}'s own rule and a federal rule (OSHA, MUTCD, EPA) both apply and differ, the answer is the STRICTER one (more protective for the crew and the public), with its source named in a few words: "${name} requires ... (stricter than federal ...)" or "Federal OSHA requires ... (stricter than ${name}'s ...)". If they are the same, add no sentence about it (at most "(same as federal)" inside line 1). If you cannot tell which is stricter, give both in one short line each and say to follow the stricter. Never give a weaker rule because it is ${name}'s, and never drop a stricter federal rule. Compare only the SAME requirement on both sides (a depth, a limit, a deadline both rules set); a rule only the state has (811 notice and ticket life, state specs, a state DOT manual) is simply ${name}'s rule: give it with no federal comparison. The state must not make the answer longer: keep the usual short length. Never give another state's number or name another state, not even as an example. If the excerpts have no ${name} rule for this, say in a few words that the library does not have ${name}'s rule for it, give the federal rule, and name who to check with (the state's OSHA plan, 811 center or agency). Do not ask which state.`;
++    return `${head}${plan} Answer for ${name}: lead with the direct answer. STRICTEST RULE: where ${name}'s own rule and a federal rule (OSHA, MUTCD, EPA) both apply and differ, the answer is the STRICTER one (more protective for the crew and the public), with its source named in a few words: "${name} requires ... (stricter than federal ...)" or "Federal OSHA requires ... (stricter than ${name}'s ...)". If they are the same, add no sentence about it (at most "(same as federal)" inside line 1). If you cannot tell which is stricter, give both in one short line each and say to follow the stricter. Never give a weaker rule because it is ${name}'s, and never drop a stricter federal rule. Compare only the SAME requirement on both sides (a depth, a limit, a deadline both rules set); a rule only the state has (811 notice and ticket life, state specs, a state DOT manual) is simply ${name}'s rule: give it with no federal comparison. The state must not make the answer longer: keep the usual short length. Never give another state's number or name another state, not even as an example. If the excerpts have no ${name} rule for this, give the federal rule as the minimum and say in a few words that ${name}'s own rule is not confirmed and who to confirm it with (the state's OSHA plan, 811 center or agency); never use the words "library", "libraries" or "excerpts". Do not ask which state.`;
+   }
+   return dependent
+-    ? "JOB STATE: not known, and this answer changes with the state. Give in one or two lines only what is the same in every state (the federal rule, if there is one). Do not give any one state's number as theirs. Then end with exactly one short question: \"Which state is the job in?\""
++    ? "JOB STATE: not known, and this answer changes with the state. Give in one or two lines only what is the same in every state (the federal rule, if there is one, as the MINIMUM: say in a few words that some states set a stricter rule). Do not give any one state's number as theirs. Then end with exactly one short question: \"Which state is the job in?\""
+     : "JOB STATE: not known. If, and only if, the answer changes with the state, give what is the same everywhere and end with one short question: \"Which state is the job in?\" Otherwise just answer; do not ask. In an emergency never ask: give the steps.";
+ }
+--- ../work/src_base/route.ts	2026-11-21 20:14:47.906083588 -0800
++++ ../work/src_q/route.ts	2026-11-21 21:04:30.917959301 -0800
+@@ -15,8 +15,11 @@
+   A_TIMEWORD = /\b(take|takes|taking|took|time|slow|slows)\b/i,
+   A_RULE =
+     /\b(good for|expir\w*|valid|ticket life|tolerance zone|hand[- ]?dig\w*|positive response|white[- ]?lin\w*|dig law|one[- ]?call law|811 (law|rules?)|wait\w* (before|to) dig|how (long|many days) (do|does|must|should|before) (i|we|you|they)\b.{0,30}\b(wait|call|dig)|(call|calling) (811|in (the |my |a )?locates?) (before|ahead)|before (i|we|you) (can )?dig|laws?|rules?|regulations?|shor(e|ing)|slop(e|ing)|benching|trench box|shield|confined|permits?|atmospher\w*|oxygen|lel|h2s|cave[- ]?ins?|competent person|osha|allowed|required|requirements?|legal(ly)?)\b/i;
++const A_KNOW = /\b(need(ed|s)?|have to|has to|must|should|supposed to|can (i|we|you|they|my|our)|before (we|i|you) (can|have to|need)|minimum|maximum|max|min|spec\w*|standard|code|cover|bedding|bury|buried|depth|deep|how (deep|far|close|wide|thick|often|soon)|distance|spacing|psi|pressure|air test|test(ed|ing)? (at|for|before|after)|velocity|notify|report|keep (the|our|these|those|my)?\s*\w*\s*(records?|reports?|logs?|permits?|payroll)|retain|renew\w*|update (my|the|a) ticket|placards?|hazmat|epa|dot|swppp|best (way|bedding|backfill|practice|method)|sit in the sun|sun|uv|wait (before|after|for))\b/i,
++  A_DATA = /\b(jobs?\s+\d|job\s+#|\d{2,4}-\d{2,4}|this (week|month|quarter|year)|last (week|month|quarter|year)|(past|last) (\d+|two|three|four|few|couple( of)?) (days|weeks|months)|ytd|year to date|so far|to date|since (monday|tuesday|wednesday|thursday|friday|the start|we started)|did (we|our|my|they|he|she)|have (we|our|they) (laid|done|put|used|logged|called|had)|we('ve| have) (laid|done|put|used|logged|called|had)|our (crews|foremen|pipelayers|production|footage|numbers|runs|delays|hours|downtime)|[A-Z][a-z]+'s (crew|guys)|per (day|week|month|man[- ]?hour|crew|foreman)|compare|comparison|versus|vs\.?|trend|rank(ing)?|on track|behind schedule)\b/i;
+ function isAnalysisQuestion(q) {
+   if (A_HOWTO.test(q) || A_RULE.test(q)) return !1;
++  if (A_KNOW.test(q) && !A_DATA.test(q)) return !1; // ask_quality_nov22: a rule / spec question, not the company's own numbers
+   if (A_FITTING.test(q) && A_FITTIME.test(q) && A_TIMEWORD.test(q)) return !0;
+   if (!A_METRIC.test(q)) return !1;
+   const agg = A_AGG.test(q) || A_DOING.test(q),
+--- ../work/src_base/gonogo.ts	2026-11-21 20:14:47.906414266 -0800
++++ ../work/src_q/gonogo.ts	2026-11-21 21:04:30.917447027 -0800
+@@ -267,6 +267,14 @@
+   normS = (s) => s.toLowerCase().replace(/[^\p{L}\p{N}%]+/gu, " ").trim(),
+   ANSWER_PART_CHARS = 16e3,
+   ANSWER_MAX_PARTS = 3;
++// verdict sentences: "it is safe / fine / ok", "you can go in / enter", "readings are good / within limits", "you do not need a box"
++const VERDICT_RX = /\b(you(\s+are|'re|re)?|it(\s+is|'s|s)?|that(\s+is|'s|s)?|this(\s+is)?|the (trench|space|hole|ditch|excavation|manhole|vault|air|atmosphere|box|shield|shoring|slope|cut|readings?|levels?)|your (trench|space|hole|box|shield|shoring|slope|cut|readings?|levels?|air)|(those|these|the|your) (numbers|readings|levels))\b[^.!?\n]{0,40}\b(is|are|looks?|seems?|sounds?)\s+(safe|fine|ok|okay|good|acceptable|adequate|enough|sufficient|within (the |safe |acceptable )?(limits?|range)|in range|good to go|clear)\b|\b(you|they|he|she|the crew|your crew|your guys)\s+(can|may|could)\s+(safely\s+)?(go in|go down|enter|get in|start (the )?entry|proceed|go ahead)\b|\b(safe|ok|okay|fine|good|clear(ed)?)\s+(to|for)\s+(enter|entry|go in|go down|get in|work in)\b|\bgood to go\b|\b(you|they|the crew)\s+(do not|don't|dont|does not|doesn't|doesnt)\s+need\s+(a |any |the )?(box|trench box|shoring|shield|sloping|protection|protective system|permit|monitor\w*|air test\w*|attendant)\b|\bno (box|shoring|shield|protection|permit) (is )?(needed|required) (here|for (this|your))\b/i;
++function failSafeStrip(text) {
++  const hits = splitSentences(text).filter((s) => VERDICT_RX.test(s));
++  let out = text, said = !1;
++  for (const s of [...new Set(hits)]) out = out.split(s).join(said ? "" : INLINE_LINE), said = !0;
++  return { text: out.replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").trim(), n: hits.length };
++}
+ function splitForCheck(t, max = ANSWER_PART_CHARS) {
+   const out = [];
+   let rest = String(t);
+@@ -329,6 +337,12 @@
+       sentences: verdicts.flatMap((x) => Array.isArray(x.sentences) ? x.sentences : []),
+     };
+   if (!v || typeof v.decides != "boolean") {
++    // ask_quality_nov22 (review 5): the checker failed or timed out. Fail safe: sentences that read as a go/no-go verdict are
++    // taken out by word match (on entry, readings and trench protection answers), then the safety line is added.
++    const fs = failSafeStrip(text);
++    if (fs.n) return { text: fs.text + `
++
++` + SAFETY_LINE, table, replaced: "sentences", appended: !0, checked: !1 };
+     return {
+       text: text + `
+ 
+@@ -386,4 +400,5 @@
+   REFUSAL_LINE,
+   SAFETY_LINE,
+   splitForCheck,
++  failSafeStrip,
+ };
+--- ../work/src_base/photos.ts	2026-11-21 20:14:47.906327586 -0800
++++ ../work/src_q/photos.ts	2026-11-21 21:04:30.918036444 -0800
+@@ -100,10 +100,13 @@
+ }
+ const PLAN_RX =
+   /\b(plans?|plan sheets?|drawings?|blue ?prints?|dimensions?|foundation|footings?|slab|takeoff|take-off|yardage|cubic yards?|yd3|callouts?|inverts?|IE|stations?|STA|floor plan|site plan|grading plan|cut ?sheet)\b/i;
++const STAKE_Q = /\b(stakes?|lath|hubs?|guard ?stakes?|paint|marks?|markings?|flags?|whiskers?|tickets?|locates?|811|offset|o\/s|grade ?board|cut(?! ?sheets?)|fill)\b/i,
++  PLAN_STRONG = /\b(plans?|plan sheets?|drawings?|blue ?prints?|takeoff|take-off|floor plan|site plan|grading plan|profile( view| sheet)?|sheets?|details?|callouts?|foundation|footings?|slab)\b/i;
+ function isPlanQuestion(photos, texts) {
+-  return photos.length
+-    ? photos.some((p) => p.zoom && !p.detail) ? !0 : PLAN_RX.test(String(texts[0] || ""))
+-    : !1;
++  if (!photos.length) return !1;
++  if (photos.some((p) => p.zoom && !p.detail)) return !0;
++  const t = String(texts[0] || "");
++  return PLAN_RX.test(t) && !(STAKE_Q.test(t) && !PLAN_STRONG.test(t)); // ask_quality_nov22: stake / paint / ticket photos stay in Ask
+ }
+ export {
+   isPlanQuestion,
+--- ../work/src_base/safety.ts	2026-11-21 20:14:47.906458829 -0800
++++ ../work/src_q/safety.ts	2026-11-21 21:04:30.913923586 -0800
+@@ -35,7 +35,10 @@
+   PB_AI_ENTER_RX = /\b(enter|entry|go in|get in|go down|climb in|work in)\b/,
+   PB_AI_SAFETY_RX =
+     /\b(trench\w*|shor(e|ing)|excavat\w*|cave[- ]?ins?|confined|permits?|entr(y|ant|ants)|attendants?|atmospher\w*|lel|h2s|oxygen|o2|gas(es)?|ventilat\w*|rescue|competent person|osha|protective system|benching|trench box|shield|1926|1910)\b/i;
++import { pbEmergencyAnswer } from "./emergency.ts";
+ function localAnswer(q) {
++  const em = pbEmergencyAnswer(q); // ask_quality_nov22: 4 scripts (space / open / gas / power), EN + ES
++  if (em) return em;
+   const t = String(q).toLowerCase().replace(/[’']/g, "");
+   return PB_AI_EMERGENCY_RX.some((r) => r.test(t))
+     ? {
+--- ../work/src_base/_shared/retrieval.ts	2026-11-21 20:14:47.906539472 -0800
++++ ../work/src_q/_shared/retrieval.ts	2026-11-21 21:04:30.918890447 -0800
+@@ -38,6 +38,11 @@
+     [/\bquick run\b/g, "quickrun"],
+     [/\bnew run\b/g, "newrun"],
+     [/\bend run\b/g, "endrun"],
++    // ask_quality_nov22: field words
++    [/\btab(?:ulated)? data\b/g, "tabdata"],
++    [/\bpositive responses?\b/g, "positiveresponse"],
++    [/\bre-mark(s|ed|ing)?\b/g, "remark"],
++    [/\bhold[- ]?downs?\b/g, "holddown"],
+   ],
+   IRREGULAR = {
+     kept: "keep",
+@@ -153,6 +158,9 @@
+     [.6, ["stumbling", "dizziness", "slurred"]],
+     [.8, ["hospital", "hospitalization", "hospitalized"]],
+     [.7, ["fine", "penalty", "penalties"]],
++    [.7, ["remark", "relocate", "refresh"]],
++    [.6, ["holddown", "flotation", "buoyancy", "uplift"]],
++    [.6, ["positiveresponse", "response"]],
+   ],
+   SYN = new Map();
+ for (const [w, g] of SYN_GROUPS) {
+@@ -182,7 +190,7 @@
+   );
+   for (const [rx2, rep] of PHRASES) t = t.replace(rx2, rep);
+   t = t.replace(/\btype([abc])soil\b/g, "type_$1soil");
+-  const out = [], rx = /(\d+\+\d+(?:\.\d+)?)|(\d{4}\.\d+[a-z]?)|(\d+\/[a-z]{1,3})|([a-z0-9_]+)/g;
++  const out = [], rx = /(\d+\+\d+(?:\.\d+)?)|(\d{4}\.\d+[a-z]?)|(\d+\/[a-z]{1,3})|\b([a-z]{1,2}\/[a-z]{1,2})\b|([a-z0-9_]+)/g; // ask_quality_nov22: "l/o", "o/s", "c/l" kept as one token
+   let m;
+   for (; m = rx.exec(t);) {
+     if (m[1]) {
+@@ -197,7 +205,11 @@
+       out.push(m[3]), out.push(m[3].split("/")[1]);
+       continue;
+     }
+-    const w = m[4];
++    if (m[4]) {
++      out.push(m[4].replace("/", "_"));
++      continue;
++    }
++    const w = m[5];
+     STOP.has(w) || /^\d+$/.test(w) && w.length < 3 && w !== "811" || w.length < 2 ||
+       out.push(stem(w));
+   }

@@ -1,7 +1,7 @@
-const pbEmNorm = (q) => String(q || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’']/g, "");
-const PB_EM_INFO = /\b(signs? of|symptoms? of|what (are|is) (the )?(signs?|symptoms?)|how (do|can|would) (you|i|we) (know|tell|recognize|spot|prevent|avoid)|prevent\w*|avoid\w*|training|toolbox|tailgate|talk about|safety meeting|in general|hazards? of|risks? of)\b/;
-const PB_EM_SPACE = /\b(trench\w*|ditch|hole|excavation|the cut|manholes?|mh|vaults?|wet ?wells?|lift stations?|tanks?|pits?|sewers?|confined|catch ?basins?|culverts?|structures?|in there|down there|down in|inside|the box|zanja|pozo|registro|hoyo|tanque|alcantarilla|boveda|espacio confinado|adentro|alla abajo)\b/;
-const PB_EM_STRONG = [
+const pbEmgNorm = (q) => String(q || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’']/g, "");
+const PB_EMG_INFO = /\b(signs? of|symptoms? of|what (are|is) (the )?(signs?|symptoms?)|how (do|can|would) (you|i|we) (know|tell|recognize|spot|prevent|avoid)|prevent\w*|avoid\w*|training|toolbox|tailgate|talk about|safety meeting|in general|hazards? of|risks? of|how (do|can|should|would) (you|i|we) (stop|treat|handle|deal with|care for))\b/;
+const PB_EMG_SPACE = /\b(trench\w*|ditch|hole|excavation|the cut|manholes?|mh|vaults?|wet ?wells?|lift stations?|tanks?|pits?|sewers?|confined|catch ?basins?|culverts?|structures?|in there|down there|down in|inside|the box|zanja|pozo|registro|hoyo|tanque|alcantarilla|boveda|espacio confinado|adentro|alla abajo)\b/;
+const PB_EMG_STRONG = [
   /\b(passed out|pass(ing)? out|unconscious|not responding|unresponsive|not breathing|stopped breathing|man down|keeled over|overcome by)\b/,
   /\b(isnt|is not|not|wont|will not|stopped|cant get him to|cant get her to)\s+(answering|answer|responding|respond|talking|moving)\b/,
   /\b(cant|cannot|can not|couldnt)\s+(reach|raise|hear|see|wake)\s+(him|her|them|my|the|our)\b/,
@@ -32,7 +32,6 @@ const PB_EM_STRONG = [
   /\b(electrocuted|got electrocuted|got shocked|was shocked|been shocked|getting shocked|shocked (him|her|them|me)|got zapped|got bit by the line)\b/,
   // medical events happening now
   /\b(cant|cannot|can not) breathe?\b/,
-  /\b(bleeding (bad|badly|a lot|heavy|heavily|everywhere|out|from)|wont stop bleeding|lots? of blood|blood everywhere|cut (an )?artery)\b/,
   /\b(having|has|had|is having|think (he|she|they)s? having|going into)\b.{0,15}\b(heart attack|stroke|heat ?stroke|seizure)\b/,
   /\b(run over|ran over|backed over)\b/,
   /\b(flagger|guy|worker|laborer|someone|somebody|he|she|operator|pipelayer|man|my \w+)\b.{0,20}\b(got hit|was hit|just got hit|hit by (a|the|our) (car|truck|vehicle|loader|excavator|machine|dozer)|got struck|was struck)\b/,
@@ -49,56 +48,71 @@ const PB_EM_STRONG = [
   /\b(sangra(ndo)? mucho|mucha sangre|lo atropell\w*|la atropell\w*|lo aplast\w*|la aplast\w*)\b/,
   /\balarma\b.{0,20}\b(sono|sonando|esta sonando|se activo)\b|\b(medidor|detector)\b.{0,15}\b(en alarma|sonando)\b/
 ];
-const PB_EM_WEAK = [
+const PB_EMG_WEAK = [
   /\b(confused|confusion|delirious|stopped sweating|not sweating|quit sweating|hot dry skin)\b.{0,40}\b(heat|hot|sun|degrees|\d{3}|sweating|confused|throwing up|dizzy)\b/,
   /\b(throwing up|vomiting|puking)\b.{0,20}\b(dizzy|confused|cramping|passed|weak|hot|heat|\d{3})\b/,
   /\b(dizzy|lightheaded)\b.{0,20}\b(throwing up|vomiting|puking|confused|its \d{3}|\d{3} (degrees|out))\b/,
   /\bchest pains?\b/,
+  /\b(bleeding (bad|badly|a lot|heavy|heavily|everywhere|out|from)|wont stop bleeding|lots? of blood|blood everywhere|cut (an )?artery)\b/,
   /\bhit by (a |the )?(car|truck|vehicle|driver|motorist)\b/,
   /\b(fell|fall|fallen) (off|from) (the )?(excavator|machine|ladder|truck|loader|roof|scaffold|trailer)\b/,
   /\b(golpe de calor|no suda|esta confundid[oa]|vomitando|dolor de pecho)\b/
 ];
-const PB_EM_ES = /\b(zanja|hombre|companero|esta|responde|atrapad|desmay|se cayo|fuga|huele|linea|ayuda|alarma|sangr|tierra|pozo|registro|atropell|aplast|corriente|electrocut|golpe de calor|vomitando|dolor de pecho|no suda|medidor)\b/;
-const PB_EM_AFTER = /\b(says (hes|he is|shes|she is|they are|theyre|its) (fine|ok|okay|alright|good)|back to work|how (fast|soon|long|many hours) (do|does|did|must|should) (we|i|you|they) (have to )?(report|call|notify)|report (it|this|that|the (hit|damage|strike))|reporting|paperwork|osha (log|300)|300 log|recordable|workers comp|comp claim|fine for|penalt\w*|yesterday|last (week|month)|ago)\b/;
-const PB_EM_NOW = /\b(not breathing|stopped breathing|unconscious|unresponsive|not responding|passed out|trapped|buried|pinned|caved|cave[- ]?in|collapsed|alarm|blowing|leaking|hissing|escaping|electrocut\w*|cant breathe|bleeding|no responde|no respira|atrapad\w*|desmay\w*|enterrad\w*|fuga)\b/;
+const PB_EMG_ES = /\b(zanja|hombre|companero|esta|responde|atrapad|desmay|se cayo|fuga|huele|linea|ayuda|alarma|sangr|tierra|pozo|registro|atropell|aplast|corriente|electrocut|golpe de calor|vomitando|dolor de pecho|no suda|medidor)\b/;
+const PB_EMG_AFTER = /\b(says (hes|he is|shes|she is|they are|theyre|its) (fine|ok|okay|alright|good)|back to work|how (fast|soon|long|many hours) (do|does|did|must|should) (we|i|you|they) (have to )?(report|call|notify)|report (it|this|that|the (hit|damage|strike))|reporting|paperwork|osha (log|300)|300 log|recordable|workers comp|comp claim|fine for|penalt\w*|yesterday|last (week|month)|ago)\b/;
+const PB_EMG_NOW = /\b(not breathing|stopped breathing|unconscious|unresponsive|not responding|passed out|trapped|buried|pinned|caved|cave[- ]?in|collapsed|alarm|blowing|leaking|hissing|escaping|electrocut\w*|cant breathe|bleeding|no responde|no respira|atrapad\w*|desmay\w*|enterrad\w*|fuga)\b/;
+const PB_EMG_NEG = /\b(not|no|isnt|wasnt|without|never)\s+(leak\w*|blowing|hissing|escaping|gas coming out|smell\w*)\b/g;
 function pbEmergencyKind(q) {
-  const t = pbEmNorm(q);
-  if (PB_EM_AFTER.test(t) && !PB_EM_NOW.test(t)) return null;
-  const strong = PB_EM_STRONG.some((r) => r.test(t)), weak = !strong && !PB_EM_INFO.test(t) && PB_EM_WEAK.some((r) => r.test(t));
+  const t = pbEmgNorm(q).replace(PB_EMG_NEG, " ");
+  if (PB_EMG_AFTER.test(t) && !PB_EMG_NOW.test(t)) return null;
+  const strong = PB_EMG_STRONG.some((r) => r.test(t)), weak = !strong && !PB_EMG_INFO.test(t) && PB_EMG_WEAK.some((r) => r.test(t));
   if (!strong && !weak) return null;
-  const lang = PB_EM_ES.test(t) && !/\b(the|we|is|my|in)\b/.test(t) ? "es" : "en";
+  const lang = PB_EMG_ES.test(t) && !/\b(the|we|is|my|in)\b/.test(t) ? "es" : "en";
   const power = /\b(power|electric\w*|overhead|primary|high voltage|wires?|shock\w*|electrocut\w*|zapped|corriente|cable|luz)\b/.test(t) && /\b(line|lines|wires?|cable|conductor|shock\w*|electrocut\w*|zapped|corriente|toco|linea)\b/.test(t) && !/\bgas\b/.test(t);
-  const gas = !power && /\b(gas (line|main|service|pipe|lateral|leak|leaking|blowing|escaping)|smell\w*\b.{0,15}\b(gas|rotten eggs?|mercaptan)|(blowing|hissing|leaking) gas|natural gas|fuga de gas|olor de gas|huele a gas|(linea|tuberia|tubo) de gas)\b/.test(t) && !/\b(alarm|monitor|meter|detector|4[- ]?gas|lel|h2s)\b/.test(t);
-  const space = !power && !gas && (PB_EM_SPACE.test(t) || /\b(alarm|monitor|meter|detector|sniffer|4[- ]?gas|h2s|lel|cave|caved|buried|entrant|attendant|medidor|alarma|atrapad|enterrad|derrumb|se cayo)\b/.test(t));
+  const gas = !power && /\b(gas\b.{0,12}\b(blowing|leaking|hissing|escaping)|gas (line|main|service|pipe|lateral|leak|leaking|blowing|escaping)|smell\w*\b.{0,15}\b(gas|rotten eggs?|mercaptan)|(blowing|hissing|leaking) gas|natural gas|fuga de gas|olor de gas|huele a gas|(linea|tuberia|tubo) de gas)\b/.test(t) && !/\b(alarm|monitor|meter|detector|4[- ]?gas|lel|h2s)\b/.test(t);
+  const space = !power && !gas && (PB_EMG_SPACE.test(t) || /\b(alarm|monitor|meter|detector|sniffer|4[- ]?gas|h2s|lel|cave|caved|buried|entrant|attendant|medidor|alarma|atrapad|enterrad|derrumb|se cayo)\b/.test(t));
   return { key: power ? "power" : gas ? "gas" : space ? "space" : "open", lang };
 }
-const PB_EM_TEXT = {
+const PB_EMG_TEXT = {
   space: {
     en: "Emergency in a trench, hole or confined space:\n- Call 911 now. Then tell your supervisor / entry supervisor.\n- Stay out and keep everyone out. Do NOT go in after them unless you are a trained, equipped rescuer: untrained rescuers are often the next victims.\n- Cave-in: keep people and machines back from the edge; more can fall.\n- If a permit is open, press EMERGENCY so the entry team and the permit record know.\n- Send someone to meet the ambulance and lead it in.",
     es: "Emergencia en una zanja, hoyo o espacio confinado:\n- Llame al 911 ahora. Luego avise a su supervisor / supervisor de entrada.\n- Quedese afuera y no deje entrar a nadie. NO entre a sacarlo si no es un rescatista entrenado y equipado: los que entran sin entrenamiento suelen ser las siguientes victimas.\n- Derrumbe: mantenga a la gente y las maquinas lejos del borde; puede caer mas tierra.\n- Si hay un permiso abierto, toque EMERGENCIA para que el equipo y el registro del permiso lo sepan.\n- Mande a alguien a recibir la ambulancia y guiarla."
   },
   open: {
-    en: "Emergency:\n- Call 911 now (or have someone call) and send someone to meet the ambulance and lead it in.\n- Not breathing or not responding normally: start CPR and get the AED if there is one.\n- Heat (confused, stopped sweating, throwing up, passed out): start cooling now: shade, soak them with water, ice on neck, armpits and groin. Do not wait for the ambulance.\n- Heavy bleeding: press hard on the wound with a cloth and keep pressing.\n- Fall, crush or struck by a vehicle: do not move them unless they are in more danger where they are; protect them from traffic and equipment.\n- If they are down in a trench, hole or confined space, do NOT go in: call 911 and keep everyone out.",
-    es: "Emergencia:\n- Llame al 911 ahora (o que alguien llame) y mande a alguien a recibir la ambulancia y guiarla.\n- Si no respira o no responde normal: empiece RCP y traiga el DEA si hay uno.\n- Calor (confundido, ya no suda, vomita, se desmayo): empiece a enfriarlo ya: sombra, mojelo con agua, hielo en cuello, axilas e ingle. No espere a la ambulancia.\n- Sangrado fuerte: apriete fuerte la herida con un trapo y no suelte.\n- Caida, aplastado o atropellado: no lo mueva a menos que corra mas peligro donde esta; protejalo del trafico y las maquinas.\n- Si esta dentro de una zanja, hoyo o espacio confinado, NO entre: llame al 911 y no deje entrar a nadie."
+    en: "Emergency:\n- Call 911 now (or have someone call) and send someone to meet the ambulance and lead it in.\n- Not breathing or not responding normally: start CPR and get the AED if there is one.\n- Heat (confused, stopped sweating, throwing up, passed out): start cooling now: shade, soak them with water, ice on neck, armpits and groin. Do not wait for the ambulance.\n- Heavy bleeding: hard, steady pressure on the wound with a cloth and do not let up; if an arm or leg will not stop, a tourniquet 2 to 3 inches above the wound (note the time).\n- Fall, crush or struck by a vehicle: do not move them unless they are in more danger where they are; protect them from traffic and equipment.\n- If they are down in a trench, hole or confined space, do NOT go in: call 911 and keep everyone out.",
+    es: "Emergencia:\n- Llame al 911 ahora (o que alguien llame) y mande a alguien a recibir la ambulancia y guiarla.\n- Si no respira o no responde normal: empiece RCP y traiga el DEA si hay uno.\n- Calor (confundido, ya no suda, vomita, se desmayo): empiece a enfriarlo ya: sombra, mojelo con agua, hielo en cuello, axilas e ingle. No espere a la ambulancia.\n- Sangrado fuerte: presion fuerte y constante sobre la herida con un trapo, sin soltar; si un brazo o pierna no para, torniquete 5 a 8 cm arriba de la herida (anote la hora).\n- Caida, aplastado o atropellado: no lo mueva a menos que corra mas peligro donde esta; protejalo del trafico y las maquinas.\n- Si esta dentro de una zanja, hoyo o espacio confinado, NO entre: llame al 911 y no deje entrar a nadie."
   },
   gas: {
-    en: "Gas line hit or gas smell:\n- Get everyone out and away, upwind. Leave the machine where it is if you can walk away from it.\n- No smoking, no flames, no starting engines or anything that can spark near the gas.\n- Do not try to stop or squeeze off the leak, and do not bury or backfill it.\n- Call 911 from a safe distance, then the gas company, the line's owner or operator (number on your locate ticket, or call 811).\n- Keep people and traffic back until the fire department or gas company says it is clear.\n- If anyone is down in a trench or hole, do NOT go in after them.",
-    es: "Linea de gas golpeada u olor a gas:\n- Saque a todos y alejense, contra el viento. Deje la maquina donde esta si puede alejarse de ella.\n- No fumar, no llamas, no arrancar motores ni nada que haga chispa cerca del gas.\n- No intente parar ni apretar la fuga, y no la entierre ni la tape.\n- Llame al 911 desde un lugar seguro, luego a la compania de gas, la duena u operadora de la linea (numero en su ticket de localizacion, o llame al 811).\n- Mantenga a la gente y el trafico lejos hasta que los bomberos o la compania de gas digan que esta seguro.\n- Si alguien esta caido dentro de una zanja o hoyo, NO entre a sacarlo."
+    en: "Gas line hit or gas smell:\n- Get everyone out and away, upwind. Leave the machine where it is if you can walk away from it.\n- No smoking, no flames, no starting engines or anything that can spark near the gas.\n- Do not try to stop or squeeze off the leak; leave the hole open for the gas company.\n- Call 911 from a safe distance, then the gas company, the line's owner or operator (number on your locate ticket, or call 811).\n- Keep people and traffic back until the fire department or gas company says it is clear.\n- If anyone is down in a trench or hole, do NOT go in after them.",
+    es: "Linea de gas golpeada u olor a gas:\n- Saque a todos y alejense, contra el viento. Deje la maquina donde esta si puede alejarse de ella.\n- No fumar, no llamas, no arrancar motores ni nada que haga chispa cerca del gas.\n- No intente parar ni apretar la fuga; deje el hoyo abierto para la compania de gas.\n- Llame al 911 desde un lugar seguro, luego a la compania de gas, la duena u operadora de la linea (numero en su ticket de localizacion, o llame al 811).\n- Mantenga a la gente y el trafico lejos hasta que los bomberos o la compania de gas digan que esta seguro.\n- Si alguien esta caido dentro de una zanja o hoyo, NO entre a sacarlo."
   },
   power: {
     en: "Power line contact:\n- Operator: stay in the cab and do not touch anything metal. Move the machine away from the line only if you can do it safely.\n- Leave the machine only if it is on fire: jump clear with feet together, never touch the machine and the ground at the same time, then shuffle or hop away with feet together.\n- Everyone else: stay far back. The ground around the machine can be live. Do not touch the machine, the person, or anything touching them.\n- Call 911 and the power company to cut the power.\n- Someone shocked and down: do not touch them until the power is off; then start CPR and get the AED if they are not breathing.",
     es: "Contacto con linea electrica:\n- Operador: quedese en la cabina y no toque nada de metal. Aleje la maquina de la linea solo si puede hacerlo sin peligro.\n- Salga de la maquina solo si se esta quemando: salte lejos con los pies juntos, nunca toque la maquina y el suelo al mismo tiempo, y alejese arrastrando los pies o saltando con los pies juntos.\n- Todos los demas: mantenganse muy lejos. El suelo alrededor de la maquina puede tener corriente. No toquen la maquina, a la persona ni nada que la toque.\n- Llame al 911 y a la compania de luz para que corten la corriente.\n- Si alguien recibio la descarga y esta caido: no lo toque hasta que corten la corriente; luego empiece RCP y traiga el DEA si no respira."
   }
 };
+const PB_EMG_FOCUS = [[/\b(bleed\w*|blood|cut (his|her|their|my)|artery|sangr\w*)\b/, /^- (Heavy bleeding|Sangrado)/], [/\b(heat|hot|sweat\w*|\d{3}|confused|throwing up|vomit\w*|calor|suda)\b/, /^- (Heat|Calor)/], [/\b(fell|fall|crush\w*|run over|ran over|backed over|hit by|struck|rolled on|aplast\w*|atropell\w*|cayo)\b/, /^- (Fall|Caida)/]];
+function pbEmergencyText(key, lang, q) {
+  const lines = PB_EMG_TEXT[key][lang].split("\n");
+  if (key !== "open") return lines.join("\n");
+  const t = pbEmgNorm(q);
+  for (const [qr, lr] of PB_EMG_FOCUS.slice().reverse()) {
+    if (!qr.test(t)) continue;
+    const i = lines.findIndex((l) => lr.test(l));
+    if (i > 2) lines.splice(2, 0, lines.splice(i, 1)[0]);
+  }
+  return lines.join("\n");
+}
 function pbEmergencyAnswer(q) {
   const k = pbEmergencyKind(q);
-  return k ? { kind: "emergency", script: k.key, lang: k.lang, text: PB_EM_TEXT[k.key][k.lang] } : null;
+  return k ? { kind: "emergency", script: k.key, lang: k.lang, text: pbEmergencyText(k.key, k.lang, q) } : null;
 }
 export {
-  PB_EM_STRONG,
-  PB_EM_TEXT,
-  PB_EM_WEAK,
-  pbEmNorm,
+  PB_EMG_STRONG,
+  PB_EMG_TEXT,
+  PB_EMG_WEAK,
   pbEmergencyAnswer,
-  pbEmergencyKind
+  pbEmergencyKind,
+  pbEmergencyText,
+  pbEmgNorm
 };

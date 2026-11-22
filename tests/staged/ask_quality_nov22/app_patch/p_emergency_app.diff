@@ -1,5 +1,5 @@
 --- ../../../../_src/index.html	2026-11-21 18:18:10.518334111 -0800
-+++ work_patched.html	2026-11-21 20:30:23.911234841 -0800
++++ /tmp/claude-0/app_em.html	2026-11-21 21:06:17.291362844 -0800
 @@ -17645,22 +17645,22 @@
      } catch (e) { return null; }
    }
@@ -35,7 +35,7 @@
    };
    let pbAiQuota = null; // { left, limit } from the last answer, for "N of 20 left today"
    function pbAiPlanOk() { return pbTierMeetsRequirement('individual'); } // individual or contractor, active
-@@ -18546,16 +18546,115 @@
+@@ -18546,16 +18546,130 @@
    // Questions the AI must never answer (independent review SF5): checked on the phone BEFORE anything is
    // sent, answered with fixed text, no AI round trip and no daily count used.
    // An emergency happening now: get out, no untrained rescue, call, and the EMERGENCY control.
@@ -119,8 +119,10 @@
 +  // something is still happening (not breathing, trapped, an alarm, gas blowing, bleeding)
 +  const PB_EMG_AFTER = /\b(says (hes|he is|shes|she is|they are|theyre|its) (fine|ok|okay|alright|good)|back to work|how (fast|soon|long|many hours) (do|does|did|must|should) (we|i|you|they) (have to )?(report|call|notify)|report (it|this|that|the (hit|damage|strike))|reporting|paperwork|osha (log|300)|300 log|recordable|workers comp|comp claim|fine for|penalt\w*|yesterday|last (week|month)|ago)\b/;
 +  const PB_EMG_NOW = /\b(not breathing|stopped breathing|unconscious|unresponsive|not responding|passed out|trapped|buried|pinned|caved|cave[- ]?in|collapsed|alarm|blowing|leaking|hissing|escaping|electrocut\w*|cant breathe|bleeding|no responde|no respira|atrapad\w*|desmay\w*|enterrad\w*|fuga)\b/;
++  // "not leaking", "no leak", "isn't blowing": the gas words are negated, so a nick with no release is an Ask question (report it to the operator)
++  const PB_EMG_NEG = /\b(not|no|isnt|wasnt|without|never)\s+(leak\w*|blowing|hissing|escaping|gas coming out|smell\w*)\b/g;
 +  function pbEmergencyKind(q) {
-+    const t = pbEmgNorm(q);
++    const t = pbEmgNorm(q).replace(PB_EMG_NEG, " ");
 +    if (PB_EMG_AFTER.test(t) && !PB_EMG_NOW.test(t)) return null;
 +    const strong = PB_EMG_STRONG.some((r) => r.test(t)), weak = !strong && !PB_EMG_INFO.test(t) && PB_EMG_WEAK.some((r) => r.test(t));
 +    if (!strong && !weak) return null;
@@ -136,34 +138,47 @@
 +      es: "Emergencia en una zanja, hoyo o espacio confinado:\n- Llame al 911 ahora. Luego avise a su supervisor / supervisor de entrada.\n- Quedese afuera y no deje entrar a nadie. NO entre a sacarlo si no es un rescatista entrenado y equipado: los que entran sin entrenamiento suelen ser las siguientes victimas.\n- Derrumbe: mantenga a la gente y las maquinas lejos del borde; puede caer mas tierra.\n- Si hay un permiso abierto, toque EMERGENCIA para que el equipo y el registro del permiso lo sepan.\n- Mande a alguien a recibir la ambulancia y guiarla.",
 +    },
 +    open: {
-+      en: "Emergency:\n- Call 911 now (or have someone call) and send someone to meet the ambulance and lead it in.\n- Not breathing or not responding normally: start CPR and get the AED if there is one.\n- Heat (confused, stopped sweating, throwing up, passed out): start cooling now: shade, soak them with water, ice on neck, armpits and groin. Do not wait for the ambulance.\n- Heavy bleeding: press hard on the wound with a cloth and keep pressing.\n- Fall, crush or struck by a vehicle: do not move them unless they are in more danger where they are; protect them from traffic and equipment.\n- If they are down in a trench, hole or confined space, do NOT go in: call 911 and keep everyone out.",
-+      es: "Emergencia:\n- Llame al 911 ahora (o que alguien llame) y mande a alguien a recibir la ambulancia y guiarla.\n- Si no respira o no responde normal: empiece RCP y traiga el DEA si hay uno.\n- Calor (confundido, ya no suda, vomita, se desmayo): empiece a enfriarlo ya: sombra, mojelo con agua, hielo en cuello, axilas e ingle. No espere a la ambulancia.\n- Sangrado fuerte: apriete fuerte la herida con un trapo y no suelte.\n- Caida, aplastado o atropellado: no lo mueva a menos que corra mas peligro donde esta; protejalo del trafico y las maquinas.\n- Si esta dentro de una zanja, hoyo o espacio confinado, NO entre: llame al 911 y no deje entrar a nadie.",
++      en: "Emergency:\n- Call 911 now (or have someone call) and send someone to meet the ambulance and lead it in.\n- Not breathing or not responding normally: start CPR and get the AED if there is one.\n- Heat (confused, stopped sweating, throwing up, passed out): start cooling now: shade, soak them with water, ice on neck, armpits and groin. Do not wait for the ambulance.\n- Heavy bleeding: hard, steady pressure on the wound with a cloth and do not let up; if an arm or leg will not stop, a tourniquet 2 to 3 inches above the wound (note the time).\n- Fall, crush or struck by a vehicle: do not move them unless they are in more danger where they are; protect them from traffic and equipment.\n- If they are down in a trench, hole or confined space, do NOT go in: call 911 and keep everyone out.",
++      es: "Emergencia:\n- Llame al 911 ahora (o que alguien llame) y mande a alguien a recibir la ambulancia y guiarla.\n- Si no respira o no responde normal: empiece RCP y traiga el DEA si hay uno.\n- Calor (confundido, ya no suda, vomita, se desmayo): empiece a enfriarlo ya: sombra, mojelo con agua, hielo en cuello, axilas e ingle. No espere a la ambulancia.\n- Sangrado fuerte: presion fuerte y constante sobre la herida con un trapo, sin soltar; si un brazo o pierna no para, torniquete 5 a 8 cm arriba de la herida (anote la hora).\n- Caida, aplastado o atropellado: no lo mueva a menos que corra mas peligro donde esta; protejalo del trafico y las maquinas.\n- Si esta dentro de una zanja, hoyo o espacio confinado, NO entre: llame al 911 y no deje entrar a nadie.",
 +    },
 +    gas: {
-+      en: "Gas line hit or gas smell:\n- Get everyone out and away, upwind. Leave the machine where it is if you can walk away from it.\n- No smoking, no flames, no starting engines or anything that can spark near the gas.\n- Do not try to stop or squeeze off the leak, and do not bury or backfill it.\n- Call 911 from a safe distance, then the gas company, the line's owner or operator (number on your locate ticket, or call 811).\n- Keep people and traffic back until the fire department or gas company says it is clear.\n- If anyone is down in a trench or hole, do NOT go in after them.",
-+      es: "Linea de gas golpeada u olor a gas:\n- Saque a todos y alejense, contra el viento. Deje la maquina donde esta si puede alejarse de ella.\n- No fumar, no llamas, no arrancar motores ni nada que haga chispa cerca del gas.\n- No intente parar ni apretar la fuga, y no la entierre ni la tape.\n- Llame al 911 desde un lugar seguro, luego a la compania de gas, la duena u operadora de la linea (numero en su ticket de localizacion, o llame al 811).\n- Mantenga a la gente y el trafico lejos hasta que los bomberos o la compania de gas digan que esta seguro.\n- Si alguien esta caido dentro de una zanja o hoyo, NO entre a sacarlo.",
++      en: "Gas line hit or gas smell:\n- Get everyone out and away, upwind. Leave the machine where it is if you can walk away from it.\n- No smoking, no flames, no starting engines or anything that can spark near the gas.\n- Do not try to stop or squeeze off the leak; leave the hole open for the gas company.\n- Call 911 from a safe distance, then the gas company, the line's owner or operator (number on your locate ticket, or call 811).\n- Keep people and traffic back until the fire department or gas company says it is clear.\n- If anyone is down in a trench or hole, do NOT go in after them.",
++      es: "Linea de gas golpeada u olor a gas:\n- Saque a todos y alejense, contra el viento. Deje la maquina donde esta si puede alejarse de ella.\n- No fumar, no llamas, no arrancar motores ni nada que haga chispa cerca del gas.\n- No intente parar ni apretar la fuga; deje el hoyo abierto para la compania de gas.\n- Llame al 911 desde un lugar seguro, luego a la compania de gas, la duena u operadora de la linea (numero en su ticket de localizacion, o llame al 811).\n- Mantenga a la gente y el trafico lejos hasta que los bomberos o la compania de gas digan que esta seguro.\n- Si alguien esta caido dentro de una zanja o hoyo, NO entre a sacarlo.",
 +    },
 +    power: {
 +      en: "Power line contact:\n- Operator: stay in the cab and do not touch anything metal. Move the machine away from the line only if you can do it safely.\n- Leave the machine only if it is on fire: jump clear with feet together, never touch the machine and the ground at the same time, then shuffle or hop away with feet together.\n- Everyone else: stay far back. The ground around the machine can be live. Do not touch the machine, the person, or anything touching them.\n- Call 911 and the power company to cut the power.\n- Someone shocked and down: do not touch them until the power is off; then start CPR and get the AED if they are not breathing.",
 +      es: "Contacto con linea electrica:\n- Operador: quedese en la cabina y no toque nada de metal. Aleje la maquina de la linea solo si puede hacerlo sin peligro.\n- Salga de la maquina solo si se esta quemando: salte lejos con los pies juntos, nunca toque la maquina y el suelo al mismo tiempo, y alejese arrastrando los pies o saltando con los pies juntos.\n- Todos los demas: mantenganse muy lejos. El suelo alrededor de la maquina puede tener corriente. No toquen la maquina, a la persona ni nada que la toque.\n- Llame al 911 y a la compania de luz para que corten la corriente.\n- Si alguien recibio la descarga y esta caido: no lo toque hasta que corten la corriente; luego empiece RCP y traiga el DEA si no respira.",
 +    },
 +  };
++  // the line that fits what happened moves up, right under the 911 line (bleeding, heat, a fall or crush)
++  const PB_EMG_FOCUS = [[/\b(bleed\w*|blood|cut (his|her|their|my)|artery|sangr\w*)\b/, /^- (Heavy bleeding|Sangrado)/], [/\b(heat|hot|sweat\w*|\d{3}|confused|throwing up|vomit\w*|calor|suda)\b/, /^- (Heat|Calor)/], [/\b(fell|fall|crush\w*|run over|ran over|backed over|hit by|struck|rolled on|aplast\w*|atropell\w*|cayo)\b/, /^- (Fall|Caida)/]];
++  function pbEmergencyText(key, lang, q) {
++    const lines = PB_EMG_TEXT[key][lang].split("\n");
++    if (key !== "open") return lines.join("\n");
++    const t = pbEmgNorm(q);
++    for (const [qr, lr] of PB_EMG_FOCUS.slice().reverse()) {
++      if (!qr.test(t)) continue;
++      const i = lines.findIndex((l) => lr.test(l));
++      if (i > 2) lines.splice(2, 0, lines.splice(i, 1)[0]);
++    }
++    return lines.join("\n");
++  }
 +  function pbEmergencyAnswer(q) {
 +    const k = pbEmergencyKind(q);
-+    return k ? { kind: "emergency", script: k.key, lang: k.lang, text: PB_EMG_TEXT[k.key][k.lang] } : null;
++    return k ? { kind: "emergency", script: k.key, lang: k.lang, text: pbEmergencyText(k.key, k.lang, q) } : null;
 +  }
 +  const PB_AI_EMERGENCY_RX = PB_EMG_STRONG;
    // A gas READING (a number with the gas, or % / ppm), not a question about what the limits are.
    const PB_AI_GAS_NUM = String.raw`(\d+(\.\d+)?\s*(%|ppm)|\b(o2|oxygen|lel|h2s|co|carbon monoxide)\b\s*(is|at|of|reads?|reading|=|:)?\s*\d|\d+(\.\d+)?\s*(o2|oxygen|lel|h2s|co)\b|\breadings?\b[^?]{0,30}\d)`;
    // A go/no-go ask: may someone enter, is it safe, can the permit be signed, is protection needed here.
-@@ -18581,8 +18680,8 @@
+@@ -18581,8 +18695,8 @@
      const src = (ids) => ids.filter(id => PB_EDU_ARTICLES[id] && pbEduArticleEl(id)).map((id, i) => ({ n: i + 1, article: id, anchor: '', title: pbEduArticleTitle(id) }));
      const trenchy = /\b(trench|excavat\w*|shor\w*|slop\w*|bench\w*|cave|ditch|hole|box|shield)\b/.test(t);
      const pages = trenchy ? ['refTrench', 'refSafety', 'refConfined'] : ['refConfined', 'refSafety', 'refTrench'];
 -    if (PB_AI_EMERGENCY_RX.some(r => r.test(t))) return { kind: 'emergency', safety: true, local: true, sources: src(pages),
 -      body: 'If someone is down, not responding, trapped, or a gas alarm is going off:\n- Get out yourself and keep everyone else out.\n- Do NOT go in after them unless you are a trained, equipped rescuer. Untrained rescuers are often the next victims.\n- Call 911 or your emergency number now, then tell your supervisor / entry supervisor.\n- If a permit is open, use EMERGENCY so the entry team and the permit record know.' };
 +    const em = pbEmergencyKind(q);
-+    if (em) return { kind: 'emergency', script: em.key, lang: em.lang, safety: true, local: true, sources: em.key === 'space' ? src(pages) : [], body: PB_EMG_TEXT[em.key][em.lang] };
++    if (em) return { kind: 'emergency', script: em.key, lang: em.lang, safety: true, local: true, sources: em.key === 'space' ? src(pages) : [], body: pbEmergencyText(em.key, em.lang, q) };
      return null;
    }
    // ---- ask_v2: one conversation in the same box. Each question joins the current thread and goes with its last 4

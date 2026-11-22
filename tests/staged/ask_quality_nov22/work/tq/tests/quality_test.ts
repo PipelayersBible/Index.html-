@@ -16,9 +16,12 @@ Deno.test("emergency: gas / power / space / open / Spanish scripts", () => {
   ok(/stay in the cab/i.test(localAnswer("excavator touched the overhead line").text), "power script");
   ok(/upwind/.test(localAnswer("we hit a gas line").text), "gas script");
   ok(/Stay out/.test(localAnswer("my pipelayer passed out in the manhole").text), "space script");
+  const bl = localAnswer("Guy cut his arm bad and it's bleeding a lot. What do I do?").text.split("\n");
+  ok(/^- Heavy bleeding/.test(bl[2]) && /pressure/.test(bl[2]) && /tourniquet/.test(bl[2]), "bleeding line first: " + bl[2]);
+  ok(!/backfill it|cover it/.test(localAnswer("we hit a gas line").text), "no 'backfill it' wording");
 });
 Deno.test("emergency: questions ABOUT a topic are not emergencies", () => {
-  for (const q of ["How far do I have to stay from an overhead power line with the excavator?", "What should the H2S alarm be set at?", "What are the signs of heat stroke?", "What is the CO limit for entering a manhole?", "How do I prevent a cave-in?", "How deep does gas line need to be buried?", "Can I use crushed rock for bedding?", "How close can I dig to a gas line?", "How often do I bump test the 4 gas meter?", "What is the alarm setting for the LEL on a 4-gas monitor?", "We hit a gas main. How fast do we have to report it?", "Laborer got hit in the head by the bucket and says he is fine. Can he go back to work?"]) ok(!K(q), q + " -> " + K(q));
+  for (const q of ["How far do I have to stay from an overhead power line with the excavator?", "What should the H2S alarm be set at?", "What are the signs of heat stroke?", "What is the CO limit for entering a manhole?", "How do I prevent a cave-in?", "How deep does gas line need to be buried?", "Can I use crushed rock for bedding?", "How close can I dig to a gas line?", "How often do I bump test the 4 gas meter?", "What is the alarm setting for the LEL on a 4-gas monitor?", "We hit a gas main. How fast do we have to report it?", "Laborer got hit in the head by the bucket and says he is fine. Can he go back to work?", "Who do we call first after nicking a gas service if it is not leaking?", "We nicked a gas line, no leak. Do we report it?"]) ok(!K(q), q + " -> " + K(q));
   ok(localAnswer("can we go in").kind === "gonogo", "go/no-go still local");
 });
 Deno.test("state: a state named in passing does not replace the job state", () => {
@@ -37,6 +40,7 @@ Deno.test("state: no state known, safety rule questions ask which state", () => 
   for (const q of ["At what depth do I need a trench box?", "Do I need shoring in this trench?", "What is the CO limit for a manhole?", "How fast do I have to report an injury to OSHA?", "Is a confined space permit needed for this vault?"]) ok(stateDependent(q, [], null), q);
   ok(!stateDependent("At what depth do I need a trench box?", [], "TX") || true, "known state unchanged path");
   ok(!stateDependent("How many fittings in a 20 ft stick of pipe?", [], null), "pipe math not dependent");
+  ok(!stateDependent("How far apart do ladders have to be in a trench?", [], null), "ladder spacing is the same everywhere (eval sa5)");
   ok(!stateDependent("trench collapsed, guy buried", [], null), "emergency never asks");
   ok(/stricter/.test(stateLines({ code: null }, true, 0)), "minimum + stricter wording");
 });

@@ -39,7 +39,7 @@ rep('state.ts', '// state from the end of an address:',
 
 # ---- S3 no state known: safety rule questions depend on the state
 rep('state.ts', '|trench permit|excavation permit|annual permit)\\b/i;',
-    '|trench permit|excavation permit|annual permit)\\b/i;\n// ask_quality_nov22 (review 4): with NO state known, safety-rule questions also change with the state (WA trench at 4 ft, CA permit, state air limits, state reporting times)\nconst DEPENDS_SAFETY = /\\b(trench\\w*|excavat\\w*|shor(e|ing)|trench box|shields?|slop(e|ed|ing) (the |a |my |our )?(trench|cut|walls?|sides?|bank|excavation|hole|ditch)|sloping|benching|type [abc] soil|cave[- ]?ins?|protective system|confined space|permit[- ]required|manhole entry|vault entry|enter(ing)? (a |the )?(manhole|vault|wet ?well|tank|pit)|(co|h2s|lel|oxygen|o2|carbon monoxide|hydrogen sulfide)\\b.{0,20}\\b(limit|level|ppm|percent|%|alarm|reading)|(limit|level|alarm)s?\\b.{0,15}\\b(co|h2s|lel|oxygen|carbon monoxide|hydrogen sulfide)|report\\w*\\b.{0,30}\\b(injur\\w*|hospital\\w*|amputat\\w*|death|fatalit\\w*|accident|incident)|(injur\\w*|hospital\\w*|amputat\\w*|death|fatalit\\w*)\\b.{0,30}\\breport\\w*|heat|fall protection|flaggers?|traffic control)\\b/i;')
+    '|trench permit|excavation permit|annual permit)\\b/i;\n// ask_quality_nov22 (review 4): with NO state known, safety-rule questions also change with the state (WA trench at 4 ft, CA permit, state air limits, state reporting times)\nconst DEPENDS_SAFETY = /\\b((trench\\w*|excavat\\w*)\\b.{0,40}\\b(box|shor\\w*|shield|slop\\w*|bench\\w*|protect\\w*|deep|depth|permit|cave)\\w*|(how deep|what depth|at what depth)\\b.{0,30}\\b(trench|excavat\\w*|box|shor\\w*|protect\\w*)|shor(e|ing)|trench box|shields?|slop(e|ed|ing) (the |a |my |our )?(trench|cut|walls?|sides?|bank|excavation|hole|ditch)|sloping|benching|type [abc] soil|cave[- ]?ins?|protective system|confined space|permit[- ]required|manhole entry|vault entry|enter(ing)? (a |the )?(manhole|vault|wet ?well|tank|pit)|(co|h2s|lel|oxygen|o2|carbon monoxide|hydrogen sulfide)\\b.{0,20}\\b(limit|level|ppm|percent|%|alarm|reading)|(limit|level|alarm)s?\\b.{0,15}\\b(co|h2s|lel|oxygen|carbon monoxide|hydrogen sulfide)|report\\w*\\b.{0,30}\\b(injur\\w*|hospital\\w*|amputat\\w*|death|fatalit\\w*|accident|incident)|(injur\\w*|hospital\\w*|amputat\\w*|death|fatalit\\w*)\\b.{0,30}\\breport\\w*|heat|fall protection|flaggers?|traffic control)\\b/i;')
 rep('state.ts', '    ? "JOB STATE: not known, and this answer changes with the state. Give in one or two lines only what is the same in every state (the federal rule, if there is one). Do not give any one state\'s number as theirs. Then end with exactly one short question: \\"Which state is the job in?\\""',
     '    ? "JOB STATE: not known, and this answer changes with the state. Give in one or two lines only what is the same in every state (the federal rule, if there is one, as the MINIMUM: say in a few words that some states set a stricter rule). Do not give any one state\'s number as theirs. Then end with exactly one short question: \\"Which state is the job in?\\""')
 
@@ -142,3 +142,18 @@ assert _m and _s.count('const REPLY_RULE = ') == 1
 _v9 = open(os.path.join(HERE, 'reply_rule_v9.txt')).read()
 wr('ask.ts', _s[:_m.start(1)] + _json.dumps(_v9, ensure_ascii=False) + _s[_m.end(1):])
 print('S9 ok')
+
+# ---- S10 injury reporting (step 1 national + exception + table): with the job state known (not an emergency), a reporting question
+#      carries the state's own sp-<st>-report card (if it has one) and the by-state table osha-pl-report-states-1 (every state on it).
+rep('state.ts', 'export const FORCED_CHARS = 2600;',
+    'export const FORCED_CHARS = 2600;\n// ask_quality_nov22\nexport const REPORT_TOPIC = /\\b(report\\w*|notify\\w*|call (osha|the state|cal\\/osha|l&i))\\b.{0,50}\\b(injur\\w*|hurt|hospital\\w*|admitted|amputat\\w*|death|fatal\\w*|died|killed|accident|incident|er|emergency room|eye|finger\\w*)\\b|\\b(injur\\w*|hospital\\w*|admitted|amputat\\w*|death|fatal\\w*|died|accident|incident|emergency room|\\ber\\b)\\b.{0,50}\\b(report\\w*|notify\\w*|call (osha|the state))\\b|\\b(do i|do we|have to|need to) call osha\\b/i;')
+rep('state.ts', '  if (DIG_TOPIC.test(q)) {\n    const re = code === "CA"',
+    '''  if (REPORT_TOPIC.test(q) && !DIG_TOPIC.test(q)) {
+    const re = new RegExp(`^sp-${lc}-report`);
+    if (!has(re)) { const h = best(re, "injury reporting hospitalization report hours"); h && outC.push({ ...h, score: Math.max(h.score, sc), exc: !0 }); }
+    const t = docHit(index, "osha-pl-report-states-1", sc, !1);
+    t && outC.push(t);
+  }
+  if (DIG_TOPIC.test(q)) {
+    const re = code === "CA"''')
+print('S10 ok')

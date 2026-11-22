@@ -17,7 +17,7 @@ i = s.index('  const PB_AI_EMERGENCY_RX = [\n'); j = s.index('  ];\n', i) + len(
 assert s.count('  const PB_AI_EMERGENCY_RX = [\n') == 1
 s = s[:i] + '  // ask_quality_nov22 (safety review 1-2): the server\'s emergency.ts, pasted. Keep the two copies identical.\n' + em + '  const PB_AI_EMERGENCY_RX = PB_EMG_STRONG;\n' + s[j:]
 rep("    if (PB_AI_EMERGENCY_RX.some(r => r.test(t))) return { kind: 'emergency', safety: true, local: true, sources: src(pages),\n      body: 'If someone is down, not responding, trapped, or a gas alarm is going off:\\n- Get out yourself and keep everyone else out.\\n- Do NOT go in after them unless you are a trained, equipped rescuer. Untrained rescuers are often the next victims.\\n- Call 911 or your emergency number now, then tell your supervisor / entry supervisor.\\n- If a permit is open, use EMERGENCY so the entry team and the permit record know.' };",
-    "    const em = pbEmergencyKind(q);\n    if (em) return { kind: 'emergency', script: em.key, lang: em.lang, safety: true, local: true, sources: em.key === 'space' ? src(pages) : [], body: PB_EMG_TEXT[em.key][em.lang] };")
+    "    const em = pbEmergencyKind(q);\n    if (em) return { kind: 'emergency', script: em.key, lang: em.lang, safety: true, local: true, sources: em.key === 'space' ? src(pages) : [], body: pbEmergencyText(em.key, em.lang, q) };")
 E = ' Emergency? Call 911.'
 for k, old in [('plan', 'Your plan on this phone doesn’t include it.'), ('offline', 'Runs, calculators and permits still work offline.'),
                ('noClient', 'Check your signal and try again.'), ('signedOut', 'or your login has expired.'),

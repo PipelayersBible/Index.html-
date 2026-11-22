@@ -1,0 +1,45 @@
+== pass 1
+reset: 3240|a9e67ec6527df46b665cbc03bdb6ca6c (want 3240|a9e67ec6527df46b665cbc03bdb6ca6c)
+psql:promotion/21_load.sql:175: NOTICE:  ask_quality 21_load: applied, 3247 rows
+{"post_all": "f85b4d61df8e54abe6bd391f7317cbd7"}
+== pass 2
+reset: 3240|a9e67ec6527df46b665cbc03bdb6ca6c (want 3240|a9e67ec6527df46b665cbc03bdb6ca6c)
+3240 -> 3247: delete 3, in place 30, new 10; expected md5 f85b4d61df8e54abe6bd391f7317cbd7
+20_precheck.sql 55410 bytes
+21_load.sql 126466 bytes
+91_rollback.sql 56313 bytes
+21t_live_test.sql 182536 bytes
+-- constraints:
+kb_chunks_chunk_check kb_chunks_lib_check kb_chunks_ord_check kb_chunks_pkey kb_chunks_version_fkey 
+-- rolled-back test (21t):
+ERROR:  ASK QUALITY ROLLBACK TEST OK: before 3240 / a9e67ec6527df46b665cbc03bdb6ca6c, after load 3247 / f85b4d61df8e54abe6bd391f7317cbd7, after rollback 3240 / a9e67ec6527df46b665cbc03bdb6ca6c
+after 21t (want unchanged 3240|a9e67ec6...): 3240|a9e67ec6527df46b665cbc03bdb6ca6c; index rows: 0
+-- precheck before:
+rows max_ord kb_n all_md5 touched_ok new_ids_there
+3240 3239 3240 a9e67ec6527df46b665cbc03bdb6ca6c 33 0
+(1 row)
+-- load:
+psql:promotion/21_load.sql:175: NOTICE:  ask_quality 21_load: applied, 3247 rows
+-- load again:
+psql:promotion/21_load.sql:175: NOTICE:  ask_quality 21_load: already applied, nothing changed
+-- precheck after:
+rows max_ord kb_n all_md5 touched_ok new_ids_there
+3247 3246 3247 f85b4d61df8e54abe6bd391f7317cbd7 0 10
+(1 row)
+3247|{"app": 238, "osha": 278, "field": 2731}
+0
+loaded rows = work/after_rows.jsonl (what the free check and the ai-next overlay used): True 3247 3247
+-- 21t on the loaded state (must refuse):
+ERROR:  FAIL test: already applied on live
+-- rollback:
+psql:promotion/91_rollback.sql:32: NOTICE:  ask_quality 91_rollback: done, 3240 rows
+after rollback (want 3240|a9e67ec6527df46b665cbc03bdb6ca6c): 3240|a9e67ec6527df46b665cbc03bdb6ca6c
+-- rollback again:
+psql:promotion/91_rollback.sql:32: NOTICE:  ask_quality 91_rollback: already rolled back (or never applied), nothing changed
+-- guard: a live row changed -> load refuses, nothing written
+FAIL: library is not the live state this was built on 
+md5 still the changed one: 3240|7c7385702e4a212765bf5afe77bdae75
+reset: 3240|a9e67ec6527df46b665cbc03bdb6ca6c (want 3240|a9e67ec6527df46b665cbc03bdb6ca6c)
+-- guard: rollback on a changed result -> refuses
+FAIL: the library is not in the state 21_load.sql leaves 
+reset: 3240|a9e67ec6527df46b665cbc03bdb6ca6c (want 3240|a9e67ec6527df46b665cbc03bdb6ca6c)

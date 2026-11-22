@@ -1,0 +1,55 @@
+  billing due: Billing due Seller on invoices: not set yet · $99.00 a month includes 5 people, $12.00 each extra · yearly = 10 months · individual $15.00 a month or $144.00 a year · plan reading $1.00 a sheet Late Co Inc Past due · 5 days left Locks (read-only) on Nov 27, 2026 unless you press Paid Nov 20, 2026 – Dec 20, 2026 · 4 people · $99.00 for the month Send to ap@late.test · billing state CA Paid Pipe LLC Nov 25, 2026 – Dec 25, 2026 · 6 people · $111.00 for the month · founder price Send to ap@paid.test · billing state CA Year Co LLC Aug 22, 2027 – Aug 22, 2028 · 7 people · $1,230.00 for the year Catch-up now: 1 above the paid seats × 9 months × $12.00 = $108.00 Send to ap@year.test · billing state CA
+PASS Billing due lists who to invoice: legal name, period, people, amount, email
+PASS Billing due warns first: past-due company with days left and its lock date (automatic, no button)
+PASS Billing due shows a yearly catch-up (1 extra × 9 months × $12)
+PASS seller name is a setting (not set yet), not hard-coded
+  beta card: Acme Pipeline Beta · 10 days left Company login: super@acme.test · 6 people counted (the company login is free) 6 users · 1 active this week · used on 3 of the last 30 days Laid: 100 ft (50 ft in 30 days) · 2 runs · 1 photos · 1 reports in 30 days Last used: not yet AI, 30 days: none · $0.00 Plan sets: 0 · Feedback: 0 Add 30 Days Make Paid Hand Over Beta Results
+PASS beta card: Add 30 Days / Make Paid / Hand Over, people counted, company login
+PASS legacy paid company: no billing record, Make Paid offered, no state buttons
+  paid card: Paid Pipe Paid Paid Pipe LLC · ap@paid.test · signed by Pat Paid, Owner Paid through Nov 25, 2026 · next invoice Nov 25, 2026 – Dec 25, 2026 · 6 people · $111.00 a month Paid seats: 6 · people now: 6 Founder price locked until Oct 22, 2027 (set Oct 22, 2026 by tommy@admin.test) Plan reading add-on: off (plan sets stay parked) · $1 a sheet when it’s on Company login: own@paid.test · 6 people counted (the company login is free) 7 users · 1 active this week · used on 3 of the last 30 days Laid: 100 ft (50 ft in 30 days) · 2 runs · 1 photos · 1 reports in 30 days Last used: not yet AI, 30 days: none · $0.00 Plan sets: 0 · Feedback: 0 Paid Read-Only Now Cancel Plan Plan Reading On Hand Over Beta Results
+PASS paid card: paid through, next invoice, paid seats, founder lock (who, until), plan reading off
+PASS paid card: Paid / Read-Only Now / Cancel Plan / Plan Reading On / Hand Over (no Past Due button)
+PASS past-due card: chip with days left and the lock date
+PASS yearly card: catch-up line and Catch-up Paid
+  form: Make Paid: Acme Pipeline × Use this after the company signs the order form. You send the invoices from Stripe; this records the deal. Company legal name Billing email PEOPLE 6 counted now: every login in the company and every open invite. The company login is free. BILLING Monthly Yearly Founder price, locked until Nov 21, 2027 Plan reading add-on ($1 a sheet, charged once when read). Leave it off for customers until Billing shows sheets read. Off: plan sets stay parked. Signed by (name and titl
+PASS form fields: legal name, email, people now, monthly/yearly, founder lock + date, plan reading, signer
+PASS price shown: $111.00 a month for 6 people
+PASS founder lock offered while the beta is on
+  price yearly: $1,110.00 a year (10 months of $111.00) $99.00 includes 5 people, 6 counted (1 extra at $12.00) Founder price locked until Nov 21, 2027 Paid seats: 6. Someone added into a free paid seat costs nothing; above them: a catch-up for the months left. If Paid isn’t pressed for the next period by its start, the company goes past due, then read-only 7 days later.
+PASS yearly = 10 months shown; founder lock date shown
+PASS form fits 390 px (no sideways overflow) []
+PASS missing billing email is caught before sending
+  make_paid args: {"p_company":"c0000000-0000-4000-8000-00000000000c","p_legal_name":"Acme Pipeline Inc","p_billing_email":"AP@acme.test","p_seats":null,"p_interval":"year","p_founder":true,"p_plan_reading":false,"p_signed_by":"Olive Owner, President"}
+PASS pb_owner_make_paid called with the form (seats counted by the server, yearly, founder, no plan reading, signer)
+  result: Make Paid: Acme Pipeline × Acme Pipeline Inc is paid. First invoice: Nov 22, 2026 – Nov 22, 2027 · 6 people · $1,110.00 Founder price locked until Nov 22, 2027 Next invoice due by Nov 22, 2027 (press Paid when it’s paid). Company login: super@acme.test. If that’s a superintendent and not the company’s owner, use Hand Over. ALSO PAYING FOR THEIR OWN PLAN crew1@acme.test Turn Off Their Plan Done
+PASS result: first invoice, company login with the hand-over hint, people still on their own plan
+PASS Turn Off Their Plan calls pb_owner_individual_off
+PASS list reloaded: Acme now shows its deal and the paid buttons
+PASS ended beta: founder lock not offered
+  paid modal: Notice Mark Late Co Inc’s invoice for Nov 20, 2026 – Dec 20, 2026 (4 people, $99.00) as paid? Paid through moves to Dec 20, 2026. Back Paid
+PASS Paid sends the current paid-through date and seats; the past due clears
+PASS Read-Only Now recorded; card says you set it, undo offered
+PASS Not Read-Only undoes it
+PASS Catch-up Paid sets the paid seats to the people now
+PASS Cancel Plan asks, records canceled, then offers Make Paid again
+PASS Plan Reading On (paid company): the confirm and the card say $1 a sheet, and that Billing does not show sheets read yet
+  hand over: Hand Over: Acme Pipeline × The company login moves to the person you pick (the company’s owner). super@acme.test stays in the company as: Superintendent Project manager NEW OWNER crew0@acme.test · Foreman crew1@acme.test · Pipelayer crew2@acme.test · Pipelayer crew3@acme.test · Pipelayer crew4@acme.
+PASS Hand Over lists the members and the old owner's new role
+PASS hand-over sheet fits 390 px
+PASS Hand Over needs a pick
+PASS Hand Over: confirm, pb_owner_company_handover(new owner, superintendent), done
+PASS the old one-tap company_set(paid) is never called
+PASS no page errors []
+PASS dark mode: form uses the dark surface (rgb(32, 37, 44)) and fits 390 px
+PASS dark: no page errors
+PASS billing server missing: Make Paid says so and changes nothing (no old switch)
+  home line: Plan paused Your company’s plan is paused. Your records stay in your company’s account. New runs and reports wait on this phone and send once the plan is active again. Nothing is deleted.
+PASS Home: "Plan paused", records wait on this phone, nothing deleted
+  report after a paused answer: waiting | Your company’s plan is paused. It waits on this phone and is sent once the plan is active again. | submits 1
+PASS signed report refused with pb:beta_ended stays WAITING on the phone with plan wording (like the ended beta)
+  after Paid: sent | 
+PASS once the plan is paid again the report sends by itself
+PASS foreman: no page errors []
+t127 done: 40 pass, 0 fail
+
+[exit 0] 56.8 s

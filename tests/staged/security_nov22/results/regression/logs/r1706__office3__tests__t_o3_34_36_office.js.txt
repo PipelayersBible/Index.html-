@@ -1,0 +1,39 @@
+  home (light): 3 locate tickets expired or expiring | Job 26014: A253100123 expired 1 day ago; Job 26014: A253100456 2 days left; Job 26043: B1 6 days left. Don’t dig on an expired ticket until a new one is valid. | Locates · Job 26014 | Locates · Job 26043
+PASS #34 office Home: a Needs attention line for locate tickets
+PASS #34 it lists the expired one, the 2-day one and the 6-day one (not the 20-day ticket)
+PASS #34 it says not to dig on the expired ticket
+PASS #34 a button opens that job's Locates
+PASS #34 one expiry function (pbLocExpiry): days left, closed tickets left out
+PASS #34 the office asked pb_prod_locates_mine (it was foreman-only)
+  cards: ["26043: wait=811 ticket: 6 days left; nopm=No PM or super","26014: emerg=811 ticket expired; late=5 work days past the end date"]
+PASS #34 job card 26014: red "811 ticket expired"
+PASS #34 job card 26043: amber "811 ticket: 6 days left"
+PASS light 390-400 px Company production: nothing off the side []
+PASS #36 job page: Spreadsheets panel with both exports
+PASS light job page with the panel: nothing off the side []
+PASS #36 the date form opens with the last 30 days (2026-10-23 to 2026-11-21)
+  days csv: production-26014-2026-10-23-to-2026-11-21.csv [["Job number","Job name","Date","Item","Unit","Quantity","Entries"],["26014","Sundance Sewer Improvement","2026-11-18","Pipe Installed - Main","LF","250","2"],["26014","Sundance Sewer Improvement","2026-11-18","Equipment hours","h","16","1"],["26014","Sundance Sewer Improvement","2026-11-19","Pipe Installed - Main","LF","120.5","1"],["26014","Sundance Sewer Improvement","2026-11-19","Structures","EA","1","1"]]
+PASS #36 file name production-<job>-<from>-to-<to>.csv
+PASS #36 headings and one row per day and item
+PASS #36 job name, items by name (never a raw key), quantities and entry counts
+PASS #36 asked the server for that job and range
+  days alert: Production by Day  4 rows, 2026-10-23 to 2026-11-21. Counted the way the job page counts: crew runs still in their 24-hour hold are not in it yet.  OK
+PASS #36 the alert gives the row count and the 24-hour hold
+PASS #36 a To date before From is caught
+  hours csv: crew-hours-26014-2026-10-23-to-2026-11-21.csv [["Date","Job number","Jobsite","Foreman (signed)","Person","Hours","Report version","Signed at"],["2026-11-19","26014","Sundance","Brandon Jones","Mike Smith","8","1","Nov 21, 2026 8:55 PM PST"],["2026-11-19","26014","Sundance","Brandon Jones","=HYPERLINK(\"x\")","7.5","2","Nov 21, 2026 8:55 PM PST"]]
+PASS #36 crew hours: headings, one row per person, hours as signed
+  hours alert: Crew Hours for Payroll  2 rows from 2 signed daily reports. The hours are the foreman’s daily totals, as signed, not start, stop or meal times. Check them against your time records before you run payr
+PASS #36 the hours alert counts rows and reports
+PASS #36 a cell typed as a formula is written as text (existing CSV escape)
+  offline days: production-26014-2026-01-01-to-2026-11-21-phone-copy.csv 4 Production by Day  3 rows, 2026-01-01 to 2026-11-21. Counted the way the job page counts: crew runs still in their 24-hour hold are not in it yet. No signal: this has only what this phone holds for the job (the last 14 days, 2026-11-19 to 2026-11-20). Make it 
+PASS #36 offline: production from the phone's copy (3 rows), and it says so
+PASS #36 offline: crew hours say they need signal
+PASS no page errors []
+  home (dark): 3 locate tickets expired or expiring | Job 26014: A253100123 expired 1 day ago; Job 26014: A253100456 2 days left; Job 26043: B1 6 days left. Don’t dig on an expired ticket until a new one is valid. | Locates · Job 26014 | Locates · Job 26043
+  cards: ["26043: wait=811 ticket: 6 days left; nopm=No PM or super","26014: emerg=811 ticket expired; late=5 work days past the end date"]
+PASS dark 390-400 px Company production: nothing off the side []
+PASS dark job page with the panel: nothing off the side []
+PASS dark: no page errors []
+RESULT PASS 27
+
+[exit 0] 35.5 s
