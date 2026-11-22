@@ -383,7 +383,7 @@ end $d$;
   insert into public.companies (id, name, owner_user_id, status, plan)
     values (q_co, 'pbrec test ' || q_tag, q_ow, 'active', 'paid'), (q_co2, 'pbrec test2 ' || q_tag, q_xo, 'active', 'paid');
   insert into public.company_members (company_id, user_id, role) values (q_co, q_fm, 'foreman'), (q_co, q_pm, 'pm');
-  insert into pb_reports.managers (company_id, user_id) values (q_co, q_pm);
+  insert into pb_reports.managers (company_id, user_id) values (q_co, q_pm) on conflict do nothing; -- live adds a PM as manager by trigger
   begin
     set local role authenticated; reset role;
     perform set_config('pbrec.as_auth', '1', true); q_notes := ' [app calls ran as role authenticated]';
