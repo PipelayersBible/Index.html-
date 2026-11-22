@@ -147,3 +147,11 @@ Other saved outputs: `results/sql_local.txt`, `results/edge_session_check.txt`, 
 `results/t_mfa_gate.txt`. t107_mfa and t114_mfacrew pass on the CSP build.
 
 ## DONE
+
+## APPLIED (lead, Nov 21 2026 ~9:45 PM PT)
+- Live test blocks first: t01 15/0, t02 23/0, t03 15/0, t04 16/0.
+- Applied 01 → 02 → 03 → 04 (apply files md5-checked from the pushed commit). Anon RPC check after 01 and after 04: 200 ok.
+- Edge: weather v10, crew-admin v11 (staged index.ts + the live logic.ts, saved beside it here), JWT verify on. Boot check: weather 401 pb:signed_out, crew-admin 200 pb:signed_out with the anon key (as before).
+- Edge: crew-join v2 (staged index.ts + live logic.mjs, saved here), JWT verify off as before. One wrong 6-character code → pb_onboard.misses row with key `e:` + 32 hex. Keys arrive.
+- Logic files were mock-tested in node before deploy (weather 6/6, crew-admin 6/6, crew-join pass).
+- Still to do: CSP p01 ships with r17.15; dashboard OTP-expiry setting (Tommy decision); `ai`/`plans` session check (later).
