@@ -55,3 +55,9 @@ before the expected golden updates landed in tests/expect (23:01-23:03), which i
 5. F7: Zoom on narrow phones now means "as big as fits" (+14-20% at 360) instead of +25% with sideways scrolling. Recommend: ship.
 
 ## DONE
+
+## Lead: rebuilt on LIVE r17.15 (Nov 22, 12:30 AM)
+- build.sh now stacks on the published r17.15 source (includes the 911-on-Ask-only patch). t_field unchanged.
+- Full regression (jobs 3): 217 pass, 5 fail. w2 and a7 = the expected layout goldens in test_updates/. The 3 permit/records
+  tests (t_o3_37_38_39, t_o3_30_31, permit_active_screen) failed only under load: re-run alone they pass on this build and on r17.15.
+- Waiting on Tommy's answers 40-44 on the Nov 22 decisions page before shipping.
