@@ -63,7 +63,7 @@ const W = 360, Hh = 740;
   await modals(bt => bt.find(x => /I Understand|Lock|Yes|Continue|OK/i.test(x)) || bt[0]);
   await p.evaluate(() => { pbOpenRosterAddForm(); document.getElementById('cpRosterName').value = 'Eddie Ent'; }); await p.waitForTimeout(200);
   await p.evaluate(() => { const b = [...document.querySelectorAll('#cpRosterAddForm button')].find(x => /^Add/.test(x.textContent.trim())); b && b.click(); }); await p.waitForTimeout(1200);
-  await p.evaluate(() => { pbQuickAddAtmoTest(); const s = (id, x) => { const e = document.getElementById(id); if (e) e.value = x; }; s('cpAtmoO2', '20.9'); s('cpAtmoLEL', '0'); s('cpAtmoH2S', '0'); s('cpAtmoCO', '0'); s('cpAtmoTester', 'Tess'); });
+  await p.evaluate(() => { const s = (id, x) => { const e = document.getElementById(id); if (e) e.value = x; }; s('cpAtmoO2', '20.9'); s('cpAtmoLEL', '0'); s('cpAtmoH2S', '0'); s('cpAtmoCO', '0'); s('cpAtmoTester', 'Tess'); });
   await p.evaluate(() => window.pbSaveAtmoReading()); await p.waitForTimeout(1500);
   await modals(bt => bt[bt.length - 1]);
   await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(800);

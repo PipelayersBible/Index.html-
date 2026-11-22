@@ -10,7 +10,8 @@ S=$ROOT/tests/staged
 D=$S/r1716_candidate
 V=${1:-A}
 case "$V" in A|B) ;; *) echo "usage: build.sh A|B"; exit 1;; esac
-W=$D/work/$V; rm -rf $W; mkdir -p $W/steps
+SFX=; if [ "${EXTRA:-0}" = 1 ]; then SFX=x; fi
+W=$D/work/$V$SFX; rm -rf $W; mkdir -p $W/steps
 LIST="
 field_nov22/patches/f1_results_compact.py
 field_nov22/patches/f4_laid_toast.py
@@ -30,7 +31,8 @@ design_nov22/patches/p2/look_permit_top.py
 design_nov22/patches/p2/look_names_row.py
 design_nov22/patches/p2/look_next_row_dark.py
 "
-[ "$V" = B ] && LIST="$LIST $LOOK"
+if [ "$V" = B ]; then LIST="$LIST $LOOK"; fi
+if [ "$V" = B ] && [ "${EXTRA:-0}" = 1 ]; then LIST="$LIST r1716_candidate/patches/p2x_station_toggle.py"; fi # optional, see NOTES.md
 cp $ROOT/_src/index.html $W/steps/s00.html
 i=0; prev=$W/steps/s00.html
 for f in $LIST; do
