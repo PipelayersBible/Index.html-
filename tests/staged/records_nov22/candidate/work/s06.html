@@ -40059,11 +40059,11 @@ html.pb-cx #pbApp #archiveReportsGroup { margin-top: 16px; }
       });
       const { data, error } = await pbLegacyWrite('pb_legacy_run_put', { p_run: pbLegacyRow, p_expect_uid: ownerId }, 60000,
         () => sbClient.from('runs').upsert(pbLegacyRow, { onConflict: 'client_run_id' }).select('id').single()); /* feat_security S3 */
-      if (error) { const off = navigator.onLine === false || /failed to fetch|networkerror|load failed|timeout|timed out|no client|network/i.test(String(error.message || '')); console.error('Supabase run sync failed (local copy is unaffected):', error.message); pbNoteCloudFail(entry, off ? 'offline' : 'rejected', error.message); return off ? 'offline' : 'failed'; } /* records_nov22 A3: no signal isn't a failed try */
+      if (error) { const off = navigator.onLine === false || /failed to fetch|networkerror|load failed|timeout|timed out|no client|network/i.test(String(error.message || '')); (off ? console.warn : console.error)('Supabase run sync failed (local copy is unaffected):', error.message); pbNoteCloudFail(entry, off ? 'offline' : 'rejected', error.message); return off ? 'offline' : 'failed'; } /* records_nov22 A3: no signal isn't a failed try */
       entry.supabaseId = data.id; // saved locally so a future step (editing/correcting) can target the right row instead of creating a duplicate
       saveRunArchive();
       return 'success';
-    } catch (e) { console.error('Supabase run sync failed (local copy is unaffected):', e.message); pbNoteCloudFail(entry, navigator.onLine === false ? 'offline' : 'network', e && e.message); return 'offline'; } /* records_nov22 A3 */
+    } catch (e) { const off = navigator.onLine === false || /failed to fetch|networkerror|load failed|timeout|timed out|network|abort/i.test(String(e && e.message || '')); (off ? console.warn : console.error)('Supabase run sync failed (local copy is unaffected):', e.message); pbNoteCloudFail(entry, navigator.onLine === false ? 'offline' : 'network', e && e.message); return off ? 'offline' : 'failed'; } /* records_nov22 A3: no signal isn't a failed try */
   }
   // UX batch 1 (UX-06): the last cloud failure per run, in words the worker can act on.
   const pbCloudFailWhy = new Map(); // entry id -> { kind: 'offline' | 'network' | 'rejected', detail, ref }

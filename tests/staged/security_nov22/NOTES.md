@@ -65,7 +65,7 @@ Adds `<meta http-equiv="Content-Security-Policy">` after the viewport meta:
 - `tests/t_csp_smoke.js` on the CSP test build: **all 11 pass**: no violation at start-up or moving between screens; jsPDF
   loads and makes a PDF with an image; pdf.js activates its blob worker and reads a page; Supabase REST/storage/functions,
   Realtime wss, Sentry, OSM, cdnjs, `data/` reachable; data:/blob: images load; **a host not listed is blocked**.
-- Full regression on the CSP hooks build: see "Regression" below.
+- Full regression on the CSP hooks build: 221 pass, 1 unrelated fail (see "Regression").
 - When a future patch adds a new outside host (a font CDN, a map, an API), the policy must list it or it is blocked.
 
 ### App behaviour with the new gate: `tests/t_mfa_gate.js` (rig; every RPC answers like the new gate while aal1): **all 12 pass**
@@ -137,6 +137,13 @@ not affected. See decision 3.
    put many phones behind one IP, so a crew joining together on one carrier still gets 30 tries between them.
 
 ## Regression
-(filled in below when the run ends)
+`tests/run_all.sh --build <CSP hooks build> --jobs 2 --out results/regression` (Nov 21, run while two other helpers'
+regressions shared the box): **pass 221, FAIL 1, skip 15 of 237** (`results/full_regression.log`). **No CSP violation in
+any test log** (the test build logs each one as `CSP-VIOLATION`; grep of all logs: none). The one FAIL,
+`bughunt_nov17/new/f06_breakend.js` (TimeoutError waiting for `#pbEaTime`), **fails the same way on the unchanged r17.14
+build** (`r1714_candidate/build_hooks`, re-run alone at 21:30 local), so it is not the policy: the test shifts the run 21 hours
+back and depends on the time of day it runs (it passed at 17:26 in the r17.14 run). `results/rerun_f06.log`.
+Other saved outputs: `results/sql_local.txt`, `results/edge_session_check.txt`, `results/t_csp_smoke.txt`,
+`results/t_mfa_gate.txt`. t107_mfa and t114_mfacrew pass on the CSP build.
 
 ## DONE
