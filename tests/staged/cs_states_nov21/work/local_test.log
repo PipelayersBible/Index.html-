@@ -1,0 +1,45 @@
+== pass 1
+reset: 3240|131904c2de6b687c14ff4d68ccaea531 (want 3240|131904c2de6b687c14ff4d68ccaea531)
+psql:sql/21_load.sql:28: NOTICE:  cs_states 21_load: applied, 3 rows changed, 3240 rows
+{"post_all": "a9e67ec6527df46b665cbc03bdb6ca6c"}
+== pass 2
+reset: 3240|131904c2de6b687c14ff4d68ccaea531 (want 3240|131904c2de6b687c14ff4d68ccaea531)
+20_precheck.sql 11262 bytes
+21_load.sql 12962 bytes
+91_rollback.sql 12453 bytes
+21t_live_test.sql 25413 bytes
+expected post md5 a9e67ec6527df46b665cbc03bdb6ca6c
+-- constraints:
+kb_chunks_chunk_check kb_chunks_lib_check kb_chunks_ord_check kb_chunks_pkey kb_chunks_version_fkey 
+-- rolled-back test (21t):
+ERROR:  CS STATES ROLLBACK TEST OK: before 3240 / 131904c2de6b687c14ff4d68ccaea531, after load 3240 / a9e67ec6527df46b665cbc03bdb6ca6c, after rollback 3240 / 131904c2de6b687c14ff4d68ccaea531
+after 21t (want unchanged 3240|131904c2...): 3240|131904c2de6b687c14ff4d68ccaea531; index rows: 0
+-- precheck before:
+rows max_ord kb_n all_md5 old_rows_ok new_rows_ok
+3240 3239 3240 131904c2de6b687c14ff4d68ccaea531 3 0
+(1 row)
+-- load:
+psql:sql/21_load.sql:28: NOTICE:  cs_states 21_load: applied, 3 rows changed, 3240 rows
+-- load again:
+psql:sql/21_load.sql:28: NOTICE:  cs_states 21_load: already applied, nothing changed
+-- precheck after:
+rows max_ord kb_n all_md5 old_rows_ok new_rows_ok
+3240 3239 3240 a9e67ec6527df46b665cbc03bdb6ca6c 0 3
+(1 row)
+3240|{"app": 238, "osha": 278, "field": 2724}
+0
+loaded rows = work/after_rows.jsonl (what the retrieval check used): True 3240 3240
+-- 21t on the loaded state (must refuse):
+ERROR:  FAIL test: already applied on live
+-- rollback:
+psql:sql/91_rollback.sql:25: NOTICE:  cs_states 91_rollback: done, 3240 rows
+after rollback (want 3240|131904c2de6b687c14ff4d68ccaea531): 3240|131904c2de6b687c14ff4d68ccaea531
+-- rollback again:
+psql:sql/91_rollback.sql:25: NOTICE:  cs_states 91_rollback: already rolled back (or never applied), nothing changed
+-- guard: an edited row changed -> load refuses, nothing written
+FAIL load: library is not the live state this was built on 
+md5 still the changed one (not 131904c2): 3240|cd9b728c43eace6226a07d03a8d5d879
+reset: 3240|131904c2de6b687c14ff4d68ccaea531 (want 3240|131904c2de6b687c14ff4d68ccaea531)
+-- guard: rollback on a changed result -> refuses
+FAIL rollback: library is not the state 21_load leaves 
+reset: 3240|131904c2de6b687c14ff4d68ccaea531 (want 3240|131904c2de6b687c14ff4d68ccaea531)
