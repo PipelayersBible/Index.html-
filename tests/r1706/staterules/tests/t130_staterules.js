@@ -1,3 +1,4 @@
+// dates_xing_nov22 update: TX row compare -> ID; AZ 2 full working days; TX Dec 24 holiday; AZ checked day.
 // t130 r17.05 staterules (decisions #33, #64): 811 and trench rules from the job's state, nationwide.
 // A) the table (data/state_rules.json and the copy in the page): 51 rows, every row has sources and the checked day,
 //    every value is either confirmed (well formed) or null.
@@ -55,7 +56,7 @@ const rpcs=(p,n)=>p.evaluate(n=>(window.__rpcArgs||[]).filter(x=>x[0]===n).map(x
   // ---------- B) the date math (hand-checked) ----------
   let {b,p}=await boot({init:LOC('100 N Central Ave, Phoenix, AZ 85004')});
   const emb=await p.evaluate(()=>window.PB_STATE_RULES);
-  ok(emb&&Object.keys(emb.states).length===51&&JSON.stringify(emb.states.TX)===JSON.stringify(J.states.find(x=>x.code==='TX')),'the page carries the same table (TX row identical)');
+  ok(emb&&Object.keys(emb.states).length===51&&JSON.stringify(emb.states.ID)===JSON.stringify(J.states.find(x=>x.code==='ID')),'the page carries the same table (ID row identical; TX changed Nov 22)');
   const M=(fn,...a)=>p.evaluate(([fn,a])=>window.pbSrMath[fn](...a),[fn,a]);
   const cases=[
     ['canDig',['2026-11-20','CA'],'2026-11-25','CA: Fri call, Mon + Tue are the 2 working days -> Wed'],
@@ -63,10 +64,10 @@ const rpcs=(p,n)=>p.evaluate(n=>(window.__rpcArgs||[]).filter(x=>x[0]===n).map(x
     ['canDig',['2026-11-21','CA'],'2026-11-30','CA: Saturday call counts from Monday; Tue, Wed, then Thanksgiving + Friday off -> Mon Nov 30'],
     ['expires',['2026-11-20','CA'],'2026-12-18','CA: 28 days'],
     ['startBy',['2026-11-20','CA'],'2026-12-04','CA: start within 14 days'],
-    ['canDig',['2026-11-25','AZ'],'2026-12-01','AZ: Thanksgiving and the Friday after are days off for the wait'],
+    ['canDig',['2026-11-25','AZ'],'2026-12-02','AZ: Thanksgiving and the Friday after are days off; 2 full working days (Nov 22)'],
     ['expires',['2026-11-20','AZ'],'2026-12-14','AZ: 15 working days (Thanksgiving off; the Friday after counted as a working day)'],
     ['expires',['2026-12-21','TX'],'2027-01-12','TX: 14 working days across Christmas and New Year'],
-    ['canDig',['2026-12-24','TX'],'2026-12-29','TX: Thu Dec 24 call, Fri 25 off -> Tue Dec 29'],
+    ['canDig',['2026-12-24','TX'],'2026-12-30','TX: Thu Dec 24 (a Texas holiday) call, Fri 25 off -> the 48 h start Mon 28 -> Wed Dec 30'],
     ['expires',['2026-11-20','CO'],'2026-12-25','CO: 30 calendar days after the due date (Wed Nov 25: the call day does not count)'],
     ['expires',['2026-07-02','NM'],'2026-07-29','NM: wait ends Wed Jul 8 (Jul 3 off, the call day not counted), then 15 working days'],
     ['expires',['2026-11-20','WA'],'2027-01-04','WA: 45 calendar days'],
@@ -130,7 +131,7 @@ const rpcs=(p,n)=>p.evaluate(n=>(window.__rpcArgs||[]).filter(x=>x[0]===n).map(x
   // Rules view (light)
   await p.click('#locSrRules');await p.waitForTimeout(300);
   let v=await p.evaluate(()=>({t:document.getElementById('pbSrVTitle')?.textContent,body:document.getElementById('pbSrVBody')?.innerText,src:document.querySelectorAll('#pbSrVSrc a').length,bg:getComputedStyle(document.querySelector('#pbSrView .pbsr-card')).backgroundColor,focus:document.activeElement&&document.activeElement.id}));
-  ok(v.t==='Rules for Arizona'&&/Arizona 811/.test(v.body)&&/15 working days/.test(v.body)&&/Checked Nov 19, 2026/.test(v.body),'Rules for Arizona: center, ticket life, checked day');
+  ok(v.t==='Rules for Arizona'&&/Arizona 811/.test(v.body)&&/15 working days/.test(v.body)&&/Checked Nov 2[02], 2026/.test(v.body),'Rules for Arizona: center, ticket life, checked day');
   ok(v.src>=3,'Rules view lists the sources ('+v.src+' links)');ok(v.focus==='pbSrVClose','Rules view: focus on Close');
   let w=await wide(p);ok(w.sw<=w.w&&!w.bad.length,'Rules view fits 390 px '+JSON.stringify(w));
   await p.screenshot({path:OUT+'/rules_az_light.png'});const lightBg=v.bg;

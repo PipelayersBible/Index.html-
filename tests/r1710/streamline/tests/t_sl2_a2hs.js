@@ -36,8 +36,8 @@ async function invite(b,ua,opts={}){
   const p=await invite(b,IOS,{dark});
   ok(await waitStep(p),L+': iPhone Safari: the Home Screen step opens after Save Password');
   const t=await sheet(p);
-  ok(/Add the App to Your Home Screen/.test(t)&&/Tap Share at the bottom of Safari/.test(t)&&/Add to Home Screen, then Add/.test(t)&&/Open the new icon and tap Paste Join Code/.test(t),L+': the Share steps: '+t.slice(0,200));
-  ok(await p.evaluate(()=>!!document.querySelector('#pbObA2hsSteps svg[aria-label="the Share button"]')),L+': a picture of the Share button');
+  ok(/Add the App to Your Home Screen/.test(t)&&/Tap •••\s*, then Share\s*\. If you see Share already, just tap it\./.test(t)&&/Scroll down, tap Add to Home Screen, then Add\. Leave Open as Web App on\./.test(t)&&/Open the new icon and tap Paste Join Code/.test(t),L+': the Share steps: '+t.slice(0,200));
+  ok(await p.evaluate(()=>!!document.querySelector('#pbObA2hsSteps svg[aria-label="the Share button"]')&&!!document.querySelector('#pbObA2hsSteps svg[aria-label="the More button (three dots)"]')),L+': pictures of the ••• button and the Share button');
   ok(await p.evaluate(()=>!!document.getElementById('pbObA2hsCodeBtn')&&document.querySelectorAll('#pbObSheet button').length===2&&document.getElementById('pbObA2hsDone').textContent==='Done'),L+': an email account: Get a Code (09) and one "Done" button');
   ok(await fits(p),L+': fits 390 px');await p.screenshot({path:SHOTS+'/a2hs_ios_'+L+'.png'});
   if(!dark){

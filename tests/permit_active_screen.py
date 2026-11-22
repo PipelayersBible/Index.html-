@@ -70,7 +70,7 @@ with sync_playwright() as p:
     # CO default is 25 ppm, the Cal/OSHA limit, since the strictest-state-limits change (was NIOSH's 35); see the app's
     # 'Maximum CO (ppm) — blank uses 25 ppm' field
     check('air test boxes show range hints', ph == ['19.5 – 23.5', '0 – 10', 'max 10', 'max 25'], ph)
-    check('roster is a grid with the toggle in column 2', pg.evaluate("(()=>{const r=document.querySelector('#cpRosterList .cp-roster-row');return getComputedStyle(r).display==='grid'&&getComputedStyle(r.querySelector('.cp-tog')).gridColumnStart==='2'})()"))
+    check('roster is a grid with the toggle in column 2 (a Check In not allowed now: full row, design G-1)', pg.evaluate("(()=>{const r=document.querySelector('#cpRosterList .cp-roster-row');const t=r.querySelector('.cp-tog');const c=getComputedStyle(t).gridColumnStart;return getComputedStyle(r).display==='grid'&&(t.classList.contains('cp-tog-blocked')?c==='1':c==='2')})()"))
     check('Permit Status keeps the air readings, hides Recent Activity', 'Latest Air Readings' in pg.inner_text('#cpStatusGrid') and disp(pg, '#cpRecentSection') == 'none')
     top = pg.evaluate("()=>['cpTopPanel','cpStatusBlock'].map(i=>document.getElementById(i).getBoundingClientRect().top)")
     check('timers and roster sit above Permit Status', top[0] < top[1], top)

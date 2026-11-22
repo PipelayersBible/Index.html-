@@ -100,7 +100,7 @@ async function pdfText(p,file){
  // ---------- C: ended beta (company closed): still works, dark mode ----------
  ({b,p}=await boot(COMPANY+SUMMARY({ended:true}),true));
  const l2=await txt(p,'#pbBetaLine');console.log('  ended home line:',l2);
- ok(/Beta ended/.test(l2)&&await shown(p,'#pbBetaLine [data-bres]'),'ended beta: Home shows Beta ended and Beta Results');
+ ok(/Trial ended/.test(l2)&&await shown(p,'#pbBetaLine [data-bres]'),'ended beta: Home shows Trial ended and Beta Results (firstweek_web_nov22: the chip says Trial)');
  await p.click('#pbBetaLine [data-bres]');await p.waitForTimeout(1200);
  const s2=await txt(p,'#pbBresSheet');
  ok(/Beta ended/.test(s2)&&/24 days/.test(s2)&&/260\.5 ft laid/.test(s2),'ended beta: sheet loads with Beta ended and the beta dates');

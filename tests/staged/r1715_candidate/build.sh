@@ -47,3 +47,14 @@ done
 python3 $S/records_nov22/patches/9_stamp.py $prev $D/index.src.html
 python3 $S/records_nov22/patches/jscheck.py $D/index.src.html
 md5sum $D/index.src.html
+sed "s/const PB_SW_BUILD = 'r17.14 · 2026-11-21';/const PB_SW_BUILD = 'r17.15 · 2026-11-22';/" $ROOT/sw.js > $D/sw.js
+grep -q "PB_SW_BUILD = 'r17.15 · 2026-11-22'" $D/sw.js
+grep -q "r17.15 · 2026-11-22" $D/index.src.html
+rm -rf $D/build $D/build_hooks
+python3 $ROOT/tests/r1708/speed2/build/build.py $D/index.src.html $D/build
+python3 $ROOT/tests/r1708/speed2/build/build.py $D/index.src.html $D/build_hooks --hooks
+cp $S/design_nov22/fonts/pbx/*.woff2 $D/build/pbx/; cp $S/design_nov22/fonts/pbx/*.woff2 $D/build_hooks/pbx/
+cp $D/sw.js $D/build_hooks/sw.js
+for n in manifest.webmanifest icon-192.png icon-512.png icon-maskable-512.png apple-touch-icon.png privacy.html terms.html; do cp $ROOT/$n $D/build_hooks/$n; done
+cp -r $ROOT/data $D/build_hooks/data
+md5sum $D/index.src.html $D/build/index.html $D/build_hooks/index.html $D/sw.js
