@@ -27,7 +27,32 @@ Rebuild everything: `sh tests/staged/r1714_candidate/build.sh`. Outputs: `index.
 the 811 change tables in `patches/results/p1_changes.md`, `p2_changes.md`, `p4_changes.md`.
 
 ## Tests
-@@TESTS@@
+Rebuilt Nov 21 with p3 (`build.sh`; md5 index.src.html 2e090725…, build/index.html 0ea4a0ce…, build_hooks 7598d72c…,
+sw.js 07be55de…). `build.sh` now also copies sw.js, icons, manifest, terms/privacy and data/ into `build_hooks/` (test
+build only; `build/` is unchanged), because the runner serves the folder of `--build` and t07_sw needs sw.js.
+
+**Feature tests on the new build (all pass):** `results/t_811_audit.txt` (set r1714 = p1-p5: CA, NV, NY, OH, IL, NM
+Monday Jun 1 -> Thu Jun 4; CA Fri Nov 20 -> Wed Nov 25, Wed Nov 25 -> Wed Dec 2, Sat Nov 21 -> Mon Nov 30; NV Day wait
+-> Nov 3; NM Renew-by 3), `t_safety_states.txt`, `t_xing_state.txt`, `t_survey.txt`, `t_es_injury.txt` (13/13),
+`t_r1713.txt` (39 checks).
+
+**Full regression from scratch** (`tests/run_all.sh --build build_hooks/index.html --jobs 2 --out results/regression`,
+Nov 21 17:26, wall 46 min): **pass 220, FAIL 2, skip 15 of 237** (`results/full_regression.log`; the cut-off Nov 20
+run is kept as `results/full_regression_cutoff_nov20.log`). Same 15 skips as r17.13. f06_breakend passed this time.
+| Test | Verdict |
+|---|---|
+| r1706/staterules/t130_staterules.js | **Expected changes, 7 lines.** CA x3 + NM ticket life (p3, call day not counted), CO ticket life (p2), IA ticket life (p1), and the run-flag-depth check that used Hawaii as the "not checked" state (Hawaii now has its trench row from safety/p2; the check now uses Iowa, still not checked). `results/t130_repo_on_r1714.txt` (7 FAIL) vs updated copy `results/t130_updated_on_r1714.txt` ("t130 done: all pass"). |
+| bughunt_nov17/offline/rig/t07_sw.js | **Test setup, not the app.** `build_hooks/` had no sw.js (ENOENT `swsite/sw.js`). Fixed in `build.sh` (above); re-run alone on the rebuilt folder: pass, output matches golden (`results/rerun_t07_sw.log`). |
+No real bug found; no fix patches needed.
+
+**Test updates:** `sh tests/staged/r1714_candidate/apply_test_updates.sh` (default root now `/home/claude/index.html-`)
+copies 1 file: `tests/r1706/staterules/tests/t130_staterules.js` (= `811/test_updates/update_t130.py p1 p2 p3` + the
+Hawaii -> Iowa line).
+
+## Release steps
+1. Publish `build/index.html` -> `index.html`, `build/pbx/`, `sw.js` -> `sw.js`, `index.src.html` -> `_src/index.html`
+   in one commit; run `apply_test_updates.sh`.
+2. Check the live page and sw.js say r17.14.
 
 ## Spanish
 Added (dictionary only, PB_ES_ENABLED stays false): the 12 new injury lines (MD, MN, NV, SC, IA exact; AZ, IN, NC, NM,
@@ -49,6 +74,14 @@ Left in English (list for the next Spanish round):
   the Toolbox Talks, and PDFs (the "not a time card" line).
 
 ## Decisions for Tommy
-@@DECISIONS@@
+1. **Ship p3 now (CA, NV, NY, OH, IL, NM: Monday call good Thursday).** Recommend yes: your California ticket matches
+   the law's "not including the date of notification", and the same words are in the other five states' laws. If a
+   ticket in NV, NY, OH, IL or NM ever shows an earlier Legal Start, tell us and we split that state out.
+2. **Build stamp says 2026-11-20** (`9_stamp.py`, sw.js). Recommend leaving it unless the release goes out on a later day;
+   then change the date in `9_stamp.py` and the sed line in `build.sh` and rebuild.
+3. **Georgia** still uses the old wait (waiting on the phone call). Recommend shipping r17.14 without it; it can be a
+   one-line follow-up.
+4. **Job state not known -> strictest crossing rule** (water above, at least 2 ft). Recommend keeping it: a crew with no
+   state set gets the safe answer, labeled, and setting the job's state gives the local rule.
 
 ## DONE
