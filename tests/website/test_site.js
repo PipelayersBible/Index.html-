@@ -43,44 +43,70 @@ const fillGood = async (p) => {
   // ---------- phone 390 x 844 ----------
   let { ctx, p } = await open(b, { width: 390, height: 844 }, { mobile: true, dpr: 2 });
   ok((await overflow(p)).length === 0, 'phone: nothing runs off the side at first paint ' + JSON.stringify(await overflow(p)));
-  ok(await p.evaluate(() => { const i = document.querySelector('.hero-phone img'); return !i.offsetParent && i.loading === 'lazy'; }), 'phone: the desktop-only hero phone frame is hidden (lazy image, so the phone does not fetch it for the hero)');
+  ok(await p.evaluate(() => { const i = document.querySelector('.hero-phone img'); return !!i.offsetParent && i.loading !== 'lazy'; }), 'phone: the hero screenshot shows on phones and loads right away (Nov 22 decision)');
   await p.keyboard.press('Tab'); const skip = await p.evaluate(() => { const a = document.activeElement; return a.className + '|' + a.getBoundingClientRect().left; });
   ok(/skip/.test(skip) && !/\|-/.test(skip), 'first Tab shows the skip link (' + skip + ')');
   const order = await p.evaluate(() => [...document.querySelectorAll('main > section')].map((s) => s.querySelector('h1,h2') ? s.querySelector('h1,h2').innerText.trim() : (s.getAttribute('aria-label') || '')));
   console.log('  sections:', JSON.stringify(order));
-  ok(order.length === 8 && /Pipelayer/i.test(order[0]) && /12 years/i.test(order[1]) && /each person/i.test(order[2]) && /in the app/i.test(order[3]) && /30-day/i.test(order[4]) && /goal/i.test(order[5]) && /Questions/i.test(order[6]) && /Start a free trial/i.test(order[7]), 'sections in the brief\'s order: hero, story, roles, screenshots, trial, goal, FAQ, form');
+  ok(order.length === 8 && /no signal/i.test(order[0]) && /quick answers/i.test(order[1]) && /each person/i.test(order[2]) && /in the app/i.test(order[3]) && /30-day/i.test(order[4]) && /goal/i.test(order[5]) && /Questions/i.test(order[6]) && /Start a free trial/i.test(order[7]), 'sections in order: hero, quick answers, roles, screenshots, trial, goal, FAQ, form');
   const text = await p.evaluate(() => document.body.textContent.replace(/\s+/g, ' '));
-  ok(text.includes('Field to office, seamlessly') && text.includes("A phone app built for underground pipe crews. It works with no signal and puts the day's work in front of the foreman and the office without anyone retyping it."), 'hero: tagline and sub-line exactly as given');
+  ok(/Grade sheets, confined space permits and daily reports on your crew's phones\. Works with no signal\./i.test(text) && text.includes("A phone app built for underground pipe crews. The day's work, with its delay log, reaches the foreman and the office without anyone retyping it."), 'hero: headline and sub-line exactly as given');
   const roles = await p.evaluate(() => [...document.querySelectorAll('.role')].map((r) => ({ h: r.querySelector('h3').innerText, li: [...r.querySelectorAll('li')].map((l) => l.innerText.replace(/\s+/g, ' ').trim()) })));
   const WANT = {
-    PIPELAYER: ['Calculates pipe grades from survey stake photos or manually entered survey data', 'Check shots, footage, slope and pipe info at a glance', 'Time-stamped delay log: utility conflict, inspector, weather, equipment down, material, survey/stakes, traffic control', 'Confined space permits and entry log, with a one-tap emergency call', 'Calculators for trenching, grade, materials and more', 'Built-in AI assistant for civil work questions on the job'],
-    FOREMAN: ['Full access to all pipelayer features', "Sees his crew's run progress live", "Daily reports filled in automatically from the day's work", 'Field tickets with photo upload', 'Warnings when an 811 ticket is nearly expired', 'Extra work documentation', 'Built-in AI assistant for civil work questions on the job'],
-    OFFICE: ['Material takeoffs from your plan sets add-on', 'A PDF of every run, time-stamped at every point', 'A sealed original of each run PDF, so any later change would show', 'Signed daily reports with production from every job and every crew', 'Search and export every record', "Built-in AI for civil work questions, crew management and your company's data"],
-  };
+ "PIPELAYER": [
+  "Works out pipe grades from survey stake photos (read by AI, then checked by you) or from numbers you enter",
+  "Imports cut sheets: a PDF, a photo, or rows pasted in",
+  "Lenker, engineer's and architect's rods",
+  "HI cross-check: flags it when two shots don't agree on the instrument height",
+  "Check shots, footage, slope and pipe info at a glance",
+  "Time-stamped delay log: utility conflict, inspector, weather, equipment down, material, survey/stakes, traffic control",
+  "Confined space permits and entry log, with an emergency button that opens the phone's dialer",
+  "Calculators for trenching, grade, materials and more",
+  "Built-in AI assistant for civil work questions on the job"
+ ],
+ "FOREMAN": [
+  "Full access to all pipelayer features",
+  "Sees his crew's run progress as their phones send it",
+  "Daily reports filled in automatically from the day's work",
+  "Field tickets with photo upload",
+  "Warnings when an 811 ticket is nearly expired, in states where the ticket life is set by law",
+  "811 and safety rules for all 50 states and DC: ticket dates, trench rules and injury reporting",
+  "Extra work documentation",
+  "Built-in AI assistant for civil work questions on the job"
+ ],
+ "OFFICE": [
+  "Material takeoffs from your plan sets coming soon",
+  "A PDF of every run, with the phone's time at every point",
+  "Sealed run records: a sealed original of each run PDF, so a later change to that file would show",
+  "Signed daily reports with production from every job and every crew",
+  "Search your records and export runs, daily reports and permits",
+  "Built-in AI for civil work questions and for questions about your company's own numbers"
+ ]
+};
   ok(roles.length === 3 && roles.every((r) => JSON.stringify(r.li) === JSON.stringify(WANT[r.h.toUpperCase()])), 'role columns: the approved wording, word for word');
   const colsPhone = await p.evaluate(() => { const r = [...document.querySelectorAll('.role')].map((e) => e.getBoundingClientRect()); return r[1].top > r[0].bottom - 1 && r[2].top > r[1].bottom - 1; });
   ok(colsPhone, 'phone: role columns stack');
   ok(text.includes("Your company account plus 6 people. No credit card, and no automatic payment when it's over. At the end, whoever ran it gets a one-page summary of what the crew logged (footage, delays, inspections, paperwork sent) to show the owner."), 'trial text exactly as given');
-  ok(text.includes('Send the email of whoever will run it, usually the superintendent.') && text.includes('Thomas sets up your company the same day and sends them the invite. They add their own crew right from the app.') && text.includes('The crew installs it from the invite and starts logging runs.'), 'trial: the 3 steps');
+  ok(text.includes('Send the email of whoever will run it, usually the superintendent.') && text.includes('Thomas sets up your company, usually the same day, and sends them the invite. They add their own crew right from the app.') && text.includes('The crew installs it from the invite and starts logging runs.'), 'trial: the 3 steps');
   ok(text.includes('Our goal is simple: get real feedback from real crews to make the best product possible. I work directly with every company that tries it, and fixes go out fast.'), 'goal line as given');
   const goalStyle = await p.evaluate(() => { const q = document.querySelector('.goal blockquote'), s = getComputedStyle(q), t = getComputedStyle(q.querySelector('p')); return { bl: s.borderLeftColor, w: s.borderLeftWidth, fw: t.fontWeight }; });
   ok(goalStyle.bl === 'rgb(244, 197, 66)' && parseFloat(goalStyle.w) >= 4 && Number(goalStyle.fw) >= 700, 'goal line: bold with a yellow left rule ' + JSON.stringify(goalStyle));
   const faqs = await p.evaluate(() => [...document.querySelectorAll('.faq details summary')].map((s) => s.innerText.trim()));
-  ok(faqs.length === 6 && faqs[0] === 'Does it work with no signal?' && faqs[5] === 'What happens after 30 days?', 'FAQ: 6 questions in <details>');
+  ok(faqs.length === 14 && faqs[0] === 'Does it work with no signal?' && faqs[1] === 'What does it cost?' && faqs[13] === 'What happens after 30 days?', 'FAQ: 14 questions in <details>');
   await p.click('.faq details:nth-of-type(3) summary'); ok(await p.evaluate(() => document.querySelectorAll('.faq details')[2].open), 'FAQ opens on tap');
   // wording rules
   const html = await p.content();
-  ok(!/\$\s?\d|price|pricing|per month|\/mo\b|per user/i.test(text), 'no pricing anywhere');
+  ok(text.includes('$99 a month for your company and 5 people') && text.includes('$12 a month for each extra person') && !/\$\s?0\b|free forever/i.test(text), 'pricing shown: $99 for the company and 5 people, $12 each extra (Nov 22 decision)');
   ok(!/—/.test(html), 'no em-dash anywhere in the page source');
   ok(!/time[- ]sav|saves? (you )?(time|hours|money)|money[- ]sav|accura|court|tamper|OSHA[- ]compliant|compliant|expert|guarantee|testimonial|trusted by|\bstars?\b|\d+\+? (crews|companies|users)/i.test(text), 'none of the banned claims (time/money saved, accuracy, court, tamper, OSHA compliant, expert, user counts, stars)');
-  ok(!/contractor/i.test(text) && !/DIG Civil|Desert Infrastructure|LLC/i.test(text), 'Thomas not called a contractor; no entity or DIG Civil named');
+  ok(!/contractor/i.test(text) && !/DIG Civil|LLC/i.test(text) && (text.match(/Desert Infrastructure Group/g) || []).length === 1, 'Thomas not called a contractor; DIG Civil never named; the legal name only in the footer');
   // links
   const links = await p.evaluate(() => [...document.querySelectorAll('a[href]')].map((a) => a.getAttribute('href')));
   ok(links.includes('tel:+19094355250') && links.includes('sms:+19094355250') && links.includes('mailto:tfontaine@pipelayersbible.com'), 'tel:, sms: and mailto: links');
   ok(text.includes('Prefer to call or text?') && text.includes('(909) 435-5250') && text.includes('tfontaine@pipelayersbible.com'), 'phone number and email shown as text');
   ok(links.filter((h) => h === 'https://app.pipelayersbible.com').length >= 2 && links.includes('https://app.pipelayersbible.com/terms.html') && links.includes('https://app.pipelayersbible.com/privacy.html'), 'Open the app, Terms and Privacy links');
   ok(await p.evaluate(() => document.querySelector('.hero-ctas a').getAttribute('href') === '#start' && /Start a free trial/.test(document.querySelector('.hero-ctas a').innerText)), 'hero primary button goes to the form');
-  ok(text.includes('© 2026 The Pipelayer\'s Bible'), 'footer copyright line');
+  ok(text.includes('© 2026 Desert Infrastructure Group'), 'footer copyright line');
   // meta
   const meta = await p.evaluate(() => { const g = (s) => { const e = document.querySelector(s); return e ? (e.content || e.href) : null; }; return { d: g('meta[name=description]'), c: g('link[rel=canonical]'), t: g('meta[name=theme-color]'), oi: g('meta[property="og:image"]'), ot: g('meta[property="og:title"]'), tc: g('meta[name="twitter:card"]'), ti: g('meta[name="twitter:image"]') }; });
   ok(meta.d && meta.c === 'https://pipelayersbible.com/' && meta.t === '#111318' && meta.oi === 'https://pipelayersbible.com/img/og-share.png' && meta.ot && meta.tc === 'summary_large_image' && meta.ti, 'meta description, canonical, theme-color, Open Graph and Twitter tags');
@@ -105,7 +131,7 @@ const fillGood = async (p) => {
     const L = (c) => { const m = c.match(/\d+(\.\d+)?/g).map(Number).slice(0, 3).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
     const R = (a, b) => { const x = L(a), y = L(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
     const bgOf = (e) => { while (e) { const c = getComputedStyle(e).backgroundColor; if (c && c !== 'rgba(0, 0, 0, 0)' && c !== 'transparent') return c; e = e.parentElement; } return 'rgb(255,255,255)'; };
-    const sel = ['.hero-sub', '.tagline', '.hero-note', '.eyebrow', '.story-body', '.role li', '.shot figcaption', '.trial-lead', '.steps li', '.goal p', '.faq summary', '.field label', '.opt', '.contact-card p', '.foot-links a', '.copy', '.btn-primary', 'a.mail', '.faq .ans a'];
+    const sel = ['.hero-sub', '.hero-note', '.eyebrow', '.role li', '.shot figcaption', '.trial-lead', '.steps li', '.goal p', '.faq summary', '.field label', '.opt', '.contact-card p', '.foot-links a', '.copy', '.btn-primary', 'a.mail', '.faq .ans a'];
     return sel.map((s) => { const e = document.querySelector(s); if (!e) return [s, 0]; return [s, Math.round(R(getComputedStyle(e).color, bgOf(e)) * 10) / 10]; });
   });
   console.log('  contrast:', JSON.stringify(contrast));

@@ -18,6 +18,7 @@ const PAGES = [
   { p: '/guides/how-to-read-a-grade-stake/', kind: 'guide', types: ['Article', 'BreadcrumbList'] },
   { p: '/guides/rod-reading-to-invert-step-by-step/', kind: 'guide', types: ['Article', 'BreadcrumbList'] },
   { p: '/guides/what-goes-on-a-confined-space-permit/', kind: 'guide', types: ['Article', 'BreadcrumbList'] },
+  { p: '/guides/trench-depth-rules/', kind: 'guide', types: ['Article', 'BreadcrumbList'] },
   { p: '/grade-and-cut-sheet-app/', kind: 'landing', types: ['WebPage', 'BreadcrumbList'] },
   { p: '/daily-reports-for-underground-crews/', kind: 'landing', types: ['WebPage', 'BreadcrumbList'] },
   { p: '/confined-space-permit-app/', kind: 'landing', types: ['WebPage', 'BreadcrumbList'] },
@@ -86,8 +87,8 @@ const scrollAll = (p) => p.evaluate(async () => { for (let y = 0; y < document.b
       ok(info.nav.length === 4 && info.nav.map((n) => n.t).join('|') === 'Home|Free tools|Guides|Start a free trial' && info.nav[3].h === '/#start' && info.nav.every((n) => n.vis && n.ht >= 44 && n.l >= 0 && n.r <= vp.width), at + 'header nav: 4 links, visible, 44 px tall, on screen');
       ok(!/—/.test(html), at + 'no em-dash in the page source');
       ok(!BANNED.test(info.text), at + 'none of the banned claims ' + ((info.text.match(BANNED) || [])[0] || ''));
-      ok(!/contractor/i.test(info.text) && !/DIG Civil|Desert Infrastructure|\bLLC\b/i.test(info.text), at + 'nobody called a contractor; no entity named');
-      ok(!/\$\s?\d|\bprice|pricing|per month|\/mo\b|per user/i.test(info.text), at + 'no pricing in the visible text');
+      ok(!/contractor/i.test(info.text) && !/DIG Civil|\bLLC\b/i.test(info.text) && (info.text.match(/Desert Infrastructure Group/g) || []).length <= 1, at + 'nobody called a contractor; DIG Civil never named; legal name only in the footer');
+      ok(pg.kind === 'home' ? /\$99 a month/.test(info.text) : !/\$\s?\d|\bprice|pricing|per month|\/mo\b|per user/i.test(info.text), at + (pg.kind === 'home' ? 'home shows the $99 price' : 'no pricing in the visible text'));
       if (pg.kind === '404') {
         ok(info.robots === 'noindex' && /Off grade/i.test(info.text) && info.links.includes('/'), at + 'noindex, Off grade, link home');
       } else {
@@ -103,13 +104,13 @@ const scrollAll = (p) => p.evaluate(async () => { for (let y = 0; y < document.b
       if (pg.kind === 'guide') {
         ok(info.words >= 600 && info.words <= 1000, at + 'guide is 600 to 1000 words (' + info.words + ')');
         const art = info.ld[0]['@graph'].find((n) => n['@type'] === 'Article');
-        ok(art.author.name === 'Thomas Fontaine' && art.publisher.name === "The Pipelayer's Bible" && art.headline && art.datePublished === '2026-11-19', at + 'Article: author Thomas Fontaine, publisher, headline, date');
+        ok(art.author.name === 'Thomas Fontaine' && art.publisher.name === "The Pipelayer's Bible" && art.headline && /^2026-11-(19|2[0-2])$/.test(art.datePublished), at + 'Article: author Thomas Fontaine, publisher, headline, date');
         ok(!/\b(when I|I was|I've seen|I remember)\b/.test(info.text.split('Related')[0].replace(/I work directly/g, '')), at + 'no first-person stories');
       }
       if (pg.kind === 'home') {
         const g = info.ld[0]['@graph'], org = g.find((n) => n['@type'] === 'Organization'), app = g.find((n) => n['@type'] === 'SoftwareApplication'), faq = g.find((n) => n['@type'] === 'FAQPage');
         ok(org.name === "The Pipelayer's Bible" && org.url === PROD + '/' && org.logo && org.telephone === '+1-909-435-5250' && org.email === 'tfontaine@pipelayersbible.com' && !org.legalName, 'home: Organization name, url, logo, telephone, email, no legal name');
-        ok(app.applicationCategory === 'BusinessApplication' && app.operatingSystem === 'iOS, Android (web app)' && app.offers['@type'] === 'Offer' && app.offers.price === '0' && /30-day/.test(app.offers.description), 'home: SoftwareApplication with the free 30-day trial Offer (price 0)');
+        ok(app.applicationCategory === 'BusinessApplication' && app.operatingSystem === 'iOS, Android (web app)' && Array.isArray(app.offers) && app.offers[0].price === '99' && app.offers[0].priceCurrency === 'USD' && /30-day/.test(app.offers[0].description) && app.offers[1].price === '15', 'home: SoftwareApplication offers: company $99/month (30-day trial noted) and individual $15');
         const vis = await p.evaluate(() => [...document.querySelectorAll('.faq details')].map((d) => ({ q: d.querySelector('summary').textContent.replace(/\s+/g, ' ').trim(), a: d.querySelector('.ans').textContent.replace(/\s+/g, ' ').trim() })));
         ok(faq.mainEntity.length === vis.length && faq.mainEntity.every((q, i) => q.name === vis[i].q && q.acceptedAnswer.text === vis[i].a), 'home: FAQPage questions and answers match the visible FAQ word for word');
       }
@@ -154,7 +155,7 @@ const scrollAll = (p) => p.evaluate(async () => { for (let y = 0; y < document.b
         await p.fill('#b-d', '1'); ok(/deeper than the trench/.test(await p.textContent('#b-out')), at + 'pipe zone deeper than the trench is refused');
       }
       await scrollAll(p);
-      ok(await p.evaluate(() => [...document.querySelectorAll('img')].filter((i) => i.offsetParent).every((i) => i.naturalWidth > 0)), at + 'every visible image loaded');
+      ok(await p.evaluate(async () => { for (let y = 0; y < document.body.scrollHeight; y += 400) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 60)); } document.querySelectorAll('.shots').forEach((x) => { x.scrollLeft = x.scrollWidth; }); await new Promise((r) => setTimeout(r, 800)); window.scrollTo(0, 0); return [...document.querySelectorAll('img')].filter((i) => i.offsetParent).every((i) => i.naturalWidth > 0); }), at + 'every visible image loaded (after scrolling, lazy images included)');
       ok((await overflow(p)).length === 0, at + 'still nothing runs off the side after using it');
       if (pg.kind !== 'home') await p.screenshot({ path: SHOTS + '/' + tag + (pg.p.replace(/\//g, '_') || '_') + '.png', fullPage: vp.width === 390 });
       await ctx.close();
@@ -168,7 +169,7 @@ const scrollAll = (p) => p.evaluate(async () => { for (let y = 0; y < document.b
   const sm = await (await fetch(SITE + 'sitemap.xml')).text(), rb = await (await fetch(SITE + 'robots.txt')).text();
   const locs = [...sm.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
   const want = PAGES.filter((x) => x.kind !== '404').map((x) => PROD + x.p);
-  ok(locs.length === want.length && want.every((u) => locs.includes(u)) && (sm.match(/<lastmod>2026-11-19<\/lastmod>/g) || []).length === want.length, 'sitemap lists all ' + want.length + ' pages with lastmod 2026-11-19');
+  ok(locs.length === want.length && want.every((u) => locs.includes(u)) && (sm.match(/<lastmod>2026-11-22<\/lastmod>/g) || []).length >= want.length, 'sitemap lists all ' + want.length + ' pages with lastmod 2026-11-22');
   ok(/^Sitemap: https:\/\/pipelayersbible\.com\/sitemap\.xml$/m.test(rb) && /Allow: \//.test(rb), 'robots.txt allows all and has the Sitemap line');
   const unlinked = want.filter((u) => u !== PROD + '/' && ![...internal].some((h) => PROD + h === u));
   ok(unlinked.length === 0, 'every page in the sitemap is linked from another page ' + JSON.stringify(unlinked));

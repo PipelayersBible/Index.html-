@@ -65,3 +65,9 @@ Tests, all run on the patched page (`results/`):
 5. **Ended trial, PMs/supers who aren't the company account** now see the crew line ("Your office decides what's next"). Recommendation: keep it, since the company account is the one who pays.
 
 ## DONE
+
+## SHIPPED (lead, Nov 21 2026 ~10 PM PT)
+- Website published (website repo 73085b0). Before publishing: fixed one JSON-LD FAQ answer that didn't match the visible text ("and $12"), set sitemap lastmod to 2026-11-22.
+- tests/website/test_site.js and test_seo_pages.js updated to the Nov 22 decisions (price shown, headline, 14 FAQs, legal name in footer only, phone hero shown, offers 99/15, trench-depth-rules page added). Results: test_site 56/0, test_seo_pages 676/0, test_tools_math 26/0 (run with APP=_src/index.html), test_form_fields PASS.
+- trial-request v2 deployed (state field + confirmation email). Live check: bad body → 400 with fields incl. state; live homepage shows $99 and the footer name.
+- App patches 01-05 still go out with r17.15.
