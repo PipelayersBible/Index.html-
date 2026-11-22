@@ -1,0 +1,99 @@
+--@DECL
+  q_p record; q_osha text; q_md5_before text; q_b9 boolean; q_cid text;
+--@BODY
+--@APPLY:02
+--@FIXTURES
+  -- (02 ran twice above: safe to run twice)
+  q_md5_before := (select b.md5 from pb_stage.fn_backup b where b.tag = 'records_b3');
+  perform pg_temp.q_ck('2a the live text was saved for undo (pb_stage.fn_backup records_b3)', q_md5_before is not null, '');
+  perform pg_temp.q_ck('2b the saved text is the one read Nov 22 (md5 06bf4e0e...)',
+    q_md5_before = '06bf4e0e338276c9d73f8a5e6a0879d3' or current_setting('pb_stage.guard', true) = 'skip-local-test', q_md5_before);
+  select count(*) into q_n from information_schema.columns where table_schema = 'pb_safety' and table_name = 'permits'
+    and column_name in ('open_first_saved_at', 'open_last_saved_at', 'open_saves', 'open_last_sha256', 'open_clock_ahead_s');
+  perform pg_temp.q_ck('2c the 5 proof columns are on pb_safety.permits', q_n = 5, q_n::text);
+  -- an r17.16 phone: open snapshots carry phoneAt (90 s ahead of the server here)
+  q_cid := 'cps-' || q_tag || '-1';
+  q_snap := jsonb_build_object('space', 'MH-1', 'jobsite', 'Test site', 'jobNumber', 'Q-' || q_tag,
+    'phoneAt', to_char((now() + interval '90 seconds') at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_permit_open_put(q_cid, q_snap, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('2d app: first open save ok', q_r->>'ok' = 'true' and q_r->>'same' = 'false', q_r::text);
+  q_snap := q_snap || '{"atmo":[{"o2":20.9}]}'::jsonb;
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_permit_open_put(q_cid, q_snap, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('2e app: second open save ok', q_r->>'ok' = 'true' and q_r->>'same' = 'false', q_r::text);
+  select o.saves, o.record_sha256 into q_n, q_osha from pb_safety.open_permits o where o.user_id = q_fm and o.client_permit_id = q_cid;
+  perform pg_temp.q_ck('2f open row: 2 saves', q_n = 2, q_n::text);
+  update pb_safety.open_permits set first_saved_at = now() - interval '3 hours' where user_id = q_fm and client_permit_id = q_cid; -- as if first seen 3 h ago
+  begin perform pg_temp.q_as(q_fm);
+    q_r := public.pb_permit_backup(q_cid, jsonb_build_object('kind', 'confined', 'lockTime', now(), 'space', 'MH-1', 'jobsite', 'Test site', 'jobNumber', 'Q-' || q_tag), q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('2g app: close-out backup (3-argument call) ok, version 1', q_r->>'ok' = 'true' and q_r->>'version' = '1' and q_r->>'same' = 'false', q_r::text);
+  select * into q_p from pb_safety.permits p where p.user_id = q_fm and p.client_permit_id = q_cid;
+  perform pg_temp.q_ck('2h proof kept: open_saves = 2', q_p.open_saves = 2, coalesce(q_p.open_saves::text, 'null'));
+  perform pg_temp.q_ck('2i proof kept: first seen 3 h before', q_p.open_first_saved_at = now() - interval '3 hours', coalesce(q_p.open_first_saved_at::text, 'null'));
+  perform pg_temp.q_ck('2j proof kept: last open save time + fingerprint', q_p.open_last_saved_at = now() and q_p.open_last_sha256 = q_osha,
+    coalesce(q_p.open_last_saved_at::text, 'null') || ' ' || coalesce(q_p.open_last_sha256, 'null'));
+  perform pg_temp.q_ck('2k phone clock ahead kept (+90 s)', q_p.open_clock_ahead_s between 88 and 92, coalesce(q_p.open_clock_ahead_s::text, 'null'));
+  perform pg_temp.q_ck('2l open row dropped at close (as before)', not exists (select 1 from pb_safety.open_permits o where o.user_id = q_fm and o.client_permit_id = q_cid), '');
+  perform pg_temp.q_ck('2m permit filed as before (company, closed_at, 1 version)', q_p.company_id = q_co and q_p.closed_at is not null and q_p.version_count = 1,
+    coalesce(q_p.company_id::text, 'null') || ' ' || coalesce(q_p.closed_at::text, 'null') || ' ' || q_p.version_count);
+  -- the same backup again, then a changed one: proof untouched
+  begin perform pg_temp.q_as(q_fm);
+    q_r := public.pb_permit_backup(q_cid, jsonb_build_object('kind', 'confined', 'lockTime', now(), 'space', 'MH-1', 'jobsite', 'Test site', 'jobNumber', 'Q-' || q_tag), q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('2n app: same backup again answers same', q_r->>'ok' = 'true' and q_r->>'same' = 'true', q_r::text);
+  begin perform pg_temp.q_as(q_fm);
+    q_r := public.pb_permit_backup(q_cid, jsonb_build_object('kind', 'confined', 'lockTime', now(), 'space', 'MH-1', 'jobsite', 'Test site', 'jobNumber', 'Q-' || q_tag, 'note', 'late note'), q_fm, null::text); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('2o app: changed backup (4-argument call) ok, version 2', q_r->>'ok' = 'true' and q_r->>'version' = '2', q_r::text);
+  select * into q_p from pb_safety.permits p where p.user_id = q_fm and p.client_permit_id = q_cid;
+  perform pg_temp.q_ck('2p proof unchanged by later backups', q_p.open_saves = 2 and q_p.open_first_saved_at = now() - interval '3 hours' and q_p.open_last_sha256 = q_osha, '');
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_permit_open_put(q_cid, q_snap || '{"x":1}'::jsonb, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('2q app: open save after close answers closed (as before)', q_r->>'ok' = 'true' and q_r->>'closed' = 'true', q_r::text);
+  -- an r17.15 phone: no phoneAt
+  q_cid := 'cps-' || q_tag || '-2';
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_permit_open_put(q_cid, jsonb_build_object('space', 'MH-2', 'jobNumber', 'Q-' || q_tag), q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  begin perform pg_temp.q_as(q_fm);
+    q_r := public.pb_permit_backup(q_cid, jsonb_build_object('kind', 'confined', 'lockTime', now(), 'space', 'MH-2', 'jobNumber', 'Q-' || q_tag), q_fm, null::text); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  select * into q_p from pb_safety.permits p where p.user_id = q_fm and p.client_permit_id = q_cid;
+  perform pg_temp.q_ck('2r r17.15 phone (no phoneAt): close-out ok, saves/first seen kept, clock left empty',
+    q_r->>'ok' = 'true' and q_p.open_saves = 1 and q_p.open_first_saved_at is not null and q_p.open_last_sha256 is not null and q_p.open_clock_ahead_s is null,
+    q_r::text || ' saves=' || coalesce(q_p.open_saves::text, 'null') || ' clock=' || coalesce(q_p.open_clock_ahead_s::text, 'null'));
+  -- a broken phoneAt never stops the rest
+  q_cid := 'cps-' || q_tag || '-3';
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_permit_open_put(q_cid, jsonb_build_object('space', 'MH-3', 'phoneAt', '2026-13-45T99:99:00Z'), q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  begin perform pg_temp.q_as(q_fm);
+    q_r := public.pb_permit_backup(q_cid, jsonb_build_object('kind', 'confined', 'lockTime', now(), 'space', 'MH-3'), q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  select * into q_p from pb_safety.permits p where p.user_id = q_fm and p.client_permit_id = q_cid;
+  perform pg_temp.q_ck('2s bad phoneAt: close-out ok, proof kept, clock empty, open row dropped',
+    q_r->>'ok' = 'true' and q_p.open_saves = 1 and q_p.open_clock_ahead_s is null
+    and not exists (select 1 from pb_safety.open_permits o where o.user_id = q_fm and o.client_permit_id = q_cid), q_r::text);
+  -- a permit closed with no open snapshot on the server
+  q_cid := 'cps-' || q_tag || '-4';
+  begin perform pg_temp.q_as(q_fm);
+    q_r := public.pb_permit_backup(q_cid, jsonb_build_object('kind', 'confined', 'lockTime', now(), 'space', 'MH-4'), q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  select * into q_p from pb_safety.permits p where p.user_id = q_fm and p.client_permit_id = q_cid;
+  perform pg_temp.q_ck('2t never saved open: close-out ok, proof columns empty', q_r->>'ok' = 'true' and q_p.open_saves is null and q_p.open_first_saved_at is null, q_r::text);
+--@SMOKE
+  -- undo 02: exact live text back; a close-out then works as before (proof not copied)
+  q_b9 := exists (select 1 from pg_trigger t where t.tgname = 'open_permits_no_delete' and t.tgrelid = 'pb_safety.open_permits'::regclass);
+--@UNDO:02
+  perform pg_temp.q_ck('2u undo 02 puts back the exact live text', md5(pg_get_functiondef('pb_safety.drop_open_on_close()'::regprocedure)) = q_md5_before
+    and not exists (select 1 from pb_stage.fn_backup b where b.tag = 'records_b3'), md5(pg_get_functiondef('pb_safety.drop_open_on_close()'::regprocedure)));
+  q_cid := 'cps-' || q_tag || '-5';
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_permit_open_put(q_cid, jsonb_build_object('space', 'MH-5'), q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  begin perform pg_temp.q_as(q_fm);
+    q_r := public.pb_permit_backup(q_cid, jsonb_build_object('kind', 'confined', 'lockTime', now(), 'space', 'MH-5'), q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  select * into q_p from pb_safety.permits p where p.user_id = q_fm and p.client_permit_id = q_cid;
+  perform pg_temp.q_ck('2v after undo: close-out ok, proof not copied, open row ' || case when q_b9 then 'kept (03 is in: undo 03 first)' else 'dropped (as before)' end,
+    q_r->>'ok' = 'true' and q_p.open_saves is null
+    and exists (select 1 from pb_safety.open_permits o where o.user_id = q_fm and o.client_permit_id = q_cid) = q_b9, q_r::text);

@@ -1,0 +1,20 @@
+  -- throwaway company: owner (company account) q_ow, foreman q_fm, listed manager q_pm (pm), another company's owner q_xo
+  q_tag := substr(md5(random()::text), 1, 10);
+  q_ow := gen_random_uuid(); q_fm := gen_random_uuid(); q_pm := gen_random_uuid(); q_xo := gen_random_uuid();
+  q_co := gen_random_uuid(); q_co2 := gen_random_uuid();
+  q_day := (now() at time zone 'utc')::date - 1;
+  q_b64 := replace(encode(convert_to(repeat('pbrec test photo A ', 12), 'UTF8'), 'base64'), E'\n', '');
+  q_sha := encode(sha256(decode(q_b64, 'base64')), 'hex');
+  q_b64b := replace(encode(convert_to(repeat('pbrec test photo B ', 12), 'UTF8'), 'base64'), E'\n', '');
+  q_shab := encode(sha256(decode(q_b64b, 'base64')), 'hex');
+  insert into auth.users (id, email) select u.v, 'pbrec-' || q_tag || '-' || u.o || '@example.invalid' from unnest(array[q_ow, q_fm, q_pm, q_xo]) with ordinality u(v, o);
+  insert into public.companies (id, name, owner_user_id, status, plan)
+    values (q_co, 'pbrec test ' || q_tag, q_ow, 'active', 'paid'), (q_co2, 'pbrec test2 ' || q_tag, q_xo, 'active', 'paid');
+  insert into public.company_members (company_id, user_id, role) values (q_co, q_fm, 'foreman'), (q_co, q_pm, 'pm');
+  insert into pb_reports.managers (company_id, user_id) values (q_co, q_pm);
+  begin
+    set local role authenticated; reset role;
+    perform set_config('pbrec.as_auth', '1', true); q_notes := ' [app calls ran as role authenticated]';
+  exception when others then
+    perform set_config('pbrec.as_auth', '0', true); q_notes := ' [app calls ran as ' || current_user || ', not authenticated]';
+  end;

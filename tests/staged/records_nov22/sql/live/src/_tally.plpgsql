@@ -1,0 +1,4 @@
+  select count(*) filter (where c.ok), count(*) filter (where c.ok is not true),
+         coalesce(string_agg(c.name || ' [got: ' || coalesce(c.got, 'null') || ']', ' ; ' order by c.i) filter (where c.ok is not true), '')
+    into q_pass, q_fail, q_fails from pg_temp.q_chk c;
+  raise exception 'RESULT: % pass, % fail% %', q_pass, q_fail, case when q_fail > 0 then ' | FAILED: ' || q_fails else '' end, q_notes;

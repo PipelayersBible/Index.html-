@@ -1,0 +1,58 @@
+--@DECL
+  q_md5 text;
+--@BODY
+  -- 01 a second time: safe to run twice
+--@APPLY:01
+  perform pg_temp.q_ck('1a pb_stage schema there', exists (select 1 from pg_namespace where nspname = 'pb_stage'), '');
+  perform pg_temp.q_ck('1b pb_stage not reachable from the API (no USAGE for anon / authenticated)',
+    not has_schema_privilege('anon', 'pb_stage', 'usage') and not has_schema_privilege('authenticated', 'pb_stage', 'usage'), '');
+  perform pg_temp.q_ck('1c helpers not executable by anon / authenticated',
+    not has_function_privilege('authenticated', 'pb_stage.patch_fn(regprocedure,text,text,text)', 'execute')
+    and not has_function_privilege('anon', 'pb_stage.guard(text,text,text)', 'execute')
+    and not has_function_privilege('authenticated', 'pb_stage.restore(text)', 'execute')
+    and not has_function_privilege('authenticated', 'pb_stage.count_in_fn(regprocedure,text)', 'execute'), '');
+  -- read-only count against the live function 02 replaces
+  q_n := pb_stage.count_in_fn('pb_safety.drop_open_on_close()'::regprocedure, 'delete from pb_safety.open_permits where user_id = new.user_id and client_permit_id = new.client_permit_id;');
+  perform pg_temp.q_ck('1d count_in_fn: the live close-out delete is in drop_open_on_close exactly once', q_n = 1, q_n::text);
+  -- patch_fn on a throwaway function
+  create or replace function pg_temp.q_probe() returns text language sql as $p$ select 'alpha' || '-' || 'beta' $p$;
+  perform pb_stage.patch_fn('pg_temp.q_probe()'::regprocedure, '''alpha''', '''gamma''', 'records_t01');
+  perform pg_temp.q_ck('1e patch_fn replaces the one piece', pg_temp.q_probe() = 'gamma-beta', pg_temp.q_probe());
+  perform pg_temp.q_ck('1f patch_fn with a tag saved the text before the patch', (select count(*) from pb_stage.fn_backup b where b.tag = 'records_t01') = 1, '');
+  begin perform pb_stage.patch_fn('pg_temp.q_probe()'::regprocedure, '''alpha''', '''delta'''); q_x := 'PATCHED';
+  exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('1g patch_fn refuses a piece that is not there (0 times)', q_x like 'patch_fn %expected the piece once, found 0 times%', q_x);
+  begin perform pb_stage.patch_fn('pg_temp.q_probe()'::regprocedure, '''', 'x'); q_x := 'PATCHED';
+  exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('1h patch_fn refuses a piece that is there 2+ times', q_x like 'patch_fn %found % times%' and q_x not like '%found 1 times%', q_x);
+  q_n := pb_stage.restore('records_t01');
+  perform pg_temp.q_ck('1i restore puts back the exact text', q_n = 1 and pg_temp.q_probe() = 'alpha-beta'
+    and not exists (select 1 from pb_stage.fn_backup b where b.tag = 'records_t01'), q_n::text || ' ' || pg_temp.q_probe());
+  -- guard
+  q_md5 := md5(pg_get_functiondef('pg_temp.q_probe()'::regprocedure));
+  begin perform pb_stage.guard('records_t01g', (select 'pg_temp.q_probe()'::regprocedure::text), 'not-the-md5'); q_x := 'PASSED';
+  exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('1j guard refuses a function whose live text changed', q_x like 'pb_stage: % changed on live%' or current_setting('pb_stage.guard', true) = 'skip-local-test', q_x);
+  begin perform pb_stage.guard('records_t01g2', (select 'pg_temp.q_probe()'::regprocedure::text), q_md5); q_x := 'PASSED';
+  exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('1k guard passes the expected text and saves it', q_x = 'PASSED' and (select b.md5 from pb_stage.fn_backup b where b.tag = 'records_t01g2') = q_md5, q_x);
+  begin perform pb_stage.guard('records_t01g2', (select 'pg_temp.q_probe()'::regprocedure::text), 'not-the-md5'); q_x := 'PASSED';
+  exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('1l guard passes on a second run of the same migration (backup row there)', q_x = 'PASSED', q_x);
+  perform pb_stage.restore('records_t01g'); perform pb_stage.restore('records_t01g2');
+  -- the md5 02 expects is still the live one (else 02 will refuse: rebase it)
+  q_md5 := md5(pg_get_functiondef('pb_safety.drop_open_on_close()'::regprocedure));
+  perform pg_temp.q_ck('1m live drop_open_on_close is the text read Nov 22 (md5 06bf4e0e...) or 02 is already in',
+    q_md5 = '06bf4e0e338276c9d73f8a5e6a0879d3' or exists (select 1 from pb_stage.fn_backup b where b.tag = 'records_b3')
+    or current_setting('pb_stage.guard', true) = 'skip-local-test', q_md5);
+  -- undo 01 (only when nothing is waiting to be restored, i.e. 02 not applied)
+  if not exists (select 1 from pb_stage.fn_backup) then
+--@UNDO:01
+    perform pg_temp.q_ck('1n undo 01 drops pb_stage', not exists (select 1 from pg_namespace where nspname = 'pb_stage'), '');
+  else
+    begin
+--@UNDO:01
+      q_x := 'DROPPED';
+    exception when others then q_x := sqlerrm; end;
+    perform pg_temp.q_ck('1n undo 01 refuses while 02''s saved text waits (02 is in)', q_x like 'records undo 01:%', q_x);
+  end if;

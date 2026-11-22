@@ -1,0 +1,155 @@
+--@DECL
+  q_e1 uuid; q_e2 uuid; q_rep1 uuid; q_rep2 uuid; q_rep3 uuid; q_tid uuid; q_tk uuid; q_cid text; q_job text;
+  q_tbls regclass[] := array['pb_daily.events', 'pb_daily.event_photos', 'pb_daily.report_photos', 'pb_daily.event_reviews',
+                             'pb_prod.talks_given', 'pb_safety.open_permits', 'pb_tickets.photos']::regclass[];
+--@BODY
+--@APPLY:03
+--@FIXTURES
+  -- (03 ran twice above: safe to run twice)
+  select count(*) into q_n from pg_trigger t where not t.tgisinternal and t.tgname in ('events_guard', 'event_photos_permanent', 'event_photos_no_delete',
+    'report_photos_permanent', 'report_photos_no_delete', 'event_reviews_permanent', 'event_reviews_no_delete', 'talks_given_no_delete',
+    'open_permits_no_delete', 'ticket_photos_permanent', 'ticket_photos_no_delete');
+  perform pg_temp.q_ck('3a 11 guard triggers in place', q_n = 11, q_n::text);
+  select count(*) into q_n from pg_trigger t where t.tgname = 'zz_pb_audit' and t.tgrelid = any (q_tbls);
+  select count(*) into q_m from pg_trigger t where t.tgname like '%no_truncate' and t.tgrelid = any (q_tbls);
+  perform pg_temp.q_ck('3b admin log + no-truncate trigger on all 7 tables', q_n = 7 and q_m = 7, q_n || ' / ' || q_m);
+  select c.confdeltype::text into q_x from pg_constraint c where c.conname = 'report_photos_report_id_fkey' and c.conrelid = 'pb_daily.report_photos'::regclass;
+  perform pg_temp.q_ck('3c report_photos FK no longer ON DELETE CASCADE', q_x = 'a', q_x);
+  -- APP PATHS (as the foreman / the company account)
+  q_job := 'Q-' || q_tag;
+  q_snap := jsonb_build_object('events', jsonb_build_array(jsonb_build_object('kind', 'delay', 'reason', 'weather', 'hours', 2, 'cid', 'e1',
+              'photos', jsonb_build_array(jsonb_build_object('sha', q_sha)))), 'photos', jsonb_build_array(jsonb_build_object('sha', q_shab)));
+  begin perform pg_temp.q_as(q_fm);
+    q_r := public.pb_daily_submit('q-' || q_tag || '-d1', q_job, 'Test site', q_day, q_snap, encode(sha256('d1'::bytea), 'hex'),
+      'Test Foreman', now(), 'America/Los_Angeles', null, null, null, now(), true, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('3d app: daily report with a delay entry saved', q_r->>'ok' = 'true' and q_r->>'events' = '1', q_r::text);
+  q_rep1 := (q_r->>'id')::uuid;
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_daily_report_photo_put('q-' || q_tag || '-d1', 1, q_b64b, q_shab, null, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('3e app: daily photo upload ok', q_r->>'ok' = 'true' and q_r->>'again' is null, q_r::text);
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_daily_event_photo_put('q-' || q_tag || '-d1', 'e1', 1, q_b64, q_sha, null, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('3f app: delay photo upload ok', q_r->>'ok' = 'true' and q_r->>'again' is null, q_r::text);
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_daily_event_photo_put('q-' || q_tag || '-d1', 'e1', 1, q_b64, q_sha, null, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('3g app: delay photo re-sent answers again (insert-only is fine)', q_r->>'ok' = 'true' and q_r->>'again' = 'true', q_r::text);
+  select e.id into q_e1 from pb_daily.events e where e.report_id = q_rep1;
+  begin perform pg_temp.q_as(q_ow); q_r := public.pb_daily_event_review(q_e1, 'reviewed', q_ow); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('3h app: office marks the delay reviewed (review fields change)', q_r->>'ok' = 'true' and q_r->>'status' = 'reviewed', q_r::text);
+  q_snap := jsonb_set(q_snap, '{events,0,hours}', '3'::jsonb);
+  begin perform pg_temp.q_as(q_fm);
+    q_r := public.pb_daily_submit('q-' || q_tag || '-d2', q_job, 'Test site', q_day, q_snap, encode(sha256('d2'::bytea), 'hex'),
+      'Test Foreman', now(), 'America/Los_Angeles', null, q_rep1, 'Hours were 3', now(), true, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('3i app: amended daily (version 2) saved', q_r->>'ok' = 'true' and q_r->>'version' = '2' and q_r->>'events' = '1', q_r::text);
+  q_rep2 := (q_r->>'id')::uuid;
+  select e.id into q_e2 from pb_daily.events e where e.report_id = q_rep2;
+  perform pg_temp.q_ck('3j amendment: old entry superseded, new one back to new + changed_after_review, history row, photo carried over',
+    (select e.superseded_at is not null from pb_daily.events e where e.id = q_e1)
+    and (select e.status = 'new' and e.changed_after_review from pb_daily.events e where e.id = q_e2)
+    and exists (select 1 from pb_daily.event_reviews v where v.event_id = q_e2 and v.note like 'Changed by the foreman%')
+    and exists (select 1 from pb_daily.event_photos p where p.event_id = q_e2 and p.n = 1), coalesce(q_e2::text, 'no event'));
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_daily_report_photo_put('q-' || q_tag || '-d2', 1, null, q_shab, null, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('3k app: amendment photo copied from version 1', q_r->>'ok' = 'true' and q_r->>'copied' = 'true', q_r::text);
+  begin perform pg_temp.q_as(q_ow); q_r := public.pb_daily_event_review(q_e2, 'tm_sent', q_ow); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('3l app: office review of the amended entry ok', q_r->>'ok' = 'true' and q_r->>'status' = 'tm_sent', q_r::text);
+  -- toolbox talk save + edit
+  q_tid := gen_random_uuid();
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_talk_give(q_tid, q_job, 'TT-002', 'Trench', q_day, null, '[{"name":"A"}]'::jsonb, false, q_fm);
+    q_r := public.pb_talk_give(q_tid, q_job, 'TT-002', 'Trench', q_day, null, '[{"name":"A"},{"name":"B"}]'::jsonb, false, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('3m app: toolbox talk save + edit ok', q_r->>'ok' = 'true' and q_r->'talk'->>'version' = '2', q_r::text);
+  -- open permit: saves (update path) and the close-out drop (the one allowed delete)
+  q_cid := 'cps-' || q_tag || '-9';
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_permit_open_put(q_cid, '{"space":"MH-9"}'::jsonb, q_fm);
+    q_r := public.pb_permit_open_put(q_cid, '{"space":"MH-9","atmo":[1]}'::jsonb, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('3n app: open permit saved twice (update allowed)', q_r->>'ok' = 'true'
+    and (select o.saves from pb_safety.open_permits o where o.user_id = q_fm and o.client_permit_id = q_cid) = 2, q_r::text);
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_permit_backup(q_cid, '{"kind":"confined","space":"MH-9"}'::jsonb || jsonb_build_object('lockTime', now()), q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('3o app: close-out ok and the open row dropped through the guard', q_r->>'ok' = 'true'
+    and not exists (select 1 from pb_safety.open_permits o where o.user_id = q_fm and o.client_permit_id = q_cid)
+    and (select p.open_saves from pb_safety.permits p where p.user_id = q_fm and p.client_permit_id = q_cid) = 2, q_r::text);
+  perform pg_temp.q_ck('3p the delete permission did not leak past the close-out', coalesce(current_setting('pb.allow_record_delete', true), '') = '', current_setting('pb.allow_record_delete', true));
+  -- ticket with photo, sent twice
+  begin perform pg_temp.q_as(q_fm);
+    q_r := public.pb_ticket_save('q-' || q_tag || '-tk1', jsonb_build_object('type', 'material', 'jobNumber', q_job, 'fields', jsonb_build_object('ticketNo', 'Q1')), q_b64, q_fm);
+    q_r := public.pb_ticket_save('q-' || q_tag || '-tk1', jsonb_build_object('type', 'material', 'jobNumber', q_job, 'fields', jsonb_build_object('ticketNo', 'Q1')), q_b64, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('3q app: ticket with photo saved and re-sent ok', q_r->>'ok' = 'true' and exists (select 1 from pb_tickets.photos tp where tp.ticket_id = (q_r->>'id')::uuid), q_r::text);
+  q_tk := (q_r->>'id')::uuid;
+--@SMOKE
+  -- CONSOLE / SQL editor / service key (here: postgres): quiet changes refused
+  begin update pb_daily.events set hours = 9 where id = q_e2; q_x := 'CHANGED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3r console: delay hours change refused', q_x = 'pb:history_is_permanent', q_x);
+  begin update pb_daily.events set detail = 'edited' where id = q_e1; q_x := 'CHANGED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3s console: superseded entry text change refused', q_x = 'pb:history_is_permanent', q_x);
+  begin update pb_daily.events set superseded_at = null where id = q_e1; q_x := 'CHANGED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3t console: un-superseding refused', q_x = 'pb:history_is_permanent', q_x);
+  begin delete from pb_daily.events where id = q_e2; q_x := 'DELETED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3u console: delay entry delete refused', q_x = 'pb:history_is_permanent', q_x);
+  begin update pb_daily.events set status = 'reviewed' where id = q_e2; q_x := 'CHANGED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3v review fields stay changeable (status)', q_x = 'CHANGED', q_x);
+  begin update pb_daily.event_photos set taken_exif = 'x' where event_id = q_e1; q_x := 'CHANGED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3w console: delay photo change refused', q_x like 'pb:%history_is_permanent', q_x);
+  begin delete from pb_daily.event_photos where event_id = q_e1; q_x := 'DELETED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3x console: delay photo delete refused', q_x = 'pb:history_is_permanent', q_x);
+  begin update pb_daily.report_photos set data_b64 = q_b64 where report_id = q_rep1; q_x := 'CHANGED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3y console: daily photo change refused', q_x like 'pb:%history_is_permanent', q_x);
+  begin delete from pb_daily.report_photos where report_id = q_rep1; q_x := 'DELETED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3z console: daily photo delete refused', q_x = 'pb:history_is_permanent', q_x);
+  -- a report with a photo and no delay entries: deleting the report no longer takes the photo
+  begin perform pg_temp.q_as(q_fm);
+    q_r := public.pb_daily_submit('q-' || q_tag || '-d3', q_job || '-B', 'Test site', q_day, jsonb_build_object('photos', jsonb_build_array(jsonb_build_object('sha', q_shab))),
+      encode(sha256('d3'::bytea), 'hex'), 'Test Foreman', now(), 'America/Los_Angeles', null, null, null, now(), true, q_fm);
+    q_rep3 := (q_r->>'id')::uuid;
+    q_r := public.pb_daily_report_photo_put('q-' || q_tag || '-d3', 1, q_b64b, q_shab, null, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  begin delete from pb_daily.reports where id = q_rep3; q_x := 'DELETED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3A console: deleting a daily report no longer silently takes its photos (refused)',
+    q_r->>'ok' = 'true' and q_x <> 'DELETED' and exists (select 1 from pb_daily.report_photos p where p.report_id = q_rep3), q_r::text || ' / ' || q_x);
+  begin update pb_daily.event_reviews set note = 'x' where event_id = q_e2; q_x := 'CHANGED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3B console: review history change refused', q_x like 'pb:%history_is_permanent', q_x);
+  begin delete from pb_daily.event_reviews where event_id = q_e2; q_x := 'DELETED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3C console: review history delete refused', q_x = 'pb:history_is_permanent', q_x);
+  begin delete from pb_prod.talks_given where id = q_tid; q_x := 'DELETED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3D console: toolbox talk delete refused', q_x = 'pb:history_is_permanent', q_x);
+  begin truncate pb_prod.talks_given; q_x := 'TRUNCATED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3E console: truncate of toolbox talks refused', q_x = 'pb:history_is_permanent', q_x);
+  q_cid := 'cps-' || q_tag || '-10';
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_permit_open_put(q_cid, '{"space":"MH-10"}'::jsonb, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  begin delete from pb_safety.open_permits where user_id = q_fm and client_permit_id = q_cid; q_x := 'DELETED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3F console: open permit delete refused', q_r->>'ok' = 'true' and q_x = 'pb:history_is_permanent', q_r::text || ' / ' || q_x);
+  begin
+    perform set_config('pb.allow_record_delete', 'on', true);
+    delete from pb_safety.open_permits where user_id = q_fm and client_permit_id = q_cid; q_x := 'DELETED';
+    perform set_config('pb.allow_record_delete', '', true);
+  exception when others then q_x := sqlerrm; perform set_config('pb.allow_record_delete', '', true); end;
+  perform pg_temp.q_ck('3G owner flow with pb.allow_record_delete = on can delete', q_x = 'DELETED', q_x);
+  begin update pb_tickets.photos set data_b64 = q_b64b where ticket_id = q_tk; q_x := 'CHANGED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3H console: ticket photo change refused', q_x like 'pb:%history_is_permanent', q_x);
+  begin delete from pb_tickets.photos where ticket_id = q_tk; q_x := 'DELETED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3I console: ticket photo delete refused', q_x = 'pb:history_is_permanent', q_x);
+  begin truncate pb_tickets.photos; q_x := 'TRUNCATED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3J console: truncate of ticket photos refused', q_x = 'pb:history_is_permanent', q_x);
+  -- admin log got the writes made outside the app (here every write: the block runs as postgres, not through the API)
+  perform pg_temp.q_ck('3K admin log: delay entries, open permits, talks and ticket photos written here are logged',
+    exists (select 1 from pb_audit.admin_log a where a.tbl = 'pb_daily.events' and a.company_id = q_co and a.at >= q_t0)
+    and exists (select 1 from pb_audit.admin_log a where a.tbl = 'pb_safety.open_permits' and a.op = 'DELETE' and a.user_id = q_fm and a.at >= q_t0)
+    and exists (select 1 from pb_audit.admin_log a where a.tbl = 'pb_prod.talks_given' and a.op = 'UPDATE' and a.company_id = q_co and a.at >= q_t0)
+    and exists (select 1 from pb_audit.admin_log a where a.tbl = 'pb_tickets.photos' and a.op = 'INSERT' and a.at >= q_t0), '');
+  -- undo 03
+--@UNDO:03
+  select count(*) into q_n from pg_trigger t where not t.tgisinternal and t.tgrelid = any (q_tbls)
+    and (t.tgname in ('events_guard', 'zz_pb_audit') or t.tgname like '%\_permanent' or t.tgname like '%\_no\_delete' or t.tgname like '%\_no\_truncate');
+  select c.confdeltype::text into q_x from pg_constraint c where c.conname = 'report_photos_report_id_fkey' and c.conrelid = 'pb_daily.report_photos'::regclass;
+  perform pg_temp.q_ck('3L undo 03: all its triggers gone, CASCADE back, guard functions gone',
+    q_n = 0 and q_x = 'c' and to_regprocedure('pb_daily.events_guard()') is null and to_regprocedure('pb_daily.record_delete_guard()') is null, q_n || ' ' || q_x);
+  begin delete from pb_daily.event_photos where event_id = q_e2; q_x := 'DELETED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('3M after undo: a console delete works again (as before)', q_x = 'DELETED', q_x);

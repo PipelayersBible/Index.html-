@@ -1,0 +1,69 @@
+--@DECL
+  q_run uuid; q_entry text; q_i integer;
+--@BODY
+--@APPLY:05
+--@FIXTURES
+  perform pg_temp.q_ck('5a pb_prod_run_versions: authenticated may call, anon and public may not',
+    to_regprocedure('public.pb_prod_run_versions(uuid,uuid)') is not null and has_function_privilege('authenticated', 'public.pb_prod_run_versions(uuid,uuid)', 'execute')
+    and not has_function_privilege('anon', 'public.pb_prod_run_versions(uuid,uuid)', 'execute')
+    and not exists (select 1 from pg_proc p, aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+                    where p.oid = to_regprocedure('public.pb_prod_run_versions(uuid,uuid)') and a.grantee = 0 and a.privilege_type = 'EXECUTE'), '');
+  q_entry := 'q-' || q_tag || '-r1';
+  q_rec := jsonb_build_object('kind', 'run', 'id', q_entry, 'jobNumber', 'Q-' || q_tag, 'lockTime', now(), 'startLabel', 'MH 1', 'endLabel', 'MH 2', 'n', 1);
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_prod_run_record_put(q_entry, q_rec, q_fm, q_co); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('5b app: run record saved, version 1', q_r->>'ok' = 'true' and q_r->>'version' = '1', q_r::text);
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_prod_run_record_put(q_entry, q_rec || '{"n":2}'::jsonb, q_fm, q_co); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('5c app: run record changed, version 2', q_r->>'ok' = 'true' and q_r->>'version' = '2', q_r::text);
+  select r.id into q_run from pb_prod.run_records r where r.user_id = q_fm and r.entry_id = q_entry;
+  insert into pb_prod.run_record_events (run_record_id, company_id, action, by_user, note) values (q_run, q_co, 'removed', q_ow, 'Duplicate run');
+  insert into pb_prod.run_setup_versions (run_record_id, company_id, version, side, change, intended, by_user)
+    values (q_run, q_co, 1, 'intended', '{"job_number":"Q-2"}'::jsonb, '{"job_number":"Q-2"}'::jsonb, q_pm);
+  begin perform pg_temp.q_as(q_ow); q_r := public.pb_prod_run_versions(q_run, q_ow); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('5d company account: history ok, 2 versions each with its record + md5',
+    q_r->>'ok' = 'true' and q_r->>'current_version' = '2' and jsonb_array_length(q_r->'versions') = 2
+    and q_r->'versions'->0->>'version' = '1' and q_r->'versions'->0->'record'->>'n' = '1' and q_r->'versions'->1->'record'->>'n' = '2'
+    and q_r->'versions'->1->>'record_md5' = (select r.record_md5 from pb_prod.run_records r where r.id = q_run), left(q_r::text, 300));
+  perform pg_temp.q_ck('5e history has the removal with its reason and the office setup change',
+    jsonb_array_length(q_r->'events') = 1 and q_r->'events'->0->>'action' = 'removed' and q_r->'events'->0->>'note' = 'Duplicate run'
+    and jsonb_array_length(q_r->'setup') = 1 and q_r->'setup'->0->>'side' = 'intended', left(q_r::text, 300));
+  begin perform pg_temp.q_as(q_pm); q_r := public.pb_prod_run_versions(q_run, q_pm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('5f listed manager: history ok', q_r->>'ok' = 'true', left(q_r::text, 200));
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_prod_run_versions(q_run, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('5g the foreman who sent it: refused (manager-only)', q_r->>'err' = 'pb:not_company_account', q_r::text);
+  begin perform pg_temp.q_as(q_xo); q_r := public.pb_prod_run_versions(q_run, q_xo); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('5h another company''s account: refused', q_r->>'err' = 'pb:not_company_account', q_r::text);
+  begin perform pg_temp.q_as(q_ow); q_r := public.pb_prod_run_versions(q_run, q_pm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('5i wrong account check: refused', q_r->>'err' = 'pb:wrong_account', q_r::text);
+  begin perform pg_temp.q_as(null); q_r := public.pb_prod_run_versions(q_run, q_ow); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('5j signed out: refused', q_r->>'err' = 'pb:signed_out', q_r::text);
+  begin perform pg_temp.q_as(q_ow); q_r := public.pb_prod_run_versions(gen_random_uuid(), q_ow); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('5k unknown run: not found', q_r->>'err' = 'pb:not_found', q_r::text);
+  -- 41 more versions (43 in all): the newest 40 carry their record, the 3 oldest are listed with md5 only
+  for q_i in 3..43 loop
+    begin perform pg_temp.q_as(q_fm); q_r := public.pb_prod_run_record_put(q_entry, q_rec || jsonb_build_object('n', q_i), q_fm, q_co); reset role;
+    exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+    exit when q_r->>'ok' is distinct from 'true';
+  end loop;
+  perform pg_temp.q_ck('5l app: 41 more run saves ok (version 43)', q_r->>'ok' = 'true' and q_r->>'version' = '43', q_r::text);
+  begin perform pg_temp.q_as(q_ow); q_r := public.pb_prod_run_versions(q_run, q_ow); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  select count(*) filter (where v->'record' is not null and v->'record' <> 'null'::jsonb), count(*) filter (where v->>'record_md5' is not null)
+    into q_n, q_m from jsonb_array_elements(coalesce(q_r->'versions', '[]'::jsonb)) v;
+  perform pg_temp.q_ck('5m 43 versions listed, newest 40 with their record, all with md5',
+    jsonb_array_length(q_r->'versions') = 43 and q_n = 40 and q_m = 43 and q_r->'versions'->2->'record' = 'null'::jsonb
+    and q_r->'versions'->3->'record'->>'n' = '4', q_n || ' / ' || q_m);
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_prod_run_record_put(q_entry, q_rec || jsonb_build_object('n', 43), q_fm, q_co); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('5n app: re-sending the same run answers same (unchanged path)', q_r->>'same' = 'true', q_r::text);
+--@SMOKE
+--@UNDO:05
+  perform pg_temp.q_ck('5o undo 05: the function is gone', to_regprocedure('public.pb_prod_run_versions(uuid,uuid)') is null, '');

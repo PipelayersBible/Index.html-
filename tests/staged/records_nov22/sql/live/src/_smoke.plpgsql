@@ -1,0 +1,31 @@
+  -- SMOKE: the app paths r17.15 uses, after the change (permit open save + close-out, toolbox talk, daily report, run record)
+  begin perform pg_temp.q_as(q_fm);
+    q_r := public.pb_permit_open_put('cps-' || q_tag || '-s', jsonb_build_object('space', 'MH smoke', 'jobsite', 'Smoke site', 'jobNumber', 'Q-' || q_tag), q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('S1a app: open permit save (pb_permit_open_put) ok', q_r->>'ok' = 'true', q_r::text);
+  begin perform pg_temp.q_as(q_fm);
+    q_r := public.pb_permit_backup('cps-' || q_tag || '-s', jsonb_build_object('kind', 'confined', 'lockTime', now(), 'space', 'MH smoke', 'jobNumber', 'Q-' || q_tag), q_fm, null::text); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('S1b app: permit close-out backup (pb_permit_backup) ok, version 1', q_r->>'ok' = 'true' and q_r->>'version' = '1', q_r::text);
+  perform pg_temp.q_ck('S1c app: open permit row dropped at close-out (as before)',
+    not exists (select 1 from pb_safety.open_permits o where o.user_id = q_fm and o.client_permit_id = 'cps-' || q_tag || '-s'), '');
+  q_id := gen_random_uuid();
+  begin perform pg_temp.q_as(q_fm);
+    q_r := public.pb_talk_give(q_id, 'Q-' || q_tag, 'TT-001', 'Smoke talk', q_day, null, '[{"name":"Smoke One"}]'::jsonb, false, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('S2a app: toolbox talk save (pb_talk_give) ok', q_r->>'ok' = 'true', q_r::text);
+  begin perform pg_temp.q_as(q_fm);
+    q_r := public.pb_talk_give(q_id, 'Q-' || q_tag, 'TT-001', 'Smoke talk', q_day, null, '[{"name":"Smoke One"},{"name":"Smoke Two"}]'::jsonb, false, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('S2b app: toolbox talk edit ok, version 2', q_r->>'ok' = 'true' and q_r->'talk'->>'version' = '2', q_r::text);
+  begin perform pg_temp.q_as(q_fm);
+    q_r := public.pb_daily_submit('q-' || q_tag || '-ds', 'Q-' || q_tag || '-S', 'Smoke site', q_day,
+      '{"events":[{"kind":"delay","reason":"weather","hours":1,"cid":"s1"}]}'::jsonb, encode(sha256('smoke'::bytea), 'hex'),
+      'Smoke Foreman', now(), 'America/Los_Angeles', null, null, null, now(), true, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('S3 app: daily report save (pb_daily_submit) ok with its delay entry', q_r->>'ok' = 'true' and q_r->>'events' = '1', q_r::text);
+  begin perform pg_temp.q_as(q_fm);
+    q_r := public.pb_prod_run_record_put('q-' || q_tag || '-rs', jsonb_build_object('kind', 'run', 'id', 'q-' || q_tag || '-rs', 'jobNumber', 'Q-' || q_tag,
+      'lockTime', now(), 'startLabel', 'MH 1', 'endLabel', 'MH 2'), q_fm, q_co); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('S4 app: run record save (pb_prod_run_record_put) ok, version 1', q_r->>'ok' = 'true' and q_r->>'version' = '1', q_r::text);

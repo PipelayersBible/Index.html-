@@ -1,0 +1,49 @@
+--@DECL
+  q_tid uuid; q_job text;
+--@BODY
+--@APPLY:04
+--@FIXTURES
+  -- (04 ran twice above: safe to run twice, the backfill adds nothing the second time)
+  perform pg_temp.q_ck('4a pb_prod.talk_versions there, RLS on, closed to anon / authenticated',
+    to_regclass('pb_prod.talk_versions') is not null and (select c.relrowsecurity from pg_class c where c.oid = 'pb_prod.talk_versions'::regclass)
+    and not has_table_privilege('authenticated', 'pb_prod.talk_versions', 'select') and not has_table_privilege('anon', 'pb_prod.talk_versions', 'select')
+    and not has_function_privilege('authenticated', 'pb_prod.talk_version_keep()', 'execute'), '');
+  perform pg_temp.q_ck('4b every talk on the server has its current version kept (backfill)',
+    not exists (select 1 from pb_prod.talks_given g where not exists (select 1 from pb_prod.talk_versions v where v.talk_id = g.id and v.version = g.version)), '');
+  q_tid := gen_random_uuid(); q_job := 'Q-' || q_tag;
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_talk_give(q_tid, q_job, 'TT-001', 'Trench safety', q_day, null, '[{"name":"A One"}]'::jsonb, false, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('4c app: new toolbox talk saved', q_r->>'ok' = 'true' and q_r->'talk'->>'version' = '1', q_r::text);
+  perform pg_temp.q_ck('4d version 1 kept', (select count(*) from pb_prod.talk_versions v where v.talk_id = q_tid) = 1, '');
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_talk_give(q_tid, q_job, 'TT-001', 'Trench safety', q_day, null, '[{"name":"A One"},{"name":"B Two"}]'::jsonb, false, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('4e app: talk edited (attendee added), version 2', q_r->>'ok' = 'true' and q_r->'talk'->>'version' = '2', q_r::text);
+  perform pg_temp.q_ck('4f both versions kept; version 1 still has only the first attendee',
+    (select count(*) from pb_prod.talk_versions v where v.talk_id = q_tid) = 2
+    and (select jsonb_array_length(v.row_data->'attendees') from pb_prod.talk_versions v where v.talk_id = q_tid and v.version = 1) = 1
+    and (select jsonb_array_length(v.row_data->'attendees') from pb_prod.talk_versions v where v.talk_id = q_tid and v.version = 2) = 2, '');
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_talk_give(q_tid, q_job, 'TT-001', 'Trench safety', q_day, null, '[{"name":"A One"},{"name":"B Two"}]'::jsonb, false, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('4g app: same save answers same, nothing new kept', q_r->>'same' = 'true' and (select count(*) from pb_prod.talk_versions v where v.talk_id = q_tid) = 2, q_r::text);
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_talk_give(q_tid, q_job, 'TT-001', 'Trench safety', q_day, null, '[{"name":"A One"},{"name":"B Two"}]'::jsonb, true, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('4h app: voiding keeps a third version', q_r->>'ok' = 'true' and (select count(*) from pb_prod.talk_versions v where v.talk_id = q_tid) = 3, q_r::text);
+  perform pg_temp.q_ck('4i a kept version has the whole row (who, company, dates)',
+    (select v.row_data->>'user_id' = q_fm::text and v.company_id = q_co and v.row_data ? 'created_at' and v.row_data ? 'given_on'
+       from pb_prod.talk_versions v where v.talk_id = q_tid and v.version = 3), '');
+  update pb_prod.talks_given set title = 'Changed in the console' where id = q_tid; -- no version bump
+  perform pg_temp.q_ck('4j a console edit without a version bump is still kept (own row)', (select count(*) from pb_prod.talk_versions v where v.talk_id = q_tid) = 4, '');
+  begin update pb_prod.talk_versions set row_data = '{}'::jsonb where talk_id = q_tid; q_x := 'CHANGED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('4k kept versions cannot be changed', q_x = 'pb:permanent', q_x);
+  begin delete from pb_prod.talk_versions where talk_id = q_tid; q_x := 'DELETED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('4l kept versions cannot be deleted', q_x = 'pb:permanent', q_x);
+  begin truncate pb_prod.talk_versions; q_x := 'TRUNCATED'; exception when others then q_x := sqlerrm; end;
+  perform pg_temp.q_ck('4m kept versions cannot be truncated', q_x = 'pb:permanent', q_x);
+--@APPLY:04
+  perform pg_temp.q_ck('4n running 04 again adds no duplicates', (select count(*) from pb_prod.talk_versions v where v.talk_id = q_tid) = 4, '');
+--@SMOKE
+--@UNDO:04
+  begin perform pg_temp.q_as(q_fm); q_r := public.pb_talk_give(q_tid, q_job, 'TT-001', 'Trench safety', q_day, null, '[{"name":"A One"}]'::jsonb, false, q_fm); reset role;
+  exception when others then q_r := jsonb_build_object('err', sqlerrm); end;
+  perform pg_temp.q_ck('4o after undo 04: talk save works, no new version kept, kept ones stay',
+    q_r->>'ok' = 'true' and (select count(*) from pb_prod.talk_versions v where v.talk_id = q_tid) = 4 and to_regclass('pb_prod.talk_versions') is not null, q_r::text);
