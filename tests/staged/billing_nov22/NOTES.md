@@ -129,3 +129,8 @@ md5: 01_billing.apply.sql 5b4c40b1…, 99_undo_01.sql ce373e42…, block_t01.sql
    from foremen and pipelayers (small app change), since r17.15 took the price off their Home.
 
 ## DONE
+
+## Lead (Nov 22 evening)
+- block_t01.sql run on LIVE (rolled back): RESULT 74 pass, 0 fail [app and owner calls ran as role authenticated].
+- Not applied yet: goes in with r17.16 (app needs to ship the same day). If Tommy picks the new look, rebase b1-b4 on r1716 Bx.
+- Decisions 51-56 added to the Nov 22 decisions page.
