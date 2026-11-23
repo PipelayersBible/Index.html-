@@ -80,7 +80,7 @@ Order: `p1_emergency_block.py` → `p2_not_emergency_link.py` → `p3_spanish_ro
 | Free retrieval check (live library, build's own search): 700 core / 204 trench-811 / 113 cs / 7 / 127 text / 47 q / 51 reporting | **identical** to live: 650, 682 / 204 / 113 / 7 / 117 / 46, 47 / 51. Everyday review sets (live and staged library) identical |
 | Review search probes (`search_probe_*.txt`: A ticket ×9, B off-topic state card ×12, D trench ×4, G Spanish ×3; raw and with keywords) | **base 12 / 48 → new 48 / 48** |
 | Rank of the wanted card per eval case (`retrieval_rank_cmp.txt`) | 11 better, 2 worse (lib-or-spec-2 "grade rings", lib-ut-spec-2: the state spec card drops from first to 6th but is still handed); 13 cases go from the long state line to the short one, all federal/general questions with an off-topic state card |
-| Full app regression on build_hooks | see "Regression" below |
+| Full app regression on build_hooks (`results/full_regression.log`, `results/regression/`) | **219 pass, 3 FAIL, 15 skip** (of 237), all 3 expected, see below |
 
 ## Apply order (lead)
 1. **Server first, slot `next`.** Copy `build/b-cdddf51b34db.txt` → `data/ask/` and commit/push. Then `select net.http_get('<raw URL>')` and `select pb_ai.code_install('next', <req id>, 'cdddf51b34db5f48e5e4046b3475a0a5f0f7f45dd97a396dadf7f195d279ee0d', '<URL>')`.
@@ -103,5 +103,18 @@ Order: `p1_emergency_block.py` → `p2_not_emergency_link.py` → `p3_spanish_ro
 - `glossary.ts` stake formula wording (everyday H) was not touched.
 - The 811 `DEPENDS` list in state.ts still has "ticket (life|good|expire|valid)". It only matters with no job state and is harmless for T&M wording.
 
-## Regression
-(filled in below when the run finished)
+## Regression (`run_all.sh --build work/app/build_hooks/index.html --jobs 2`, 47 min)
+**pass 219, flaky 0, FAIL 3, skip 15.** I re-ran the 3 failures on their own (`results/regression_rerun/`). They fail the same way every time, and all 3 are expected:
+- `critic/w2` and `new/a7`: r17.16 candidate A's own field changes. Their output is byte-identical to the goldens already staged in `r1716_candidate/test_updates/A`.
+- `office/a1_ask`: the end of the offline emergency card now shows the new space line ("…is tested and ventilated…") and the "Not an emergency? Send to Ask" link. The new golden is in `test_updates/tests/expect/` (`sh test_updates/apply.sh`, with the release that carries the app patch). The re-run output matches it exactly.
+`new/f06_breakend` passed.
+
+## Files
+- `src_patch/`: emergency.ts (the one copy for phone and server), emergency_nov22.diff (server source diff on live src_q), make_src.sh
+- `build/`: b-cdddf51b34db.txt (sealed), SHA256, build.sh
+- `patches/`: p1–p4, _rep.py, base_emergency_ask_quality.ts (the anchor), build_app.sh, app_emergency_nov22.diff
+- `tests/`: cases.txt (the phrase list), run_cases.mjs (both copies), eval_hits.mjs, emergency_nov22_test.ts (Deno), search_cases.json + search_probe.mjs, cmp_rank.py, t_emergency_ui.js (browser)
+- `results/`: every run above; `shots/`: the emergency card with the link, the "line" answer
+- `test_updates/`: the a1_ask golden
+
+## DONE
