@@ -18,3 +18,10 @@ Page: https://claude.ai/artifact/Y7YfHPvbMgAPYDpqEUDhsW (answers in its database
 - 39 cutsheet rows without N/E: "doesn't mean it's not an important row" → agrees with the fix (keep the rows; never drop them silently). Needs 3–4 real sheets.
 - 47 job chat members: "anyone who's been assigned to the same job" → changed: membership = people assigned to the job (+ office); PMs/supers only on their jobs.
 - 52 yearly catch-up $10/mo: "make sure my costs won't be too high" → checked (see reply).
+
+## Follow-ups (Nov 23, 5:22 AM)
+- Plan-reading price ($1 a sheet) hidden from foremen/pipelayers: OK (shipped in r17.16).
+- Toolbox talks: "Maybe give the option to schedule how often they want a toolbox talk." Already in the app: pick the days and
+  every week or every 2 weeks. Washington must be at least weekly (WAC 296-155-110); California at least every 10 working days.
+- "Foremen on this job" on the job page: OK (helper building, staged in tests/staged/foremen_job_nov23/).
+- Website FAQ changed to "72 hours" (website commit f54075a).
