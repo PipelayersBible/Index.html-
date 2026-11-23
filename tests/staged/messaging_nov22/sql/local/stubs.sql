@@ -4,7 +4,7 @@ alter table public.companies add column if not exists created_at timestamptz def
 alter table public.companies drop constraint if exists companies_plan_check;
 create or replace function pb_prod.job_key(p text) returns text language sql immutable set search_path to '' as $$ select left(lower(btrim(coalesce(p, ''))), 60) $$;
 create table if not exists pb_prod.entries (id uuid primary key default gen_random_uuid(), user_id uuid not null, company_id uuid not null, client_entry_id text not null,
-  kind text, job_number text, job_key text, record jsonb not null default '{}', voided boolean default false, updated_at timestamptz default now());
+  kind text, job_number text, job_key text, record jsonb not null default '{}', voided boolean default false, updated_at timestamptz default now(), assigned_to uuid, assigned_at timestamptz);
 alter table pb_prod.run_records add column if not exists job_key text, add column if not exists removed_at timestamptz, add column if not exists updated_at timestamptz default now();
 create table if not exists pb_prod.site_log (id uuid primary key default gen_random_uuid(), user_id uuid not null, company_id uuid not null, client_item_id text not null,
   kind text not null, job_number text, job_key text, data jsonb not null default '{}', updated_at timestamptz default now());
@@ -31,8 +31,46 @@ create or replace function pb_push.kick() returns void language sql security def
 alter table storage.objects add column if not exists created_at timestamptz default now();
 -- billing photo cap stand-in (live: pb_billing.storage_room counts today's own uploads against photos_day / the policy cap)
 create schema if not exists pb_billing;
-create or replace function pb_billing.storage_room(p_user uuid, p_bucket text, p_cap integer) returns boolean language sql stable security definer set search_path to '' as $$
-  select (select count(*) from storage.objects o where o.bucket_id = p_bucket and o.owner_id = p_user::text and o.created_at > now() - interval '1 day') < least(p_cap, 3) $$;
+create or replace function pb_billing.plan_limits() returns jsonb language sql immutable set search_path to '' as $$
+  select '{"member": {"photos_day": 150}, "owner": {"photos_day": 20}, "none": {"photos_day": 10, "storage_gb": 0.1}, "company": {"storage_gb_base": 10, "storage_gb_per_extra": 1}}'::jsonb $$;
+create or replace function pb_billing.limits_of(p_company uuid) returns jsonb language sql stable set search_path to '' as $$ select pb_billing.plan_limits() $$;
+create or replace function pb_billing.ai_who(p_user uuid, out who text, out company_id uuid) returns record language sql stable security definer set search_path to '' as $$
+  select case when m.user_id is not null then 'member' when c.id is not null then 'owner' end, coalesce(m.company_id, c.id)
+  from (select p_user u) x left join public.company_members m on m.user_id = x.u left join public.companies c on c.owner_user_id = x.u limit 1 $$;
+create or replace function pb_billing.storage_gb(p_who text, p_company uuid) returns numeric language sql stable set search_path to '' as $$
+  select case when p_who in ('member', 'owner') then 10::numeric else 0.1 end $$;
+-- pb_billing.storage_room exactly as live (read Nov 22 2026, md5 9975ba51a21d2f2443b8d570e4b6d960 there; whitespace may differ here)
+CREATE OR REPLACE FUNCTION pb_billing.storage_room(p_user uuid, p_bucket text, p_cap integer)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare w record; L jsonb := pb_billing.plan_limits(); v_cap int; v_bytes numeric;
+begin
+  select * into w from pb_billing.ai_who(p_user);
+  L := pb_billing.limits_of(w.company_id);
+  v_cap := (L->(case when w.who = 'member' then 'member' when w.who is null then 'none' else w.who end)->>'photos_day')::int;
+  if w.who in ('member', 'individual', 'beta') and p_bucket <> 'run-photos' then v_cap := p_cap; end if;  -- sealed runs, cut sheet sources: the policy's own cap
+  if (select count(*) from storage.objects o where o.bucket_id = p_bucket and o.owner_id = p_user::text and o.created_at > now() - interval '1 day') >= least(p_cap, v_cap) then return false; end if;
+  select coalesce(sum((o.metadata->>'size')::numeric), 0) into v_bytes from storage.objects o
+    where o.bucket_id in ('run-photos', 'run-seals', 'cutsheet-sources')
+      and o.owner_id in (select p_user::text
+                         union all select m.user_id::text from public.company_members m where m.company_id = w.company_id
+                         union all select c.owner_user_id::text from public.companies c where c.id = w.company_id);
+  return v_bytes < pb_billing.storage_gb(w.who, w.company_id) * 1073741824;
+end $function$;
+create or replace function public.pb_storage_put_ok(p_bucket text, p_cap integer, p_need_company boolean default false) returns boolean
+language sql stable security definer set search_path to '' as $$ select auth.uid() is not null and pb_billing.storage_room(auth.uid(), p_bucket, p_cap) $$;
+grant execute on function public.pb_storage_put_ok(text, integer, boolean) to authenticated;
+-- job assignments as live (the parts read): PMs/supers per job, inspection/test items per foreman, office-filled dailies
+create table if not exists pb_pm.job_pms (id bigint generated always as identity primary key, company_id uuid not null, job_key text not null, job_number text, user_id uuid not null,
+  assigned_by uuid, assigned_at timestamptz default now(), ended_at timestamptz, ended_by uuid, end_reason text);
+create schema if not exists pb_daily;
+create table if not exists pb_daily.items (id uuid primary key default gen_random_uuid(), company_id uuid not null, client_item_id text, job_key text, job_number text, kind text,
+  foreman_uid uuid, status text not null default 'open' check (status in ('open', 'done', 'canceled')), created_by uuid, updated_at timestamptz default now());
+create table if not exists pb_daily.reports (id uuid primary key default gen_random_uuid(), company_id uuid not null, job_key text, job_number text, work_date date, foreman_uid uuid,
+  for_foreman uuid, received_at timestamptz default now());
 -- storage as live: RLS on, authenticated may insert/select (policies decide), buckets table
 create table if not exists storage.buckets (id text primary key, name text not null, public boolean default false, file_size_limit bigint, allowed_mime_types text[]);
 create or replace function storage.foldername(name text) returns text[] language sql immutable as $$ select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1] $$;

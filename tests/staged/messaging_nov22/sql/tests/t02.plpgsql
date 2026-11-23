@@ -60,6 +60,7 @@ begin
   insert into public.companies (id, name, owner_user_id, status, plan) values (c, 'pbmsgp ' || tag, o, 'active', 'paid'), (c2, 'pbmsgp other ' || tag, o2, 'active', 'paid');
   insert into public.company_members (company_id, user_id, role) values (c, pm, 'pm'), (c, f1, 'foreman'), (c, p1, 'pipelayer'), (c, p3, 'pipelayer'), (c2, x, 'foreman');
   insert into pb_prod.site_log (user_id, company_id, client_item_id, kind, job_number, job_key, data) values (f1, c, 'msgp-' || tag || '-1', 'delay', job, lower(job), '{}');
+  insert into pb_pm.job_pms (company_id, job_key, job_number, user_id, assigned_by) values (c, lower(job), job, pm, o);
   insert into pb_prod.crew_links (company_id, foreman_id, pipelayer_id) values (c, f1, p1);
   ch := (pg_temp.q(f1, format('select public.pb_msg_open_job(%L, %L)', job, f1))->'chat'->>'id')::uuid;
   perform pg_temp.q(pm, format('select public.pb_msg_set(%L, true, %L, %L)', ch, 'from_added', pm));
@@ -112,9 +113,13 @@ begin
       'msg-archives', apath, '{"size": 5000}'));
     perform pg_temp.svc('select public.pb_msg_svc_archive_next()');
     perform pg_temp.svc(format('select public.pb_msg_svc_archive_done(%L, true, %L, 5000, 2, 1, 2, null)', ar, jsonb_build_array(jsonb_build_object('path', apath, 'bytes', 5000))));
-    s := pg_temp.e(j) || '/' || pg_temp.sees(o, 'msg-archives', apath) || '/' || pg_temp.sees(pm, 'msg-archives', apath) || '/' || pg_temp.sees(f1, 'msg-archives', apath) || '/' || pg_temp.sees(x, 'msg-archives', apath)
+    s := pg_temp.sees(o, 'msg-archives', apath);   -- before the logged download: nothing
+    perform pg_temp.q(o, format('select public.pb_msg_archive_download(%L, %L, %L)', ar, apath, o));
+    perform pg_temp.q(pm, format('select public.pb_msg_archive_download(%L, %L, %L)', ar, apath, pm));
+    perform pg_temp.q(f1, format('select public.pb_msg_archive_download(%L, %L, %L)', ar, apath, f1));
+    s := s || '/' || pg_temp.e(j) || '/' || pg_temp.sees(o, 'msg-archives', apath) || '/' || pg_temp.sees(pm, 'msg-archives', apath) || '/' || pg_temp.sees(f1, 'msg-archives', apath) || '/' || pg_temp.sees(x, 'msg-archives', apath)
       || '/' || pg_temp.up(o, 'msg-archives', c::text || '/keep/' || ch::text || '/fake.zip', 10);
-    insert into t_chk (name, ok, got) values ('4n archive: company account and PM can download; foreman and other company cannot; nobody uploads one from the app', s ~ '^ok/1/1/0/0/new row violates', s);
+    insert into t_chk (name, ok, got) values ('4n archive: nobody before a logged download; then company account and PM can; foreman and other company cannot; nobody uploads one from the app', s ~ '^0/ok/1/1/0/0/new row violates', s);
   end if;
 
   select count(*) filter (where ok), count(*) filter (where ok is not true), coalesce(string_agg(name || ' [got: ' || coalesce(got, 'null') || ']', ' ; ' order by i) filter (where ok is not true), '') into pass, fail, fails from t_chk;

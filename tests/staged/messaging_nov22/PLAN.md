@@ -11,15 +11,21 @@ has `UNIQUE (user_id)`), or is the company account (`companies.owner_user_id`).
 
 | Kind | Who can read and write |
 |---|---|
-| **Job chat** (one per job: company + job key, same key the app already uses, `pb_prod.job_key(job_number)`) | **The office, always**: the company account, managers (`pb_reports.managers`), PMs and supers (`company_members.role = 'pm'`). **Foremen on the job, always**: a foreman who filed work on that job in the last 120 days (production entry, run record or job book/site log, the same 120 days the app's job list uses) or whom the office added. **Pipelayers only when the office turns on "Include pipelayers"** for that chat (default OFF): pipelayers who filed work on the job, are on the crew of a foreman in the chat (`pb_prod.crew_links`, live link), or whom the office added. |
+| **Job chat** (one per job: company + job key, same key the app already uses, `pb_prod.job_key(job_number)`) | **Everyone assigned to the job** (Tommy, Nov 22 answer 47), read from what the app assigns today: PMs/supers from `pb_pm.job_pms` (the job page's PM/super assignment); foremen from open inspection/test items assigned to them (`pb_daily.items.foreman_uid`), crew runs assigned to them on that job (`pb_prod.entries.assigned_to`, 120 days) and dailies the office filled for them (`pb_daily.reports.for_foreman`, 120 days); **plus the company account and managers, always**; plus anyone the office adds to the chat. **Nobody assigned → fallback, said on Chat info**: foremen who filed work on the job in the last 120 days, and (no PM/super assigned) every PM/super, as job alerts already do (`pb_pm.job_alert_recipients`). **Pipelayers only while "Include pipelayers" is on** (default OFF), and only those on the job: on the crew of a foreman in the chat, filed work on it, or added by the office. Membership follows the assignments at every call. |
 | **Direct message** (1-on-1) | The two people, any roles, both in the same company. A pipelayer can message anyone in the company. |
 
-- Once on a job chat a person stays on it (like any group chat) until the office takes them off, they leave the
-  company, or (pipelayers) the office turns "Include pipelayers" off.
+- Membership follows the assignments at every call: unassigned = out; the office can add or take off anyone (an office
+  add keeps them in whatever the assignments say; the company account and managers cannot be taken off).
+- Running a job chat (switches, people, close, archive, deleting others' messages): the company account, managers and the
+  PMs/supers in that chat.
 - **Removed from the company = no access at once**: every check reads `company_members` / `companies` at the moment of
   the call (no cache, no grace). Messages queued on their phone are refused (`pb:not_in_chat`) and stay on the phone.
 - **Nobody outside the company, ever**: every read and write compares the chat's company with the caller's company now.
   The app owner's Owner Dashboard shows nothing from messages (not even counts are added there).
+- **Direct messages are company records** (answer 46): every DM thread says so at the top. Only the **company account**
+  can list them (names and counts, never the text: `pb_msg_dm_records`), save one as an archive and download it. Every
+  archive download (job or DM) is logged first (`pb_msg_archive_download` → `pb_msg.downloads` + the chat's Changes, so
+  the two people see it); the storage rule opens the file only for 15 minutes after a logged download.
 - **Pipelayer history** (only when pipelayers are included; the office chooses per chat): **"From when added"**
   (default): a pipelayer sees messages sent after they were added (stored as the chat's message number at that moment,
   not a clock time). **"Whole chat"**: they see everything. Turning pipelayers off takes their access away again;
@@ -53,7 +59,9 @@ Photos: new private bucket `msg-photos`, path `<company>/<chat>/<author>/<messag
 phone exactly like run and note photos (longest side 900 px, JPEG 0.72, about 80-150 KB). Upload policy: the author's
 own folder, still allowed to post in that chat, chat open, and the existing daily photo cap
 (`pb_billing.storage_room(uid, 'msg-photos', 150)`: 150 a day for a crew member, 20 for the company account, from
-`pb_billing.plan_limits`) plus a 2 GB per company ceiling for message photos. Read policy: only someone who can see the
+`pb_billing.plan_limits`). **Message photos count in the plan's storage allowance** (answer 49, `sql/04`):
+`pb_billing.storage_room` sums `msg-photos` with run photos, sealed runs and cut sheet sources against
+`pb_billing.storage_gb` (10 GB + 1 GB per extra person); 01's separate 2 GB ceiling is dropped once 04 is in. Read policy: only someone who can see the
 message that carries the photo (a deleted message's photos are hidden). No update/delete policy: nobody can overwrite.
 
 ## 3. Server functions (all `SECURITY DEFINER`, `search_path = ''`, EXECUTE only for `authenticated`, each checks `auth.uid()` and `p_expect_uid`)

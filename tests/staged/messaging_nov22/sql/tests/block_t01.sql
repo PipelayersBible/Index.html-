@@ -9,7 +9,12 @@ begin;
 -- pb_pm.settings.tz (default America/Chicago), pb_prod.push_prefs.tz, pb_push.outbox (+ check pb_push_out_type),
 -- pb_push.kick(), pb_push.is_service(), pb_audit.direct_write(), pb_billing.storage_room(uuid,text,integer),
 -- pb_crew.display_name(uuid,uuid). Nothing live is replaced; the only live object changed is the pb_push_out_type check
--- (gets 'message'). Run as postgres in one transaction (apply/01_messaging.apply.sql). Safe to run twice.
+-- (gets 'message'). Job membership (Tommy, Nov 22 answer 47): everyone ASSIGNED to the job, read from what the app assigns
+-- today: PMs/supers from pb_pm.job_pms; foremen from inspection/test items (pb_daily.items.foreman_uid), crew runs assigned
+-- to them (pb_prod.entries.assigned_to) and dailies the office filled for them (pb_daily.reports.for_foreman); plus the
+-- company account and managers. Nobody assigned -> fallback (said on Chat info): foremen who worked the job in 120 days,
+-- and every PM/super when no PM/super is assigned (as pb_pm.job_alert_recipients does for job alerts).
+-- Run as postgres in one transaction (apply/01_messaging.apply.sql). Safe to run twice.
 -- Undo: undo/99_undo_01.sql.
 
 create schema if not exists pb_msg;
@@ -132,10 +137,12 @@ create table if not exists pb_msg.archives (
 create index if not exists pb_msg_archives_chat on pb_msg.archives (chat_id, requested_at desc);
 create index if not exists pb_msg_archives_todo on pb_msg.archives (state, requested_at) where state in ('queued', 'working', 'purge');
 create table if not exists pb_msg.push_pending (chat_id uuid not null, user_id uuid not null, outbox_id uuid not null, n integer not null default 1, last_msg uuid, primary key (chat_id, user_id));
+create table if not exists pb_msg.downloads (id bigint generated always as identity primary key, archive_id uuid not null, chat_id uuid not null, company_id uuid not null, path text not null, by_user uuid not null, at timestamptz not null default now());
+create index if not exists pb_msg_downloads_path on pb_msg.downloads (path, by_user, at desc);
 create table if not exists pb_msg.purge_log (id bigint generated always as identity primary key, company_id uuid not null, at timestamptz not null default now(), messages integer, versions integer, before_at timestamptz);
 
 do $t$ declare t text; begin
-  foreach t in array array['chats','people','messages','message_versions','reads','mutes','person_prefs','company_settings','company_log','chat_log','archives','push_pending','purge_log'] loop
+  foreach t in array array['chats','people','messages','message_versions','reads','mutes','person_prefs','company_settings','company_log','chat_log','archives','push_pending','purge_log','downloads'] loop
     execute format('alter table pb_msg.%I enable row level security', t);
     execute format('revoke all on table pb_msg.%I from public', t);
     execute format('revoke all on table pb_msg.%I from anon, authenticated', t);
@@ -183,6 +190,8 @@ drop trigger if exists versions_no_truncate on pb_msg.message_versions;
 create trigger versions_no_truncate before truncate on pb_msg.message_versions for each statement execute function pb_msg.permanent();
 drop trigger if exists chat_log_permanent on pb_msg.chat_log;
 create trigger chat_log_permanent before update or delete on pb_msg.chat_log for each row execute function pb_msg.permanent();
+drop trigger if exists downloads_permanent on pb_msg.downloads;
+create trigger downloads_permanent before update or delete on pb_msg.downloads for each row execute function pb_msg.permanent();
 drop trigger if exists company_log_permanent on pb_msg.company_log;
 create trigger company_log_permanent before update or delete on pb_msg.company_log for each row execute function pb_msg.permanent();
 do $a$ declare t text; begin
@@ -201,14 +210,15 @@ language sql stable security definer set search_path to '' as $f$
     (select m.company_id from public.company_members m where m.user_id = p_uid order by m.created_at desc nulls last limit 1),
     (select c.id from public.companies c where c.owner_user_id = p_uid order by (c.status = 'active') desc, c.created_at desc limit 1))
 $f$;
--- their place in that company now: office | foreman | pipelayer | null (not in it). No status check: a lapsed company can
--- still read its messages; posting needs an active company (pb_msg.co_active).
+-- their place in that company now: office (company account, managers) | pm (PMs and supers) | foreman | pipelayer | null.
+-- No status check: a lapsed company can still read its messages; posting needs an active company (pb_msg.co_active).
 create or replace function pb_msg.role_in(p_uid uuid, p_co uuid) returns text
 language sql stable security definer set search_path to '' as $f$
   select case
     when p_uid is null or p_co is null then null
     when exists (select 1 from public.companies c where c.id = p_co and c.owner_user_id = p_uid) then 'office'
-    else (select case when m.role = 'pm' or exists (select 1 from pb_reports.managers g where g.company_id = p_co and g.user_id = p_uid) then 'office'
+    else (select case when m.role = 'pm' then 'pm'
+                      when exists (select 1 from pb_reports.managers g where g.company_id = p_co and g.user_id = p_uid) then 'office'
                       when m.role = 'foreman' then 'foreman' else 'pipelayer' end
             from public.company_members m where m.user_id = p_uid and m.company_id = p_co limit 1)
   end
@@ -231,31 +241,86 @@ language sql stable security definer set search_path to '' as $f$
       or exists (select 1 from pb_prod.site_log s where s.user_id = p_uid and s.company_id = p_co and s.job_key = p_jk and s.updated_at > now() - interval '120 days')
 $f$;
 
--- may this person be in this chat now, and as what: office | foreman | pipelayer | dm | null
+-- assigned to the job (what the app assigns today; see the header)
+create or replace function pb_msg.pm_assigned(p_uid uuid, p_co uuid, p_jk text) returns boolean
+language plpgsql stable security definer set search_path to '' as $f$
+begin
+  return exists (select 1 from pb_pm.job_pms a where a.company_id = p_co and a.job_key = p_jk and a.user_id = p_uid and a.ended_at is null);
+exception when undefined_table then return false;
+end $f$;
+create or replace function pb_msg.any_pm(p_co uuid, p_jk text) returns boolean
+language plpgsql stable security definer set search_path to '' as $f$
+begin
+  return exists (select 1 from pb_pm.job_pms a where a.company_id = p_co and a.job_key = p_jk and a.ended_at is null and pb_msg.role_in(a.user_id, p_co) = 'pm');
+exception when undefined_table then return false;
+end $f$;
+create or replace function pb_msg.fm_assigned(p_uid uuid, p_co uuid, p_jk text) returns boolean
+language plpgsql stable security definer set search_path to '' as $f$
+declare v boolean := false;
+begin
+  begin v := exists (select 1 from pb_daily.items i where i.company_id = p_co and i.job_key = p_jk and i.foreman_uid = p_uid and i.status = 'open'); exception when undefined_table then v := false; end;
+  if v then return true; end if;
+  if exists (select 1 from pb_prod.entries e where e.company_id = p_co and e.job_key = p_jk and e.assigned_to = p_uid and not coalesce(e.voided, false) and e.updated_at > now() - interval '120 days') then return true; end if;
+  begin v := exists (select 1 from pb_daily.reports r where r.company_id = p_co and r.job_key = p_jk and r.for_foreman = p_uid and r.received_at > now() - interval '120 days'); exception when undefined_table then v := false; end;
+  return v;
+end $f$;
+create or replace function pb_msg.any_fm(p_co uuid, p_jk text) returns boolean
+language plpgsql stable security definer set search_path to '' as $f$
+declare v boolean := false;
+begin
+  begin v := exists (select 1 from pb_daily.items i where i.company_id = p_co and i.job_key = p_jk and i.foreman_uid is not null and i.status = 'open' and pb_msg.role_in(i.foreman_uid, p_co) = 'foreman'); exception when undefined_table then v := false; end;
+  if v then return true; end if;
+  if exists (select 1 from pb_prod.entries e where e.company_id = p_co and e.job_key = p_jk and e.assigned_to is not null and not coalesce(e.voided, false) and e.updated_at > now() - interval '120 days' and pb_msg.role_in(e.assigned_to, p_co) = 'foreman') then return true; end if;
+  begin v := exists (select 1 from pb_daily.reports r where r.company_id = p_co and r.job_key = p_jk and r.for_foreman is not null and r.received_at > now() - interval '120 days' and pb_msg.role_in(r.for_foreman, p_co) = 'foreman'); exception when undefined_table then v := false; end;
+  return v;
+end $f$;
+-- who is in a job chat, as words for Chat info: assigned, or the fallback
+create or replace function pb_msg.rule(p_co uuid, p_jk text) returns jsonb
+language sql stable security definer set search_path to '' as $f$
+  select jsonb_build_object('pms', case when pb_msg.any_pm(p_co, p_jk) then 'assigned' else 'all' end,
+                            'foremen', case when pb_msg.any_fm(p_co, p_jk) then 'assigned' else 'worked' end)
+$f$;
+-- a job chat (also before it exists: p_chat null): office | pm | foreman | pipelayer | null
+create or replace function pb_msg.jq(p_co uuid, p_jk text, p_include boolean, p_chat uuid, p_uid uuid) returns text
+language plpgsql stable security definer set search_path to '' as $f$
+declare r text; p pb_msg.people; added boolean := false; f uuid;
+begin
+  r := pb_msg.role_in(p_uid, p_co);
+  if r is null then return null; end if;                             -- not in the company (now): nothing, ever
+  if r = 'office' then return 'office'; end if;                      -- the company account and managers: every job chat
+  if p_chat is not null then
+    select * into p from pb_msg.people where chat_id = p_chat and user_id = p_uid;
+    if found and p.state = 'out' then return null; end if;           -- taken off by the office
+    added := found and p.state = 'in' and p.how = 'office';          -- the office added them to this chat
+  end if;
+  if r = 'pm' then
+    return case when added or pb_msg.pm_assigned(p_uid, p_co, p_jk) or not pb_msg.any_pm(p_co, p_jk) then 'pm' end;
+  end if;
+  if r = 'foreman' then
+    return case when added or pb_msg.fm_assigned(p_uid, p_co, p_jk) or (not pb_msg.any_fm(p_co, p_jk) and pb_msg.on_job(p_uid, p_co, p_jk)) then 'foreman' end;
+  end if;
+  if not coalesce(p_include, false) then return null; end if;        -- pipelayers only when the office included them
+  if added or pb_msg.on_job(p_uid, p_co, p_jk) then return 'pipelayer'; end if;
+  select l.foreman_id into f from pb_prod.crew_links l where l.pipelayer_id = p_uid and l.company_id = p_co and l.ended_at is null limit 1;
+  if f is not null and pb_msg.jq(p_co, p_jk, false, p_chat, f) = 'foreman' then return 'pipelayer'; end if;  -- on the crew of a foreman in the chat
+  return null;
+end $f$;
+-- may this person be in this chat now, and as what: office | pm | foreman | pipelayer | dm | null
 create or replace function pb_msg.qual(p_chat uuid, p_uid uuid) returns text
 language plpgsql stable security definer set search_path to '' as $f$
-declare c pb_msg.chats; r text; p pb_msg.people; f uuid;
+declare c pb_msg.chats;
 begin
   select * into c from pb_msg.chats where id = p_chat;
   if not found or p_uid is null then return null; end if;
-  r := pb_msg.role_in(p_uid, c.company_id);
-  if r is null then return null; end if;                             -- not in the company (now): nothing, ever
-  if c.kind = 'dm' then return case when p_uid in (c.dm_a, c.dm_b) then 'dm' end; end if;
-  if r = 'office' then return 'office'; end if;                      -- the office is always in every job chat
-  select * into p from pb_msg.people where chat_id = p_chat and user_id = p_uid;
-  if found and p.state = 'out' then return null; end if;             -- taken off by the office
-  if r = 'foreman' then
-    return case when (found and p.state = 'in') or pb_msg.on_job(p_uid, c.company_id, c.job_key) then 'foreman' end;
-  end if;
-  if not c.include_pipelayers then return null; end if;              -- pipelayers only when the office included them
-  if (found and p.state = 'in') or pb_msg.on_job(p_uid, c.company_id, c.job_key) then return 'pipelayer'; end if;
-  select l.foreman_id into f from pb_prod.crew_links l where l.pipelayer_id = p_uid and l.company_id = c.company_id and l.ended_at is null limit 1;
-  if f is not null and pb_msg.role_in(f, c.company_id) = 'foreman'
-     and (exists (select 1 from pb_msg.people q where q.chat_id = p_chat and q.user_id = f and q.state = 'in') or pb_msg.on_job(f, c.company_id, c.job_key)) then
-    return 'pipelayer';
-  end if;
-  return null;
+  if c.kind = 'dm' then return case when p_uid in (c.dm_a, c.dm_b) and pb_msg.role_in(p_uid, c.company_id) is not null then 'dm' end; end if;
+  return pb_msg.jq(c.company_id, c.job_key, c.include_pipelayers, c.id, p_uid);
 end $f$;
+-- runs the chat (switches, people, close, archive, delete others' messages): the company account, managers, and the PMs/supers in it
+create or replace function pb_msg.is_admin(p_chat uuid, p_uid uuid) returns boolean
+language sql stable security definer set search_path to '' as $f$ select coalesce(pb_msg.qual(p_chat, p_uid) in ('office', 'pm'), false) $f$;
+-- the company account itself (direct-message archives are its alone)
+create or replace function pb_msg.is_owner(p_uid uuid, p_co uuid) returns boolean
+language sql stable security definer set search_path to '' as $f$ select exists (select 1 from public.companies c where c.id = p_co and c.owner_user_id = p_uid) $f$;
 -- what of the chat this person may read: -1 = all of it, n = messages with seq > n, null = nothing
 create or replace function pb_msg.can_read(p_chat uuid, p_uid uuid) returns bigint
 language plpgsql stable security definer set search_path to '' as $f$
@@ -348,7 +413,7 @@ begin
     'other', o, 'other_in', case when c.kind = 'dm' then pb_msg.role_in(o, c.company_id) is not null end,
     'last_seq', c.last_seq, 'last_at', c.last_at, 'closed', c.closed_at is not null, 'unread', v_unread, 'read_seq', coalesce(v_read, 0),
     'muted', exists (select 1 from pb_msg.mutes x where x.chat_id = p_chat and x.user_id = p_uid),
-    'include_pipelayers', c.include_pipelayers, 'pipelayer_history', c.pipelayer_history, 'from_seq', s,
+    'include_pipelayers', c.include_pipelayers, 'pipelayer_history', c.pipelayer_history, 'from_seq', s, 'admin', pb_msg.is_admin(p_chat, p_uid),
     'last', case when v_last.id is null then null else jsonb_build_object('seq', v_last.seq, 'at', v_last.created_at, 'author_name', v_last.author_name, 'mine', v_last.author = p_uid,
        'deleted', v_last.deleted_at is not null, 'photos', jsonb_array_length(v_last.photos),
        'preview', case when v_last.deleted_at is not null then null else left(regexp_replace(coalesce(v_last.body, ''), '\s+', ' ', 'g'), 60) end) end);
@@ -478,7 +543,7 @@ begin
   end loop;
   select * into pr from pb_msg.person_prefs where user_id = v;
   select s.retention into ret from pb_msg.company_settings s where s.company_id = co;
-  return jsonb_build_object('ok', true, 'member', true, 'me', jsonb_build_object('uid', v, 'role', r, 'company_id', co, 'name', pb_msg.name_of(co, v),
+  return jsonb_build_object('ok', true, 'member', true, 'me', jsonb_build_object('uid', v, 'role', r, 'company_id', co, 'name', pb_msg.name_of(co, v), 'is_owner', pb_msg.is_owner(v, co),
       'can_retention', pb_msg.role_in(v, co) = 'office' and (exists (select 1 from public.companies c where c.id = co and c.owner_user_id = v) or exists (select 1 from pb_reports.managers g where g.company_id = co and g.user_id = v))),
     'prefs', jsonb_build_object('push', coalesce(pr.push, true), 'words', coalesce(pr.words, true), 'quiet_on', coalesce(pr.quiet_on, true),
       'quiet_from', to_char(coalesce(pr.quiet_from, '19:00'::time), 'HH24:MI'), 'quiet_to', to_char(coalesce(pr.quiet_to, '06:00'::time), 'HH24:MI')),
@@ -503,8 +568,8 @@ begin
   if jk = '' then raise exception 'pb:bad_job'; end if;
   select c.id into v_id from pb_msg.chats c where c.company_id = co and c.kind = 'job' and c.job_key = jk;
   if v_id is null then
-    -- only someone who would be in it may start it: the office, or a foreman on that job
-    ok := r = 'office' or (r = 'foreman' and pb_msg.on_job(v, co, jk));
+    -- only someone who would be in it may start it (pipelayers are never in a new chat: the switch starts off)
+    ok := pb_msg.jq(co, jk, false, null, v) is not null;
     if not ok then raise exception 'pb:not_in_chat'; end if;
     if not pb_msg.co_active(co) then raise exception 'pb:company_inactive'; end if;
     if (select count(*) from pb_msg.chats c where c.company_id = co) >= 5000 then raise exception 'pb:quota'; end if;
@@ -614,7 +679,7 @@ begin
   select * into m from pb_msg.messages where id = p_message for update;
   if not found or pb_msg.can_read(m.chat_id, v) is null then raise exception 'pb:not_found'; end if;
   q := pb_msg.qual(m.chat_id, v);
-  if m.author <> v and q <> 'office' then raise exception 'pb:not_yours'; end if;
+  if m.author <> v and coalesce(q not in ('office', 'pm'), true) then raise exception 'pb:not_yours'; end if;
   if m.deleted_at is not null then return jsonb_build_object('ok', true, 'again', true, 'message', pb_msg.msg_json(m, v)); end if;
   update pb_msg.messages set deleted_at = now(), deleted_by = v, version = version + 1 where id = p_message returning * into m;
   if m.author <> v then perform pb_msg.log(m.chat_id, v, 'message_deleted', m.author, jsonb_build_object('seq', m.seq), null); end if;
@@ -652,12 +717,13 @@ begin
   select coalesce(jsonb_agg(jsonb_build_object('at', l.at, 'by', pb_msg.name_of(c.company_id, l.by_user), 'what', l.what,
       'target', case when l.target_user is not null then pb_msg.name_of(c.company_id, l.target_user) end, 'old', l.old_value, 'new', l.new_value) order by l.at desc), '[]'::jsonb)
     into lg from (select * from pb_msg.chat_log l where l.chat_id = p_chat order by l.at desc limit 50) l;
-  if q = 'office' then
+  if (c.kind = 'job' and q in ('office', 'pm')) or (c.kind = 'dm' and pb_msg.is_owner(v, c.company_id)) then
     select coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'state', a.state, 'reason', a.reason, 'at', coalesce(a.done_at, a.requested_at), 'files', a.files, 'bytes', a.bytes,
         'messages', a.messages, 'photos', a.photos) order by a.requested_at desc), '[]'::jsonb) into ar
       from (select * from pb_msg.archives a where a.chat_id = p_chat and a.state <> 'purged' order by a.requested_at desc limit 20) a;
   end if;
-  return jsonb_build_object('ok', true, 'chat', pb_msg.chat_json(p_chat, v), 'can_manage', q = 'office' and c.kind = 'job', 'office', q = 'office',
+  return jsonb_build_object('ok', true, 'chat', pb_msg.chat_json(p_chat, v), 'can_manage', q in ('office', 'pm') and c.kind = 'job', 'office', q in ('office', 'pm'),
+    'rule', case when c.kind = 'job' then pb_msg.rule(c.company_id, c.job_key) end,
     'people', ppl, 'log', lg, 'archives', ar, 'settings_ver', c.settings_ver, 'closed_at', c.closed_at, 'server_at', now());
 end $f$;
 
@@ -666,7 +732,7 @@ language plpgsql security definer set search_path to '' as $f$
 declare v uuid := pb_msg.me(p_expect_uid); c pb_msg.chats; h text := coalesce(p_pipelayer_history, 'from_added');
 begin
   select * into c from pb_msg.chats where id = p_chat for update;
-  if not found or c.kind <> 'job' or pb_msg.qual(p_chat, v) is distinct from 'office' then raise exception 'pb:not_office'; end if;
+  if not found or c.kind <> 'job' or not pb_msg.is_admin(p_chat, v) then raise exception 'pb:not_office'; end if;
   if h not in ('from_added', 'all') or p_include_pipelayers is null then raise exception 'pb:bad_value'; end if;
   if p_include_pipelayers is distinct from c.include_pipelayers then
     perform pb_msg.log(p_chat, v, 'include_pipelayers', null, to_jsonb(c.include_pipelayers), to_jsonb(p_include_pipelayers));
@@ -689,10 +755,10 @@ language plpgsql security definer set search_path to '' as $f$
 declare v uuid := pb_msg.me(p_expect_uid); c pb_msg.chats; r text; cur text;
 begin
   select * into c from pb_msg.chats where id = p_chat for update;
-  if not found or c.kind <> 'job' or pb_msg.qual(p_chat, v) is distinct from 'office' then raise exception 'pb:not_office'; end if;
+  if not found or c.kind <> 'job' or not pb_msg.is_admin(p_chat, v) then raise exception 'pb:not_office'; end if;
   r := pb_msg.role_in(p_user, c.company_id);
   if r is null then raise exception 'pb:not_company_member'; end if;   -- never anyone outside the company
-  if r = 'office' then raise exception 'pb:office_always_in'; end if;
+  if r = 'office' then raise exception 'pb:office_always_in'; end if;   -- (a PM/super can be added to or taken off a job chat)
   if p_in is null then raise exception 'pb:bad_value'; end if;
   select p.state into cur from pb_msg.people p where p.chat_id = p_chat and p.user_id = p_user;
   insert into pb_msg.people (chat_id, user_id, state, how, since, since_seq, changed_by)
@@ -731,7 +797,7 @@ declare v uuid := pb_msg.me(p_expect_uid); co uuid := pb_msg.my_co(v); cur text;
 begin
   -- the company account and its managers (not PMs/supers, not crews): how long the company keeps its records is theirs
   if co is null or not (exists (select 1 from public.companies c where c.id = co and c.owner_user_id = v)
-                        or (pb_msg.role_in(v, co) = 'office' and exists (select 1 from pb_reports.managers g where g.company_id = co and g.user_id = v))) then
+                        or (pb_msg.role_in(v, co) = 'office' and exists (select 1 from pb_reports.managers g where g.company_id = co and g.user_id = v))) then  -- (role 'office' = not a PM)
     raise exception 'pb:not_company_account';
   end if;
   if p_retention not in ('forever', '13m') then raise exception 'pb:bad_value'; end if;
@@ -775,7 +841,7 @@ language plpgsql security definer set search_path to '' as $f$
 declare v uuid := pb_msg.me(p_expect_uid); c pb_msg.chats; a uuid;
 begin
   select * into c from pb_msg.chats where id = p_chat for update;
-  if not found or c.kind <> 'job' or pb_msg.qual(p_chat, v) is distinct from 'office' then raise exception 'pb:not_office'; end if;
+  if not found or c.kind <> 'job' or not pb_msg.is_admin(p_chat, v) then raise exception 'pb:not_office'; end if;
   if p_closed and c.closed_at is null then
     update pb_msg.chats set closed_at = now(), closed_by = v where id = p_chat;
     perform pb_msg.log(p_chat, v, 'closed', null, null, null);
@@ -791,7 +857,10 @@ create or replace function public.pb_msg_archive_request(p_chat uuid, p_expect_u
 language plpgsql security definer set search_path to '' as $f$
 declare v uuid := pb_msg.me(p_expect_uid); a uuid;
 begin
-  if pb_msg.qual(p_chat, v) is distinct from 'office' then raise exception 'pb:not_office'; end if;
+  if not (pb_msg.is_admin(p_chat, v) and exists (select 1 from pb_msg.chats c where c.id = p_chat and c.kind = 'job'))
+     and not exists (select 1 from pb_msg.chats c where c.id = p_chat and c.kind = 'dm' and pb_msg.is_owner(v, c.company_id)) then
+    raise exception 'pb:not_office';   -- a job chat: its office; a direct message: the company account only
+  end if;
   if (select count(*) from pb_msg.archives x where x.chat_id = p_chat and x.requested_at > now() - interval '1 day') >= 5 then raise exception 'pb:quota'; end if;
   a := pb_msg.queue_archive(p_chat, 'office', v); perform pb_msg.kick_archive();
   return jsonb_build_object('ok', true, 'archive_id', a);
@@ -822,14 +891,42 @@ begin
   if s is null then return false; end if;
   return exists (select 1 from pb_msg.messages m where m.chat_id = cid and m.seq > s and m.deleted_at is null and m.photos @> jsonb_build_array(jsonb_build_object('path', p_name)));
 end $f$;
+-- may this person download this archive file now: the right person AND a logged download (pb_msg_archive_download) in the last 15 minutes
 create or replace function public.pb_msg_archive_can_view(p_name text) returns boolean
 language plpgsql stable security definer set search_path to '' as $f$
 declare v uuid := auth.uid(); ar pb_msg.archives;
 begin
   if v is null then return false; end if;
   select * into ar from pb_msg.archives a where a.state = 'done' and a.files @> jsonb_build_array(jsonb_build_object('path', p_name)) limit 1;
-  if not found then return false; end if;
-  return pb_msg.role_in(v, ar.company_id) = 'office' and pb_msg.my_co(v) = ar.company_id;
+  if not found or pb_msg.my_co(v) is distinct from ar.company_id or not pb_msg.archive_ok(ar.chat_id, v) then return false; end if;
+  return exists (select 1 from pb_msg.downloads d where d.path = p_name and d.by_user = v and d.at > now() - interval '15 minutes');
+end $f$;
+create or replace function pb_msg.archive_ok(p_chat uuid, p_uid uuid) returns boolean
+language sql stable security definer set search_path to '' as $f$
+  select exists (select 1 from pb_msg.chats c where c.id = p_chat and ((c.kind = 'job' and pb_msg.is_admin(c.id, p_uid)) or (c.kind = 'dm' and pb_msg.is_owner(p_uid, c.company_id))))
+$f$;
+-- the app asks before it downloads: logged (and shown in the chat's Changes), then the file opens for 15 minutes
+create or replace function public.pb_msg_archive_download(p_archive uuid, p_path text, p_expect_uid uuid) returns jsonb
+language plpgsql security definer set search_path to '' as $f$
+declare v uuid := pb_msg.me(p_expect_uid); ar pb_msg.archives;
+begin
+  select * into ar from pb_msg.archives a where a.id = p_archive and a.state = 'done' and a.files @> jsonb_build_array(jsonb_build_object('path', p_path));
+  if not found or pb_msg.my_co(v) is distinct from ar.company_id or not pb_msg.archive_ok(ar.chat_id, v) then raise exception 'pb:not_office'; end if;
+  insert into pb_msg.downloads (archive_id, chat_id, company_id, path, by_user) values (ar.id, ar.chat_id, ar.company_id, p_path, v);
+  perform pb_msg.log(ar.chat_id, v, 'archive_downloaded', null, null, jsonb_build_object('archive', ar.id));
+  return jsonb_build_object('ok', true, 'path', p_path);
+end $f$;
+-- the company account: every direct message in the company, as records (names, counts, archives; never the text)
+create or replace function public.pb_msg_dm_records(p_expect_uid uuid) returns jsonb
+language plpgsql security definer set search_path to '' as $f$
+declare v uuid := pb_msg.me(p_expect_uid); co uuid := pb_msg.my_co(v);
+begin
+  if co is null or not pb_msg.is_owner(v, co) then raise exception 'pb:not_company_account'; end if;
+  return jsonb_build_object('ok', true, 'threads', coalesce((select jsonb_agg(jsonb_build_object('id', c.id, 'a', pb_msg.name_of(co, c.dm_a), 'b', pb_msg.name_of(co, c.dm_b),
+      'messages', (select count(*) from pb_msg.messages m where m.chat_id = c.id), 'last_at', c.last_at,
+      'archives', coalesce((select jsonb_agg(jsonb_build_object('id', a.id, 'state', a.state, 'at', coalesce(a.done_at, a.requested_at), 'files', a.files, 'bytes', a.bytes) order by a.requested_at desc)
+                            from (select * from pb_msg.archives a where a.chat_id = c.id and a.state <> 'purged' order by a.requested_at desc limit 5) a), '[]'::jsonb))
+      order by c.last_at desc nulls last) from (select * from pb_msg.chats c where c.company_id = co and c.kind = 'dm' and c.dm_a <> v and c.dm_b <> v order by c.last_at desc nulls last limit 300) c), '[]'::jsonb));
 end $f$;
 
 -- ============================ service (archive writer, retention) ============================
@@ -933,7 +1030,8 @@ grant execute on function public.pb_msg_list(uuid), public.pb_msg_people(uuid), 
   public.pb_msg_delete(uuid, uuid), public.pb_msg_read(uuid, bigint, uuid), public.pb_msg_info(uuid, uuid), public.pb_msg_set(uuid, boolean, text, uuid),
   public.pb_msg_person(uuid, uuid, boolean, uuid), public.pb_msg_mute(uuid, boolean, uuid), public.pb_msg_prefs_set(boolean, boolean, boolean, text, text, uuid),
   public.pb_msg_company_set(text, uuid), public.pb_msg_close(uuid, boolean, uuid), public.pb_msg_archive_request(uuid, uuid),
-  public.pb_msg_photo_put_ok(text), public.pb_msg_photo_can_view(text), public.pb_msg_archive_can_view(text) to authenticated;
+  public.pb_msg_photo_put_ok(text), public.pb_msg_photo_can_view(text), public.pb_msg_archive_can_view(text),
+  public.pb_msg_archive_download(uuid, text, uuid), public.pb_msg_dm_records(uuid) to authenticated;
 grant execute on function public.pb_msg_svc_archive_next(), public.pb_msg_svc_archive_done(uuid, boolean, jsonb, bigint, integer, integer, bigint, text),
   public.pb_msg_svc_purge_list(integer), public.pb_msg_svc_purged(uuid[]) to service_role;
 
@@ -978,18 +1076,27 @@ declare
   o uuid := gen_random_uuid(); pm uuid := gen_random_uuid(); f1 uuid := gen_random_uuid(); f2 uuid := gen_random_uuid();
   p1 uuid := gen_random_uuid(); p2 uuid := gen_random_uuid(); p3 uuid := gen_random_uuid(); r uuid := gen_random_uuid();
   o2 uuid := gen_random_uuid(); x uuid := gen_random_uuid(); anyone uuid := gen_random_uuid();
+  pm2 uuid := gen_random_uuid(); mgr uuid := gen_random_uuid(); wk uuid := gen_random_uuid(); jobb text; chb uuid; dm2 uuid; ar2 uuid; k2 text; item_f1 uuid := gen_random_uuid();
   c uuid := gen_random_uuid(); c2 uuid := gen_random_uuid();
   job text := 'MSGT-' || tag; j jsonb; ch uuid; ch2 uuid; dm uuid; m1 uuid; m2 uuid; m3 uuid; s text; n integer; t timestamptz; ar uuid; k text; old_m uuid;
 begin
   create temp table t_chk (i serial, name text, ok boolean, got text) on commit drop;
   perform set_config('pb_msg.no_kick', 'on', true);
-  insert into auth.users (id, email) select v, 'pbmsg-' || tag || '-' || row_number() over () || '@example.invalid' from unnest(array[o, pm, f1, f2, p1, p2, p3, r, o2, x, anyone]) v;
+  insert into auth.users (id, email) select v, 'pbmsg-' || tag || '-' || row_number() over () || '@example.invalid' from unnest(array[o, pm, f1, f2, p1, p2, p3, r, o2, x, anyone, pm2, mgr, wk]) v;
   insert into public.companies (id, name, owner_user_id, status, plan) values (c, 'pbmsg ' || tag, o, 'active', 'paid'), (c2, 'pbmsg other ' || tag, o2, 'active', 'paid');
   insert into public.company_members (company_id, user_id, role) values (c, pm, 'pm'), (c, f1, 'foreman'), (c, f2, 'foreman'), (c, p1, 'pipelayer'),
-    (c, p2, 'pipelayer'), (c, p3, 'pipelayer'), (c, r, 'foreman'), (c2, x, 'foreman');
-  -- on the job: f1 and r (foremen) and p2 (pipelayer) filed work on it; p1 is on f1's crew; f2 and p3 did not
+    (c, p2, 'pipelayer'), (c, p3, 'pipelayer'), (c, r, 'foreman'), (c2, x, 'foreman'), (c, pm2, 'pm'), (c, mgr, 'foreman'), (c, wk, 'foreman');
+  insert into pb_reports.managers (company_id, user_id) values (c, mgr);   -- a listed manager (office)
+  jobb := 'MSGB-' || tag;
+  -- ASSIGNED to the job (Tommy's rule): PM pm (pb_pm.job_pms), foremen f1 and r (inspection items, pb_daily.items).
+  -- Filed work on it: f1, r, wk (foremen) and p2 (pipelayer); p1 is on f1's crew; f2, p3, pm2 nothing.
+  -- Job B: nobody assigned; wk filed work on it (the fallback).
+  insert into pb_pm.job_pms (company_id, job_key, job_number, user_id, assigned_by) values (c, lower(job), job, pm, o);
+  insert into pb_daily.items (id, company_id, client_item_id, job_key, job_number, kind, foreman_uid, status, created_by) values
+    (item_f1, c, 'msgt-' || tag || '-i1', lower(job), job, 'test', f1, 'open', o), (gen_random_uuid(), c, 'msgt-' || tag || '-i2', lower(job), job, 'test', r, 'open', o);
   insert into pb_prod.site_log (user_id, company_id, client_item_id, kind, job_number, job_key, data) values
-    (f1, c, 'msgt-' || tag || '-1', 'delay', job, lower(job), '{}'), (r, c, 'msgt-' || tag || '-2', 'delay', job, lower(job), '{}'), (p2, c, 'msgt-' || tag || '-3', 'delay', job, lower(job), '{}');
+    (f1, c, 'msgt-' || tag || '-1', 'delay', job, lower(job), '{}'), (r, c, 'msgt-' || tag || '-2', 'delay', job, lower(job), '{}'), (p2, c, 'msgt-' || tag || '-3', 'delay', job, lower(job), '{}'),
+    (wk, c, 'msgt-' || tag || '-4', 'delay', job, lower(job), '{}'), (wk, c, 'msgt-' || tag || '-5', 'delay', jobb, lower(jobb), '{}');
   insert into pb_prod.crew_links (company_id, foreman_id, pipelayer_id) values (c, f1, p1);
   insert into pb_pm.settings (company_id, tz) values (c, 'America/Chicago') on conflict (company_id) do update set tz = 'America/Chicago';
 
@@ -1016,19 +1123,29 @@ begin
 
   -- ---- job chat: who is in ----
   j := pg_temp.q(f2, format('select public.pb_msg_open_job(%L, %L)', job, f2));
-  insert into t_chk (name, ok, got) values ('1g a foreman NOT on the job cannot start its chat', j->>'err' = 'pb:not_in_chat', j::text);
+  insert into t_chk (name, ok, got) values ('1g a foreman NOT assigned to the job cannot start its chat', j->>'err' = 'pb:not_in_chat', j::text);
   j := pg_temp.q(f1, format('select public.pb_msg_open_job(%L, %L)', job, f1));
   ch := (j->'chat'->>'id')::uuid;
-  insert into t_chk (name, ok, got) values ('1h a foreman on the job starts it (title Job <n>, pipelayers off)', ch is not null and j->'chat'->>'title' = 'Job ' || job and (j->'chat'->>'include_pipelayers')::boolean = false, j::text);
+  insert into t_chk (name, ok, got) values ('1h a foreman assigned to the job starts it (title Job <n>, pipelayers off)', ch is not null and j->'chat'->>'title' = 'Job ' || job and (j->'chat'->>'include_pipelayers')::boolean = false, j::text);
   j := pg_temp.q(o, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli-' || tag || '-001', 'Pipe truck at 7. Need two guys on the loader please, bring the slings', '[]', o));
   m1 := (j->'message'->>'id')::uuid;
   insert into t_chk (name, ok, got) values ('1i the company account posts (seq 1)', m1 is not null and (j->'message'->>'seq')::int = 1, j::text);
   s := pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, pm))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, f1)))
     || '/' || pg_temp.e(pg_temp.q(r, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, r)));
-  insert into t_chk (name, ok, got) values ('1j the PM (office), foreman f1 and foreman r (on the job) read it', s = 'ok/ok/ok', s);
+  insert into t_chk (name, ok, got) values ('1j the assigned PM and the two assigned foremen read it', s = 'ok/ok/ok', s);
+  s := pg_temp.e(pg_temp.q(mgr, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, mgr))) || '/' || pg_temp.e(pg_temp.q(pm2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, pm2)))
+    || '/' || pg_temp.e(pg_temp.q(wk, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, wk)));
+  insert into t_chk (name, ok, got) values ('1j2 the manager reads; a PM not assigned to this job does not; a foreman who only worked it (others are assigned) does not', s = 'ok/pb:not_in_chat/pb:not_in_chat', s);
+  j := pg_temp.q(wk, format('select public.pb_msg_open_job(%L, %L)', jobb, wk)); chb := (j->'chat'->>'id')::uuid;
+  s := pg_temp.e(j) || '/' || pg_temp.e(pg_temp.q(pm2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chb, pm2))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chb, f1)));
+  j := pg_temp.q(o, format('select public.pb_msg_info(%L, %L)', chb, o));
+  insert into t_chk (name, ok, got) values ('1j3 a job nobody is assigned to: the foreman who worked it starts the chat, every PM is in, other foremen are not; Chat info says it is the fallback',
+    s = 'ok/ok/pb:not_in_chat' and j->'rule'->>'pms' = 'all' and j->'rule'->>'foremen' = 'worked', s || ' ' || coalesce((j->'rule')::text, ''));
+  j := pg_temp.q(pm, format('select public.pb_msg_info(%L, %L)', ch, pm));
+  insert into t_chk (name, ok, got) values ('1j4 the assigned job''s Chat info says assigned', j->'rule'->>'pms' = 'assigned' and j->'rule'->>'foremen' = 'assigned', coalesce((j->'rule')::text, ''));
   s := pg_temp.e(pg_temp.q(f2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, f2))) || '/' || pg_temp.e(pg_temp.q(p1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p1)))
     || '/' || pg_temp.e(pg_temp.q(p2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p2)));
-  insert into t_chk (name, ok, got) values ('1k foreman not on the job, and pipelayers (switch off) cannot read', s = 'pb:not_in_chat/pb:not_in_chat/pb:not_in_chat', s);
+  insert into t_chk (name, ok, got) values ('1k a foreman not assigned, and pipelayers (switch off) cannot read', s = 'pb:not_in_chat/pb:not_in_chat/pb:not_in_chat', s);
   j := pg_temp.q(p1, format('select public.pb_msg_list(%L)', p1));
   insert into t_chk (name, ok, got) values ('1l the job chat is not in a pipelayer''s list while pipelayers are off', jsonb_array_length(j->'chats') = 0 and (j->>'member')::boolean, j::text);
   s := pg_temp.e(pg_temp.q(x, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, x))) || '/' || pg_temp.e(pg_temp.q(x, format('select public.pb_msg_open_dm(%L, %L)', o, x)))
@@ -1048,7 +1165,7 @@ begin
   insert into t_chk (name, ok, got) values ('1q the PM/super turns Include pipelayers on (from when added)', pg_temp.e(j) = 'ok' and (j->'chat'->>'include_pipelayers')::boolean, j::text);
   s := pg_temp.e(pg_temp.q(p1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p1))) || '/' || pg_temp.e(pg_temp.q(p2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p2)))
     || '/' || pg_temp.e(pg_temp.q(p3, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p3)));
-  insert into t_chk (name, ok, got) values ('1r now p1 (on f1''s crew) and p2 (filed work on it) read; p3 (not on the job) does not', s = 'ok/ok/pb:not_in_chat', s);
+  insert into t_chk (name, ok, got) values ('1r now p1 (on assigned f1''s crew) and p2 (filed work on it) read; p3 (not on the job) does not', s = 'ok/ok/pb:not_in_chat', s);
   j := pg_temp.q(p1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p1));
   insert into t_chk (name, ok, got) values ('1s "from when added": p1 does not see the message from before', jsonb_array_length(j->'messages') = 0, j->'messages'::text);
   j := pg_temp.q(f1, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli-' || tag || '-002', 'Loader is up', '[]', f1)); m2 := (j->'message'->>'id')::uuid;
@@ -1199,6 +1316,43 @@ begin
   insert into t_chk (name, ok, got) values ('3k a job chat with no message for 120 days is closed by the daily job (logged) and an archive is waiting',
     (select closed_at is not null from pb_msg.chats where id = ch) and exists (select 1 from pb_msg.archives a where a.chat_id = ch and a.state = 'queued')
     and exists (select 1 from pb_msg.chat_log l where l.chat_id = ch and l.what = 'closed' and l.by_user is null), '');
+
+  -- ---- assignments change: membership follows them ----
+  update pb_daily.items set status = 'canceled' where id = item_f1;
+  s := pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, f1))) || '/' || pg_temp.e(pg_temp.q(wk, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, wk)));
+  s := s || '/' || (pg_temp.q(o, format('select public.pb_msg_info(%L, %L)', ch, o))->'rule'->>'foremen');
+  insert into t_chk (name, ok, got) values ('3m f1''s item ends and r left the company (2c): no foreman assigned, so the fallback lets wk (worked it) in; f1 stays because the office added him in 2w; Chat info says worked', s = 'ok/ok/worked', s);
+  update pb_daily.items set status = 'open' where id = item_f1;
+  s := pg_temp.e(pg_temp.q(wk, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, wk))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, f1)));
+  insert into t_chk (name, ok, got) values ('3m2 f1 assigned again: the fallback ends (wk out at once); f1 in', s = 'pb:not_in_chat/ok', s);
+  update pb_pm.job_pms set ended_at = now() where company_id = c and job_key = lower(job);
+  s := pg_temp.e(pg_temp.q(pm2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, pm2))) || '/' || pg_temp.e(pg_temp.q(o, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, o)));
+  insert into t_chk (name, ok, got) values ('3n the job''s PM is unassigned: no PM assigned, so every PM is in (fallback); the company account always', s = 'ok/ok', s);
+  -- ---- direct messages are company records: the company account (only) can archive and download them, each download logged ----
+  j := pg_temp.q(p3, format('select public.pb_msg_open_dm(%L, %L)', f1, p3)); dm2 := (j->'chat'->>'id')::uuid;
+  perform pg_temp.q(p3, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', dm2, 'cli-' || tag || '-d02', 'Running late, 20 min', '[]', p3));
+  j := pg_temp.q(o, format('select public.pb_msg_dm_records(%L)', o));
+  insert into t_chk (name, ok, got) values ('3o the company account lists everyone''s direct messages as records: names and counts, never the text',
+    exists (select 1 from jsonb_array_elements(j->'threads') e where (e->>'id')::uuid = dm2 and (e->>'messages')::int = 1) and position('Running late' in j::text) = 0
+    and pg_temp.e(pg_temp.q(o, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', dm2, o))) = 'pb:not_in_chat', left(j::text, 200));
+  s := pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_dm_records(%L)', pm))) || '/' || pg_temp.e(pg_temp.q(mgr, format('select public.pb_msg_dm_records(%L)', mgr)))
+    || '/' || pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_archive_request(%L, %L)', dm2, pm))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_archive_request(%L, %L)', dm2, f1)));
+  insert into t_chk (name, ok, got) values ('3p a PM, a manager, or the people in it cannot list or archive direct messages', s = 'pb:not_company_account/pb:not_company_account/pb:not_office/pb:not_office', s);
+  j := pg_temp.q(o, format('select public.pb_msg_archive_request(%L, %L)', dm2, o)); ar2 := (j->>'archive_id')::uuid;
+  insert into t_chk (name, ok, got) values ('3q the company account archives a direct message', ar2 is not null, j::text);
+  update pb_msg.archives set requested_at = now() - interval '1 year' where id = ar2;   -- (next in line for the writer)
+  j := pg_temp.svc('select public.pb_msg_svc_archive_next()');
+  k2 := c::text || '/keep/' || dm2::text || '/t-' || tag || '.zip';
+  perform pg_temp.svc(format('select public.pb_msg_svc_archive_done(%L, true, %L, 99, 1, 0, 1, null)', ar2, jsonb_build_array(jsonb_build_object('path', k2, 'bytes', 99))));
+  s := (pg_temp.q(o, format('select to_jsonb(public.pb_msg_archive_can_view(%L))', k2)))::text;
+  s := s || '/' || pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_archive_download(%L, %L, %L)', ar2, k2, pm))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_archive_download(%L, %L, %L)', ar2, k2, f1)))
+    || '/' || pg_temp.e(pg_temp.q(o, format('select public.pb_msg_archive_download(%L, %L, %L)', ar2, k2, o))) || '/' || (pg_temp.q(o, format('select to_jsonb(public.pb_msg_archive_can_view(%L))', k2)))::text
+    || '/' || (pg_temp.q(pm, format('select to_jsonb(public.pb_msg_archive_can_view(%L))', k2)))::text;
+  insert into t_chk (name, ok, got) values ('3r download: refused to a PM and to the people in it; the company account must log it first (can_view false, then true after pb_msg_archive_download); a PM never',
+    j->'archive'->>'id' = ar2::text and s = 'false/pb:not_office/pb:not_office/ok/true/false', s);
+  j := pg_temp.q(f1, format('select public.pb_msg_info(%L, %L)', dm2, f1));
+  insert into t_chk (name, ok, got) values ('3s each download is logged (who, when) and shown to the two people in the Changes',
+    (select count(*) from pb_msg.downloads d where d.archive_id = ar2 and d.by_user = o) = 1 and exists (select 1 from jsonb_array_elements(j->'log') e where e->>'what' = 'archive_downloaded'), left((j->'log')::text, 160));
 
   select count(*) filter (where ok), count(*) filter (where ok is not true), coalesce(string_agg(name || ' [got: ' || coalesce(got, 'null') || ']', ' ; ' order by i) filter (where ok is not true), '') into pass, fail, fails from t_chk;
   raise exception 'RESULT: % pass, % fail% %', pass, fail, case when fail > 0 then ' | FAILED: ' || fails else '' end, notes;

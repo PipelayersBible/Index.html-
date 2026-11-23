@@ -1,0 +1,45 @@
+-- messaging_nov22 04 test: message photos count in the plan's storage allowance (pb_billing.storage_room), run AS ROLE
+-- authenticated through the real policies. Rolled back.
+create function pg_temp.q(p_user uuid, p_sql text) returns jsonb language plpgsql as $f$
+declare r jsonb;
+begin
+  begin
+    perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', p_user, 'aal', 'aal1')::text, true);
+    perform set_config('role', 'authenticated', true);
+    execute p_sql into r;
+    perform set_config('role', 'none', true);
+    return coalesce(r, 'null'::jsonb);
+  exception when others then return jsonb_build_object('err', sqlerrm);
+  end;
+end $f$;
+do $test$
+declare pass integer; fail integer; fails text; notes text := ''; tag text := substr(md5(random()::text), 1, 8);
+  o uuid := gen_random_uuid(); f1 uuid := gen_random_uuid(); c uuid := gen_random_uuid(); ch uuid; job text := 'MSGS-' || tag; s text; gb numeric; base text;
+begin
+  create temp table t_chk (i serial, name text, ok boolean, got text) on commit drop;
+  perform set_config('pb_msg.no_kick', 'on', true);
+  insert into auth.users (id, email) select v, 'pbmsgs-' || tag || '-' || row_number() over () || '@example.invalid' from unnest(array[o, f1]) v;
+  insert into public.companies (id, name, owner_user_id, status, plan) values (c, 'pbmsgs ' || tag, o, 'active', 'paid');
+  insert into public.company_members (company_id, user_id, role) values (c, f1, 'foreman');
+  insert into pb_prod.site_log (user_id, company_id, client_item_id, kind, job_number, job_key, data) values (f1, c, 'msgs-' || tag || '-1', 'delay', job, lower(job), '{}');
+  ch := (pg_temp.q(f1, format('select public.pb_msg_open_job(%L, %L)', job, f1))->'chat'->>'id')::uuid;
+  base := c::text || '/' || ch::text || '/' || f1::text || '/';
+  insert into t_chk (name, ok, got) values ('6a storage_room now sums msg-photos with the other photo buckets; the live text is kept for the undo',
+    position('''msg-photos''' in pg_get_functiondef('pb_billing.storage_room(uuid,text,integer)'::regprocedure)) > 0 and exists (select 1 from pb_msg.fn_backup where sig = 'pb_billing.storage_room(uuid,text,integer)'), '');
+  insert into t_chk (name, ok, got) values ('6b the photo check no longer has its own 2 GB ceiling', position('2147483648' in pg_get_functiondef('public.pb_msg_photo_put_ok(text)'::regprocedure)) = 0, '');
+  gb := pb_billing.storage_gb('member', c);
+  -- 3 GB of message photos already (over 01's old 2 GB ceiling, under the plan's allowance): still room
+  insert into storage.objects (bucket_id, name, owner_id, metadata) values ('msg-photos', base || 'old' || tag || 'a-1.jpg', f1::text, jsonb_build_object('size', 3221225472));
+  s := (pg_temp.q(f1, format('select to_jsonb(public.pb_msg_photo_put_ok(%L))', base || 'cli' || tag || 'b-1.jpg')))::text;
+  insert into t_chk (name, ok, got) values ('6c 3 GB of message photos, plan allowance ' || gb || ' GB: a new message photo is allowed', s = 'true', s);
+  -- message photos fill the allowance: no more message photos AND no more run photos (one allowance)
+  insert into storage.objects (bucket_id, name, owner_id, metadata) values ('msg-photos', base || 'old' || tag || 'c-1.jpg', f1::text, jsonb_build_object('size', (gb * 1073741824)::bigint));
+  s := (pg_temp.q(f1, format('select to_jsonb(public.pb_msg_photo_put_ok(%L))', base || 'cli' || tag || 'd-1.jpg')))::text
+    || '/' || (pg_temp.q(f1, format('select to_jsonb(public.pb_storage_put_ok(%L, 400))', 'run-photos')))::text;
+  insert into t_chk (name, ok, got) values ('6d message photos over the allowance: no more message photos, and no more run photos either (one allowance)', s = 'false/false', s);
+  insert into t_chk (name, ok, got) values ('6e every function the msg_* policies call is still executable by authenticated',
+    not exists (select 1 from pg_policy po join pg_depend d on d.classid = 'pg_policy'::regclass and d.objid = po.oid and d.refclassid = 'pg_proc'::regclass
+                 where po.polrelid = 'storage.objects'::regclass and po.polname like 'msg\_%' and not has_function_privilege('authenticated', d.refobjid, 'execute')), '');
+  select count(*) filter (where ok), count(*) filter (where ok is not true), coalesce(string_agg(name || ' [got: ' || coalesce(got, 'null') || ']', ' ; ' order by i) filter (where ok is not true), '') into pass, fail, fails from t_chk;
+  raise exception 'RESULT: % pass, % fail% %', pass, fail, case when fail > 0 then ' | FAILED: ' || fails else '' end, notes;
+end $test$;

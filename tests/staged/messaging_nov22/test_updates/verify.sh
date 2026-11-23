@@ -1,9 +1,9 @@
 #!/bin/sh
-# Re-runs the 5 tests whose goldens change, on a COPY of tests/ with these expect files (the repo stays as it is).
+# Re-runs the 3 tests whose goldens change with Messages, on a COPY of tests/ with these expect files (the repo stays as it is).
 #   sh tests/staged/messaging_nov22/test_updates/verify.sh
-# w2 and a7: r17.16 A's own changes, byte-identical to r1716_candidate/test_updates/A (field fixes). w1: the screen list
-# now has screen-messages, msgChat, msgInfo, msgSettings. s1_smoke, t03_roles: a company account now calls pb_msg_list.
-# Copy test_updates/tests over tests/ with the release commit that ships Messages.
+# Base: r1716_final (its own golden changes are its own; see NOTES "Regression"). w1: the screen list has screen-messages,
+# msgChat, msgInfo, msgSettings (the file is this build's whole output, so it also carries r1716_final's own w1 changes);
+# s1_smoke, t03_roles: a company account now calls pb_msg_list. Copy test_updates/tests over tests/ with the release commit.
 set -e
 ROOT=/home/claude/index.html-; D=$ROOT/tests/staged/messaging_nov22
 T=${TMPDIR:-/tmp}/msg_verify; rm -rf $T; mkdir -p $T/repo/tests

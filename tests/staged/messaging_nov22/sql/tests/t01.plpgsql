@@ -33,18 +33,27 @@ declare
   o uuid := gen_random_uuid(); pm uuid := gen_random_uuid(); f1 uuid := gen_random_uuid(); f2 uuid := gen_random_uuid();
   p1 uuid := gen_random_uuid(); p2 uuid := gen_random_uuid(); p3 uuid := gen_random_uuid(); r uuid := gen_random_uuid();
   o2 uuid := gen_random_uuid(); x uuid := gen_random_uuid(); anyone uuid := gen_random_uuid();
+  pm2 uuid := gen_random_uuid(); mgr uuid := gen_random_uuid(); wk uuid := gen_random_uuid(); jobb text; chb uuid; dm2 uuid; ar2 uuid; k2 text; item_f1 uuid := gen_random_uuid();
   c uuid := gen_random_uuid(); c2 uuid := gen_random_uuid();
   job text := 'MSGT-' || tag; j jsonb; ch uuid; ch2 uuid; dm uuid; m1 uuid; m2 uuid; m3 uuid; s text; n integer; t timestamptz; ar uuid; k text; old_m uuid;
 begin
   create temp table t_chk (i serial, name text, ok boolean, got text) on commit drop;
   perform set_config('pb_msg.no_kick', 'on', true);
-  insert into auth.users (id, email) select v, 'pbmsg-' || tag || '-' || row_number() over () || '@example.invalid' from unnest(array[o, pm, f1, f2, p1, p2, p3, r, o2, x, anyone]) v;
+  insert into auth.users (id, email) select v, 'pbmsg-' || tag || '-' || row_number() over () || '@example.invalid' from unnest(array[o, pm, f1, f2, p1, p2, p3, r, o2, x, anyone, pm2, mgr, wk]) v;
   insert into public.companies (id, name, owner_user_id, status, plan) values (c, 'pbmsg ' || tag, o, 'active', 'paid'), (c2, 'pbmsg other ' || tag, o2, 'active', 'paid');
   insert into public.company_members (company_id, user_id, role) values (c, pm, 'pm'), (c, f1, 'foreman'), (c, f2, 'foreman'), (c, p1, 'pipelayer'),
-    (c, p2, 'pipelayer'), (c, p3, 'pipelayer'), (c, r, 'foreman'), (c2, x, 'foreman');
-  -- on the job: f1 and r (foremen) and p2 (pipelayer) filed work on it; p1 is on f1's crew; f2 and p3 did not
+    (c, p2, 'pipelayer'), (c, p3, 'pipelayer'), (c, r, 'foreman'), (c2, x, 'foreman'), (c, pm2, 'pm'), (c, mgr, 'foreman'), (c, wk, 'foreman');
+  insert into pb_reports.managers (company_id, user_id) values (c, mgr);   -- a listed manager (office)
+  jobb := 'MSGB-' || tag;
+  -- ASSIGNED to the job (Tommy's rule): PM pm (pb_pm.job_pms), foremen f1 and r (inspection items, pb_daily.items).
+  -- Filed work on it: f1, r, wk (foremen) and p2 (pipelayer); p1 is on f1's crew; f2, p3, pm2 nothing.
+  -- Job B: nobody assigned; wk filed work on it (the fallback).
+  insert into pb_pm.job_pms (company_id, job_key, job_number, user_id, assigned_by) values (c, lower(job), job, pm, o);
+  insert into pb_daily.items (id, company_id, client_item_id, job_key, job_number, kind, foreman_uid, status, created_by) values
+    (item_f1, c, 'msgt-' || tag || '-i1', lower(job), job, 'test', f1, 'open', o), (gen_random_uuid(), c, 'msgt-' || tag || '-i2', lower(job), job, 'test', r, 'open', o);
   insert into pb_prod.site_log (user_id, company_id, client_item_id, kind, job_number, job_key, data) values
-    (f1, c, 'msgt-' || tag || '-1', 'delay', job, lower(job), '{}'), (r, c, 'msgt-' || tag || '-2', 'delay', job, lower(job), '{}'), (p2, c, 'msgt-' || tag || '-3', 'delay', job, lower(job), '{}');
+    (f1, c, 'msgt-' || tag || '-1', 'delay', job, lower(job), '{}'), (r, c, 'msgt-' || tag || '-2', 'delay', job, lower(job), '{}'), (p2, c, 'msgt-' || tag || '-3', 'delay', job, lower(job), '{}'),
+    (wk, c, 'msgt-' || tag || '-4', 'delay', job, lower(job), '{}'), (wk, c, 'msgt-' || tag || '-5', 'delay', jobb, lower(jobb), '{}');
   insert into pb_prod.crew_links (company_id, foreman_id, pipelayer_id) values (c, f1, p1);
   insert into pb_pm.settings (company_id, tz) values (c, 'America/Chicago') on conflict (company_id) do update set tz = 'America/Chicago';
 
@@ -71,19 +80,29 @@ begin
 
   -- ---- job chat: who is in ----
   j := pg_temp.q(f2, format('select public.pb_msg_open_job(%L, %L)', job, f2));
-  insert into t_chk (name, ok, got) values ('1g a foreman NOT on the job cannot start its chat', j->>'err' = 'pb:not_in_chat', j::text);
+  insert into t_chk (name, ok, got) values ('1g a foreman NOT assigned to the job cannot start its chat', j->>'err' = 'pb:not_in_chat', j::text);
   j := pg_temp.q(f1, format('select public.pb_msg_open_job(%L, %L)', job, f1));
   ch := (j->'chat'->>'id')::uuid;
-  insert into t_chk (name, ok, got) values ('1h a foreman on the job starts it (title Job <n>, pipelayers off)', ch is not null and j->'chat'->>'title' = 'Job ' || job and (j->'chat'->>'include_pipelayers')::boolean = false, j::text);
+  insert into t_chk (name, ok, got) values ('1h a foreman assigned to the job starts it (title Job <n>, pipelayers off)', ch is not null and j->'chat'->>'title' = 'Job ' || job and (j->'chat'->>'include_pipelayers')::boolean = false, j::text);
   j := pg_temp.q(o, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli-' || tag || '-001', 'Pipe truck at 7. Need two guys on the loader please, bring the slings', '[]', o));
   m1 := (j->'message'->>'id')::uuid;
   insert into t_chk (name, ok, got) values ('1i the company account posts (seq 1)', m1 is not null and (j->'message'->>'seq')::int = 1, j::text);
   s := pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, pm))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, f1)))
     || '/' || pg_temp.e(pg_temp.q(r, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, r)));
-  insert into t_chk (name, ok, got) values ('1j the PM (office), foreman f1 and foreman r (on the job) read it', s = 'ok/ok/ok', s);
+  insert into t_chk (name, ok, got) values ('1j the assigned PM and the two assigned foremen read it', s = 'ok/ok/ok', s);
+  s := pg_temp.e(pg_temp.q(mgr, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, mgr))) || '/' || pg_temp.e(pg_temp.q(pm2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, pm2)))
+    || '/' || pg_temp.e(pg_temp.q(wk, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, wk)));
+  insert into t_chk (name, ok, got) values ('1j2 the manager reads; a PM not assigned to this job does not; a foreman who only worked it (others are assigned) does not', s = 'ok/pb:not_in_chat/pb:not_in_chat', s);
+  j := pg_temp.q(wk, format('select public.pb_msg_open_job(%L, %L)', jobb, wk)); chb := (j->'chat'->>'id')::uuid;
+  s := pg_temp.e(j) || '/' || pg_temp.e(pg_temp.q(pm2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chb, pm2))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chb, f1)));
+  j := pg_temp.q(o, format('select public.pb_msg_info(%L, %L)', chb, o));
+  insert into t_chk (name, ok, got) values ('1j3 a job nobody is assigned to: the foreman who worked it starts the chat, every PM is in, other foremen are not; Chat info says it is the fallback',
+    s = 'ok/ok/pb:not_in_chat' and j->'rule'->>'pms' = 'all' and j->'rule'->>'foremen' = 'worked', s || ' ' || coalesce((j->'rule')::text, ''));
+  j := pg_temp.q(pm, format('select public.pb_msg_info(%L, %L)', ch, pm));
+  insert into t_chk (name, ok, got) values ('1j4 the assigned job''s Chat info says assigned', j->'rule'->>'pms' = 'assigned' and j->'rule'->>'foremen' = 'assigned', coalesce((j->'rule')::text, ''));
   s := pg_temp.e(pg_temp.q(f2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, f2))) || '/' || pg_temp.e(pg_temp.q(p1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p1)))
     || '/' || pg_temp.e(pg_temp.q(p2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p2)));
-  insert into t_chk (name, ok, got) values ('1k foreman not on the job, and pipelayers (switch off) cannot read', s = 'pb:not_in_chat/pb:not_in_chat/pb:not_in_chat', s);
+  insert into t_chk (name, ok, got) values ('1k a foreman not assigned, and pipelayers (switch off) cannot read', s = 'pb:not_in_chat/pb:not_in_chat/pb:not_in_chat', s);
   j := pg_temp.q(p1, format('select public.pb_msg_list(%L)', p1));
   insert into t_chk (name, ok, got) values ('1l the job chat is not in a pipelayer''s list while pipelayers are off', jsonb_array_length(j->'chats') = 0 and (j->>'member')::boolean, j::text);
   s := pg_temp.e(pg_temp.q(x, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, x))) || '/' || pg_temp.e(pg_temp.q(x, format('select public.pb_msg_open_dm(%L, %L)', o, x)))
@@ -103,7 +122,7 @@ begin
   insert into t_chk (name, ok, got) values ('1q the PM/super turns Include pipelayers on (from when added)', pg_temp.e(j) = 'ok' and (j->'chat'->>'include_pipelayers')::boolean, j::text);
   s := pg_temp.e(pg_temp.q(p1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p1))) || '/' || pg_temp.e(pg_temp.q(p2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p2)))
     || '/' || pg_temp.e(pg_temp.q(p3, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p3)));
-  insert into t_chk (name, ok, got) values ('1r now p1 (on f1''s crew) and p2 (filed work on it) read; p3 (not on the job) does not', s = 'ok/ok/pb:not_in_chat', s);
+  insert into t_chk (name, ok, got) values ('1r now p1 (on assigned f1''s crew) and p2 (filed work on it) read; p3 (not on the job) does not', s = 'ok/ok/pb:not_in_chat', s);
   j := pg_temp.q(p1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p1));
   insert into t_chk (name, ok, got) values ('1s "from when added": p1 does not see the message from before', jsonb_array_length(j->'messages') = 0, j->'messages'::text);
   j := pg_temp.q(f1, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli-' || tag || '-002', 'Loader is up', '[]', f1)); m2 := (j->'message'->>'id')::uuid;
@@ -254,6 +273,43 @@ begin
   insert into t_chk (name, ok, got) values ('3k a job chat with no message for 120 days is closed by the daily job (logged) and an archive is waiting',
     (select closed_at is not null from pb_msg.chats where id = ch) and exists (select 1 from pb_msg.archives a where a.chat_id = ch and a.state = 'queued')
     and exists (select 1 from pb_msg.chat_log l where l.chat_id = ch and l.what = 'closed' and l.by_user is null), '');
+
+  -- ---- assignments change: membership follows them ----
+  update pb_daily.items set status = 'canceled' where id = item_f1;
+  s := pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, f1))) || '/' || pg_temp.e(pg_temp.q(wk, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, wk)));
+  s := s || '/' || (pg_temp.q(o, format('select public.pb_msg_info(%L, %L)', ch, o))->'rule'->>'foremen');
+  insert into t_chk (name, ok, got) values ('3m f1''s item ends and r left the company (2c): no foreman assigned, so the fallback lets wk (worked it) in; f1 stays because the office added him in 2w; Chat info says worked', s = 'ok/ok/worked', s);
+  update pb_daily.items set status = 'open' where id = item_f1;
+  s := pg_temp.e(pg_temp.q(wk, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, wk))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, f1)));
+  insert into t_chk (name, ok, got) values ('3m2 f1 assigned again: the fallback ends (wk out at once); f1 in', s = 'pb:not_in_chat/ok', s);
+  update pb_pm.job_pms set ended_at = now() where company_id = c and job_key = lower(job);
+  s := pg_temp.e(pg_temp.q(pm2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, pm2))) || '/' || pg_temp.e(pg_temp.q(o, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, o)));
+  insert into t_chk (name, ok, got) values ('3n the job''s PM is unassigned: no PM assigned, so every PM is in (fallback); the company account always', s = 'ok/ok', s);
+  -- ---- direct messages are company records: the company account (only) can archive and download them, each download logged ----
+  j := pg_temp.q(p3, format('select public.pb_msg_open_dm(%L, %L)', f1, p3)); dm2 := (j->'chat'->>'id')::uuid;
+  perform pg_temp.q(p3, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', dm2, 'cli-' || tag || '-d02', 'Running late, 20 min', '[]', p3));
+  j := pg_temp.q(o, format('select public.pb_msg_dm_records(%L)', o));
+  insert into t_chk (name, ok, got) values ('3o the company account lists everyone''s direct messages as records: names and counts, never the text',
+    exists (select 1 from jsonb_array_elements(j->'threads') e where (e->>'id')::uuid = dm2 and (e->>'messages')::int = 1) and position('Running late' in j::text) = 0
+    and pg_temp.e(pg_temp.q(o, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', dm2, o))) = 'pb:not_in_chat', left(j::text, 200));
+  s := pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_dm_records(%L)', pm))) || '/' || pg_temp.e(pg_temp.q(mgr, format('select public.pb_msg_dm_records(%L)', mgr)))
+    || '/' || pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_archive_request(%L, %L)', dm2, pm))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_archive_request(%L, %L)', dm2, f1)));
+  insert into t_chk (name, ok, got) values ('3p a PM, a manager, or the people in it cannot list or archive direct messages', s = 'pb:not_company_account/pb:not_company_account/pb:not_office/pb:not_office', s);
+  j := pg_temp.q(o, format('select public.pb_msg_archive_request(%L, %L)', dm2, o)); ar2 := (j->>'archive_id')::uuid;
+  insert into t_chk (name, ok, got) values ('3q the company account archives a direct message', ar2 is not null, j::text);
+  update pb_msg.archives set requested_at = now() - interval '1 year' where id = ar2;   -- (next in line for the writer)
+  j := pg_temp.svc('select public.pb_msg_svc_archive_next()');
+  k2 := c::text || '/keep/' || dm2::text || '/t-' || tag || '.zip';
+  perform pg_temp.svc(format('select public.pb_msg_svc_archive_done(%L, true, %L, 99, 1, 0, 1, null)', ar2, jsonb_build_array(jsonb_build_object('path', k2, 'bytes', 99))));
+  s := (pg_temp.q(o, format('select to_jsonb(public.pb_msg_archive_can_view(%L))', k2)))::text;
+  s := s || '/' || pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_archive_download(%L, %L, %L)', ar2, k2, pm))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_archive_download(%L, %L, %L)', ar2, k2, f1)))
+    || '/' || pg_temp.e(pg_temp.q(o, format('select public.pb_msg_archive_download(%L, %L, %L)', ar2, k2, o))) || '/' || (pg_temp.q(o, format('select to_jsonb(public.pb_msg_archive_can_view(%L))', k2)))::text
+    || '/' || (pg_temp.q(pm, format('select to_jsonb(public.pb_msg_archive_can_view(%L))', k2)))::text;
+  insert into t_chk (name, ok, got) values ('3r download: refused to a PM and to the people in it; the company account must log it first (can_view false, then true after pb_msg_archive_download); a PM never',
+    j->'archive'->>'id' = ar2::text and s = 'false/pb:not_office/pb:not_office/ok/true/false', s);
+  j := pg_temp.q(f1, format('select public.pb_msg_info(%L, %L)', dm2, f1));
+  insert into t_chk (name, ok, got) values ('3s each download is logged (who, when) and shown to the two people in the Changes',
+    (select count(*) from pb_msg.downloads d where d.archive_id = ar2 and d.by_user = o) = 1 and exists (select 1 from jsonb_array_elements(j->'log') e where e->>'what' = 'archive_downloaded'), left((j->'log')::text, 160));
 
   select count(*) filter (where ok), count(*) filter (where ok is not true), coalesce(string_agg(name || ' [got: ' || coalesce(got, 'null') || ']', ' ; ' order by i) filter (where ok is not true), '') into pass, fail, fails from t_chk;
   raise exception 'RESULT: % pass, % fail% %', pass, fail, case when fail > 0 then ' | FAILED: ' || fails else '' end, notes;

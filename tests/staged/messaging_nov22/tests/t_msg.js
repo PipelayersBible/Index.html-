@@ -26,7 +26,7 @@ async function boot(role, o = {}) {
   await ctx.addInitScript(SRV(role === 'removed' ? 'removed' : role));
   if (o.init) await ctx.addInitScript(o.init);
   const p = await ctx.newPage(); p.errs = []; p.on('pageerror', e => p.errs.push(e.message));
-  await p.goto(URL0, { waitUntil: 'load' }); await p.waitForTimeout(o.wait || 6000);
+  await p.goto(URL0, { waitUntil: 'load' }); await p.waitForTimeout(o.wait || 10000);
   return { b, ctx, p, H: F(p) };
 }
 const size = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s); if (!e || !e.offsetParent) return null; const r = e.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }, sel);
@@ -87,7 +87,7 @@ const shot = async (p, n) => { try { fs.mkdirSync(OUT, { recursive: true }); awa
     await p.evaluate((id) => pbMsgOpenChat(id), J1); await p.waitForTimeout(800);
     await p.fill('#pbmText', 'Inspector at 2'); await p.dispatchEvent('#pbmText', 'input'); await p.click('#pbmSend'); await p.waitForTimeout(1500);
     const cid = await p.evaluate(() => (window.__pbMsg().out[0] || {}).cid);
-    await p.reload({ waitUntil: 'load' }); await p.waitForTimeout(8000);
+    await p.reload({ waitUntil: 'load' }); await p.waitForTimeout(13000);
     const rs = await calls(p, 'pb_msg_send');
     ok(!!cid && rs.length >= 1 && rs[rs.length - 1].p_client_id === cid && rs[rs.length - 1].p_body === 'Inspector at 2', 'A17 a message waiting when the app was closed is still there after a restart and is sent with the same id (' + cid + ')');
     // ---- a photo: resized like run photos, uploaded to the chat folder first, then named in the message ----
@@ -105,7 +105,7 @@ const shot = async (p, n) => { try { fs.mkdirSync(OUT, { recursive: true }); awa
     // ---- foreman's Info: read-only pipelayer line, no switch, no archive; Mute is his ----
     await p.evaluate(() => pbMsgOpenInfo()); await p.waitForTimeout(1500);
     const inf = await p.evaluate(() => ({ sw: !!document.getElementById('pbmIncl'), txt: document.getElementById('pbmInfoBody').innerText.replace(/\s+/g, ' '), mute: !!document.getElementById('pbmMute'), arch: /Save archive now/.test(document.getElementById('pbmInfoBody').innerText) }));
-    ok(!inf.sw && /Pipelayers are not in this chat/.test(inf.txt) && inf.mute && !inf.arch && /Foremen on this job and the office are always in/.test(inf.txt), 'A21 a foreman\'s Info: sees the pipelayer setting (no switch), Mute, no archive tools');
+    ok(!inf.sw && /Pipelayers are not in this chat/.test(inf.txt) && inf.mute && !inf.arch && /Everyone assigned to this job is in, with the company account and managers/.test(inf.txt), 'A21 a foreman\'s Info: who is in (assigned), the pipelayer setting (no switch), Mute, no archive tools');
     await p.click('#pbmMute'); await p.waitForTimeout(1200);
     const mu = await calls(p, 'pb_msg_mute');
     ok(mu.length === 1 && mu[0].p_muted === true && mu[0].p_chat === J1, 'A22 Mute this chat goes to the server for this person (' + JSON.stringify(mu) + ')');
@@ -115,6 +115,8 @@ const shot = async (p, n) => { try { fs.mkdirSync(OUT, { recursive: true }); awa
     await p.evaluate((id) => window.pbPushOpen('#/messages/' + id), D1); await p.waitForTimeout(2500);
     const po = await p.evaluate(() => ({ scr: [...document.querySelectorAll('.pb-screen.active')].map(x => x.id).join(), t: document.getElementById('pbmChatTitle').textContent }));
     ok(po.scr === 'screen-msgChat' && po.t === 'Brandon Jones', 'A23 tapping a message alert (#/messages/<chat>) opens that chat (' + JSON.stringify(po) + ')');
+    const dmn = await p.evaluate(() => { const n = document.getElementById('pbmDmNote'); return n && !n.hidden && n.offsetParent ? n.textContent : ''; });
+    ok(dmn === 'Direct messages are company records.', 'A23b a direct message thread says at the top: "Direct messages are company records." (' + dmn + ')');
     // ---- edit own message (24 h) ----
     await p.evaluate((id) => pbMsgOpenChat(id), J1); await p.waitForTimeout(1500);
     const mine = await p.evaluate(() => { const b = [...document.querySelectorAll('#pbmMsgs .pbm-m.mine .more')]; return b.length ? +b[0].dataset.seq : null; });
@@ -145,6 +147,7 @@ const shot = async (p, n) => { try { fs.mkdirSync(OUT, { recursive: true }); awa
     ok(/Pipelayers are not in this chat/.test(line), 'B2 the office is told pipelayers are not in the chat (' + line + ')');
     await p.evaluate(() => pbMsgOpenInfo()); await p.waitForTimeout(1500);
     const i0 = await p.evaluate(() => ({ sw: (() => { const s = document.getElementById('pbmIncl'); return s ? { on: s.checked } : null; })(), hist: /Pipelayers see/.test(document.getElementById('pbmInfoBody').innerText), arch: [...document.querySelectorAll('#pbmInfoBody button')].map(x => x.textContent.trim()) }));
+    ok((await p.evaluate(() => { const n = document.getElementById('pbmDmNote'); return !n || n.hidden; })), 'B2b no "company records" line on a job chat');
     ok(i0.sw && i0.sw.on === false && !i0.hist, 'B3 the office sees "Include pipelayers" OFF (default), no history choice yet (' + JSON.stringify(i0.sw) + ')');
     ok(i0.arch.includes('Download') && i0.arch.includes('Save archive now') && i0.arch.includes('Close chat') && i0.arch.includes('Add a person') && i0.arch.includes('Take off'), 'B4 office tools: Download, Save archive now, Close chat, Add a person, Take off (' + JSON.stringify(i0.arch) + ')');
     const swH = await size(p, 'label[for="pbmIncl"]');
@@ -161,6 +164,13 @@ const shot = async (p, n) => { try { fs.mkdirSync(OUT, { recursive: true }); awa
     const log2 = await p.evaluate(() => document.querySelector('.pbm-log').innerText);
     ok(st2.p_pipelayer_history === 'all' && st2.p_include_pipelayers === true && /set Pipelayers see: Whole chat/.test(log2), 'B9 Whole chat chosen, logged (' + JSON.stringify(st2) + ')');
     await shot(p, 'b_info_on');
+    await p.evaluate(() => { window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; });
+    await p.evaluate(() => { const b = [...document.querySelectorAll('#pbmInfoBody button')].find(x => x.textContent.trim() === 'Download'); b.click(); }); await p.waitForTimeout(1200);
+    const dl = await calls(p, 'pb_msg_archive_download');
+    ok(dl.length === 1 && dl[0].p_archive === 'ar1' && /x-Job-24-017-chat\.zip$/.test(dl[0].p_path), 'B9b Download asks the server first (logged), with the archive and file (' + JSON.stringify(dl) + ')');
+    await p.evaluate(() => { window.__msgSrv.rule = { pms: 'all', foremen: 'worked' }; }); await p.evaluate(() => pbMsgOpenInfo()); await p.waitForTimeout(1500);
+    const who = await p.evaluate(() => (document.getElementById('pbmWho') || {}).textContent || '');
+    ok(/Nobody is assigned to this job, so the foremen who worked it in the last 120 days are in\./.test(who) && /No PM or super is assigned to this job, so every PM and super is in\./.test(who), 'B9c nobody assigned: Chat info says the fallback (' + who + ')');
     // the yellow rule on Info: no solid yellow anywhere (nothing waiting for a decision)
     const yel = await p.evaluate(() => [...document.querySelectorAll('#screen-msgInfo *')].filter(e => e.offsetParent && /rgb\((24[0-9]|25[0-5]), (1[7-9][0-9]|20[0-9]), ([0-8]?[0-9])\)/.test(getComputedStyle(e).backgroundColor)).map(e => e.tagName + '.' + e.className + ':' + e.textContent.trim().slice(0, 20)));
     ok(yel.filter(x => !/pb-fb-pill/.test(x)).length === 0, 'B10 the yellow rule: nothing decorative in yellow on Info (' + JSON.stringify(yel.slice(0, 4)) + ')');
@@ -168,6 +178,14 @@ const shot = async (p, n) => { try { fs.mkdirSync(OUT, { recursive: true }); awa
     await p.evaluate(() => pbMsgClose(true)); await p.waitForTimeout(400);
     const cm = await H.modal(); await H.modalClick('Keep Open'); await p.waitForTimeout(300);
     ok(/Close this chat\?/.test(cm || '') && (await calls(p, 'pb_msg_close')).length === 0, 'B11 Close chat asks first; Keep Open does nothing');
+    await p.evaluate(() => pbMsgOpenList()); await p.waitForTimeout(1200);
+    const drb = await p.evaluate(() => { const b = document.getElementById('pbmDmRecBtn'); return !!b && !b.hidden && !!b.offsetParent; });
+    await p.evaluate(() => pbMsgDmRecords()); await p.waitForTimeout(1200);
+    const drt = await p.evaluate(() => document.getElementById('pbmDmRec').innerText.replace(/\s+/g, ' '));
+    ok(drb && /Mike Ruiz · Luis Ortega/.test(drt) && /Download/.test(drt) && /Save archive/.test(drt) && /cannot read it here/.test(drt), 'B10b the company account: "Direct messages (company records)" lists threads by names and counts with Save archive / Download (' + drt.slice(0, 120) + ')');
+    await p.evaluate(() => { const b = [...document.querySelectorAll('#pbmDmRec button')].find(x => x.textContent.trim() === 'Download'); b.click(); }); await p.waitForTimeout(1200);
+    const dl2 = (await calls(p, 'pb_msg_archive_download')).slice(-1)[0] || {};
+    ok(dl2.p_archive === 'ar9', 'B10c a direct-message download is logged first too (' + JSON.stringify(dl2) + ')');
     // message settings: quiet hours defaults, retention for the company account
     await p.evaluate(() => pbMsgOpenSettings()); await p.waitForTimeout(1500);
     const ms = await p.evaluate(() => ({ f: document.getElementById('pbmQuietFrom').value, t: document.getElementById('pbmQuietTo').value, q: document.getElementById('pbmPrefQuiet').checked, ret: !document.getElementById('pbmRetSection').hidden, sel: (document.querySelector('#pbmRetToggle button.active') || {}).textContent }));
@@ -191,11 +209,12 @@ const shot = async (p, n) => { try { fs.mkdirSync(OUT, { recursive: true }); awa
   { const { b, p, H } = await boot('pipelayer');
     await p.evaluate(() => pbMsgOpenList()); await p.waitForTimeout(1500);
     const rows = await p.evaluate(() => [...document.querySelectorAll('#pbmList .pbm-row')].map(r => r.innerText.replace(/\s+/g, ' ')));
+    ok(await p.evaluate(() => { const b = document.getElementById('pbmDmRecBtn'); return !b || b.hidden; }), 'C0 only the company account sees "Direct messages (company records)"');
     ok(rows.length === 1 && /Brandon Jones/.test(rows[0]), 'C1 a pipelayer (job chat not including pipelayers) sees only the direct message (' + JSON.stringify(rows) + ')');
     await p.evaluate(() => pbMsgNewToggle(true)); await p.waitForTimeout(1500);
     await p.evaluate(() => pbMsgOpenJob('24-020')); await p.waitForTimeout(1500);
     const m = await H.modal();
-    ok(/Only the office or a foreman who has worked this job can start its chat/.test(m || ''), 'C2 a pipelayer cannot start a job chat: told plainly (' + (m || '').slice(0, 80) + ')');
+    ok(/Only the office or a foreman assigned to this job can start its chat/.test(m || ''), 'C2 a pipelayer cannot start a job chat: told plainly (' + (m || '').slice(0, 80) + ')');
     if (m) await H.modalClick('OK');
     await p.evaluate(() => pbMsgOpenDm('u9', 'Luis Ortega')); await p.waitForTimeout(1500);
     const t = await p.evaluate(() => document.getElementById('pbmChatTitle').textContent);

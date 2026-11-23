@@ -110,6 +110,7 @@
       + (dms.length ? '<p class="pbm-h">Direct messages</p>' + dms.map(row).join('') : '')
       + (pend.length ? '<p class="pbm-h">Waiting to start</p>' + pend.map((x) => '<button type="button" class="pbm-row" data-key="' + pbMsgEsc(x.key) + '" onclick="pbMsgOpenKey(this.dataset.key)"><span class="tx"><span class="nm" data-noi18n>' + pbMsgEsc(x.title || 'New chat') + '</span><span class="sb">Waiting for signal</span></span></button>').join('') : '')
       + (!chats.length && !pend.length && pbMsg.list ? '<p class="pbm-line">No messages yet. Tap New message.</p>' : '');
+    const dr = pbMsgEl('pbmDmRecBtn'); if (dr) dr.hidden = !(pbMsg.list && pbMsg.list.me && pbMsg.list.me.is_owner);
   }
   // ---- opening ----
   window.pbMsgOpenList = function() {
@@ -159,7 +160,7 @@
     }
     const code = pbMsgCode(r);
     if (pbMsgNet(r)) { pbMsg.cur = { id: null, key, target, title }; pbGoto('msgChat'); pbMsgPaintChat(); return; }
-    pbAlert(code === 'pb:not_in_chat' ? (target.kind === 'job' ? 'Only the office or a foreman who has worked this job can start its chat.' : 'That person is not in your company.')
+    pbAlert(code === 'pb:not_in_chat' ? (target.kind === 'job' ? 'Only the office or a foreman assigned to this job can start its chat.' : 'That person is not in your company.')
       : code === 'pb:company_inactive' ? 'The company account is not active, so new chats cannot start.' : 'The chat could not be opened. Try again.', 'Messages');
   }
   window.pbMsgOpenJob = function(job) { pbMsgOpenTarget({ kind: 'job', job: String(job || '').trim() }, 'Job ' + String(job || '').trim()); };
@@ -209,9 +210,13 @@
     { const eb = pbMsgEl('pbmChatEyebrow'); eb.textContent = c && c.kind === 'dm' ? 'Direct message' : c && c.project ? c.project : 'Job chat'; if (c && c.kind !== 'dm' && c.project) eb.setAttribute('data-noi18n', ''); else eb.removeAttribute('data-noi18n'); }
     pbMsgEl('pbmInfoBtn').hidden = !cur.id;
     const line = pbMsgEl('pbmChatLine');
-    const office = !!(pbMsg.list && pbMsg.list.me && pbMsg.list.me.role === 'office');
+    const office = !!(c && c.admin); // the company account, managers and the PMs/supers in this chat
     line.textContent = cur.gone ? 'You are no longer in this chat.' : navigator.onLine === false ? 'No signal. Messages you write wait on this phone and send when there is signal.'
       : !cur.id ? 'This chat starts when the first message is sent.' : c && c.kind === 'job' && c.include_pipelayers === false && office ? 'Pipelayers are not in this chat. Change it in Info.' : '';
+    // Tommy, Nov 22 (46): every direct message thread says so at the top
+    { let dmn = pbMsgEl('pbmDmNote'); const isDm = (c && c.kind === 'dm') || (!cur.id && cur.target && cur.target.kind === 'dm');
+      if (isDm && !dmn) { dmn = document.createElement('p'); dmn.id = 'pbmDmNote'; dmn.className = 'pbm-dmnote'; dmn.textContent = 'Direct messages are company records.'; box.parentNode.insertBefore(dmn, box); }
+      if (dmn) dmn.hidden = !isDm; }
     const msgs = (x && x.msgs) || [];
     const pend = pbMsg.out.filter((o) => (cur.id && o.chat === cur.id) || (cur.key && o.key === cur.key));
     const older = pbMsgEl('pbmOlder'); older.hidden = !(cur.id && msgs.length >= 50 && pbMsg.older !== 'none' && msgs[0].seq > ((c && c.from_seq) || 0) + 1);
@@ -374,7 +379,7 @@
   // ---- edit / delete (need signal: the server keeps every version) ----
   window.pbMsgMore = function(seq) {
     const cur = pbMsg.cur, x = cur && pbMsg.chats[cur.id], m = x && x.msgs.find((y) => y.seq === seq); if (!m) return;
-    const office = !!(pbMsg.list && pbMsg.list.me && pbMsg.list.me.role === 'office');
+    const office = !!(x.chat && x.chat.admin);
     const b = [];
     if (pbMsgCanEdit(m)) b.push({ label: 'Edit', onClick: () => pbMsgEditStart(m) });
     if (!m.deleted && (m.mine || office)) b.push({ label: 'Delete', danger: true, onClick: () => pbMsgDelete(m) });
@@ -435,7 +440,13 @@
     const people = (I.people || []).filter((p) => p.state === 'in');
     const out = (I.people || []).filter((p) => p.state !== 'in');
     let h = '';
-    h += '<section class="pbm-sec" aria-labelledby="pbmPplH"><h2 id="pbmPplH">People in this chat (' + people.length + ')</h2>'
+    const R = I.rule || null;
+    const who = c.kind !== 'job' || !R ? '' : '<p class="pb-help" id="pbmWho">'
+      + (R.foremen === 'assigned' && R.pms === 'assigned' ? 'Everyone assigned to this job is in, with the company account and managers.'
+        : [R.foremen === 'worked' ? 'Nobody is assigned to this job, so the foremen who worked it in the last 120 days are in.' : 'The foremen assigned to this job are in.',
+           R.pms === 'all' ? 'No PM or super is assigned to this job, so every PM and super is in.' : 'The PMs and supers assigned to this job are in.',
+           'The company account and managers are always in.'].join(' ')) + '</p>';
+    h += '<section class="pbm-sec" aria-labelledby="pbmPplH"><h2 id="pbmPplH">People in this chat (' + people.length + ')</h2>' + who
       + people.map((p) => '<div class="pbm-person"><span class="tx"><span data-noi18n>' + pbMsgEsc(p.name) + '</span> <span class="rl">' + pbMsgEsc(PB_MSG_ROLE[p.role] || '') + '</span></span>'
         + (mg && c.kind === 'job' && p.role !== 'office' && p.uid !== uid ? '<button type="button" class="pbm-btn" data-uid="' + pbMsgEsc(p.uid) + '" data-name="' + pbMsgEsc(p.name) + '" onclick="pbMsgPerson(this.dataset.uid, false, this.dataset.name)">Take off</button>' : '') + '</div>').join('')
       + (mg && out.length ? '<p class="pbm-h">Not in it now</p>' + out.map((p) => '<div class="pbm-person"><span class="tx"><span data-noi18n>' + pbMsgEsc(p.name) + '</span> <span class="rl">' + pbMsgEsc(PB_MSG_ROLE[p.role] || '') + '</span></span><button type="button" class="pbm-btn" data-uid="' + pbMsgEsc(p.uid) + '" data-name="' + pbMsgEsc(p.name) + '" onclick="pbMsgPerson(this.dataset.uid, true, this.dataset.name)">Add</button></div>').join('') : '')
@@ -448,16 +459,16 @@
               + '<button type="button" data-val="from_added" aria-pressed="' + (c.pipelayer_history !== 'all') + '" class="' + (c.pipelayer_history !== 'all' ? 'active' : '') + '" onclick="pbMsgSetHist(\'from_added\')">From when added</button>'
               + '<button type="button" data-val="all" aria-pressed="' + (c.pipelayer_history === 'all') + '" class="' + (c.pipelayer_history === 'all' ? 'active' : '') + '" onclick="pbMsgSetHist(\'all\')">Whole chat</button></div>'
             : '<p>Pipelayers see: ' + (c.pipelayer_history === 'all' ? 'the whole chat' : 'messages from when they were added') + '.</p>') : '')
-        + '<p class="pb-help">Foremen on this job and the office are always in.' + (mg ? ' Only the office changes this.' : '') + '</p></section>';
+        + '<p class="pb-help">' + (mg ? 'Only the office changes this.' : '') + '</p></section>';
     }
     h += '<section class="pbm-sec"><label class="pb-set-switch pbm-sw" for="pbmMute"><span>Mute this chat</span><input type="checkbox" role="switch" id="pbmMute"' + (c.muted ? ' checked' : '') + ' onchange="pbMsgMute(this.checked)"></label><p class="pb-help">No alerts from this chat on your phone. Messages still arrive.</p></section>';
-    if (I.office && c.kind === 'job') {
+    if ((I.office && c.kind === 'job') || (c.kind === 'dm' && I.archives)) {
       const ar = (I.archives || []);
       h += '<section class="pbm-sec" aria-labelledby="pbmArH"><h2 id="pbmArH">Archive</h2><p class="pb-help">The whole chat in one file (text and photos) to keep. Saved by itself when the chat closes.</p>'
         + ar.map((a) => '<div class="pbm-person"><span class="tx"><span data-noi18n>' + pbMsgEsc(pbMsgTime(a.at)) + ' · </span>' + (a.state === 'done' ? pbMsgEsc((Math.max(0.1, (a.bytes || 0) / 1048576)).toFixed(1) + ' MB') : a.state === 'failed' ? 'Failed' : 'Being made') + '</span>'
-          + (a.state === 'done' ? (a.files || []).map((f, i) => '<button type="button" class="pbm-btn" data-path="' + pbMsgEsc(f.path) + '" onclick="pbMsgDownload(this.dataset.path)">Download' + ((a.files || []).length > 1 ? ' ' + (i + 1) : '') + '</button>').join('') : '') + '</div>').join('')
+          + (a.state === 'done' ? (a.files || []).map((f, i) => '<button type="button" class="pbm-btn" data-path="' + pbMsgEsc(f.path) + '" data-ar="' + pbMsgEsc(a.id) + '" onclick="pbMsgDownload(this.dataset.path, this.dataset.ar)">Download' + ((a.files || []).length > 1 ? ' ' + (i + 1) : '') + '</button>').join('') : '') + '</div>').join('')
         + '<div class="pbm-actions"><button type="button" class="pbm-btn" onclick="pbMsgArchiveNow()">Save archive now</button>'
-        + '<button type="button" class="pbm-btn" onclick="pbMsgClose(' + (c.closed ? 'false' : 'true') + ')">' + (c.closed ? 'Reopen chat' : 'Close chat') + '</button></div></section>';
+        + (c.kind === 'job' ? '<button type="button" class="pbm-btn" onclick="pbMsgClose(' + (c.closed ? 'false' : 'true') + ')">' + (c.closed ? 'Reopen chat' : 'Close chat') + '</button>' : '') + '</div></section>';
     }
     const log = I.log || [];
     if (log.length) h += '<section class="pbm-sec" aria-labelledby="pbmLogH"><h2 id="pbmLogH">Changes</h2><ul class="pbm-log">' + log.slice(0, 30).map((l) => '<li><span data-noi18n>' + pbMsgEsc(pbMsgLogText(l)) + '</span> <span data-noi18n>· ' + pbMsgEsc(pbMsgTime(l.at)) + '</span></li>').join('') + '</ul></section>';
@@ -491,12 +502,37 @@
     if (!close) { pbMsgInfoCall('pb_msg_close', { p_closed: false }); return; }
     pbConfirm('Close this chat? Nobody can write in it until the office reopens it. An archive file of the whole chat is saved.', () => pbMsgInfoCall('pb_msg_close', { p_closed: true }), 'Close Chat', { no: 'Keep Open', yes: 'Close Chat' });
   };
-  window.pbMsgDownload = async function(path) {
+  window.pbMsgDownload = async function(path, archiveId) {
     if (!sbClient || !sbClient.storage || navigator.onLine === false) { pbAlert('No signal. Downloading needs signal.', 'Archive'); return; }
+    // every download is logged first (Tommy, Nov 22); the file only opens after that
+    const uid = pbMsgUid(); const lg = await pbPermitRpc('pb_msg_archive_download', { p_archive: archiveId, p_path: path, p_expect_uid: uid }, 15000);
+    if (!(lg && !lg.error && lg.data && lg.data.ok)) { pbAlert(pbMsgCode(lg) === 'pb:not_office' ? 'Only the office can download this archive.' : 'The archive could not be opened. Try again.', 'Archive'); return; }
     let r = null; try { r = await sbClient.storage.from('msg-archives').createSignedUrl(path, 600, { download: String(path).split('/').pop() }); } catch (e) { r = null; }
     const u = r && !r.error && r.data && r.data.signedUrl;
     if (!u) { pbAlert('The archive could not be opened. Try again.', 'Archive'); return; }
     window.open(u, '_blank', 'noopener');
+  };
+  // ---- direct messages as company records (the company account only; names and counts, never the text) ----
+  window.pbMsgDmRecords = async function() {
+    const el = pbMsgEl('pbmDmRec'), uid = pbMsgUid(); if (!el || !uid) return;
+    el.hidden = !el.hidden; if (el.hidden) return;
+    el.innerHTML = '<p class="pbm-line">Loading…</p>';
+    if (!(await pbMsgCanAsk(uid))) { el.innerHTML = '<p class="pbm-line">No signal.</p>'; return; }
+    const r = await pbPermitRpc('pb_msg_dm_records', { p_expect_uid: uid }, 20000);
+    if (!(r && !r.error && r.data && r.data.ok)) { el.innerHTML = '<p class="pbm-line">Could not be loaded. Try again.</p>'; return; }
+    const T = r.data.threads || [];
+    el.innerHTML = '<p class="pb-help">Direct messages between people in the company. You can save and download a thread as an archive file; you cannot read it here. Each download is logged and the two people see it in the chat\u2019s Changes.</p>'
+      + (T.length ? T.map((t) => { const a = (t.archives || []).find((x) => x.state === 'done'), w = (t.archives || []).find((x) => x.state === 'queued' || x.state === 'working');
+          return '<div class="pbm-person"><span class="tx"><span data-noi18n>' + pbMsgEsc(t.a + ' · ' + t.b) + '</span> <span class="rl" data-noi18n>' + pbMsgEsc(t.messages + ' · ' + (t.last_at ? pbMsgTime(t.last_at) : '')) + '</span></span>'
+            + (a ? (a.files || []).map((f) => '<button type="button" class="pbm-btn" data-path="' + pbMsgEsc(f.path) + '" data-ar="' + pbMsgEsc(a.id) + '" onclick="pbMsgDownload(this.dataset.path, this.dataset.ar)">Download</button>').join('') : '')
+            + (w ? '<span class="rl">Being made</span>' : '<button type="button" class="pbm-btn" data-chat="' + pbMsgEsc(t.id) + '" onclick="pbMsgDmArchive(this.dataset.chat)">Save archive</button>') + '</div>'; }).join('')
+        : '<p class="pbm-line">No direct messages yet.</p>');
+  };
+  window.pbMsgDmArchive = async function(id) {
+    const uid = pbMsgUid(); if (!(await pbMsgCanAsk(uid))) { pbAlert('No signal. Try again when you have signal.', 'Archive'); return; }
+    const r = await pbPermitRpc('pb_msg_archive_request', { p_chat: id, p_expect_uid: uid }, 20000);
+    if (r && !r.error && r.data && r.data.ok) { pbAlert('The archive is being made. It shows here with a Download button in a few minutes.', 'Archive'); const el = pbMsgEl('pbmDmRec'); if (el) { el.hidden = true; window.pbMsgDmRecords(); } }
+    else pbAlert(pbMsgCode(r) === 'pb:not_office' ? 'Only the company account can save direct messages.' : 'That could not be changed. Try again.', 'Archive');
   };
   // ---- message settings ----
   window.pbMsgOpenSettings = function() { pbGoto('msgSettings'); pbMsgPaintSettings(); pbMsgRefresh(true).then(pbMsgPaintSettings).catch(() => {}); };
@@ -538,7 +574,7 @@
   window.pbScreenTab = (inner => function(name) { return /^(messages|msgChat|msgInfo|msgSettings)$/.test(String(name)) ? 'home' : inner.apply(this, arguments); })(window.pbScreenTab);
   window.pbScreenHooks.push((name) => {
     try {
-      if (name === 'home') { pbMsgPaintHome(); pbMsgRefresh(false).catch(() => {}); }
+      if (name === 'home') { pbMsgPaintHome(); if (pbMsg.loaded) pbMsgRefresh(false).catch(() => {}); }
       if (name === 'messages') pbMsgPaintList();
       if (name === 'msgChat') pbMsgPaintChat();
       if (name !== 'msgChat' && pbMsg.editing) { pbMsg.editing = null; const t = pbMsgEl('pbmText'); if (t) t.value = ''; const e = pbMsgEl('pbmEditing'); if (e) e.hidden = true; }
@@ -547,7 +583,8 @@
   });
   window.pbAccountLoadHooks.push((uid) => {
     pbMsg = Object.assign({}, pbMsg, { uid: null, loaded: false, list: null, chats: {}, out: [], photos: {}, cur: null, at: 0, draftPhotos: [], editing: null });
-    setTimeout(() => { const u = pbMsgUid(); if (!u) return; pbMsgLoad(u).then(() => { pbMsgPaintAll(); return pbMsgRefresh(true); }).catch(() => {}); }, 3500);
+    // after the account's own start-up calls (8 s): messages never compete with records loading on a weak signal
+    setTimeout(() => { const u = pbMsgUid(); if (!u) return; pbMsgLoad(u).then(() => { pbMsgPaintAll(); return pbMsgRefresh(true); }).catch(() => {}); }, 8000);
   });
   window.addEventListener('online', () => { setTimeout(() => { pbMsgFlush(); pbMsgRefresh(true).catch(() => {}); }, 2500); });
   window.addEventListener('offline', () => { try { pbMsgPaintAll(); } catch (e) {} });

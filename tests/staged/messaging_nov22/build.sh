@@ -1,10 +1,12 @@
 #!/bin/sh
-# messaging_nov22: company messages on top of the r17.16 candidate A (tests/staged/r1716_candidate/work/A/index.src.html, not edited).
+# messaging_nov22: company messages on top of the r17.16 FINAL build (tests/staged/r1716_final/work/index.src.html, not edited;
+# rebased Nov 22 from r1716_candidate A, where it was built first: the patch applies to both unchanged).
+# BASE=<folder with index.src.html and sw.js> to build on another base (e.g. BASE=$S/r1716_candidate/work/A).
 #   sh tests/staged/messaging_nov22/build.sh  ->  work/index.src.html, work/build/ (publish), work/build_hooks/ (tests). work/ is git-ignored.
 set -e
 ROOT=/home/claude/index.html-
 S=$ROOT/tests/staged
-D=$S/messaging_nov22; W=$D/work; A=$S/r1716_candidate/work/A
+D=$S/messaging_nov22; W=$D/work; A=${BASE:-$S/r1716_final/work}
 rm -rf $W/build $W/build_hooks; mkdir -p $W/steps
 cp $A/index.src.html $W/steps/s00.html
 python3 $D/patches/m1_messages.py $W/steps/s00.html $W/index.src.html
