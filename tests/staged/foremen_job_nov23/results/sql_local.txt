@@ -1,0 +1,21 @@
+# foremen_job_nov23 SQL, local throwaway Postgres 16 (2026-11-23T13:46:49Z). Never live.
+## sql/local/run_local.sh
+== replica functions with the live md5: 21 of 21
+== block_t01: ERROR:  RESULT: 25 pass, 0 fail  [app calls ran as role authenticated]
+== nothing kept by the block: job_foremen table f, users 0, audit 0
+== apply x2: no errors
+== assigned on job K-1 as the company account (role authenticated): 1 row
+== undo: psql:/tmp/pbfmj_pg/99_undo_01.sql:24: NOTICE:  undo 01: audit check left allowing job_foremen (1 audit rows are permanent) undo 01 done (assignments kept in pb_pm.job_foremen: 1 rows) 
+== left after undo: functions 0, trigger 0, audit check CHECK ((action = ANY (ARRAY['job_pms'::text, 'settings'::text, 'job_foremen'::text])))
+== live functions still the live md5: 21 of 21
+== apply again: no errors; K-1 list: 1 foreman
+== block_t01 on the applied state: ERROR:  RESULT: 25 pass, 0 fail  [app calls ran as role authenticated]
+
+## sql/local/with_messaging.sh (messaging_nov22 block_t01 on a DB with foremen 01 applied for real)
+== foremen 01 applied on the messaging DB: ok
+== messaging block_t01 with foremen 01: ERROR:  RESULT: 80 pass, 0 fail 
+
+## mutation check (that the block can fail), run Nov 23 on the same replica, not kept
+- execute on pb_job_foremen_get revoked from authenticated -> RESULT: 15 pass, 10 fail ("permission denied for function pb_job_foremen_get")
+- pb_job_foremen_set made SECURITY INVOKER -> RESULT: 11 pass, 14 fail ("permission denied for schema pb_prod")
+- trigger company_members_foreman_sync dropped -> RESULT: 22 pass, 3 fail (1f, 4a, 4b)

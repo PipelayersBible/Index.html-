@@ -1,0 +1,44 @@
+// messaging_nov22: a fake pb_msg_* server inside the page (init script). The real permission rules are tested in SQL
+// (sql/tests, as role authenticated); this stands in for the answers so the app's screens, outbox and alerts can be tested.
+// module.exports(role) -> init script text. role: 'foreman' | 'office' | 'pipelayer' | 'removed'
+module.exports = (role) => `(function(){
+  const ME='00000000-0000-4000-8000-000000000001', CO='11111111-1111-4111-8111-111111111111';
+  const J1='aaaaaaaa-0000-4000-8000-000000000001', D1='aaaaaaaa-0000-4000-8000-000000000002';
+  const ROLE=${JSON.stringify(role)};
+  const now=()=>new Date().toISOString(), ago=(m)=>new Date(Date.now()-m*60000).toISOString();
+  const S=window.__msgSrv={role:ROLE,calls:[],fail:{},chats:{},msgs:{},log:{},prefs:{push:true,words:true,quiet_on:true,quiet_from:'19:00',quiet_to:'06:00'},retention:'forever'};
+  S.chats[J1]={id:J1,kind:'job',job_number:'24-017',job_key:'24-017',title:'Job 24-017',project:'Wildomar Sewer',other:null,last_seq:3,last_at:ago(5),closed:false,unread:2,read_seq:1,muted:false,include_pipelayers:false,pipelayer_history:'from_added',from_seq:-1};
+  S.chats[D1]={id:D1,kind:'dm',job_number:null,title:'Brandon Jones',project:null,other:'4fc9c8ae-2951-4c2b-8a8b-f5f09236a84e',other_in:true,last_seq:1,last_at:ago(60),closed:false,unread:0,read_seq:1,muted:false,from_seq:-1};
+  const M=(chat,seq,author,name,body,extra)=>Object.assign({id:'m-'+chat.slice(-1)+'-'+seq,seq,client_id:'c'+seq+'xxxxxxxx',author,author_name:name,mine:author===ME,at:ago(60-seq*10),phone_at:null,edited:false,version:1,deleted:false,body,photos:[]},extra||{});
+  S.msgs[J1]=[M(J1,1,'u2','Mike Ruiz','Pipe truck at 7. Need two on the loader.'),M(J1,2,'u3','Brandon Jones','On it',{edited:true,version:2}),M(J1,3,'u2','Mike Ruiz',null,{deleted:true})];
+  S.msgs[D1]=[M(D1,1,'4fc9c8ae-2951-4c2b-8a8b-f5f09236a84e','Brandon Jones','Can you bring the laser?')];
+  S.log[J1]=[{at:ago(30),by:'Tommy Fontaine',what:'started',target:null,old:null,new:null}];
+  const office=ROLE==='office', vis=(c)=>ROLE==='removed'?false:(c.kind==='dm'||ROLE!=='pipelayer'||c.include_pipelayers);
+  const err=(m)=>({__error:m});
+  const last=(c)=>{const a=S.msgs[c.id]||[];const m=a[a.length-1];return m?{seq:m.seq,at:m.at,author_name:m.author_name,mine:m.mine,deleted:m.deleted,photos:(m.photos||[]).length,preview:m.deleted?null:String(m.body||'').slice(0,60)}:null;};
+  const cj=(c)=>Object.assign({},c,{last:last(c),admin:office&&c.kind==='job'});
+  const log=(n,a)=>{S.calls.push([n,JSON.parse(JSON.stringify(a||{}))]);const f=S.fail[n];if(f)return typeof f==='function'?f(a):err(f);return null;};
+  const R={
+    pb_msg_list:(a)=>log('pb_msg_list',a)||(ROLE==='removed'?{ok:true,member:false,chats:[],server_at:now()}:{ok:true,member:true,me:{uid:ME,role:office?'office':ROLE,company_id:CO,name:'Tommy Fontaine',can_retention:office,is_owner:office},prefs:S.prefs,retention:S.retention,chats:Object.values(S.chats).filter(vis).map(cj),server_at:now()}),
+    pb_msg_people:(a)=>log('pb_msg_people',a)||{ok:true,people:[{uid:'4fc9c8ae-2951-4c2b-8a8b-f5f09236a84e',name:'Brandon Jones',role:'foreman'},{uid:'u9',name:'Luis Ortega',role:'pipelayer'}]},
+    pb_prod_member_jobs:(a)=>log('pb_prod_member_jobs',a)||{jobs:[{job_key:'24-017',job_number:'24-017'},{job_key:'24-020',job_number:'24-020'}],server_at:now()},
+    pb_msg_open_job:(a)=>{const e=log('pb_msg_open_job',a);if(e)return e;if(ROLE==='pipelayer')return err('pb:not_in_chat');const k=String(a.p_job_number).toLowerCase();let c=Object.values(S.chats).find(x=>x.job_key===k);if(!c){const id='aaaaaaaa-0000-4000-8000-0000000000'+(10+Object.keys(S.chats).length);c=S.chats[id]={id,kind:'job',job_number:a.p_job_number,job_key:k,title:'Job '+a.p_job_number,last_seq:0,last_at:null,closed:false,unread:0,read_seq:0,muted:false,include_pipelayers:false,pipelayer_history:'from_added',from_seq:-1};S.msgs[id]=[];}return {ok:true,chat:cj(c)};},
+    pb_msg_open_dm:(a)=>{const e=log('pb_msg_open_dm',a);if(e)return e;let c=Object.values(S.chats).find(x=>x.kind==='dm'&&x.other===a.p_user);if(!c){const id='aaaaaaaa-0000-4000-8000-0000000000'+(10+Object.keys(S.chats).length);c=S.chats[id]={id,kind:'dm',title:'Luis Ortega',other:a.p_user,other_in:true,last_seq:0,last_at:null,closed:false,unread:0,read_seq:0,muted:false,from_seq:-1};S.msgs[id]=[];}return {ok:true,chat:cj(c)};},
+    pb_msg_fetch:(a)=>{const e=log('pb_msg_fetch',a);if(e)return e;const c=S.chats[a.p_chat];if(!c||!vis(c))return err('pb:not_in_chat');let ms=(S.msgs[c.id]||[]).filter(m=>m.seq>(a.p_after_seq==null?-1:a.p_after_seq)&&(a.p_before_seq==null||m.seq<a.p_before_seq));return {ok:true,chat:cj(c),messages:ms.slice(-(a.p_limit||100)),can_post:!c.closed,why_not:c.closed?'pb:chat_closed':null,server_at:now()};},
+    pb_msg_send:(a)=>{const e=log('pb_msg_send',a);if(e)return e;const c=S.chats[a.p_chat];if(!c)return err('pb:not_found');const have=(S.msgs[c.id]||[]).find(m=>m.client_id===a.p_client_id&&m.mine);if(have)return {ok:true,again:true,message:have};c.last_seq++;c.last_at=now();const m={id:'m-new-'+c.last_seq,seq:c.last_seq,client_id:a.p_client_id,author:ME,author_name:'Tommy Fontaine',mine:true,at:now(),phone_at:a.p_phone_at,edited:false,version:1,deleted:false,body:a.p_body,photos:(a.p_photos||[]).map(p=>({path:p.path,w:p.w,h:p.h,bytes:1000}))};S.msgs[c.id].push(m);return {ok:true,message:m};},
+    pb_msg_read:(a)=>{const e=log('pb_msg_read',a);if(e)return e;const c=S.chats[a.p_chat];if(c){c.read_seq=Math.max(c.read_seq,a.p_seq);c.unread=0;}return {ok:true};},
+    pb_msg_edit:(a)=>{const e=log('pb_msg_edit',a);if(e)return e;for(const k in S.msgs){const m=S.msgs[k].find(x=>x.id===a.p_message);if(m){m.body=a.p_body;m.edited=true;m.version++;return {ok:true,message:m};}}return err('pb:not_found');},
+    pb_msg_delete:(a)=>{const e=log('pb_msg_delete',a);if(e)return e;for(const k in S.msgs){const m=S.msgs[k].find(x=>x.id===a.p_message);if(m){m.deleted=true;m.body=null;m.version++;return {ok:true,message:m};}}return err('pb:not_found');},
+    pb_msg_info:(a)=>{const e=log('pb_msg_info',a);if(e)return e;const c=S.chats[a.p_chat];return {ok:true,chat:cj(c),can_manage:office&&c.kind==='job',office,rule:c.kind==='job'?(S.rule||{pms:'assigned',foremen:'assigned'}):null,people:[{uid:ME,name:'Tommy Fontaine',role:office?'office':ROLE,state:'in'},{uid:'u2',name:'Mike Ruiz',role:'foreman',state:'in'},{uid:'u7',name:'Jesse Hart',role:'pipelayer',state:c.include_pipelayers?'in':'not_now'}],log:S.log[c.id]||[],archives:office?[{id:'ar1',state:'done',reason:'office',at:ago(100),files:[{path:CO+'/keep/'+c.id+'/x-Job-24-017-chat.zip',bytes:3500000}],bytes:3500000}]:null,closed_at:null};},
+    pb_msg_set:(a)=>{const e=log('pb_msg_set',a);if(e)return e;if(!office)return err('pb:not_office');const c=S.chats[a.p_chat];if(c.include_pipelayers!==a.p_include_pipelayers)S.log[c.id].unshift({at:now(),by:'Tommy Fontaine',what:'include_pipelayers',old:c.include_pipelayers,new:a.p_include_pipelayers});if(c.pipelayer_history!==a.p_pipelayer_history)S.log[c.id].unshift({at:now(),by:'Tommy Fontaine',what:'pipelayer_history',old:c.pipelayer_history,new:a.p_pipelayer_history});c.include_pipelayers=a.p_include_pipelayers;c.pipelayer_history=a.p_pipelayer_history;return {ok:true,chat:cj(c)};},
+    pb_msg_mute:(a)=>{const e=log('pb_msg_mute',a);if(e)return e;S.chats[a.p_chat].muted=!!a.p_muted;return {ok:true};},
+    pb_msg_person:(a)=>log('pb_msg_person',a)||{ok:true},
+    pb_msg_prefs_set:(a)=>{const e=log('pb_msg_prefs_set',a);if(e)return e;S.prefs={push:a.p_push,words:a.p_words,quiet_on:a.p_quiet_on,quiet_from:a.p_quiet_from,quiet_to:a.p_quiet_to};return {ok:true};},
+    pb_msg_company_set:(a)=>{const e=log('pb_msg_company_set',a);if(e)return e;if(!office)return err('pb:not_company_account');S.retention=a.p_retention;return {ok:true,retention:a.p_retention};},
+    pb_msg_close:(a)=>{const e=log('pb_msg_close',a);if(e)return e;S.chats[a.p_chat].closed=!!a.p_closed;return {ok:true};},
+    pb_msg_archive_request:(a)=>{const e=log('pb_msg_archive_request',a);if(e)return e;const c=S.chats[a.p_chat];if(c&&c.kind==='dm'&&!office)return err('pb:not_office');return {ok:true,archive_id:'ar2'};},
+    pb_msg_archive_download:(a)=>{const e=log('pb_msg_archive_download',a);if(e)return e;if(!office)return err('pb:not_office');S.downloads=(S.downloads||[]).concat([a.p_path]);return {ok:true,path:a.p_path};},
+    pb_msg_dm_records:(a)=>{const e=log('pb_msg_dm_records',a);if(e)return e;if(!office)return err('pb:not_company_account');return {ok:true,threads:[{id:'aaaaaaaa-0000-4000-8000-000000000099',a:'Mike Ruiz',b:'Luis Ortega',messages:42,last_at:ago(90),archives:[{id:'ar9',state:'done',at:ago(80),files:[{path:CO+'/keep/aaaaaaaa-0000-4000-8000-000000000099/x-Direct-message-chat.zip'}],bytes:2000}]}]};},
+  };
+  window.__rpcOverride=Object.assign(window.__rpcOverride||{},R);
+})();`;

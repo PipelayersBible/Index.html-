@@ -1,0 +1,27 @@
+PASS 1 "Foremen on this job" shows on the job page right under PMs & supers {"pm":true,"fm":true,"next":"pjFmSec","vis":true}
+PASS 2 heading "Foremen on this job"; the folded row shows the names (Foremen on this job / Dale Ortiz, Eli Banks)
+PASS 3 it loads with the job page (pb_job_foremen_get with the job number)
+PASS 4 opened: each foreman with email and since, and a Change Foremen button ["Dale Ortiz dale.ortiz@x.co · since Tue, Nov 10","Eli Banks eli.banks@x.co · since Thu, Nov 12"]
+PASS 5 Change shows every foreman of the company with a tick box (2 ticked), each row 44 px or taller [{"t":"Dale Ortiz dale.ortiz@x.co","c":true,"d":false,"h":48},{"t":"Eli Banks eli.banks@x.co","c":true,"d":false,"h":48},{"t":"Finn Cole finn.cole@x.co","c":false,"d":false,"h":48},{"t":"Gus Reyes gus.reyes@x.co","c":false,"d":false,"h":48}]
+PASS 6 Save sends the list on the version it read (2): Dale and Finn {"p_job_number":"26014","p_user_ids":["u-dale","u-finn"],"p_expect_uid":"00000000-0000-4000-8000-000000000001","p_expect_ver":2}
+PASS 7 "Saved. 2 foremen on this job." and the list shows Dale and Finn (Saved. 2 foremen on this job.)
+PASS 8 someone else added Gus meanwhile: Gus kept, Eli added, said so (Saved. 4 foremen on this job. Gus Reyes was added by someone else meanwhile and is kept.)
+PASS 9 refused as changed, re-applied (the other manager took Dale off, this one Gus) and saved on the new version [[12,["u-dale","u-finn","u-eli"]],[13,["u-finn","u-eli"]]]
+PASS 10 pb:owner_only: plain words, still editing (Only the owner, a PM or a superintendent can take another foreman off this job. Nothing was changed.)
+PASS 11 pb:not_foreman: plain words (Someone you picked isn’t a foreman of the company any more. Nothing was changed. Refresh and try again.)
+PASS 12 manager (not a PM/super): assigned foremen locked, the others can be added, a note says why ["u-dale:false:false","u-eli:true:true","u-finn:true:true","u-gus:false:false"]
+PASS 13 none assigned: "None assigned" and an Assign Foremen button
+PASS 14 no foremen in the company: says where to add them
+PASS 15 no signal: Change says "No signal. Assigning foremen needs signal." and nothing opens (Foremen  No signal. Assigning foremen needs signal.  OK)
+PASS 16 another job opened with no signal: "Loads with signal." (Loads with signal.)
+PASS 17 server not updated yet: "Assigning foremen isn’t ready on the company server yet." (Assigning foremen isn’t ready on the company server yet.)
+PASS 17b drawn as a card like PMs & supers, and hidden on the other tabs with it [{"same":true,"r":"14px"},{"fm":false,"pm":false,"tab":"waiting"}]
+PASS 17c Edit Job menu: "Foremen" right after "PMs & supers" ["pjCxEdit_plan","pjCxEdit_mat","pjCxEdit_trench","pjCxEdit_pms","pjCxEdit_fms","pjCxEdit_info","pjCxEdit_sched"]
+PASS 17d tapping it opens the Foremen editor on the Overview tab
+PASS 18 PMs & supers still shows as before (Ann · alerts go to them)
+PASS 19 every new line has Spanish ["Capataces en este trabajo","Asignar capataces","Cambiar capataces","Sin señal. Para asignar capataces se necesita señal.","Solo el dueño, un PM o un superintendente puede quitar a otro capataz de este trabajo. No se cambió nada."]
+PASS 20 at 400 px: nothing runs off the side, Change Foremen is 52 px tall []
+PASS 20 at 360 px: nothing runs off the side, Change Foremen is 52 px tall []
+PASS 21 someone who is no longer a foreman is marked "No longer a foreman"
+PASS 22 no page errors []
+RESULT PASS 26

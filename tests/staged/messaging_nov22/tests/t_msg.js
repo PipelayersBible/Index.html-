@@ -171,6 +171,12 @@ const shot = async (p, n) => { try { fs.mkdirSync(OUT, { recursive: true }); awa
     await p.evaluate(() => { window.__msgSrv.rule = { pms: 'all', foremen: 'worked' }; }); await p.evaluate(() => pbMsgOpenInfo()); await p.waitForTimeout(1500);
     const who = await p.evaluate(() => (document.getElementById('pbmWho') || {}).textContent || '');
     ok(/Nobody is assigned to this job, so the foremen who worked it in the last 120 days are in\./.test(who) && /No PM or super is assigned to this job, so every PM and super is in\./.test(who), 'B9c nobody assigned: Chat info says the fallback (' + who + ')');
+    await p.evaluate(() => { window.__msgSrv.rule = { pms: 'assigned', foremen: 'linked' }; }); await p.evaluate(() => pbMsgOpenInfo()); await p.waitForTimeout(1500);
+    const who2 = await p.evaluate(() => (document.getElementById('pbmWho') || {}).textContent || '');
+    ok(/No foremen are listed on the job page, so foremen with open inspections, crew runs or dailies on this job are in\./.test(who2) && /The PMs and supers assigned to this job are in\./.test(who2), 'B9d no Foremen list on the job page: Chat info says the older signs let foremen in (foremen_job_nov23) (' + who2 + ')');
+    await p.evaluate(() => { window.__msgSrv.rule = { pms: 'assigned', foremen: 'assigned' }; }); await p.evaluate(() => pbMsgOpenInfo()); await p.waitForTimeout(1500);
+    const who3 = await p.evaluate(() => (document.getElementById('pbmWho') || {}).textContent || '');
+    ok(/^Everyone assigned to this job is in, with the company account and managers\.$/.test(who3), 'B9e foremen and PMs both assigned: one line (' + who3 + ')');
     // the yellow rule on Info: no solid yellow anywhere (nothing waiting for a decision)
     const yel = await p.evaluate(() => [...document.querySelectorAll('#screen-msgInfo *')].filter(e => e.offsetParent && /rgb\((24[0-9]|25[0-5]), (1[7-9][0-9]|20[0-9]), ([0-8]?[0-9])\)/.test(getComputedStyle(e).backgroundColor)).map(e => e.tagName + '.' + e.className + ':' + e.textContent.trim().slice(0, 20)));
     ok(yel.filter(x => !/pb-fb-pill/.test(x)).length === 0, 'B10 the yellow rule: nothing decorative in yellow on Info (' + JSON.stringify(yel.slice(0, 4)) + ')');

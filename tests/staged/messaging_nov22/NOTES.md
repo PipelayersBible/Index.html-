@@ -189,4 +189,24 @@ intended; t99_removed fails as on the base. Golden updates (`test_updates/`, 3 f
 a copy of tests/: **3/3 pass** (`results/test_updates_verify.log`). The full 237 were not re-run after the 8 s change; the
 rig test (55/55) and the 7 were. Round 1 (on candidate A): pass 213, FAIL 9, all explained, kept in git history of this file.
 
+## Nov 23 update: foremen from the job page first (foremen_job_nov23)
+Decision 1 above is now built in `tests/staged/foremen_job_nov23` ("Foremen on this job" on the job page, table
+`pb_pm.job_foremen`). Changed here (originals kept in `foremen_job_nov23/messaging_before/`):
+- `sql/01_messaging.sql`: new `pb_msg.fm_listed` / `pb_msg.any_fm_listed` (read `pb_pm.job_foremen`; if the table isn't
+  there they answer false, so this file still works alone). A foreman is in a job chat by the FIRST rule that has anyone:
+  1. listed on the job page's Foremen list → only those listed; 2. else open inspection items, assigned crew runs or
+  office-filled dailies (the older signs) → those foremen; 3. else foremen who worked it in the last 120 days. An office add
+  still keeps a person in. Chat info's `rule.foremen` is now `assigned` (listed) | `linked` (older signs) | `worked`.
+- `sql/tests/t01.plpgsql`: 1j4 now expects `linked` (that job's foremen come in by their items); new 3t1-3t6 (list
+  first, older signs and 120-day fallback ignored while anyone is listed, back to them when the list empties, a stale row
+  for a non-foreman counts for nothing, and 3t6 the real `pb_job_foremen_set` save). Skipped with a note when the table or
+  function isn't on the server. `sql/local/stubs.sql` has the table's shape; `NOFM=1 sql/local/run_local.sh` drops it.
+- `patches/m1/messages.js` + Spanish: Chat info says for `linked`: "No foremen are listed on the job page, so foremen with
+  open inspections, crew runs or dailies on this job are in." `tests/t_msg.js` B9d/B9e.
+Results (`results/sql_local.txt`, `results/t_msg.txt`): block_t01 **79 pass, 0 fail** (3t6 skipped: no foremen functions
+in this stub DB); with foremen 01 applied for real (`foremen_job_nov23/sql/local/with_messaging.sh`) **80 pass, 0 fail**;
+without the table (NOFM=1) **74 pass, 0 fail**; t02 14, t03 4, t04 5; apply x2 and undo clean. App rig **57/57 pass**.
+Apply order on live: foremen_job_nov23 01 **before** messaging 01 (so block_t01 runs 3t1-3t6; it works either way).
+The full 237-test regression was not re-run for messaging (only Chat info words changed; t_msg covers them).
+
 ## DONE

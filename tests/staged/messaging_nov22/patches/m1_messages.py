@@ -81,6 +81,7 @@ ES = {
   "Only the company account can save direct messages.": "Solo la cuenta de la compañía puede guardar mensajes directos.", "Only the office can download this archive.": "Solo la oficina puede descargar este archivo.",
   "Everyone assigned to this job is in, with the company account and managers.": "Todos los asignados a este trabajo están, con la cuenta de la compañía y los gerentes.",
   "Nobody is assigned to this job, so the foremen who worked it in the last 120 days are in.": "Nadie está asignado a este trabajo, así que están los capataces que trabajaron en él en los últimos 120 días.",
+  "No foremen are listed on the job page, so foremen with open inspections, crew runs or dailies on this job are in.": "No hay capataces anotados en la página del trabajo, así que están los capataces con inspecciones abiertas, tramos de cuadrilla o reportes diarios en este trabajo.",
   "The foremen assigned to this job are in.": "Están los capataces asignados a este trabajo.", "No PM or super is assigned to this job, so every PM and super is in.": "No hay PM ni superintendente asignado a este trabajo, así que están todos los PMs y superintendentes.",
   "The PMs and supers assigned to this job are in.": "Están los PMs y superintendentes asignados a este trabajo.", "The company account and managers are always in.": "La cuenta de la compañía y los gerentes siempre están.",
   "Only the office changes this.": "Solo la oficina cambia esto.",

@@ -9,11 +9,13 @@ begin;
 -- pb_pm.settings.tz (default America/Chicago), pb_prod.push_prefs.tz, pb_push.outbox (+ check pb_push_out_type),
 -- pb_push.kick(), pb_push.is_service(), pb_audit.direct_write(), pb_billing.storage_room(uuid,text,integer),
 -- pb_crew.display_name(uuid,uuid). Nothing live is replaced; the only live object changed is the pb_push_out_type check
--- (gets 'message'). Job membership (Tommy, Nov 22 answer 47): everyone ASSIGNED to the job, read from what the app assigns
--- today: PMs/supers from pb_pm.job_pms; foremen from inspection/test items (pb_daily.items.foreman_uid), crew runs assigned
--- to them (pb_prod.entries.assigned_to) and dailies the office filled for them (pb_daily.reports.for_foreman); plus the
--- company account and managers. Nobody assigned -> fallback (said on Chat info): foremen who worked the job in 120 days,
--- and every PM/super when no PM/super is assigned (as pb_pm.job_alert_recipients does for job alerts).
+-- (gets 'message'). Job membership (Tommy, Nov 22 answer 47): everyone ASSIGNED to the job: PMs/supers from pb_pm.job_pms;
+-- foremen (foremen_job_nov23, Nov 23): first the job page's "Foremen on this job" (pb_pm.job_foremen); when nobody is on
+-- that list, foremen with work handed to them on the job: open inspection/test items (pb_daily.items.foreman_uid), crew runs
+-- assigned to them (pb_prod.entries.assigned_to), dailies the office filled for them (pb_daily.reports.for_foreman); when
+-- none of those either, foremen who worked the job in 120 days. Plus the company account and managers. No PM/super assigned
+-- -> every PM/super (as pb_pm.job_alert_recipients does for job alerts). Chat info says which rule let people in.
+-- pb_pm.job_foremen comes from foremen_job_nov23/sql/01 (apply that first); without it this falls back as before.
 -- Run as postgres in one transaction (apply/01_messaging.apply.sql). Safe to run twice.
 -- Undo: undo/99_undo_01.sql.
 
@@ -254,6 +256,21 @@ begin
   return exists (select 1 from pb_pm.job_pms a where a.company_id = p_co and a.job_key = p_jk and a.ended_at is null and pb_msg.role_in(a.user_id, p_co) = 'pm');
 exception when undefined_table then return false;
 end $f$;
+-- foremen_job_nov23: on the job page's "Foremen on this job" list (pb_pm.job_foremen, open rows, still a foreman here)
+create or replace function pb_msg.fm_listed(p_uid uuid, p_co uuid, p_jk text) returns boolean
+language plpgsql stable security definer set search_path to '' as $f$
+begin
+  return exists (select 1 from pb_pm.job_foremen a where a.company_id = p_co and a.job_key = p_jk and a.user_id = p_uid and a.ended_at is null)
+     and pb_msg.role_in(p_uid, p_co) = 'foreman';
+exception when undefined_table then return false;
+end $f$;
+create or replace function pb_msg.any_fm_listed(p_co uuid, p_jk text) returns boolean
+language plpgsql stable security definer set search_path to '' as $f$
+begin
+  return exists (select 1 from pb_pm.job_foremen a where a.company_id = p_co and a.job_key = p_jk and a.ended_at is null and pb_msg.role_in(a.user_id, p_co) = 'foreman');
+exception when undefined_table then return false;
+end $f$;
+-- the older signs (used only when nobody is on the job page's list): work handed to a foreman on this job
 create or replace function pb_msg.fm_assigned(p_uid uuid, p_co uuid, p_jk text) returns boolean
 language plpgsql stable security definer set search_path to '' as $f$
 declare v boolean := false;
@@ -278,7 +295,7 @@ end $f$;
 create or replace function pb_msg.rule(p_co uuid, p_jk text) returns jsonb
 language sql stable security definer set search_path to '' as $f$
   select jsonb_build_object('pms', case when pb_msg.any_pm(p_co, p_jk) then 'assigned' else 'all' end,
-                            'foremen', case when pb_msg.any_fm(p_co, p_jk) then 'assigned' else 'worked' end)
+                            'foremen', case when pb_msg.any_fm_listed(p_co, p_jk) then 'assigned' when pb_msg.any_fm(p_co, p_jk) then 'linked' else 'worked' end)
 $f$;
 -- a job chat (also before it exists: p_chat null): office | pm | foreman | pipelayer | null
 create or replace function pb_msg.jq(p_co uuid, p_jk text, p_include boolean, p_chat uuid, p_uid uuid) returns text
@@ -297,7 +314,11 @@ begin
     return case when added or pb_msg.pm_assigned(p_uid, p_co, p_jk) or not pb_msg.any_pm(p_co, p_jk) then 'pm' end;
   end if;
   if r = 'foreman' then
-    return case when added or pb_msg.fm_assigned(p_uid, p_co, p_jk) or (not pb_msg.any_fm(p_co, p_jk) and pb_msg.on_job(p_uid, p_co, p_jk)) then 'foreman' end;
+    -- foremen_job_nov23: the job page's list first; else work handed to them; else worked it in 120 days
+    return case when added then 'foreman'
+                when pb_msg.any_fm_listed(p_co, p_jk) then case when pb_msg.fm_listed(p_uid, p_co, p_jk) then 'foreman' end
+                when pb_msg.any_fm(p_co, p_jk) then case when pb_msg.fm_assigned(p_uid, p_co, p_jk) then 'foreman' end
+                when pb_msg.on_job(p_uid, p_co, p_jk) then 'foreman' end;
   end if;
   if not coalesce(p_include, false) then return null; end if;        -- pipelayers only when the office included them
   if added or pb_msg.on_job(p_uid, p_co, p_jk) then return 'pipelayer'; end if;
@@ -1076,7 +1097,7 @@ declare
   o uuid := gen_random_uuid(); pm uuid := gen_random_uuid(); f1 uuid := gen_random_uuid(); f2 uuid := gen_random_uuid();
   p1 uuid := gen_random_uuid(); p2 uuid := gen_random_uuid(); p3 uuid := gen_random_uuid(); r uuid := gen_random_uuid();
   o2 uuid := gen_random_uuid(); x uuid := gen_random_uuid(); anyone uuid := gen_random_uuid();
-  pm2 uuid := gen_random_uuid(); mgr uuid := gen_random_uuid(); wk uuid := gen_random_uuid(); jobb text; chb uuid; dm2 uuid; ar2 uuid; k2 text; item_f1 uuid := gen_random_uuid();
+  pm2 uuid := gen_random_uuid(); mgr uuid := gen_random_uuid(); wk uuid := gen_random_uuid(); jobb text; chb uuid; jobc text; chc uuid; item_f2 uuid := gen_random_uuid(); dm2 uuid; ar2 uuid; k2 text; item_f1 uuid := gen_random_uuid();
   c uuid := gen_random_uuid(); c2 uuid := gen_random_uuid();
   job text := 'MSGT-' || tag; j jsonb; ch uuid; ch2 uuid; dm uuid; m1 uuid; m2 uuid; m3 uuid; s text; n integer; t timestamptz; ar uuid; k text; old_m uuid;
 begin
@@ -1142,7 +1163,7 @@ begin
   insert into t_chk (name, ok, got) values ('1j3 a job nobody is assigned to: the foreman who worked it starts the chat, every PM is in, other foremen are not; Chat info says it is the fallback',
     s = 'ok/ok/pb:not_in_chat' and j->'rule'->>'pms' = 'all' and j->'rule'->>'foremen' = 'worked', s || ' ' || coalesce((j->'rule')::text, ''));
   j := pg_temp.q(pm, format('select public.pb_msg_info(%L, %L)', ch, pm));
-  insert into t_chk (name, ok, got) values ('1j4 the assigned job''s Chat info says assigned', j->'rule'->>'pms' = 'assigned' and j->'rule'->>'foremen' = 'assigned', coalesce((j->'rule')::text, ''));
+  insert into t_chk (name, ok, got) values ('1j4 the assigned job''s Chat info: PMs assigned; foremen let in by their open items (nobody on the job page''s Foremen list): linked', j->'rule'->>'pms' = 'assigned' and j->'rule'->>'foremen' = 'linked', coalesce((j->'rule')::text, ''));
   s := pg_temp.e(pg_temp.q(f2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, f2))) || '/' || pg_temp.e(pg_temp.q(p1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p1)))
     || '/' || pg_temp.e(pg_temp.q(p2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p2)));
   insert into t_chk (name, ok, got) values ('1k a foreman not assigned, and pipelayers (switch off) cannot read', s = 'pb:not_in_chat/pb:not_in_chat/pb:not_in_chat', s);
@@ -1328,6 +1349,45 @@ begin
   update pb_pm.job_pms set ended_at = now() where company_id = c and job_key = lower(job);
   s := pg_temp.e(pg_temp.q(pm2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, pm2))) || '/' || pg_temp.e(pg_temp.q(o, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, o)));
   insert into t_chk (name, ok, got) values ('3n the job''s PM is unassigned: no PM assigned, so every PM is in (fallback); the company account always', s = 'ok/ok', s);
+  -- ---- foremen_job_nov23: the job page's "Foremen on this job" list counts first ----
+  -- Job C: f2 has an open inspection item on it (older sign), wk filed work on it, f1 nothing. Then the office lists f1.
+  if to_regclass('pb_pm.job_foremen') is null then
+    notes := notes || ' [3t1-3t6 skipped: pb_pm.job_foremen is not on this server; apply foremen_job_nov23 01 first]';
+  else
+    jobc := 'MSGC-' || tag;
+    insert into pb_daily.items (id, company_id, client_item_id, job_key, job_number, kind, foreman_uid, status, created_by) values (item_f2, c, 'msgt-' || tag || '-i3', lower(jobc), jobc, 'test', f2, 'open', o);
+    insert into pb_prod.site_log (user_id, company_id, client_item_id, kind, job_number, job_key, data) values (wk, c, 'msgt-' || tag || '-6', 'delay', jobc, lower(jobc), '{}');
+    j := pg_temp.q(o, format('select public.pb_msg_open_job(%L, %L)', jobc, o)); chc := (j->'chat'->>'id')::uuid;
+    s := pg_temp.e(pg_temp.q(f2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chc, f2))) || '/' || pg_temp.e(pg_temp.q(wk, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chc, wk)))
+      || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chc, f1))) || '/' || (pg_temp.q(o, format('select public.pb_msg_info(%L, %L)', chc, o))->'rule'->>'foremen');
+    insert into t_chk (name, ok, got) values ('3t1 nobody on the Foremen list: the foreman with an open item on the job is in, the one who only worked it and the one with nothing are not; Chat info says linked',
+      s = 'ok/pb:not_in_chat/pb:not_in_chat/linked', s);
+    insert into pb_pm.job_foremen (company_id, job_key, job_number, user_id, assigned_by) values (c, lower(jobc), jobc, f1, o);
+    s := pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chc, f1))) || '/' || pg_temp.e(pg_temp.q(f2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chc, f2)))
+      || '/' || pg_temp.e(pg_temp.q(wk, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chc, wk))) || '/' || (pg_temp.q(o, format('select public.pb_msg_info(%L, %L)', chc, o))->'rule'->>'foremen');
+    insert into t_chk (name, ok, got) values ('3t2 the office lists f1 on the job page: f1 is in at once; the older signs (f2''s item) and the 120-day fallback (wk) no longer count; Chat info says assigned',
+      s = 'ok/pb:not_in_chat/pb:not_in_chat/assigned', s);
+    j := pg_temp.q(f1, format('select public.pb_msg_list(%L)', f1));
+    insert into t_chk (name, ok, got) values ('3t3 the job chat is in f1''s Messages list', exists (select 1 from jsonb_array_elements(j->'chats') e where (e->>'id')::uuid = chc), left(j::text, 160));
+    update pb_pm.job_foremen set ended_at = now(), end_reason = 'unassigned' where company_id = c and job_key = lower(jobc);
+    s := pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chc, f1))) || '/' || pg_temp.e(pg_temp.q(f2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chc, f2)))
+      || '/' || (pg_temp.q(o, format('select public.pb_msg_info(%L, %L)', chc, o))->'rule'->>'foremen');
+    insert into t_chk (name, ok, got) values ('3t4 f1 taken off the list (list empty again): f1 out at once, the older sign lets f2 back in; Chat info says linked', s = 'pb:not_in_chat/ok/linked', s);
+    update pb_daily.items set status = 'done' where id = item_f2;
+    insert into pb_pm.job_foremen (company_id, job_key, job_number, user_id, assigned_by) values (c, lower(jobc), jobc, p1, o);   -- a stale row for someone who is not a foreman
+    s := pg_temp.e(pg_temp.q(wk, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chc, wk))) || '/' || pg_temp.e(pg_temp.q(f2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chc, f2)))
+      || '/' || pg_temp.e(pg_temp.q(p1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chc, p1))) || '/' || (pg_temp.q(o, format('select public.pb_msg_info(%L, %L)', chc, o))->'rule'->>'foremen');
+    insert into t_chk (name, ok, got) values ('3t5 no list, no open item: foremen who worked it in 120 days are in (wk), f2 out; a list row for a non-foreman counts for nothing (pipelayer stays out, rule stays worked)',
+      s = 'ok/pb:not_in_chat/pb:not_in_chat/worked', s);
+    if to_regprocedure('public.pb_job_foremen_set(text,uuid[],uuid,integer)') is not null then   -- on live, with foremen_job_nov23 applied: the real save
+      j := pg_temp.q(o, format('select public.pb_job_foremen_get(%L)', jobc));
+      j := pg_temp.q(o, format('select public.pb_job_foremen_set(%L, %L::uuid[], %L, %s)', jobc, array[f2], o, coalesce((j->>'ver')::int, 0)));
+      s := pg_temp.e(j) || '/' || pg_temp.e(pg_temp.q(f2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chc, f2))) || '/' || pg_temp.e(pg_temp.q(wk, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chc, wk)));
+      insert into t_chk (name, ok, got) values ('3t6 the job page''s own save (pb_job_foremen_set, as the company account) puts f2 in and the fallback (wk) out', s = 'ok/ok/pb:not_in_chat', s);
+    else
+      notes := notes || ' [3t6 skipped: pb_job_foremen_set not on this server]';
+    end if;
+  end if;
   -- ---- direct messages are company records: the company account (only) can archive and download them, each download logged ----
   j := pg_temp.q(p3, format('select public.pb_msg_open_dm(%L, %L)', f1, p3)); dm2 := (j->'chat'->>'id')::uuid;
   perform pg_temp.q(p3, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', dm2, 'cli-' || tag || '-d02', 'Running late, 20 min', '[]', p3));

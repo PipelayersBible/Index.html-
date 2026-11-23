@@ -1,0 +1,316 @@
+-- messaging_nov22 01 test. Every app call runs AS ROLE authenticated with that person's JWT claims (pg_temp.q), the
+-- way PostgREST runs it, so a function authenticated can't execute fails here too. Ends with 'RESULT: ...' (rolled back).
+create function pg_temp.q(p_user uuid, p_sql text) returns jsonb language plpgsql as $f$
+declare r jsonb;
+begin
+  begin
+    perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'sub', p_user, 'aal', 'aal1')::text, true);
+    perform set_config('role', 'authenticated', true);
+    execute p_sql into r;
+    perform set_config('role', 'none', true);
+    return coalesce(r, 'null'::jsonb);
+  exception when others then
+    return jsonb_build_object('err', sqlerrm);   -- (the role switch is undone with the failed sub-transaction)
+  end;
+end $f$;
+create function pg_temp.svc(p_sql text) returns jsonb language plpgsql as $f$
+declare r jsonb;
+begin
+  begin
+    perform set_config('request.jwt.claims', '{"role": "service_role"}', true);
+    perform set_config('role', 'service_role', true);
+    execute p_sql into r;
+    perform set_config('role', 'none', true);
+    return coalesce(r, 'null'::jsonb);
+  exception when others then return jsonb_build_object('err', sqlerrm);
+  end;
+end $f$;
+create function pg_temp.e(j jsonb) returns text language sql as $f$ select coalesce(j->>'err', case when (j->>'ok')::boolean then 'ok' else j::text end) $f$;
+
+do $test$
+declare
+  pass integer; fail integer; fails text; notes text := ''; tag text := substr(md5(random()::text), 1, 8);
+  o uuid := gen_random_uuid(); pm uuid := gen_random_uuid(); f1 uuid := gen_random_uuid(); f2 uuid := gen_random_uuid();
+  p1 uuid := gen_random_uuid(); p2 uuid := gen_random_uuid(); p3 uuid := gen_random_uuid(); r uuid := gen_random_uuid();
+  o2 uuid := gen_random_uuid(); x uuid := gen_random_uuid(); anyone uuid := gen_random_uuid();
+  pm2 uuid := gen_random_uuid(); mgr uuid := gen_random_uuid(); wk uuid := gen_random_uuid(); jobb text; chb uuid; dm2 uuid; ar2 uuid; k2 text; item_f1 uuid := gen_random_uuid();
+  c uuid := gen_random_uuid(); c2 uuid := gen_random_uuid();
+  job text := 'MSGT-' || tag; j jsonb; ch uuid; ch2 uuid; dm uuid; m1 uuid; m2 uuid; m3 uuid; s text; n integer; t timestamptz; ar uuid; k text; old_m uuid;
+begin
+  create temp table t_chk (i serial, name text, ok boolean, got text) on commit drop;
+  perform set_config('pb_msg.no_kick', 'on', true);
+  insert into auth.users (id, email) select v, 'pbmsg-' || tag || '-' || row_number() over () || '@example.invalid' from unnest(array[o, pm, f1, f2, p1, p2, p3, r, o2, x, anyone, pm2, mgr, wk]) v;
+  insert into public.companies (id, name, owner_user_id, status, plan) values (c, 'pbmsg ' || tag, o, 'active', 'paid'), (c2, 'pbmsg other ' || tag, o2, 'active', 'paid');
+  insert into public.company_members (company_id, user_id, role) values (c, pm, 'pm'), (c, f1, 'foreman'), (c, f2, 'foreman'), (c, p1, 'pipelayer'),
+    (c, p2, 'pipelayer'), (c, p3, 'pipelayer'), (c, r, 'foreman'), (c2, x, 'foreman'), (c, pm2, 'pm'), (c, mgr, 'foreman'), (c, wk, 'foreman');
+  insert into pb_reports.managers (company_id, user_id) values (c, mgr);   -- a listed manager (office)
+  jobb := 'MSGB-' || tag;
+  -- ASSIGNED to the job (Tommy's rule): PM pm (pb_pm.job_pms), foremen f1 and r (inspection items, pb_daily.items).
+  -- Filed work on it: f1, r, wk (foremen) and p2 (pipelayer); p1 is on f1's crew; f2, p3, pm2 nothing.
+  -- Job B: nobody assigned; wk filed work on it (the fallback).
+  insert into pb_pm.job_pms (company_id, job_key, job_number, user_id, assigned_by) values (c, lower(job), job, pm, o);
+  insert into pb_daily.items (id, company_id, client_item_id, job_key, job_number, kind, foreman_uid, status, created_by) values
+    (item_f1, c, 'msgt-' || tag || '-i1', lower(job), job, 'test', f1, 'open', o), (gen_random_uuid(), c, 'msgt-' || tag || '-i2', lower(job), job, 'test', r, 'open', o);
+  insert into pb_prod.site_log (user_id, company_id, client_item_id, kind, job_number, job_key, data) values
+    (f1, c, 'msgt-' || tag || '-1', 'delay', job, lower(job), '{}'), (r, c, 'msgt-' || tag || '-2', 'delay', job, lower(job), '{}'), (p2, c, 'msgt-' || tag || '-3', 'delay', job, lower(job), '{}'),
+    (wk, c, 'msgt-' || tag || '-4', 'delay', job, lower(job), '{}'), (wk, c, 'msgt-' || tag || '-5', 'delay', jobb, lower(jobb), '{}');
+  insert into pb_prod.crew_links (company_id, foreman_id, pipelayer_id) values (c, f1, p1);
+  insert into pb_pm.settings (company_id, tz) values (c, 'America/Chicago') on conflict (company_id) do update set tz = 'America/Chicago';
+
+  -- ---- privileges (static): what the API can reach ----
+  select count(*) into n from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
+   where ns.nspname = 'public' and p.proname like 'pb\_msg\_%' and p.proname not like 'pb\_msg\_svc\_%' and not has_function_privilege('authenticated', p.oid, 'execute');
+  insert into t_chk (name, ok, got) values ('1a every public pb_msg_* app function is executable by authenticated', n = 0, n::text);
+  select count(*) into n from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
+   where ((ns.nspname = 'public' and p.proname like 'pb\_msg\_%') or ns.nspname = 'pb_msg') and has_function_privilege('anon', p.oid, 'execute');
+  insert into t_chk (name, ok, got) values ('1b anon can execute none of them', n = 0, n::text);
+  select count(*) into n from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
+   where (ns.nspname = 'pb_msg' or (ns.nspname = 'public' and p.proname like 'pb\_msg\_svc\_%')) and has_function_privilege('authenticated', p.oid, 'execute');
+  insert into t_chk (name, ok, got) values ('1c authenticated can execute no private pb_msg.* and no service function', n = 0, n::text);
+  select count(*) into n from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
+   where ((ns.nspname = 'public' and p.proname like 'pb\_msg\_%') or ns.nspname = 'pb_msg') and not p.prosecdef and has_function_privilege('authenticated', p.oid, 'execute');
+  insert into t_chk (name, ok, got) values ('1d no caller-rights (SECURITY INVOKER) function of ours is callable by authenticated', n = 0, n::text);
+  insert into t_chk (name, ok, got) values ('1e the pb_msg schema and tables are closed to the API',
+    not has_schema_privilege('authenticated', 'pb_msg', 'usage') and not has_schema_privilege('anon', 'pb_msg', 'usage')
+    and not has_table_privilege('authenticated', 'pb_msg.messages', 'select'), '');
+  select count(*) into n from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
+   where ((ns.nspname = 'public' and p.proname like 'pb\_msg\_%') or ns.nspname = 'pb_msg') and p.prosecdef
+     and not exists (select 1 from unnest(p.proconfig) cfg where cfg like 'search_path=%');
+  insert into t_chk (name, ok, got) values ('1f every definer function pins search_path', n = 0, n::text);
+
+  -- ---- job chat: who is in ----
+  j := pg_temp.q(f2, format('select public.pb_msg_open_job(%L, %L)', job, f2));
+  insert into t_chk (name, ok, got) values ('1g a foreman NOT assigned to the job cannot start its chat', j->>'err' = 'pb:not_in_chat', j::text);
+  j := pg_temp.q(f1, format('select public.pb_msg_open_job(%L, %L)', job, f1));
+  ch := (j->'chat'->>'id')::uuid;
+  insert into t_chk (name, ok, got) values ('1h a foreman assigned to the job starts it (title Job <n>, pipelayers off)', ch is not null and j->'chat'->>'title' = 'Job ' || job and (j->'chat'->>'include_pipelayers')::boolean = false, j::text);
+  j := pg_temp.q(o, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli-' || tag || '-001', 'Pipe truck at 7. Need two guys on the loader please, bring the slings', '[]', o));
+  m1 := (j->'message'->>'id')::uuid;
+  insert into t_chk (name, ok, got) values ('1i the company account posts (seq 1)', m1 is not null and (j->'message'->>'seq')::int = 1, j::text);
+  s := pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, pm))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, f1)))
+    || '/' || pg_temp.e(pg_temp.q(r, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, r)));
+  insert into t_chk (name, ok, got) values ('1j the assigned PM and the two assigned foremen read it', s = 'ok/ok/ok', s);
+  s := pg_temp.e(pg_temp.q(mgr, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, mgr))) || '/' || pg_temp.e(pg_temp.q(pm2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, pm2)))
+    || '/' || pg_temp.e(pg_temp.q(wk, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, wk)));
+  insert into t_chk (name, ok, got) values ('1j2 the manager reads; a PM not assigned to this job does not; a foreman who only worked it (others are assigned) does not', s = 'ok/pb:not_in_chat/pb:not_in_chat', s);
+  j := pg_temp.q(wk, format('select public.pb_msg_open_job(%L, %L)', jobb, wk)); chb := (j->'chat'->>'id')::uuid;
+  s := pg_temp.e(j) || '/' || pg_temp.e(pg_temp.q(pm2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chb, pm2))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', chb, f1)));
+  j := pg_temp.q(o, format('select public.pb_msg_info(%L, %L)', chb, o));
+  insert into t_chk (name, ok, got) values ('1j3 a job nobody is assigned to: the foreman who worked it starts the chat, every PM is in, other foremen are not; Chat info says it is the fallback',
+    s = 'ok/ok/pb:not_in_chat' and j->'rule'->>'pms' = 'all' and j->'rule'->>'foremen' = 'worked', s || ' ' || coalesce((j->'rule')::text, ''));
+  j := pg_temp.q(pm, format('select public.pb_msg_info(%L, %L)', ch, pm));
+  insert into t_chk (name, ok, got) values ('1j4 the assigned job''s Chat info says assigned', j->'rule'->>'pms' = 'assigned' and j->'rule'->>'foremen' = 'assigned', coalesce((j->'rule')::text, ''));
+  s := pg_temp.e(pg_temp.q(f2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, f2))) || '/' || pg_temp.e(pg_temp.q(p1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p1)))
+    || '/' || pg_temp.e(pg_temp.q(p2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p2)));
+  insert into t_chk (name, ok, got) values ('1k a foreman not assigned, and pipelayers (switch off) cannot read', s = 'pb:not_in_chat/pb:not_in_chat/pb:not_in_chat', s);
+  j := pg_temp.q(p1, format('select public.pb_msg_list(%L)', p1));
+  insert into t_chk (name, ok, got) values ('1l the job chat is not in a pipelayer''s list while pipelayers are off', jsonb_array_length(j->'chats') = 0 and (j->>'member')::boolean, j::text);
+  s := pg_temp.e(pg_temp.q(x, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, x))) || '/' || pg_temp.e(pg_temp.q(x, format('select public.pb_msg_open_dm(%L, %L)', o, x)))
+    || '/' || pg_temp.e(pg_temp.q(x, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli-' || tag || '-x01', 'hi', '[]', x)))
+    || '/' || (pg_temp.q(x, format('select public.pb_msg_list(%L)', x))->'chats')::text;
+  insert into t_chk (name, ok, got) values ('1m someone from ANOTHER company: no read, no DM to us, no post, nothing listed', s = 'pb:not_in_chat/pb:not_in_chat/pb:not_in_chat/[]', s);
+  s := pg_temp.e(pg_temp.q(anyone, format('select public.pb_msg_list(%L)', anyone))) || '/' || coalesce(pg_temp.q(anyone, format('select public.pb_msg_list(%L)', anyone))->>'member', '?')
+    || '/' || pg_temp.e(pg_temp.q(anyone, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, anyone)));
+  insert into t_chk (name, ok, got) values ('1n a login with no company: empty list, no read', s = 'ok/false/pb:not_in_chat', s);
+  s := pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_list(%L)', o)));
+  insert into t_chk (name, ok, got) values ('1o another account''s expect-uid is refused', s = 'pb:wrong_account', s);
+
+  -- ---- Include pipelayers / history: only the office, enforced and logged ----
+  s := pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_set(%L, true, %L, %L)', ch, 'from_added', f1))) || '/' || pg_temp.e(pg_temp.q(p2, format('select public.pb_msg_set(%L, true, %L, %L)', ch, 'all', p2)));
+  insert into t_chk (name, ok, got) values ('1p a foreman or a pipelayer cannot change Include pipelayers', s = 'pb:not_office/pb:not_office', s);
+  j := pg_temp.q(pm, format('select public.pb_msg_set(%L, true, %L, %L)', ch, 'from_added', pm));
+  insert into t_chk (name, ok, got) values ('1q the PM/super turns Include pipelayers on (from when added)', pg_temp.e(j) = 'ok' and (j->'chat'->>'include_pipelayers')::boolean, j::text);
+  s := pg_temp.e(pg_temp.q(p1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p1))) || '/' || pg_temp.e(pg_temp.q(p2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p2)))
+    || '/' || pg_temp.e(pg_temp.q(p3, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p3)));
+  insert into t_chk (name, ok, got) values ('1r now p1 (on assigned f1''s crew) and p2 (filed work on it) read; p3 (not on the job) does not', s = 'ok/ok/pb:not_in_chat', s);
+  j := pg_temp.q(p1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p1));
+  insert into t_chk (name, ok, got) values ('1s "from when added": p1 does not see the message from before', jsonb_array_length(j->'messages') = 0, j->'messages'::text);
+  j := pg_temp.q(f1, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli-' || tag || '-002', 'Loader is up', '[]', f1)); m2 := (j->'message'->>'id')::uuid;
+  j := pg_temp.q(p1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p1));
+  insert into t_chk (name, ok, got) values ('1t ... and does see the next one', jsonb_array_length(j->'messages') = 1 and j->'messages'->0->>'body' = 'Loader is up', j->'messages'::text);
+  perform pg_temp.q(pm, format('select public.pb_msg_set(%L, true, %L, %L)', ch, 'all', pm));
+  j := pg_temp.q(p1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p1));
+  insert into t_chk (name, ok, got) values ('1u "whole chat": p1 sees everything', jsonb_array_length(j->'messages') = 2, jsonb_array_length(j->'messages')::text);
+  perform pg_temp.q(pm, format('select public.pb_msg_set(%L, false, %L, %L)', ch, 'all', pm));
+  s := pg_temp.e(pg_temp.q(p1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p1))) || '/' || pg_temp.e(pg_temp.q(p2, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli-' || tag || '-p2a', 'x', '[]', p2)));
+  insert into t_chk (name, ok, got) values ('1v pipelayers switched off: no read, no post at once', s = 'pb:not_in_chat/pb:not_in_chat', s);
+  perform pg_temp.q(o, format('select public.pb_msg_set(%L, true, %L, %L)', ch, 'from_added', o));
+  j := pg_temp.q(p1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, p1));
+  insert into t_chk (name, ok, got) values ('1w switched back on (by the company account): p1 is added again from now (sees 0 old)', pg_temp.e(j) = 'ok' and jsonb_array_length(j->'messages') = 0, j::text);
+  select count(*) into n from pb_msg.chat_log l where l.chat_id = ch and l.what in ('include_pipelayers', 'pipelayer_history');
+  j := pg_temp.q(f1, format('select public.pb_msg_info(%L, %L)', ch, f1));
+  insert into t_chk (name, ok, got) values ('1x each change is logged with who and when (5 changes), shown on the info screen to the crew too',
+    n = 5 and jsonb_array_length(j->'log') >= 5 and exists (select 1 from jsonb_array_elements(j->'log') e where e->>'what' = 'include_pipelayers' and e->>'by' is not null)
+    and (j->>'can_manage')::boolean = false, n || ' ' || left((j->'log')::text, 200));
+  j := pg_temp.q(pm, format('select public.pb_msg_info(%L, %L)', ch, pm));
+  insert into t_chk (name, ok, got) values ('1y the office sees can_manage and the people (with roles)', (j->>'can_manage')::boolean and jsonb_array_length(j->'people') >= 5, jsonb_array_length(j->'people')::text);
+
+  -- ---- direct messages ----
+  j := pg_temp.q(p3, format('select public.pb_msg_open_dm(%L, %L)', o, p3)); dm := (j->'chat'->>'id')::uuid;
+  j := pg_temp.q(p3, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', dm, 'cli-' || tag || '-d01', 'Can I leave at 3 Friday?', '[]', p3));
+  s := pg_temp.e(j) || '/' || pg_temp.e(pg_temp.q(o, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', dm, o))) || '/' || pg_temp.e(pg_temp.q(f2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', dm, f2)))
+    || '/' || pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', dm, pm)));
+  insert into t_chk (name, ok, got) values ('1z a pipelayer DMs the company account (allowed whatever the switch); a third person, even the PM, cannot read it', s = 'ok/ok/pb:not_in_chat/pb:not_in_chat', s);
+  j := pg_temp.q(o, format('select public.pb_msg_list(%L)', o));
+  insert into t_chk (name, ok, got) values ('2a the DM is in the owner''s list with 1 unread and the sender''s name as title',
+    exists (select 1 from jsonb_array_elements(j->'chats') e where (e->>'id')::uuid = dm and (e->>'unread')::int = 1 and e->>'kind' = 'dm'), left(j::text, 300));
+  perform pg_temp.q(o, format('select public.pb_msg_read(%L, 999, %L)', dm, o));
+  j := pg_temp.q(o, format('select public.pb_msg_list(%L)', o));
+  insert into t_chk (name, ok, got) values ('2b read: unread back to 0', exists (select 1 from jsonb_array_elements(j->'chats') e where (e->>'id')::uuid = dm and (e->>'unread')::int = 0), '');
+
+  -- ---- removed from the company: nothing, at once ----
+  j := pg_temp.q(r, format('select public.pb_msg_open_dm(%L, %L)', o, r)); ch2 := (j->'chat'->>'id')::uuid;
+  delete from public.company_members where user_id = r;
+  s := pg_temp.e(pg_temp.q(r, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, r))) || '/' || pg_temp.e(pg_temp.q(r, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli-' || tag || '-r01', 'x', '[]', r)))
+    || '/' || pg_temp.e(pg_temp.q(r, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch2, r))) || '/' || (pg_temp.q(r, format('select public.pb_msg_list(%L)', r))->>'member');
+  insert into t_chk (name, ok, got) values ('2c removed member: no job chat, no post, not even his own DM, list empty', s = 'pb:not_in_chat/pb:not_in_chat/pb:not_in_chat/false', s);
+  s := pg_temp.e(pg_temp.q(o, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch2, o))) || '/' || pg_temp.e(pg_temp.q(o, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch2, 'cli-' || tag || '-o2r', 'x', '[]', o)));
+  insert into t_chk (name, ok, got) values ('2d the owner keeps reading that DM (records) but cannot post to someone gone', s = 'ok/pb:other_left', s);
+
+  -- ---- edit / delete keep history ----
+  j := pg_temp.q(f1, format('select public.pb_msg_edit(%L, %L, %L)', m2, 'Loader is up, slings in the truck', f1));
+  s := pg_temp.e(j) || '/' || (j->'message'->>'version') || '/' || (j->'message'->>'edited') || '/' || pg_temp.e(pg_temp.q(o, format('select public.pb_msg_edit(%L, %L, %L)', m2, 'hijack', o)));
+  insert into t_chk (name, ok, got) values ('2e the author edits (version 2, edited); someone else cannot, not even the owner', s = 'ok/2/true/pb:not_yours', s);
+  select count(*) into n from pb_msg.message_versions v where v.message_id = m2 and v.action = 'edit' and v.body = 'Loader is up' and v.version = 1;
+  insert into t_chk (name, ok, got) values ('2f the old text is kept as version 1', n = 1, n::text);
+  s := pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_delete(%L, %L)', m1, f1)));
+  insert into t_chk (name, ok, got) values ('2g a foreman cannot delete someone else''s message', s = 'pb:not_yours', s);
+  s := pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_delete(%L, %L)', m1, pm)));
+  j := pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, f1));
+  insert into t_chk (name, ok, got) values ('2h the office deletes it: others get deleted=true and no text', s = 'ok' and exists (select 1 from jsonb_array_elements(j->'messages') e where (e->>'id')::uuid = m1 and (e->>'deleted')::boolean and e->>'body' is null), left(j::text, 250));
+  select count(*) into n from pb_msg.message_versions v where v.message_id = m1 and v.action = 'delete' and v.body like 'Pipe truck at 7%';
+  insert into t_chk (name, ok, got) values ('2i the deleted text is kept in the history (archive), logged as moderation', n = 1 and exists (select 1 from pb_msg.chat_log l where l.chat_id = ch and l.what = 'message_deleted'), n::text);
+  begin delete from pb_msg.messages where id = m2; s := 'deleted'; exception when others then s := sqlerrm; end;
+  insert into t_chk (name, ok, got) values ('2j a direct DELETE (console, service key) is refused', s = 'pb:history_is_permanent', s);
+  begin update pb_msg.messages set body = 'quiet change' where id = m2; s := 'changed'; exception when others then s := sqlerrm; end;
+  insert into t_chk (name, ok, got) values ('2k a quiet UPDATE of the text without a new version is refused', s = 'pb:history_is_permanent', s);
+  j := pg_temp.q(f1, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli-' || tag || '-002', 'Loader is up', '[]', f1));
+  insert into t_chk (name, ok, got) values ('2l the phone sending the same message twice: same message back, not a second one', (j->>'again')::boolean and (j->'message'->>'id')::uuid = m2, j::text);
+
+  -- ---- alerts ----
+  delete from pb_push.outbox where user_id in (o, pm, f1, f2, p1, p2, p3);
+  insert into pb_msg.person_prefs (user_id, quiet_on) values (o, false), (pm, false), (f1, false), (p2, false) on conflict (user_id) do update set quiet_on = false;
+  insert into pb_msg.person_prefs (user_id, quiet_on, words) values (p1, false, false) on conflict (user_id) do update set quiet_on = false, words = false;
+  perform pg_temp.q(p2, format('select public.pb_msg_mute(%L, true, %L)', ch, p2));
+  j := pg_temp.q(f1, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli-' || tag || '-003', repeat('Grade at MH4 is 0.40 low, ', 5), '[]', f1)); m3 := (j->'message'->>'id')::uuid;
+  select string_agg(title || ' | ' || body, ' ; ' order by title) into s from pb_push.outbox where user_id = o and type = 'message';
+  insert into t_chk (name, ok, got) values ('2m alert: "Job <n> · <first name>" and the first 60 characters with …',
+    s like 'Job ' || job || ' · % | ' || left(repeat('Grade at MH4 is 0.40 low, ', 5), 60) || '…' and (select count(*) from pb_push.outbox where user_id = o and type = 'message') = 1, coalesce(s, 'none'));
+  select string_agg(title || ' | ' || body, ' ; ') into s from pb_push.outbox where user_id = p1 and type = 'message';
+  insert into t_chk (name, ok, got) values ('2n a person with "words on the lock screen" off gets "New message in Job <n> from <name>"', s like 'Messages | New message in Job ' || job || ' from %', coalesce(s, 'none'));
+  select count(*) into n from pb_push.outbox where user_id = p2 and type = 'message';
+  insert into t_chk (name, ok, got) values ('2o a muted chat sends that person nothing', n = 0, n::text);
+  select count(*) into n from pb_push.outbox where user_id in (f1, f2, p3, x) and type = 'message';
+  insert into t_chk (name, ok, got) values ('2p nothing to the sender, to people not in the chat, or outside the company', n = 0, n::text);
+  select count(*) into n from pb_push.outbox where user_id = pm and type = 'message' and url = '#/messages/' || ch::text;
+  perform pg_temp.q(f1, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli-' || tag || '-004', 'second one', '[]', f1));
+  select body into s from pb_push.outbox where user_id = pm and type = 'message' and sent_at is null and given_up_at is null;
+  insert into t_chk (name, ok, got) values ('2q a second message before the alert went out folds into the same alert', n = 1 and (select count(*) from pb_push.outbox where user_id = pm and type = 'message') = 1 and s = '2 new messages. Last: second one', coalesce(s, 'none'));
+  perform pg_temp.q(pm, format('select public.pb_msg_read(%L, 999, %L)', ch, pm));
+  select last_error into s from pb_push.outbox where user_id = pm and type = 'message';
+  insert into t_chk (name, ok, got) values ('2r opening the chat cancels the waiting alert', s = 'read', coalesce(s, 'none'));
+  -- quiet hours: default 19:00-06:00 in the job's time zone; an alert in quiet hours waits until the end
+  t := pb_msg.send_at(ch, f2, ('2026-11-23 21:30:00')::timestamp at time zone 'America/Chicago');
+  insert into t_chk (name, ok, got) values ('2s quiet hours (default 7 PM - 6 AM job time): 9:30 PM waits until 6:00 AM', t = ('2026-11-24 06:00:00')::timestamp at time zone 'America/Chicago', t::text);
+  t := pb_msg.send_at(ch, f2, ('2026-11-24 05:10:00')::timestamp at time zone 'America/Chicago');
+  insert into t_chk (name, ok, got) values ('2t ... 5:10 AM waits until 6:00 the same morning; 10:00 AM goes now',
+    t = ('2026-11-24 06:00:00')::timestamp at time zone 'America/Chicago' and pb_msg.send_at(ch, f2, ('2026-11-24 10:00:00')::timestamp at time zone 'America/Chicago') = ('2026-11-24 10:00:00')::timestamp at time zone 'America/Chicago', t::text);
+  j := pg_temp.q(f2, format('select public.pb_msg_prefs_set(true, true, true, %L, %L, %L)', '22:00', '05:00', f2));
+  t := pb_msg.send_at(ch, f2, ('2026-11-23 21:30:00')::timestamp at time zone 'America/Chicago');
+  insert into t_chk (name, ok, got) values ('2u quiet hours changed in Settings (10 PM - 5 AM): 9:30 PM goes now', pg_temp.e(j) = 'ok' and t = ('2026-11-23 21:30:00')::timestamp at time zone 'America/Chicago', t::text);
+  s := pg_temp.e(pg_temp.q(f2, format('select public.pb_msg_prefs_set(true, true, true, %L, %L, %L)', '25:00', '05:00', f2)));
+  insert into t_chk (name, ok, got) values ('2v a bad time is refused', s = 'pb:bad_value', s);
+
+  -- ---- office: take people off / add; office always in ----
+  s := pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_person(%L, %L, false, %L)', ch, f1, pm))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, f1)))
+    || '/' || pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_person(%L, %L, true, %L)', ch, f1, pm))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, f1)));
+  insert into t_chk (name, ok, got) values ('2w the office takes a foreman off (no read), and adds him back (reads)', s = 'ok/pb:not_in_chat/ok/ok', s);
+  s := pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_person(%L, %L, false, %L)', ch, o, pm))) || '/' || pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_person(%L, %L, true, %L)', ch, x, pm)))
+    || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_person(%L, %L, true, %L)', ch, f2, f1)));
+  insert into t_chk (name, ok, got) values ('2x the office cannot be taken off; nobody from outside can be added; a foreman cannot add', s = 'pb:office_always_in/pb:not_company_member/pb:not_office', s);
+  s := pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_person(%L, %L, true, %L)', ch, f2, pm))) || '/' || pg_temp.e(pg_temp.q(f2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, f2)));
+  insert into t_chk (name, ok, got) values ('2y the office adds a foreman who is not on the job: he reads', s = 'ok/ok', s);
+
+  -- ---- retention: company setting, company account / managers only, logged; the daily job deletes after 13 months ----
+  s := pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_company_set(%L, %L)', '13m', pm))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_company_set(%L, %L)', '13m', f1)))
+    || '/' || pg_temp.e(pg_temp.q(o, format('select public.pb_msg_company_set(%L, %L)', 'never', o)));
+  insert into t_chk (name, ok, got) values ('2z retention: a PM or foreman cannot change it; a bad value is refused', s = 'pb:not_company_account/pb:not_company_account/pb:bad_value', s);
+  j := pg_temp.q(o, format('select public.pb_msg_list(%L)', o));
+  insert into t_chk (name, ok, got) values ('3a default is keep forever', j->>'retention' = 'forever' and (j->'me'->>'can_retention')::boolean, j->>'retention');
+  insert into pb_msg.messages (chat_id, company_id, seq, author, author_name, client_id, body, created_at) values (ch, c, 900, f1, 'Old', 'cli-' || tag || '-old', 'old one', now() - interval '14 months') returning id into old_m;
+  perform pb_msg.sweep();
+  insert into t_chk (name, ok, got) values ('3b keep forever: the daily job deletes nothing', exists (select 1 from pb_msg.messages where id = old_m), '');
+  s := pg_temp.e(pg_temp.q(o, format('select public.pb_msg_company_set(%L, %L)', '13m', o)));
+  perform pb_msg.sweep();
+  insert into t_chk (name, ok, got) values ('3c the company account chooses 13 months (logged); the daily job deletes the 14-month-old message, keeps the new ones',
+    s = 'ok' and not exists (select 1 from pb_msg.messages where id = old_m) and exists (select 1 from pb_msg.messages where id = m3)
+    and exists (select 1 from pb_msg.company_log l where l.company_id = c and l.what = 'retention' and l.new_value = '"13m"'::jsonb) and exists (select 1 from pb_msg.purge_log p where p.company_id = c and p.messages = 1), s);
+  perform pg_temp.q(o, format('select public.pb_msg_company_set(%L, %L)', 'forever', o));
+
+  -- ---- close, archive (service only) ----
+  s := pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_close(%L, true, %L)', ch, f1)));
+  j := pg_temp.q(pm, format('select public.pb_msg_close(%L, true, %L)', ch, pm)); ar := (j->>'archive_id')::uuid;
+  insert into t_chk (name, ok, got) values ('3d a foreman cannot close; the PM closes and an archive is queued', s = 'pb:not_office' and ar is not null and (select state from pb_msg.archives where id = ar) = 'queued', s || ' ' || j::text);
+  s := pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli-' || tag || '-005', 'late', '[]', f1)));
+  insert into t_chk (name, ok, got) values ('3e a closed chat takes no new message', s = 'pb:chat_closed', s);
+  s := pg_temp.e(pg_temp.q(pm, 'select public.pb_msg_svc_archive_next()')) || '/' || pg_temp.e(pg_temp.q(o, format('select public.pb_msg_svc_archive_done(%L, true, %L, 1, 1, 1, 1, null)', ar, '[]')));
+  insert into t_chk (name, ok, got) values ('3f the app cannot call the archive writer''s functions', s like 'permission denied%/permission denied%', s);
+  j := pg_temp.svc('select public.pb_msg_svc_archive_next()');
+  insert into t_chk (name, ok, got) values ('3g the service role gets the whole chat: messages incl. deleted text history, versions, log, people',
+    j->'archive'->>'id' = ar::text and jsonb_array_length(j->'messages') >= 4 and jsonb_array_length(j->'versions') >= 2 and jsonb_array_length(j->'log') >= 5 and j->>'retention' = 'forever', left(j::text, 200));
+  k := c::text || '/keep/' || ch::text || '/test-' || tag || '.zip';
+  j := pg_temp.svc(format('select public.pb_msg_svc_archive_done(%L, true, %L, 1234, 4, 0, 4, null)', ar, jsonb_build_array(jsonb_build_object('path', k, 'bytes', 1234, 'sha256', repeat('a', 64)))));
+  j := pg_temp.q(pm, format('select public.pb_msg_info(%L, %L)', ch, pm));
+  insert into t_chk (name, ok, got) values ('3h the office sees the archive (done, file path) on the info screen; the foreman does not',
+    exists (select 1 from jsonb_array_elements(j->'archives') a where a->>'state' = 'done' and a->'files'->0->>'path' = k)
+    and pg_temp.q(f1, format('select public.pb_msg_info(%L, %L)', ch, f1))->'archives' = 'null'::jsonb, left((j->'archives')::text, 200));
+  s := pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_archive_request(%L, %L)', ch, f1))) || '/' || pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_archive_request(%L, %L)', ch, pm)));
+  insert into t_chk (name, ok, got) values ('3i Save archive now: office yes, foreman no', s = 'pb:not_office/ok', s);
+  s := pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_close(%L, false, %L)', ch, pm))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', ch, 'cli-' || tag || '-006', 'back', '[]', f1)));
+  insert into t_chk (name, ok, got) values ('3j the office reopens it; posting works again', s = 'ok/ok', s);
+  update pb_msg.chats set last_at = now() - interval '121 days' where id = ch;
+  perform pb_msg.sweep();
+  insert into t_chk (name, ok, got) values ('3k a job chat with no message for 120 days is closed by the daily job (logged) and an archive is waiting',
+    (select closed_at is not null from pb_msg.chats where id = ch) and exists (select 1 from pb_msg.archives a where a.chat_id = ch and a.state = 'queued')
+    and exists (select 1 from pb_msg.chat_log l where l.chat_id = ch and l.what = 'closed' and l.by_user is null), '');
+
+  -- ---- assignments change: membership follows them ----
+  update pb_daily.items set status = 'canceled' where id = item_f1;
+  s := pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, f1))) || '/' || pg_temp.e(pg_temp.q(wk, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, wk)));
+  s := s || '/' || (pg_temp.q(o, format('select public.pb_msg_info(%L, %L)', ch, o))->'rule'->>'foremen');
+  insert into t_chk (name, ok, got) values ('3m f1''s item ends and r left the company (2c): no foreman assigned, so the fallback lets wk (worked it) in; f1 stays because the office added him in 2w; Chat info says worked', s = 'ok/ok/worked', s);
+  update pb_daily.items set status = 'open' where id = item_f1;
+  s := pg_temp.e(pg_temp.q(wk, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, wk))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, f1)));
+  insert into t_chk (name, ok, got) values ('3m2 f1 assigned again: the fallback ends (wk out at once); f1 in', s = 'pb:not_in_chat/ok', s);
+  update pb_pm.job_pms set ended_at = now() where company_id = c and job_key = lower(job);
+  s := pg_temp.e(pg_temp.q(pm2, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, pm2))) || '/' || pg_temp.e(pg_temp.q(o, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', ch, o)));
+  insert into t_chk (name, ok, got) values ('3n the job''s PM is unassigned: no PM assigned, so every PM is in (fallback); the company account always', s = 'ok/ok', s);
+  -- ---- direct messages are company records: the company account (only) can archive and download them, each download logged ----
+  j := pg_temp.q(p3, format('select public.pb_msg_open_dm(%L, %L)', f1, p3)); dm2 := (j->'chat'->>'id')::uuid;
+  perform pg_temp.q(p3, format('select public.pb_msg_send(%L, %L, %L, %L, null, %L)', dm2, 'cli-' || tag || '-d02', 'Running late, 20 min', '[]', p3));
+  j := pg_temp.q(o, format('select public.pb_msg_dm_records(%L)', o));
+  insert into t_chk (name, ok, got) values ('3o the company account lists everyone''s direct messages as records: names and counts, never the text',
+    exists (select 1 from jsonb_array_elements(j->'threads') e where (e->>'id')::uuid = dm2 and (e->>'messages')::int = 1) and position('Running late' in j::text) = 0
+    and pg_temp.e(pg_temp.q(o, format('select public.pb_msg_fetch(%L, null, null, 50, %L)', dm2, o))) = 'pb:not_in_chat', left(j::text, 200));
+  s := pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_dm_records(%L)', pm))) || '/' || pg_temp.e(pg_temp.q(mgr, format('select public.pb_msg_dm_records(%L)', mgr)))
+    || '/' || pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_archive_request(%L, %L)', dm2, pm))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_archive_request(%L, %L)', dm2, f1)));
+  insert into t_chk (name, ok, got) values ('3p a PM, a manager, or the people in it cannot list or archive direct messages', s = 'pb:not_company_account/pb:not_company_account/pb:not_office/pb:not_office', s);
+  j := pg_temp.q(o, format('select public.pb_msg_archive_request(%L, %L)', dm2, o)); ar2 := (j->>'archive_id')::uuid;
+  insert into t_chk (name, ok, got) values ('3q the company account archives a direct message', ar2 is not null, j::text);
+  update pb_msg.archives set requested_at = now() - interval '1 year' where id = ar2;   -- (next in line for the writer)
+  j := pg_temp.svc('select public.pb_msg_svc_archive_next()');
+  k2 := c::text || '/keep/' || dm2::text || '/t-' || tag || '.zip';
+  perform pg_temp.svc(format('select public.pb_msg_svc_archive_done(%L, true, %L, 99, 1, 0, 1, null)', ar2, jsonb_build_array(jsonb_build_object('path', k2, 'bytes', 99))));
+  s := (pg_temp.q(o, format('select to_jsonb(public.pb_msg_archive_can_view(%L))', k2)))::text;
+  s := s || '/' || pg_temp.e(pg_temp.q(pm, format('select public.pb_msg_archive_download(%L, %L, %L)', ar2, k2, pm))) || '/' || pg_temp.e(pg_temp.q(f1, format('select public.pb_msg_archive_download(%L, %L, %L)', ar2, k2, f1)))
+    || '/' || pg_temp.e(pg_temp.q(o, format('select public.pb_msg_archive_download(%L, %L, %L)', ar2, k2, o))) || '/' || (pg_temp.q(o, format('select to_jsonb(public.pb_msg_archive_can_view(%L))', k2)))::text
+    || '/' || (pg_temp.q(pm, format('select to_jsonb(public.pb_msg_archive_can_view(%L))', k2)))::text;
+  insert into t_chk (name, ok, got) values ('3r download: refused to a PM and to the people in it; the company account must log it first (can_view false, then true after pb_msg_archive_download); a PM never',
+    j->'archive'->>'id' = ar2::text and s = 'false/pb:not_office/pb:not_office/ok/true/false', s);
+  j := pg_temp.q(f1, format('select public.pb_msg_info(%L, %L)', dm2, f1));
+  insert into t_chk (name, ok, got) values ('3s each download is logged (who, when) and shown to the two people in the Changes',
+    (select count(*) from pb_msg.downloads d where d.archive_id = ar2 and d.by_user = o) = 1 and exists (select 1 from jsonb_array_elements(j->'log') e where e->>'what' = 'archive_downloaded'), left((j->'log')::text, 160));
+
+  select count(*) filter (where ok), count(*) filter (where ok is not true), coalesce(string_agg(name || ' [got: ' || coalesce(got, 'null') || ']', ' ; ' order by i) filter (where ok is not true), '') into pass, fail, fails from t_chk;
+  raise exception 'RESULT: % pass, % fail% %', pass, fail, case when fail > 0 then ' | FAILED: ' || fails else '' end, notes;
+end $test$;

@@ -66,6 +66,9 @@ grant execute on function public.pb_storage_put_ok(text, integer, boolean) to au
 -- job assignments as live (the parts read): PMs/supers per job, inspection/test items per foreman, office-filled dailies
 create table if not exists pb_pm.job_pms (id bigint generated always as identity primary key, company_id uuid not null, job_key text not null, job_number text, user_id uuid not null,
   assigned_by uuid, assigned_at timestamptz default now(), ended_at timestamptz, ended_by uuid, end_reason text);
+-- foremen_job_nov23 01 makes this on live ("Foremen on this job"); same columns. NOFM=1 run_local.sh drops it to test without it.
+create table if not exists pb_pm.job_foremen (id bigint generated always as identity primary key, company_id uuid not null, job_key text not null, job_number text, user_id uuid not null,
+  assigned_by uuid not null, assigned_at timestamptz not null default now(), ended_at timestamptz, ended_by uuid, end_reason text);
 create schema if not exists pb_daily;
 create table if not exists pb_daily.items (id uuid primary key default gen_random_uuid(), company_id uuid not null, client_item_id text, job_key text, job_number text, kind text,
   foreman_uid uuid, status text not null default 'open' check (status in ('open', 'done', 'canceled')), created_by uuid, updated_at timestamptz default now());

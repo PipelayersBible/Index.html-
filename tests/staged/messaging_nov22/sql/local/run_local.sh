@@ -7,7 +7,8 @@ D=$(mktemp -d /tmp/pbmsg.XXXXXX); mkdir -p $D/s; cp -r "$S"/* $D/s/; cp $ST/one_
 chmod -R a+rwx "$D"; chown -R postgres "$D"
 Q="psql -h $D -p $P -U postgres -v ON_ERROR_STOP=1 -q -X"
 fresh() { su postgres -c "$B/pg_ctl -D $D/data stop -m fast >/dev/null 2>&1; rm -rf $D/data; $B/initdb -D $D/data -A trust >/dev/null && $B/pg_ctl -D $D/data -o '-p $P -k $D' -l $D/log start >/dev/null && $Q -c 'create database t'" >/dev/null 2>&1
-  su postgres -c "$Q -d t -f $D/od_stubs.sql && $Q -d t -f $D/sec_stubs.sql && $Q -d t -f $D/s/local/stubs.sql" 2>&1 | grep -E 'ERROR' ; }
+  su postgres -c "$Q -d t -f $D/od_stubs.sql && $Q -d t -f $D/sec_stubs.sql && $Q -d t -f $D/s/local/stubs.sql" 2>&1 | grep -E 'ERROR'
+  [ -z "$NOFM" ] || su postgres -c "$Q -d t -c 'drop table pb_pm.job_foremen'"; }   # NOFM=1: as live before foremen_job_nov23
 LG="PGOPTIONS='-c pb_msg.guard=skip-local-test'"
 for n in ${ONLY:-01 02 03 04}; do
   fresh

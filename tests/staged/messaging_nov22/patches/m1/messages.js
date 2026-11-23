@@ -443,7 +443,9 @@
     const R = I.rule || null;
     const who = c.kind !== 'job' || !R ? '' : '<p class="pb-help" id="pbmWho">'
       + (R.foremen === 'assigned' && R.pms === 'assigned' ? 'Everyone assigned to this job is in, with the company account and managers.'
-        : [R.foremen === 'worked' ? 'Nobody is assigned to this job, so the foremen who worked it in the last 120 days are in.' : 'The foremen assigned to this job are in.',
+        : [R.foremen === 'worked' ? 'Nobody is assigned to this job, so the foremen who worked it in the last 120 days are in.'
+             : R.foremen === 'linked' ? 'No foremen are listed on the job page, so foremen with open inspections, crew runs or dailies on this job are in.' /* foremen_job_nov23 */
+             : 'The foremen assigned to this job are in.',
            R.pms === 'all' ? 'No PM or super is assigned to this job, so every PM and super is in.' : 'The PMs and supers assigned to this job are in.',
            'The company account and managers are always in.'].join(' ')) + '</p>';
     h += '<section class="pbm-sec" aria-labelledby="pbmPplH"><h2 id="pbmPplH">People in this chat (' + people.length + ')</h2>' + who

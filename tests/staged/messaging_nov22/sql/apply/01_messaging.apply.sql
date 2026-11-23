@@ -6,11 +6,13 @@ begin;
 -- pb_pm.settings.tz (default America/Chicago), pb_prod.push_prefs.tz, pb_push.outbox (+ check pb_push_out_type),
 -- pb_push.kick(), pb_push.is_service(), pb_audit.direct_write(), pb_billing.storage_room(uuid,text,integer),
 -- pb_crew.display_name(uuid,uuid). Nothing live is replaced; the only live object changed is the pb_push_out_type check
--- (gets 'message'). Job membership (Tommy, Nov 22 answer 47): everyone ASSIGNED to the job, read from what the app assigns
--- today: PMs/supers from pb_pm.job_pms; foremen from inspection/test items (pb_daily.items.foreman_uid), crew runs assigned
--- to them (pb_prod.entries.assigned_to) and dailies the office filled for them (pb_daily.reports.for_foreman); plus the
--- company account and managers. Nobody assigned -> fallback (said on Chat info): foremen who worked the job in 120 days,
--- and every PM/super when no PM/super is assigned (as pb_pm.job_alert_recipients does for job alerts).
+-- (gets 'message'). Job membership (Tommy, Nov 22 answer 47): everyone ASSIGNED to the job: PMs/supers from pb_pm.job_pms;
+-- foremen (foremen_job_nov23, Nov 23): first the job page's "Foremen on this job" (pb_pm.job_foremen); when nobody is on
+-- that list, foremen with work handed to them on the job: open inspection/test items (pb_daily.items.foreman_uid), crew runs
+-- assigned to them (pb_prod.entries.assigned_to), dailies the office filled for them (pb_daily.reports.for_foreman); when
+-- none of those either, foremen who worked the job in 120 days. Plus the company account and managers. No PM/super assigned
+-- -> every PM/super (as pb_pm.job_alert_recipients does for job alerts). Chat info says which rule let people in.
+-- pb_pm.job_foremen comes from foremen_job_nov23/sql/01 (apply that first); without it this falls back as before.
 -- Run as postgres in one transaction (apply/01_messaging.apply.sql). Safe to run twice.
 -- Undo: undo/99_undo_01.sql.
 
@@ -251,6 +253,21 @@ begin
   return exists (select 1 from pb_pm.job_pms a where a.company_id = p_co and a.job_key = p_jk and a.ended_at is null and pb_msg.role_in(a.user_id, p_co) = 'pm');
 exception when undefined_table then return false;
 end $f$;
+-- foremen_job_nov23: on the job page's "Foremen on this job" list (pb_pm.job_foremen, open rows, still a foreman here)
+create or replace function pb_msg.fm_listed(p_uid uuid, p_co uuid, p_jk text) returns boolean
+language plpgsql stable security definer set search_path to '' as $f$
+begin
+  return exists (select 1 from pb_pm.job_foremen a where a.company_id = p_co and a.job_key = p_jk and a.user_id = p_uid and a.ended_at is null)
+     and pb_msg.role_in(p_uid, p_co) = 'foreman';
+exception when undefined_table then return false;
+end $f$;
+create or replace function pb_msg.any_fm_listed(p_co uuid, p_jk text) returns boolean
+language plpgsql stable security definer set search_path to '' as $f$
+begin
+  return exists (select 1 from pb_pm.job_foremen a where a.company_id = p_co and a.job_key = p_jk and a.ended_at is null and pb_msg.role_in(a.user_id, p_co) = 'foreman');
+exception when undefined_table then return false;
+end $f$;
+-- the older signs (used only when nobody is on the job page's list): work handed to a foreman on this job
 create or replace function pb_msg.fm_assigned(p_uid uuid, p_co uuid, p_jk text) returns boolean
 language plpgsql stable security definer set search_path to '' as $f$
 declare v boolean := false;
@@ -275,7 +292,7 @@ end $f$;
 create or replace function pb_msg.rule(p_co uuid, p_jk text) returns jsonb
 language sql stable security definer set search_path to '' as $f$
   select jsonb_build_object('pms', case when pb_msg.any_pm(p_co, p_jk) then 'assigned' else 'all' end,
-                            'foremen', case when pb_msg.any_fm(p_co, p_jk) then 'assigned' else 'worked' end)
+                            'foremen', case when pb_msg.any_fm_listed(p_co, p_jk) then 'assigned' when pb_msg.any_fm(p_co, p_jk) then 'linked' else 'worked' end)
 $f$;
 -- a job chat (also before it exists: p_chat null): office | pm | foreman | pipelayer | null
 create or replace function pb_msg.jq(p_co uuid, p_jk text, p_include boolean, p_chat uuid, p_uid uuid) returns text
@@ -294,7 +311,11 @@ begin
     return case when added or pb_msg.pm_assigned(p_uid, p_co, p_jk) or not pb_msg.any_pm(p_co, p_jk) then 'pm' end;
   end if;
   if r = 'foreman' then
-    return case when added or pb_msg.fm_assigned(p_uid, p_co, p_jk) or (not pb_msg.any_fm(p_co, p_jk) and pb_msg.on_job(p_uid, p_co, p_jk)) then 'foreman' end;
+    -- foremen_job_nov23: the job page's list first; else work handed to them; else worked it in 120 days
+    return case when added then 'foreman'
+                when pb_msg.any_fm_listed(p_co, p_jk) then case when pb_msg.fm_listed(p_uid, p_co, p_jk) then 'foreman' end
+                when pb_msg.any_fm(p_co, p_jk) then case when pb_msg.fm_assigned(p_uid, p_co, p_jk) then 'foreman' end
+                when pb_msg.on_job(p_uid, p_co, p_jk) then 'foreman' end;
   end if;
   if not coalesce(p_include, false) then return null; end if;        -- pipelayers only when the office included them
   if added or pb_msg.on_job(p_uid, p_co, p_jk) then return 'pipelayer'; end if;
