@@ -34,7 +34,7 @@ A new card on the office job page, right under "PMs & supers on this job", same 
 | Messaging | edited in place in `tests/staged/messaging_nov22` (see below); pre-edit copies in `messaging_before/` |
 | Results | `results/sql_local.txt`, `results/t_foremen.txt`, `results/shots/`, `results/full_regression.log`, `results/regression/` |
 
-Build md5 (`sh build.sh`): work/index.src.html `RESULT_SRC_MD5`, work/build/index.html `RESULT_BUILD_MD5`.
+Build md5 (`sh build.sh`): work/index.src.html `3132f03c6dcbcf62c9d4cda3fab9b0f9`, work/build/index.html `4af8807b6c0e2e9f3ffa8c909f8f9268`.
 
 ## Server (sql/01_job_foremen.sql)
 - New table **`pb_pm.job_foremen`** (same columns as `pb_pm.job_pms`: one row per assignment, ended not deleted,
@@ -59,8 +59,8 @@ Build md5 (`sh build.sh`): work/index.src.html `RESULT_SRC_MD5`, work/build/inde
    role authenticated]`**. It inserts throwaway users/companies (plan paid, active) and rolls everything back.
 3. Apply `sql/apply/01_job_foremen.apply.sql` (one transaction).
 4. **Before messaging_nov22's 01** if both go the same day (so its test block runs 3t1-3t6; it works either way).
-5. Release the app with `patches/f1_job_foremen.py` (`sh build.sh`; on top of messaging too, both orders apply), and copy
-   `test_updates/` over `tests/` in the same commit (see below). The app can go first: until step 3 the card says
+5. Release the app with `patches/f1_job_foremen.py` (`sh build.sh`; on top of messaging too, both orders apply), (no test changes needed:
+   `test_updates/` is empty; `tests/t_foremen.js` can be added to the suite if wanted). The app can go first: until step 3 the card says
    "Assigning foremen isn’t ready on the company server yet."
 
 ## Undo
@@ -87,7 +87,7 @@ the table). Details in messaging_nov22/NOTES.md "Nov 23 update".
 | messaging block_t01 | 79/0 (stub DB), **80/0 with this applied for real** (3t6 = the real save), 74/0 without the table; t02 14, t03 4, t04 5; apply x2 + undo clean |
 | messaging app rig `t_msg.js` | 57/57 pass (B9d, B9e new) |
 | `tests/t_foremen.js` | **26/26 pass** (placement, card + Overview only, load, list, edit ticks 44 px+, save on version, someone else's add kept, pb:changed retry, owner_only / not_foreman words, manager locks + note, none / nobody to pick, no signal both ways, server not ready, Edit Job menu, PMs untouched, Spanish, 400/360 px no sideways scroll, no page errors) |
-| Full regression | RESULT_REGRESSION |
+| Full regression (`tests/run_all.sh --build work/build_hooks/index.html --jobs 2`) | **pass 222, flaky 0, FAIL 0, skip 15 (of 237)**: no golden changed, so `test_updates/` holds no file (only a README). f06_breakend passed this time. |
 
 ## Where foremen assignment would matter (NOT changed; for later)
 All of these key off PMs/supers (`pb_pm.job_alert_recipients`) or guess foremen from recent work:
