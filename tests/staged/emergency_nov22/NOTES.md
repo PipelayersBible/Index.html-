@@ -117,4 +117,7 @@ Order: `p1_emergency_block.py` → `p2_not_emergency_link.py` → `p3_spanish_ro
 - `results/`: every run above; `shots/`: the emergency card with the link, the "line" answer
 - `test_updates/`: the a1_ask golden
 
+## Paid eval on ai-next (after the lead installed cdddf51b34db on next)
+See `EVAL_NEXT.md`: **GO**. $7.88 counted in the 3 run totals, $8.13 counted in all (over the $8 budget by $0.13; the extra $0.25 is answers outside the 3 runs, not identified). 25/25 instant emergencies right, 10/10 look-alikes reached Ask, everyday 64/67 by hand (3 length only), 148 existing 144 by pattern = 146 by hand (lib8 146).
+
 ## DONE
