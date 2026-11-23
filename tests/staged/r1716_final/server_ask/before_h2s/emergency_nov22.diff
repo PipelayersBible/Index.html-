@@ -1,0 +1,461 @@
+diff -ruN src_base/ask.ts server_src/ask.ts
+--- a/ask.ts	2026-11-22 15:19:46.793209035 -0800
++++ b/ask.ts	2026-11-22 15:36:59.069445358 -0800
+@@ -60,7 +60,7 @@
+   search,
+ } from "./_shared/retrieval.ts";
+ import { gapStep, later, namesOwnJob, REFUSAL_RX } from "./gaps.ts";
+-import { addressState, analysisStateLine, okState, resolveState, stateLines, stateSearch } from "./state.ts";
++import { addressState, analysisStateLine, esSearchWords, okState, resolveState, stateLines, stateSearch } from "./state.ts";
+ import { SHELF_FIRST, shelfPick, shelfSearch, withShelf } from "./shelf.ts";
+ const REPLY_RULE = "REPLY FOR THIS ONE (firm; count before you send): Line 1 is ONE sentence of 25 words or fewer and IS the answer: the number with its unit, the yes or no, or the first step, in your own words (never start with a quotation). STRICTEST RULE: when the job state's rule and the federal rule (OSHA, MUTCD, EPA) differ, line 1 gives the STRICTER one and names its source in a few words (\"Washington requires a protective system at 4 ft (stricter than federal OSHA's 5 ft)\"); when they match, add no sentence about it (in a state with its own OSHA plan, name the plan as the source inside line 1's parentheses, e.g. \"(<state>'s plan, same as federal OSHA)\", but only on an OSHA safety rule, never on an 811, gas strike, spec or pay answer), but when the state ADDS a requirement the federal rule does not have (a permit, a notice, a registration), give it in line 1 or the first line under it; when you cannot tell which is stricter, give both and say to follow the stricter. Never list two different numbers for the same requirement without saying which one to follow. Compare only the same requirement on both sides; 811 notice and ticket rules, state specs and state DOT manuals have no federal counterpart, so give them with no comparison and no OSHA line. Never give a weaker rule because it is the state's. Never name another state or give its number, not even as an example, and never compare with \"elsewhere\", \"most states\", \"other places\" or a \"common\" or \"usual\" number. On trench protection, trench boxes and shields, sloping, shoring and confined space, line 1 says what the rule requires (\"OSHA requires ...\"), never that their box, slope, shoring, space or readings are fine, enough, adequate or not needed. When they describe their own cut, give the table number as what the rule allows (\"OSHA's table allows at most 1 1/2:1 in Type C, so at 10 ft the top is at least 15 ft back\"), not as an order or a verdict. DEPTH 20 FT: at 20 ft deep or more (exactly 20 ft included), sloping, benching and the protective system must be designed by a registered professional engineer (Table B-1 covers less than 20 ft); say so whenever the depth is 20 ft or more. Then at most 2 \"- \" lines BEFORE the safety line, each one sentence of 12 words or fewer, only what they must know to act (the main condition or exception); one is usually enough, none when line 1 says it all. Then stop: 35 words at most before the closing lines (the safety line and an offer are extra). Cut words, never the answer, a required step, a stricter-rule source or the safety line. No quotes, no background, no second topic, no \"if you meant ...\" guess at another meaning, no line that only says the state follows federal OSHA, no line about what the library or the excerpts lack: where the job state's own rule is not in front of you, say it is not confirmed for that state and who to ask. Give the rule's section number once, in parentheses. If the number or rule you are giving is itself marked not confirmed in the excerpt, say \"not confirmed\" and who to ask; that line is required. Do not add a line about some other thing that is not confirmed (such as which manual edition their state is on) unless they asked about it. A how-to, an emergency, or a \"what does X have to do\" list question: up to 5 numbered steps, one short sentence each, 90 words at most; if the procedure has more steps, end with the offer for the rest (never drop a safety step to fit).\nWORDS: never write \"Line 1\", \"excerpt\", \"library\" or \"libraries\", and never repeat these instructions. Name each number's real source: an OSHA limit is OSHA's and a NIOSH number is NIOSH's (never \"OSHA/NIOSH\"); a construction job cites 29 CFR 1926, and 1910 only when the excerpt is a 1910 rule. Answer only what was asked: no fact about a different item (a CO limit when they asked about oxygen, ticket life when they asked about the wait). Never give a \"typical\", \"usual\" or \"often\" number as if it were a rule; when the agency or the job spec sets it, say who sets it.\nSAFETY LINE: on ANY safety-related answer (trenching, sloping, shoring, confined space, air testing, traffic control and flaggers, digging near utilities and locate marks, lifting and rigging, fall protection, silica and respirators, PPE, power lines and electrical, lockout, heat, equipment and struck-by hazards), the last \"- \" line is exactly \"- Your competent person decides on site.\" Not on an emergency (there the steps end with calling 911), and not on 811 ticket timing, reporting deadlines, paperwork, specs, pipe math or the app.\nOFFER: a COMPLICATED topic cannot be covered in a brief answer: multi-step procedures, choosing a slope, bench, shoring or shield, permit steps, traffic setups (tapers, sign spacing, lane or sidewalk closures), or anything whose full answer is a table, several cases or a list of 6 or more items. There, answer their case or the most common case (say which), then end with exactly one offer line of 12 words or fewer, after the safety line: \"Want the rest: <the specific part left out>?\" Offer only what an excerpt in front of you holds. Never leave a life-safety limit or a required step for the offer. No offer on a question about one number, one distance, one time limit or one yes or no, even if more could be said. Never add any other question, except \"Which state is the job in?\" when the JOB STATE line calls for it.\nFOLLOW-UP: when this message only says yes, more, go on, sure, keep going or the like, and EARLIER IN THIS CONVERSATION ends with your offer, give the part you offered now, in full: every row of the table, every item of the list, every step you offered, with its numbers, taken from the excerpts. Pick up where the last answer stopped, do not repeat what it already said, do not start over. Here the word limits above do not apply: give the whole offered table, list or steps, with nothing around them but one lead-in sentence (no background, no repeats), continuing the numbering if the last answer had steps. Never say the table or list did not come through; if no excerpt has it, name the document that does in one line. End with the safety line if it is a safety topic, and offer once more only if a part is still left.";
+ const pbTrimHits = (hits) => { const v = Number((globalThis.__pbKnobs || {}).verbatimMax) || 0; return v ? hits.map((h) => (h.verbatim && h.text.length > v ? { ...h, text: h.text.slice(0, v) + " \u2026" } : h)) : hits; };
+@@ -269,7 +269,7 @@
+       /\bOSHA[\s_\-:]*VERBATIM\b/gi,
+       "OSHA",
+     ),
+-    local0 = localAnswer(q),
++    local0 = localAnswer(q, { notEmergency: body.not_emergency === true }), // emergency_nov22: "Not an emergency? Send to Ask"
+     local = local0 && local0.kind === "emergency" ? local0 : null, // v28 freedom: only emergencies skip the AI
+     localGo = !!local0 && local0.kind === "gonogo",
+     signedOut = () =>
+@@ -600,13 +600,13 @@
+     // state's chunks only on that state's job or when the question names the state; the job state's own chunks for
+     // this question are added beside the general ones.
+     const ss = index
+-        ? stateSearch(search, index, cont ? cont.orig : intent?.search ? q + " " + intent.search : q, {
++        ? stateSearch(search, index, cont ? cont.orig : (intent?.search ? q + " " + intent.search : q) + esSearchWords(q), { // emergency_nov22 (G): Spanish field words
+           k: 6,
+           level,
+           topicBoost: ctxLabel ? ctxLabel.toLowerCase().split(/\W+/) : [],
+           maxChars: 9e3,
+           stats: kst,
+-        }, st, cont ? cont.orig : q)
++        }, st, cont ? cont.orig : q + esSearchWords(q))
+         : { hits: [], dropped: 0, own: 0, dependent: !1 },
+       hits = cont && index ? (() => {
+         const seen = new Set(ss.hits.map((h) => h.id)),
+diff -ruN src_base/emergency.ts server_src/emergency.ts
+--- a/emergency.ts	2026-11-22 15:19:46.793712654 -0800
++++ b/emergency.ts	2026-11-22 15:28:06.705452515 -0800
+@@ -1,29 +1,32 @@
+ // emergency.ts (ask_quality_nov22, Nov 22 2026; independent safety review items 1-2): an emergency happening NOW gets a fixed
+ // answer with no AI round trip. The SAME text is pasted into the app (_src PB_AI_EMERGENCY_*), so a phone with no plan, no
+-// quota or no signal still shows it. Pure, no imports. Scripts: space (trench / hole / confined space / gas alarm: stay out),
+-// open (someone down, hurt or overheated in the open: 911, CPR / cooling now), gas (gas line hit or gas smell), power
+-// (power line contact or shock). English and Spanish.
++// quota or no signal still shows it. Pure, no imports. Scripts: space (trench / hole / confined space / gas alarm / sewer-gas
++// smell: stay out), open (someone down, hurt or overheated in the open: 911, CPR / cooling now), gas (gas line hit or gas
++// smell), power (power line contact or shock), line (a line hit and nobody can tell what it is: the power AND the gas steps).
++// English and Spanish.
++// emergency_nov22 (Nov 22 2026; Spanish review #1 #4 #12 #13 #19, Ask everyday review P1 #2 and P2 C): a machine touching a
++// line gets the power steps; many more Spanish phrasings, word-end matching, Spanish guessed from ordinary small words; the
++// sewer-gas / rotten-egg smell at a manhole gets the confined-space steps; everyday wording ("down in the trench shooting
++// grade", "ran over the lath", "low battery", "nobody hurt", texts / calls) no longer sets it off. When in doubt it still fires.
+ // Text is lower-cased, apostrophes and accents removed before matching (pbEmgNorm).
+ export const pbEmgNorm = (q) => String(q || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’']/g, "");
+ // a question ABOUT emergencies (training, signs, prevention, "what if") rather than one happening: only the strong triggers fire
+-const PB_EMG_INFO = /\b(signs? of|symptoms? of|what (are|is) (the )?(signs?|symptoms?)|how (do|can|would) (you|i|we) (know|tell|recognize|spot|prevent|avoid)|prevent\w*|avoid\w*|training|toolbox|tailgate|talk about|safety meeting|in general|hazards? of|risks? of|how (do|can|should|would) (you|i|we) (stop|treat|handle|deal with|care for))\b/;
+-const PB_EMG_SPACE = /\b(trench\w*|ditch|hole|excavation|the cut|manholes?|mh|vaults?|wet ?wells?|lift stations?|tanks?|pits?|sewers?|confined|catch ?basins?|culverts?|structures?|in there|down there|down in|inside|the box|zanja|pozo|registro|hoyo|tanque|alcantarilla|boveda|espacio confinado|adentro|alla abajo)\b/;
++const PB_EMG_INFO = /\b(signs? of|symptoms? of|what (are|is) (the )?(signs?|symptoms?)|how (do|can|would) (you|i|we) (know|tell|recognize|spot|prevent|avoid)|prevent\w*|avoid\w*|training|toolbox|tailgate|talk about|safety meeting|in general|hazards? of|risks? of|how (do|can|should|would) (you|i|we) (stop|treat|handle|deal with|care for)|como (se )?(evita|evitar|previene|prevenir|reconoce|reconocer|sabe)|senales? de|sintomas? de|que hago si|que hacer si|que se hace si|platicas?|capacitacion|entrenamiento|en general|riesgos? de|peligros? de|que es (un|una|el|la))\b/;
++const PB_EMG_SPACE = /\b(trench\w*|ditch|hole|excavation|the cut|manholes?|mh|vaults?|wet ?wells?|lift stations?|tanks?|pits?|sewers?|confined|catch ?basins?|culverts?|structures?|in there|down there|down in|inside|the box|zanjas?|pozos?|registros?|hoyos?|tanques?|alcantarillas?|bovedas?|espacio confinado|excavacion|adentro|alla abajo)\b/;
++// a person (English): "ran over" / "hit by a truck" count only with one
++const PB_EMG_WHO = "(him|her|them|me|us|someone|somebody|anyone|anybody|(a |the |my |our |his |her |that )?(guy|guys|man|men|worker|workers|laborer|laborers|pipelayer|pipe layer|operator|flagger|foreman|helper|partner|buddy|entrant|attendant|top ?man|grade ?(checker|man)|kid|brother|son|apprentice|driver|surveyor|inspector|employee|coworker|co-worker|hand|crew ?member))";
++// machine parts that can reach a line, and lines that are not power or gas (a water / sewer / fiber line hit is an Ask question)
++const PB_EMG_MACH = "(boom|bucket|stick|arm|excavator|hoe|backhoe|crane|truck|machine|dump ?bed|dump truck|mast|pluma|brazo|bote|cucharon|retro|retroexcavadora|excavadora|grua|maquina|troca)";
++const PB_EMG_QUAL = /\b(water|sewer|storm|irrigation|sprinkler|fiber|fibre|phone|telephone|tv|comm\w*|drain|grade|string|laser|chalk|paint|agua|drenaje|fibra|telefono|riego)\b/;
+ // strong: fire even when the question reads like a "what if"
+-export const PB_EMG_STRONG = [
+-  /\b(passed out|pass(ing)? out|unconscious|not responding|unresponsive|not breathing|stopped breathing|man down|keeled over|overcome by)\b/,
+-  /\b(isnt|is not|not|wont|will not|stopped|cant get him to|cant get her to)\s+(answering|answer|responding|respond|talking|moving)\b/,
+-  /\b(cant|cannot|can not|couldnt)\s+(reach|raise|hear|see|wake)\s+(him|her|them|my|the|our)\b/,
+-  /\bno (answer|response) from\b/,
+-  /\b(havent|have not|hasnt|has not|we havent|nobody has) (heard from|heard back from|seen|had an answer from)\b/,
+-  /\b(someone|somebody|he|she|they|guy|man|worker|buddy|partner|entrant|laborer|operator|pipelayer|flagger|crew ?member|my \w+)\b.{0,25}\b(is down|are down|went down|fell (in|down)|collapsed|buried|trapped|pinned)\b/,
++const PB_EMG_CORE = [
++  /\b(passed out|pass(ing)? out|unconscious|not breathing|stopped breathing|man down|keeled over|overcome by)\b/,
++  // "down" while working ("down in the trench shooting grade", "down at the supply house", "down sick") is not an emergency
++  new RegExp("\\b(someone|somebody|he|she|they|guy|man|worker|buddy|partner|entrant|laborer|operator|pipelayer|flagger|crew ?member|my \\w+)\\b.{0,25}\\b((is|are|went|was) down(?!\\s+(at|to|sick|for|on|from|by|here|the (road|street|block|hill)|\\d|with(?! (heat|a heat|a seizure|chest))|(in|inside) (the |a )?(trench|hole|ditch|cut|excavation|manhole|pit|box|vault)\\s*,?\\s*(shooting|setting|laying|grading|grade|rod|checking grade)))|fell (in|down)|collapsed|buried|trapped|pinned)\\b"),
+   /\b(cave[- ]?in|trench|wall|side|bank|hole|ditch)\b.{0,20}\b(just )?(collapsed|caved|came down|fell in|gave way|sloughed( off)?)\b/,
+   /\b(cave[- ]?in|caved in)\s*!/,
+   /\b(dirt|soil|bank|wall|side|spoil|mud|ground|sand|clay)\b.{0,25}\b(came down|fell|sloughed( off)?|slid|slumped|caved|collapsed)\b.{0,25}\b(on|onto|over|around|in on)\b/,
+   /\bup to (his|her|their|the guys|my guys) (waist|chest|knees|neck|hips|shoulders)\b/,
+-  /\b(gas )?(alarm|monitor|meter|detector|sniffer|4[- ]?gas|four[- ]?gas|multi[- ]?gas)\b.{0,20}\b(going off|is going|went off|alarming|beeping|screaming|in alarm|sounding)\b/,
+-  /\b(meter|monitor|detector|alarm)s? (is |are )?in alarm\b/,
+-  /\bgas alarm\b(?!s? (be |is |are )?(set|setting|level|point|at|should))/,
+-  /\b(h2s|co|lel|o2|oxygen|4[- ]?gas)\s+alarm\b(?!s? (be |is |are )?(set|setting|level|point|at|should))/,
+   /\b(\d+(\.\d+)?\s*(ppm|%)|(co|h2s|lel)\s+\d+)\b.{0,30}\b(and )?(climbing|rising|going up|spiking|keeps going up)\b/,
+   /\b(\d+(\.\d+)?\s*(ppm|%)|(co|h2s|lel|o2)\s+\d+)\b.{0,40}\b(guys?|someone|somebody|he|she|they|entrant|man|worker)\b.{0,10}\b(inside|in there|down there|in the hole|in the manhole|in the vault)\b/,
+   /\b(entrant|guy|he|she|worker|man)\b.{0,30}\b(acting (drunk|weird|strange|funny|confused|loopy|dizzy)|slurring|stumbling|cant stand)\b/,
+@@ -34,28 +37,85 @@
+   /\bgas (leak|leaking|is leaking|blowing|escaping|coming out)\b/,
+   /\b(blowing|hissing|leaking) gas\b/,
+   /\bgas\b.{0,15}\b(is |was |keeps )?(blowing|hissing|leaking|escaping|coming out)\b/,
+-  // power line contact or shock
+-  /\b(hit|hitting|touched|touching|touch|contacted|made contact with|snagged|struck|clipped|caught|tore down|pulled down|brought down|ripped|cut)\b.{0,30}\b(power|electric|electrical|overhead|hot|live|primary|high voltage)\s*(line|lines|wire|wires|cable|service|conductor)s?\b/,
+-  /\b(boom|bucket|stick|arm|excavator|hoe|backhoe|crane|truck|machine|dump bed)\b.{0,20}\b(touched|touching|hit|contacted|in contact with)\b.{0,20}\b(line|lines|wire|wires)\b/,
++  // power line contact or shock (the contact patterns are in PB_EMG_MACHLINE)
+   /\b(electrocuted|got electrocuted|got shocked|was shocked|been shocked|getting shocked|shocked (him|her|them|me)|got zapped|got bit by the line)\b/,
+   // medical events happening now
+   /\b(cant|cannot|can not) breathe?\b/,
+-    /\b(having|has|had|is having|think (he|she|they)s? having|going into)\b.{0,15}\b(heart attack|stroke|heat ?stroke|seizure)\b/,
+-  /\b(run over|ran over|backed over)\b/,
++  /\b(having|has|had|is having|think (he|she|they)s? having|going into)\b.{0,15}\b(heart attack|stroke|heat ?stroke|seizure)\b/,
++  // run over / backed over: a person, not the lath, the hose or the hydrant
++  new RegExp("\\b(run|ran|backed|rolled|drove) over (" + PB_EMG_WHO + "|(his|her|their|my) (leg|legs|foot|feet|arm|hand|ankle))\\b"),
++  new RegExp("\\b(" + PB_EMG_WHO + "|he|she|they)\\b.{0,20}\\b(got|was|been|were|get|gets|is|getting) (run|ran|backed|rolled) over\\b"),
+   /\b(flagger|guy|worker|laborer|someone|somebody|he|she|operator|pipelayer|man|my \w+)\b.{0,20}\b(got hit|was hit|just got hit|hit by (a|the|our) (car|truck|vehicle|loader|excavator|machine|dozer)|got struck|was struck)\b/,
+   /\b(pipe|stick|load|bucket|plate|box|shield|rock|machine|loader|excavator|truck|roller|joint)\b.{0,25}\b(rolled|fell|dropped|landed|swung) (on|over|onto|into)\s+(him|her|them|his|her|my|a guy|the guy|someone|somebody)\b/,
+   /\b(crushed|smashed) (his|her|their|my)\b|\b(leg|arm|hand|foot|fingers?|chest) (got |was |is )?(crushed|smashed|pinned)\b/,
+   /\b(fell|fallen) (off|from|into|in)\b.{0,40}\b(hit (his|her) head|not moving|cant move|bleeding|knocked out|out cold)\b/,
+-  // Spanish
+-  /\b(atrapad[oa]s?|enterrad[oa]s?|sepultad[oa]s?)\b/,
+-  /\b(se (cayo|derrumbo|vino abajo|colapso|desplomo)|derrumbe)\b.{0,25}\b(zanja|pared|tierra|talud|hoyo|excavacion)\b|\b(zanja|pared|tierra|talud)\b.{0,15}\b(se (cayo|derrumbo|vino abajo|colapso))\b/,
+-  /\bno (responde|respira|contesta|se mueve)\b/,
+-  /\b(se desmayo|desmayad[oa]|inconsciente|esta desmayad[oa])\b/,
+-  /\b(fuga|olor) de gas\b|\bhuele a gas\b|\b(pegamos|golpeamos|rompimos|reventamos|cortamos)\b.{0,20}\b(linea|tuberia|tubo) de gas\b/,
+-  /\b(electrocut\w*|le dio (la )?corriente|toco (la |el )?(linea|cable)s?( electric\w*| de luz)?)\b/,
+-  /\b(sangra(ndo)? mucho|mucha sangre|lo atropell\w*|la atropell\w*|lo aplast\w*|la aplast\w*)\b/,
+-  /\balarma\b.{0,20}\b(sono|sonando|esta sonando|se activo)\b|\b(medidor|detector)\b.{0,15}\b(en alarma|sonando)\b/,
++  /\b(broke|broken|fractured|snapped) (his|her|their|my|a) (leg|arm|back|neck|hip|pelvis|skull|ribs?)\b/,
++  // Spanish: trapped, buried, crushed
++  /\b(atrapad|enterrad|sepultad|prensad|machucad|aplastad|apachurrad)[oa]s?\b/,
++  // Spanish: cave-in ("se nos derrumbo el banco", "se cayo el trench", "se desmorono la zanja", "lo tapo la tierra")
++  /\b(derrumb\w*|desmoron\w*|se (nos )?(cayo|vino abajo|vino|colapso|desplomo|hundio))\b.{0,30}\b(zanjas?|pared(es)?|tierra|talud|hoyo|excavacion|banco|orilla|trench|banqueta|encima|compa\w*|adentro)\b/,
++  /\b(zanjas?|pared(es)?|tierra|talud|banco|orilla|trench|hoyo|excavacion)\b.{0,20}\b(se (nos )?(cayo|derrumbo|vino abajo|colapso|desmorono|desplomo)|colapso|derrumbo|desmorono)\b/,
++  /\b(tierra encima|vino (la )?tierra|lo tapo|la tapo|los tapo|quedo tapad\w*|quedaron tapad\w*|tapad[oa]s? (con|de|por) (la )?tierra|hasta (la|el|las|los) (cintura|rodillas?|pecho|cuello|hombros))\b/,
++  /\bse cayo (al|en el|en la|dentro de (la|el|un|una)|a la|adentro del?)\b.{0,12}\b(pozo|hoyo|zanja|registro|manhole|trench|excavacion|alcantarilla|tanque|boveda)\b/,
++  // Spanish: not responding, not breathing, passed out
++  /\bno (respira|se mueve|despierta|reacciona|puede respirar)\b/,
++  /\b(se desmay\w*|desmayad[oa]s?|inconsciente|perdio el conocimiento|esta morad[oa])\b/,
++  /\bno lo (oigo|escucho|veo)\b.{0,30}\b(pozo|hoyo|zanja|registro|manhole|adentro|abajo|tanque|boveda)\b/,
++  /\b(mare\w*|se quedo dormido|dormido)\b.{0,40}\b(pozo|hoyo|zanja|registro|manhole|adentro|alla abajo|abajo|tanque|boveda)\b|\b(pozo|hoyo|registro|manhole|alla abajo|adentro)\b.{0,30}\b(mare\w*|dormido)\b/,
++  // Spanish: bad air (H2S: rotten eggs, sewer smell; low oxygen, high H2S with someone inside)
++  /\b(huele|olor|apesta)\b.{0,10}\b(huevos? podridos?|drenaje|cloaca)\b/,
++  /\b(h2s|acido sulfhidrico|oxigeno|monoxido|lel|gas(es)?)\b.{0,30}\b(alt[oa]|baj[oa]|subiendo|bajando)\b.{0,40}\b(adentro|dentro|abajo)\b/,
++  // Spanish: gas
++  /\b(fuga|olor|escape) de gas\b|\bhuele (mucho |fuerte |bien )?a gas\b/,
++  /\b(le )?(pegamos|pegaron|pego|golpeamos|golpearon|golpeo|rompimos|rompieron|rompio|reventamos|reventaron|revento|cortamos|cortaron|corto|ponchamos|poncharon|poncho)\b.{0,25}\bgas\b/,
++  /\b(le )?dimos (al|a la|a una|a un) (gas|linea de gas|tuberia de gas|tubo de gas)\b/,
++  /\b(sale|saliendo|salio|chifla\w*|silba\w*|escapando|se escapa|se sale)\b.{0,15}\bgas\b|\bgas\b.{0,15}\b(sale|saliendo|chifla\w*|silba\w*|escapando)\b/,
++  // Spanish: power
++  /\b(electrocut\w*|le dio (la )?(luz|corriente|toques?|un toque|una descarga|descarga|un choque|choque)|le dieron toques|choque electrico|descarga electrica|le paso (la )?corriente|toques? electric\w*)\b/,
++  /\b(toco|tocaron|tocamos|tocando|toca)\b.{0,25}\b(cables?|alambres?|lineas?)( electric\w*| de (luz|alta|corriente|electricidad))?\b/,
++  /\b(pego|pegamos|pegaron|golpeo|golpeamos|engancho|enganchamos)\b.{0,25}\b(cables?|alambres?|lineas?) (electric\w*|de (luz|alta|corriente|electricidad))\b/,
++  // Spanish: medical, crush, struck-by
++  /\b(se (esta )?ahog\w*|ahogando)\b/,
++  /\bdesangr\w*/,
++  /\b(infarto|ataque (al corazon|cardiaco|de corazon|epileptico)|le (esta )?(dando|dio) un ataque|convulsion\w*|derrame cerebral)\b/,
++  /\b(sangra(ndo)? (mucho|bastante|feo)|mucha sangre|sangra mucho)\b/,
++  /\b(atropell\w*|arroll\w*)\b/,
++  /\b(le|lo|la|los) (pego|golpeo|aplasto|prenso|machuco|agarro|pesco|arrollo|apachurro) (la|el|un|una) (maquina|excavadora|retro|retroexcavadora|troca|camion|carro|loader|cargador|bote|cucharon|tubo|grua|pluma|vehiculo|trailer|rodillo|compactadora|caja|placa)\b(?!\s+(al|a la|a los|a las)\b)/,
++  /\b(machuc|aplast|prens|apachurr)(o|aron|ado|ada|ados|adas|ando)\b/,
++  /\ble cayo\b.{0,30}\bencima\b/,
++  /\bse (quebro|fracturo|rompio) (la|el|una|un) (pierna|brazo|espalda|cuello|cadera|cabeza|craneo|costillas?)\b/,
++  /\b(se corto (feo|muy feo|profundo|mucho|bastante)|cortada (fea|profunda|grande))\b/,
+ ];
++// "not responding": a person in danger, not someone ignoring texts or calls about work (see PB_EMG_RESP_SKIP)
++const PB_EMG_RESP = [
++  /\b(not responding|unresponsive)\b/,
++  /\b(isnt|is not|not|wont|will not|stopped|cant get him to|cant get her to)\s+(answering|answer|responding|respond|talking|moving)\b/,
++  /\b(cant|cannot|can not|couldnt)\s+(reach|raise|hear|see|wake)\s+(him|her|them|my|the|our)\b/,
++  /\bno (answer|response) from\b/,
++  /\b(havent|have not|hasnt|has not|we havent|nobody has) (heard from|heard back from|seen|had an answer from)\b/,
++  /\bno (responde|contesta)\b/,
++];
++const PB_EMG_RESP_SKIP = /\b(texts?|texting|text messages?|messages?|emails?|e-mails?|calls?|phone calls?|voicemails?|mensajes?|llamadas?|correos?|whatsapp)\b|\babout (the|a|my|our|his|her|that) (ticket|daily|invoice|schedule|bid|job|plans?|pay|timesheet|order|change order|rfi|submittal|delivery|truck|material)/;
++const PB_EMG_RESP_DANGER = /\b(trench\w*|ditch|hole|excavation|manholes?|vaults?|wet ?wells?|lift stations?|tanks?|pits?|sewers?|confined|in there|down there|down in|inside|hurt|injur\w*|fell|fall|collapsed|bleeding|breathing|passed out|down|pozo|zanja|hoyo|registro|adentro|abajo)\b/;
++// a gas monitor in alarm: not a low battery, a bump test or calibration (unless someone is inside)
++const PB_EMG_ALARM = [
++  /\b(gas )?(alarm|monitor|meter|detector|sniffer|4[- ]?gas|four[- ]?gas|multi[- ]?gas)\b.{0,20}\b(going off|is going|went off|alarming|beeping|screaming|in alarm|sounding)\b/,
++  /\b(meter|monitor|detector|alarm)s? (is |are )?in alarm\b/,
++  /\bgas alarm\b(?!s? (be |is |are )?(set|setting|level|point|at|should))/,
++  /\b(h2s|co|lel|o2|oxygen|4[- ]?gas)\s+alarm\b(?!s? (be |is |are )?(set|setting|level|point|at|should))/,
++  /\b(suena|sonando|sono|pita|pitando|pito|chilla\w*|en alarma|se activo)\b.{0,25}\b(detector|medidor|monitor|alarma|4 ?gas|cuatro gases|sensor)\b|\b(detector|medidor|monitor|alarma|4 ?gas|cuatro gases|sensor)\b.{0,25}\b(suena|sonando|sono|pita|pitando|pito|chilla\w*|en alarma|se activo)\b/,
++];
++const PB_EMG_ALARM_SKIP = /\b(low batt\w*|batter(y|ies)|bump(ing)? test\w*|calibrat\w*|charg(e|ing)|bateria|calibr\w*|prueba de (choque|bump)|a que nivel|que nivel|nivel de (la )?alarma|ajust\w*|configur\w*)\b/;
++const PB_EMG_INSIDE = /\b(inside|in there|down there|in the (hole|manhole|vault|trench|pit|tank|wet ?well|space)|entrant|adentro|alla abajo|hay (uno|alguien|gente))\b/;
++// power line contact and a machine part touching a line: valid unless the line is a water / sewer / fiber line with no power
++// word, or they say there was no contact
++const PB_EMG_MACHLINE = [
++  /\b(hit|hitting|touched|touching|touch|contacted|made contact with|snagged|struck|clipped|caught|tore down|pulled down|brought down|ripped|cut)\b.{0,30}\b(power|electric|electrical|overhead|hot|live|primary|high voltage)\s*(line|lines|wire|wires|cable|service|conductor)s?\b/,
++  /\b(boom|bucket|stick|arm|excavator|hoe|backhoe|crane|truck|machine|dump bed)\b.{0,20}\b(touched|touching|hit|contacted|in contact with)\b.{0,20}\b(line|lines|wire|wires)\b/,
++  new RegExp("\\b(hit|struck|snagged|caught|clipped|pego|pegamos|pegaron|golpeamos|golpeo|enganchamos|engancho)\\b.{0,25}\\b(lines?|lineas?|wires?|cables?|alambres?)\\b.{0,20}\\b(with|con) (the |a |our |la |el |una |un )?" + PB_EMG_MACH + "\\b"),
++  new RegExp("\\b" + PB_EMG_MACH + "\\b.{0,25}\\b(touched|touching|contacted|contacting|in contact with|struck|snagged|caught|clipped|toco|tocaron|tocando|tocamos|pego|golpeo|engancho)\\b.{0,25}\\b(lines?|wires?|cables?|overheads?|primar\\w*|lineas?|alambres?)\\b"),
++];
++export const PB_EMG_STRONG = [...PB_EMG_CORE, ...PB_EMG_RESP, ...PB_EMG_ALARM, ...PB_EMG_MACHLINE];
+ // weak: medical / heat signs in the open. Fire unless the question is ABOUT the topic (PB_EMG_INFO).
+ export const PB_EMG_WEAK = [
+   /\b(confused|confusion|delirious|stopped sweating|not sweating|quit sweating|hot dry skin)\b.{0,40}\b(heat|hot|sun|degrees|\d{3}|sweating|confused|throwing up|dizzy)\b/,
+@@ -63,48 +123,99 @@
+   /\b(dizzy|lightheaded)\b.{0,20}\b(throwing up|vomiting|puking|confused|its \d{3}|\d{3} (degrees|out))\b/,
+   /\bchest pains?\b/,
+   /\b(bleeding (bad|badly|a lot|heavy|heavily|everywhere|out|from)|wont stop bleeding|lots? of blood|blood everywhere|cut (an )?artery)\b/,
+-  /\bhit by (a |the )?(car|truck|vehicle|driver|motorist)\b/,
++  new RegExp("\\b(" + PB_EMG_WHO + "|he|she|they)\\b.{0,25}\\bhit by (a |the |our )?(car|truck|vehicle|driver|motorist)\\b"),
+   /\b(fell|fall|fallen) (off|from) (the )?(excavator|machine|ladder|truck|loader|roof|scaffold|trailer)\b/,
+-  /\b(golpe de calor|no suda|esta confundid[oa]|vomitando|dolor de pecho)\b/,
++  /\b(golpe de calor|insol\w*|no suda|ya no suda|dejo de sudar|esta confundid[oa]|vomitando|dolor de pecho|le duele (mucho )?el pecho|dolor (fuerte )?en el pecho)\b/,
++  /\b(vomit\w*|calambres?|mare(ad[oa]s?|o|a)|confundid[oa])\b.{0,30}\b(vomit\w*|calambres?|mare(ad[oa]s?|o|a)|confundid[oa]|calor|sol|sudar|suda)\b/,
++  /\bderrumb\w*/,
+ ];
+-const PB_EMG_ES = /\b(zanja|hombre|companero|esta|responde|atrapad|desmay|se cayo|fuga|huele|linea|ayuda|alarma|sangr|tierra|pozo|registro|atropell|aplast|corriente|electrocut|golpe de calor|vomitando|dolor de pecho|no suda|medidor)\b/;
++// Spanish words that show up in emergencies (word ends match: "electrocuto", "atropellaron", "desmayo")
++const PB_EMG_ES = /\b(zanja|hombre|compa\w*|responde|respir\w*|tapad\w*|quedo|atrapad\w*|desmay\w*|se cayo|fuga|huele|linea|ayuda|alarma|sangr\w*|tierra|pozo|registro|hoyo|atropell\w*|aplast\w*|prensad\w*|machuc\w*|corriente|electrocut(o|ado|ada|aron|ando)|golpe de calor|vomit\w*|dolor de pecho|no suda|medidor|derrumb\w*|enterrad\w*|excavacion|maquina|excavadora|retro|pluma|grua|cables?|alambres?|luz|ahog\w*|infarto|insol\w*|convuls\w*|mare\w*|toques?|descarga|chifl\w*|pegamos|rompimos|golpeamos|encima|adentro|abajo)\b/;
++const PB_EMG_ES_SMALL = /\b(el|la|los|las|se|lo|le|les|esta|estan|un|una|al|del|en|de|que|por|con|hay|mi|su|sus|y|muy|mucho|mucha|ya|nos|es|fue|tiene|ahi|alla|aqui|para|pero|porque|esto|eso|puede|pueden)\b/g;
++const PB_EMG_EN_SMALL = /\b(the|we|is|my|in|an|of|and|he|she|it|its|to|on|at|our|his|her|was|got|has|have|are|with|from|i|you|they|this|that|what|how|guy|someone|just|into|out|off|up|im|hes|shes|theyre|cant|wont|dont|isnt|going)\b/g;
++// Spanish when its ordinary small words (and emergency words) outnumber the English ones
++function pbEmgLang(t) {
++  const es = (t.match(PB_EMG_ES_SMALL) || []).length + (t.match(new RegExp(PB_EMG_ES.source, "g")) || []).length;
++  const en = (t.match(PB_EMG_EN_SMALL) || []).length;
++  return es > en ? "es" : "en";
++}
+ // after the fact or about something else (a report deadline, "says he is fine, can he go back to work"): Ask answers it, unless
+ // something is still happening (not breathing, trapped, an alarm, gas blowing, bleeding)
+-const PB_EMG_AFTER = /\b(says (hes|he is|shes|she is|they are|theyre|its) (fine|ok|okay|alright|good)|back to work|how (fast|soon|long|many hours) (do|does|did|must|should) (we|i|you|they) (have to )?(report|call|notify)|report (it|this|that|the (hit|damage|strike))|reporting|paperwork|osha (log|300)|300 log|recordable|workers comp|comp claim|fine for|penalt\w*|yesterday|last (week|month)|ago)\b/;
++const PB_EMG_AFTER = /\b(says (hes|he is|shes|she is|they are|theyre|its) (fine|ok|okay|alright|good)|back to work|how (fast|soon|long|many hours) (do|does|did|must|should) (we|i|you|they) (have to )?(report|call|notify)|report (it|this|that|the (hit|damage|strike))|reporting|paperwork|osha (log|300)|300 log|recordable|workers comp|comp claim|fine for|penalt\w*|yesterday|last (week|month)|ago|how (long|soon|fast|many hours) (to|until|before) (report|call|notify)|hospitali[sz]ed|was admitted|went to the (er|hospital|emergency room)|ayer|semana pasada|mes pasado|hace (un|una|dos|tres|unos|unas|\d+) (dias?|semanas?|meses?|anos?)|reportar\w*|papeleo)\b/;
+ const PB_EMG_NOW = /\b(not breathing|stopped breathing|unconscious|unresponsive|not responding|passed out|trapped|buried|pinned|caved|cave[- ]?in|collapsed|alarm|blowing|leaking|hissing|escaping|electrocut\w*|cant breathe|bleeding|no responde|no respira|atrapad\w*|desmay\w*|enterrad\w*|fuga)\b/;
++// nobody hurt, nobody in it, overnight: the cave-in or collapse is over; still an emergency if someone is hurt or trapped now
++const PB_EMG_AFTER2 = /\b((nobody|no one|noone|no body) (was |got |is |were |are )?(hurt|injured|in (it|there|the (trench|hole|ditch|excavation)))|(nobody|no one) inside|overnight|last night|over the weekend|nadie (salio |resulto |quedo )?(herido|lastimado)|nadie se lastimo|no hubo heridos|no habia nadie|nadie estaba (adentro|ahi)|anoche|durante la noche)\b/;
++const PB_EMG_NOW_HARD = /\b(not breathing|stopped breathing|unconscious|unresponsive|passed out|trapped|buried|pinned|going off|blowing|leaking|hissing|escaping|electrocut\w*|shocked|cant breathe|bleeding|(smells?|smelling) (like )?(gas|rotten)|no responde|no respira|atrapad\w*|desmay\w*|enterrad\w*|sangr\w*|fuga|sonando)\b/;
++// "the trench collapsed on the pipe, do we have to relay it": about the pipe when no person is named
++const PB_EMG_ONPIPE = /\b(caved|collapsed|came down|fell|sloughed|slid)( in| off)? (on|onto|over|into) (the|our|my) (new |fresh |whole )?(pipe|pipes|line|main|run|bedding|box)\b/;
++const PB_EMG_PERSON = new RegExp("\\b(" + PB_EMG_WHO + "|he|she|they)\\b");
+ // "not leaking", "no leak", "isn't blowing": the gas words are negated, so a nick with no release is an Ask question (report it to the operator)
+ const PB_EMG_NEG = /\b(not|no|isnt|wasnt|without|never)\s+(leak\w*|blowing|hissing|escaping|gas coming out|smell\w*)\b/g;
++// which script
++const PB_EMG_GAS = /\b(gas\b.{0,12}\b(blowing|leaking|hissing|escaping)|gas (line|main|service|pipe|lateral|leak|leaking|blowing|escaping)|smell\w*\b.{0,15}\b(gas|rotten eggs?|mercaptan)|(blowing|hissing|leaking) gas|natural gas|fuga de gas|olor de gas|escape de gas|huele (mucho |fuerte |bien )?a gas|huele a huevos? podridos?|(linea|tuberia|tubo) de gas|(pegamos|pegaron|pego|golpeamos|golpearon|golpeo|rompimos|rompieron|rompio|reventamos|reventaron|revento|cortamos|cortaron|corto|ponchamos|poncharon|poncho|dimos)\b.{0,25}\bgas|(sale|saliendo|salio|chifla\w*|silba\w*|escapando|se escapa|se sale)\b.{0,15}\bgas|gas\b.{0,15}\b(sale|saliendo|chifla\w*|silba\w*|escapando))\b/;
++// a gas MONITOR (4-gas meter, detector, alarm) is the confined-space case; "the gas meter on the house" is natural gas
++const PB_EMG_GAS_METER = /\b(alarm\w*|monitor|detector|sniffer|4[- ]?gas|four[- ]?gas|multi[- ]?gas|lel|h2s|medidor|alarma|sensor|cuatro gases)\b|\bmeters? (is |are )?(going off|went off|in alarm|alarm\w*|beep\w*|read\w*|says|shows)\b/;
++// a smell at a sewer, manhole or wet well is usually hydrogen sulfide (H2S): stay out, test, ventilate (not the gas-line steps)
++const PB_EMG_SMELL = /\b(smell\w*|stink\w*|odor|huele|olor|apesta)\b/;
++const PB_EMG_SEWER = /\b(sewer\w*|manholes?|mh|wet ?wells?|lift stations?|clean ?outs?|vaults?|drenaje|alcantarillas?|cloaca|pozos?|registros?)\b/;
++const PB_EMG_POWER_W = /\b(power|electric\w*|overhead\w*|primary|high voltage|wires?|shock\w*|electrocut\w*|zapped|corriente|cables?|luz|alta( tension)?|alambres?|toques?|descarga|voltaje|volts?|kv)\b/;
++const PB_EMG_LINE_W = /\b(line|lines|wires?|cables?|conductor\w*|shock\w*|electrocut\w*|zapped|corriente|toco|lineas?|alambres?|overheads?|toques?|descarga|choque|luz)\b/;
++const PB_EMG_NOCONTACT = /\b((no|without) contact|(didnt|did not|never|not) (touch|contact|hit)\w*|no (toco|hizo contacto)|sin (tocar|contacto))\b/;
++// a high machine part (boom, crane, dump bed) that hits a line hit an overhead line
++const PB_EMG_HIGH = /\b(boom|crane|dump ?bed|mast|stick|pluma|grua|brazo)\b.{0,25}\b(hit|struck|snagged|caught|clipped|pego|golpeo|engancho)\b.{0,25}\b(lines?|wires?|cables?|overheads?|lineas?|alambres?)\b/;
++// a line hit with nothing to say what it is
++const PB_EMG_LINEHIT = /\b(hit|hitting|struck|snagged|nicked|cut|broke|tore|ripped|caught|clipped|pego|pegamos|pegaron|golpeamos|golpeo|rompimos|engancho)\b.{0,30}\b(lines?|lineas?)\b/;
+ export function pbEmergencyKind(q) {
+   const t = pbEmgNorm(q).replace(PB_EMG_NEG, " ");
+   if (PB_EMG_AFTER.test(t) && !PB_EMG_NOW.test(t)) return null;
+-  const strong = PB_EMG_STRONG.some((r) => r.test(t)), weak = !strong && !PB_EMG_INFO.test(t) && PB_EMG_WEAK.some((r) => r.test(t));
++  if ((PB_EMG_AFTER2.test(t) || (PB_EMG_ONPIPE.test(t) && !PB_EMG_PERSON.test(t))) && !PB_EMG_NOW_HARD.test(t)) return null;
++  const hit = (a) => a.some((r) => r.test(t));
++  const qual = PB_EMG_QUAL.test(t) && !PB_EMG_POWER_W.test(t);
++  const strong = hit(PB_EMG_CORE)
++    || (hit(PB_EMG_RESP) && !(PB_EMG_RESP_SKIP.test(t) && !PB_EMG_RESP_DANGER.test(t)))
++    || (hit(PB_EMG_ALARM) && !(PB_EMG_ALARM_SKIP.test(t) && !PB_EMG_INSIDE.test(t)))
++    || (hit(PB_EMG_MACHLINE) && !qual && !PB_EMG_NOCONTACT.test(t));
++  const weak = !strong && !PB_EMG_INFO.test(t) && PB_EMG_WEAK.some((r) => r.test(t));
+   if (!strong && !weak) return null;
+-  const lang = PB_EMG_ES.test(t) && !/\b(the|we|is|my|in)\b/.test(t) ? "es" : "en";
+-  const power = /\b(power|electric\w*|overhead|primary|high voltage|wires?|shock\w*|electrocut\w*|zapped|corriente|cable|luz)\b/.test(t) && /\b(line|lines|wires?|cable|conductor|shock\w*|electrocut\w*|zapped|corriente|toco|linea)\b/.test(t) && !/\bgas\b/.test(t);
+-  const gas = !power && /\b(gas\b.{0,12}\b(blowing|leaking|hissing|escaping)|gas (line|main|service|pipe|lateral|leak|leaking|blowing|escaping)|smell\w*\b.{0,15}\b(gas|rotten eggs?|mercaptan)|(blowing|hissing|leaking) gas|natural gas|fuga de gas|olor de gas|huele a gas|(linea|tuberia|tubo) de gas)\b/.test(t) && !/\b(alarm|monitor|meter|detector|4[- ]?gas|lel|h2s)\b/.test(t);
+-  const space = !power && !gas && (PB_EMG_SPACE.test(t) || /\b(alarm|monitor|meter|detector|sniffer|4[- ]?gas|h2s|lel|cave|caved|buried|entrant|attendant|medidor|alarma|atrapad|enterrad|derrumb|se cayo)\b/.test(t));
+-  return { key: power ? "power" : gas ? "gas" : space ? "space" : "open", lang };
++  const lang = pbEmgLang(t);
++  const noMeter = !PB_EMG_GAS_METER.test(t);
++  const sewerSmell = PB_EMG_SMELL.test(t) && PB_EMG_SEWER.test(t);
++  const gasW = /\bgas\b/.test(t.replace(/\b(4|four|multi|cuatro)[- ]?gas(es)?\b/g, " "));
++  const gas = noMeter && !sewerSmell && PB_EMG_GAS.test(t);
++  const machine = !qual && (hit(PB_EMG_MACHLINE) || PB_EMG_HIGH.test(t));
++  const power = (PB_EMG_POWER_W.test(t) && PB_EMG_LINE_W.test(t)) || machine;
++  // a machine part touching a line is power; a bucket that "hit the line", with nothing to say what line, or power AND gas: both
++  const unclear = !gas && !gasW && !qual && PB_EMG_LINEHIT.test(t) && !(PB_EMG_POWER_W.test(t) && PB_EMG_LINE_W.test(t)) && !PB_EMG_HIGH.test(t) && !/\b(touch\w*|contact\w*|toc[oa]\w*)\b/.test(t);
++  const both = (power && (gas || (gasW && noMeter && !sewerSmell))) || (unclear && !sewerSmell);
++  const space = !power && !gas && (sewerSmell || PB_EMG_SPACE.test(t) || /\b(alarm|monitor|meter|detector|sniffer|4[- ]?gas|h2s|lel|cave|caved|buried|entrant|attendant|medidor|alarma|atrapad\w*|enterrad\w*|derrumb\w*|desmoron\w*|tapad\w*|tierra|orilla|talud|banco|se cayo (al|en|dentro)|huevos? podridos?|drenaje|dirt|soil|spoils?|bank|slough\w*|up to (his|her|their|the guys|my guys) (waist|chest|knees|neck|hips|shoulders))\b/.test(t));
++  return { key: both ? "line" : power ? "power" : gas ? "gas" : space ? "space" : "open", lang };
+ }
++const PB_EMG_ES_911 = "- Si no habla bien inglés: diga primero la dirección y luego «Spanish». El 911 conecta a un intérprete; puede tardar un minuto, no cuelgue.";
+ export const PB_EMG_TEXT = {
+   space: {
+-    en: "Emergency in a trench, hole or confined space:\n- Call 911 now. Then tell your supervisor / entry supervisor.\n- Stay out and keep everyone out. Do NOT go in after them unless you are a trained, equipped rescuer: untrained rescuers are often the next victims.\n- Cave-in: keep people and machines back from the edge; more can fall.\n- If a permit is open, press EMERGENCY so the entry team and the permit record know.\n- Send someone to meet the ambulance and lead it in.",
+-    es: "Emergencia en una zanja, hoyo o espacio confinado:\n- Llame al 911 ahora. Luego avise a su supervisor / supervisor de entrada.\n- Quedese afuera y no deje entrar a nadie. NO entre a sacarlo si no es un rescatista entrenado y equipado: los que entran sin entrenamiento suelen ser las siguientes victimas.\n- Derrumbe: mantenga a la gente y las maquinas lejos del borde; puede caer mas tierra.\n- Si hay un permiso abierto, toque EMERGENCIA para que el equipo y el registro del permiso lo sepan.\n- Mande a alguien a recibir la ambulancia y guiarla.",
++    en: "Emergency in a trench, hole or confined space:\n- Call 911 now. Then tell your supervisor / entry supervisor.\n- Stay out and keep everyone out. Do NOT go in after them unless you are a trained, equipped rescuer: untrained rescuers are often the next victims.\n- Gas alarm, or a rotten-egg or sewer smell: everyone out now. Nobody goes back in until the air is tested and ventilated and the entry supervisor says so.\n- Cave-in: keep people and machines back from the edge; more can fall.\n- If a permit is open, press EMERGENCY so the entry team and the permit record know.\n- Send someone to meet the ambulance and lead it in.",
++    es: "Emergencia en una zanja, hoyo o espacio confinado:\n- Llame al 911 ahora. Luego avise a su supervisor o al supervisor de entrada.\n- Quédese afuera y no deje entrar a nadie. NO entre a sacarlo si no es un rescatista entrenado y con equipo: los que entran sin entrenamiento muchas veces son las siguientes víctimas.\n- Alarma del medidor de gas, u olor a huevo podrido o a drenaje: todos afuera ya. Nadie vuelve a entrar hasta que se mida el aire, se ventile y el supervisor de entrada lo autorice.\n- Derrumbe: mantenga a la gente y las máquinas lejos de la orilla; puede caer más tierra.\n- Si hay un permiso abierto, toque EMERGENCIA para que el equipo de entrada y el registro del permiso lo sepan.\n- Mande a alguien a recibir la ambulancia y a guiarla hasta aquí.\n" + PB_EMG_ES_911,
+   },
+   open: {
+     en: "Emergency:\n- Call 911 now (or have someone call) and send someone to meet the ambulance and lead it in.\n- Not breathing or not responding normally: start CPR and get the AED if there is one.\n- Heat (confused, stopped sweating, throwing up, passed out): start cooling now: shade, soak them with water, ice on neck, armpits and groin. Do not wait for the ambulance.\n- Heavy bleeding: hard, steady pressure on the wound with a cloth and do not let up; if an arm or leg will not stop, a tourniquet 2 to 3 inches above the wound (note the time).\n- Fall, crush or struck by a vehicle: do not move them unless they are in more danger where they are; protect them from traffic and equipment.\n- If they are down in a trench, hole or confined space, do NOT go in: call 911 and keep everyone out.",
+-    es: "Emergencia:\n- Llame al 911 ahora (o que alguien llame) y mande a alguien a recibir la ambulancia y guiarla.\n- Si no respira o no responde normal: empiece RCP y traiga el DEA si hay uno.\n- Calor (confundido, ya no suda, vomita, se desmayo): empiece a enfriarlo ya: sombra, mojelo con agua, hielo en cuello, axilas e ingle. No espere a la ambulancia.\n- Sangrado fuerte: presion fuerte y constante sobre la herida con un trapo, sin soltar; si un brazo o pierna no para, torniquete 5 a 8 cm arriba de la herida (anote la hora).\n- Caida, aplastado o atropellado: no lo mueva a menos que corra mas peligro donde esta; protejalo del trafico y las maquinas.\n- Si esta dentro de una zanja, hoyo o espacio confinado, NO entre: llame al 911 y no deje entrar a nadie.",
++    es: "Emergencia:\n- Llame al 911 ahora (o que alguien llame) y mande a alguien a recibir la ambulancia y a guiarla hasta aquí.\n- Si no respira o no responde normal: empiece RCP y traiga el DEA (desfibrilador) si hay uno.\n- Calor (confundido, ya no suda, vomita, se desmayó): empiece a enfriarlo ya: sombra, mójelo con agua, hielo en el cuello, las axilas y la ingle. No espere a la ambulancia.\n- Sangrado fuerte: apriete fuerte y sin soltar sobre la herida con un trapo; si un brazo o una pierna no deja de sangrar, ponga un torniquete 2 a 3 pulgadas (5 a 8 cm) más arriba de la herida (apunte la hora).\n- Caída, aplastado o atropellado: no lo mueva, a menos que corra más peligro donde está; protéjalo del tráfico y de las máquinas.\n- Si está dentro de una zanja, hoyo o espacio confinado, NO entre: llame al 911 y no deje entrar a nadie.\n" + PB_EMG_ES_911,
+   },
+   gas: {
+     en: "Gas line hit or gas smell:\n- Get everyone out and away, upwind. Leave the machine where it is if you can walk away from it.\n- No smoking, no flames, no starting engines or anything that can spark near the gas.\n- Do not try to stop or squeeze off the leak; leave the hole open for the gas company.\n- Call 911 from a safe distance, then the gas company, the line's owner or operator (number on your locate ticket, or call 811).\n- Keep people and traffic back until the fire department or gas company says it is clear.\n- If anyone is down in a trench or hole, do NOT go in after them.",
+-    es: "Linea de gas golpeada u olor a gas:\n- Saque a todos y alejense, contra el viento. Deje la maquina donde esta si puede alejarse de ella.\n- No fumar, no llamas, no arrancar motores ni nada que haga chispa cerca del gas.\n- No intente parar ni apretar la fuga; deje el hoyo abierto para la compania de gas.\n- Llame al 911 desde un lugar seguro, luego a la compania de gas, la duena u operadora de la linea (numero en su ticket de localizacion, o llame al 811).\n- Mantenga a la gente y el trafico lejos hasta que los bomberos o la compania de gas digan que esta seguro.\n- Si alguien esta caido dentro de una zanja o hoyo, NO entre a sacarlo.",
++    es: "Le pegaron a una línea de gas, o huele a gas:\n- Saque a todos y aléjense hacia donde viene el viento (con el viento en la cara). Si puede alejarse de la máquina, déjela donde está.\n- No fumar, nada de fuego, no arrancar motores ni nada que saque chispa cerca del gas.\n- No trate de tapar ni de prensar la fuga; deje el hoyo abierto para la compañía de gas.\n- Llame al 911 desde un lugar seguro; luego a la compañía de gas o al dueño de la línea (el número está en su ticket del 811, o llame al 811).\n- Mantenga a la gente y el tráfico lejos hasta que los bomberos o la compañía de gas digan que ya es seguro.\n- Si alguien está caído dentro de una zanja o un hoyo, NO entre a sacarlo.",
+   },
+   power: {
+     en: "Power line contact:\n- Operator: stay in the cab and do not touch anything metal. Move the machine away from the line only if you can do it safely.\n- Leave the machine only if it is on fire: jump clear with feet together, never touch the machine and the ground at the same time, then shuffle or hop away with feet together.\n- Everyone else: stay far back. The ground around the machine can be live. Do not touch the machine, the person, or anything touching them.\n- Call 911 and the power company to cut the power.\n- Someone shocked and down: do not touch them until the power is off; then start CPR and get the AED if they are not breathing.",
+-    es: "Contacto con linea electrica:\n- Operador: quedese en la cabina y no toque nada de metal. Aleje la maquina de la linea solo si puede hacerlo sin peligro.\n- Salga de la maquina solo si se esta quemando: salte lejos con los pies juntos, nunca toque la maquina y el suelo al mismo tiempo, y alejese arrastrando los pies o saltando con los pies juntos.\n- Todos los demas: mantenganse muy lejos. El suelo alrededor de la maquina puede tener corriente. No toquen la maquina, a la persona ni nada que la toque.\n- Llame al 911 y a la compania de luz para que corten la corriente.\n- Si alguien recibio la descarga y esta caido: no lo toque hasta que corten la corriente; luego empiece RCP y traiga el DEA si no respira.",
++    es: "Contacto con línea eléctrica (cables de luz):\n- Operador: quédese en la cabina y no toque nada de metal. Aleje la máquina de la línea solo si puede hacerlo sin peligro.\n- Bájese de la máquina solo si se está quemando: salte lejos con los pies juntos, nunca toque la máquina y el suelo al mismo tiempo, y aléjese arrastrando los pies o saltando con los pies juntos.\n- Todos los demás: quédense muy lejos. El suelo alrededor de la máquina puede tener corriente. No toquen la máquina, a la persona ni nada que la esté tocando.\n- Llame al 911 y a la compañía de luz para que corten la corriente.\n- Si a alguien le dio la corriente y está tirado: no lo toque hasta que corten la corriente; luego empiece RCP y traiga el DEA si no respira.",
+   },
+ };
++// a line hit and nobody can tell what it is: treat it as live power, and as gas if there is any sign of gas
++PB_EMG_TEXT.line = {
++  en: "Hit a line and not sure what it is: treat it as a live power line until you know, and as a gas line if you smell or hear gas.\n\n" + PB_EMG_TEXT.power.en + "\n\n" + PB_EMG_TEXT.gas.en,
++  es: "Le pegaron a una línea y no sabe qué es: trátela como línea eléctrica con corriente hasta saber, y como línea de gas si huele o se oye el gas.\n\n" + PB_EMG_TEXT.power.es + "\n\n" + PB_EMG_TEXT.gas.es,
++};
+ // the line that fits what happened moves up, right under the 911 line (bleeding, heat, a fall or crush)
+-const PB_EMG_FOCUS = [[/\b(bleed\w*|blood|cut (his|her|their|my)|artery|sangr\w*)\b/, /^- (Heavy bleeding|Sangrado)/], [/\b(heat|hot|sweat\w*|\d{3}|confused|throwing up|vomit\w*|calor|suda)\b/, /^- (Heat|Calor)/], [/\b(fell|fall|crush\w*|run over|ran over|backed over|hit by|struck|rolled on|aplast\w*|atropell\w*|cayo)\b/, /^- (Fall|Caida)/]];
++const PB_EMG_FOCUS = [[/\b(bleed\w*|blood|cut (his|her|their|my)|artery|sangr\w*|desangr\w*|cortad[oa]|se corto)\b/, /^- (Heavy bleeding|Sangrado)/], [/\b(heat|hot|sweat\w*|\d{3}|confused|throwing up|vomit\w*|calor|suda\w*|insol\w*|confundid[oa])\b/, /^- (Heat|Calor)/], [/\b(fell|fall|crush\w*|run over|ran over|backed over|hit by|struck|rolled on|broke|aplast\w*|atropell\w*|prens\w*|machuc\w*|cayo|caida|encima|quebro|fracturo)\b/, /^- (Fall|Ca[ií]da)/]];
+ export function pbEmergencyText(key, lang, q) {
+   const lines = PB_EMG_TEXT[key][lang].split("\n");
+   if (key !== "open") return lines.join("\n");
+diff -ruN src_base/index.ts server_src/index.ts
+--- a/index.ts	2026-11-22 15:19:46.793142957 -0800
++++ b/index.ts	2026-11-22 15:28:26.267598413 -0800
+@@ -188,7 +188,7 @@
+       : await runV2(uid);
+   }
+   if (body.feature === "teacher") {
+-    const local = localAnswer(v1Question(body.text));
++    const local = localAnswer(v1Question(body.text), { notEmergency: body.not_emergency === true }); // emergency_nov22
+     if (local) {
+       return reply(200, {
+         ok: !0,
+diff -ruN src_base/safety.ts server_src/safety.ts
+--- a/safety.ts	2026-11-22 15:19:46.793588150 -0800
++++ b/safety.ts	2026-11-22 15:28:26.266431922 -0800
+@@ -36,20 +36,14 @@
+   PB_AI_SAFETY_RX =
+     /\b(trench\w*|shor(e|ing)|excavat\w*|cave[- ]?ins?|confined|permits?|entr(y|ant|ants)|attendants?|atmospher\w*|lel|h2s|oxygen|o2|gas(es)?|ventilat\w*|rescue|competent person|osha|protective system|benching|trench box|shield|1926|1910)\b/i;
+ import { pbEmergencyAnswer } from "./emergency.ts";
+-function localAnswer(q) {
+-  const em = pbEmergencyAnswer(q); // ask_quality_nov22: 4 scripts (space / open / gas / power), EN + ES
++// emergency_nov22: pbEmergencyAnswer is the ONE emergency check (the phone runs the same code). The old generic list
++// (PB_AI_EMERGENCY_RX) is no longer used here: it re-fired on what the new check lets through on purpose (after the fact,
++// "nobody hurt", a low battery, texts). opt.notEmergency: the person tapped "Not an emergency? Send to Ask" under the script.
++function localAnswer(q, opt) {
++  const em = opt && opt.notEmergency ? null : pbEmergencyAnswer(q); // 5 scripts (space / open / gas / power / line), EN + ES
+   if (em) return em;
+   const t = String(q).toLowerCase().replace(/[’']/g, "");
+-  return PB_AI_EMERGENCY_RX.some((r) => r.test(t))
+-    ? {
+-      kind: "emergency",
+-      text: `If someone is down, not responding, trapped, or a gas alarm is going off:
+-- Get out yourself and keep everyone else out.
+-- Do NOT go in after them unless you are a trained, equipped rescuer. Untrained rescuers are often the next victims.
+-- Call 911 or your emergency number now, then tell your supervisor / entry supervisor.
+-- If a permit is open, use EMERGENCY so the entry team and the permit record know.`,
+-    }
+-    : PB_AI_GONOGO_RX.some((r) => r.test(t)) || PB_AI_GAS_RX.test(t) && PB_AI_ENTER_RX.test(t)
++  return PB_AI_GONOGO_RX.some((r) => r.test(t)) || PB_AI_GAS_RX.test(t) && PB_AI_ENTER_RX.test(t)
+     ? {
+       kind: "gonogo",
+       text:
+diff -ruN src_base/state.ts server_src/state.ts
+--- a/state.ts	2026-11-22 15:19:46.793600691 -0800
++++ b/state.ts	2026-11-22 15:37:43.922184573 -0800
+@@ -172,8 +172,11 @@
+   // subject word with the question) and scores at least half of that
+   const words = subjectWords(question);
+   const about = (h) => { const t = subjectWords(h.title); return words.length > 0 && words.filter((w) => t.includes(w)).length * 2 >= words.length; };
++  // emergency_nov22 (Ask everyday review B): a state card is "on topic" when its title shares the question's subject (about());
++  // only on-topic state cards go first and count for the long state instructions. Off-topic ones still go in, after the general ones.
++  // A question that names the state ("toolbox talks in Washington") is about that state: its cards are on topic.
+   own = own.filter((h) => h.score >= qTop * OWN_MIN || (h.score >= qTop * OWN_MIN * 0.7 && about(h)))
+-    .sort((a, b) => b.score - a.score).slice(0, OWN_SLOTS);
++    .sort((a, b) => b.score - a.score).slice(0, OWN_SLOTS).map((h) => ({ ...h, on: st?.how === "question" || named.length > 0 || onTopic(h, String(question || ""), (about(h) && h.score >= qTop * OWN_FIRST_MIN) || h.score >= qTop * OWN_SURE_MIN) }));
+   // lib8: an own-plan state, a safety-rule question, and none of the state's cards made it: add the state's plan card
+   // (sp-<st>-trench-* first for trench words, else sp-<st>-who-1), so the answer can name the plan as the source.
+   const qs0 = String(question || ""), REPORT_Q = /\b(report\w*|hospital\w*|amputat\w*|fatal\w*|notify osha)\b/i, HEAT_Q = /\b(heat|shade|hot)\b/i;
+@@ -184,7 +187,7 @@
+     const rank = (h) => kind && new RegExp(`^sp-${lc}-${kind}`).test(h.id) ? 0 : new RegExp(`^sp-${lc}-who-`).test(h.id) ? 1 : 9;
+     const pc = search(index, qq + " " + US_STATES[code] + " state OSHA plan", { ...opts, k: 80, maxChars: 9e6, stats: void 0 })
+       .filter((h) => rank(h) < 9 && keep(h)).sort((a, b) => rank(a) - rank(b) || b.score - a.score)[0];
+-    pc && (own = [{ ...pc, score: Math.max(pc.score, qTop * OWN_MIN) }]);
++    pc && (own = [{ ...pc, score: Math.max(pc.score, qTop * OWN_MIN), on: !0 }]);
+   }
+   // consolidate (Nov 21): trench and 811 questions always carry the job state's exception card (if any) and the by-state table card.
+   const forced = code && !EMERGENCY.test(qs0) ? topicCards(search, index, qq, opts, code, qs0, own, qTop) : [];
+@@ -219,7 +222,7 @@
+     if (plainChars + h.text.length > OWN_CHARS && plainChars) continue;
+     seen.add(h.id), out.push({ ...h, text: h.text.length > OWN_CHARS ? h.text.slice(0, OWN_CHARS) : h.text }), plainChars += Math.min(h.text.length, OWN_CHARS), plainN++, plain++;
+   }
+-  const ownFirst = new Set(EMERGENCY.test(String(question || "")) ? [] : own.map((h) => h.id).concat(forced.filter((h) => h.exc).map((h) => h.id)));
++  const ownFirst = new Set(EMERGENCY.test(String(question || "")) ? [] : own.filter((h) => h.on).map((h) => h.id).concat(forced.filter((h) => h.exc).map((h) => h.id)));
+   out.sort((a, b) => (Number(ownFirst.has(b.id)) - Number(ownFirst.has(a.id))) || b.score - a.score);
+   if (ownFirst.size && out.length > 2 && ownFirst.has(out[1].id)) { // lib7: strictest rule needs both sides: own card 1, best general card 2
+     const g = out.findIndex((h) => !ownFirst.has(h.id));
+@@ -227,15 +230,24 @@
+   }
+   // A state that runs its own OSHA plan, a safety-rule question, and nothing of that state's own anywhere near the
+   // question: the federal rule is all the library has, and the answer must say so (dependent = "plan", see stateLines).
+-  const ownN = out.filter((h) => own.some((x) => x.id === h.id) || forced.some((x) => x.id === h.id)).length, dep = stateDependent(question, wide, code);
++  const ownN = out.filter((h) => own.some((x) => x.id === h.id && x.on) || forced.some((x) => x.id === h.id)).length, dep = stateDependent(question, wide, code);
+   // lib8: an own-plan state with no card of its own for a safety rule always gets the "plan" line (was: only when the question
+   // did not look state-dependent, so "depth for a trench box" in Indiana got the general line and named no state)
+   const thin = !ownN && PLAN_STATES.includes(code) && SAFETY_RULE.test(String(question || "")) && !EMERGENCY.test(String(question || ""));
+   return { hits: out, dropped: wide.slice(0, k).filter((h) => !keep(h)).length, own: ownN, plain, dependent: thin ? "plan" : dep, forced: forced.map((h) => h.id) };
+ }
+ // consolidate (Nov 21): which topic a question is on, and the cards it always carries for the job state.
+-export const TRENCH_TOPIC = /\b(trench(es|ing)?|excavat(e|es|ed|ing|ions?)|shor(e|ed|ing)|shields?|trench box(es)?|cave-?ins?|protective systems?)\b/i;
+-export const DIG_TOPIC = /\b(811|one[- ]?call|locates?|locate (ticket|request|marks?)|locators?|dig ?(ticket|law|alert)|tickets?|tolerance zone|hand[- ]?dig\w*|white[- ]?lin\w*|positive response|call before you dig|blue ?stakes?|miss ?dig|miss utility|gopher state|julie|sunshine ?811|diggers hotline|okie ?811|dig ?safe|utility marks?)\b/i;
++const TRENCH_RX = /\b(trench(es|ing)?|excavat(e|es|ed|ing|ions?)|shor(e|ed|ing)|shields?|trench box(es)?|cave-?ins?|protective systems?)\b/i;
++// emergency_nov22 (Ask everyday review D): "trench" or "excavation" alone (how deep for a water main, how wide for 12 inch, a patch over
++// the trench) is not a trench-safety question; the trench-protection cards are forced in only with a safety word.
++const TRENCH_SAFE_W = /\b(protect\w*|box(es)?|shor(e|ed|ing)|shields?|slop(e|ed|es|ing)|bench\w*|cave-?ins?|caving|collaps\w*|ladders?|egress|competent person|osha|safe\w*|soil (type|class\w*)|type [abc]|spoils?|walls?|engineer\w*|how deep (can|before|until|is too)|deep enough|too deep|before (you|we|i) (need|have)|max(imum)? depth|depth (limit|rule)|tabulated|inspect\w*|water in (the|a) (trench|bottom|excavation|hole)|standing water|test(ing)? the air|air (in|inside) (the|a) (trench|excavation)|atmospher\w*|oxygen|fumes|flammable|toxic|walkways?|cross(ing)? (the|a|an open) (trench|excavation)|guard ?rails?|edge|rain\w*|struck|falling|fall in|sloughing|hydraulic|speed ?shor\w*|slide ?rail|1926\.65\d|subpart p|permit)\b/i;
++export const TRENCH_TOPIC = { test: (q: string) => /\b(shor(e|ed|ing)|shields?|trench box(es)?|cave-?ins?|protective systems?)\b|\bexcavat\w*\b.{0,20}\b(depth|deep)\b/i.test(String(q || "")) || (TRENCH_RX.test(String(q || "")) && TRENCH_SAFE_W.test(String(q || ""))) };
++// emergency_nov22 (Ask everyday review A): the bare word "ticket" is NOT an 811 question (T&M, field, delivery, concrete, batch,
++// dump, haul and load tickets are daily paperwork). "ticket" counts only next to 811 words (TICKET_811), never for those tickets.
++const DIG_WORDS = /\b(811|one[- ]?call|locates?|locate (ticket|request|marks?)|locators?|dig ?(ticket|law|alert)|tolerance zone|hand[- ]?dig\w*|white[- ]?lin\w*|positive response|call before you dig|blue ?stakes?|miss ?dig|miss utility|gopher state|julie|sunshine ?811|diggers hotline|okie ?811|dig ?safe|utility marks?)\b/i;
++const TICKET_811 = /\b((usa|811|locate|dig|one[- ]?call|utility|excavation) tickets?|tickets? (number|no\.?|#|life|expir\w*|renew\w*|valid\w*|good for|updat\w*|extend\w*|refresh\w*|positive response|marks?|start date|legal start|to dig)|(renew|extend|update|refresh|call in|called in|re-?call|re-?mark) (the |my |our |a |that )?tickets?|(my|our|the|a) tickets? (is |was )?(expir\w*|still good|still valid|good|valid|up|run out))\b/i;
++const NOT_811_TICKET = /\b(t ?& ?m|t and m|time (and|&) materials?|field|delivery|concrete|batch|dump|haul|load|extra work|work|weigh|scale|truck|trucking|material|rock|asphalt|change|daily|service|parking|speeding|traffic) tickets?\b/i;
++export const DIG_TOPIC = { test: (q: string) => DIG_WORDS.test(String(q || "")) || (TICKET_811.test(String(q || "")) && !NOT_811_TICKET.test(String(q || ""))) };
+ const TRENCH_TABLES = ["osha-pl-trench-states-1", "osha-pl-trench-states-2"];
+ // consolidate_cs (Nov 21): confined space questions carry the job state's confined space card (if any) and the state table card.
+ export const CS_TOPIC = /\b(confined[- ]spaces?|permit[- ]required|permit[- ]spaces?|entry permits?|entrants?|entry supervisors?|attendants?|(4|four)[- ]gas|gas (monitor|meter|detector)s?|subpart aa|1926\.12\d\d|1910\.146)\b/i;
+@@ -296,8 +308,50 @@
+ const STOP = new Set("what when where which while with without from that this they them their there here have has does into over under about above below after before many much long good need needs must should would could will your ours mine guys crew crews today work working works hour hours rule rules state states apply applies job jobs give gives take takes make makes thing things kind required require requires going want wants know tell says said more most some than then also only just ever every each other another same".split(" "));
+ export const subjectWords = (t) => [...new Set(String(t || "").toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !STOP.has(w)).map((w) => w.replace(/(ing|es|s)$/, "")).filter((w) => w.length >= 3))];
+ export const OWN_MIN = 0.28, OWN_SLOTS = 2, OWN_CHARS = 3000;
++// emergency_nov22 (Ask everyday review G): a question typed in Spanish searched only through the helper step's English keywords;
++// when that step is slow or down, the raw Spanish found junk. These field words add their English search terms (only when the
++// question reads as Spanish). Accents are removed before matching.
++const ES_SEARCH = [
++  [/\bpendientes?\b/, "slope grade percent fall"], [/\b(desnivel|caida)\b/, "fall drop slope"], [/\bdrenajes?\b|\balcantarillado\b/, "sewer drain"],
++  [/\bpluvial\b/, "storm drain"], [/\bestacas?\b/, "stake grade stake hub lath"], [/\bcortes?\b/, "cut"], [/\brellenos?\b/, "backfill fill"],
++  [/\bcompact\w*/, "compaction relative compaction"], [/\bzanjas?\b/, "trench"], [/\btub(o|os|eria|erias)\b/, "pipe"],
++  [/\bpruebas?\b/, "test"], [/\baire\b/, "air"], [/\bagua potable\b/, "water main"], [/\bagua\b/, "water"], [/\bpresion\b/, "pressure"],
++  [/\bpulgadas?\b/, "inch"], [/\bpies\b/, "feet ft"], [/\bprofund\w*/, "depth deep"], [/\bancho\b|\banchura\b/, "width wide"],
++  [/\b(cama|encamado|plantilla de arena)\b/, "bedding"], [/\barena\b/, "sand"], [/\bgrava\b/, "gravel"], [/\bpiedra\b/, "rock"],
++  [/\b(registros?|pozos? de visita|pozos?)\b/, "manhole"], [/\btapas?\b/, "lid rim"], [/\b(rasante|nivel)\b/, "grade"],
++  [/\bcotas?\b|\belevacion\w*/, "elevation"], [/\b(cadenamiento|estacion)\b/, "station"], [/\b(estadal|varilla)\b/, "grade rod"],
++  [/\bbanco de nivel\b/, "benchmark"], [/\bplantilla\b|\binvertida\b/, "invert flowline"], [/\bpermisos?\b/, "permit"],
++  [/\bespacios? confinados?\b/, "confined space"], [/\bcaja\b/, "trench box shield"], [/\btalud\w*/, "slope sloping"], [/\bsuelos?\b/, "soil"],
++  [/\blocaliza\w*|\bmarcas?\b/, "locate marks 811"], [/\bvalvulas?\b/, "valve"], [/\bhidrantes?\b/, "hydrant"], [/\bcodos?\b/, "bend elbow fitting"],
++  [/\bempaques?\b/, "gasket"], [/\bcampana\b/, "bell"], [/\bespiga\b/, "spigot"], [/\bempuje\b/, "thrust block"], [/\bmandril\b/, "mandrel"],
++  [/\bdeflexion\b/, "deflection"], [/\bcalor\b/, "heat"], [/\bsombra\b/, "shade"], [/\bdescansos?\b/, "break"], [/\bbandereros?\b/, "flagger"],
++  [/\bconos?\b/, "cones"], [/\btrafico\b/, "traffic control"], [/\bsenal\w*/, "sign"], [/\b(desinfec\w*|cloro)\b/, "disinfection chlorine"],
++  [/\blavado\b/, "flushing"], [/\bhidrostatica\b/, "hydrostatic pressure test"], [/\bfugas?\b/, "leak leakage"], [/\btermofusion\b|\bfusion\b/, "fusion HDPE"],
++  [/\bpead\b/, "HDPE"], [/\bconcreto\b/, "concrete"], [/\basfalto\b/, "asphalt paving"], [/\bcuadrilla\b/, "crew"], [/\btramos?\b/, "run pipe length"],
++];
++export function esSearchWords(q: string) {
++  const raw = String(q || ""), t = raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
++  if (!/[¿¡]/.test(raw) && !/\b(el|la|los|las|del|que|una|como|cuanto|cuanta|cuantos|cuantas|cual|lleva|tiene|hay|para|por|se)\b/.test(t)) return "";
++  const add = ES_SEARCH.filter(([re]) => re.test(t)).map(([, w]) => w);
++  return add.length ? " " + add.join(" ") : "";
++}
++// emergency_nov22 (review B): the bar for a state card to go FIRST (and to bring the long state instructions): on topic (about())
++// and at least this share of the best plain hit. OWN_MIN (0.28) stays the bar for being handed at all, so no card is lost.
++export const OWN_FIRST_MIN = 0.45, OWN_SURE_MIN = 0.55;
++// a state card of a known kind (811, trench, confined space, reporting, heat, fall protection, who enforces) is on topic when the
++// question is on that kind; any other state card (a spec, a separation rule) when about() says so and it scores near the best hit
++const OWN_KIND = [[/^(dig-|ca-dig-)/, (q) => DIG_TOPIC.test(q) || /\b(hit|nick\w*|struck|damag\w*|broke) (a|the|an?) ?(\w+ )?(line|main|service|cable|pipe)\b|\b(mark\w*|respond\w*|utilit\w*|gas (line|main|service)|power line|dig\w*|excavat\w*)\b/i.test(q)], [/^sp-[a-z]{2}-trench/, (q) => TRENCH_TOPIC.test(q) || /\b(slop\w*|soil|type [abc]|bench\w*|shor\w*)\b/i.test(q)], [/^sp-[a-z]{2}-confined/, (q) => csTopic(q)],
++  [/^sp-[a-z]{2}-report/, (q) => REPORT_TOPIC.test(q) || /\b(report\w*|notify\w*|fatal\w*|died|death|amputat\w*|hospital\w*|fingertip|accident)\b/i.test(q)],
++  [/^sp-[a-z]{2}-heat/, (q) => /\b(heat|shade|hot|cool[- ]?down|drink\w*|how much water|water (per|for|breaks?)|temperature|degrees|sun)\b/i.test(q)],
++  [/^sp-[a-z]{2}-fall/, (q) => /\b(fall protection|fall arrest|guard ?rails?|harness\w*|lanyard|holes?|edges?|ladders?|fall (from|off|hazard)|fall of|falling)\b/i.test(q)],
++  [/^tc-[a-z]{2}-/, (q) => /\b(taper|cones?|flaggers?|signs?|work ?zones?|traffic|mutcd|lanes?|detour|vests?|hi-?vis|high visibility|barricades?|channeliz\w*|pedestrian|sidewalk)\b/i.test(q)],
++  [/^sp-[a-z]{2}-(osha10|osha-10|training|cert)/, (q) => /\b(card|training|osha ?-?(10|30)|certif\w*|course|class)\b/i.test(q)],
++  [/^sp-[a-z]{2}-who/, (q) => SAFETY_RULE.test(q) || /\b(osha|state plan|who enforces)\b/i.test(q)]];
++function onTopic(h, q, aboutIt) { const k = OWN_KIND.find(([re]) => re.test(h.id)); return k ? k[1](q) || aboutIt : aboutIt; }
+ // questions a state OSHA plan can answer differently from federal OSHA (Washington protects a trench at 4 ft, not 5)
+-const SAFETY_RULE = /\b(trench(es)?|excavations?|shor(e|ed|ing)|shields?|trench box(es)?|protective systems?|cave-?ins?|spoils?|ladders?|confined spaces?|permit spaces?|entry permits?|atmospher\w*|gas (monitor|meter|test)\w*|fall protection|guardrails?|harness(es)?|silica|lock ?out|tag ?out|competent person|osha)\b/i;
++// emergency_nov22 (review D): trench / excavation count as a safety rule only with a safety word (TRENCH_TOPIC)
++const SAFETY_RULE = { test: (q: string) => SAFETY_RULE_RX.test(String(q || "")) || TRENCH_TOPIC.test(q) };
++const SAFETY_RULE_RX = /\b(shor(e|ed|ing)|shields?|trench box(es)?|protective systems?|cave-?ins?|spoils?|ladders?|confined spaces?|permit spaces?|entry permits?|atmospher\w*|gas (monitor|meter|test)\w*|fall protection|guardrails?|harness(es)?|silica|lock ?out|tag ?out|competent person|osha)\b/i;
+ 
+ // States whose own OSHA plan covers private-sector crews (osha.gov/stateplans, read 2026-11-20 by ask_nationwide_nov20).
+ export const PLAN_STATES = "AK AZ CA HI IN IA KY MD MI MN NV NM NC OR SC TN UT VT VA WA WY".split(" ");

@@ -1,0 +1,68 @@
+-- r1716_final test 11: join links last 72 hours. Ends with 'RESULT: ...' (raised, so everything is rolled back).
+do $test$
+declare o uuid := gen_random_uuid(); f uuid := gen_random_uuid(); m uuid := gen_random_uuid(); c uuid := gen_random_uuid();
+  tag text := substr(md5(random()::text), 1, 10); j jsonb; x jsonb; h numeric; n integer; d text;
+  pass integer; fail integer; fails text; notes text := '';
+begin
+  create temp table t_chk (i serial, name text, ok boolean, got text) on commit drop;
+  -- "signed in as": the JWT claims PostgREST sets, and the role the app's requests run as (authenticated)
+  create function pg_temp.t11_as(p_uid uuid, p_sql text) returns jsonb language plpgsql as $f$
+  declare r jsonb;
+  begin
+    perform set_config('request.jwt.claims', jsonb_build_object('sub', p_uid, 'role', 'authenticated', 'aal', 'aal1')::text, true);
+    begin
+      if current_setting('pbt11.as_auth', true) = '1' then set local role authenticated; end if;
+      execute p_sql into r;
+      reset role;
+    exception when others then reset role; r := jsonb_build_object('error', sqlerrm);
+    end;
+    return r;
+  end $f$;
+  begin set local role authenticated; reset role; perform set_config('pbt11.as_auth', '1', true); notes := ' [app calls ran as role authenticated]';
+  exception when others then perform set_config('pbt11.as_auth', '0', true); notes := ' [app calls ran as ' || current_user || ', NOT authenticated]'; end;
+
+  -- throwaway: a company on trial (ends in 10 days), its company account o, foreman f, manager-free
+  insert into auth.users (id, email) values (o, 'pbt11-' || tag || '-o@example.invalid'), (f, 'pbt11-' || tag || '-f@example.invalid'), (m, 'pbt11-' || tag || '-m@example.invalid');
+  insert into public.companies (id, name, owner_user_id, status, plan, trial_ends_at) values (c, 'pbt11 ' || tag, o, 'active', 'trial', now() + interval '10 days');
+  insert into public.company_members (company_id, user_id, role) values (c, f, 'foreman');
+
+  -- A. the company account makes a foreman link (the app's call)
+  j := pg_temp.t11_as(o, $q$select public.pb_onboard_link_make('foreman', 'Dale', null)$q$);
+  h := extract(epoch from ((j->>'expires_at')::timestamptz - now())) / 3600;
+  insert into t_chk (name, ok, got) values ('11a company account link: made, lasts 72 hours', (j->>'ok')::boolean and h between 71.98 and 72.02, coalesce(j->>'error', round(h, 3)::text));
+  insert into t_chk (name, ok, got) select '11b the stored link ends when the app was told', l.expires_at = (j->>'expires_at')::timestamptz, l.expires_at::text from pb_onboard.links l where l.id = (j->>'id')::uuid;
+  -- B. a foreman's pipelayer link (goes on his crew)
+  x := pg_temp.t11_as(f, $q$select public.pb_onboard_link_make('pipelayer', 'Mike', null)$q$);
+  h := extract(epoch from ((x->>'expires_at')::timestamptz - now())) / 3600;
+  insert into t_chk (name, ok, got) values ('11c foreman pipelayer link: made, lasts 72 hours, paired with him', (x->>'ok')::boolean and h between 71.98 and 72.02
+    and (select l.pair_foreman from pb_onboard.links l where l.id = (x->>'id')::uuid) = f, coalesce(x->>'error', round(h, 3)::text));
+  -- C. a link made 30 hours ago (dated back) still counts as waiting, and still holds its trial seat
+  update pb_onboard.links set created_at = created_at - interval '30 hours', expires_at = expires_at - interval '30 hours' where id = (j->>'id')::uuid;
+  n := pb_onboard.live_links(c);
+  insert into t_chk (name, ok, got) values ('11d a 30-hour-old unused link still works (2 waiting links)', n = 2, n::text);
+  insert into t_chk (name, ok, got) values ('11e trial seats: company account + foreman + 2 waiting links = 4 of 7, still room', pb_onboard.room(c, 0, null) is null and pb_billing.trial_seats_used(c) + pb_onboard.live_links(c) = 4, coalesce(pb_onboard.room(c, 0, null), 'room'));
+  -- D. a 73-hour-old link is expired
+  update pb_onboard.links set created_at = created_at - interval '43 hours', expires_at = expires_at - interval '43 hours' where id = (j->>'id')::uuid;
+  n := pb_onboard.live_links(c);
+  insert into t_chk (name, ok, got) values ('11f a 73-hour-old link no longer counts (1 waiting link)', n = 1, n::text);
+  -- E. limits unchanged
+  d := pg_get_functiondef('pb_onboard.make_link(uuid,uuid,text,text,uuid,uuid,integer)'::regprocedure);
+  insert into t_chk (name, ok, got) values ('11g 30-links-a-day limit still counts the last 24 hours; only the end time is 72 h',
+    d ~ $r$l\.created_at > now\(\) - interval '24 hours'\) >= 30$r$ and d ~ $r$v_exp timestamptz := now\(\) \+ interval '72 hours'$r$ and d ~ 'live_links\(p_company\) >= 10', '');
+  -- F. who may call
+  insert into t_chk (name, ok, got) values ('11h pb_onboard_link_make: authenticated may call, anon may not',
+    has_function_privilege('authenticated', 'public.pb_onboard_link_make(text,text,uuid)', 'execute') and not has_function_privilege('anon', 'public.pb_onboard_link_make(text,text,uuid)', 'execute'), '');
+  insert into t_chk (name, ok, got) values ('11i make_link itself is not callable from the API', not has_function_privilege('authenticated', 'pb_onboard.make_link(uuid,uuid,text,text,uuid,uuid,integer)', 'execute')
+    and not has_function_privilege('anon', 'pb_onboard.make_link(uuid,uuid,text,text,uuid,uuid,integer)', 'execute'), '');
+  insert into t_chk (name, ok, got) select '11j the live text was saved for undo', count(*) = 1, count(*)::text from pb_sec.fn_backup b where b.tag = 'nov23_11';
+  -- G. undo puts the 24-hour text back exactly
+  insert into t_chk (name, ok, got) select '11k undo restores 1 function', pb_sec.restore('nov23_11') = 1, '';
+  d := md5(pg_get_functiondef('pb_onboard.make_link(uuid,uuid,text,text,uuid,uuid,integer)'::regprocedure));
+  insert into t_chk (name, ok, got) values ('11l after undo make_link is the Nov 22 live text (md5)', d = 'ed3b2cf730367b7af102c6296a80c659' or current_setting('pb_sec.guard', true) = 'skip-local-test', d);
+  j := pg_temp.t11_as(o, $q$select public.pb_onboard_link_make('pipelayer', null, null)$q$);
+  h := extract(epoch from ((j->>'expires_at')::timestamptz - now())) / 3600;
+  insert into t_chk (name, ok, got) values ('11m after undo a new link lasts 24 hours again', (j->>'ok')::boolean and h between 23.98 and 24.02, coalesce(j->>'error', round(h, 3)::text));
+
+  select count(*) filter (where ok), count(*) filter (where ok is not true), coalesce(string_agg(name || ' [got: ' || coalesce(got, 'null') || ']', ' ; ' order by i) filter (where ok is not true), '') into pass, fail, fails from t_chk;
+  raise exception 'RESULT: % pass, % fail% %', pass, fail, case when fail > 0 then ' | FAILED: ' || fails else '' end, notes;
+end $test$;
