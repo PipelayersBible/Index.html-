@@ -89,3 +89,8 @@ What is still missing in the staged library:
 4. **Buy AWWA C651-23** (price not checked) so the disinfection cards can be confirmed against the current edition. Recommend: yes, low priority.
 
 ## DONE
+
+## Lead: applied Nov 22 evening
+- Library 21_load applied: 3,255 rows, md5 eb8a4923… (rollback 91_rollback.sql).
+- Prompt row teacher_v2@next = v10. Live row still v9.
+- Build cdddf51b34db installed on slot next (with the emergency/search fixes). Eval on ai-next running (emergency_nov22/EVAL_NEXT.md).
