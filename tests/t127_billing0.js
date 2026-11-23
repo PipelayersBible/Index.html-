@@ -76,7 +76,7 @@ const SERVER=`;(function(){
  const due=await txt(p,'#pbBillDue');console.log('  billing due:',due);
  ok(/Billing due/.test(due)&&/Paid Pipe LLC/.test(due)&&/\$111\.00/.test(due)&&/6 people/.test(due)&&/ap@paid\.test/.test(due)&&/founder price/.test(due),'Billing due lists who to invoice: legal name, period, people, amount, email');
  ok(/Late Co Inc Past due · 5 days left/.test(due)&&/Locks \(read-only\) on/.test(due)&&due.indexOf('Late Co Inc')<due.indexOf('Paid Pipe LLC'),'Billing due warns first: past-due company with days left and its lock date (automatic, no button)');
- ok(/Year Co LLC/.test(due)&&/Catch-up now: 1 above the paid seats × 9 months × \$12\.00 = \$108\.00/.test(due),'Billing due shows a yearly catch-up (1 extra × 9 months × $12)');
+ ok(/Year Co LLC/.test(due)&&/Catch-up now: 1 joined above the paid seats × 9 months × \$12\.00 = \$108\.00/.test(due),'Billing due shows a yearly catch-up (1 extra × 9 months × $12)');
  ok(/Seller on invoices: not set yet/.test(due),'seller name is a setting (not set yet), not hard-coded');
  const cC=await card(p,C);console.log('  beta card:',cC);
  ok(/Add 30 Days/.test(cC)&&/Make Paid/.test(cC)&&/Hand Over/.test(cC)&&/6 people counted/.test(cC)&&/super@acme\.test/.test(cC),'beta card: Add 30 Days / Make Paid / Hand Over, people counted, company login');
@@ -85,7 +85,7 @@ const SERVER=`;(function(){
  ok(/Paid Pipe LLC/.test(cP)&&/Paid through/.test(cP)&&/next invoice/.test(cP)&&/\$111\.00 a month/.test(cP)&&/Paid seats: 6 · people now: 6/.test(cP)&&/Founder price locked until/.test(cP)&&/tommy@admin\.test/.test(cP)&&/Plan reading add-on: off/.test(cP),'paid card: paid through, next invoice, paid seats, founder lock (who, until), plan reading off');
  ok(['Paid','Read-Only Now','Cancel Plan','Plan Reading On','Hand Over'].every(t=>cP.includes(t))&&!/Past Due/.test(cP)&&!/Catch-up Paid/.test(cP),'paid card: Paid / Read-Only Now / Cancel Plan / Plan Reading On / Hand Over (no Past Due button)');
  const cL=await card(p,'a0000000-0000-4000-8000-00000000000a');ok(/Past due · 5 days left/.test(cL)&&/Not paid for the next period/.test(cL)&&/Goes read-only on/.test(cL),'past-due card: chip with days left and the lock date');
- const cY=await card(p,'b0000000-0000-4000-8000-00000000000b');ok(/Catch-up: 1 above the paid seats/.test(cY)&&/Catch-up Paid/.test(cY),'yearly card: catch-up line and Catch-up Paid');
+ const cY=await card(p,'b0000000-0000-4000-8000-00000000000b');ok(/Catch-up: 1 joined above the paid seats/.test(cY)&&/Catch-up Paid/.test(cY),'yearly card: catch-up line and Catch-up Paid');
  await p.screenshot({path:SHOTS+'/owner_list_light.png',fullPage:false});
  // Make Paid form on the beta
  await clickAct(p,C,'paid');
@@ -101,9 +101,12 @@ const SERVER=`;(function(){
  await p.click('#pbMpGo');await p.waitForTimeout(300);
  ok(/Type the billing email/.test(await txt(p,'#pbMpSt'))&&(await rpcs(p,'pb_owner_make_paid')).length===0,'missing billing email is caught before sending');
  await p.fill('#pbMpName','Acme Pipeline Inc');await p.fill('#pbMpEmail','AP@acme.test');await p.fill('#pbMpSigner','Olive Owner, President');
+ await p.click('#pbMpGo');await p.waitForTimeout(300); /* billing_nov22: a billing state is required */
+ ok(/billing state/.test(await txt(p,'#pbMpSt'))&&(await rpcs(p,'pb_owner_make_paid')).length===0,'missing billing state is caught before sending');
+ await p.fill('#pbMpState','ca');
  await p.click('#pbMpGo');await p.waitForTimeout(800);
  const mp=(await rpcs(p,'pb_owner_make_paid'))[0]||{};console.log('  make_paid args:',JSON.stringify(mp));
- ok(mp.p_company===C&&mp.p_legal_name==='Acme Pipeline Inc'&&mp.p_billing_email==='AP@acme.test'&&mp.p_seats===null&&mp.p_interval==='year'&&mp.p_founder===true&&mp.p_plan_reading===false&&mp.p_signed_by==='Olive Owner, President','pb_owner_make_paid called with the form (seats counted by the server, yearly, founder, no plan reading, signer)');
+ ok(mp.p_company===C&&mp.p_legal_name==='Acme Pipeline Inc'&&mp.p_billing_email==='AP@acme.test'&&mp.p_seats===6&&mp.p_address&&mp.p_address.state==='CA'&&mp.p_terms_version==='1.0'&&mp.p_interval==='year'&&mp.p_founder===true&&mp.p_plan_reading===false&&mp.p_signed_by==='Olive Owner, President','pb_owner_make_paid called with the form (seats bought = the 6 people now, state CA, Terms 1.0, yearly, founder, no plan reading, signer)');
  const res=await txt(p,'#pbMakePaid');console.log('  result:',res.slice(0,400));
  ok(/is paid/.test(res)&&/First invoice/.test(res)&&/\$1,110\.00/.test(res)&&/super@acme\.test/.test(res)&&/Hand Over/.test(res)&&/crew1@acme\.test/.test(res),'result: first invoice, company login with the hand-over hint, people still on their own plan');
  await p.evaluate(()=>document.querySelector('#pbMakePaid [data-off]').click());await p.waitForTimeout(400);
@@ -112,7 +115,7 @@ const SERVER=`;(function(){
  ok(/Acme Pipeline Inc/.test(await card(p,C))&&/Read-Only Now/.test(await card(p,C)),'list reloaded: Acme now shows its deal and the paid buttons');
  // founder lock not offered for an ended beta
  await clickAct(p,E,'paid');
- ok(await p.evaluate(()=>document.getElementById('pbMpFounder').disabled)&&/not offered: the beta has ended/.test(await txt(p,'#pbMakePaid')),'ended beta: founder lock not offered');
+ ok(await p.evaluate(()=>document.getElementById('pbMpFounder').disabled)&&/not offered: the beta ended/.test(await txt(p,'#pbMakePaid')),'ended beta: founder lock not offered');
  await p.evaluate(()=>document.querySelector('#pbMakePaid .pb-fb-x').click());await p.waitForTimeout(300);
  // Paid on the past-due company: moves paid-through one period; Read-Only Now; Catch-up Paid
  const L='a0000000-0000-4000-8000-00000000000a',Y='b0000000-0000-4000-8000-00000000000b';

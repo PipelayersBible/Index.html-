@@ -42,7 +42,7 @@ window.__csv=[];window.__debugCsvSink=(n,r)=>window.__csv.push({n,r});
     // ---- #36 on the job page
     await ev("window.pbCxOpenJob('26014')"); await p.waitForTimeout(2200);
     const panel = await ev("(()=>{const e=document.getElementById('pjCxExport');return e?e.innerText:''})()");
-    if (!dark) L.ok(/Spreadsheets/.test(panel) && /Production by day/.test(panel) && /Crew hours for payroll/.test(panel), '#36 job page: Spreadsheets panel with both exports');
+    if (!dark) L.ok(/Spreadsheets/.test(panel) && /Production by day/.test(panel) && /Crew hours by day/.test(panel), '#36 job page: Spreadsheets panel with both exports');
     await p.evaluate(() => document.getElementById('pjCxExport') && document.getElementById('pjCxExport').scrollIntoView());
     await p.screenshot({ path: L.OUT + '/o3_36_panel_' + (dark ? 'dark' : 'light') + '.png' });
     L.ok((await L.overflow(p)).length === 0, (dark ? 'dark' : 'light') + ' job page with the panel: nothing off the side ' + JSON.stringify(await L.overflow(p)));
@@ -68,7 +68,7 @@ window.__csv=[];window.__debugCsvSink=(n,r)=>window.__csv.push({n,r});
     await ev("pbCxExportOpen('hours')"); await p.waitForTimeout(400); await L.clickModal(p, 'Make Spreadsheet'); await p.waitForTimeout(1500);
     csv = await ev('window.__csv'); c = csv[csv.length - 1];
     console.log('  hours csv:', c && c.n, JSON.stringify(c && c.r));
-    L.ok(c && /^crew-hours-26014-/.test(c.n) && c.r[0].join('|') === 'Date|Job number|Jobsite|Foreman (signed)|Person|Hours|Report version|Signed at' && c.r.length === 3 && c.r[1][4] === 'Mike Smith' && c.r[1][5] === '8' && c.r[2][5] === '7.5', '#36 crew hours: headings, one row per person, hours as signed');
+    L.ok(c && /^crew-hours-by-day-26014-/.test(c.n) && c.r[0].join('|') === 'Date|Job number|Jobsite|Foreman (signed)|Person|Hours|Report version|Signed at' && c.r.length === 3 && c.r[1][4] === 'Mike Smith' && c.r[1][5] === '8' && c.r[2][5] === '7.5', '#36 crew hours: headings, one row per person, hours as signed');
     al = await L.modal(p); console.log('  hours alert:', al.replace(/\n/g, ' ').slice(0, 200));
     L.ok(/2 rows from 2 signed daily reports/.test(al), '#36 the hours alert counts rows and reports');
     await L.clickModal(p, 'OK'); await p.waitForTimeout(300);

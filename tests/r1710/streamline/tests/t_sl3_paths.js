@@ -55,7 +55,7 @@ const fits=(p,sel)=>p.evaluate((sel)=>{const e=document.querySelector(sel);const
   ok(await fits(p,'#homeObStart'),'fits 390 px');await p.evaluate(()=>document.getElementById('homeObStart').scrollIntoView());await p.screenshot({path:SHOTS+'/start.png'});
   await p.click('#homeObCrewBtn');await p.waitForTimeout(1500);
   ok(await vis(p,'screen-home')&&/Text a Join Link/.test(await sheet(p))&&await vis(p,'pbObMakeBtn'),'one tap: the link sheet opens over Home');
-  ok(/One link, one person\. They tap it and they’re in DIG Civil Construction\. Works once, for 24 hours\./.test(await sheet(p)),'the sheet says it in one line');
+  ok(/One link, one person\. They tap it and they’re in DIG Civil Construction\. Works once, for 72 hours\./.test(await sheet(p)),'the sheet says it in one line');
   await p.fill('#pbObInvName','Ray');await p.click('[data-role=foreman]');await p.click('#pbObMakeBtn');await p.waitForTimeout(1200);
   ok(await p.evaluate(()=>/sms:/.test((document.getElementById('pbObTextIt')||{}).getAttribute&&document.getElementById('pbObTextIt').getAttribute('href')||'')),'the link is made, ready to text');
   await p.click('#pbObInvClose');await p.waitForTimeout(300);

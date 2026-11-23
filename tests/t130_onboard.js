@@ -65,7 +65,7 @@ const CONTRACTOR=`window.__tableOne={subscriptions:{tier:'contractor',status:'ac
  await O.fill('#pbObInvName','Mike');await O.selectOption('#pbObPair',srv.FOREMAN);await O.click('#pbObMakeBtn');await O.waitForTimeout(900);
  const sms=await O.evaluate(()=>document.getElementById('pbObTextIt').getAttribute('href'));const body=decodeURIComponent(sms.replace(/^sms:\?&body=/,''));
  const url=(/https:\/\/app\.pipelayersbible\.com\/#join=[A-Za-z0-9_-]{32}/.exec(body)||[])[0];
- ok(/^sms:\?&body=/.test(sms)&&!!url&&/as Pipelayer/.test(body)&&/works once, for 24 hours/.test(body),'2: Text It opens Messages with the link, the role and "works once, for 24 hours"');
+ ok(/^sms:\?&body=/.test(sms)&&!!url&&/as Pipelayer/.test(body)&&/works once, for 72 hours/.test(body),'2: Text It opens Messages with the link, the role and "works once, for 72 hours"');
  t=await sheet(O);const code=(/Code to read out: ([A-Z0-9]{3} [A-Z0-9]{3})/.exec(t)||[])[1];
  ok(!!code&&/Goes on Ray’s crew/.test(t)&&/Mike · Pipelayer Not used yet/.test(t),'2: code shown, "Goes on Ray\'s crew", list says "Mike · Pipelayer, not used yet"');
  ok(await fits(O,'#pbObSheet .pbob-card'),'2: the link sheet fits 390 px');await O.screenshot({path:SHOTS+'/invite_light.png'});
