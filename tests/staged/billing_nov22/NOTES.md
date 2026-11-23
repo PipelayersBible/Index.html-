@@ -79,7 +79,7 @@ Fri Dec 18 12:09 PM and Sat Dec 19 2:55 PM Pacific, pb_stage present.
   The block includes privilege checks (new helpers closed; new owner tools authenticated-only + security definer;
   no caller-rights function the app can run calls a new helper or state_of; no row policy calls pb_billing).
 - App, tests/t_billing.js on the build: ALL PASS (51 checks). On the unfixed candidate A it fails from the first case.
-- Full regression: see the end of this file.
+- Full regression: see "Regression" below.
 
 ## Apply order (lead, one sitting, after the r17.16 candidate it is built on)
 1. Run sql/block_t01.sql on live. Expect `ERROR: RESULT: 74 pass, 0 fail [app and owner calls ran as role authenticated]`.
@@ -88,8 +88,10 @@ Fri Dec 18 12:09 PM and Sat Dec 19 2:55 PM Pacific, pb_stage present.
    the 20 functions changed on live since Nov 22.
 3. Ship the app (b1..b4) the same day: the new Make Paid needs a billing state, so Tommy's r17.15 Make Paid form
    (which sends none) is refused with "Type the billing address with its state" until he has the new app.
-4. Undo: sql/99_undo_01.sql (puts back the exact live texts, drops what 01 added).
-md5: 01_billing.apply.sql 5b4c40b1…, 99_undo_01.sql ce373e42…, block_t01.sql 681f288c…, index.src.html 597a3e86…
+4. With the app commit: sh tests/staged/billing_nov22/test_updates/apply.sh (7 goldens + t127), plus the r17.16
+   candidate's own test_updates/A (critic/w2, new/a7).
+5. Undo: sql/99_undo_01.sql (puts back the exact live texts, drops what 01 added).
+md5: 01_billing.apply.sql 5b4c40b1…, 99_undo_01.sql ce373e42…, block_t01.sql 681f288c…, index.src.html a15aae5a…, build/index.html e969ccd5…
 
 ## Notes / not done
 - Owner Dashboard money still counts a company whose first invoice isn't paid (pb_owner_dashboard not touched).
@@ -97,3 +99,33 @@ md5: 01_billing.apply.sql 5b4c40b1…, 99_undo_01.sql ce373e42…, block_t01.sql
   the new app maps the code itself. Add them to functions/crew-admin/logic.ts next time it is deployed.
 - AI day and month stay UTC on the server (8+ functions and the edge count by it); the app now says the real time.
 - #27 (owner removing people before Paid day) not built.
+
+## Regression
+`tests/run_all.sh --build work/out/build_hooks/index.html --jobs 2` (results/regression.log): pass 211, FAIL 11, skip 15.
+- 8 are the intended wording changes, re-run alone after the last build and recorded in test_updates/:
+  t99_removed (Not Now hides the line), critic w1 / w3 / w4 ("Company plan (active)"), office a1_ask / a3_stake
+  ("It resets at 4 PM today", "Individual or Company"), office b3_owner (company request line), t127_billing0
+  (catch-up "joined", Make Paid needs a state). Updated t127 copy: 41 pass, 0 fail on the build.
+- critic/w2 and new/a7: fail the same way on the unfixed r17.16 candidate A (results/regression_base_check); the
+  candidate already carries their updates (r1716_candidate/test_updates/A). Not mine.
+- offline/rig/t10_quota: passed when re-run alone (flaky).
+- After the regression I made the owner screen fall back cleanly on an old server (no Invoice Sent button / no
+  "due" line without due_on); rebuilt, re-ran t_billing (ALL PASS), t127 copy (41/0), t95, t98 and the 7 goldens
+  (identical to test_updates).
+
+## Decisions for Tommy
+1. Due date: each invoice is due on the paid-through date (sent 7 days before), read-only 7 days after it. Stripe must
+   show that same due date (not "Net 15 from sending"). Recommend: keep, and set the Stripe due date to the period
+   start; if he wants Net terms, set `due_offset_days` instead (e.g. 15) so the app and the invoice agree.
+2. Yearly catch-up part month rounds down ($110, not $120, for someone added the day after signing). Recommend keep
+   (setting `catchup_part_month`).
+3. Seats bought above the people in the company become a floor (billed even if fewer join) until Edit Billing changes
+   it. Recommend keep; the order form's "People bought at start" says so.
+4. Monthly invoices still count open email invites (Nov 20 decision); yearly catch-up counts joined people only.
+   Recommend keep for now; revisit if owners complain about paying for invites.
+5. AI day stays UTC on the server; the app now says "It resets at 4 PM". Recommend keep until after the first
+   invoices (moving it touches 8 server functions and the AI edge function).
+6. #8 crew can read the company price in Settings > What each plan includes. Recommend hide the company paragraphs
+   from foremen and pipelayers (small app change), since r17.15 took the price off their Home.
+
+## DONE
