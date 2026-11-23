@@ -17,6 +17,7 @@ Design and numbers: `PLAN.md`. **Nothing was applied, deployed, committed or pub
 | Tests | `sql/tests/t0N.plpgsql` → `block_t0N.sql` (`python3 sql/tests/mk.py`), `sql/local/run_local.sh`, `tests/t_msg.js` + `tests/msgsrv.js`, `edge/msg-archive/test.mjs` | see Results |
 | Undo | `sql/undo/99_undo_03.sql`, `99_undo_02.sql`, `99_undo_01.sql` (in that order) | 01's undo deletes every message: its first block alone only cuts the app off and keeps them |
 | Build | `build.sh` | `work/index.src.html`, `work/build/` (publish), `work/build_hooks/` (tests) |
+| Golden updates | `test_updates/tests/expect/` (5 files), `test_updates/verify.sh` | copy over `tests/` with the release commit that ships Messages |
 
 ### Who is in a chat (enforced in `pb_msg.qual` / `pb_msg.can_read`, read at every call)
 - Job chat: the office always (company account, managers, PMs/supers); foremen who filed work on that job in the last
@@ -46,8 +47,8 @@ own phone time zone when known) hold the alert until they end; they are set per 
 | SQL, local throwaway Postgres 16 (`sql/local/run_local.sh`; one_device + security stubs + ours) | `block_t01` **RESULT: 63 pass, 0 fail**; `block_t02` **14 pass, 0 fail**; `block_t03` **4 pass, 0 fail**; each apply file run twice: ok; undo 03, 02, 01: nothing left (0 buckets, 0 policies, off-site list and outbox check back to the live text) | `results/sql_local.txt` |
 | SQL mutation check (that the tests can fail) | grant on `pb_msg_photo_can_view` revoked → 4a and 4i-4l FAIL ("permission denied for function pb_msg_photo_can_view", the same shape as this morning's live bug); `pb_msg_info` made SECURITY INVOKER → 1d, 1x, 1y, 3h FAIL ("permission denied for schema pb_msg") | (run from `work/mut`, not kept) |
 | Archive writer (`node edge/msg-archive/test.mjs`) | **all pass** (14): python `zipfile.testzip()` clean, CRC-32 check value, UTF-8 names, deleted/edited text kept, offline-typed time noted, company time zone, no `<script>`, missing photo noted not fatal, 60 MB parts; `deno check index.ts` ok (msg-archive and pb-offsite) | `results/edge_msg_archive.txt` |
-| App rig (`tests/t_msg.js`, 360 x 740, fake server) | **all pass (49)** (see list below) | `results/t_msg.txt`, `results/shots/` |
-| Full regression | (filled in below) | `results/full_regression.log` |
+| App rig (`tests/t_msg.js`, 360 x 740, fake server) | **all pass (48)** (see list below) | `results/t_msg.txt`, `results/shots/` |
+| Full regression | pass 213, FAIL 9, skip 15 of 237; every FAIL explained (see Regression); after the fix the 9 re-run, golden updates verified 5/5 | `results/full_regression.log`, `results/rerun9/`, `results/test_updates_verify.log` |
 
 SQL tests run every app call **as role `authenticated` with the person's JWT claims** (`set_config('role', ...)` inside
 the call, the way PostgREST runs it), photo uploads/reads as real `insert`/`select` on `storage.objects` through the
@@ -87,8 +88,9 @@ the included 100 GB). Photos are 95%+ of the cost.
    is set so no push or archive call goes out.
 3. Apply `sql/apply/01_messaging.apply.sql`, then `02_storage.apply.sql` (storage owner path), then `03_offsite.apply.sql`.
 4. Deploy `edge/msg-archive` (`--no-verify-jwt`; files index.ts, logic.mjs, zip.mjs) and `edge/pb-offsite/index.ts`.
-5. Release the app with `patches/m1_messages.py` (on top of r17.16 A; `build.sh`). The app hides everything until the
-   server answers `pb_msg_list` (a missing function → no card), so the app can ship first.
+5. Release the app with `patches/m1_messages.py` (on top of r17.16 A; `build.sh`) and copy `test_updates/tests` over
+   `tests/` in the same commit. The app shows nothing until the server answers `pb_msg_list` with `member: true`, so the
+   app can ship before or after the server part.
 6. Backblaze: for 13-month companies, add a B2 lifecycle rule to delete `msg-archives/<company>/13m/` files after 400 days
    (Object Lock keeps them 396 days; nothing deletes B2 copies automatically today).
 7. Undo: `sql/undo/99_undo_03.sql`, `99_undo_02.sql`, then `99_undo_01.sql` (read its header: it deletes messages).
@@ -153,4 +155,20 @@ the included 100 GB). Photos are 95%+ of the cost.
 - The app build stamp is unchanged (r17.16 A's); the lead stamps the release.
 
 ## Regression
-(filled in below)
+`tests/run_all.sh --build work/build_hooks/index.html --jobs 2 --out results/regression` (shared box, about 2.5 h):
+**pass 213, FAIL 9, skip 15 of 237** (`results/full_regression.log`). Each failure looked at:
+- `critic/w2`, `new/a7`: r17.16 A's own changes; they fail the same way on A (`r1716_candidate/results/full_regression_A.log`)
+  and my expect files are byte-identical to `r1716_candidate/test_updates/A`.
+- `critic/w1`, `w3`, `w4`, `sync/t06_hash`: the Home Messages card and the Settings row appeared in the page text, at a
+  moment that depended on timing (w4 and t06_hash flipped between runs). **Fixed in the app**: the card and the row now
+  show only after the server has answered `pb_msg_list` with `member: true` (kept on the phone, so it still shows
+  offline); with no server part (the rigs, or before 01 is applied) nothing shows. Re-run on the fixed build: w3, w4,
+  t06_hash match their old goldens; w1 differs only by the 4 new screen ids in its screen list (intended).
+- `office/s1_smoke`, `sync/t03_roles`: the RPC list now includes `pb_msg_list` for a company account (intended).
+- `offline/rig/t00b`: RPC order shifted by timing; **passes alone** on the same build (`results/rerun_t00b`) and in the re-run.
+After the fix: the 9 re-run (`results/rerun9`: 4 match old goldens, 5 intended differences), the 5 new expect files in
+`test_updates/` verified on a copy of tests/ (`results/test_updates_verify.log`: **5/5 pass**). The full 237 were not
+re-run after this last app change (it only gates when the card/row show); the rig test (48/48) was.
+The known flaky `new/f06_breakend` passed in this run.
+
+## DONE

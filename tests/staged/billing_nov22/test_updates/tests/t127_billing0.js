@@ -101,9 +101,12 @@ const SERVER=`;(function(){
  await p.click('#pbMpGo');await p.waitForTimeout(300);
  ok(/Type the billing email/.test(await txt(p,'#pbMpSt'))&&(await rpcs(p,'pb_owner_make_paid')).length===0,'missing billing email is caught before sending');
  await p.fill('#pbMpName','Acme Pipeline Inc');await p.fill('#pbMpEmail','AP@acme.test');await p.fill('#pbMpSigner','Olive Owner, President');
+ await p.click('#pbMpGo');await p.waitForTimeout(300); /* billing_nov22: a billing state is required */
+ ok(/billing state/.test(await txt(p,'#pbMpSt'))&&(await rpcs(p,'pb_owner_make_paid')).length===0,'missing billing state is caught before sending');
+ await p.fill('#pbMpState','ca');
  await p.click('#pbMpGo');await p.waitForTimeout(800);
  const mp=(await rpcs(p,'pb_owner_make_paid'))[0]||{};console.log('  make_paid args:',JSON.stringify(mp));
- ok(mp.p_company===C&&mp.p_legal_name==='Acme Pipeline Inc'&&mp.p_billing_email==='AP@acme.test'&&mp.p_seats===null&&mp.p_interval==='year'&&mp.p_founder===true&&mp.p_plan_reading===false&&mp.p_signed_by==='Olive Owner, President','pb_owner_make_paid called with the form (seats counted by the server, yearly, founder, no plan reading, signer)');
+ ok(mp.p_company===C&&mp.p_legal_name==='Acme Pipeline Inc'&&mp.p_billing_email==='AP@acme.test'&&mp.p_seats===6&&mp.p_address&&mp.p_address.state==='CA'&&mp.p_terms_version==='1.0'&&mp.p_interval==='year'&&mp.p_founder===true&&mp.p_plan_reading===false&&mp.p_signed_by==='Olive Owner, President','pb_owner_make_paid called with the form (seats bought = the 6 people now, state CA, Terms 1.0, yearly, founder, no plan reading, signer)');
  const res=await txt(p,'#pbMakePaid');console.log('  result:',res.slice(0,400));
  ok(/is paid/.test(res)&&/First invoice/.test(res)&&/\$1,110\.00/.test(res)&&/super@acme\.test/.test(res)&&/Hand Over/.test(res)&&/crew1@acme\.test/.test(res),'result: first invoice, company login with the hand-over hint, people still on their own plan');
  await p.evaluate(()=>document.querySelector('#pbMakePaid [data-off]').click());await p.waitForTimeout(400);
@@ -112,7 +115,7 @@ const SERVER=`;(function(){
  ok(/Acme Pipeline Inc/.test(await card(p,C))&&/Read-Only Now/.test(await card(p,C)),'list reloaded: Acme now shows its deal and the paid buttons');
  // founder lock not offered for an ended beta
  await clickAct(p,E,'paid');
- ok(await p.evaluate(()=>document.getElementById('pbMpFounder').disabled)&&/not offered: the beta has ended/.test(await txt(p,'#pbMakePaid')),'ended beta: founder lock not offered');
+ ok(await p.evaluate(()=>document.getElementById('pbMpFounder').disabled)&&/not offered: the beta ended/.test(await txt(p,'#pbMakePaid')),'ended beta: founder lock not offered');
  await p.evaluate(()=>document.querySelector('#pbMakePaid .pb-fb-x').click());await p.waitForTimeout(300);
  // Paid on the past-due company: moves paid-through one period; Read-Only Now; Catch-up Paid
  const L='a0000000-0000-4000-8000-00000000000a',Y='b0000000-0000-4000-8000-00000000000b';

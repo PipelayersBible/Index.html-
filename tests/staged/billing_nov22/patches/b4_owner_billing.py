@@ -20,7 +20,7 @@ p.rep("""      'pb:company_inactive': 'That company isn’t active.', 'pb:no_cat
 # the catch-up line: the yearly rate, joined people only
 p.rep("""    const pbCatchLine = (a) => { const c = a.catchup || {}; return Number(c.cents) > 0 ? 'Catch-up: ' + c.people + ' above the paid seats × ' + c.months + ' month' + (c.months === 1 ? '' : 's') + ' left × ' + pbMoney(a.seat_cents) + ' = <b>' + pbMoney(c.cents) + '</b>' : Number(c.monthly_next_invoice) > 0 ? c.monthly_next_invoice + ' above the paid seats: on the next invoice' : ''; };""",
 """    const pbCatchLine = (a) => { const c = a.catchup || {}; return Number(c.cents) > 0 ? 'Catch-up: ' + c.people + ' joined above the paid seats × ' + (c.each_cents != null ? pbMoney(c.each_cents) + ' each (' + c.months + ' full month' + (c.months === 1 ? '' : 's') + ' left at the yearly rate)' : c.months + ' months × ' + pbMoney(a.seat_cents)) + ' = <b>' + pbMoney(c.cents) + '</b>' : Number(c.monthly_next_invoice) > 0 ? c.monthly_next_invoice + ' above the paid seats: on the next invoice' : ''; }; /* billing_nov22 #4 #18 */
-    const pbInvLine = (a) => { const n = a.next || {}; if (a.state === 'canceled') return ''; /* billing_nov22 #5: has the invoice for the next period been sent? */
+    const pbInvLine = (a) => { const n = a.next || {}; if (a.state === 'canceled' || !a.due_on) return ''; /* no due_on: the server isn't updated yet */ /* billing_nov22 #5: has the invoice for the next period been sent? */
       return n.sent ? 'Invoice sent ' + pbDay(a.invoice && a.invoice.sent_on) + ' · due ' + pbDay(a.due_on) + ' · locks ' + pbDay(a.lock_on) + ' if not paid'
         : n.due ? '<b>Not sent yet:</b> send it, then press Invoice Sent (due ' + pbDay(a.due_on) + ' unless sent later)' : ''; };""")
 
@@ -33,7 +33,7 @@ p.rep("""        + '<div class="ln">Paid through ' + pbDay(a.paid_through) + ' �
         + '<div class="ln">Paid seats: ' + (Number(a.seats_capacity) || 0) + (Number(a.seats_min) > 0 ? ' · bought: ' + a.seats_min : '') + ' · people now: ' + (Number(a.seats_used) || 0) + (a.waiting != null ? ' (' + (Number(a.joined) || 0) + ' joined, ' + (Number(a.waiting) || 0) + ' invited)' : '') + (pbCatchLine(a) ? ' · ' + pbCatchLine(a) : '') + '</div>'
         + (a.next_interval ? '<div class="ln">Switches to <b>' + (a.next_interval === 'year' ? 'yearly' : 'monthly') + '</b> at renewal.</div>' : '')
         + '<div class="ln">Billing: ' + (a.tax_state ? 'state ' + escapeHtml(a.tax_state) : '<b>no billing state</b> (Edit Billing)') + (a.billing_contact ? ' · contact ' + escapeHtml(a.billing_contact) : '') + (a.terms_version ? ' · Terms ' + escapeHtml(a.terms_version) : '') + '</div>'
-        + (a.state === 'past_due' ? '<div class="ln"><b>Not paid: due ' + pbDay(a.due_on) + '.</b> Goes read-only on ' + pbDay(a.lock_on) + ' unless you press Paid.</div>' : '')""")
+        + (a.state === 'past_due' ? '<div class="ln"><b>' + (a.due_on ? 'Not paid: due ' + pbDay(a.due_on) + '.' : 'Not paid for the next period.') + '</b> Goes read-only on ' + pbDay(a.lock_on) + ' unless you press Paid.</div>' : '')""")
 
 # the buttons
 p.rep("""      if (!a || a.state === 'canceled') return '<div class="acts">' + b('paid', 'Make Paid') + b('handover', 'Hand Over', true) + '</div>';
@@ -41,7 +41,7 @@ p.rep("""      if (!a || a.state === 'canceled') return '<div class="acts">' + b
         + (a.catchup && Number(a.catchup.cents) > 0 ? b('b_catch', 'Catch-up Paid') : '')""",
 """      if (!a || a.state === 'canceled') return '<div class="acts">' + (a && a.state === 'canceled' && !a.read_only ? b('b_undo', 'Undo Cancel') : '') + b('paid', 'Make Paid') + b('handover', 'Hand Over', true) + '</div>'; /* billing_nov22 #14 */
       const nx = a.next || {}, locked = a.state === 'read_only'; /* restart from today: a locked company (past due still has Paid) */
-      return '<div class="acts pb-bill-acts">' + (!nx.sent ? b('b_inv', 'Invoice Sent', !nx.due) : '') + b('b_paid', 'Paid') + (locked ? b('b_restart', 'Paid \\u2013 Restart From Today', true) : '') /* billing_nov22 #5 #13 */
+      return '<div class="acts pb-bill-acts">' + (!nx.sent && a.due_on ? b('b_inv', 'Invoice Sent', !nx.due) : '') + b('b_paid', 'Paid') + (locked ? b('b_restart', 'Paid \\u2013 Restart From Today', true) : '') /* billing_nov22 #5 #13 */
         + (a.stored_state === 'read_only' ? b('b_active', 'Not Read-Only', true) : b('b_ro', 'Read-Only Now', true)) + b('b_cancel', 'Cancel Plan', true)
         + (a.catchup && Number(a.catchup.cents) > 0 ? b('b_catch', 'Catch-up Paid') : '')
         + b('b_edit', 'Edit Billing', true) + b('b_iv', a.next_interval ? 'Keep ' + (a.interval === 'year' ? 'Yearly' : 'Monthly') : 'Switch to ' + (a.interval === 'year' ? 'Monthly' : 'Yearly') + ' at Renewal', true)""")
@@ -69,7 +69,7 @@ p.rep("""    document.addEventListener('click', async (e) => {
 p.rep("""            + '<div class="ln">' + pbDay(d.from) + ' – ' + pbDay(d.to) + ' · ' + (Number(d.seats) || 0) + ' people · <b>' + pbMoney(d.amount_cents) + '</b> ' + (d.interval === 'year' ? 'for the year' : 'for the month') + (d.founder ? ' · founder price' : '') + '</div>'
             + (d.catchup && Number(d.catchup.cents) > 0 ? '<div class="ln">Catch-up now: ' + d.catchup.people + ' above the paid seats × ' + d.catchup.months + ' months × ' + pbMoney(pbNum(set.seat_cents, 1200)) + ' = <b>' + pbMoney(d.catchup.cents) + '</b></div>' : '')""",
 """            + '<div class="ln">' + (d.first_invoice ? '<b>First invoice</b> · ' : '') + pbDay(d.from) + ' – ' + pbDay(d.to) + ' · ' + (Number(d.seats) || 0) + ' people · <b>' + pbMoney(d.amount_cents) + '</b> ' + (d.interval === 'year' ? 'for the year' : 'for the month') + (d.founder ? ' · founder price' : '') + '</div>'
-            + (d.state !== 'canceled' ? '<div class="ln">' + (d.sent ? 'Sent · due ' + pbDay(d.due_on) : '<b>Not sent yet</b> · send it, then press Invoice Sent on the company below') + '</div>' : '') /* billing_nov22 #5 */
+            + (d.state !== 'canceled' && d.due_on ? '<div class="ln">' + (d.sent ? 'Sent · due ' + pbDay(d.due_on) : '<b>Not sent yet</b> · send it, then press Invoice Sent on the company below') + '</div>' : '') /* billing_nov22 #5 */
             + (d.catchup && Number(d.catchup.cents) > 0 ? '<div class="ln">Catch-up now: ' + d.catchup.people + ' joined above the paid seats × ' + (d.catchup.each_cents != null ? pbMoney(d.catchup.each_cents) + ' each (' + d.catchup.months + ' full months left at the yearly rate)' : d.catchup.months + ' months × ' + pbMoney(pbNum(set.seat_cents, 1200))) + ' = <b>' + pbMoney(d.catchup.cents) + '</b></div>' : '')""")
 
 # Make Paid form: seats, address, contact, Terms version; the pick from the request; founder after a request before the end

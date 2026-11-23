@@ -12,11 +12,10 @@
   const pbMsgEsc = (s) => escapeHtml(String(s == null ? '' : s));
   const pbMsgEl = (id) => document.getElementById(id);
   function pbMsgUid() { const u = pbArchiveOwnerUid; return u && u !== 'shared' ? u : null; }
-  function pbMsgInCompany(uid) {
-    const a = uid ? pbProdAccMem.get(uid) : null;
-    if (a) return !!(a.member || a.manager);
-    return !!(pbMsg.uid === uid && pbMsg.list && pbMsg.list.member);
-  }
+  // shown only once the server has said this account is in a company with Messages (pb_msg_list; the phone keeps the answer,
+  // so it shows offline too). Before the server part is applied, or for someone not in a company: nothing shows.
+  function pbMsgInCompany(uid) { return !!(uid && pbMsg.uid === uid && pbMsg.list && pbMsg.list.member === true && !pbMsg.list.missing); }
+  function pbMsgMayAsk(uid) { const a = uid ? pbProdAccMem.get(uid) : null; return !!((a && (a.member || a.manager)) || pbMsgInCompany(uid)); }
   async function pbMsgCanAsk(uid) { try { return !!uid && pbAuthBackgroundOk() && (await pbDlyCanAsk(uid)); } catch (e) { return false; } }
   function pbMsgCode(r) { const m = String((r && r.error && (r.error.message || r.error.code)) || ''); return (m.match(/pb:\w+/) || [''])[0]; }
   function pbMsgNet(r) { const m = String((r && r.error && r.error.message) || ''); return navigator.onLine === false || /failed to fetch|networkerror|load failed|no client|timeout|no answer/i.test(m); }
@@ -53,6 +52,7 @@
     const uid = pbMsgUid(); if (!uid) return;
     await pbMsgLoad(uid);
     if (pbMsg.busy || (!force && pbMsg.at && Date.now() - pbMsg.at < 20000)) return;
+    if (!pbMsgMayAsk(uid)) { pbMsgPaintAll(); return; } // an individual account: no company, no messages, no call
     if (!(await pbMsgCanAsk(uid))) { pbMsgPaintAll(); return; }
     pbMsg.busy = true; let r = null;
     try { r = await pbPermitRpc('pb_msg_list', { p_expect_uid: uid }, 20000); } catch (e) { r = null; }
@@ -86,7 +86,7 @@
   function pbMsgPaintHome() {
     const el = pbMsgEl('homeMsgCard'); if (!el) return;
     const uid = pbMsgUid();
-    if (!uid || !pbMsgInCompany(uid) || (pbMsg.list && pbMsg.list.missing)) { el.hidden = true; el.innerHTML = ''; return; }
+    if (!uid || !pbMsgInCompany(uid)) { el.hidden = true; el.innerHTML = ''; return; }
     const n = pbMsgUnread(), waiting = pbMsg.out.filter((x) => x.state !== 'refused').length;
     const top = pbMsgChats().filter((c) => (+c.unread || 0) > 0 && !c.muted)[0];
     const sub = waiting ? waiting + (waiting === 1 ? ' message waiting for signal' : ' messages waiting for signal')
