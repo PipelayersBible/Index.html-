@@ -121,3 +121,9 @@ Order: `p1_emergency_block.py` → `p2_not_emergency_link.py` → `p3_spanish_ro
 See `EVAL_NEXT.md`: **GO**. $7.88 counted in the 3 run totals, $8.13 counted in all (over the $8 budget by $0.13; the extra $0.25 is answers outside the 3 runs, not identified). 25/25 instant emergencies right, 10/10 look-alikes reached Ask, everyday 64/67 by hand (3 length only), 148 existing 144 by pattern = 146 by hand (lib8 146).
 
 ## DONE
+
+## Lead: LIVE (Nov 22 evening)
+- Build cdddf51b34db installed on live ("installed live cdddf51b34db"); prompt row teacher_v2 = v10 (32_…_live.sql).
+- Live smoke 6/6: boom/line -> instant power steps; "le pegamos al gas" -> instant Spanish gas steps with accents; FL T&M ticket -> no 811; OR cover -> 30 in (OAR 333-061-0050(8)(f)); "ran over the lath" -> AI, surveyor resets; Spokane CO -> WA 35 ppm. Cost about $0.12.
+- Rollback: build 1b8514750e72, then ask_everyday_nov22/sql/39_prompt_row_v9_rollback.sql.
+- Follow-up for the next build + app release: add "(often hydrogen sulfide, H2S)" to the sewer-smell line (EN+ES); update eval case wa1.
